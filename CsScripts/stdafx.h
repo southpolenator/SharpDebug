@@ -13,4 +13,6 @@
 
 
 
-// TODO: reference additional headers your program requires here
+#define KDEXT_64BIT 
+#include <wdbgexts.h>
+#include <Dbgeng.h>

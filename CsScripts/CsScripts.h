@@ -12,6 +12,8 @@
 
 extern "C" {
 
-CSSCRIPTS_API int fnCsScripts(void);
+CSSCRIPTS_API HRESULT DebugExtensionInitialize(
+	_Out_ PULONG Version,
+	_Out_ PULONG Flags);
 
 };

@@ -4,8 +4,13 @@
 #include "stdafx.h"
 #include "CsScripts.h"
 
-// This is an example of an exported function.
-CSSCRIPTS_API int fnCsScripts(void)
+CSSCRIPTS_API HRESULT DebugExtensionInitialize(
+	_Out_ PULONG Version,
+	_Out_ PULONG Flags)
 {
-    return 42;
+	if (Version != nullptr)
+		*Version = DEBUG_EXTENSION_VERSION(0, 1);
+	if (Flags != nullptr)
+		*Flags = 0;
+	return S_OK;
 }
