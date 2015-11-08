@@ -10,10 +10,73 @@
 #define CSSCRIPTS_API __declspec(dllimport)
 #endif
 
+struct IDebugClient;
+
 extern "C" {
 
 CSSCRIPTS_API HRESULT DebugExtensionInitialize(
 	_Out_ PULONG Version,
 	_Out_ PULONG Flags);
 
+CSSCRIPTS_API void CALLBACK DebugExtensionUninitialize();
+
+CSSCRIPTS_API HRESULT CALLBACK execute(
+	_In_     IDebugClient* client,
+	_In_opt_ PCSTR         Args);
+
+};
+
+template<class T>
+class CAutoComPtr
+{
+private:
+	CAutoComPtr(CAutoComPtr&);
+
+public:
+	CAutoComPtr()
+		: pointer(nullptr)
+	{
+	}
+
+	CAutoComPtr(T* pointer)
+		: pointer(pointer)
+	{
+	}
+
+	~CAutoComPtr()
+	{
+		if (pointer)
+			pointer->Release();
+	}
+
+	CAutoComPtr& operator=(T* p)
+	{
+		if (pointer)
+			pointer->Release();
+		pointer = p;
+		return *this;
+	}
+
+	T* operator->() const
+	{
+		return pointer;
+	}
+
+	operator T*() const
+	{
+		return pointer;
+	}
+
+	T** operator&()
+	{
+		return &pointer;
+	}
+
+	bool operator !=(T* p) const
+	{
+		return pointer != p;
+	}
+
+private:
+	T* pointer;
 };

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsScriptManaged", "..\CsScr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsScriptManagedTest", "..\CsScriptManagedTest\CsScriptManagedTest.csproj", "{B683D8DD-6759-4301-A54A-FAEFE1105416}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CsScriptsTest", "..\CsScriptsTest\CsScriptsTest.vcxproj", "{DCB9C02D-1615-4287-A413-210F6C08F9C9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,16 @@ Global
 		{B683D8DD-6759-4301-A54A-FAEFE1105416}.Release|x64.Build.0 = Release|x64
 		{B683D8DD-6759-4301-A54A-FAEFE1105416}.Release|x86.ActiveCfg = Release|x86
 		{B683D8DD-6759-4301-A54A-FAEFE1105416}.Release|x86.Build.0 = Release|x86
+		{DCB9C02D-1615-4287-A413-210F6C08F9C9}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{DCB9C02D-1615-4287-A413-210F6C08F9C9}.Debug|x64.ActiveCfg = Debug|x64
+		{DCB9C02D-1615-4287-A413-210F6C08F9C9}.Debug|x64.Build.0 = Debug|x64
+		{DCB9C02D-1615-4287-A413-210F6C08F9C9}.Debug|x86.ActiveCfg = Debug|Win32
+		{DCB9C02D-1615-4287-A413-210F6C08F9C9}.Debug|x86.Build.0 = Debug|Win32
+		{DCB9C02D-1615-4287-A413-210F6C08F9C9}.Release|Any CPU.ActiveCfg = Release|Win32
+		{DCB9C02D-1615-4287-A413-210F6C08F9C9}.Release|x64.ActiveCfg = Release|x64
+		{DCB9C02D-1615-4287-A413-210F6C08F9C9}.Release|x64.Build.0 = Release|x64
+		{DCB9C02D-1615-4287-A413-210F6C08F9C9}.Release|x86.ActiveCfg = Release|Win32
+		{DCB9C02D-1615-4287-A413-210F6C08F9C9}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

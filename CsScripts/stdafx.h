@@ -10,9 +10,10 @@
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 // Windows Header Files:
 #include <windows.h>
+#include <intrin.h>
+#include <Psapi.h>
+#include <wchar.h>
+#include <winscard.h>
+#include <Shlwapi.h>
+#include <strsafe.h>
 
-
-
-#define KDEXT_64BIT 
-#include <wdbgexts.h>
-#include <Dbgeng.h>
