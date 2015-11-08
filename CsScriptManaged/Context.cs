@@ -18,6 +18,7 @@ namespace CsScriptManaged
         public static IDebugSymbolGroup2 SymbolGroup;
         public static IDebugSymbols5 Symbols;
         public static IDebugSystemObjects4 SystemObjects;
+        private static ScriptManager ScriptManager = new ScriptManager();
 
         public static void Initalize(IDebugClient client)
         {
@@ -35,6 +36,7 @@ namespace CsScriptManaged
         public static void Execute(string path, string[] args)
         {
             // TODO: Execute script with arguments
+            ScriptManager.Execute(path, args);
         }
     }
 }
