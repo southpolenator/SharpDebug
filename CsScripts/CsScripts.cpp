@@ -245,6 +245,12 @@ public:
 		CHECKCOM(assembly->CreateInstance_2(bstr_t(L"CsScriptManaged.Executor"), true, &variant));
 		CHECKCOM(variant.punkVal->QueryInterface(&instance));
 
+		CHECKCOM(InitializeContext(client));
+		return S_OK;
+	}
+
+	HRESULT InitializeContext(IDebugClient* client)
+	{
 		CHECKCOM(instance->InitializeContext(client));
 		return S_OK;
 	}
@@ -361,5 +367,6 @@ HRESULT CALLBACK execute(
 	wstringstream ss;
 
 	ss << Args;
+	clr.InitializeContext(Client);
 	return clr.ExecuteScript(ss.str().c_str());
 }

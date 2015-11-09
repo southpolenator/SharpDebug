@@ -35,7 +35,6 @@ namespace CsScriptManaged
             {
                 var compilerParameters = new CompilerParameters()
                 {
-                    GenerateInMemory = true,
                     IncludeDebugInformation = true,
                 };
 
