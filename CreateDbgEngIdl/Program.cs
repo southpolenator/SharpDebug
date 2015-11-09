@@ -13,8 +13,8 @@ namespace CreateDbgEngIdl
         static string StripWin32Defs(string line)
         {
             line = Regex.Replace(line, "_(In|Out)_(reads|writes|writes_to)_(bytes_|)(opt_|)[(][^)]*[)]", "");
-            return line.Replace("PCSTR ", "const char * ").Replace("PSTR ", "char * ").Replace("PCWSTR ", "const wchar_t * ")
-                       .Replace("PWSTR ", "wchar_t * ").Replace("PULONG64 ", "unsigned __int64 * ").Replace("ULONG64 ", "unsigned __int64 ").Replace("LONG64 ", "__int64 ").Replace("PULONG ", "unsigned long * ")
+            return line.Replace("PCSTR ", "LPStr ").Replace("PSTR ", "LPStr ").Replace("PCWSTR ", "LPWStr ")
+                       .Replace("PWSTR ", "LPWStr ").Replace("PULONG64 ", "unsigned __int64 * ").Replace("ULONG64 ", "unsigned __int64 ").Replace("LONG64 ", "__int64 ").Replace("PULONG ", "unsigned long * ")
                        .Replace("ULONG ", "unsigned long ").Replace("PBOOL ", "bool * ").Replace("BOOL ", "bool ").Replace("va_list ", "char * ").Replace("...", "SAFEARRAY(VARIANT)").Replace("FARPROC ", "void * ").Replace("FARPROC*", "void **")
                        .Replace("UCHAR ", "unsigned char ").Replace("CHAR ", "char ").Replace("USHORT ", "unsigned short ").Replace("PVOID ", "void * ").Replace("UINT ", "unsigned int ")
                        .Replace("IN ", "").Replace("__in ", "").Replace("_In_ ", "").Replace("__out ", "").Replace("_Out_ ", "").Replace("OUT ", "").Replace("__out_opt ", "").Replace("_Out_opt_ ", "").Replace("OPTIONAL ", "")
@@ -162,9 +162,6 @@ namespace CreateDbgEngIdl
 
                                 if (methodName != "QueryInterface" && methodName != "AddRef" && methodName != "Release")
                                 {
-                                    if (interfaceName == "IDebugClient" && methodName == "GetRunningProcessDescription")
-                                        methodName = methodName;
-
                                     // Clean parameters
                                     StringBuilder parameters = new StringBuilder();
 
@@ -181,10 +178,12 @@ namespace CreateDbgEngIdl
 
                                         // Fix parameters
                                         bool optionalStarted = false;
+                                        string[] parametersArray = parametersString.Split(",".ToCharArray());
+                                        int outParameters = 0;
 
-                                        foreach (string parameter2 in parametersString.Split(",".ToCharArray()))
+                                        for (int i = 0; i < parametersArray.Length; i++)
                                         {
-                                            string parameter = parameter2;
+                                            string parameter = parametersArray[i];
 
                                             if (parameters.Length != 0)
                                                 parameters.Append(", ");
@@ -199,6 +198,8 @@ namespace CreateDbgEngIdl
                                                 throw new Exception("Not all SAL attributes are parsed");
                                             }
 
+                                            if (outAttribute)
+                                                outParameters++;
                                             optionalStarted = optionalAttribute;
                                             parameters.Append('[');
                                             parameters.Append(outAttribute ? "out" : "in");
@@ -217,6 +218,8 @@ namespace CreateDbgEngIdl
                                                 parameters.Append(")");
                                             }
 
+                                            if (outParameters == 1 && outAttribute && i == parametersArray.Length - 1 && !optionalAttribute)
+                                                parameters.Append(",retval");
                                             parameters.Append("] ");
                                             foreach (var reference in references)
                                             {
