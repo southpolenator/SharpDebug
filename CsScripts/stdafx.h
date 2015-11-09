@@ -17,3 +17,4 @@
 #include <Shlwapi.h>
 #include <strsafe.h>
 
+#include <atlsafe.h>

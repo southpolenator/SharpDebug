@@ -35,15 +35,7 @@ using namespace mscorlib;
 //
 #define CHECKCOM(expr) \
     { \
-        HRESULT _temp_hr;\
-		try\
-		{\
-			_temp_hr = (expr); \
-		}\
-		catch (const _com_error& ex)\
-		{\
-			_temp_hr = E_FAIL;\
-		}\
+        HRESULT _temp_hr = (expr); \
         if (FAILED(_temp_hr)) \
         { \
             WriteComException(_temp_hr, #expr); \
@@ -130,16 +122,16 @@ public:
 		_In_ DWORD dwAppDomainID,
 		_In_ IUnknown *pUnkAppDomainManager)
 	{
-		return pUnkAppDomainManager->QueryInterface(__uuidof(CsScriptManaged::ICustomAppDomainManager), (PVOID*)&m_appDomainManager);
+		return pUnkAppDomainManager->QueryInterface(__uuidof(CsScriptManaged::IExecutor), (PVOID*)&m_appDomainManager);
 	}
 
-	CsScriptManaged::ICustomAppDomainManager* GetAppDomainManager() const
+	CsScriptManaged::IExecutor* GetAppDomainManager() const
 	{
 		return m_appDomainManager;
 	}
 
 private:
-	CAutoComPtr<CsScriptManaged::ICustomAppDomainManager> m_appDomainManager;
+	CAutoComPtr<CsScriptManaged::IExecutor> m_appDomainManager;
 	ULONG counter;
 };
 
@@ -166,6 +158,14 @@ wstring GetCurrentDllDirectory()
     if (pos != wstring::npos)
         path.resize(pos + 1);
     return path;
+}
+
+wstring GetWorkingDirectory()
+{
+	wchar_t dllpath[8000];
+
+	GetCurrentDirectoryW(ARRAYSIZE(dllpath), dllpath);
+	return dllpath;
 }
 
 class ClrInitializator
@@ -205,7 +205,7 @@ public:
 		//CHECKCOM(runtimeInfo->SetDefaultStartupFlags(clrStartupFlags, nullptr));
 		CHECKCOM(runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&clrRuntimeHost)));
 		CHECKCOM(clrRuntimeHost->GetCLRControl(&clrControl));
-		CHECKCOM(clrControl->SetAppDomainManagerType(L"CsScriptManaged", L"CsScriptManaged.CustomAppDomainManager"));
+		//CHECKCOM(clrControl->SetAppDomainManagerType(L"CsScriptManaged", L"CsScriptManaged.CustomAppDomainManager"));
 		CHECKCOM(clrRuntimeHost->SetHostControl(hostControl));
 		CHECKCOM(clrRuntimeHost->Start());
 
@@ -222,7 +222,30 @@ public:
 		CHECKCOM(corRuntimeHost->CreateDomainEx(L"MyDomain", appDomainSetup, nullptr, &appDomainThunk));
 		CHECKCOM(appDomainThunk->QueryInterface(IID_PPV_ARGS(&appDomain)));
 
-		CHECKCOM(hostControl->GetAppDomainManager()->InitializeContext(client));
+		// Load our assembly
+		//
+		CAutoComPtr<_Assembly> mscorlibAssembly;
+		CAutoComPtr<_Type> reflectionAssemblyType;
+		SafeArray loadFromArguments;
+		variant_t loadFromResult;
+		variant_t arg1(csScriptsManaged);
+
+		loadFromArguments.CreateVector(VT_VARIANT, 0, 1);
+		loadFromArguments.PutElement(0, &arg1);
+
+		CHECKCOM(GetAssemblyFromAppDomain(appDomain, L"mscorlib", &mscorlibAssembly));
+		CHECKCOM(mscorlibAssembly->GetType_2(bstr_t(L"System.Reflection.Assembly"), &reflectionAssemblyType));
+		CHECKCOM(reflectionAssemblyType->InvokeMember_3(bstr_t(L"LoadFrom"), (BindingFlags)(BindingFlags_InvokeMethod | BindingFlags_Public | BindingFlags_Static), nullptr, variant_t(), loadFromArguments, &loadFromResult));
+
+		// Create our extension CLR instance
+		//
+		CAutoComPtr<_Assembly> assembly = (_Assembly*)(IDispatch*)loadFromResult;
+		variant_t variant;
+
+		CHECKCOM(assembly->CreateInstance_2(bstr_t(L"CsScriptManaged.Executor"), true, &variant));
+		CHECKCOM(variant.punkVal->QueryInterface(&instance));
+
+		CHECKCOM(instance->InitializeContext(client));
 		return S_OK;
 	}
 
@@ -243,9 +266,7 @@ public:
 
 		// Execute script function
 		//
-		CsScriptManaged::ICustomAppDomainManager* appDomainManager = hostControl->GetAppDomainManager();
-
-		CHECKCOM(appDomainManager->ExecuteScript(bstrScriptPath, safeArray));
+		CHECKCOM(instance->ExecuteScript(bstrScriptPath, safeArray));
 		return S_OK;
 	}
 
@@ -253,10 +274,9 @@ public:
 	{
 		// Execute script function
 		//
-		CsScriptManaged::ICustomAppDomainManager* appDomainManager = hostControl->GetAppDomainManager();
 		bstr_t bstrArguments = arguments;
 
-		CHECKCOM(appDomainManager->ExecuteScript_2(bstrArguments));
+		CHECKCOM(instance->ExecuteScript_2(bstrArguments));
 		return S_OK;
 	}
 
@@ -268,14 +288,42 @@ public:
 		clrRuntimeHost = nullptr;
 		runtimeInfo = nullptr;
 		hostControl = nullptr;
+		instance = nullptr;
 	}
 
 private:
+	HRESULT GetAssemblyFromAppDomain(_AppDomain* appDomain, const wchar_t* assemblyName, _Assembly **assembly)
+	{
+		SAFEARRAY* safearray;
+		CComSafeArray<IUnknown*> assemblies;
+
+		CHECKCOM(appDomain->GetAssemblies(&safearray));
+		assemblies.Attach(safearray);
+		for (int i = 0, n = assemblies.GetCount(); i < n; i++)
+		{
+			CComPtr<_Assembly> a;
+
+			a = assemblies[i];
+			if (a == nullptr)
+				continue;
+			CComBSTR assemblyFullName;
+			CHECKCOM(a->get_FullName(&assemblyFullName));
+			if (assemblyFullName != nullptr && _wcsnicmp(assemblyFullName, assemblyName, wcslen(assemblyName)) == 0)
+			{
+				*assembly = a.Detach();
+				return S_OK;
+			}
+		}
+
+		return E_FAIL;
+	}
+
 	CAutoComPtr<ICLRRuntimeInfo> runtimeInfo;
 	CAutoComPtr<ICLRRuntimeHost> clrRuntimeHost;
 	CAutoComPtr<ICLRControl> clrControl;
 	CAutoComPtr<HostControl> hostControl;
 	CAutoComPtr<ICorRuntimeHost> corRuntimeHost;
+	CAutoComPtr<CsScriptManaged::IExecutor> instance;
 } clr;
 
 CSSCRIPTS_API HRESULT DebugExtensionInitialize(
@@ -295,7 +343,10 @@ CSSCRIPTS_API HRESULT DebugExtensionInitialize(
 	CAutoComPtr<IDebugClient> debugClient;
 
 	CHECKCOM(DebugCreate(IID_PPV_ARGS(&debugClient)));
-	return clr.Initialize(csScriptsManaged.c_str(), debugClient);
+
+	HRESULT hr = clr.Initialize(csScriptsManaged.c_str(), debugClient);
+
+	return hr;
 }
 
 CSSCRIPTS_API void CALLBACK DebugExtensionUninitialize()

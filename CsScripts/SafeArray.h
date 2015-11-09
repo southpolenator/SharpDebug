@@ -1,5 +1,7 @@
 #pragma once
 
+#include <comutil.h>
+
 // Wrapper class for using SAFEARRAY structure
 //
 class SafeArray
@@ -35,6 +37,30 @@ public:
 		_In_ void* value);
 
 	operator SAFEARRAY*() const;
+
+	SAFEARRAY** operator&()
+	{
+		return &m_pointer;
+	}
+
+	LONG size() const
+	{
+		LONG lower, upper;
+		HRESULT hr;
+
+		hr = SafeArrayGetLBound(m_pointer, 1, &lower);
+		hr = SafeArrayGetUBound(m_pointer, 1, &upper);
+		return upper - lower + 1;
+	}
+
+	variant_t operator[](int pos) const
+	{
+		variant_t variant;
+		long index = pos;
+
+		SafeArrayGetElement(m_pointer, &index, &variant);
+		return variant;
+	}
 
 protected:
 	SAFEARRAY* m_pointer;
