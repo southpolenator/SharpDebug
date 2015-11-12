@@ -124,12 +124,19 @@ namespace CsScripts
 
         private void ReadSourceFileName()
         {
-            uint fileNameLength;
-            ulong displacement;
-            StringBuilder sb = new StringBuilder(Constants.MaxFileName);
+            try
+            {
+                uint fileNameLength;
+                ulong displacement;
+                StringBuilder sb = new StringBuilder(Constants.MaxFileName);
 
-            Context.Symbols.GetLineByOffset(InstructionOffset, out sourceFileLine, sb, Constants.MaxFileName, out fileNameLength, out displacement);
-            sourceFileName = sb.ToString();
+                Context.Symbols.GetLineByOffset(InstructionOffset, out sourceFileLine, sb, Constants.MaxFileName, out fileNameLength, out displacement);
+                sourceFileName = sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
+            }
         }
 
         public string SourceFileName
