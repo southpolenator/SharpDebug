@@ -33,7 +33,10 @@ namespace CsScripts
             else
             {
                 typedData.Size = entry.Size;
+                typedData.ModBase = entry.ModuleBase;
                 typedData.Offset = entry.Offset;
+                typedData.TypeId = entry.TypeId;
+                typedData.Tag = (SymTag)entry.Tag;
             }
         }
 
@@ -60,6 +63,7 @@ namespace CsScripts
 
         public static explicit operator long (Variable v)
         {
+            // TODO: Check if it is base type and if we can read v.typedData.Data
             uint read;
             uint size = v.typedData.Size;
             IntPtr pointer = Marshal.AllocHGlobal((int)size);
@@ -93,6 +97,17 @@ namespace CsScripts
             return name;
         }
 
+        public DType GetCodeType()
+        {
+            return new DType(typedData);
+        }
+
+        public string GetRuntimeType()
+        {
+            // TODO: See if it is complex type and try to get VTable
+            return "";
+        }
+
         public string[] GetFieldNames()
         {
             List<string> fields = new List<string>();
@@ -104,7 +119,7 @@ namespace CsScripts
                 {
                     StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
 
-                    Context.Symbols.GetFieldName(typedData.ModBase, typedData.TypeId, fieldIndex, sb, Constants.MaxSymbolName, out nameSize);
+                    Context.Symbols.GetFieldName(typedData.ModBase, typedData.TypeId, fieldIndex, sb, (uint)sb.Capacity, out nameSize);
                     fields.Add(sb.ToString());
                 }
             }

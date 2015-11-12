@@ -46,7 +46,6 @@ namespace CsScriptManaged
 
         public static void Execute(string path, params string[] args)
         {
-            // TODO: Execute script with arguments
             ScriptManager.Execute(path, args);
         }
     }

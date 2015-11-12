@@ -39,6 +39,7 @@ namespace CsScriptManaged
                 };
 
                 compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
+                compilerParameters.ReferencedAssemblies.Add("Microsoft.CSharp.dll");
                 CompilerResults results = provider.CompileAssemblyFromSource(compilerParameters, code);
 
                 if (results.Errors.Count > 0)

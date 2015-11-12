@@ -130,7 +130,7 @@ namespace CsScripts
                 ulong displacement;
                 StringBuilder sb = new StringBuilder(Constants.MaxFileName);
 
-                Context.Symbols.GetLineByOffset(InstructionOffset, out sourceFileLine, sb, Constants.MaxFileName, out fileNameLength, out displacement);
+                Context.Symbols.GetLineByOffset(InstructionOffset, out sourceFileLine, sb, (uint)sb.Capacity, out fileNameLength, out displacement);
                 sourceFileName = sb.ToString();
             }
             catch (Exception ex)
@@ -165,6 +165,26 @@ namespace CsScripts
             }
         }
 
+        public string FunctionName
+        {
+            get
+            {
+                try
+                {
+                    uint functionNameSize;
+                    ulong displacement;
+                    StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+
+                    Context.Symbols.GetNameByOffset(InstructionOffset, sb, (uint)sb.Capacity, out functionNameSize, out displacement);
+                    return sb.ToString();
+                }
+                catch (Exception ex)
+                {
+                    throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
+                }
+            }
+        }
+
         public Variable[] Locals
         {
             get
@@ -194,7 +214,7 @@ namespace CsScripts
                     StringBuilder name = new StringBuilder(Constants.MaxSymbolName);
                     uint nameSize;
 
-                    symbolGroup.GetSymbolName(i, name, Constants.MaxSymbolName, out nameSize);
+                    symbolGroup.GetSymbolName(i, name, (uint)name.Capacity, out nameSize);
                     var entry = symbolGroup.GetSymbolEntryInformation(i);
 
                     variables[i] = new Variable(name.ToString(), entry);

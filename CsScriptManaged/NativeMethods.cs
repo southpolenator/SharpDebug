@@ -9,7 +9,7 @@ namespace CsScriptManaged
         Copy,
         Release,
         SetFromExpr,
-        SetFromU64Exptr,
+        SetFromU64Expr,
         GetField,
         Evaluate,
         GetTypeName,
