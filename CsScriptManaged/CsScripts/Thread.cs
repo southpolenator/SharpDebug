@@ -63,6 +63,14 @@ namespace CsScripts
             }
         }
 
+        public Variable[] Locals
+        {
+            get
+            {
+                return StackTrace.CurrentFrame.Locals;
+            }
+        }
+
         public ulong TEB
         {
             get

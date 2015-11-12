@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CsScriptManaged
 {
-    public class StackFrameSwitcher
+    public class StackFrameSwitcher : IDisposable
     {
         /// <summary>
         /// The thread switcher

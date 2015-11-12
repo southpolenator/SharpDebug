@@ -123,22 +123,25 @@ namespace CsScripts
         {
             get
             {
-                IDebugSymbolGroup2 symbolGroup;
-                Context.Symbols.GetScopeSymbolGroup2((uint)DebugScopeGroup.Locals, null, out symbolGroup);
-                uint localsCount = symbolGroup.GetNumberSymbols();
-                Variable[] locals = new Variable[localsCount];
-                for (uint i = 0; i < localsCount; i++)
+                using (StackFrameSwitcher switcher = new StackFrameSwitcher(this))
                 {
-                    StringBuilder name = new StringBuilder();
-                    uint nameSize;
+                    IDebugSymbolGroup2 symbolGroup;
+                    Context.Symbols.GetScopeSymbolGroup2((uint)DebugScopeGroup.Locals, null, out symbolGroup);
+                    uint localsCount = symbolGroup.GetNumberSymbols();
+                    Variable[] locals = new Variable[localsCount];
+                    for (uint i = 0; i < localsCount; i++)
+                    {
+                        StringBuilder name = new StringBuilder();
+                        uint nameSize;
 
-                    symbolGroup.GetSymbolName(i, name, 1000, out nameSize);
-                    var entry = symbolGroup.GetSymbolEntryInformation(i);
+                        symbolGroup.GetSymbolName(i, name, 1000, out nameSize);
+                        var entry = symbolGroup.GetSymbolEntryInformation(i);
 
-                    locals[i] = new Variable(name.ToString(), entry);
+                        locals[i] = new Variable(name.ToString(), entry);
+                    }
+
+                    return locals;
                 }
-
-                return locals;
             }
         }
     }
