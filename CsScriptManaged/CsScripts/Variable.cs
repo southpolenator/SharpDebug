@@ -102,9 +102,9 @@ namespace CsScripts
             {
                 for (uint fieldIndex = 0; ; fieldIndex++)
                 {
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
 
-                    Context.Symbols.GetFieldName(typedData.ModBase, typedData.TypeId, fieldIndex, sb, 1024, out nameSize);
+                    Context.Symbols.GetFieldName(typedData.ModBase, typedData.TypeId, fieldIndex, sb, Constants.MaxSymbolName, out nameSize);
                     fields.Add(sb.ToString());
                 }
             }

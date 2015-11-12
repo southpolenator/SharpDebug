@@ -285,7 +285,7 @@ namespace CreateDbgEngIdl
                 var remainingConstants = constants.ToArray();
                 WriteConstants(outputString, ref remainingConstants, "DEBUG_REQUEST_", "DebugRequest", (s) => s.StartsWith("DEBUG_LIVE_USER_NON_INVASIVE"));
                 WriteConstants(outputString, ref remainingConstants, "DEBUG_SCOPE_GROUP_");
-                WriteConstants(outputString, ref remainingConstants, "", "Constants");
+                WriteConstants(outputString, ref remainingConstants, "", "Defines");
 
                 // Write file header
                 output.WriteLine(@"import ""oaidl.idl"";

@@ -15,6 +15,9 @@ namespace CsScripts
         /// </summary>
         private _DEBUG_STACK_FRAME frame;
 
+        private string sourceFileName;
+        private uint sourceFileLine;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="StackFrame"/> class.
         /// </summary>
@@ -119,29 +122,78 @@ namespace CsScripts
             }
         }
 
+        private void ReadSourceFileName()
+        {
+            uint fileNameLength;
+            ulong displacement;
+            StringBuilder sb = new StringBuilder(Constants.MaxFileName);
+
+            Context.Symbols.GetLineByOffset(InstructionOffset, out sourceFileLine, sb, Constants.MaxFileName, out fileNameLength, out displacement);
+            sourceFileName = sb.ToString();
+        }
+
+        public string SourceFileName
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(sourceFileName))
+                {
+                    ReadSourceFileName();
+                }
+
+                return sourceFileName;
+            }
+        }
+
+        public uint SourceFileLine
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(sourceFileName))
+                {
+                    ReadSourceFileName();
+                }
+
+                return sourceFileLine;
+            }
+        }
+
         public Variable[] Locals
         {
             get
             {
-                using (StackFrameSwitcher switcher = new StackFrameSwitcher(this))
+                return GetVariables(DebugScopeGroup.Locals);
+            }
+        }
+
+        public Variable[] Arguments
+        {
+            get
+            {
+                return GetVariables(DebugScopeGroup.Arguments);
+            }
+        }
+
+        private Variable[] GetVariables(DebugScopeGroup scopeGroup)
+        {
+            using (StackFrameSwitcher switcher = new StackFrameSwitcher(this))
+            {
+                IDebugSymbolGroup2 symbolGroup;
+                Context.Symbols.GetScopeSymbolGroup2((uint)scopeGroup, null, out symbolGroup);
+                uint localsCount = symbolGroup.GetNumberSymbols();
+                Variable[] variables = new Variable[localsCount];
+                for (uint i = 0; i < localsCount; i++)
                 {
-                    IDebugSymbolGroup2 symbolGroup;
-                    Context.Symbols.GetScopeSymbolGroup2((uint)DebugScopeGroup.Locals, null, out symbolGroup);
-                    uint localsCount = symbolGroup.GetNumberSymbols();
-                    Variable[] locals = new Variable[localsCount];
-                    for (uint i = 0; i < localsCount; i++)
-                    {
-                        StringBuilder name = new StringBuilder();
-                        uint nameSize;
+                    StringBuilder name = new StringBuilder(Constants.MaxSymbolName);
+                    uint nameSize;
 
-                        symbolGroup.GetSymbolName(i, name, 1000, out nameSize);
-                        var entry = symbolGroup.GetSymbolEntryInformation(i);
+                    symbolGroup.GetSymbolName(i, name, Constants.MaxSymbolName, out nameSize);
+                    var entry = symbolGroup.GetSymbolEntryInformation(i);
 
-                        locals[i] = new Variable(name.ToString(), entry);
-                    }
-
-                    return locals;
+                    variables[i] = new Variable(name.ToString(), entry);
                 }
+
+                return variables;
             }
         }
     }
