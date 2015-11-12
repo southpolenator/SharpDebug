@@ -20,6 +20,21 @@ namespace CsScriptManaged
         public static IDebugSystemObjects4 SystemObjects;
         private static ScriptManager ScriptManager = new ScriptManager();
 
+        public bool IsLiveDebugging
+        {
+            get
+            {
+                try
+                {
+                    return Client.GetNumberDumpFiles() == 0;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
         public static void Initalize(IDebugClient client)
         {
             Advanced = client as IDebugAdvanced3;

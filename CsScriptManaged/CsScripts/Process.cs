@@ -92,6 +92,7 @@ namespace CsScripts
                         {
                             Id = id,
                             SystemId = sysid,
+                            Process = this,
                         };
                     }
 

@@ -45,6 +45,7 @@ namespace CreateDbgEngIdl
             Dictionary<string, string> uuids = new Dictionary<string, string>();
             Dictionary<string, string> references = new Dictionary<string, string>();
             StringBuilder outputString = new StringBuilder();
+            Dictionary<string, string> constants = new Dictionary<string, string>();
 
             using (StreamWriter output = new StreamWriter("output.idl"))
             using (StreamReader reader = new StreamReader(HeaderFile))
@@ -58,7 +59,7 @@ namespace CreateDbgEngIdl
                     match = defineDeclarationRegex.Match(line);
                     if (match != null && match.Success && match.Groups[1].ToString().ToUpper() != "INTERFACE" && match.Groups[2].Length <= 10)
                     {
-                        outputString.AppendLine(string.Format("    enum {{ {0} = {1} }};", match.Groups[1], match.Groups[2]));
+                        constants.Add(match.Groups[1].Value, match.Groups[2].Value);
                         continue;
                     }
 
@@ -192,6 +193,7 @@ namespace CreateDbgEngIdl
                                             bool optionalAttribute = Regex.IsMatch(parameter, @"_(In|Out)[a-zA-Z_]*opt[a-zA-Z_]*([(][^)]*[)])?\s|OPTIONAL") || optionalStarted;
                                             Match sizeAttribute = Regex.Match(parameter, @"_(In|Out)_(reads_|writes_)(bytes_|)(opt_|)[(]([^)]*)[)]");
                                             Match maxAttribute = Regex.Match(parameter, @"_Out_writes_to_(opt_|)[(]([^):]*):([^)]*)[)]");
+                                            bool convertToArray = false;
 
                                             if (Regex.IsMatch(parameter, @"[(][^)]*[)]") && (sizeAttribute == null || sizeAttribute.Success == false) && (maxAttribute == null || maxAttribute.Success == false))
                                             {
@@ -210,12 +212,14 @@ namespace CreateDbgEngIdl
                                                 parameters.Append(",size_is(");
                                                 parameters.Append(sizeAttribute.Groups[5].Value);
                                                 parameters.Append(")");
+                                                convertToArray = true;
                                             }
                                             else if (maxAttribute != null && maxAttribute.Success)
                                             {
                                                 parameters.Append(",size_is(");
                                                 parameters.Append(maxAttribute.Groups[2].Value);
                                                 parameters.Append(")");
+                                                convertToArray = true;
                                             }
 
                                             if (outParameters == 1 && outAttribute && i == parametersArray.Length - 1 && !optionalAttribute)
@@ -227,7 +231,22 @@ namespace CreateDbgEngIdl
                                                 parameter = parameter.Replace(reference.Key + "*", reference.Value + "**");
                                             }
 
-                                            parameters.Append(RemoveSpaces(StripWin32Defs(parameter)));
+                                            parameter = RemoveSpaces(StripWin32Defs(parameter));
+                                            if (convertToArray)
+                                            {
+                                                int pointerIndex = parameter.LastIndexOf('*');
+
+                                                if (pointerIndex >= 0)
+                                                {
+                                                    parameter = RemoveSpaces(parameter.Remove(pointerIndex, 1) + "[]");
+                                                }
+                                                else if (!parameter.StartsWith("LPStr") && !parameter.StartsWith("LPWStr"))
+                                                {
+                                                    parameter += "[]";
+                                                }
+                                            }
+
+                                            parameters.Append(parameter);
                                         }
                                     }
 
@@ -261,6 +280,12 @@ namespace CreateDbgEngIdl
 
                     // TODO: Unknown line
                 }
+
+                // Write constants
+                var remainingConstants = constants.ToArray();
+                WriteConstants(outputString, ref remainingConstants, "DEBUG_REQUEST_", "DebugRequest", (s) => s.StartsWith("DEBUG_LIVE_USER_NON_INVASIVE"));
+                WriteConstants(outputString, ref remainingConstants, "DEBUG_SCOPE_GROUP_");
+                WriteConstants(outputString, ref remainingConstants, "", "Constants");
 
                 // Write file header
                 output.WriteLine(@"import ""oaidl.idl"";
@@ -400,6 +425,53 @@ library DbgEngManaged
             {
                 process.WaitForExit();
             }
+        }
+
+        private static void WriteConstants(StringBuilder outputString, ref KeyValuePair<string,string>[] remainingConstants, string prefix, string constantsName = null, Func<string, bool> additionalConstantFilter = null)
+        {
+            if (string.IsNullOrEmpty(constantsName))
+                constantsName = FormatEnumName(prefix, "");
+
+            var constants = remainingConstants.Where(k => k.Key.StartsWith(prefix) || (additionalConstantFilter != null && additionalConstantFilter(k.Key))).ToArray();
+            remainingConstants = remainingConstants.Except(constants).ToArray();
+
+            outputString.AppendLine("    enum " + constantsName);
+            outputString.AppendLine("    {");
+            foreach (var c in constants)
+            {
+                outputString.AppendFormat("        {0} = {1},", FormatEnumName(c.Key, prefix), c.Value);
+                outputString.AppendLine();
+            }
+
+            outputString.AppendLine("    };");
+        }
+
+        private static string FormatEnumName(string key, string prefix)
+        {
+            if (key.StartsWith(prefix))
+                key = key.Substring(prefix.Length);
+            key = key.Trim().ToLower();
+
+            StringBuilder sb = new StringBuilder();
+            bool makeUpper = true;
+
+            foreach (char c in key)
+            {
+                if (c == '_')
+                    makeUpper = true;
+                else if (makeUpper)
+                {
+                    sb.Append(char.ToUpper(c));
+                    makeUpper = false;
+                }
+                else
+                {
+                    sb.Append(c);
+                    makeUpper = false;
+                }
+            }
+
+            return sb.ToString();
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using CsScriptManaged;
+using DbgEngManaged;
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CsScripts
 {
@@ -29,6 +31,11 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the owning process.
+        /// </summary>
+        public Process Process { get; internal set; }
+
+        /// <summary>
         /// Gets the identifier.
         /// </summary>
         public uint Id { get; internal set; }
@@ -37,5 +44,34 @@ namespace CsScripts
         /// Gets the system identifier.
         /// </summary>
         public uint SystemId { get; internal set; }
+
+        /// <summary>
+        /// Gets the stack trace.
+        /// </summary>
+        public StackTrace StackTrace
+        {
+            get
+            {
+                using (ThreadSwitcher switcher = new ThreadSwitcher(this))
+                {
+                    MarshalArrayReader<_DEBUG_STACK_FRAME> buffer = new MarshalArrayReader<_DEBUG_STACK_FRAME>(1024);
+                    uint framesCount;
+
+                    Context.Control.GetStackTrace(0, 0, 0, buffer.Pointer, (uint)buffer.Count, out framesCount);
+                    return new StackTrace(this, buffer.Elements.Take((int)framesCount).ToArray());
+                }
+            }
+        }
+
+        public ulong TEB
+        {
+            get
+            {
+                using (ThreadSwitcher switcher = new ThreadSwitcher(this))
+                {
+                    return Context.SystemObjects.GetCurrentThreadTeb();
+                }
+            }
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsScripts;
+using System;
 
 namespace CsScriptManaged
 {
@@ -16,6 +17,15 @@ namespace CsScriptManaged
         /// The new process identifier
         /// </summary>
         private uint newProcessId;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProcessSwitcher"/> class.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        public ProcessSwitcher(Process process)
+            : this(process.Id)
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProcessSwitcher"/> class.
