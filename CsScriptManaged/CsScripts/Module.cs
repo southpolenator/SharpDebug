@@ -17,6 +17,7 @@ namespace CsScripts
         internal Module(Process process, ulong id)
         {
             Id = id;
+            Process = process;
         }
 
         /// <summary>
@@ -107,6 +108,19 @@ namespace CsScripts
             get
             {
                 return GetName(DebugModname.MappedImage);
+            }
+        }
+
+        public Variable GetVariable(string name)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
+            {
+                ulong offset = Context.Symbols.GetOffsetByNameWide(name);
+                uint typeId;
+                ulong moduleId;
+
+                Context.Symbols.GetSymbolTypeIdWide(name, out typeId, out moduleId);
+                return new Variable(moduleId, typeId, offset, name);
             }
         }
 

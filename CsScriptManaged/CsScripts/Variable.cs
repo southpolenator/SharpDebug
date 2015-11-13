@@ -18,27 +18,25 @@ namespace CsScripts
         internal Variable(string name, _DEBUG_SYMBOL_ENTRY entry)
         {
             this.name = name;
-            if (entry.Offset > 0)
+            try
             {
-                typedData = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
-                {
-                    Operation = ExtTdop.SetFromTypeIdAndU64,
-                    InData = new DEBUG_TYPED_DATA()
-                    {
-                        ModBase = entry.ModuleBase,
-                        Offset = entry.Offset,
-                        TypeId = entry.TypeId,
-                    },
-                }).OutData;
+                typedData = GetTypedData(entry.ModuleBase, entry.TypeId, entry.Offset);
             }
-            else
+            catch (Exception)
             {
+                // Fill manually available fields
                 typedData.Size = entry.Size;
                 typedData.ModBase = entry.ModuleBase;
                 typedData.Offset = entry.Offset;
                 typedData.TypeId = entry.TypeId;
                 typedData.Tag = (SymTag)entry.Tag;
             }
+        }
+
+        internal Variable(ulong moduleId, uint typeId, ulong offset, string name = ComputedName)
+        {
+            this.name = name;
+            typedData = GetTypedData(moduleId, typeId, offset);
         }
 
         private static DEBUG_TYPED_DATA GetTypedData(ulong moduleId, uint typeId, ulong offset)
@@ -275,7 +273,7 @@ namespace CsScripts
 
         public Variable CastAs(DType type)
         {
-            return new Variable(GetTypedData(type.ModuleId, type.TypeId, typedData.Offset));
+            return new Variable(type.ModuleId, type.TypeId, typedData.Offset);
         }
 
         public Variable CastAs(string newType)
@@ -292,7 +290,7 @@ namespace CsScripts
                 Context.Symbols.GetModuleByModuleName(moduleName, 0, out index, out moduleId);
             }
 
-            return new Variable(GetTypedData(moduleId, newTypeId, typedData.Offset));
+            return new Variable(moduleId, newTypeId, typedData.Offset);
         }
 
         public Variable[] GetFields()
