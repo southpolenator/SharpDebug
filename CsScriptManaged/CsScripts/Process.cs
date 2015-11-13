@@ -56,6 +56,9 @@ namespace CsScripts
         /// </summary>
         public uint SystemId { get; private set; }
 
+        /// <summary>
+        /// Gets the name of the executable.
+        /// </summary>
         public string ExecutableName
         {
             get
@@ -71,6 +74,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets up time.
+        /// </summary>
         public uint UpTime
         {
             get
@@ -82,6 +88,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the PEB (Process environment block) address.
+        /// </summary>
         public ulong PEB
         {
             get
@@ -100,7 +109,7 @@ namespace CsScripts
         {
             get
             {
-                using (ProcessSwitcher process = new ProcessSwitcher(Id))
+                using (ProcessSwitcher process = new ProcessSwitcher(this))
                 {
                     uint currentId = Context.SystemObjects.GetCurrentThreadId();
 
@@ -116,7 +125,7 @@ namespace CsScripts
         {
             get
             {
-                using (ProcessSwitcher process = new ProcessSwitcher(Id))
+                using (ProcessSwitcher process = new ProcessSwitcher(this))
                 {
                     uint threadCount = Context.SystemObjects.GetNumberThreads();
                     Thread[] threads = new Thread[threadCount];
@@ -135,6 +144,32 @@ namespace CsScripts
                     }
 
                     return threads;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the modules.
+        /// </summary>
+        public Module[] Modules
+        {
+            get
+            {
+                using (ProcessSwitcher switcher = new ProcessSwitcher(this))
+                {
+                    uint loaded, unloaded;
+
+                    Context.Symbols.GetNumberModules(out loaded, out unloaded);
+                    Module[] modules = new Module[loaded + unloaded];
+
+                    for (int i = 0; i < modules.Length; i++)
+                    {
+                        ulong moduleId = Context.Symbols.GetModuleByIndex((uint)i);
+
+                        modules[i] = new Module(this, moduleId);
+                    }
+
+                    return modules;
                 }
             }
         }
