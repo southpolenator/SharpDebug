@@ -173,5 +173,33 @@ namespace CsScripts
                 }
             }
         }
+
+        public Variable GetGlobal(string name)
+        {
+            // Try global name
+            try
+            {
+                return Variable.FromName(name);
+            }
+            catch (Exception)
+            {
+                if (name.Contains('!'))
+                    throw;
+            }
+
+            // Try all modules since module name wasn't specified
+            foreach (Module module in Module.All)
+            {
+                try
+                {
+                    return module.GetVariable(name);
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            throw new ArgumentException("Global variable wasn't found, name: " + name);
+        }
     }
 }

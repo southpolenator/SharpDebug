@@ -115,12 +115,21 @@ namespace CsScripts
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
             {
-                ulong offset = Context.Symbols.GetOffsetByNameWide(name);
-                uint typeId;
-                ulong moduleId;
+                int moduleIndex = name.IndexOf('!');
 
-                Context.Symbols.GetSymbolTypeIdWide(name, out typeId, out moduleId);
-                return new Variable(moduleId, typeId, offset, name);
+                if (moduleIndex > 0)
+                {
+                    if (string.Compare(name.Substring(0, moduleIndex), Name, true) != 0)
+                    {
+                        throw new ArgumentException("Variable name contains wrong module name. Don't add it manually, it will be added automatically.");
+                    }
+                }
+                else
+                {
+                    name = Name + "!" + name;
+                }
+
+                return Variable.FromName(name);
             }
         }
 

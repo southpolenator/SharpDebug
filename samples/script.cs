@@ -3,8 +3,8 @@ using System.Linq;
 using CsScripts;
 import helper.cs;
 
-Console.Error.WriteLine("This is sample error");
-HelpMe("It works!");
+writeln(Modules.dummy.ImageName);
+writeln(Globals.car.GetName());
 
 writeln("All Modules: {0}", string.Join(", ", Module.All.Select(m => m.Name)));
 
@@ -20,8 +20,4 @@ dynamic l = Thread.Current.Locals[0];
 
 writeln(l.GetName());
 foreach (var field in l.GetFields())
-{
-    write("  {0} ({1})", field.GetName(), field.GetCodeType());
-    write(" = {0}", field);
-    writeln("");
-}
+    writeln("  {0} ({1}) = {0}", field.GetName(), field.GetCodeType(), field);

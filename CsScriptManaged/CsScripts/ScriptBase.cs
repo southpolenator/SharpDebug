@@ -60,7 +60,25 @@ namespace CsScripts
             }
         }
 
+        public class GlobalsHelper : DynamicObject
+        {
+            public override bool TryGetMember(GetMemberBinder binder, out object result)
+            {
+                try
+                {
+                    result = Process.Current.GetGlobal(binder.Name);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    result = null;
+                    return false;
+                }
+            }
+        }
+
         protected dynamic Modules = new ModulesHelper();
+        protected dynamic Globals = new GlobalsHelper();
 
         public static void write(object obj)
         {

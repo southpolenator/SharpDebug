@@ -59,6 +59,16 @@ namespace CsScripts
             this.typedData = typedData;
         }
 
+        public static Variable FromName(string name)
+        {
+            ulong offset = Context.Symbols.GetOffsetByNameWide(name);
+            uint typeId;
+            ulong moduleId;
+
+            Context.Symbols.GetSymbolTypeIdWide(name, out typeId, out moduleId);
+            return new Variable(moduleId, typeId, offset, name);
+        }
+
         public static explicit operator bool (Variable v)
         {
             if (!v.GetCodeType().IsSimple && !v.GetCodeType().IsPointer)
