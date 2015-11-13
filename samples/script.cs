@@ -19,9 +19,6 @@ writeln(l.GetName());
 foreach (var field in l.GetFields())
 {
     write("  {0} ({1})", field.GetName(), field.GetCodeType());
-    if (field.GetCodeType().ToString() == "int")
-    {
-        write(" = {0}", (long)field);
-    }
+    write(" = {0}", field);
     writeln("");
 }

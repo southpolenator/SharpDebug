@@ -73,7 +73,16 @@ namespace CsScripts
                 {
                     return new DType(ModuleId, typedData.BaseTypeId);
                 }
-                else if (Tag == SymTag.ArrayType || Tag == SymTag.PointerType)
+
+                return this;
+            }
+        }
+
+        public DType ElementType
+        {
+            get
+            {
+                if (IsPointer || IsArray)
                 {
                     try
                     {
@@ -133,6 +142,30 @@ namespace CsScripts
             get
             {
                 return Tag == SymTag.PointerType;
+            }
+        }
+
+        public bool IsAnsiString
+        {
+            get
+            {
+                return (IsArray || IsPointer) && ElementType.Size == 1 && ElementType.IsSimple;
+            }
+        }
+
+        public bool IsWideString
+        {
+            get
+            {
+                return (IsArray || IsPointer) && ElementType.Size == 2 && ElementType.IsSimple;
+            }
+        }
+
+        public bool IsSimple
+        {
+            get
+            {
+                return Tag == SymTag.BaseType;
             }
         }
 

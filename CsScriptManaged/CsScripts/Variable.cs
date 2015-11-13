@@ -61,56 +61,165 @@ namespace CsScripts
             this.typedData = typedData;
         }
 
+        public static explicit operator bool (Variable v)
+        {
+            if (!v.GetCodeType().IsSimple && !v.GetCodeType().IsPointer)
+            {
+                return bool.Parse(v.ToString());
+            }
+
+            return v.typedData.Data != 0;
+        }
+
         public static explicit operator byte (Variable v)
         {
-            return (byte)(short)v;
+            if (!v.GetCodeType().IsSimple)
+            {
+                return byte.Parse(v.ToString());
+            }
+
+            return (byte)v.typedData.Data;
+        }
+
+        public static explicit operator char (Variable v)
+        {
+            if (!v.GetCodeType().IsSimple)
+            {
+                return char.Parse(v.ToString());
+            }
+
+            return (char)v.typedData.Data;
         }
 
         public static explicit operator short (Variable v)
         {
-            return (short)(int)v;
+            if (!v.GetCodeType().IsSimple)
+            {
+                return short.Parse(v.ToString());
+            }
+
+            return (short)v.typedData.Data;
+        }
+
+        public static explicit operator ushort (Variable v)
+        {
+            if (!v.GetCodeType().IsSimple)
+            {
+                return ushort.Parse(v.ToString());
+            }
+
+            return (ushort)v.typedData.Data;
         }
 
         public static explicit operator int (Variable v)
         {
-            return (int)(long)v;
+            if (!v.GetCodeType().IsSimple)
+            {
+                return int.Parse(v.ToString());
+            }
+
+            return (int)v.typedData.Data;
+        }
+
+        public static explicit operator uint (Variable v)
+        {
+            if (!v.GetCodeType().IsSimple)
+            {
+                return uint.Parse(v.ToString());
+            }
+
+            return (uint)v.typedData.Data;
         }
 
         public static explicit operator long (Variable v)
         {
-            // TODO: Check if it is base type and if we can read v.typedData.Data
-            uint read;
-            uint size = v.typedData.Size;
-            IntPtr pointer = Marshal.AllocHGlobal((int)size);
-
-            try
+            if (!v.GetCodeType().IsSimple)
             {
-                Context.Symbols.ReadTypedDataVirtual(v.typedData.Offset, v.typedData.ModBase, v.typedData.TypeId, pointer, size, out read);
+                return long.Parse(v.ToString());
+            }
 
-                switch (size)
-                {
-                    case 1:
-                        return Marshal.ReadByte(pointer);
-                    case 2:
-                        return Marshal.ReadInt16(pointer);
-                    case 4:
-                        return Marshal.ReadInt32(pointer);
-                    case 8:
-                        return Marshal.ReadInt64(pointer);
-                    default:
-                        throw new Exception("Unexpected variable size");
-                }
-            }
-            finally
+            return (long)v.typedData.Data;
+        }
+
+        public static explicit operator ulong (Variable v)
+        {
+            if (!v.GetCodeType().IsSimple)
             {
-                Marshal.FreeHGlobal(pointer);
+                return ulong.Parse(v.ToString());
             }
+
+            return v.typedData.Data;
         }
 
         public override string ToString()
         {
             var type = GetCodeType();
-            return "";
+
+            // Check if it is null
+            if (type.IsPointer && (typedData.Offset == 0 || typedData.Data == 0))
+            {
+                return "(null)";
+            }
+
+            // ANSI string
+            if (type.IsAnsiString)
+            {
+                uint stringLength;
+                StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+
+                Context.DataSpaces.ReadMultiByteStringVirtual(typedData.Offset, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
+                return sb.ToString();
+            }
+
+            // Unicode string
+            if (type.IsWideString)
+            {
+                uint stringLength;
+                StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+
+                Context.DataSpaces.ReadUnicodeStringVirtualWide(typedData.Offset, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
+                return sb.ToString();
+            }
+
+            // Simple type
+            if (type.IsSimple)
+            {
+                if (type.Name == "bool" || type.Name == "BOOL")
+                {
+                    return (typedData.Data != 0).ToString();
+                }
+
+                switch (typedData.Size)
+                {
+                    case 1:
+                        return ((byte)typedData.Data).ToString();
+                    case 2:
+                        return ((short)typedData.Data).ToString();
+                    case 4:
+                        return ((int)typedData.Data).ToString();
+                    case 8:
+                        return ((long)typedData.Data).ToString();
+                    default:
+                        throw new ArgumentException("Incorrect data size " + typedData.Size);
+                }
+            }
+
+            // TODO: Call custom caster (e.g. std::string, std::wstring)
+
+            // Check if it is pointer
+            if (type.IsPointer)
+            {
+                if (type.Size == 4)
+                {
+                    return string.Format("0x{0:X4}", typedData.Data);
+                }
+                else
+                {
+                    return string.Format("0x{0:X8}", typedData.Data);
+                }
+            }
+
+            return "{" + type.Name + "}";
         }
 
         public string GetName()

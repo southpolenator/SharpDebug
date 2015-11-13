@@ -11,5 +11,6 @@ namespace CsScriptManaged
         public const int MaxFileName = 65536;
         public const int MaxSymbolName = 4096;
         public const uint MaxBaseTypeId = 2000000000;
+        public const uint MaxStringReadLength = 10240;
     }
 }
