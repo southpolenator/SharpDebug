@@ -11,6 +11,7 @@ namespace CsScripts
 {
     public class Variable : DynamicObject
     {
+        public const string ComputedName = "<computed>";
         private DEBUG_TYPED_DATA typedData;
         private string name;
 
@@ -40,7 +41,21 @@ namespace CsScripts
             }
         }
 
-        internal Variable(string name, DEBUG_TYPED_DATA typedData)
+        private static DEBUG_TYPED_DATA GetTypedData(ulong moduleId, uint typeId, ulong offset)
+        {
+            return Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+            {
+                Operation = ExtTdop.SetFromTypeIdAndU64,
+                InData = new DEBUG_TYPED_DATA()
+                {
+                    ModBase = moduleId,
+                    Offset = offset,
+                    TypeId = typeId,
+                },
+            }).OutData;
+        }
+
+        internal Variable(DEBUG_TYPED_DATA typedData, string name = ComputedName)
         {
             this.name = name;
             this.typedData = typedData;
@@ -92,6 +107,12 @@ namespace CsScripts
             }
         }
 
+        public override string ToString()
+        {
+            var type = GetCodeType();
+            return "";
+        }
+
         public string GetName()
         {
             return name;
@@ -130,6 +151,41 @@ namespace CsScripts
             return fields.ToArray();
         }
 
+        public Variable AdjustPointer(int offset)
+        {
+            if (typedData.Tag != SymTag.PointerType)
+            {
+                throw new ArgumentException("Variable is not a pointer type, but " + typedData.Tag);
+            }
+
+            DEBUG_TYPED_DATA newTypedData = typedData;
+
+            newTypedData.Data += (ulong)offset;
+            return new Variable(newTypedData);
+        }
+
+        public Variable CastAs(DType type)
+        {
+            return new Variable(GetTypedData(type.ModuleId, type.TypeId, typedData.Offset));
+        }
+
+        public Variable CastAs(string newType)
+        {
+            uint newTypeId = Context.Symbols.GetTypeIdWide(typedData.ModBase, newType);
+            int moduleIndex = newType.IndexOf('!');
+            ulong moduleId = typedData.ModBase;
+
+            if (moduleIndex > 0)
+            {
+                string moduleName = newType.Substring(moduleIndex);
+                uint index;
+
+                Context.Symbols.GetModuleByModuleName(moduleName, 0, out index, out moduleId);
+            }
+
+            return new Variable(GetTypedData(moduleId, newTypeId, typedData.Offset));
+        }
+
         public Variable[] GetFields()
         {
             string[] fieldNames = GetFieldNames();
@@ -152,7 +208,30 @@ namespace CsScripts
                 InStrIndex = (uint)Marshal.SizeOf<EXT_TYPED_DATA>(),
             }, name);
 
-            return new Variable(name, response.OutData);
+            return new Variable(response.OutData, name);
+        }
+
+        public override bool TryConvert(ConvertBinder binder, out object result)
+        {
+            // TODO: Implement
+            return base.TryConvert(binder, out result);
+        }
+
+        public override bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result)
+        {
+            // TODO: Implement
+            return base.TryBinaryOperation(binder, arg, out result);
+        }
+
+        public override bool TryUnaryOperation(UnaryOperationBinder binder, out object result)
+        {
+            // TODO: Implement
+            return base.TryUnaryOperation(binder, out result);
+        }
+
+        public override IEnumerable<string> GetDynamicMemberNames()
+        {
+            return GetFieldNames();
         }
 
         private bool TryGetMember(string name, out object result)
@@ -178,21 +257,29 @@ namespace CsScripts
         {
             if (indexes.Length > 1)
             {
-                throw new Exception("Multidimensional arrays are not supported");
+                throw new ArgumentException("Multidimensional arrays are not supported");
             }
 
-            if (typedData.Tag == SymTag.PointerType || typedData.Tag == SymTag.ArrayType)
+            try
             {
-                int index = (int)indexes[0];
-                var response = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
-                {
-                    Operation = ExtTdop.GetArrayElement,
-                    InData = typedData,
-                    In64 = (ulong)index,
-                }).OutData;
+                int index = Convert.ToInt32(indexes[0]);
 
-                result = new Variable("<computed>", response);
-                return true;
+                if (typedData.Tag == SymTag.PointerType || typedData.Tag == SymTag.ArrayType)
+                {
+                    var response = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+                    {
+                        Operation = ExtTdop.GetArrayElement,
+                        InData = typedData,
+                        In64 = (ulong)index,
+                    }).OutData;
+
+                    result = new Variable(response);
+                    return true;
+                }
+            }
+            catch (Exception)
+            {
+                // Index is not a number, fall back to getting member
             }
 
             return TryGetMember(indexes[0].ToString(), out result);

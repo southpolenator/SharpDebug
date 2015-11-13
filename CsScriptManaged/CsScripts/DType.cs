@@ -116,7 +116,23 @@ namespace CsScripts
         {
             get
             {
-                return typedData.Tag == SymTag.Enum;
+                return Tag == SymTag.Enum;
+            }
+        }
+
+        public bool IsArray
+        {
+            get
+            {
+                return Tag == SymTag.ArrayType;
+            }
+        }
+
+        public bool IsPointer
+        {
+            get
+            {
+                return Tag == SymTag.PointerType;
             }
         }
 
