@@ -60,11 +60,14 @@ namespace CsScripts
         {
             get
             {
-                uint exeSize;
-                StringBuilder sb = new StringBuilder(Constants.MaxFileName);
+                using (ProcessSwitcher switcher = new ProcessSwitcher(this))
+                {
+                    uint exeSize;
+                    StringBuilder sb = new StringBuilder(Constants.MaxFileName);
 
-                Context.SystemObjects.GetCurrentProcessExecutableNameWide(sb, (uint)sb.Capacity, out exeSize);
-                return sb.ToString();
+                    Context.SystemObjects.GetCurrentProcessExecutableNameWide(sb, (uint)sb.Capacity, out exeSize);
+                    return sb.ToString();
+                }
             }
         }
 
@@ -72,7 +75,21 @@ namespace CsScripts
         {
             get
             {
-                return Context.SystemObjects.GetCurrentProcessUpTime();
+                using (ProcessSwitcher switcher = new ProcessSwitcher(this))
+                {
+                    return Context.SystemObjects.GetCurrentProcessUpTime();
+                }
+            }
+        }
+
+        public ulong PEB
+        {
+            get
+            {
+                using (ProcessSwitcher switcher = new ProcessSwitcher(this))
+                {
+                    return Context.SystemObjects.GetCurrentProcessPeb();
+                }
             }
         }
 
