@@ -293,6 +293,7 @@ namespace CreateDbgEngIdl
                 WriteConstants(outputString, ref remainingConstants, "DEBUG_REQUEST_", "DebugRequest", (s) => s.StartsWith("DEBUG_LIVE_USER_NON_INVASIVE"));
                 WriteConstants(outputString, ref remainingConstants, "DEBUG_SCOPE_GROUP_");
                 WriteConstants(outputString, ref remainingConstants, "DEBUG_OUTPUT_", "DebugOutput", null, (s) => !s.StartsWith("DEBUG_OUTPUT_SYMBOLS_") && !s.StartsWith("DEBUG_OUTPUT_IDENTITY_DEFAULT"));
+                WriteConstants(outputString, ref remainingConstants, "DEBUG_MODNAME_");
                 WriteConstants(outputString, ref remainingConstants, "", "Defines");
 
                 // Write file header

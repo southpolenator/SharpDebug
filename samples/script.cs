@@ -6,6 +6,8 @@ import helper.cs;
 Console.Error.WriteLine("This is sample error");
 HelpMe("It works!");
 
+writeln("All Modules: {0}", string.Join(", ", Module.All.Select(m => m.Name)));
+
 writeln("Current process exe: {0}", Process.Current.ExecutableName);
 writeln("Current thread {0}:{1}", Thread.Current.Id, Thread.Current.SystemId);
 writeln("Current call stack {0}", Thread.Current.StackTrace);

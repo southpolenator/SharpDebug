@@ -89,6 +89,7 @@
     <Compile Include="Constants.cs" />
     <Compile Include="Context.cs" />
     <Compile Include="CsScripts\DType.cs" />
+    <Compile Include="CsScripts\Module.cs" />
     <Compile Include="CsScripts\StackFrame.cs" />
     <Compile Include="CsScripts\StackTrace.cs" />
     <Compile Include="CsScripts\Process.cs" />
