@@ -4,9 +4,33 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DbgEngManaged;
+using System.IO;
 
 namespace CsScriptManaged
 {
+    class DebuggerTextWriter : TextWriter
+    {
+        public DebuggerTextWriter(DebugOutput outputType)
+        {
+            OutputType = outputType;
+        }
+
+        public DebugOutput OutputType { get; set; }
+
+        public override Encoding Encoding
+        {
+            get
+            {
+                return Encoding.Default;
+            }
+        }
+
+        public override void Write(char value)
+        {
+            Context.Control.Output((uint)OutputType, value == '%' ? "%%" : value.ToString());
+        }
+    }
+
     public class Context
     {
         public static IDebugAdvanced3 Advanced;
@@ -46,7 +70,20 @@ namespace CsScriptManaged
 
         public static void Execute(string path, params string[] args)
         {
-            ScriptManager.Execute(path, args);
+            TextWriter originalConsoleOut = Console.Out;
+            TextWriter originalConsoleError = Console.Error;
+
+            Console.SetOut(new DebuggerTextWriter(DebugOutput.Normal));
+            Console.SetError(new DebuggerTextWriter(DebugOutput.Error));
+            try
+            {
+                ScriptManager.Execute(path, args);
+            }
+            finally
+            {
+                Console.SetOut(originalConsoleOut);
+                Console.SetError(originalConsoleError);
+            }
         }
     }
 }

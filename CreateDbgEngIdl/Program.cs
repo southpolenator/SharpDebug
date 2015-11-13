@@ -15,7 +15,7 @@ namespace CreateDbgEngIdl
             line = Regex.Replace(line, "_(In|Out)_(reads|writes|writes_to)_(bytes_|)(opt_|)[(][^)]*[)]", "");
             return line.Replace("PCSTR ", "LPStr ").Replace("PSTR ", "LPStr ").Replace("PCWSTR ", "LPWStr ")
                        .Replace("PWSTR ", "LPWStr ").Replace("PULONG64 ", "unsigned __int64 * ").Replace("ULONG64 ", "unsigned __int64 ").Replace("LONG64 ", "__int64 ").Replace("PULONG ", "unsigned long * ")
-                       .Replace("ULONG ", "unsigned long ").Replace("PBOOL ", "bool * ").Replace("BOOL ", "bool ").Replace("va_list ", "char * ").Replace("...", "SAFEARRAY(VARIANT)").Replace("FARPROC ", "void * ").Replace("FARPROC*", "void **")
+                       .Replace("ULONG ", "unsigned long ").Replace("PBOOL ", "bool * ").Replace("BOOL ", "bool ").Replace("va_list ", "char * ").Replace("...", "SAFEARRAY(VARIANT) parameters").Replace("FARPROC ", "void * ").Replace("FARPROC*", "void **")
                        .Replace("UCHAR ", "unsigned char ").Replace("CHAR ", "char ").Replace("USHORT ", "unsigned short ").Replace("PVOID ", "void * ").Replace("UINT ", "unsigned int ")
                        .Replace("IN ", "").Replace("__in ", "").Replace("_In_ ", "").Replace("__out ", "").Replace("_Out_ ", "").Replace("OUT ", "").Replace("__out_opt ", "").Replace("_Out_opt_ ", "").Replace("OPTIONAL ", "")
                        .Replace("__in_opt ", "").Replace("_In_opt_ ", "").Replace("__reserved ", "").Replace("__inout ", "").Replace("_Inout_ ", "").Replace("_Reserved_ ", "");
@@ -181,6 +181,13 @@ namespace CreateDbgEngIdl
                                         bool optionalStarted = false;
                                         string[] parametersArray = parametersString.Split(",".ToCharArray());
                                         int outParameters = 0;
+                                        bool forbidOptional = false;
+
+                                        if (parametersString.Contains("..."))
+                                        {
+                                            returnValue = "[vararg] " + returnValue;
+                                            forbidOptional = true;
+                                        }
 
                                         for (int i = 0; i < parametersArray.Length; i++)
                                         {
@@ -190,7 +197,7 @@ namespace CreateDbgEngIdl
                                                 parameters.Append(", ");
 
                                             bool outAttribute = Regex.IsMatch(parameter, @"OUT\s|_Out_[a-zA-Z_]*([(][^)]*[)])?\s|__out\w*\s|__inout|_Inout\w*\s");
-                                            bool optionalAttribute = Regex.IsMatch(parameter, @"_(In|Out)[a-zA-Z_]*opt[a-zA-Z_]*([(][^)]*[)])?\s|OPTIONAL") || optionalStarted;
+                                            bool optionalAttribute = (Regex.IsMatch(parameter, @"_(In|Out)[a-zA-Z_]*opt[a-zA-Z_]*([(][^)]*[)])?\s|OPTIONAL") || optionalStarted) && !forbidOptional;
                                             Match sizeAttribute = Regex.Match(parameter, @"_(In|Out)_(reads_|writes_)(bytes_|)(opt_|)[(]([^)]*)[)]");
                                             Match maxAttribute = Regex.Match(parameter, @"_Out_writes_to_(opt_|)[(]([^):]*):([^)]*)[)]");
                                             bool convertToArray = false;
@@ -285,6 +292,7 @@ namespace CreateDbgEngIdl
                 var remainingConstants = constants.ToArray();
                 WriteConstants(outputString, ref remainingConstants, "DEBUG_REQUEST_", "DebugRequest", (s) => s.StartsWith("DEBUG_LIVE_USER_NON_INVASIVE"));
                 WriteConstants(outputString, ref remainingConstants, "DEBUG_SCOPE_GROUP_");
+                WriteConstants(outputString, ref remainingConstants, "DEBUG_OUTPUT_", "DebugOutput", null, (s) => !s.StartsWith("DEBUG_OUTPUT_SYMBOLS_") && !s.StartsWith("DEBUG_OUTPUT_IDENTITY_DEFAULT"));
                 WriteConstants(outputString, ref remainingConstants, "", "Defines");
 
                 // Write file header
@@ -427,12 +435,12 @@ library DbgEngManaged
             }
         }
 
-        private static void WriteConstants(StringBuilder outputString, ref KeyValuePair<string,string>[] remainingConstants, string prefix, string constantsName = null, Func<string, bool> additionalConstantFilter = null)
+        private static void WriteConstants(StringBuilder outputString, ref KeyValuePair<string,string>[] remainingConstants, string prefix, string constantsName = null, Func<string, bool> additionalAcceptanceConstantFilter = null, Func<string, bool> additionalRejectConstantFilter = null)
         {
             if (string.IsNullOrEmpty(constantsName))
                 constantsName = FormatEnumName(prefix, "");
 
-            var constants = remainingConstants.Where(k => k.Key.StartsWith(prefix) || (additionalConstantFilter != null && additionalConstantFilter(k.Key))).ToArray();
+            var constants = remainingConstants.Where(k => (k.Key.StartsWith(prefix) || (additionalAcceptanceConstantFilter != null && additionalAcceptanceConstantFilter(k.Key))) && (additionalRejectConstantFilter == null || additionalRejectConstantFilter(k.Key))).ToArray();
             remainingConstants = remainingConstants.Except(constants).ToArray();
 
             outputString.AppendLine("    enum " + constantsName);
