@@ -88,6 +88,7 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="Context.cs" />
+    <Compile Include="CsScripts\Debugger.cs" />
     <Compile Include="CsScripts\DType.cs" />
     <Compile Include="CsScripts\Module.cs" />
     <Compile Include="CsScripts\StackFrame.cs" />
@@ -96,11 +97,13 @@
     <Compile Include="CsScripts\ScriptBase.cs" />
     <Compile Include="CsScripts\Thread.cs" />
     <Compile Include="CsScripts\Variable.cs" />
+    <Compile Include="DebuggerOutputSaver.cs" />
     <Compile Include="Executor.cs" />
     <Compile Include="IExecutor.cs" />
     <Compile Include="MarshalArrayReader.cs" />
     <Compile Include="MarshalStructure.cs" />
     <Compile Include="NativeMethods.cs" />
+    <Compile Include="OutputCallbacksSwitcher.cs" />
     <Compile Include="ProcessSwitcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScriptManager.cs" />

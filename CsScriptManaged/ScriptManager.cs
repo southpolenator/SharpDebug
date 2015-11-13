@@ -30,6 +30,7 @@ namespace CsScriptManaged
         internal void Execute(string path, string[] args)
         {
             string code = LoadCode(path);
+            const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
 
             using (CSharpCodeProvider provider = new CSharpCodeProvider())
             {
@@ -39,7 +40,18 @@ namespace CsScriptManaged
                 };
 
                 compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
-                compilerParameters.ReferencedAssemblies.Add("Microsoft.CSharp.dll");
+
+                bool found = false;
+
+                foreach (string assembly in compilerParameters.ReferencedAssemblies)
+                    if (assembly.Contains(MicrosoftCSharpDll))
+                    {
+                        found = true;
+                        break;
+                    }
+                if (!found)
+                    compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
+
                 CompilerResults results = provider.CompileAssemblyFromSource(compilerParameters, code);
 
                 if (results.Errors.Count > 0)

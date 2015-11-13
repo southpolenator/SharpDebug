@@ -290,11 +290,14 @@ namespace CreateDbgEngIdl
 
                 // Write constants
                 var remainingConstants = constants.ToArray();
-                WriteConstants(outputString, ref remainingConstants, "DEBUG_REQUEST_", "DebugRequest", (s) => s.StartsWith("DEBUG_LIVE_USER_NON_INVASIVE"));
-                WriteConstants(outputString, ref remainingConstants, "DEBUG_SCOPE_GROUP_");
-                WriteConstants(outputString, ref remainingConstants, "DEBUG_OUTPUT_", "DebugOutput", null, (s) => !s.StartsWith("DEBUG_OUTPUT_SYMBOLS_") && !s.StartsWith("DEBUG_OUTPUT_IDENTITY_DEFAULT"));
-                WriteConstants(outputString, ref remainingConstants, "DEBUG_MODNAME_");
-                WriteConstants(outputString, ref remainingConstants, "", "Defines");
+                var usedConstants = new HashSet<string>();
+                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_REQUEST_", "DebugRequest", (s) => s.StartsWith("DEBUG_LIVE_USER_NON_INVASIVE"));
+                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_SCOPE_GROUP_");
+                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_OUTPUT_", "DebugOutput", null, (s) => !s.StartsWith("DEBUG_OUTPUT_SYMBOLS_") && !s.StartsWith("DEBUG_OUTPUT_IDENTITY_DEFAULT"));
+                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_MODNAME_");
+                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_OUTCTL_");
+                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_EXECUTE_");
+                WriteConstants(outputString, usedConstants, ref remainingConstants, "", "Defines");
 
                 // Write file header
                 output.WriteLine(@"import ""oaidl.idl"";
@@ -436,7 +439,7 @@ library DbgEngManaged
             }
         }
 
-        private static void WriteConstants(StringBuilder outputString, ref KeyValuePair<string,string>[] remainingConstants, string prefix, string constantsName = null, Func<string, bool> additionalAcceptanceConstantFilter = null, Func<string, bool> additionalRejectConstantFilter = null)
+        private static void WriteConstants(StringBuilder outputString, HashSet<string> usedConstants, ref KeyValuePair<string,string>[] remainingConstants, string prefix, string constantsName = null, Func<string, bool> additionalAcceptanceConstantFilter = null, Func<string, bool> additionalRejectConstantFilter = null)
         {
             if (string.IsNullOrEmpty(constantsName))
                 constantsName = FormatEnumName(prefix, "");
@@ -448,7 +451,13 @@ library DbgEngManaged
             outputString.AppendLine("    {");
             foreach (var c in constants)
             {
-                outputString.AppendFormat("        {0} = {1},", FormatEnumName(c.Key, prefix), c.Value);
+                string cname = FormatEnumName(c.Key, prefix);
+
+                while (usedConstants.Contains(cname))
+                    cname += "_";
+                usedConstants.Add(cname);
+
+                outputString.AppendFormat("        {0} = {1},", cname, c.Value);
                 outputString.AppendLine();
             }
 
