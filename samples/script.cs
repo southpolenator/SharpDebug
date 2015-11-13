@@ -6,6 +6,7 @@ import helper.cs;
 Console.Error.WriteLine("This is sample error");
 HelpMe("It works!");
 
+writeln("Current process exe: {0}", Process.Current.ExecutableName);
 writeln("Current thread {0}:{1}", Thread.Current.Id, Thread.Current.SystemId);
 writeln("Current call stack {0}", Thread.Current.StackTrace);
 writeln("Current source file: {0}:{1}", Thread.Current.StackTrace.CurrentFrame.SourceFileName, Thread.Current.StackTrace.CurrentFrame.SourceFileLine);

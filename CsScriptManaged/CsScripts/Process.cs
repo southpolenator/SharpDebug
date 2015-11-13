@@ -1,6 +1,7 @@
 ﻿using CsScriptManaged;
 using System;
 using System.Linq;
+using System.Text;
 
 namespace CsScripts
 {
@@ -54,6 +55,26 @@ namespace CsScripts
         /// Gets the system identifier.
         /// </summary>
         public uint SystemId { get; private set; }
+
+        public string ExecutableName
+        {
+            get
+            {
+                uint exeSize;
+                StringBuilder sb = new StringBuilder(Constants.MaxFileName);
+
+                Context.SystemObjects.GetCurrentProcessExecutableNameWide(sb, (uint)sb.Capacity, out exeSize);
+                return sb.ToString();
+            }
+        }
+
+        public uint UpTime
+        {
+            get
+            {
+                return Context.SystemObjects.GetCurrentProcessUpTime();
+            }
+        }
 
         /// <summary>
         /// Gets the current thread.
