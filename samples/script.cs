@@ -3,8 +3,8 @@ using System.Linq;
 using CsScripts;
 import helper.cs;
 
-writeln(Modules.dummy.ImageName);
-writeln(Globals.car.GetName());
+Console.Error.WriteLine("This is sample error");
+HelpMe("It works!");
 
 writeln("All Modules: {0}", string.Join(", ", Module.All.Select(m => m.Name)));
 
