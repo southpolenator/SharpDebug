@@ -320,6 +320,18 @@ namespace CsScripts
             return new Variable(response.OutData, name);
         }
 
+        public int GetArrayLength()
+        {
+            var type = GetCodeType();
+
+            if (!type.IsPointer || !type.IsArray)
+            {
+                throw new ArgumentException("Variable is not an array, but " + type.Name);
+            }
+
+            return (int)(type.Size / type.ElementType.Size);
+        }
+
         public override bool TryConvert(ConvertBinder binder, out object result)
         {
             // TODO: Implement
