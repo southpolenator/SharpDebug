@@ -1,10 +1,7 @@
 ﻿using CsScriptManaged;
 using DbgEngManaged;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CsScripts
 {
@@ -111,6 +108,12 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the variable.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>Variable if found</returns>
+        /// <exception cref="System.ArgumentException">Variable name contains wrong module name. Don't add it manually, it will be added automatically.</exception>
         public Variable GetVariable(string name)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
@@ -133,6 +136,11 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the name of the module.
+        /// </summary>
+        /// <param name="modname">The type of module name.</param>
+        /// <returns>Read name</returns>
         private string GetName(DebugModname modname)
         {
             uint nameSize;
