@@ -1,12 +1,11 @@
 ﻿using CsScripts;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CsScriptManaged
 {
+    /// <summary>
+    /// Used for scoped stack frame switching
+    /// </summary>
     public class StackFrameSwitcher : IDisposable
     {
         /// <summary>
@@ -24,13 +23,17 @@ namespace CsScriptManaged
         /// </summary>
         private uint newStackFrameId;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StackFrameSwitcher"/> class.
+        /// </summary>
+        /// <param name="stackFrame">The stack frame.</param>
         public StackFrameSwitcher(StackFrame stackFrame)
         {
             threadSwitcher = new ThreadSwitcher(stackFrame.Thread);
             oldStackFrameId = Context.Symbols.GetCurrentScopeFrameIndex();
             newStackFrameId = stackFrame.FrameNumber;
 
-            SetThreadId(newStackFrameId);
+            SetStackFrameIndex(newStackFrameId);
         }
 
         /// <summary>
@@ -38,11 +41,15 @@ namespace CsScriptManaged
         /// </summary>
         public void Dispose()
         {
-            SetThreadId(oldStackFrameId);
+            SetStackFrameIndex(oldStackFrameId);
             threadSwitcher.Dispose();
         }
 
-        private void SetThreadId(uint newStackFrameId)
+        /// <summary>
+        /// Sets the current stack frame index.
+        /// </summary>
+        /// <param name="newStackFrameId">The new stack frame identifier.</param>
+        private void SetStackFrameIndex(uint newStackFrameId)
         {
             Context.Symbols.SetScopeFrameByIndex(newStackFrameId);
         }
