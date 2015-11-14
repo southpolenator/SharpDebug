@@ -41,10 +41,10 @@ namespace CsScripts
         {
             StackTrace = stackTrace;
             this.frame = frame;
-            sourceFileNameAndLine = new SimpleCache<Tuple<string, uint, ulong>>(ReadSourceFileNameAndLine);
-            functionNameAndDisplacement = new SimpleCache<Tuple<string, ulong>>(ReadFunctionNameAndDisplacement);
-            locals = new SimpleCache<Variable[]>(() => GetVariables(DebugScopeGroup.Locals));
-            arguments = new SimpleCache<Variable[]>(() => GetVariables(DebugScopeGroup.Arguments));
+            sourceFileNameAndLine = SimpleCache.Create(ReadSourceFileNameAndLine);
+            functionNameAndDisplacement = SimpleCache.Create(ReadFunctionNameAndDisplacement);
+            locals = SimpleCache.Create(() => GetVariables(DebugScopeGroup.Locals));
+            arguments = SimpleCache.Create(() => GetVariables(DebugScopeGroup.Arguments));
         }
 
         /// <summary>
