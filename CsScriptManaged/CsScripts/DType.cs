@@ -259,7 +259,7 @@ namespace CsScripts
         {
             if (typedData.BaseTypeId < Constants.MaxBaseTypeId && typedData.BaseTypeId != TypeId)
             {
-                return new DType(ModuleId, typedData.BaseTypeId);
+                return new DType(ModuleId, typedData.BaseTypeId, typedData.Offset);
             }
 
             return this;
