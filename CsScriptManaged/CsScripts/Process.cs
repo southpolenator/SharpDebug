@@ -174,6 +174,12 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the global variable.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>Global variable if found</returns>
+        /// <exception cref="System.ArgumentException">Global variable wasn't found, name:</exception>
         public Variable GetGlobal(string name)
         {
             // Try global name
