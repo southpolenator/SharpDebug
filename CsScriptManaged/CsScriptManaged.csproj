@@ -107,6 +107,7 @@
     <Compile Include="ProcessSwitcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScriptManager.cs" />
+    <Compile Include="SimpleCache.cs" />
     <Compile Include="StackFrameSwitcher.cs" />
     <Compile Include="ThreadSwitcher.cs" />
   </ItemGroup>

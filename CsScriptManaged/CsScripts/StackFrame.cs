@@ -13,14 +13,24 @@ namespace CsScripts
         private _DEBUG_STACK_FRAME frame;
 
         /// <summary>
-        /// The source file name
+        /// The source file name, line and displacement
         /// </summary>
-        private string sourceFileName;
+        private SimpleCache<Tuple<string, uint, ulong>> sourceFileNameAndLine;
 
         /// <summary>
-        /// The source file line
+        /// The function name and displacement
         /// </summary>
-        private uint sourceFileLine;
+        private SimpleCache<Tuple<string, ulong>> functionNameAndDisplacement;
+
+        /// <summary>
+        /// The local variables
+        /// </summary>
+        private SimpleCache<Variable[]> locals;
+
+        /// <summary>
+        /// The arguments
+        /// </summary>
+        private SimpleCache<Variable[]> arguments;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StackFrame"/> class.
@@ -31,6 +41,10 @@ namespace CsScripts
         {
             StackTrace = stackTrace;
             this.frame = frame;
+            sourceFileNameAndLine = new SimpleCache<Tuple<string, uint, ulong>>(ReadSourceFileNameAndLine);
+            functionNameAndDisplacement = new SimpleCache<Tuple<string, ulong>>(ReadFunctionNameAndDisplacement);
+            locals = new SimpleCache<Variable[]>(() => GetVariables(DebugScopeGroup.Locals));
+            arguments = new SimpleCache<Variable[]>(() => GetVariables(DebugScopeGroup.Arguments));
         }
 
         /// <summary>
@@ -127,39 +141,13 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Reads the name of the source file.
-        /// </summary>
-        /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
-        private void ReadSourceFileName()
-        {
-            try
-            {
-                uint fileNameLength;
-                ulong displacement;
-                StringBuilder sb = new StringBuilder(Constants.MaxFileName);
-
-                Context.Symbols.GetLineByOffset(InstructionOffset, out sourceFileLine, sb, (uint)sb.Capacity, out fileNameLength, out displacement);
-                sourceFileName = sb.ToString();
-            }
-            catch (Exception ex)
-            {
-                throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
-            }
-        }
-
-        /// <summary>
         /// Gets the name of the source file.
         /// </summary>
         public string SourceFileName
         {
             get
             {
-                if (string.IsNullOrEmpty(sourceFileName))
-                {
-                    ReadSourceFileName();
-                }
-
-                return sourceFileName;
+                return sourceFileNameAndLine.Value.Item1;
             }
         }
 
@@ -170,36 +158,40 @@ namespace CsScripts
         {
             get
             {
-                if (string.IsNullOrEmpty(sourceFileName))
-                {
-                    ReadSourceFileName();
-                }
+                return sourceFileNameAndLine.Value.Item2;
+            }
+        }
 
-                return sourceFileLine;
+        /// <summary>
+        /// Gets the source file displacement.
+        /// </summary>
+        public ulong SourceFileDisplacement
+        {
+            get
+            {
+                return sourceFileNameAndLine.Value.Item3;
             }
         }
 
         /// <summary>
         /// Gets the name of the function.
         /// </summary>
-        /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
         public string FunctionName
         {
             get
             {
-                try
-                {
-                    uint functionNameSize;
-                    ulong displacement;
-                    StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+                return functionNameAndDisplacement.Value.Item1;
+            }
+        }
 
-                    Context.Symbols.GetNameByOffset(InstructionOffset, sb, (uint)sb.Capacity, out functionNameSize, out displacement);
-                    return sb.ToString();
-                }
-                catch (Exception ex)
-                {
-                    throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
-                }
+        /// <summary>
+        /// Gets the function displacement.
+        /// </summary>
+        public ulong FunctionDisplacement
+        {
+            get
+            {
+                return functionNameAndDisplacement.Value.Item2;
             }
         }
 
@@ -210,7 +202,7 @@ namespace CsScripts
         {
             get
             {
-                return GetVariables(DebugScopeGroup.Locals);
+                return locals.Value;
             }
         }
 
@@ -221,7 +213,50 @@ namespace CsScripts
         {
             get
             {
-                return GetVariables(DebugScopeGroup.Arguments);
+                return arguments.Value;
+            }
+        }
+
+        /// <summary>
+        /// Reads the name of the source file, line and displacement.
+        /// </summary>
+        /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
+        private Tuple<string, uint, ulong> ReadSourceFileNameAndLine()
+        {
+            try
+            {
+                uint fileNameLength, sourceFileLine;
+                ulong displacement;
+                StringBuilder sb = new StringBuilder(Constants.MaxFileName);
+
+                Context.Symbols.GetLineByOffset(InstructionOffset, out sourceFileLine, sb, (uint)sb.Capacity, out fileNameLength, out displacement);
+                return Tuple.Create(sb.ToString(), sourceFileLine, displacement);
+            }
+            catch (Exception ex)
+            {
+                throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Reads the function name and displacement.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
+        private Tuple<string, ulong> ReadFunctionNameAndDisplacement()
+        {
+            try
+            {
+                uint functionNameSize;
+                ulong displacement;
+                StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+
+                Context.Symbols.GetNameByOffset(InstructionOffset, sb, (uint)sb.Capacity, out functionNameSize, out displacement);
+                return Tuple.Create(sb.ToString(), displacement);
+            }
+            catch (Exception ex)
+            {
+                throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
             }
         }
 

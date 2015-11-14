@@ -13,6 +13,8 @@ writeln("Current thread {0}:{1}", Thread.Current.Id, Thread.Current.SystemId);
 writeln("Current call stack {0}", Thread.Current.StackTrace);
 writeln("Current source file: {0}:{1}", Thread.Current.StackTrace.CurrentFrame.SourceFileName, Thread.Current.StackTrace.CurrentFrame.SourceFileLine);
 writeln("Current function: {0}", Thread.Current.StackTrace.CurrentFrame.FunctionName);
+writeln("Callstack:");
+writeln(string.Join("\n", Thread.Current.StackTrace.Frames.Select(f => f.FunctionName)));
 writeln("Locals: {0}", string.Join(", ", Thread.Current.StackTrace.CurrentFrame.Locals.Select(v => string.Format("{0} ({1})", v.GetName(), v.GetCodeType()))));
 writeln("Arguments: {0}", string.Join(", ", Thread.Current.StackTrace.CurrentFrame.Arguments.Select(v => string.Format("{0} ({1})", v.GetName(), v.GetCodeType()))));
 
