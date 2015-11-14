@@ -165,7 +165,19 @@ namespace CsScriptManaged
                 imports.Add(GetFullPath(import, path));
             }
 
-            return code;
+            return "#line 1 \"" + path + "\"\n" + code + "\n#line default\n";
+        }
+
+        private static string CleanCodeForRemoval(string code)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach (char c in code)
+                if (c == '\n')
+                    sb.AppendLine();
+                else
+                    sb.Append(' ');
+            return sb.ToString();
         }
 
         private static string RemoveComments(string code)
@@ -174,7 +186,7 @@ namespace CsScriptManaged
                 me =>
                 {
                     if (me.Value.StartsWith("/*") || me.Value.StartsWith("//"))
-                        return me.Value.StartsWith("//") ? Environment.NewLine : "";
+                        return CleanCodeForRemoval(me.Value);
                     return me.Value;
                 });
         }
@@ -187,7 +199,7 @@ namespace CsScriptManaged
                     if (me.Value.StartsWith("import"))
                     {
                         imports.Add(me.Groups[1].Value);
-                        return Environment.NewLine;
+                        return CleanCodeForRemoval(me.Value);
                     }
 
                     return me.Value;
@@ -202,7 +214,7 @@ namespace CsScriptManaged
                     if (me.Value.StartsWith("using"))
                     {
                         usings.Add(me.Groups[1].Value);
-                        return Environment.NewLine;
+                        return CleanCodeForRemoval(me.Value);
                     }
 
                     return me.Value;
