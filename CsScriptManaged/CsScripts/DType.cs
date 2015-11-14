@@ -1,22 +1,36 @@
 ﻿using CsScriptManaged;
 using DbgEngManaged;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Debugging type of variables
+    /// </summary>
     public class DType
     {
+        /// <summary>
+        /// The typed data
+        /// </summary>
         private DEBUG_TYPED_DATA typedData;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DType"/> class.
+        /// </summary>
+        /// <param name="typedData">The typed data.</param>
         internal DType(DEBUG_TYPED_DATA typedData)
         {
             this.typedData = typedData;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DType"/> class.
+        /// </summary>
+        /// <param name="moduleId">The module identifier.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="offset">The offset.</param>
+        /// <param name="tag">The tag.</param>
         internal DType(ulong moduleId, uint typeId, ulong offset = 0, SymTag tag = SymTag.Null)
         {
             try
@@ -41,6 +55,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the module identifier.
+        /// </summary>
         public ulong ModuleId
         {
             get
@@ -49,6 +66,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
         public uint TypeId
         {
             get
@@ -57,14 +77,9 @@ namespace CsScripts
             }
         }
 
-        internal SymTag Tag
-        {
-            get
-            {
-                return typedData.Tag;
-            }
-        }
-
+        /// <summary>
+        /// Gets the base type.
+        /// </summary>
         public DType BaseType
         {
             get
@@ -78,6 +93,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the type of the element if type is array or pointer.
+        /// </summary>
         public DType ElementType
         {
             get
@@ -101,6 +119,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the type name.
+        /// </summary>
         public string Name
         {
             get
@@ -113,6 +134,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the type size in bytes.
+        /// </summary>
         public uint Size
         {
             get
@@ -121,6 +145,12 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type is enum.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is enum; otherwise, <c>false</c>.
+        /// </value>
         public bool IsEnum
         {
             get
@@ -129,6 +159,12 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type is array.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is array; otherwise, <c>false</c>.
+        /// </value>
         public bool IsArray
         {
             get
@@ -137,6 +173,12 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type is pointer.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is pointer; otherwise, <c>false</c>.
+        /// </value>
         public bool IsPointer
         {
             get
@@ -145,6 +187,12 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is ANSI string; otherwise, <c>false</c>.
+        /// </value>
         public bool IsAnsiString
         {
             get
@@ -153,6 +201,12 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type is wide string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is wide string; otherwise, <c>false</c>.
+        /// </value>
         public bool IsWideString
         {
             get
@@ -161,6 +215,12 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type is simple type.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is simple type; otherwise, <c>false</c>.
+        /// </value>
         public bool IsSimple
         {
             get
@@ -169,6 +229,23 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the tag.
+        /// </summary>
+        internal SymTag Tag
+        {
+            get
+            {
+                return typedData.Tag;
+            }
+        }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
         public override string ToString()
         {
             return Name;
