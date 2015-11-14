@@ -8,6 +8,31 @@ namespace CsScripts
     public class Module
     {
         /// <summary>
+        /// The module name
+        /// </summary>
+        private SimpleCache<string> name;
+
+        /// <summary>
+        /// The image name
+        /// </summary>
+        private SimpleCache<string> imageName;
+
+        /// <summary>
+        /// The loaded image name
+        /// </summary>
+        private SimpleCache<string> loadedImageName;
+
+        /// <summary>
+        /// The symbol file name
+        /// </summary>
+        private SimpleCache<string> symbolFileName;
+
+        /// <summary>
+        /// The mapped image name
+        /// </summary>
+        private SimpleCache<string> mappedImageName;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Module"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -15,6 +40,11 @@ namespace CsScripts
         {
             Id = id;
             Process = process;
+            name = new SimpleCache<string>(() => GetName(DebugModname.Module));
+            imageName = new SimpleCache<string>(() => GetName(DebugModname.Image));
+            loadedImageName = new SimpleCache<string>(() => GetName(DebugModname.LoadedImage));
+            symbolFileName = new SimpleCache<string>(() => GetName(DebugModname.SymbolFile));
+            mappedImageName = new SimpleCache<string>(() => GetName(DebugModname.MappedImage));
         }
 
         /// <summary>
@@ -57,7 +87,7 @@ namespace CsScripts
         {
             get
             {
-                return GetName(DebugModname.Module);
+                return name.Value;
             }
         }
 
@@ -69,7 +99,7 @@ namespace CsScripts
         {
             get
             {
-                return GetName(DebugModname.Image);
+                return imageName.Value;
             }
         }
 
@@ -80,7 +110,7 @@ namespace CsScripts
         {
             get
             {
-                return GetName(DebugModname.LoadedImage);
+                return loadedImageName.Value;
             }
         }
 
@@ -92,7 +122,7 @@ namespace CsScripts
         {
             get
             {
-                return GetName(DebugModname.SymbolFile);
+                return symbolFileName.Value;
             }
         }
 
@@ -104,7 +134,7 @@ namespace CsScripts
         {
             get
             {
-                return GetName(DebugModname.MappedImage);
+                return mappedImageName.Value;
             }
         }
 
