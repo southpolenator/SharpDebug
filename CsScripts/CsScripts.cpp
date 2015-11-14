@@ -75,66 +75,6 @@ void WriteComException(HRESULT hr, const char* expression)
     }
 }
 
-class HostControl : public IHostControl
-{
-public:
-	HostControl()
-		: counter(1)
-	{
-	}
-
-	virtual HRESULT STDMETHODCALLTYPE QueryInterface(
-		REFIID riid,
-		void ** ppvObject)
-	{
-		if (riid == __uuidof(IHostControl))
-		{
-			AddRef();
-			*ppvObject = this;
-			return S_OK;
-		}
-
-		return E_NOINTERFACE;
-	}
-
-	virtual ULONG STDMETHODCALLTYPE AddRef()
-	{
-		return ++counter;
-	}
-
-	virtual ULONG STDMETHODCALLTYPE Release()
-	{
-		ULONG result = --counter;
-
-		if (result == 0)
-			delete this;
-		return result;
-	}
-
-	HRESULT STDMETHODCALLTYPE GetHostManager(
-		_In_ REFIID riid,
-		_Outptr_result_maybenull_ void **ppv)
-	{
-		return E_NOINTERFACE;
-	}
-
-	HRESULT STDMETHODCALLTYPE SetAppDomainManager(
-		_In_ DWORD dwAppDomainID,
-		_In_ IUnknown *pUnkAppDomainManager)
-	{
-		return pUnkAppDomainManager->QueryInterface(__uuidof(CsScriptManaged::IExecutor), (PVOID*)&m_appDomainManager);
-	}
-
-	CsScriptManaged::IExecutor* GetAppDomainManager() const
-	{
-		return m_appDomainManager;
-	}
-
-private:
-	CAutoComPtr<CsScriptManaged::IExecutor> m_appDomainManager;
-	ULONG counter;
-};
-
 
 wstring GetCurrentDllDirectory()
 {
@@ -200,13 +140,10 @@ public:
 
 		// Set custom memory manager and start CLR
 		//
-		hostControl = new HostControl();
 		CHECKCOM(runtimeInfo->BindAsLegacyV2Runtime());
 		//CHECKCOM(runtimeInfo->SetDefaultStartupFlags(clrStartupFlags, nullptr));
 		CHECKCOM(runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&clrRuntimeHost)));
 		CHECKCOM(clrRuntimeHost->GetCLRControl(&clrControl));
-		//CHECKCOM(clrControl->SetAppDomainManagerType(L"CsScriptManaged", L"CsScriptManaged.CustomAppDomainManager"));
-		CHECKCOM(clrRuntimeHost->SetHostControl(hostControl));
 		CHECKCOM(clrRuntimeHost->Start());
 
 		// Create a new AppDomain that will contain application configuration.
@@ -293,7 +230,6 @@ public:
 		clrControl = nullptr;
 		clrRuntimeHost = nullptr;
 		runtimeInfo = nullptr;
-		hostControl = nullptr;
 		instance = nullptr;
 	}
 
@@ -327,7 +263,6 @@ private:
 	CAutoComPtr<ICLRRuntimeInfo> runtimeInfo;
 	CAutoComPtr<ICLRRuntimeHost> clrRuntimeHost;
 	CAutoComPtr<ICLRControl> clrControl;
-	CAutoComPtr<HostControl> hostControl;
 	CAutoComPtr<ICorRuntimeHost> corRuntimeHost;
 	CAutoComPtr<CsScriptManaged::IExecutor> instance;
 } clr;
