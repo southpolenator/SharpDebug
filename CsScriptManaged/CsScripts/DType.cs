@@ -16,12 +16,33 @@ namespace CsScripts
         private DEBUG_TYPED_DATA typedData;
 
         /// <summary>
+        /// The base type
+        /// </summary>
+        private SimpleCache<DType> baseType;
+
+        /// <summary>
+        /// The element type
+        /// </summary>
+        private SimpleCache<DType> elementType;
+
+        /// <summary>
+        /// The name
+        /// </summary>
+        private SimpleCache<string> name;
+
+        /// <summary>
+        /// The size
+        /// </summary>
+        private SimpleCache<uint> size;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DType"/> class.
         /// </summary>
         /// <param name="typedData">The typed data.</param>
         internal DType(DEBUG_TYPED_DATA typedData)
         {
             this.typedData = typedData;
+            InitializeCache();
         }
 
         /// <summary>
@@ -35,16 +56,7 @@ namespace CsScripts
         {
             try
             {
-                typedData = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
-                {
-                    Operation = ExtTdop.SetFromTypeIdAndU64,
-                    InData = new DEBUG_TYPED_DATA()
-                    {
-                        ModBase = moduleId,
-                        TypeId = typeId,
-                        Offset = 350978832288,
-                    },
-                }).OutData;
+                typedData = GlobalCache.TypedData[Tuple.Create(moduleId, typeId, offset)];
             }
             catch (Exception)
             {
@@ -53,6 +65,19 @@ namespace CsScripts
                 typedData.Offset = offset;
                 typedData.Tag = tag;
             }
+
+            InitializeCache();
+        }
+
+        /// <summary>
+        /// Initializes the cache.
+        /// </summary>
+        private void InitializeCache()
+        {
+            baseType = SimpleCache.Create(GetBaseType);
+            elementType = SimpleCache.Create(GetElementType);
+            name = SimpleCache.Create(GetName);
+            size = SimpleCache.Create(() => Context.Symbols.GetTypeSize(ModuleId, TypeId));
         }
 
         /// <summary>
@@ -84,12 +109,7 @@ namespace CsScripts
         {
             get
             {
-                if (typedData.BaseTypeId < Constants.MaxBaseTypeId && typedData.BaseTypeId != TypeId)
-                {
-                    return new DType(ModuleId, typedData.BaseTypeId);
-                }
-
-                return this;
+                return baseType.Value;
             }
         }
 
@@ -100,22 +120,7 @@ namespace CsScripts
         {
             get
             {
-                if (IsPointer || IsArray)
-                {
-                    try
-                    {
-                        return new DType(Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
-                        {
-                            Operation = ExtTdop.GetDereference,
-                            InData = typedData,
-                        }).OutData);
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-
-                return this;
+                return elementType.Value;
             }
         }
 
@@ -126,11 +131,7 @@ namespace CsScripts
         {
             get
             {
-                uint nameSize;
-                StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
-
-                Context.Symbols.GetTypeName(ModuleId, TypeId, sb, (uint)sb.Capacity, out nameSize);
-                return sb.ToString();
+                return name.Value;
             }
         }
 
@@ -141,7 +142,7 @@ namespace CsScripts
         {
             get
             {
-                return Context.Symbols.GetTypeSize(ModuleId, TypeId);
+                return size.Value;
             }
         }
 
@@ -249,6 +250,54 @@ namespace CsScripts
         public override string ToString()
         {
             return Name;
+        }
+
+        /// <summary>
+        /// Gets the base type.
+        /// </summary>
+        private DType GetBaseType()
+        {
+            if (typedData.BaseTypeId < Constants.MaxBaseTypeId && typedData.BaseTypeId != TypeId)
+            {
+                return new DType(ModuleId, typedData.BaseTypeId);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Gets the element type.
+        /// </summary>
+        private DType GetElementType()
+        {
+            if (IsPointer || IsArray)
+            {
+                try
+                {
+                    return new DType(Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+                    {
+                        Operation = ExtTdop.GetDereference,
+                        InData = typedData,
+                    }).OutData);
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Gets the name.
+        /// </summary>
+        private string GetName()
+        {
+            uint nameSize;
+            StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+
+            Context.Symbols.GetTypeName(ModuleId, TypeId, sb, (uint)sb.Capacity, out nameSize);
+            return sb.ToString();
         }
     }
 }
