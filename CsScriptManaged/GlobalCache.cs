@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsScripts;
+using System;
 using System.Collections.Generic;
 
 namespace CsScriptManaged
@@ -9,14 +10,17 @@ namespace CsScriptManaged
     public class GlobalCache
     {
         /// <summary>
-        /// Creates a new instance of the <see cref="SimpleCache{TKey, TValue}"/> class.
+        /// The processes
         /// </summary>
-        /// <typeparam name="TKey">The type of the key.</typeparam>
-        /// <typeparam name="TValue">The type of the value.</typeparam>
-        /// <param name="populateAction">The populate action.</param>
-        public static GlobalCache<TKey, TValue> Create<TKey, TValue>(Func<TKey, TValue> populateAction)
+        public static GlobalCache<Tuple<uint, uint>, Process> Processes = new GlobalCache<Tuple<uint, uint>, Process>(CreateProcess);
+
+        /// <summary>
+        /// Creates the process.
+        /// </summary>
+        /// <param name="processKey">The process key.</param>
+        private static Process CreateProcess(Tuple<uint, uint> processKey)
         {
-            return new GlobalCache<TKey, TValue>(populateAction);
+            return new Process(processKey.Item1, processKey.Item2);
         }
     }
 

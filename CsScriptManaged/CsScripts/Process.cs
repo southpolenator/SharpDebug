@@ -55,8 +55,9 @@ namespace CsScripts
             get
             {
                 uint currentId = Context.SystemObjects.GetCurrentProcessId();
+                uint currentSystemId = Context.SystemObjects.GetCurrentProcessSystemId();
 
-                return All.FirstOrDefault(p => p.Id == currentId);
+                return GlobalCache.Processes[Tuple.Create(currentId, currentSystemId)];
             }
         }
 
@@ -75,7 +76,7 @@ namespace CsScripts
                     uint id, systemId;
 
                     Context.SystemObjects.GetProcessIdsByIndex(i, 1, out id, out systemId);
-                    processes[i] = new Process(id, systemId);
+                    processes[i] = GlobalCache.Processes[Tuple.Create(id, systemId)];
                 }
 
                 return processes;
