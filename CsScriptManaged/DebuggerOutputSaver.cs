@@ -7,6 +7,13 @@ namespace CsScriptManaged
     {
         private StringBuilder sb = new StringBuilder();
 
+        public DebuggerOutputSaver(DebugOutput captureFlags)
+        {
+            CaptureFlags = captureFlags;
+        }
+
+        public DebugOutput CaptureFlags { get; set; }
+
         public string Text
         {
             get
@@ -15,9 +22,12 @@ namespace CsScriptManaged
             }
         }
 
-        public void Output(uint Mask, string Text)
+        public void Output(uint mask, string text)
         {
-            sb.Append(Text);
+            if ((mask & (uint)CaptureFlags) != 0)
+            {
+                sb.Append(text);
+            }
         }
     }
 }

@@ -13,10 +13,25 @@ namespace CsScripts
         /// </summary>
         /// <param name="command">The command.</param>
         /// <param name="parameters">The parameters.</param>
-        /// <returns></returns>
+        /// <returns>Captured text</returns>
         public static string ExecuteAndCapture(string command, params object[] parameters)
         {
-            var callbacks = new DebuggerOutputSaver();
+            DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
+                | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
+                | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
+            return ExecuteAndCapture(captureFlags, command, parameters);
+        }
+
+        /// <summary>
+        /// Executes the specified command and captures its output.
+        /// </summary>
+        /// <param name="captureFlags">The capture flags.</param>
+        /// <param name="command">The command.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>Captured text</returns>
+        public static string ExecuteAndCapture(DebugOutput captureFlags, string command, params object[] parameters)
+        {
+            var callbacks = new DebuggerOutputSaver(captureFlags);
             using (OutputCallbacksSwitcher switcher = new OutputCallbacksSwitcher(callbacks))
             {
                 Execute(command, parameters);
