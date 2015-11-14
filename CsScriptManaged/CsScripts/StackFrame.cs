@@ -1,10 +1,7 @@
 ﻿using CsScriptManaged;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using DbgEngManaged;
 using System.Text;
-using System.Runtime.InteropServices;
 
 namespace CsScripts
 {
@@ -15,7 +12,14 @@ namespace CsScripts
         /// </summary>
         private _DEBUG_STACK_FRAME frame;
 
+        /// <summary>
+        /// The source file name
+        /// </summary>
         private string sourceFileName;
+
+        /// <summary>
+        /// The source file line
+        /// </summary>
         private uint sourceFileLine;
 
         /// <summary>
@@ -122,6 +126,10 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Reads the name of the source file.
+        /// </summary>
+        /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
         private void ReadSourceFileName()
         {
             try
@@ -139,6 +147,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the name of the source file.
+        /// </summary>
         public string SourceFileName
         {
             get
@@ -152,6 +163,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the source file line.
+        /// </summary>
         public uint SourceFileLine
         {
             get
@@ -165,6 +179,10 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the name of the function.
+        /// </summary>
+        /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
         public string FunctionName
         {
             get
@@ -185,6 +203,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the local variables.
+        /// </summary>
         public Variable[] Locals
         {
             get
@@ -193,6 +214,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the function arguments.
+        /// </summary>
         public Variable[] Arguments
         {
             get
@@ -201,6 +225,11 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the variables based on the scope group.
+        /// </summary>
+        /// <param name="scopeGroup">The scope group.</param>
+        /// <returns>Array of variables</returns>
         private Variable[] GetVariables(DebugScopeGroup scopeGroup)
         {
             using (StackFrameSwitcher switcher = new StackFrameSwitcher(this))
