@@ -638,16 +638,7 @@ namespace CsScripts
         /// <param name="offset">The offset.</param>
         private static DEBUG_TYPED_DATA GetTypedData(ulong moduleId, uint typeId, ulong offset)
         {
-            return Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
-            {
-                Operation = ExtTdop.SetFromTypeIdAndU64,
-                InData = new DEBUG_TYPED_DATA()
-                {
-                    ModBase = moduleId,
-                    Offset = offset,
-                    TypeId = typeId,
-                },
-            }).OutData;
+            return GlobalCache.TypedData[Tuple.Create(moduleId, typeId, offset)];
         }
     }
 }

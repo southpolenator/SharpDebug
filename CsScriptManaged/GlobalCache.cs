@@ -1,4 +1,5 @@
 ﻿using CsScripts;
+using DbgEngManaged;
 using System;
 using System.Collections.Generic;
 
@@ -15,12 +16,37 @@ namespace CsScriptManaged
         public static GlobalCache<Tuple<uint, uint>, Process> Processes = new GlobalCache<Tuple<uint, uint>, Process>(CreateProcess);
 
         /// <summary>
+        /// The typed data
+        /// </summary>
+        public static GlobalCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA> TypedData = new GlobalCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA>(GetTypedData);
+
+        /// <summary>
         /// Creates the process.
         /// </summary>
         /// <param name="processKey">The process key.</param>
         private static Process CreateProcess(Tuple<uint, uint> processKey)
         {
             return new Process(processKey.Item1, processKey.Item2);
+        }
+
+        /// <summary>
+        /// Gets the typed data.
+        /// </summary>
+        /// <param name="moduleId">The module identifier.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="offset">The offset.</param>
+        private static DEBUG_TYPED_DATA GetTypedData(Tuple<ulong, uint, ulong> typedDataId)
+        {
+            return Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+            {
+                Operation = ExtTdop.SetFromTypeIdAndU64,
+                InData = new DEBUG_TYPED_DATA()
+                {
+                    ModBase = typedDataId.Item1,
+                    TypeId = typedDataId.Item2,
+                    Offset = typedDataId.Item3,
+                },
+            }).OutData;
         }
     }
 
