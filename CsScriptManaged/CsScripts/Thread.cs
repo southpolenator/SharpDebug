@@ -1,8 +1,6 @@
 ﻿using CsScriptManaged;
 using DbgEngManaged;
-using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace CsScripts
 {
@@ -63,6 +61,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the local variables on current stack frame.
+        /// </summary>
         public Variable[] Locals
         {
             get
@@ -71,6 +72,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the TEB (Thread environment block) address.
+        /// </summary>
         public ulong TEB
         {
             get
