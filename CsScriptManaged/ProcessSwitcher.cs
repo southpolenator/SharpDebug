@@ -48,6 +48,23 @@ namespace CsScriptManaged
         }
 
         /// <summary>
+        /// Executes specified action in protected scope.
+        /// </summary>
+        /// <typeparam name="T">The specified type</typeparam>
+        /// <param name="process">The process.</param>
+        /// <param name="action">The action.</param>
+        public static Func<T> DelegateProtector<T>(Process process, Func<T> action)
+        {
+            return () =>
+            {
+                using (ProcessSwitcher switcher = new ProcessSwitcher(process))
+                {
+                    return action();
+                }
+            };
+        }
+
+        /// <summary>
         /// Sets the current process to the process identifier.
         /// </summary>
         /// <param name="processId">The process identifier.</param>

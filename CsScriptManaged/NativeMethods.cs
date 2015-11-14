@@ -1,6 +1,7 @@
 ﻿using DbgEngManaged;
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace CsScriptManaged
 {
@@ -305,6 +306,19 @@ namespace CsScriptManaged
                 Context.Advanced.Request((uint)requestType, requestNative.Pointer, requestNative.USize, requestNative.Pointer, requestNative.USize, out outSize);
                 return requestNative.Structure;
             }
+        }
+
+        /// <summary>
+        /// Gets the name of the current process executable.
+        /// </summary>
+        /// <param name="systemObjects">The system objects.</param>
+        public static string GetCurrentProcessExecutableName(this IDebugSystemObjects4 systemObjects)
+        {
+            uint exeSize;
+            StringBuilder sb = new StringBuilder(Constants.MaxFileName);
+
+            systemObjects.GetCurrentProcessExecutableNameWide(sb, (uint)sb.Capacity, out exeSize);
+            return sb.ToString();
         }
     }
 

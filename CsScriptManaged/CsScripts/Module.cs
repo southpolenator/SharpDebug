@@ -40,11 +40,11 @@ namespace CsScripts
         {
             Id = id;
             Process = process;
-            name = new SimpleCache<string>(() => GetName(DebugModname.Module));
-            imageName = new SimpleCache<string>(() => GetName(DebugModname.Image));
-            loadedImageName = new SimpleCache<string>(() => GetName(DebugModname.LoadedImage));
-            symbolFileName = new SimpleCache<string>(() => GetName(DebugModname.SymbolFile));
-            mappedImageName = new SimpleCache<string>(() => GetName(DebugModname.MappedImage));
+            name = SimpleCache.Create(() => GetName(DebugModname.Module));
+            imageName = SimpleCache.Create(() => GetName(DebugModname.Image));
+            loadedImageName = SimpleCache.Create(() => GetName(DebugModname.LoadedImage));
+            symbolFileName = SimpleCache.Create(() => GetName(DebugModname.SymbolFile));
+            mappedImageName = SimpleCache.Create(() => GetName(DebugModname.MappedImage));
         }
 
         /// <summary>

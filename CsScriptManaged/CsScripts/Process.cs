@@ -1,12 +1,52 @@
 ﻿using CsScriptManaged;
 using System;
 using System.Linq;
-using System.Text;
 
 namespace CsScripts
 {
     public class Process
     {
+        /// <summary>
+        /// The executable name
+        /// </summary>
+        private SimpleCache<string> executableName;
+
+        /// <summary>
+        /// Up time
+        /// </summary>
+        private SimpleCache<uint> upTime;
+
+        /// <summary>
+        /// The PEB address
+        /// </summary>
+        private SimpleCache<ulong> pebAddress;
+
+        /// <summary>
+        /// The threads
+        /// </summary>
+        private SimpleCache<Thread[]> threads;
+
+        /// <summary>
+        /// The modules
+        /// </summary>
+        private SimpleCache<Module[]> modules;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Process"/> class.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="systemId">The system identifier.</param>
+        public Process(uint id, uint systemId)
+        {
+            Id = id;
+            SystemId = systemId;
+            upTime = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessUpTime()));
+            pebAddress = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessPeb()));
+            executableName = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessExecutableName()));
+            threads = SimpleCache.Create(GetThreads);
+            modules = SimpleCache.Create(GetModules);
+        }
+
         /// <summary>
         /// Gets the current process.
         /// </summary>
@@ -32,14 +72,10 @@ namespace CsScripts
 
                 for (uint i = 0; i < processCount; i++)
                 {
-                    uint id, sysid;
+                    uint id, systemId;
 
-                    Context.SystemObjects.GetProcessIdsByIndex(i, 1, out id, out sysid);
-                    processes[i] = new Process()
-                    {
-                        Id = id,
-                        SystemId = sysid,
-                    };
+                    Context.SystemObjects.GetProcessIdsByIndex(i, 1, out id, out systemId);
+                    processes[i] = new Process(id, systemId);
                 }
 
                 return processes;
@@ -63,14 +99,7 @@ namespace CsScripts
         {
             get
             {
-                using (ProcessSwitcher switcher = new ProcessSwitcher(this))
-                {
-                    uint exeSize;
-                    StringBuilder sb = new StringBuilder(Constants.MaxFileName);
-
-                    Context.SystemObjects.GetCurrentProcessExecutableNameWide(sb, (uint)sb.Capacity, out exeSize);
-                    return sb.ToString();
-                }
+                return executableName.Value;
             }
         }
 
@@ -81,10 +110,7 @@ namespace CsScripts
         {
             get
             {
-                using (ProcessSwitcher switcher = new ProcessSwitcher(this))
-                {
-                    return Context.SystemObjects.GetCurrentProcessUpTime();
-                }
+                return upTime.Value;
             }
         }
 
@@ -95,10 +121,7 @@ namespace CsScripts
         {
             get
             {
-                using (ProcessSwitcher switcher = new ProcessSwitcher(this))
-                {
-                    return Context.SystemObjects.GetCurrentProcessPeb();
-                }
+                return pebAddress.Value;
             }
         }
 
@@ -125,26 +148,7 @@ namespace CsScripts
         {
             get
             {
-                using (ProcessSwitcher process = new ProcessSwitcher(this))
-                {
-                    uint threadCount = Context.SystemObjects.GetNumberThreads();
-                    Thread[] threads = new Thread[threadCount];
-
-                    for (uint i = 0; i < threadCount; i++)
-                    {
-                        uint id, sysid;
-
-                        Context.SystemObjects.GetThreadIdsByIndex(i, 1, out id, out sysid);
-                        threads[i] = new Thread()
-                        {
-                            Id = id,
-                            SystemId = sysid,
-                            Process = this,
-                        };
-                    }
-
-                    return threads;
-                }
+                return threads.Value;
             }
         }
 
@@ -155,22 +159,7 @@ namespace CsScripts
         {
             get
             {
-                using (ProcessSwitcher switcher = new ProcessSwitcher(this))
-                {
-                    uint loaded, unloaded;
-
-                    Context.Symbols.GetNumberModules(out loaded, out unloaded);
-                    Module[] modules = new Module[loaded + unloaded];
-
-                    for (int i = 0; i < modules.Length; i++)
-                    {
-                        ulong moduleId = Context.Symbols.GetModuleByIndex((uint)i);
-
-                        modules[i] = new Module(this, moduleId);
-                    }
-
-                    return modules;
-                }
+                return modules.Value;
             }
         }
 
@@ -194,7 +183,7 @@ namespace CsScripts
             }
 
             // Try all modules since module name wasn't specified
-            foreach (Module module in Module.All)
+            foreach (Module module in Modules)
             {
                 try
                 {
@@ -206,6 +195,56 @@ namespace CsScripts
             }
 
             throw new ArgumentException("Global variable wasn't found, name: " + name);
+        }
+
+        /// <summary>
+        /// Gets the threads.
+        /// </summary>
+        private Thread[] GetThreads()
+        {
+            using (ProcessSwitcher process = new ProcessSwitcher(this))
+            {
+                uint threadCount = Context.SystemObjects.GetNumberThreads();
+                Thread[] threads = new Thread[threadCount];
+
+                for (uint i = 0; i < threadCount; i++)
+                {
+                    uint id, sysid;
+
+                    Context.SystemObjects.GetThreadIdsByIndex(i, 1, out id, out sysid);
+                    threads[i] = new Thread()
+                    {
+                        Id = id,
+                        SystemId = sysid,
+                        Process = this,
+                    };
+                }
+
+                return threads;
+            }
+        }
+
+        /// <summary>
+        /// Gets the modules.
+        /// </summary>
+        private Module[] GetModules()
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(this))
+            {
+                uint loaded, unloaded;
+
+                Context.Symbols.GetNumberModules(out loaded, out unloaded);
+                Module[] modules = new Module[loaded + unloaded];
+
+                for (int i = 0; i < modules.Length; i++)
+                {
+                    ulong moduleId = Context.Symbols.GetModuleByIndex((uint)i);
+
+                    modules[i] = new Module(this, moduleId);
+                }
+
+                return modules;
+            }
         }
     }
 }

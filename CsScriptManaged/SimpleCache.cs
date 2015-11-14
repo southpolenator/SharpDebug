@@ -1,5 +1,30 @@
-﻿namespace CsScriptManaged
+﻿using System;
+
+namespace CsScriptManaged
 {
+    /// <summary>
+    /// Helper class for caching results - it is being used as lazy evaluation
+    /// </summary>
+    public class SimpleCache
+    {
+        /// <summary>
+        /// Prevents a default instance of the <see cref="SimpleCache"/> class from being created.
+        /// </summary>
+        private SimpleCache()
+        {
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="SimpleCache{T}"/> class.
+        /// </summary>
+        /// <typeparam name="T">Type to be cached</typeparam>
+        /// <param name="populateAction">The populate action.</param>
+        public static SimpleCache<T> Create<T>(Func<T> populateAction)
+        {
+            return new SimpleCache<T>(populateAction);
+        }
+    }
+
     /// <summary>
     /// Helper class for caching results - it is being used as lazy evaluation
     /// </summary>
@@ -7,14 +32,9 @@
     public class SimpleCache<T>
     {
         /// <summary>
-        /// Delegate for populating the cached value
-        /// </summary>
-        public delegate T PopulateAction();
-
-        /// <summary>
         /// The populate action
         /// </summary>
-        private PopulateAction populateAction;
+        private Func<T> populateAction;
 
         /// <summary>
         /// The value that is cached
@@ -25,7 +45,7 @@
         /// Initializes a new instance of the <see cref="SimpleCache{T}"/> class.
         /// </summary>
         /// <param name="populateAction">The populate action.</param>
-        public SimpleCache(PopulateAction populateAction)
+        public SimpleCache(Func<T> populateAction)
         {
             this.populateAction = populateAction;
         }
