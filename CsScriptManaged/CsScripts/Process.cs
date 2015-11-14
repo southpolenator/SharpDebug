@@ -209,15 +209,10 @@ namespace CsScripts
 
                 for (uint i = 0; i < threadCount; i++)
                 {
-                    uint id, sysid;
+                    uint id, systemId;
 
-                    Context.SystemObjects.GetThreadIdsByIndex(i, 1, out id, out sysid);
-                    threads[i] = new Thread()
-                    {
-                        Id = id,
-                        SystemId = sysid,
-                        Process = this,
-                    };
+                    Context.SystemObjects.GetThreadIdsByIndex(i, 1, out id, out systemId);
+                    threads[i] = new Thread(id, systemId, this);
                 }
 
                 return threads;
