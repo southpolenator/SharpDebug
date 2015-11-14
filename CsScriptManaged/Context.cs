@@ -1,47 +1,98 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using DbgEngManaged;
 using System.IO;
 
 namespace CsScriptManaged
 {
-    class DebuggerTextWriter : TextWriter
+    public class Context
     {
-        public DebuggerTextWriter(DebugOutput outputType)
+        /// <summary>
+        /// Helper class for redirecting console out/error to debuggers output
+        /// </summary>
+        private class DebuggerTextWriter : TextWriter
         {
-            OutputType = outputType;
-        }
-
-        public DebugOutput OutputType { get; set; }
-
-        public override Encoding Encoding
-        {
-            get
+            /// <summary>
+            /// Initializes a new instance of the <see cref="DebuggerTextWriter"/> class.
+            /// </summary>
+            /// <param name="outputType">Type of the output.</param>
+            public DebuggerTextWriter(DebugOutput outputType)
             {
-                return Encoding.Default;
+                OutputType = outputType;
+            }
+
+            /// <summary>
+            /// Gets or sets the type of the output.
+            /// </summary>
+            public DebugOutput OutputType { get; set; }
+
+            /// <summary>
+            /// When overridden in a derived class, returns the character encoding in which the output is written.
+            /// </summary>
+            public override Encoding Encoding
+            {
+                get
+                {
+                    return Encoding.Default;
+                }
+            }
+
+            /// <summary>
+            /// Writes a character to the text string or stream.
+            /// </summary>
+            /// <param name="value">The character to write to the text stream.</param>
+            public override void Write(char value)
+            {
+                Context.Control.Output((uint)OutputType, value == '%' ? "%%" : value.ToString());
             }
         }
 
-        public override void Write(char value)
-        {
-            Context.Control.Output((uint)OutputType, value == '%' ? "%%" : value.ToString());
-        }
-    }
-
-    public class Context
-    {
+        /// <summary>
+        /// The advanced interface
+        /// </summary>
         public static IDebugAdvanced3 Advanced;
+
+        /// <summary>
+        /// The client interface
+        /// </summary>
         public static IDebugClient7 Client;
+
+        /// <summary>
+        /// The control interface
+        /// </summary>
         public static IDebugControl7 Control;
+
+        /// <summary>
+        /// The data spaces interface
+        /// </summary>
         public static IDebugDataSpaces4 DataSpaces;
+
+        /// <summary>
+        /// The registers interface
+        /// </summary>
         public static IDebugRegisters2 Registers;
+
+        /// <summary>
+        /// The symbols interface
+        /// </summary>
         public static IDebugSymbols5 Symbols;
+
+        /// <summary>
+        /// The system objects interface
+        /// </summary>
         public static IDebugSystemObjects4 SystemObjects;
+
+        /// <summary>
+        /// The script manager
+        /// </summary>
         private static ScriptManager ScriptManager = new ScriptManager();
 
+        /// <summary>
+        /// Gets a value indicating whether this instance is live debugging.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is live debugging; otherwise, <c>false</c>.
+        /// </value>
         public bool IsLiveDebugging
         {
             get
@@ -57,6 +108,10 @@ namespace CsScriptManaged
             }
         }
 
+        /// <summary>
+        /// Initalizes the Context with the specified client.
+        /// </summary>
+        /// <param name="client">The client.</param>
         public static void Initalize(IDebugClient client)
         {
             Advanced = client as IDebugAdvanced3;
@@ -68,6 +123,11 @@ namespace CsScriptManaged
             SystemObjects = client as IDebugSystemObjects4;
         }
 
+        /// <summary>
+        /// Executes the specified script.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="args">The arguments.</param>
         public static void Execute(string path, params string[] args)
         {
             TextWriter originalConsoleOut = Console.Out;
