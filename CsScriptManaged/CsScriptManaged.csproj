@@ -99,6 +99,7 @@
     <Compile Include="CsScripts\Variable.cs" />
     <Compile Include="DebuggerOutputSaver.cs" />
     <Compile Include="Executor.cs" />
+    <Compile Include="GlobalCache.cs" />
     <Compile Include="IExecutor.cs" />
     <Compile Include="MarshalArrayReader.cs" />
     <Compile Include="MarshalStructure.cs" />
