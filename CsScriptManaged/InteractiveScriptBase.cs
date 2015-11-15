@@ -22,17 +22,17 @@ namespace CsScriptManaged
         public IEnumerable<string> GetCommands(string nameFilter = "")
         {
             Type type = GetType();
-            var methods = type.GetMethods();
+
+            var methods = type.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static);
 
             nameFilter = nameFilter.ToLower();
             foreach (var method in methods)
             {
+                if (method.DeclaringType != type)
+                    continue;
                 if (string.IsNullOrEmpty(nameFilter) || method.Name.ToLower().Contains(nameFilter))
                 {
-                    if (!method.IsPrivate)
-                    {
-                        yield return method.ToString();
-                    }
+                    yield return method.ToString();
                 }
             }
         }
@@ -45,6 +45,54 @@ namespace CsScriptManaged
         public void ListCommands(string nameFilter = "", string signatureFilter = "")
         {
             var commands = GetCommands(nameFilter);
+
+            if (!string.IsNullOrEmpty(signatureFilter))
+            {
+                signatureFilter = signatureFilter.ToLower();
+                commands = commands.Where(c => c.ToLower().Contains(signatureFilter));
+            }
+
+            foreach (var command in commands)
+            {
+                Console.WriteLine(command);
+            }
+        }
+
+        /// <summary>
+        /// Gets the available commands.
+        /// </summary>
+        /// <param name="nameFilter">The name filter.</param>
+        public IEnumerable<string> GetAllCommands(string nameFilter = "")
+        {
+            Type type = GetType();
+
+            while (type != typeof(object))
+            {
+                var methods = type.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static);
+
+                nameFilter = nameFilter.ToLower();
+                foreach (var method in methods)
+                {
+                    if (method.DeclaringType != type)
+                        continue;
+                    if (string.IsNullOrEmpty(nameFilter) || method.Name.ToLower().Contains(nameFilter))
+                    {
+                        yield return method.ToString();
+                    }
+                }
+
+                type = type.BaseType;
+            }
+        }
+
+        /// <summary>
+        /// Lists the available commands.
+        /// </summary>
+        /// <param name="nameFilter">The name filter.</param>
+        /// <param name="signatureFilter">The signature filter.</param>
+        public void ListAllCommands(string nameFilter = "", string signatureFilter = "")
+        {
+            var commands = GetAllCommands(nameFilter);
 
             if (!string.IsNullOrEmpty(signatureFilter))
             {
