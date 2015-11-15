@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Dynamic;
+using System.Collections.Generic;
 
 namespace CsScripts
 {
@@ -175,6 +176,16 @@ namespace CsScripts
         /// <summary>
         /// Helper function for writing onto console (shorter version for scripts).
         /// </summary>
+        /// <typeparam name="T">Enumeration type</typeparam>
+        /// <param name="objects">The objects.</param>
+        public static void write<T>(IEnumerable<T> objects)
+        {
+            Console.Write(string.Join(", ", objects));
+        }
+
+        /// <summary>
+        /// Helper function for writing onto console (shorter version for scripts).
+        /// </summary>
         /// <param name="obj">The object.</param>
         public static void Write(object obj)
         {
@@ -189,6 +200,16 @@ namespace CsScripts
         public static void Write(string format, params object[] args)
         {
             Console.Write(format, args);
+        }
+
+        /// <summary>
+        /// Helper function for writing onto console (shorter version for scripts).
+        /// </summary>
+        /// <typeparam name="T">Enumeration type</typeparam>
+        /// <param name="objects">The objects.</param>
+        public static void Write<T>(IEnumerable<T> objects)
+        {
+            Console.Write(string.Join(", ", objects));
         }
 
         /// <summary>
@@ -208,6 +229,16 @@ namespace CsScripts
         public static void writeln(string format, params object[] args)
         {
             Console.WriteLine(format, args);
+        }
+
+        /// <summary>
+        /// Helper function for writing line onto console (shorter version for scripts).
+        /// </summary>
+        /// <typeparam name="T">Enumeration type</typeparam>
+        /// <param name="objects">The objects.</param>
+        public static void writeln<T>(IEnumerable<T> objects)
+        {
+            Console.WriteLine(string.Join(", ", objects));
         }
 
         /// <summary>
@@ -235,6 +266,16 @@ namespace CsScripts
         public static void WriteLine(string format, params object[] args)
         {
             Console.WriteLine(format, args);
+        }
+
+        /// <summary>
+        /// Helper function for writing line onto console (shorter version for scripts).
+        /// </summary>
+        /// <typeparam name="T">Enumeration type</typeparam>
+        /// <param name="objects">The objects.</param>
+        public static void WriteLine<T>(IEnumerable<T> objects)
+        {
+            Console.WriteLine(string.Join(", ", objects));
         }
 
         /// <summary>
