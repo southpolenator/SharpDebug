@@ -26,6 +26,26 @@ namespace CsScripts
         private string name;
 
         /// <summary>
+        /// The code type
+        /// </summary>
+        private SimpleCache<DType> codeType;
+
+        /// <summary>
+        /// The runtime type
+        /// </summary>
+        private SimpleCache<DType> runtimeType;
+
+        /// <summary>
+        /// The field names
+        /// </summary>
+        private SimpleCache<string[]> fieldNames;
+
+        /// <summary>
+        /// The fields
+        /// </summary>
+        private SimpleCache<Variable[]> fields;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Variable"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
@@ -46,6 +66,8 @@ namespace CsScripts
                 typedData.TypeId = entry.TypeId;
                 typedData.Tag = (SymTag)entry.Tag;
             }
+
+            InitializeCache();
         }
 
         /// <summary>
@@ -56,9 +78,8 @@ namespace CsScripts
         /// <param name="offset">The offset.</param>
         /// <param name="name">The name.</param>
         internal Variable(ulong moduleId, uint typeId, ulong offset, string name = ComputedName)
+            : this(GetTypedData(moduleId, typeId, offset), name)
         {
-            this.name = name;
-            typedData = GetTypedData(moduleId, typeId, offset);
         }
 
         /// <summary>
@@ -70,6 +91,15 @@ namespace CsScripts
         {
             this.name = name;
             this.typedData = typedData;
+            InitializeCache();
+        }
+
+        private void InitializeCache()
+        {
+            codeType = SimpleCache.Create(() => new DType(typedData));
+            runtimeType = SimpleCache.Create(FindRuntimeType);
+            fieldNames = SimpleCache.Create(FindFieldNames);
+            fields = SimpleCache.Create(FindFields);
         }
 
         /// <summary>
@@ -331,16 +361,15 @@ namespace CsScripts
         /// </summary>
         public DType GetCodeType()
         {
-            return new DType(typedData);
+            return codeType.Value;
         }
 
         /// <summary>
         /// Gets the runtime type.
         /// </summary>
-        public string GetRuntimeType()
+        public DType GetRuntimeType()
         {
-            // TODO: See if it is complex type and try to get VTable
-            return "";
+            return runtimeType.Value;
         }
 
         /// <summary>
@@ -348,24 +377,7 @@ namespace CsScripts
         /// </summary>
         public string[] GetFieldNames()
         {
-            List<string> fields = new List<string>();
-            uint nameSize;
-
-            try
-            {
-                for (uint fieldIndex = 0; ; fieldIndex++)
-                {
-                    StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
-
-                    Context.Symbols.GetFieldName(typedData.ModBase, typedData.TypeId, fieldIndex, sb, (uint)sb.Capacity, out nameSize);
-                    fields.Add(sb.ToString());
-                }
-            }
-            catch (Exception)
-            {
-            }
-
-            return fields.ToArray();
+            return fieldNames.Value;
         }
 
         /// <summary>
@@ -373,15 +385,7 @@ namespace CsScripts
         /// </summary>
         public Variable[] GetFields()
         {
-            string[] fieldNames = GetFieldNames();
-            Variable[] fields = new Variable[fieldNames.Length];
-
-            for (int i = 0; i < fieldNames.Length; i++)
-            {
-                fields[i] = GetField(fieldNames[i]);
-            }
-
-            return fields;
+            return fields.Value;
         }
 
         /// <summary>
@@ -629,6 +633,56 @@ namespace CsScripts
             throw new UnauthorizedAccessException();
         }
         #endregion
+
+        /// <summary>
+        /// Finds the runtime type.
+        /// </summary>
+        private DType FindRuntimeType()
+        {
+            // TODO: See if it is complex type and try to get VTable
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the field names.
+        /// </summary>
+        private string[] FindFieldNames()
+        {
+            List<string> fields = new List<string>();
+            uint nameSize;
+
+            try
+            {
+                for (uint fieldIndex = 0; ; fieldIndex++)
+                {
+                    StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+
+                    Context.Symbols.GetFieldName(typedData.ModBase, typedData.TypeId, fieldIndex, sb, (uint)sb.Capacity, out nameSize);
+                    fields.Add(sb.ToString());
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return fields.ToArray();
+        }
+
+        /// <summary>
+        /// Finds the fields.
+        /// </summary>
+        private Variable[] FindFields()
+        {
+            string[] fieldNames = GetFieldNames();
+            Variable[] fields = new Variable[fieldNames.Length];
+
+            for (int i = 0; i < fieldNames.Length; i++)
+            {
+                fields[i] = GetField(fieldNames[i]);
+            }
+
+            return fields;
+        }
 
         /// <summary>
         /// Gets the typed data.
