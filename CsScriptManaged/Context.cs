@@ -83,11 +83,6 @@ namespace CsScriptManaged
         public static IDebugSystemObjects4 SystemObjects;
 
         /// <summary>
-        /// The script manager
-        /// </summary>
-        private static ScriptManager ScriptManager = new ScriptManager();
-
-        /// <summary>
         /// Gets a value indicating whether this instance is live debugging.
         /// </summary>
         /// <value>
@@ -137,12 +132,26 @@ namespace CsScriptManaged
             Console.SetError(new DebuggerTextWriter(DebugOutput.Error));
             try
             {
-                ScriptManager.Execute(path, args);
+                using (ScriptExecution execution = new ScriptExecution())
+                {
+                    execution.Execute(path, args);
+                }
             }
             finally
             {
                 Console.SetOut(originalConsoleOut);
                 Console.SetError(originalConsoleError);
+            }
+        }
+
+        /// <summary>
+        /// Enters the interactive mode.
+        /// </summary>
+        public static void EnterInteractiveMode()
+        {
+            using (InteractiveExecution execution = new InteractiveExecution())
+            {
+                execution.Run();
             }
         }
     }

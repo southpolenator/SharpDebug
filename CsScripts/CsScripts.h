@@ -24,6 +24,10 @@ CSSCRIPTS_API HRESULT CALLBACK execute(
 	_In_     IDebugClient* client,
 	_In_opt_ PCSTR         Args);
 
+CSSCRIPTS_API HRESULT CALLBACK interactive(
+	_In_     IDebugClient* client,
+	_In_opt_ PCSTR         Args);
+
 };
 
 template<class T>

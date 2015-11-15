@@ -223,6 +223,16 @@ public:
 		return S_OK;
 	}
 
+	HRESULT EnterInteractiveMode(const wchar_t* arguments)
+	{
+		// Execute script function
+		//
+		bstr_t bstrArguments = arguments;
+
+		CHECKCOM(instance->EnterInteractiveMode(bstrArguments));
+		return S_OK;
+	}
+
 	void Uninitialize()
 	{
 		clrRuntimeHost->Stop();
@@ -304,4 +314,15 @@ HRESULT CALLBACK execute(
 	ss << Args;
 	clr.InitializeContext(Client);
 	return clr.ExecuteScript(ss.str().c_str());
+}
+
+HRESULT CALLBACK interactive(
+	_In_     IDebugClient* Client,
+	_In_opt_ PCSTR         Args)
+{
+	wstringstream ss;
+
+	ss << Args;
+	clr.InitializeContext(Client);
+	return clr.EnterInteractiveMode(ss.str().c_str());
 }

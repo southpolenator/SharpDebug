@@ -40,5 +40,14 @@ namespace CsScriptManaged
 
             ExecuteScript(args[0], args.Skip(1).ToArray());
         }
+
+        /// <summary>
+        /// Enters the interactive mode.
+        /// </summary>
+        /// <param name="arguments">The arguments</param>
+        public void EnterInteractiveMode(string arguments)
+        {
+            Context.EnterInteractiveMode();
+        }
     }
 }

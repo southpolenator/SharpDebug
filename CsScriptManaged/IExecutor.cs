@@ -28,5 +28,11 @@ namespace CsScriptManaged
         /// </summary>
         /// <param name="arguments">The arguments.</param>
         void ExecuteScript(string arguments);
+
+        /// <summary>
+        /// Enters the interactive mode.
+        /// </summary>
+        /// <param name="arguments">The arguments.</param>
+        void EnterInteractiveMode(string arguments);
     }
 }

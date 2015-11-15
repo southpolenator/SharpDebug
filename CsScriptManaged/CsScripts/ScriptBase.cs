@@ -132,6 +132,28 @@ namespace CsScripts
         protected dynamic Globals = new GlobalsDynamicObject();
 
         /// <summary>
+        /// Gets the processes.
+        /// </summary>
+        public static Process[] Processes
+        {
+            get
+            {
+                return Process.All;
+            }
+        }
+
+        /// <summary>
+        /// Gets the threads in the current process.
+        /// </summary>
+        public static Thread[] Threads
+        {
+            get
+            {
+                return Process.Current.Threads;
+            }
+        }
+
+        /// <summary>
         /// Helper function for writing onto console (shorter version for scripts).
         /// </summary>
         /// <param name="obj">The object.</param>
