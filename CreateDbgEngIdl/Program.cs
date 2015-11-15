@@ -303,6 +303,10 @@ namespace CreateDbgEngIdl
                 output.WriteLine(@"import ""oaidl.idl"";
 import ""ocidl.idl"";
 
+#if (__midl >= 501)
+midl_pragma warning( disable: 2362 )
+#endif
+
 [
     uuid({0}),
     helpstring(""DbgEng Type Library"")
@@ -419,8 +423,9 @@ library DbgEngManaged
             }
 
             ProcessStartInfo startInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Windows Kits\10\bin\x64\midl.exe");
+            string midlPlatform = IntPtr.Size == 4 ? "/win32 /robust" : "/x64";
 
-            startInfo.Arguments = @"/I""C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\um"" /I""C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\shared"" output.idl /tlb output.tlb";
+            startInfo.Arguments = @"/I""C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\um"" /I""C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\shared"" output.idl /tlb output.tlb " + midlPlatform;
             startInfo.UseShellExecute = false;
             startInfo.EnvironmentVariables["Path"] = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin;" + startInfo.EnvironmentVariables["Path"];
             using (Process process = Process.Start(startInfo))
@@ -428,9 +433,10 @@ library DbgEngManaged
                 process.WaitForExit();
             }
 
+            string tlbimpPlatform = IntPtr.Size == 4 ? "x86" : "x64";
 
             startInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\TlbImp.exe");
-            startInfo.Arguments = @"output.tlb /machine:x64";
+            startInfo.Arguments = @"output.tlb /machine:" + tlbimpPlatform;
             startInfo.UseShellExecute = false;
             startInfo.EnvironmentVariables["Path"] = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin;" + startInfo.EnvironmentVariables["Path"];
             using (Process process = Process.Start(startInfo))

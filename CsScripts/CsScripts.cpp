@@ -300,12 +300,12 @@ CSSCRIPTS_API HRESULT DebugExtensionInitialize(
 	return hr;
 }
 
-CSSCRIPTS_API void CALLBACK DebugExtensionUninitialize()
+CSSCRIPTS_API void DebugExtensionUninitialize()
 {
 	clr.Uninitialize();
 }
 
-HRESULT CALLBACK execute(
+CSSCRIPTS_API HRESULT execute(
 	_In_     IDebugClient* Client,
 	_In_opt_ PCSTR         Args)
 {
@@ -316,7 +316,7 @@ HRESULT CALLBACK execute(
 	return clr.ExecuteScript(ss.str().c_str());
 }
 
-HRESULT CALLBACK interactive(
+CSSCRIPTS_API HRESULT interactive(
 	_In_     IDebugClient* Client,
 	_In_opt_ PCSTR         Args)
 {

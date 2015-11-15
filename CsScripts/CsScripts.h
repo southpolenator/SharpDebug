@@ -18,13 +18,13 @@ CSSCRIPTS_API HRESULT DebugExtensionInitialize(
 	_Out_ PULONG Version,
 	_Out_ PULONG Flags);
 
-CSSCRIPTS_API void CALLBACK DebugExtensionUninitialize();
+CSSCRIPTS_API void DebugExtensionUninitialize();
 
-CSSCRIPTS_API HRESULT CALLBACK execute(
+CSSCRIPTS_API HRESULT execute(
 	_In_     IDebugClient* client,
 	_In_opt_ PCSTR         Args);
 
-CSSCRIPTS_API HRESULT CALLBACK interactive(
+CSSCRIPTS_API HRESULT interactive(
 	_In_     IDebugClient* client,
 	_In_opt_ PCSTR         Args);
 
