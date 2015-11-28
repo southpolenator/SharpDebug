@@ -98,6 +98,7 @@
     <Compile Include="CsScripts\Thread.cs" />
     <Compile Include="CsScripts\Variable.cs" />
     <Compile Include="DebuggerOutputSaver.cs" />
+    <Compile Include="DebuggerTextWriter.cs" />
     <Compile Include="Executor.cs" />
     <Compile Include="GlobalCache.cs" />
     <Compile Include="IExecutor.cs" />
