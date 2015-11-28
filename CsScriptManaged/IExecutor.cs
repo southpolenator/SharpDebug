@@ -34,5 +34,11 @@ namespace CsScriptManaged
         /// </summary>
         /// <param name="arguments">The arguments.</param>
         void EnterInteractiveMode(string arguments);
+
+        /// <summary>
+        /// Interprets C# code.
+        /// </summary>
+        /// <param name="arguments">The arguments.</param>
+        void Interpret(string arguments);
     }
 }

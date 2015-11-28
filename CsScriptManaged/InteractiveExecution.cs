@@ -1,6 +1,4 @@
 ﻿using CsScripts;
-using DbgEngManaged;
-using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -8,7 +6,6 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CsScriptManaged
 {
@@ -71,35 +68,47 @@ namespace CsScriptManaged
                 {
                     if (trimmedCommand.EndsWith(";"))
                     {
-                        Execute(trimmedCommand);
+                        Interpret(trimmedCommand, prompt);
                     }
                     else
                     {
                         Debugger.Execute(command);
                     }
                 }
-                catch (CompileException ex)
-                {
-                    CompilerError[] errors = ex.Errors;
-
-                    if (errors[0].FileName.EndsWith(InteractiveScriptName) || errors.Count(e => !e.FileName.EndsWith(InteractiveScriptName)) == 0)
-                    {
-                        CompilerError e = errors[0];
-
-                        Console.Error.WriteLine("{0}^ {1}", new string(' ', prompt.Length + e.Column - 1), e.ErrorText);
-                    }
-                    else
-                    {
-                        Console.Error.WriteLine("Compile errors:");
-                        foreach (var error in errors)
-                        {
-                            Console.Error.WriteLine(error);
-                        }
-                    }
-                }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine(ex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Interprets C# code.
+        /// </summary>
+        /// <param name="code">The C# code.</param>
+        public void Interpret(string code, string prompt = "")
+        {
+            try
+            {
+                Execute(code);
+            }
+            catch (CompileException ex)
+            {
+                CompilerError[] errors = ex.Errors;
+
+                if (!string.IsNullOrEmpty(prompt) && (errors[0].FileName.EndsWith(InteractiveScriptName) || errors.Count(e => !e.FileName.EndsWith(InteractiveScriptName)) == 0))
+                {
+                    CompilerError e = errors[0];
+
+                    Console.Error.WriteLine("{0}^ {1}", new string(' ', prompt.Length + e.Column - 1), e.ErrorText);
+                }
+                else
+                {
+                    Console.Error.WriteLine("Compile errors:");
+                    foreach (var error in errors)
+                    {
+                        Console.Error.WriteLine(error);
+                    }
                 }
             }
         }
@@ -261,6 +270,40 @@ namespace CsScriptManaged
                         code = sb.ToString().Substring(0, sb.Length - 2);
                         fixedError = true;
                         break;
+                    }
+                    else if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS1002")
+                    {
+                        bool incorrect = false;
+
+                        using (StringReader reader = new StringReader(code))
+                        {
+                            for (int lineNumber = 1; !incorrect; lineNumber++)
+                            {
+                                string line = reader.ReadLine();
+
+                                if (line == null)
+                                    break;
+
+                                if (lineNumber == error.Line)
+                                {
+                                    if (line.Substring(error.Column - 1).Trim().Length != 0)
+                                    {
+                                        incorrect = true;
+                                    }
+                                    else if (reader.ReadToEnd().Trim().Length != 0)
+                                    {
+                                        incorrect = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!incorrect)
+                        {
+                            code += ";";
+                            fixedError = true;
+                            break;
+                        }
                     }
                 }
 

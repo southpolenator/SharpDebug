@@ -42,6 +42,11 @@ namespace CsScriptManaged
         public static IDebugSystemObjects4 SystemObjects;
 
         /// <summary>
+        /// The interactive execution
+        /// </summary>
+        private static InteractiveExecution interactiveExecution = new InteractiveExecution();
+
+        /// <summary>
         /// Gets a value indicating whether this instance is live debugging.
         /// </summary>
         /// <value>
@@ -112,10 +117,16 @@ namespace CsScriptManaged
         /// </summary>
         public static void EnterInteractiveMode()
         {
-            using (InteractiveExecution execution = new InteractiveExecution())
-            {
-                execution.Run();
-            }
+            interactiveExecution.Run();
+        }
+
+        /// <summary>
+        /// Interprets C# code.
+        /// </summary>
+        /// <param name="code">The C# code.</param>
+        public static void Interpret(string code)
+        {
+            interactiveExecution.Interpret(code);
         }
     }
 }

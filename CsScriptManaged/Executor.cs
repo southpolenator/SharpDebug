@@ -49,5 +49,14 @@ namespace CsScriptManaged
         {
             Context.EnterInteractiveMode();
         }
+
+        /// <summary>
+        /// Interprets C# code.
+        /// </summary>
+        /// <param name="arguments">The arguments.</param>
+        public void Interpret(string arguments)
+        {
+            Context.Interpret(arguments);
+        }
     }
 }

@@ -224,11 +224,17 @@ public:
 
 	HRESULT EnterInteractiveMode(const wchar_t* arguments)
 	{
-		// Execute script function
-		//
 		bstr_t bstrArguments = arguments;
 
 		CHECKCOM(instance->EnterInteractiveMode(bstrArguments));
+		return S_OK;
+	}
+
+	HRESULT Interpret(const wchar_t* arguments)
+	{
+		bstr_t bstrArguments = arguments;
+
+		CHECKCOM(instance->Interpret(bstrArguments));
 		return S_OK;
 	}
 
@@ -345,6 +351,19 @@ CSSCRIPTS_API HRESULT interactive(
 	ss << Args;
 	clr.InitializeContext(Client);
 	HRESULT result = clr.EnterInteractiveMode(ss.str().c_str());
+	clr.InitializeContext(nullptr);
+	return result;
+}
+
+CSSCRIPTS_API HRESULT interpret(
+	_In_     IDebugClient* Client,
+	_In_opt_ PCSTR         Args)
+{
+	wstringstream ss;
+
+	ss << Args;
+	clr.InitializeContext(Client);
+	HRESULT result = clr.Interpret(ss.str().c_str());
 	clr.InitializeContext(nullptr);
 	return result;
 }

@@ -32,6 +32,10 @@ CSSCRIPTS_API HRESULT interactive(
 	_In_     IDebugClient* client,
 	_In_opt_ PCSTR         Args);
 
+CSSCRIPTS_API HRESULT interpret(
+	_In_     IDebugClient* client,
+	_In_opt_ PCSTR         Args);
+
 };
 
 template<class T>
