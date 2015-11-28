@@ -2,6 +2,7 @@
 using System.Text;
 using DbgEngManaged;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace CsScriptManaged
 {
@@ -13,12 +14,24 @@ namespace CsScriptManaged
         private class DebuggerTextWriter : TextWriter
         {
             /// <summary>
+            /// The output callbacks
+            /// </summary>
+            private IDebugOutputCallbacks outputCallbacks;
+
+            /// <summary>
+            /// The output callbacks wide
+            /// </summary>
+            private IDebugOutputCallbacksWide outputCallbacksWide;
+
+            /// <summary>
             /// Initializes a new instance of the <see cref="DebuggerTextWriter"/> class.
             /// </summary>
             /// <param name="outputType">Type of the output.</param>
             public DebuggerTextWriter(DebugOutput outputType)
             {
                 OutputType = outputType;
+                outputCallbacksWide = Context.Client.GetOutputCallbacksWide();
+                outputCallbacks = Context.Client.GetOutputCallbacks();
             }
 
             /// <summary>
@@ -43,7 +56,14 @@ namespace CsScriptManaged
             /// <param name="value">The character to write to the text stream.</param>
             public override void Write(char value)
             {
-                Context.Control.Output((uint)OutputType, value == '%' ? "%%" : value.ToString());
+                if (outputCallbacksWide != null)
+                {
+                    outputCallbacksWide.Output((uint)OutputType, value.ToString());
+                }
+                else if (outputCallbacks != null)
+                {
+                    outputCallbacks.Output((uint)OutputType, value.ToString());
+                }
             }
         }
 
@@ -136,6 +156,10 @@ namespace CsScriptManaged
                 {
                     execution.Execute(path, args);
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex);
             }
             finally
             {
