@@ -20,6 +20,10 @@ CSSCRIPTS_API HRESULT DebugExtensionInitialize(
 
 CSSCRIPTS_API void DebugExtensionUninitialize();
 
+CSSCRIPTS_API HRESULT uninitialize(
+	_In_     IDebugClient* client,
+	_In_opt_ PCSTR         Args);
+
 CSSCRIPTS_API HRESULT execute(
 	_In_     IDebugClient* client,
 	_In_opt_ PCSTR         Args);
@@ -79,6 +83,14 @@ public:
 	bool operator !=(T* p) const
 	{
 		return pointer != p;
+	}
+
+	T* PvReturn()
+	{
+		T* result = pointer;
+
+		pointer = nullptr;
+		return result;
 	}
 
 private:

@@ -46,10 +46,11 @@ using namespace mscorlib;
 void WriteComException(HRESULT hr, const char* expression)
 {
     CAutoComPtr<IErrorInfo> errorInfo;
+	wstringstream out;
 
-    cout << "COM Exception!!!" << endl;
-    cout << "HRESULT: " << hex << showbase << hr << noshowbase << dec << endl;
-    cout << "Expression: " << expression << endl;
+    out << "COM Exception!!!" << endl;
+    out << "HRESULT: " << hex << showbase << hr << noshowbase << dec << endl;
+    out << "Expression: " << expression << endl;
     if (SUCCEEDED(GetErrorInfo(0, &errorInfo)) && errorInfo != nullptr)
     {
         BSTR description = nullptr;
@@ -57,7 +58,7 @@ void WriteComException(HRESULT hr, const char* expression)
         errorInfo->GetDescription(&description);
         if (description != nullptr)
         {
-            wcout << "Description: " << description << endl;
+            out << "Description: " << description << endl;
         }
 
         CAutoComPtr<_Exception> exception;
@@ -69,10 +70,14 @@ void WriteComException(HRESULT hr, const char* expression)
         	exception->get_ToString(&toString);
         	if (toString != nullptr)
         	{
-        		wcout << "Exception.ToString(): " << toString << endl;
+        		out << "Exception.ToString(): " << toString << endl;
         	}
         }
     }
+
+	wcout << out.str();
+
+	// TODO: Write output to debug client output callbacks
 }
 
 
@@ -111,7 +116,7 @@ wstring GetWorkingDirectory()
 class ClrInitializator
 {
 public:
-	HRESULT Initialize(const wchar_t* csScriptsManaged, IDebugClient* client)
+	HRESULT Initialize(const wchar_t* csScriptsManaged)
 	{
 		// We should figure out needed runtime version
 		//
@@ -122,7 +127,6 @@ public:
 			IID_ICLRMetaHostPolicy,
 			(LPVOID*)&pClrHostPolicy));
 
-		wstring runtimeVersion;
 		wchar_t queriedRuntimeVersion[100] = { 0 };
 		DWORD length = sizeof(queriedRuntimeVersion) / sizeof(wchar_t);
 
@@ -136,14 +140,12 @@ public:
 			nullptr,
 			nullptr,
 			IID_PPV_ARGS(&runtimeInfo)));
-		runtimeVersion = queriedRuntimeVersion;
 
 		// Set custom memory manager and start CLR
 		//
 		CHECKCOM(runtimeInfo->BindAsLegacyV2Runtime());
 		//CHECKCOM(runtimeInfo->SetDefaultStartupFlags(clrStartupFlags, nullptr));
 		CHECKCOM(runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&clrRuntimeHost)));
-		CHECKCOM(clrRuntimeHost->GetCLRControl(&clrControl));
 		CHECKCOM(clrRuntimeHost->Start());
 
 		// Create a new AppDomain that will contain application configuration.
@@ -151,7 +153,6 @@ public:
 		CAutoComPtr<IUnknown> appDomainSetupThunk;
 		CAutoComPtr<IAppDomainSetup> appDomainSetup;
 		CAutoComPtr<IUnknown> appDomainThunk;
-		CAutoComPtr<_AppDomain> appDomain;
 
 		CHECKCOM(runtimeInfo->GetInterface(CLSID_CorRuntimeHost, IID_PPV_ARGS(&corRuntimeHost)));
 		CHECKCOM(corRuntimeHost->CreateDomainSetup(&appDomainSetupThunk));
@@ -181,8 +182,6 @@ public:
 
 		CHECKCOM(assembly->CreateInstance_2(bstr_t(L"CsScriptManaged.Executor"), true, &variant));
 		CHECKCOM(variant.punkVal->QueryInterface(&instance));
-
-		CHECKCOM(InitializeContext(client));
 		return S_OK;
 	}
 
@@ -233,14 +232,19 @@ public:
 		return S_OK;
 	}
 
-	void Uninitialize()
+	HRESULT Uninitialize(bool full)
 	{
-		clrRuntimeHost->Stop();
+		instance = nullptr;
+		if (full && corRuntimeHost != nullptr && appDomain != nullptr)
+		{
+			CHECKCOM(corRuntimeHost->UnloadDomain(appDomain));
+			appDomain.PvReturn();
+		}
+
 		corRuntimeHost = nullptr;
-		clrControl = nullptr;
 		clrRuntimeHost = nullptr;
 		runtimeInfo = nullptr;
-		instance = nullptr;
+		return S_OK;
 	}
 
 private:
@@ -272,9 +276,9 @@ private:
 
 	CAutoComPtr<ICLRRuntimeInfo> runtimeInfo;
 	CAutoComPtr<ICLRRuntimeHost> clrRuntimeHost;
-	CAutoComPtr<ICLRControl> clrControl;
 	CAutoComPtr<ICorRuntimeHost> corRuntimeHost;
 	CAutoComPtr<CsScriptManaged::IExecutor> instance;
+	CAutoComPtr<_AppDomain> appDomain;
 } clr;
 
 CSSCRIPTS_API HRESULT DebugExtensionInitialize(
@@ -291,18 +295,30 @@ CSSCRIPTS_API HRESULT DebugExtensionInitialize(
         *Flags = 0;
 
 	// Initialize CRL and CsScriptManaged library
-	CAutoComPtr<IDebugClient> debugClient;
-
-	CHECKCOM(DebugCreate(IID_PPV_ARGS(&debugClient)));
-
-	HRESULT hr = clr.Initialize(csScriptsManaged.c_str(), debugClient);
+	HRESULT hr = clr.Initialize(csScriptsManaged.c_str());
 
 	return hr;
 }
 
+DWORD WINAPI UninitializeThread(void*)
+{
+	clr.Uninitialize(true);
+	return 0;
+}
+
+HANDLE g_thread = nullptr;
+
 CSSCRIPTS_API void DebugExtensionUninitialize()
 {
-	clr.Uninitialize();
+	clr.Uninitialize(false);
+}
+
+CSSCRIPTS_API HRESULT uninitialize(
+	_In_     IDebugClient* Client,
+	_In_opt_ PCSTR         Args)
+{
+	g_thread = CreateThread(nullptr, 0, UninitializeThread, nullptr, 0, nullptr);
+	return S_OK;
 }
 
 CSSCRIPTS_API HRESULT execute(
@@ -312,8 +328,12 @@ CSSCRIPTS_API HRESULT execute(
 	wstringstream ss;
 
 	ss << Args;
+
 	clr.InitializeContext(Client);
-	return clr.ExecuteScript(ss.str().c_str());
+	HRESULT result = clr.ExecuteScript(ss.str().c_str());
+	clr.InitializeContext(nullptr);
+
+	return result;
 }
 
 CSSCRIPTS_API HRESULT interactive(
@@ -324,5 +344,7 @@ CSSCRIPTS_API HRESULT interactive(
 
 	ss << Args;
 	clr.InitializeContext(Client);
-	return clr.EnterInteractiveMode(ss.str().c_str());
+	HRESULT result = clr.EnterInteractiveMode(ss.str().c_str());
+	clr.InitializeContext(nullptr);
+	return result;
 }
