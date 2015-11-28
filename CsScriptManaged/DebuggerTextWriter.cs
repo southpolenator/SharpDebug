@@ -61,5 +61,21 @@ namespace CsScriptManaged
                 outputCallbacks.Output((uint)OutputType, value.ToString());
             }
         }
+
+        /// <summary>
+        /// Writes a string to the text string or stream.
+        /// </summary>
+        /// <param name="value">The string to write.</param>
+        public override void Write(string value)
+        {
+            if (outputCallbacksWide != null)
+            {
+                outputCallbacksWide.Output((uint)OutputType, value);
+            }
+            else if (outputCallbacks != null)
+            {
+                outputCallbacks.Output((uint)OutputType, value);
+            }
+        }
     }
 }
