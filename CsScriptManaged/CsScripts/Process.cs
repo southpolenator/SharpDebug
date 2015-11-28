@@ -70,13 +70,21 @@ namespace CsScripts
             {
                 uint processCount = Context.SystemObjects.GetNumberProcesses();
                 Process[] processes = new Process[processCount];
+                uint[] processIds = new uint[processCount];
+                uint[] processSytemIds = new uint[processCount];
+
+                unsafe
+                {
+                    fixed (uint* ids = &processIds[0])
+                    fixed (uint* systemIds = &processSytemIds[0])
+                    {
+                        Context.SystemObjects.GetProcessIdsByIndex(0, processCount, out *ids, out *systemIds);
+                    }
+                }
 
                 for (uint i = 0; i < processCount; i++)
                 {
-                    uint id, systemId;
-
-                    Context.SystemObjects.GetProcessIdsByIndex(i, 1, out id, out systemId);
-                    processes[i] = GlobalCache.Processes[Tuple.Create(id, systemId)];
+                    processes[i] = GlobalCache.Processes[Tuple.Create(processIds[i], processSytemIds[i])];
                 }
 
                 return processes;
@@ -207,13 +215,21 @@ namespace CsScripts
             {
                 uint threadCount = Context.SystemObjects.GetNumberThreads();
                 Thread[] threads = new Thread[threadCount];
+                uint[] threadIds = new uint[threadCount];
+                uint[] threadSytemIds = new uint[threadCount];
+
+                unsafe
+                {
+                    fixed (uint* ids = &threadIds[0])
+                    fixed (uint* systemIds = &threadSytemIds[0])
+                    {
+                        Context.SystemObjects.GetThreadIdsByIndex(0, threadCount, out *ids, out *systemIds);
+                    }
+                }
 
                 for (uint i = 0; i < threadCount; i++)
                 {
-                    uint id, systemId;
-
-                    Context.SystemObjects.GetThreadIdsByIndex(i, 1, out id, out systemId);
-                    threads[i] = new Thread(id, systemId, this);
+                    threads[i] = new Thread(threadIds[i], threadSytemIds[i], this);
                 }
 
                 return threads;
