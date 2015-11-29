@@ -89,6 +89,38 @@ namespace CsScriptManaged
         /// <param name="args">The arguments.</param>
         public static void Execute(string path, params string[] args)
         {
+            ExecuteAction(() =>
+            {
+                using (ScriptExecution execution = new ScriptExecution())
+                {
+                    execution.Execute(path, args);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Enters the interactive mode.
+        /// </summary>
+        public static void EnterInteractiveMode()
+        {
+            ExecuteAction(() => interactiveExecution.Run());
+        }
+
+        /// <summary>
+        /// Interprets C# code.
+        /// </summary>
+        /// <param name="code">The C# code.</param>
+        public static void Interpret(string code)
+        {
+            ExecuteAction(() => interactiveExecution.Interpret(code));
+        }
+
+        /// <summary>
+        /// Executes the action in redirected console output and error stream.
+        /// </summary>
+        /// <param name="action">The action.</param>
+        private static void ExecuteAction(Action action)
+        {
             TextWriter originalConsoleOut = Console.Out;
             TextWriter originalConsoleError = Console.Error;
 
@@ -96,10 +128,7 @@ namespace CsScriptManaged
             Console.SetError(new DebuggerTextWriter(DebugOutput.Error));
             try
             {
-                using (ScriptExecution execution = new ScriptExecution())
-                {
-                    execution.Execute(path, args);
-                }
+                action();
             }
             catch (Exception ex)
             {
@@ -110,23 +139,6 @@ namespace CsScriptManaged
                 Console.SetOut(originalConsoleOut);
                 Console.SetError(originalConsoleError);
             }
-        }
-
-        /// <summary>
-        /// Enters the interactive mode.
-        /// </summary>
-        public static void EnterInteractiveMode()
-        {
-            interactiveExecution.Run();
-        }
-
-        /// <summary>
-        /// Interprets C# code.
-        /// </summary>
-        /// <param name="code">The C# code.</param>
-        public static void Interpret(string code)
-        {
-            interactiveExecution.Interpret(code);
         }
     }
 }
