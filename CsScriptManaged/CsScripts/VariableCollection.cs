@@ -11,7 +11,7 @@ namespace CsScripts
     /// This is helper class for easier navigation through local variables and arguments.
     /// It is not performance optimized and should not be used as dictionary, but only as array of variables.
     /// </summary>
-    public class VariableCollection : IReadOnlyList<Variable>, IReadOnlyDictionary<string, Variable>
+    public class VariableCollection : IReadOnlyList<Variable>
     {
         /// <summary>
         /// The array of variables
@@ -28,14 +28,14 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the <see cref="Variable"/> with the specified key.
+        /// Gets the <see cref="Variable"/> with the specified name.
         /// </summary>
-        /// <param name="key">The key.</param>
-        public Variable this[string key]
+        /// <param name="name">The name.</param>
+        public Variable this[string name]
         {
             get
             {
-                return variables.Where(v => v.GetName() == key).First();
+                return variables.Where(v => v.GetName() == name).First();
             }
         }
 
@@ -63,24 +63,13 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets an enumerable collection that contains the keys in the read-only dictionary.
+        /// Gets an enumerable collection that contains the variables names.
         /// </summary>
-        public IEnumerable<string> Keys
+        public IEnumerable<string> Names
         {
             get
             {
                 return variables.Select(v => v.GetName());
-            }
-        }
-
-        /// <summary>
-        /// Gets an enumerable collection that contains the values in the read-only dictionary.
-        /// </summary>
-        public IEnumerable<Variable> Values
-        {
-            get
-            {
-                return variables;
             }
         }
 
@@ -101,32 +90,23 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Determines whether the specified key contains key.
+        /// Determines whether variable with the specified name is in the collection.
         /// </summary>
-        /// <param name="key">The key.</param>
-        public bool ContainsKey(string key)
+        /// <param name="name">The name.</param>
+        public bool ContainsName(string name)
         {
-            return Keys.Contains(key);
+            return Names.Contains(name);
         }
 
         /// <summary>
-        /// Tries the get value.
+        /// Tries to get variable with the specified name.
         /// </summary>
-        /// <param name="key">The key.</param>
+        /// <param name="name">The name.</param>
         /// <param name="value">The value.</param>
-        /// <returns></returns>
-        public bool TryGetValue(string key, out Variable value)
+        public bool TryGetValue(string name, out Variable value)
         {
-            value = variables.Where(v => v.GetName() == key).FirstOrDefault();
+            value = variables.Where(v => v.GetName() == name).FirstOrDefault();
             return value != null;
-        }
-
-        /// <summary>
-        /// Returns an enumerator that iterates through the collection.
-        /// </summary>
-        IEnumerator<KeyValuePair<string, Variable>> IEnumerable<KeyValuePair<string, Variable>>.GetEnumerator()
-        {
-            return variables.ToDictionary(v => v.GetName()).GetEnumerator();
         }
     }
 }
