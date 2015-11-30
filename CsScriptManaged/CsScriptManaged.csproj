@@ -97,6 +97,7 @@
     <Compile Include="CsScripts\ScriptBase.cs" />
     <Compile Include="CsScripts\Thread.cs" />
     <Compile Include="CsScripts\Variable.cs" />
+    <Compile Include="CsScripts\VariableCollection.cs" />
     <Compile Include="DebuggerOutputSaver.cs" />
     <Compile Include="DebuggerTextWriter.cs" />
     <Compile Include="Executor.cs" />

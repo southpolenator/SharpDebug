@@ -81,7 +81,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the local variables on current stack frame.
         /// </summary>
-        public Variable[] Locals
+        public VariableCollection Locals
         {
             get
             {

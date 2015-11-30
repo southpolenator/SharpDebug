@@ -25,12 +25,12 @@ namespace CsScripts
         /// <summary>
         /// The local variables
         /// </summary>
-        private SimpleCache<Variable[]> locals;
+        private SimpleCache<VariableCollection> locals;
 
         /// <summary>
         /// The arguments
         /// </summary>
-        private SimpleCache<Variable[]> arguments;
+        private SimpleCache<VariableCollection> arguments;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StackFrame"/> class.
@@ -198,7 +198,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the local variables.
         /// </summary>
-        public Variable[] Locals
+        public VariableCollection Locals
         {
             get
             {
@@ -209,7 +209,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the function arguments.
         /// </summary>
-        public Variable[] Arguments
+        public VariableCollection Arguments
         {
             get
             {
@@ -256,7 +256,7 @@ namespace CsScripts
             }
             catch (Exception ex)
             {
-                throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
+                throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
             }
         }
 
@@ -265,7 +265,7 @@ namespace CsScripts
         /// </summary>
         /// <param name="scopeGroup">The scope group.</param>
         /// <returns>Array of variables</returns>
-        private Variable[] GetVariables(DebugScopeGroup scopeGroup)
+        private VariableCollection GetVariables(DebugScopeGroup scopeGroup)
         {
             using (StackFrameSwitcher switcher = new StackFrameSwitcher(this))
             {
@@ -284,7 +284,7 @@ namespace CsScripts
                     variables[i] = new Variable(name.ToString(), entry);
                 }
 
-                return variables;
+                return new VariableCollection(variables);
             }
         }
     }
