@@ -17,6 +17,11 @@ namespace CsScriptManaged
         private const string DefaultPrompt = "C#> ";
 
         /// <summary>
+        /// The clear imports statement
+        /// </summary>
+        private const string ClearImportsStatement = "ClearImports;";
+
+        /// <summary>
         /// The interactive script name. It is being used as file name during interactive commands compile time.
         /// </summary>
         private const string InteractiveScriptName = "_interactive_script_.cs";
@@ -90,7 +95,15 @@ namespace CsScriptManaged
         {
             try
             {
-                Execute(code);
+                if (code == ClearImportsStatement)
+                {
+                    importedCode = "";
+                    loadedScripts = new List<string>();
+                }
+                else
+                {
+                    Execute(code);
+                }
             }
             catch (CompileException ex)
             {

@@ -185,6 +185,19 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the function name without module name.
+        /// </summary>
+        public string FunctionNameWithoutModule
+        {
+            get
+            {
+                int moduleEnd = FunctionName.IndexOf('!');
+
+                return moduleEnd >= 0 ? FunctionName.Substring(moduleEnd + 1) : FunctionName;
+            }
+        }
+
+        /// <summary>
         /// Gets the function displacement.
         /// </summary>
         public ulong FunctionDisplacement

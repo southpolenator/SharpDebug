@@ -170,11 +170,12 @@ namespace CsScriptManaged
         /// Loads the code from the script and imported files. It acts as precompiler.
         /// </summary>
         /// <param name="path">The path.</param>
+        /// <param name="defaultUsings">The array of default using namespaces. If null is supplied, it will be { System, System.Linq, CsScripts }</param>
         /// <returns>Merged code of all imported script files</returns>
-        protected string LoadCode(string path)
+        protected string LoadCode(string path, string[] defaultUsings = null)
         {
             HashSet<string> loadedScripts = new HashSet<string>();
-            HashSet<string> usings = new HashSet<string>();
+            HashSet<string> usings = new HashSet<string>(defaultUsings ?? new string[] { "System", "System.Linq", "CsScripts" });
             HashSet<string> imports = new HashSet<string>();
             StringBuilder importedCode = new StringBuilder();
             string fullPath = GetFullPath(path, Directory.GetCurrentDirectory());
