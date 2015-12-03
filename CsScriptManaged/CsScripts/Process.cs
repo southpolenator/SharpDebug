@@ -32,6 +32,16 @@ namespace CsScripts
         private SimpleCache<Module[]> modules;
 
         /// <summary>
+        /// The modules by name
+        /// </summary>
+        private GlobalCache<string, Module> ModulesByName;
+
+        /// <summary>
+        /// The modules by identifier
+        /// </summary>
+        private GlobalCache<ulong, Module> ModulesById;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Process"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -45,6 +55,8 @@ namespace CsScripts
             executableName = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessExecutableName()));
             threads = SimpleCache.Create(GetThreads);
             modules = SimpleCache.Create(GetModules);
+            ModulesByName = new GlobalCache<string, Module>(GetModuleByName);
+            ModulesById = new GlobalCache<ulong, Module>(GetModuleById);
         }
 
         /// <summary>
@@ -252,11 +264,36 @@ namespace CsScripts
                 {
                     ulong moduleId = Context.Symbols.GetModuleByIndex((uint)i);
 
-                    modules[i] = new Module(this, moduleId);
+                    modules[i] = ModulesById[moduleId];
                 }
 
                 return modules;
             }
+        }
+
+        /// <summary>
+        /// Gets the module with the specified name.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        private Module GetModuleByName(string name)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(this))
+            {
+                uint index;
+                ulong moduleId;
+
+                Context.Symbols.GetModuleByModuleName2Wide(name, 0, 0, out index, out moduleId);
+                return ModulesById[moduleId];
+            }
+        }
+
+        /// <summary>
+        /// Gets the module with the specified identifier.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        private Module GetModuleById(ulong id)
+        {
+            return new Module(this, id);
         }
     }
 }
