@@ -219,6 +219,16 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Updates the cache of modules specified by the name.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="name">The name.</param>
+        internal void UpdateModuleByNameCache(Module module, string name)
+        {
+            ModulesByName[name] = module;
+        }
+
+        /// <summary>
         /// Gets the threads.
         /// </summary>
         private Thread[] GetThreads()
@@ -283,7 +293,10 @@ namespace CsScripts
                 ulong moduleId;
 
                 Context.Symbols.GetModuleByModuleName2Wide(name, 0, 0, out index, out moduleId);
-                return ModulesById[moduleId];
+                Module module = ModulesById[moduleId];
+
+                module.Name = name;
+                return module;
             }
         }
 

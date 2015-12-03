@@ -89,6 +89,11 @@ namespace CsScripts
             {
                 return name.Value;
             }
+
+            internal set
+            {
+                name.Value = value;
+            }
         }
 
         /// <summary>
@@ -177,7 +182,11 @@ namespace CsScripts
             StringBuilder sb = new StringBuilder(Constants.MaxFileName);
 
             Context.Symbols.GetModuleNameStringWide((uint)modname, 0xffffffff, Id, sb, (uint)sb.Capacity, out nameSize);
-            return sb.ToString();
+
+            string name = sb.ToString();
+
+            Process.Current.UpdateModuleByNameCache(this, name);
+            return name;
         }
     }
 }
