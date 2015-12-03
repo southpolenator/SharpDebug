@@ -106,18 +106,8 @@ namespace CsScriptManaged
 
             // Check if Microsoft.CSharp.dll should be added to the list of referenced assemblies
             const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
-            bool found = false;
 
-            foreach (string assembly in compilerParameters.ReferencedAssemblies)
-            {
-                if (assembly.Contains(MicrosoftCSharpDll))
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
+            if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.Contains(MicrosoftCSharpDll)).Any())
             {
                 compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
             }
