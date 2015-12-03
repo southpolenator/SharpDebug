@@ -32,16 +32,6 @@ namespace CsScripts
         private SimpleCache<Module[]> modules;
 
         /// <summary>
-        /// The modules by name
-        /// </summary>
-        private GlobalCache<string, Module> ModulesByName;
-
-        /// <summary>
-        /// The modules by identifier
-        /// </summary>
-        private GlobalCache<ulong, Module> ModulesById;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="Process"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -102,6 +92,16 @@ namespace CsScripts
                 return processes;
             }
         }
+
+        /// <summary>
+        /// The modules by name
+        /// </summary>
+        internal GlobalCache<string, Module> ModulesByName { get; private set; }
+
+        /// <summary>
+        /// The modules by identifier
+        /// </summary>
+        internal GlobalCache<ulong, Module> ModulesById { get; private set; }
 
         /// <summary>
         /// Gets the identifier.

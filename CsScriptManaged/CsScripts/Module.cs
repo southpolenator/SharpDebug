@@ -45,6 +45,8 @@ namespace CsScripts
             loadedImageName = SimpleCache.Create(() => GetName(DebugModname.LoadedImage));
             symbolFileName = SimpleCache.Create(() => GetName(DebugModname.SymbolFile));
             mappedImageName = SimpleCache.Create(() => GetName(DebugModname.MappedImage));
+            TypesByName = new GlobalCache<string, DType>(GetTypeByName);
+            TypesById = new GlobalCache<uint, DType>(GetTypeById);
         }
 
         /// <summary>
@@ -57,6 +59,16 @@ namespace CsScripts
                 return Process.Current.Modules;
             }
         }
+
+        /// <summary>
+        /// Types by the name
+        /// </summary>
+        internal GlobalCache<string, DType> TypesByName { get; private set; }
+
+        /// <summary>
+        /// Types by the identifier
+        /// </summary>
+        internal GlobalCache<uint, DType> TypesById { get; private set; }
 
         /// <summary>
         /// Gets the identifier.
@@ -187,6 +199,43 @@ namespace CsScripts
 
             Process.Current.UpdateModuleByNameCache(this, name);
             return name;
+        }
+
+        /// <summary>
+        /// Gets the type with the specified name.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        private DType GetTypeByName(string name)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
+            {
+                int moduleIndex = name.IndexOf('!');
+
+                if (moduleIndex > 0)
+                {
+                    if (string.Compare(name.Substring(0, moduleIndex), Name, true) != 0)
+                    {
+                        throw new ArgumentException("Type name contains wrong module name. Don't add it manually, it will be added automatically.");
+                    }
+                }
+                else
+                {
+                    name = Name + "!" + name;
+                }
+
+                uint typeId = Context.Symbols.GetTypeIdWide(Id, name);
+
+                return TypesById[typeId];
+            }
+        }
+
+        /// <summary>
+        /// Gets the type with the specified identifier.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        private DType GetTypeById(uint typeId)
+        {
+            return new DType(Id, typeId);
         }
     }
 }
