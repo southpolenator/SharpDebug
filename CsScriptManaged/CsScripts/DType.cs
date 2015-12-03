@@ -189,6 +189,20 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets a value indicating whether this type is ANSI or wide string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is string; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsString
+        {
+            get
+            {
+                return IsAnsiString || IsWideString;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this type is ANSI string.
         /// </summary>
         /// <value>

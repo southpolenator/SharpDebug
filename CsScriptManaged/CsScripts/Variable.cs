@@ -282,7 +282,7 @@ namespace CsScripts
             var type = GetCodeType();
 
             // Check if it is null
-            if (type.IsPointer && (typedData.Offset == 0 || typedData.Data == 0))
+            if (IsNullPointer())
             {
                 return "(null)";
             }
@@ -346,6 +346,15 @@ namespace CsScripts
             }
 
             return "{" + type.Name + "}";
+        }
+
+        /// <summary>
+        /// Determines whether this variable is null pointer.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsNullPointer()
+        {
+            return GetCodeType().IsPointer && (typedData.Offset == 0 || typedData.Data == 0);
         }
 
         /// <summary>
@@ -464,7 +473,7 @@ namespace CsScripts
         {
             var type = GetCodeType();
 
-            if (!type.IsPointer || !type.IsArray)
+            if (!type.IsArray)
             {
                 throw new ArgumentException("Variable is not an array, but " + type.Name);
             }
@@ -673,6 +682,11 @@ namespace CsScripts
         /// </summary>
         private Variable[] FindFields()
         {
+            if (GetCodeType().IsArray)
+            {
+                return new Variable[0];
+            }
+
             string[] fieldNames = GetFieldNames();
             Variable[] fields = new Variable[fieldNames.Length];
 
