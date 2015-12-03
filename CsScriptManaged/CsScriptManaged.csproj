@@ -96,6 +96,9 @@
     <Compile Include="CsScripts\Process.cs" />
     <Compile Include="CsScripts\ScriptBase.cs" />
     <Compile Include="CsScripts\Thread.cs" />
+    <Compile Include="CsScripts\UserMember.cs" />
+    <Compile Include="CsScripts\UserType.cs" />
+    <Compile Include="CsScripts\UserTypeAttribute.cs" />
     <Compile Include="CsScripts\Variable.cs" />
     <Compile Include="CsScripts\VariableCollection.cs" />
     <Compile Include="DebuggerOutputSaver.cs" />

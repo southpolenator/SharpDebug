@@ -48,6 +48,20 @@ namespace CsScripts
         /// <summary>
         /// Initializes a new instance of the <see cref="Variable"/> class.
         /// </summary>
+        /// <param name="variable">The variable.</param>
+        public Variable(Variable variable)
+        {
+            typedData = variable.typedData;
+            name = variable.name;
+            codeType = variable.codeType;
+            runtimeType = variable.runtimeType;
+            fieldNames = variable.fieldNames;
+            fields = variable.fields;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Variable"/> class.
+        /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="entry">The debug symbol entry.</param>
         internal Variable(string name, _DEBUG_SYMBOL_ENTRY entry)
