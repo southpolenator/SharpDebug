@@ -28,9 +28,19 @@ namespace CsScripts
         private SimpleCache<VariableCollection> locals;
 
         /// <summary>
+        /// The user type converted local variables
+        /// </summary>
+        private SimpleCache<VariableCollection> userTypeConvertedLocals;
+
+        /// <summary>
         /// The arguments
         /// </summary>
         private SimpleCache<VariableCollection> arguments;
+
+        /// <summary>
+        /// The user type converted arguments
+        /// </summary>
+        private SimpleCache<VariableCollection> userTypeConvertedArguments;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StackFrame"/> class.
@@ -45,6 +55,20 @@ namespace CsScripts
             functionNameAndDisplacement = SimpleCache.Create(ReadFunctionNameAndDisplacement);
             locals = SimpleCache.Create(() => GetVariables(DebugScopeGroup.Locals));
             arguments = SimpleCache.Create(() => GetVariables(DebugScopeGroup.Arguments));
+            userTypeConvertedLocals = SimpleCache.Create(() =>
+            {
+                VariableCollection collection = Variable.CastVariableCollectionToUserType(locals.Value);
+
+                GlobalCache.UserTypeCastedVariableCollections.Add(userTypeConvertedLocals);
+                return collection;
+            });
+            userTypeConvertedArguments = SimpleCache.Create(() =>
+            {
+                VariableCollection collection = Variable.CastVariableCollectionToUserType(arguments.Value);
+
+                GlobalCache.UserTypeCastedVariableCollections.Add(userTypeConvertedArguments);
+                return collection;
+            });
         }
 
         /// <summary>
@@ -215,7 +239,7 @@ namespace CsScripts
         {
             get
             {
-                return locals.Value;
+                return userTypeConvertedLocals.Value;
             }
         }
 
@@ -226,7 +250,7 @@ namespace CsScripts
         {
             get
             {
-                return arguments.Value;
+                return userTypeConvertedArguments.Value;
             }
         }
 

@@ -56,7 +56,7 @@ namespace CsScriptManaged
         /// <value>
         ///   <c>true</c> if cached; otherwise, <c>false</c>.
         /// </value>
-        public bool Cached { get; private set; }
+        public bool Cached { get; internal set; }
 
         /// <summary>
         /// Gets or sets the value. The value will be populated if it wasn't cached.

@@ -19,12 +19,28 @@ namespace CsScripts
         private Variable[] variables;
 
         /// <summary>
+        /// The variables indexed by name
+        /// </summary>
+        private Dictionary<string, Variable> variablesByName;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="VariableCollection"/> class.
         /// </summary>
         /// <param name="variables">The variables.</param>
         public VariableCollection(Variable[] variables)
+            : this(variables, variables.ToDictionary(v => v.GetName()))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="VariableCollection"/> class.
+        /// </summary>
+        /// <param name="variables">The variables.</param>
+        /// <param name="variablesByName">The variables indexed by name.</param>
+        public VariableCollection(Variable[] variables, Dictionary<string, Variable> variablesByName)
         {
             this.variables = variables;
+            this.variablesByName = variablesByName;
         }
 
         /// <summary>
@@ -35,7 +51,7 @@ namespace CsScripts
         {
             get
             {
-                return variables.Where(v => v.GetName() == name).First();
+                return variablesByName[name];
             }
         }
 
@@ -69,7 +85,7 @@ namespace CsScripts
         {
             get
             {
-                return variables.Select(v => v.GetName());
+                return variablesByName.Keys;
             }
         }
 
@@ -95,7 +111,7 @@ namespace CsScripts
         /// <param name="name">The name.</param>
         public bool ContainsName(string name)
         {
-            return Names.Contains(name);
+            return variablesByName.ContainsKey(name);
         }
 
         /// <summary>
@@ -105,8 +121,7 @@ namespace CsScripts
         /// <param name="value">The value.</param>
         public bool TryGetValue(string name, out Variable value)
         {
-            value = variables.Where(v => v.GetName() == name).FirstOrDefault();
-            return value != null;
+            return variablesByName.TryGetValue(name, out value);
         }
     }
 }

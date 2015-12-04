@@ -32,6 +32,11 @@ namespace CsScripts
         private SimpleCache<Module[]> modules;
 
         /// <summary>
+        /// The user types
+        /// </summary>
+        private SimpleCache<UserTypeDescription[]> userTypes;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Process"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -45,6 +50,7 @@ namespace CsScripts
             executableName = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessExecutableName()));
             threads = SimpleCache.Create(GetThreads);
             modules = SimpleCache.Create(GetModules);
+            userTypes = SimpleCache.Create(GetUserTypes);
             ModulesByName = new GlobalCache<string, Module>(GetModuleByName);
             ModulesById = new GlobalCache<ulong, Module>(GetModuleById);
         }
@@ -102,6 +108,17 @@ namespace CsScripts
         /// The modules by identifier
         /// </summary>
         internal GlobalCache<ulong, Module> ModulesById { get; private set; }
+
+        /// <summary>
+        /// Gets the user types.
+        /// </summary>
+        internal UserTypeDescription[] UserTypes
+        {
+            get
+            {
+                return userTypes.Value;
+            }
+        }
 
         /// <summary>
         /// Gets the identifier.
@@ -229,6 +246,14 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Clears the process metadata cache.
+        /// </summary>
+        internal void ClearMetadataCache()
+        {
+            userTypes.Cached = false;
+        }
+
+        /// <summary>
         /// Gets the threads.
         /// </summary>
         private Thread[] GetThreads()
@@ -307,6 +332,24 @@ namespace CsScripts
         private Module GetModuleById(ulong id)
         {
             return new Module(this, id);
+        }
+
+        /// <summary>
+        /// Gets the user types.
+        /// </summary>
+        private UserTypeDescription[] GetUserTypes()
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(this))
+            {
+                UserTypeDescription[] userTypes = new UserTypeDescription[Context.UserTypeMetadata.Length];
+
+                for (int i = 0; i < userTypes.Length; i++)
+                {
+                    userTypes[i] = Context.UserTypeMetadata[i].ConvertToDescription();
+                }
+
+                return userTypes;
+            }
         }
     }
 }

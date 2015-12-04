@@ -119,6 +119,8 @@
     <Compile Include="SimpleCache.cs" />
     <Compile Include="StackFrameSwitcher.cs" />
     <Compile Include="ThreadSwitcher.cs" />
+    <Compile Include="UserTypeDescription.cs" />
+    <Compile Include="UserTypeMetadata.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

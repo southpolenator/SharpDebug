@@ -3,6 +3,7 @@ using DbgEngManaged;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -46,6 +47,21 @@ namespace CsScripts
         private SimpleCache<Variable[]> fields;
 
         /// <summary>
+        /// The fields that are casted to user type if metadata is provided
+        /// </summary>
+        private SimpleCache<Variable[]> userTypeCastedFields;
+
+        /// <summary>
+        /// The fields indexed by name
+        /// </summary>
+        private GlobalCache<string, Variable> fieldsByName;
+
+        /// <summary>
+        /// The fields that are casted to user type if metadata is provided, indexed by name
+        /// </summary>
+        private GlobalCache<string, Variable> userTypeCastedFieldsByName;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Variable"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
@@ -57,6 +73,9 @@ namespace CsScripts
             runtimeType = variable.runtimeType;
             fieldNames = variable.fieldNames;
             fields = variable.fields;
+            userTypeCastedFields = variable.userTypeCastedFields;
+            fieldsByName = variable.fieldsByName;
+            userTypeCastedFieldsByName = variable.userTypeCastedFieldsByName;
         }
 
         /// <summary>
@@ -114,6 +133,9 @@ namespace CsScripts
             runtimeType = SimpleCache.Create(FindRuntimeType);
             fieldNames = SimpleCache.Create(FindFieldNames);
             fields = SimpleCache.Create(FindFields);
+            userTypeCastedFields = SimpleCache.Create(FindUserTypeCastedFields);
+            fieldsByName = new GlobalCache<string, Variable>(GetOriginalField);
+            userTypeCastedFieldsByName = new GlobalCache<string, Variable>(GetUserTypeCastedFieldByName);
         }
 
         /// <summary>
@@ -408,6 +430,14 @@ namespace CsScripts
         /// </summary>
         public Variable[] GetFields()
         {
+            return userTypeCastedFields.Value;
+        }
+
+        /// <summary>
+        /// Gets the not user type casted fields (original ones).
+        /// </summary>
+        internal Variable[] GetOriginalFields()
+        {
             return fields.Value;
         }
 
@@ -463,11 +493,21 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the field.
+        /// Gets the field value.
         /// </summary>
         /// <param name="name">The field name.</param>
         /// <returns>Field variable if the specified field exists.</returns>
         public Variable GetField(string name)
+        {
+            return userTypeCastedFieldsByName[name];
+        }
+
+        /// <summary>
+        /// Gets the original field value (not user type casted field).
+        /// </summary>
+        /// <param name="name">The field name.</param>
+        /// <returns>Field variable if the specified field exists.</returns>
+        private Variable GetOriginalField(string name)
         {
             var response = Context.Advanced.RequestExtended(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
             {
@@ -477,6 +517,81 @@ namespace CsScripts
             }, name);
 
             return new Variable(response.OutData, name);
+        }
+
+        /// <summary>
+        /// Gets the user type casted field.
+        /// </summary>
+        /// <param name="name">The field name.</param>
+        /// <returns>Field variable casted to user type if the specified field exists.</returns>
+        private Variable GetUserTypeCastedFieldByName(string name)
+        {
+            Variable field = CastVariableToUserType(fieldsByName[name]);
+
+            if (userTypeCastedFieldsByName.Count == 1)
+            {
+                GlobalCache.VariablesUserTypeCastedFieldsByName.Add(userTypeCastedFieldsByName);
+            }
+
+            return field;
+        }
+
+        /// <summary>
+        /// Casts the variable to user type.
+        /// </summary>
+        /// <param name="originalVariable">The original variable.</param>
+        internal static Variable CastVariableToUserType(Variable originalVariable)
+        {
+            // Check if it is null
+            if (originalVariable.IsNullPointer())
+            {
+                return null;
+            }
+
+            // Get user type descriptions to be used by this process
+            var userTypes = Process.Current.UserTypes;
+
+            if (userTypes.Length == 0)
+            {
+                return originalVariable;
+            }
+
+            // Look at the type and see if it should be converted to user type
+            var typesBasedOnModule = userTypes.Where(t => t.Module.Offset == originalVariable.typedData.ModBase);
+            var typesBasedOnName = typesBasedOnModule.Where(t => t.UserType.TypeId == (originalVariable.GetCodeType().IsPointer ? originalVariable.GetCodeType().ElementType.TypeId : originalVariable.GetCodeType().TypeId));
+
+            var types = typesBasedOnName.ToArray();
+
+            if (types.Length > 1)
+            {
+                throw new Exception(string.Format("Multiple types ({0}) are targeting same type {1}", string.Join(", ", types.Select(t => t.Type.FullName)), originalVariable.GetCodeType().Name));
+            }
+
+            if (types.Length == 0)
+            {
+                return originalVariable;
+            }
+
+            // Create new instance of user defined type
+            return (Variable)Activator.CreateInstance(types[0].Type, originalVariable);
+        }
+
+        /// <summary>
+        /// Casts the variable collection to user type.
+        /// </summary>
+        /// <param name="originalCollection">The original variable collection.</param>
+        internal static VariableCollection CastVariableCollectionToUserType(VariableCollection originalCollection)
+        {
+            Variable[] variables = new Variable[originalCollection.Count];
+            Dictionary<string, Variable> variablesByName = new Dictionary<string, Variable>();
+
+            for (int i = 0; i < variables.Length; i++)
+            {
+                variables[i] = CastVariableToUserType(originalCollection[i]);
+                variablesByName.Add(originalCollection[i].name, variables[i]);
+            }
+
+            return new VariableCollection(variables, variablesByName);
         }
 
         /// <summary>
@@ -550,7 +665,7 @@ namespace CsScripts
         {
             try
             {
-                result = GetField(name);
+                result = userTypeCastedFieldsByName[name];
                 return true;
             }
             catch (Exception)
@@ -706,9 +821,36 @@ namespace CsScripts
 
             for (int i = 0; i < fieldNames.Length; i++)
             {
-                fields[i] = GetField(fieldNames[i]);
+                fields[i] = fieldsByName[fieldNames[i]];
             }
 
+            return fields;
+        }
+
+        /// <summary>
+        /// Finds the user type casted fields.
+        /// </summary>
+        private Variable[] FindUserTypeCastedFields()
+        {
+            Variable[] originalFields = GetOriginalFields();
+            Variable[] fields = new Variable[originalFields.Length];
+
+            for (int i = 0; i < originalFields.Length; i++)
+            {
+                string name = originalFields[i].name;
+                Variable field;
+
+                if (userTypeCastedFieldsByName.TryGetExistingValue(name, out field))
+                {
+                    fields[i] = field;
+                }
+                else
+                {
+                    fields[i] = userTypeCastedFieldsByName[name] = CastVariableToUserType(originalFields[i]);
+                }
+            }
+
+            GlobalCache.VariablesUserTypeCastedFields.Add(this.userTypeCastedFields);
             return fields;
         }
 

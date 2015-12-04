@@ -1,9 +1,11 @@
-﻿using Microsoft.CSharp;
+﻿using CsScripts;
+using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -341,6 +343,66 @@ namespace CsScriptManaged
 
                     return me.Value;
                 });
+        }
+
+        /// <summary>
+        /// Extracts the metadata from user assemblies.
+        /// </summary>
+        /// <param name="assemblies">The assemblies.</param>
+        internal static UserTypeMetadata[] ExtractMetadata(IEnumerable<Assembly> assemblies)
+        {
+            List<UserTypeMetadata> metadata = new List<UserTypeMetadata>();
+
+            foreach (var assembly in assemblies)
+            {
+                List<Type> nextTypes = assembly.ExportedTypes.ToList();
+
+                while (nextTypes.Count > 0)
+                {
+                    List<Type> types = nextTypes;
+
+                    nextTypes = new List<Type>();
+                    foreach (var type in types)
+                    {
+                        UserTypeAttribute attribute = type.GetCustomAttribute<UserTypeAttribute>();
+                        bool derivedFromUserType = IsDerivedFrom(type, typeof(UserType));
+
+                        if (attribute != null && !derivedFromUserType)
+                        {
+                            throw new Exception(string.Format("Type {0} has defined UserTypeAttribute, but it does not inherit UserType", type.FullName));
+                        }
+                        else if (derivedFromUserType)
+                        {
+                            string moduleName = attribute != null ? attribute.ModuleName : null;
+                            string typeName = attribute != null ? attribute.TypeName : type.Name;
+
+                            metadata.Add(new UserTypeMetadata(moduleName, typeName, type));
+                        }
+
+                        nextTypes.AddRange(type.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public));
+                    }
+                }
+            }
+
+            return metadata.ToArray();
+        }
+
+        /// <summary>
+        /// Determines whether type is derived from the specified type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="derivedType">Type of the derived.</param>
+        private static bool IsDerivedFrom(Type type, Type derivedType)
+        {
+            while (type != null)
+            {
+                if (type == derivedType)
+                    return true;
+
+                type = type.BaseType;
+            }
+
+            return false;
         }
     }
 }

@@ -42,6 +42,11 @@ namespace CsScriptManaged
         public static IDebugSystemObjects4 SystemObjects;
 
         /// <summary>
+        /// The user type metadata (used for casting to user types)
+        /// </summary>
+        internal static UserTypeMetadata[] UserTypeMetadata;
+
+        /// <summary>
         /// The interactive execution
         /// </summary>
         private static InteractiveExecution interactiveExecution = new InteractiveExecution();
@@ -113,6 +118,39 @@ namespace CsScriptManaged
         public static void Interpret(string code)
         {
             ExecuteAction(() => interactiveExecution.Interpret(code));
+        }
+
+        /// <summary>
+        /// Clears the metadata cache.
+        /// </summary>
+        internal static void ClearMetadataCache()
+        {
+            // Clear metadata from processes
+            foreach (var process in GlobalCache.Processes.Values)
+            {
+                process.ClearMetadataCache();
+            }
+
+            // Clear user types metadata
+            UserTypeMetadata = new UserTypeMetadata[0];
+            foreach (var cacheEntry in GlobalCache.VariablesUserTypeCastedFields)
+            {
+                cacheEntry.Cached = false;
+            }
+
+            foreach (var cacheEntry in GlobalCache.VariablesUserTypeCastedFieldsByName)
+            {
+                cacheEntry.Clear();
+            }
+
+            foreach (var cacheEntry in GlobalCache.UserTypeCastedVariableCollections)
+            {
+                cacheEntry.Cached = false;
+            }
+
+            GlobalCache.VariablesUserTypeCastedFields.Clear();
+            GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
+            GlobalCache.UserTypeCastedVariableCollections.Clear();
         }
 
         /// <summary>

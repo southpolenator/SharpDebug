@@ -21,6 +21,21 @@ namespace CsScriptManaged
         public static GlobalCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA> TypedData = new GlobalCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA>(GetTypedData);
 
         /// <summary>
+        /// The list of simple caches that should be invalidated after medatada is removed so that new metadata can create new caches...
+        /// </summary>
+        internal static List<SimpleCache<Variable[]>> VariablesUserTypeCastedFields = new List<SimpleCache<Variable[]>>();
+
+        /// <summary>
+        /// The list of global caches that should be invalidated after medatada is removed so that new metadata can create new caches...
+        /// </summary>
+        internal static List<GlobalCache<string, Variable>> VariablesUserTypeCastedFieldsByName = new List<GlobalCache<string, Variable>>();
+
+        /// <summary>
+        /// The List of user type casted variable collections that should be invalidated after metadata is removed so that new metadata can create new caches...
+        /// </summary>
+        internal static List<SimpleCache<VariableCollection>> UserTypeCastedVariableCollections = new List<SimpleCache<VariableCollection>>();
+
+        /// <summary>
         /// Creates the process.
         /// </summary>
         /// <param name="processKey">The process key.</param>
@@ -85,6 +100,28 @@ namespace CsScriptManaged
         }
 
         /// <summary>
+        /// Gets the values.
+        /// </summary>
+        public IEnumerable<TValue> Values
+        {
+            get
+            {
+                return values.Values;
+            }
+        }
+
+        /// <summary>
+        /// Gets the number of entries inside the cache.
+        /// </summary>
+        public int Count
+        {
+            get
+            {
+                return values.Count;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the <see cref="TValue"/> with the specified key.
         /// </summary>
         /// <value>
@@ -109,6 +146,45 @@ namespace CsScriptManaged
             set
             {
                 values[key] = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the existing value in the cache associated with the specified key. Value won't be populated if it is not in cache.
+        /// </summary>
+        /// <param name="key">The key of the value to get.</param>
+        /// <param name="value">When this method returns, contains the value associated with the specified key,
+        /// if the key is found; otherwise, the default value for the type of the value parameter. This parameter
+        /// is passed uninitialized.</param>
+        /// <returns>
+        ///   <c>true</c> if the <see cref="GlobalCache{TKey, TValue}" /> contains an element with the specified key; otherwise, <c>false</c>.
+        /// </returns>
+        public bool TryGetExistingValue(TKey key, out TValue value)
+        {
+            return values.TryGetValue(key, out value);
+        }
+
+        /// <summary>
+        /// Gets the value in the cache associated with the specified key. Value will be populated if it is not in cache.
+        /// </summary>
+        /// <param name="key">The key of the value to get.</param>
+        /// <param name="value">When this method returns, contains the value associated with the specified key,
+        /// if the key is found; otherwise, the default value for the type of the value parameter. This parameter
+        /// is passed uninitialized.</param>
+        /// <returns>
+        ///   <c>true</c> if the <see cref="GlobalCache{TKey, TValue}" /> contains an element with the specified key; otherwise, <c>false</c>.
+        /// </returns>
+        public bool TryGetValue(TKey typeName, out TValue userType)
+        {
+            try
+            {
+                userType = this[typeName];
+                return true;
+            }
+            catch (Exception)
+            {
+                userType = default(TValue);
+                return false;
             }
         }
     }
