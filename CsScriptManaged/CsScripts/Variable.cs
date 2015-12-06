@@ -532,6 +532,22 @@ namespace CsScripts
         /// <summary>
         /// Casts variable to new type.
         /// </summary>
+        /// <param name="newType">The type.</param>
+        /// <returns>Computed variable that is of new type.</returns>
+        public T CastAs<T>()
+            where T : Variable
+        {
+            ulong address = GetPointerAddress();
+            UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(typeof(T));
+            UserTypeDescription description = metadata.ConvertToDescription();
+            Variable variable = CastAs(new DType(description.Module.Id, description.UserType.TypeId, address));
+
+            return (T)variable;
+        }
+
+        /// <summary>
+        /// Casts variable to new type.
+        /// </summary>
         /// <param name="newType">The new type.</param>
         /// <returns>Computed variable that is of new type.</returns>
         public Variable CastAs(string newType)

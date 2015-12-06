@@ -364,19 +364,11 @@ namespace CsScriptManaged
                     nextTypes = new List<Type>();
                     foreach (var type in types)
                     {
-                        UserTypeAttribute attribute = type.GetCustomAttribute<UserTypeAttribute>();
-                        bool derivedFromUserType = IsDerivedFrom(type, typeof(UserType));
+                        UserTypeMetadata userType = UserTypeMetadata.ReadFromType(type);
 
-                        if (attribute != null && !derivedFromUserType)
+                        if (userType != null)
                         {
-                            throw new Exception(string.Format("Type {0} has defined UserTypeAttribute, but it does not inherit UserType", type.FullName));
-                        }
-                        else if (derivedFromUserType)
-                        {
-                            string moduleName = attribute != null ? attribute.ModuleName : null;
-                            string typeName = attribute != null ? attribute.TypeName : type.Name;
-
-                            metadata.Add(new UserTypeMetadata(moduleName, typeName, type));
+                            metadata.Add(userType);
                         }
 
                         nextTypes.AddRange(type.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public));
@@ -385,24 +377,6 @@ namespace CsScriptManaged
             }
 
             return metadata.ToArray();
-        }
-
-        /// <summary>
-        /// Determines whether type is derived from the specified type.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <param name="derivedType">Type of the derived.</param>
-        private static bool IsDerivedFrom(Type type, Type derivedType)
-        {
-            while (type != null)
-            {
-                if (type == derivedType)
-                    return true;
-
-                type = type.BaseType;
-            }
-
-            return false;
         }
     }
 }
