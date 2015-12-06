@@ -150,7 +150,7 @@ namespace CsScripts
             ulong moduleId;
 
             Context.Symbols.GetSymbolTypeIdWide(name, out typeId, out moduleId);
-            return new Variable(moduleId, typeId, offset, name);
+            return CastVariableToUserType(new Variable(moduleId, typeId, offset, name));
         }
 
         /// <summary>
@@ -394,6 +394,25 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the pointer address.
+        /// </summary>
+        /// <exception cref="System.ArgumentException">Variable is not a pointer type, but ...</exception>
+        public ulong GetPointerAddress()
+        {
+            if (typedData.Tag == SymTag.PointerType)
+            {
+                return typedData.Data;
+            }
+
+            if (typedData.Offset == 0)
+            {
+                throw new ArgumentException("Variable is not a pointer type, but " + typedData.Tag);
+            }
+
+            return typedData.Offset;
+        }
+
+        /// <summary>
         /// Gets the name of variable.
         /// </summary>
         public string GetName()
@@ -442,22 +461,57 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Adjusts the pointer.
+        /// Gets the array element.
         /// </summary>
-        /// <param name="offset">The offset.</param>
-        /// <returns>Computed variable that points to new address</returns>
-        /// <exception cref="System.ArgumentException">Variable is not a pointer type, but </exception>
-        public Variable AdjustPointer(int offset)
+        /// <param name="index">The index.</param>
+        public Variable GetArrayElement(int index)
+        {
+            var response = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+            {
+                Operation = ExtTdop.GetArrayElement,
+                InData = typedData,
+                In64 = (ulong)index,
+            }).OutData;
+
+            return CastVariableToUserType(new Variable(response));
+        }
+
+        /// <summary>
+        /// Dereferences the pointer.
+        /// </summary>
+        /// <exception cref="System.ArgumentException">Variable is not a pointer type, but ...</exception>
+        public Variable DereferencePointer()
         {
             if (typedData.Tag != SymTag.PointerType)
             {
                 throw new ArgumentException("Variable is not a pointer type, but " + typedData.Tag);
             }
 
-            DEBUG_TYPED_DATA newTypedData = typedData;
+            return GetArrayElement(0);
+        }
 
-            newTypedData.Data += (ulong)offset;
-            return new Variable(newTypedData);
+        /// <summary>
+        /// Adjusts the pointer.
+        /// </summary>
+        /// <param name="offset">The offset.</param>
+        /// <returns>Computed variable that points to new address</returns>
+        /// <exception cref="System.ArgumentException">Variable is not a pointer type, but ...</exception>
+        public Variable AdjustPointer(int offset)
+        {
+            if (typedData.Tag == SymTag.PointerType)
+            {
+                return DereferencePointer().AdjustPointer(offset);
+            }
+
+            if (typedData.Offset != 0)
+            {
+                DEBUG_TYPED_DATA newTypedData = typedData;
+
+                newTypedData.Offset += (ulong)offset;
+                return new Variable(newTypedData);
+            }
+
+            throw new ArgumentException("Variable is not a pointer type, but " + typedData.Tag);
         }
 
         /// <summary>
@@ -467,7 +521,12 @@ namespace CsScripts
         /// <returns>Computed variable that is of new type.</returns>
         public Variable CastAs(DType newType)
         {
-            return new Variable(newType.ModuleId, newType.TypeId, typedData.Offset, name);
+            if (typedData.Tag == SymTag.PointerType)
+            {
+                return DereferencePointer().CastAs(newType);
+            }
+
+            return CastVariableToUserType(new Variable(newType.ModuleId, newType.TypeId, typedData.Offset, name));
         }
 
         /// <summary>
@@ -477,6 +536,11 @@ namespace CsScripts
         /// <returns>Computed variable that is of new type.</returns>
         public Variable CastAs(string newType)
         {
+            if (typedData.Tag == SymTag.PointerType)
+            {
+                return DereferencePointer().CastAs(newType);
+            }
+
             uint newTypeId = Context.Symbols.GetTypeIdWide(typedData.ModBase, newType);
             int moduleIndex = newType.IndexOf('!');
             ulong moduleId = typedData.ModBase;
@@ -489,7 +553,7 @@ namespace CsScripts
                 Context.Symbols.GetModuleByModuleName(moduleName, 0, out index, out moduleId);
             }
 
-            return new Variable(moduleId, newTypeId, typedData.Offset, name);
+            return CastVariableToUserType(new Variable(moduleId, newTypeId, typedData.Offset, name));
         }
 
         /// <summary>
@@ -707,14 +771,7 @@ namespace CsScripts
 
                 if (typedData.Tag == SymTag.PointerType || typedData.Tag == SymTag.ArrayType)
                 {
-                    var response = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
-                    {
-                        Operation = ExtTdop.GetArrayElement,
-                        InData = typedData,
-                        In64 = (ulong)index,
-                    }).OutData;
-
-                    result = new Variable(response);
+                    result = GetArrayElement(index);
                     return true;
                 }
             }
@@ -779,6 +836,23 @@ namespace CsScripts
         {
             // TODO: See if it is complex type and try to get VTable
             return null;
+        }
+
+        /// <summary>
+        /// Gets field offset.
+        /// </summary>
+        public int GetFieldOffset(string fieldName)
+        {
+            try
+            {
+                int offset = (int)Context.Symbols.GetFieldOffsetWide(typedData.ModBase, typedData.TypeId, fieldName);
+
+                return offset;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
         }
 
         /// <summary>
