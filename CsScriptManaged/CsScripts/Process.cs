@@ -210,14 +210,11 @@ namespace CsScripts
         public Variable GetGlobal(string name)
         {
             // Try global name
-            try
+            int moduleIndex = name.IndexOf('!');
+
+            if (moduleIndex > 0)
             {
-                return Variable.FromName(name);
-            }
-            catch (Exception)
-            {
-                if (name.Contains('!'))
-                    throw;
+                return ModulesByName[name.Substring(0, moduleIndex)].GetVariable(name.Substring(moduleIndex + 1));
             }
 
             // Try all modules since module name wasn't specified

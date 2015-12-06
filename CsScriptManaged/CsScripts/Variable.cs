@@ -139,21 +139,6 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets Variable with the specified name.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <returns>Variable if found</returns>
-        public static Variable FromName(string name)
-        {
-            ulong offset = Context.Symbols.GetOffsetByNameWide(name);
-            uint typeId;
-            ulong moduleId;
-
-            Context.Symbols.GetSymbolTypeIdWide(name, out typeId, out moduleId);
-            return CastVariableToUserType(new Variable(moduleId, typeId, offset, name));
-        }
-
-        /// <summary>
         /// Performs an explicit conversion from <see cref="Variable"/> to <see cref="System.Boolean"/>.
         /// </summary>
         /// <param name="v">The v.</param>
