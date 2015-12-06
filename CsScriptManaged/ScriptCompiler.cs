@@ -1,5 +1,4 @@
-﻿using CsScripts;
-using Microsoft.CSharp;
+﻿using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -8,19 +7,28 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace CsScriptManaged
 {
     public class ScriptCompiler : IDisposable
     {
+        /// <summary>
+        /// Exception that contains all compiler errors that happened
+        /// </summary>
         public class CompileException : Exception
         {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="CompileException"/> class.
+            /// </summary>
+            /// <param name="errors">The errors.</param>
             public CompileException(CompilerError[] errors)
             {
                 Errors = errors;
             }
 
+            /// <summary>
+            /// Gets the errors.
+            /// </summary>
             public CompilerError[] Errors { get; private set; }
         }
 
@@ -89,13 +97,23 @@ namespace CsScriptManaged
         /// </summary>
         internal List<string> SearchFolders { get; } = new List<string>();
 
+        /// <summary>
+        /// The code provider
+        /// </summary>
         private CSharpCodeProvider codeProvider = new CSharpCodeProvider();
 
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
         public void Dispose()
         {
             codeProvider.Dispose();
         }
 
+        /// <summary>
+        /// Compiles the specified code.
+        /// </summary>
+        /// <param name="code">The code.</param>
         protected CompilerResults Compile(string code)
         {
             // Create compiler parameters
@@ -195,6 +213,13 @@ namespace CsScriptManaged
             return GenerateCode(usings, importedCode.ToString(), scriptCode);
         }
 
+        /// <summary>
+        /// Generates the code based on parameters.
+        /// </summary>
+        /// <param name="usings">The usings.</param>
+        /// <param name="importedCode">The imported code.</param>
+        /// <param name="scriptCode">The script code.</param>
+        /// <param name="scriptBaseClassName">Name of the script base class.</param>
         protected static string GenerateCode(IEnumerable<string> usings, string importedCode, string scriptCode, string scriptBaseClassName = "CsScripts.ScriptBase")
         {
             StringBuilder codeBuilder = new StringBuilder();
