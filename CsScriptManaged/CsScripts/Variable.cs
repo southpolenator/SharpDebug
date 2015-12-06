@@ -608,7 +608,7 @@ namespace CsScripts
         {
             Variable field = CastVariableToUserType(fieldsByName[name]);
 
-            if (userTypeCastedFieldsByName.Count == 1)
+            if (userTypeCastedFieldsByName.Count == 0)
             {
                 GlobalCache.VariablesUserTypeCastedFieldsByName.Add(userTypeCastedFieldsByName);
             }

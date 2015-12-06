@@ -47,6 +47,37 @@ namespace CsScripts
             mappedImageName = SimpleCache.Create(() => GetName(DebugModname.MappedImage));
             TypesByName = new GlobalCache<string, DType>(GetTypeByName);
             TypesById = new GlobalCache<uint, DType>(GetTypeById);
+            GlobalVariables = new GlobalCache<string, Variable>(GetGlobalVariable);
+            UserTypeCastedGlobalVariables = new GlobalCache<string, Variable>((name) =>
+            {
+                Variable variable = Variable.CastVariableToUserType(GlobalVariables[name]);
+
+                if (UserTypeCastedGlobalVariables.Count == 0)
+                {
+                    GlobalCache.VariablesUserTypeCastedFieldsByName.Add(UserTypeCastedGlobalVariables);
+                }
+
+                return variable;
+            });
+        }
+
+        /// <summary>
+        /// Gets the global variable by the name.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        private Variable GetGlobalVariable(string name)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
+            {
+                name = Name + "!" + name;
+
+                ulong offset = Context.Symbols.GetOffsetByNameWide(name);
+                uint typeId;
+                ulong moduleId;
+
+                Context.Symbols.GetSymbolTypeIdWide(name, out typeId, out moduleId);
+                return new Variable(moduleId, typeId, offset, name);
+            }
         }
 
         /// <summary>
@@ -69,6 +100,16 @@ namespace CsScripts
         /// Types by the identifier
         /// </summary>
         internal GlobalCache<uint, DType> TypesById { get; private set; }
+
+        /// <summary>
+        /// Cache of global variables.
+        /// </summary>
+        internal GlobalCache<string, Variable> GlobalVariables { get; private set; }
+
+        /// <summary>
+        /// Cache of user type casted global variables.
+        /// </summary>
+        internal GlobalCache<string, Variable> UserTypeCastedGlobalVariables { get; private set; }
 
         /// <summary>
         /// Gets the identifier.
@@ -173,13 +214,11 @@ namespace CsScripts
                     {
                         throw new ArgumentException("Variable name contains wrong module name. Don't add it manually, it will be added automatically.");
                     }
-                }
-                else
-                {
-                    name = Name + "!" + name;
+
+                    name = name.Substring(moduleIndex + 1);
                 }
 
-                return Variable.FromName(name);
+                return UserTypeCastedGlobalVariables[name];
             }
         }
 
