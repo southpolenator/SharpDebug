@@ -16,6 +16,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CsScriptsTest", "..\CsScrip
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateDbgEngIdl", "..\CreateDbgEngIdl\CreateDbgEngIdl.csproj", "{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenerateUserTypesFromPdb", "..\GenerateUserTypesFromPdb\GenerateUserTypesFromPdb.csproj", "{283A0331-2EAD-4DD2-A3FE-20D229E2D277}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -82,6 +84,18 @@ Global
 		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}.Release|x64.Build.0 = Release|x64
 		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}.Release|x86.ActiveCfg = Release|x86
 		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}.Release|x86.Build.0 = Release|x86
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Debug|x64.Build.0 = Debug|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Debug|x86.Build.0 = Debug|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Release|Any CPU.Build.0 = Release|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Release|x64.ActiveCfg = Release|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Release|x64.Build.0 = Release|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Release|x86.ActiveCfg = Release|Any CPU
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
