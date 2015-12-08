@@ -210,7 +210,7 @@ namespace CsScripts
 
                 if (moduleIndex > 0)
                 {
-                    if (string.Compare(name.Substring(0, moduleIndex), Name, true) != 0)
+                    if (string.Compare(name, 0, Name, 0, Math.Max(Name.Length, moduleIndex), true) != 0)
                     {
                         throw new ArgumentException("Variable name contains wrong module name. Don't add it manually, it will be added automatically.");
                     }
@@ -222,6 +222,7 @@ namespace CsScripts
             }
         }
 
+        #region Cache filling functions
         /// <summary>
         /// Gets the name of the module.
         /// </summary>
@@ -276,5 +277,6 @@ namespace CsScripts
         {
             return new DType(Id, typeId);
         }
+        #endregion
     }
 }
