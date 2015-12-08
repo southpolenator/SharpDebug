@@ -138,6 +138,7 @@ namespace CsScripts
             userTypeCastedFieldsByName = new GlobalCache<string, Variable>(GetUserTypeCastedFieldByName);
         }
 
+        #region Simple casts
         /// <summary>
         /// Performs an explicit conversion from <see cref="Variable"/> to <see cref="System.Boolean"/>.
         /// </summary>
@@ -290,6 +291,7 @@ namespace CsScripts
 
             return v.typedData.Data;
         }
+        #endregion
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
@@ -375,7 +377,7 @@ namespace CsScripts
         /// <returns></returns>
         public bool IsNullPointer()
         {
-            return GetCodeType().IsPointer && (typedData.Offset == 0 || typedData.Data == 0);
+            return GetCodeType().IsPointer && GetPointerAddress() == 0;
         }
 
         /// <summary>
@@ -384,17 +386,7 @@ namespace CsScripts
         /// <exception cref="System.ArgumentException">Variable is not a pointer type, but ...</exception>
         public ulong GetPointerAddress()
         {
-            if (typedData.Tag == SymTag.PointerType)
-            {
-                return typedData.Data;
-            }
-
-            if (typedData.Offset == 0)
-            {
-                throw new ArgumentException("Variable is not a pointer type, but " + typedData.Tag);
-            }
-
-            return typedData.Offset;
+            return typedData.Tag == SymTag.PointerType ? typedData.Data : typedData.Offset;
         }
 
         /// <summary>
