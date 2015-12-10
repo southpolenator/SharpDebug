@@ -97,7 +97,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>pushd $(OutDir)&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" "$(TargetPath)"</Command>
+      <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>del /F /Q $(OutDir)\NativeDump1.dmp</Command>
@@ -115,7 +115,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>pushd $(OutDir)&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" "$(TargetPath)"</Command>
+      <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>del /F /Q $(OutDir)\NativeDump1.dmp</Command>
@@ -137,7 +137,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>pushd $(OutDir)&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" "$(TargetPath)"</Command>
+      <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>del /F /Q $(OutDir)\NativeDump1.dmp</Command>
@@ -159,7 +159,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>pushd $(OutDir)&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" "$(TargetPath)"</Command>
+      <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>del /F /Q $(OutDir)\NativeDump1.dmp</Command>
