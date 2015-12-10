@@ -117,9 +117,14 @@ namespace CsScriptManaged
         protected CompilerResults Compile(string code)
         {
             // Create compiler parameters
+            string tempDir = Path.GetTempPath() + @"\CsScripts\";
+
+            Directory.CreateDirectory(tempDir);
+
             var compilerParameters = new CompilerParameters()
             {
                 IncludeDebugInformation = true,
+                TempFiles = new TempFileCollection(tempDir, true),
             };
 
             compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
