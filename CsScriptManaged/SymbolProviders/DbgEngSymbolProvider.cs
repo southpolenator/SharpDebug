@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using CsScripts;
 using DbgEngManaged;
 
@@ -10,6 +8,11 @@ namespace CsScriptManaged.SymbolProviders
 {
     internal class DbgEngSymbolProvider : ISymbolProvider
     {
+        /// <summary>
+        /// Gets the element type of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
         public uint GetTypeElementTypeId(Module module, uint typeId)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
@@ -26,6 +29,11 @@ namespace CsScriptManaged.SymbolProviders
             }
         }
 
+        /// <summary>
+        /// Gets the names of all fields of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
         public string[] GetTypeFieldNames(Module module, uint typeId)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
@@ -51,6 +59,32 @@ namespace CsScriptManaged.SymbolProviders
             }
         }
 
+        /// <summary>
+        /// Gets the field offset of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        public int GetTypeFieldOffset(Module module, uint typeId, string fieldName)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            {
+                try
+                {
+                    return (int)Context.Symbols.GetFieldOffsetWide(module.Id, typeId, fieldName);
+                }
+                catch (Exception)
+                {
+                    return -1;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the name of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
         public string GetTypeName(Module module, uint typeId)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
@@ -63,6 +97,11 @@ namespace CsScriptManaged.SymbolProviders
             }
         }
 
+        /// <summary>
+        /// Gets the size of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
         public uint GetTypeSize(Module module, uint typeId)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
@@ -71,6 +110,11 @@ namespace CsScriptManaged.SymbolProviders
             }
         }
 
+        /// <summary>
+        /// Gets the symbol tag of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
         public SymTag GetTypeTag(Module module, uint typeId)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))

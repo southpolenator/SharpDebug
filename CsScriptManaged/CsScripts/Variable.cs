@@ -123,7 +123,8 @@ namespace CsScripts
 
         private void InitializeCache()
         {
-            codeType = SimpleCache.Create(() => new CodeType(typedData));
+            Process process = Process.Current;
+            codeType = SimpleCache.Create(() => process.ModulesById[typedData.ModBase].TypesById[typedData.TypeId]);
             runtimeType = SimpleCache.Create(FindRuntimeType);
             fields = SimpleCache.Create(FindFields);
             userTypeCastedFields = SimpleCache.Create(FindUserTypeCastedFields);
@@ -510,7 +511,7 @@ namespace CsScripts
             ulong address = GetPointerAddress();
             UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(typeof(T));
             UserTypeDescription description = metadata.ConvertToDescription();
-            Variable variable = CastAs(new CodeType(description.Module.Id, description.UserType.TypeId));
+            Variable variable = CastAs(description.UserType);
 
             return (T)variable;
         }
@@ -829,16 +830,7 @@ namespace CsScripts
         /// </summary>
         public int GetFieldOffset(string fieldName)
         {
-            try
-            {
-                int offset = (int)Context.Symbols.GetFieldOffsetWide(typedData.ModBase, typedData.TypeId, fieldName);
-
-                return offset;
-            }
-            catch (Exception)
-            {
-                return -1;
-            }
+            return GetCodeType().GetFieldOffset(fieldName);
         }
 
         /// <summary>

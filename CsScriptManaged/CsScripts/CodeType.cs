@@ -1,8 +1,6 @@
 ﻿using CsScriptManaged;
-using DbgEngManaged;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace CsScripts
 {
@@ -32,6 +30,11 @@ namespace CsScripts
         private SimpleCache<string[]> fieldNames;
 
         /// <summary>
+        /// The field offsets
+        /// </summary>
+        private GlobalCache<string, int> fieldOffsets;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CodeType"/> class.
         /// </summary>
         /// <remarks>This should not be used directly, but through Module.TypesById[typeId]</remarks>
@@ -46,35 +49,6 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CodeType"/> class.
-        /// </summary>
-        /// <param name="typedData">The typed data.</param>
-        internal CodeType(DEBUG_TYPED_DATA typedData)
-        {
-            // TODO: Deprecate this constructor
-            Module = Process.Current.ModulesById[typedData.ModBase];
-            TypeId = typedData.TypeId;
-            Tag = typedData.Tag;
-            InitializeCache();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CodeType"/> class.
-        /// </summary>
-        /// <param name="moduleId">The module identifier.</param>
-        /// <param name="typeId">The type identifier.</param>
-        /// <param name="offset">The offset.</param>
-        /// <param name="tag">The tag.</param>
-        internal CodeType(ulong moduleId, uint typeId, SymTag tag = SymTag.Null)
-        {
-            // TODO: Deprecate this constructor
-            Module = Process.Current.ModulesById[moduleId];
-            TypeId = typeId;
-            Tag = tag;
-            InitializeCache();
-        }
-
-        /// <summary>
         /// Initializes the cache.
         /// </summary>
         private void InitializeCache()
@@ -83,6 +57,7 @@ namespace CsScripts
             name = SimpleCache.Create(() => Context.SymbolProvider.GetTypeName(Module, TypeId));
             size = SimpleCache.Create(() => Context.SymbolProvider.GetTypeSize(Module, TypeId));
             fieldNames = SimpleCache.Create(() => Context.SymbolProvider.GetTypeFieldNames(Module, TypeId));
+            fieldOffsets = new GlobalCache<string, int>((fieldName) => Context.SymbolProvider.GetTypeFieldOffset(Module, TypeId, fieldName));
         }
 
         /// <summary>
@@ -252,6 +227,29 @@ namespace CsScripts
         /// Gets the tag.
         /// </summary>
         internal SymTag Tag { get; private set; }
+
+        /// <summary>
+        /// Gets field offset.
+        /// </summary>
+        public int GetFieldOffset(string fieldName)
+        {
+            return fieldOffsets[fieldName];
+        }
+
+        /// <summary>
+        /// Gets offset of all fields.
+        /// </summary>
+        public Dictionary<string, int> GetFieldOffsets()
+        {
+            Dictionary<string, int> offsets = new Dictionary<string, int>();
+
+            foreach (var field in FieldNames)
+            {
+                offsets[field] = GetFieldOffset(field);
+            }
+
+            return offsets;
+        }
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
