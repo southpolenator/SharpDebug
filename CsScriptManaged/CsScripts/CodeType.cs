@@ -32,7 +32,7 @@ namespace CsScripts
         /// <summary>
         /// The field offsets
         /// </summary>
-        private GlobalCache<string, int> fieldOffsets;
+        private GlobalCache<string, Tuple<uint, int>> fieldTypeAndOffsets;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CodeType"/> class.
@@ -57,7 +57,7 @@ namespace CsScripts
             name = SimpleCache.Create(() => Context.SymbolProvider.GetTypeName(Module, TypeId));
             size = SimpleCache.Create(() => Context.SymbolProvider.GetTypeSize(Module, TypeId));
             fieldNames = SimpleCache.Create(() => Context.SymbolProvider.GetTypeFieldNames(Module, TypeId));
-            fieldOffsets = new GlobalCache<string, int>((fieldName) => Context.SymbolProvider.GetTypeFieldOffset(Module, TypeId, fieldName));
+            fieldTypeAndOffsets = new GlobalCache<string, Tuple<uint, int>>((fieldName) => Context.SymbolProvider.GetTypeFieldTypeAndOffset(Module, TypeId, fieldName));
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace CsScripts
         /// </summary>
         public int GetFieldOffset(string fieldName)
         {
-            return fieldOffsets[fieldName];
+            return fieldTypeAndOffsets[fieldName].Item2;
         }
 
         /// <summary>
@@ -246,6 +246,29 @@ namespace CsScripts
             foreach (var field in FieldNames)
             {
                 offsets[field] = GetFieldOffset(field);
+            }
+
+            return offsets;
+        }
+
+        /// <summary>
+        /// Gets field code type.
+        /// </summary>
+        public CodeType GetFieldType(string fieldName)
+        {
+            return Module.TypesById[fieldTypeAndOffsets[fieldName].Item1];
+        }
+
+        /// <summary>
+        /// Gets code type of all fields.
+        /// </summary>
+        public Dictionary<string, CodeType> GetFieldTypes()
+        {
+            Dictionary<string, CodeType> offsets = new Dictionary<string, CodeType>();
+
+            foreach (var field in FieldNames)
+            {
+                offsets[field] = GetFieldType(field);
             }
 
             return offsets;

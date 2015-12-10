@@ -60,22 +60,25 @@ namespace CsScriptManaged.SymbolProviders
         }
 
         /// <summary>
-        /// Gets the field offset of the specified type.
+        /// Gets the field type id and offset of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
-        public int GetTypeFieldOffset(Module module, uint typeId, string fieldName)
+        public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
             {
                 try
                 {
-                    return (int)Context.Symbols.GetFieldOffsetWide(module.Id, typeId, fieldName);
+                    uint fieldTypeId, fieldOffset;
+
+                    Context.Symbols.GetFieldTypeAndOffsetWide(module.Id, typeId, fieldName, out fieldTypeId, out fieldOffset);
+                    return Tuple.Create(fieldTypeId, (int)fieldOffset);
                 }
                 catch (Exception)
                 {
-                    return -1;
+                    return Tuple.Create<uint, int>(0, -1);
                 }
             }
         }

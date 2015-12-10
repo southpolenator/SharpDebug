@@ -27,6 +27,11 @@ namespace CsScripts
         private string name;
 
         /// <summary>
+        /// The address where this variable value is stored
+        /// </summary>
+        private ulong address;
+
+        /// <summary>
         /// The code type
         /// </summary>
         private SimpleCache<CodeType> codeType;
@@ -64,12 +69,27 @@ namespace CsScripts
         {
             typedData = variable.typedData;
             name = variable.name;
+            address = variable.address;
             codeType = variable.codeType;
             runtimeType = variable.runtimeType;
             fields = variable.fields;
             userTypeCastedFields = variable.userTypeCastedFields;
             fieldsByName = variable.fieldsByName;
             userTypeCastedFieldsByName = variable.userTypeCastedFieldsByName;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Variable"/> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="codeType">The code type.</param>
+        /// <param name="address">The address.</param>
+        public Variable(CodeType codeType, ulong address, string name = ComputedName)
+        {
+            this.name = name;
+            this.address = address;
+            InitializeCache();
+            this.codeType.Value = codeType;
         }
 
         /// <summary>
@@ -95,6 +115,7 @@ namespace CsScripts
             }
 
             InitializeCache();
+            Data = typedData.Data;
         }
 
         /// <summary>
@@ -107,6 +128,8 @@ namespace CsScripts
         internal Variable(ulong moduleId, uint typeId, ulong offset, string name = ComputedName)
             : this(GetTypedData(moduleId, typeId, offset), name)
         {
+            InitializeCache();
+            Data = typedData.Data;
         }
 
         /// <summary>
@@ -119,7 +142,10 @@ namespace CsScripts
             this.name = name;
             this.typedData = typedData;
             InitializeCache();
+            Data = typedData.Data;
         }
+
+        internal ulong Data { get; private set; }
 
         private void InitializeCache()
         {
@@ -147,7 +173,7 @@ namespace CsScripts
                 return bool.Parse(v.ToString());
             }
 
-            return v.typedData.Data != 0;
+            return v.Data != 0;
         }
 
         /// <summary>
@@ -164,7 +190,7 @@ namespace CsScripts
                 return byte.Parse(v.ToString());
             }
 
-            return (byte)v.typedData.Data;
+            return (byte)v.Data;
         }
 
         /// <summary>
@@ -181,7 +207,7 @@ namespace CsScripts
                 return char.Parse(v.ToString());
             }
 
-            return (char)v.typedData.Data;
+            return (char)v.Data;
         }
 
         /// <summary>
@@ -198,7 +224,7 @@ namespace CsScripts
                 return short.Parse(v.ToString());
             }
 
-            return (short)v.typedData.Data;
+            return (short)v.Data;
         }
 
         /// <summary>
@@ -215,7 +241,7 @@ namespace CsScripts
                 return ushort.Parse(v.ToString());
             }
 
-            return (ushort)v.typedData.Data;
+            return (ushort)v.Data;
         }
 
         /// <summary>
@@ -232,7 +258,7 @@ namespace CsScripts
                 return int.Parse(v.ToString());
             }
 
-            return (int)v.typedData.Data;
+            return (int)v.Data;
         }
 
         /// <summary>
@@ -249,7 +275,7 @@ namespace CsScripts
                 return uint.Parse(v.ToString());
             }
 
-            return (uint)v.typedData.Data;
+            return (uint)v.Data;
         }
 
         /// <summary>
@@ -266,7 +292,7 @@ namespace CsScripts
                 return long.Parse(v.ToString());
             }
 
-            return (long)v.typedData.Data;
+            return (long)v.Data;
         }
 
         /// <summary>
@@ -283,7 +309,7 @@ namespace CsScripts
                 return ulong.Parse(v.ToString());
             }
 
-            return v.typedData.Data;
+            return v.Data;
         }
         #endregion
 
@@ -310,7 +336,7 @@ namespace CsScripts
                 uint stringLength;
                 StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
 
-                Context.DataSpaces.ReadMultiByteStringVirtual(typedData.Offset, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
+                Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
                 return sb.ToString();
             }
 
@@ -320,7 +346,7 @@ namespace CsScripts
                 uint stringLength;
                 StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
 
-                Context.DataSpaces.ReadUnicodeStringVirtualWide(typedData.Offset, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
+                Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
                 return sb.ToString();
             }
 
@@ -329,21 +355,21 @@ namespace CsScripts
             {
                 if (type.Name == "bool" || type.Name == "BOOL")
                 {
-                    return (typedData.Data != 0).ToString();
+                    return (Data != 0).ToString();
                 }
 
-                switch (typedData.Size)
+                switch (GetCodeType().Size)
                 {
                     case 1:
-                        return ((byte)typedData.Data).ToString();
+                        return ((byte)Data).ToString();
                     case 2:
-                        return ((short)typedData.Data).ToString();
+                        return ((short)Data).ToString();
                     case 4:
-                        return ((int)typedData.Data).ToString();
+                        return ((int)Data).ToString();
                     case 8:
-                        return ((long)typedData.Data).ToString();
+                        return ((long)Data).ToString();
                     default:
-                        throw new ArgumentException("Incorrect data size " + typedData.Size);
+                        throw new ArgumentException("Incorrect data size " + GetCodeType().Size);
                 }
             }
 
@@ -354,11 +380,11 @@ namespace CsScripts
             {
                 if (type.Size == 4)
                 {
-                    return string.Format("0x{0:X4}", typedData.Data);
+                    return string.Format("0x{0:X4}", Data);
                 }
                 else
                 {
-                    return string.Format("0x{0:X8}", typedData.Data);
+                    return string.Format("0x{0:X8}", Data);
                 }
             }
 
@@ -380,7 +406,7 @@ namespace CsScripts
         /// <exception cref="System.ArgumentException">Variable is not a pointer type, but ...</exception>
         public ulong GetPointerAddress()
         {
-            return typedData.Tag == SymTag.PointerType ? typedData.Data : typedData.Offset;
+            return typedData.Tag == SymTag.PointerType ? Data : typedData.Offset;
         }
 
         /// <summary>
@@ -608,7 +634,7 @@ namespace CsScripts
             }
 
             // Look at the type and see if it should be converted to user type
-            var typesBasedOnModule = userTypes.Where(t => t.Module.Offset == originalVariable.typedData.ModBase);
+            var typesBasedOnModule = userTypes.Where(t => t.Module == originalVariable.GetCodeType().Module);
             var typesBasedOnName = typesBasedOnModule.Where(t => t.UserType.TypeId == (originalVariable.GetCodeType().IsPointer ? originalVariable.GetCodeType().ElementType.TypeId : originalVariable.GetCodeType().TypeId));
 
             var types = typesBasedOnName.ToArray();
@@ -755,8 +781,9 @@ namespace CsScripts
             try
             {
                 int index = Convert.ToInt32(indexes[0]);
+                var tag = GetCodeType().Tag;
 
-                if (typedData.Tag == SymTag.PointerType || typedData.Tag == SymTag.ArrayType)
+                if (tag == SymTag.PointerType || tag == SymTag.ArrayType)
                 {
                     result = GetArrayElement(index);
                     return true;

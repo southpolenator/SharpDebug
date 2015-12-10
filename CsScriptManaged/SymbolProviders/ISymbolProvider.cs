@@ -1,4 +1,5 @@
 ﻿using CsScripts;
+using System;
 
 namespace CsScriptManaged.SymbolProviders
 {
@@ -19,12 +20,12 @@ namespace CsScriptManaged.SymbolProviders
         string[] GetTypeFieldNames(Module module, uint typeId);
 
         /// <summary>
-        /// Gets the field offset of the specified type.
+        /// Gets the field type id and offset of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
-        int GetTypeFieldOffset(Module module, uint typeId, string fieldName);
+        Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName);
 
         /// <summary>
         /// Gets the name of the specified type.
