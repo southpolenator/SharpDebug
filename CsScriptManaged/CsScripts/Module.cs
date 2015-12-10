@@ -45,8 +45,8 @@ namespace CsScripts
             loadedImageName = SimpleCache.Create(() => GetName(DebugModname.LoadedImage));
             symbolFileName = SimpleCache.Create(() => GetName(DebugModname.SymbolFile));
             mappedImageName = SimpleCache.Create(() => GetName(DebugModname.MappedImage));
-            TypesByName = new GlobalCache<string, DType>(GetTypeByName);
-            TypesById = new GlobalCache<uint, DType>(GetTypeById);
+            TypesByName = new GlobalCache<string, CodeType>(GetTypeByName);
+            TypesById = new GlobalCache<uint, CodeType>(GetTypeById);
             GlobalVariables = new GlobalCache<string, Variable>(GetGlobalVariable);
             UserTypeCastedGlobalVariables = new GlobalCache<string, Variable>((name) =>
             {
@@ -94,12 +94,12 @@ namespace CsScripts
         /// <summary>
         /// Types by the name
         /// </summary>
-        internal GlobalCache<string, DType> TypesByName { get; private set; }
+        internal GlobalCache<string, CodeType> TypesByName { get; private set; }
 
         /// <summary>
         /// Types by the identifier
         /// </summary>
-        internal GlobalCache<uint, DType> TypesById { get; private set; }
+        internal GlobalCache<uint, CodeType> TypesById { get; private set; }
 
         /// <summary>
         /// Cache of global variables.
@@ -245,7 +245,7 @@ namespace CsScripts
         /// Gets the type with the specified name.
         /// </summary>
         /// <param name="name">The name.</param>
-        private DType GetTypeByName(string name)
+        private CodeType GetTypeByName(string name)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
             {
@@ -273,9 +273,9 @@ namespace CsScripts
         /// Gets the type with the specified identifier.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
-        private DType GetTypeById(uint typeId)
+        private CodeType GetTypeById(uint typeId)
         {
-            return new DType(Id, typeId);
+            return new CodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId));
         }
         #endregion
     }

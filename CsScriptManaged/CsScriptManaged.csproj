@@ -89,7 +89,7 @@
     <Compile Include="Constants.cs" />
     <Compile Include="Context.cs" />
     <Compile Include="CsScripts\Debugger.cs" />
-    <Compile Include="CsScripts\DType.cs" />
+    <Compile Include="CsScripts\CodeType.cs" />
     <Compile Include="CsScripts\Module.cs" />
     <Compile Include="CsScripts\StackFrame.cs" />
     <Compile Include="CsScripts\StackTrace.cs" />
@@ -118,6 +118,8 @@
     <Compile Include="ScriptExecution.cs" />
     <Compile Include="SimpleCache.cs" />
     <Compile Include="StackFrameSwitcher.cs" />
+    <Compile Include="SymbolProviders\DbgEngSymbolProvider.cs" />
+    <Compile Include="SymbolProviders\ISymbolProvider.cs" />
     <Compile Include="ThreadSwitcher.cs" />
     <Compile Include="UserTypeDescription.cs" />
     <Compile Include="UserTypeMetadata.cs" />

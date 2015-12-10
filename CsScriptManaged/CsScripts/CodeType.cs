@@ -1,6 +1,7 @@
 ﻿using CsScriptManaged;
 using DbgEngManaged;
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace CsScripts
@@ -8,22 +9,12 @@ namespace CsScripts
     /// <summary>
     /// Debugging type of variables
     /// </summary>
-    public class DType
+    public class CodeType
     {
-        /// <summary>
-        /// The typed data
-        /// </summary>
-        private DEBUG_TYPED_DATA typedData;
-
-        /// <summary>
-        /// The base type
-        /// </summary>
-        private SimpleCache<DType> baseType;
-
         /// <summary>
         /// The element type
         /// </summary>
-        private SimpleCache<DType> elementType;
+        private SimpleCache<CodeType> elementType;
 
         /// <summary>
         /// The name
@@ -36,36 +27,50 @@ namespace CsScripts
         private SimpleCache<uint> size;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DType"/> class.
+        /// The field names
         /// </summary>
-        /// <param name="typedData">The typed data.</param>
-        internal DType(DEBUG_TYPED_DATA typedData)
+        private SimpleCache<string[]> fieldNames;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeType"/> class.
+        /// </summary>
+        /// <remarks>This should not be used directly, but through Module.TypesById[typeId]</remarks>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        internal CodeType(Module module, uint typeId, SymTag tag)
         {
-            this.typedData = typedData;
+            Module = module;
+            TypeId = typeId;
+            Tag = tag;
             InitializeCache();
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DType"/> class.
+        /// Initializes a new instance of the <see cref="CodeType"/> class.
+        /// </summary>
+        /// <param name="typedData">The typed data.</param>
+        internal CodeType(DEBUG_TYPED_DATA typedData)
+        {
+            // TODO: Deprecate this constructor
+            Module = Process.Current.ModulesById[typedData.ModBase];
+            TypeId = typedData.TypeId;
+            Tag = typedData.Tag;
+            InitializeCache();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeType"/> class.
         /// </summary>
         /// <param name="moduleId">The module identifier.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="offset">The offset.</param>
         /// <param name="tag">The tag.</param>
-        internal DType(ulong moduleId, uint typeId, ulong offset = 0, SymTag tag = SymTag.Null)
+        internal CodeType(ulong moduleId, uint typeId, SymTag tag = SymTag.Null)
         {
-            try
-            {
-                typedData = GlobalCache.TypedData[Tuple.Create(moduleId, typeId, offset)];
-            }
-            catch (Exception)
-            {
-                typedData.ModBase = moduleId;
-                typedData.TypeId = typeId;
-                typedData.Offset = offset;
-                typedData.Tag = tag;
-            }
-
+            // TODO: Deprecate this constructor
+            Module = Process.Current.ModulesById[moduleId];
+            TypeId = typeId;
+            Tag = tag;
             InitializeCache();
         }
 
@@ -74,11 +79,27 @@ namespace CsScripts
         /// </summary>
         private void InitializeCache()
         {
-            baseType = SimpleCache.Create(GetBaseType);
             elementType = SimpleCache.Create(GetElementType);
-            name = SimpleCache.Create(GetName);
-            size = SimpleCache.Create(() => Context.Symbols.GetTypeSize(ModuleId, TypeId));
+            name = SimpleCache.Create(() => Context.SymbolProvider.GetTypeName(Module, TypeId));
+            size = SimpleCache.Create(() => Context.SymbolProvider.GetTypeSize(Module, TypeId));
+            fieldNames = SimpleCache.Create(() => Context.SymbolProvider.GetTypeFieldNames(Module, TypeId));
         }
+
+        /// <summary>
+        /// Gets the type field names.
+        /// </summary>
+        public string[] FieldNames
+        {
+            get
+            {
+                return fieldNames.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the module.
+        /// </summary>
+        public Module Module { get; private set; }
 
         /// <summary>
         /// Gets the module identifier.
@@ -87,36 +108,19 @@ namespace CsScripts
         {
             get
             {
-                return typedData.ModBase;
+                return Module.Id;
             }
         }
 
         /// <summary>
         /// Gets the type identifier.
         /// </summary>
-        public uint TypeId
-        {
-            get
-            {
-                return typedData.TypeId;
-            }
-        }
-
-        /// <summary>
-        /// Gets the base type.
-        /// </summary>
-        public DType BaseType
-        {
-            get
-            {
-                return baseType.Value;
-            }
-        }
+        public uint TypeId { get; private set; }
 
         /// <summary>
         /// Gets the type of the element if type is array or pointer.
         /// </summary>
-        public DType ElementType
+        public CodeType ElementType
         {
             get
             {
@@ -247,13 +251,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the tag.
         /// </summary>
-        internal SymTag Tag
-        {
-            get
-            {
-                return typedData.Tag;
-            }
-        }
+        internal SymTag Tag { get; private set; }
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
@@ -267,32 +265,16 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the base type.
-        /// </summary>
-        private DType GetBaseType()
-        {
-            if (typedData.BaseTypeId < Constants.MaxBaseTypeId && typedData.BaseTypeId != TypeId)
-            {
-                return new DType(ModuleId, typedData.BaseTypeId, typedData.Offset);
-            }
-
-            return this;
-        }
-
-        /// <summary>
         /// Gets the element type.
         /// </summary>
-        private DType GetElementType()
+        private CodeType GetElementType()
         {
             if (IsPointer || IsArray)
             {
                 try
                 {
-                    return new DType(Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
-                    {
-                        Operation = ExtTdop.GetDereference,
-                        InData = typedData,
-                    }).OutData);
+                    uint elementTypeId = Context.SymbolProvider.GetTypeElementTypeId(Module, TypeId);
+                    return Module.TypesById[elementTypeId];
                 }
                 catch (Exception)
                 {
@@ -300,18 +282,6 @@ namespace CsScripts
             }
 
             return this;
-        }
-
-        /// <summary>
-        /// Gets the name.
-        /// </summary>
-        private string GetName()
-        {
-            uint nameSize;
-            StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
-
-            Context.Symbols.GetTypeName(ModuleId, TypeId, sb, (uint)sb.Capacity, out nameSize);
-            return sb.ToString();
         }
     }
 }

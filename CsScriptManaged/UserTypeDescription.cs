@@ -20,7 +20,7 @@ namespace CsScriptManaged
             }
             else
             {
-                DType userType;
+                CodeType userType;
                 var modules = Process.Current.Modules.Where(m => m.TypesByName.TryGetValue(typeName, out userType)).ToArray();
 
                 if (modules.Length > 1)
@@ -48,7 +48,7 @@ namespace CsScriptManaged
         /// <summary>
         /// Gets the user code type.
         /// </summary>
-        public DType UserType { get; private set; }
+        public CodeType UserType { get; private set; }
 
         /// <summary>
         /// Gets the user type.

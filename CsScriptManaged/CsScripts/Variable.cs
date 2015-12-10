@@ -29,17 +29,12 @@ namespace CsScripts
         /// <summary>
         /// The code type
         /// </summary>
-        private SimpleCache<DType> codeType;
+        private SimpleCache<CodeType> codeType;
 
         /// <summary>
         /// The runtime type
         /// </summary>
-        private SimpleCache<DType> runtimeType;
-
-        /// <summary>
-        /// The field names
-        /// </summary>
-        private SimpleCache<string[]> fieldNames;
+        private SimpleCache<CodeType> runtimeType;
 
         /// <summary>
         /// The fields
@@ -71,7 +66,6 @@ namespace CsScripts
             name = variable.name;
             codeType = variable.codeType;
             runtimeType = variable.runtimeType;
-            fieldNames = variable.fieldNames;
             fields = variable.fields;
             userTypeCastedFields = variable.userTypeCastedFields;
             fieldsByName = variable.fieldsByName;
@@ -129,9 +123,8 @@ namespace CsScripts
 
         private void InitializeCache()
         {
-            codeType = SimpleCache.Create(() => new DType(typedData));
+            codeType = SimpleCache.Create(() => new CodeType(typedData));
             runtimeType = SimpleCache.Create(FindRuntimeType);
-            fieldNames = SimpleCache.Create(FindFieldNames);
             fields = SimpleCache.Create(FindFields);
             userTypeCastedFields = SimpleCache.Create(FindUserTypeCastedFields);
             fieldsByName = new GlobalCache<string, Variable>(GetOriginalField);
@@ -400,7 +393,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the code type.
         /// </summary>
-        public DType GetCodeType()
+        public CodeType GetCodeType()
         {
             return codeType.Value;
         }
@@ -408,7 +401,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the runtime type.
         /// </summary>
-        public DType GetRuntimeType()
+        public CodeType GetRuntimeType()
         {
             return runtimeType.Value;
         }
@@ -418,7 +411,7 @@ namespace CsScripts
         /// </summary>
         public string[] GetFieldNames()
         {
-            return fieldNames.Value;
+            return GetCodeType().FieldNames;
         }
 
         /// <summary>
@@ -496,7 +489,7 @@ namespace CsScripts
         /// </summary>
         /// <param name="newType">The type.</param>
         /// <returns>Computed variable that is of new type.</returns>
-        public Variable CastAs(DType newType)
+        public Variable CastAs(CodeType newType)
         {
             if (typedData.Tag == SymTag.PointerType)
             {
@@ -517,7 +510,7 @@ namespace CsScripts
             ulong address = GetPointerAddress();
             UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(typeof(T));
             UserTypeDescription description = metadata.ConvertToDescription();
-            Variable variable = CastAs(new DType(description.Module.Id, description.UserType.TypeId, address));
+            Variable variable = CastAs(new CodeType(description.Module.Id, description.UserType.TypeId));
 
             return (T)variable;
         }
@@ -825,7 +818,7 @@ namespace CsScripts
         /// <summary>
         /// Finds the runtime type.
         /// </summary>
-        private DType FindRuntimeType()
+        private CodeType FindRuntimeType()
         {
             // TODO: See if it is complex type and try to get VTable
             return null;
@@ -846,31 +839,6 @@ namespace CsScripts
             {
                 return -1;
             }
-        }
-
-        /// <summary>
-        /// Finds the field names.
-        /// </summary>
-        private string[] FindFieldNames()
-        {
-            List<string> fields = new List<string>();
-            uint nameSize;
-
-            try
-            {
-                for (uint fieldIndex = 0; ; fieldIndex++)
-                {
-                    StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
-
-                    Context.Symbols.GetFieldName(typedData.ModBase, typedData.TypeId, fieldIndex, sb, (uint)sb.Capacity, out nameSize);
-                    fields.Add(sb.ToString());
-                }
-            }
-            catch (Exception)
-            {
-            }
-
-            return fields.ToArray();
         }
 
         /// <summary>

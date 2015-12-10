@@ -70,6 +70,16 @@ namespace CsScriptManaged
         ManagedType,
         Dimension,
         CallSite,
+        InlineSite,
+        BaseInterface,
+        VectorType,
+        MatrixType,
+        HLSLType,
+        Caller,
+        Callee,
+        Export,
+        HeapAllocationSite,
+        CoffGroup,
         Max,
     }
 

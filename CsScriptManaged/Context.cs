@@ -1,6 +1,7 @@
 ﻿using System;
 using DbgEngManaged;
 using System.IO;
+using CsScriptManaged.SymbolProviders;
 
 namespace CsScriptManaged
 {
@@ -40,6 +41,11 @@ namespace CsScriptManaged
         /// The system objects interface
         /// </summary>
         public static IDebugSystemObjects4 SystemObjects;
+
+        /// <summary>
+        /// The symbol provider interface
+        /// </summary>
+        public static ISymbolProvider SymbolProvider;
 
         /// <summary>
         /// The user type metadata (used for casting to user types)
@@ -85,6 +91,7 @@ namespace CsScriptManaged
             Registers = client as IDebugRegisters2;
             Symbols = client as IDebugSymbols5;
             SystemObjects = client as IDebugSystemObjects4;
+            SymbolProvider = new DbgEngSymbolProvider();
         }
 
         /// <summary>
