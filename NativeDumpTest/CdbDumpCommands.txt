@@ -1,0 +1,10 @@
+* Set break point to BreakPointFunction
+bu NativeDumpTest!BreakPointFunction
+* Start executing program
+g
+* Step out to main function
+gu
+* Save the dump file
+.dump /ma NativeDump1.dmp
+* Stop debugging
+q
