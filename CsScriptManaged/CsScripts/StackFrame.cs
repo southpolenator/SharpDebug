@@ -88,6 +88,17 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the owning process.
+        /// </summary>
+        public Process Process
+        {
+            get
+            {
+                return Thread.Process;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this <see cref="StackFrame"/> is virtual.
         /// </summary>
         /// <value>
@@ -317,8 +328,11 @@ namespace CsScripts
 
                     symbolGroup.GetSymbolName(i, name, (uint)name.Capacity, out nameSize);
                     var entry = symbolGroup.GetSymbolEntryInformation(i);
+                    var module = Process.ModulesById[entry.ModuleBase];
+                    var codeType = module.TypesById[entry.TypeId];
+                    var address = entry.Offset;
 
-                    variables[i] = new Variable(name.ToString(), entry);
+                    variables[i] = new Variable(codeType, address, name.ToString());
                 }
 
                 return new VariableCollection(variables);

@@ -69,14 +69,10 @@ namespace CsScripts
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
             {
-                name = Name + "!" + name;
+                uint typeId = Context.SymbolProvider.GetGlobalVariableTypeId(this, name);
+                ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
 
-                ulong offset = Context.Symbols.GetOffsetByNameWide(name);
-                uint typeId;
-                ulong moduleId;
-
-                Context.Symbols.GetSymbolTypeIdWide(name, out typeId, out moduleId);
-                return new Variable(moduleId, typeId, offset, name);
+                return new Variable(TypesById[typeId], address, name);
             }
         }
 

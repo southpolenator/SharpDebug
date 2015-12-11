@@ -1,10 +1,8 @@
 ﻿using CsScriptManaged;
-using DbgEngManaged;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CsScripts
@@ -17,24 +15,19 @@ namespace CsScripts
         public const string ComputedName = "<computed>";
 
         /// <summary>
-        /// The typed data
-        /// </summary>
-        private DEBUG_TYPED_DATA typedData;
-
-        /// <summary>
         /// The name
         /// </summary>
         private string name;
 
         /// <summary>
-        /// The address where this variable value is stored
-        /// </summary>
-        private ulong address;
-
-        /// <summary>
         /// The code type
         /// </summary>
-        private SimpleCache<CodeType> codeType;
+        private CodeType codeType;
+
+        /// <summary>
+        /// The data
+        /// </summary>
+        private SimpleCache<ulong> data;
 
         /// <summary>
         /// The runtime type
@@ -67,9 +60,8 @@ namespace CsScripts
         /// <param name="variable">The variable.</param>
         public Variable(Variable variable)
         {
-            typedData = variable.typedData;
             name = variable.name;
-            address = variable.address;
+            Address = variable.Address;
             codeType = variable.codeType;
             runtimeType = variable.runtimeType;
             fields = variable.fields;
@@ -86,76 +78,51 @@ namespace CsScripts
         /// <param name="address">The address.</param>
         public Variable(CodeType codeType, ulong address, string name = ComputedName)
         {
+            this.codeType = codeType;
             this.name = name;
-            this.address = address;
-            InitializeCache();
-            this.codeType.Value = codeType;
-        }
+            Address = address;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Variable"/> class.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="entry">The debug symbol entry.</param>
-        internal Variable(string name, _DEBUG_SYMBOL_ENTRY entry)
-        {
-            this.name = name;
-            try
-            {
-                typedData = GetTypedData(entry.ModuleBase, entry.TypeId, entry.Offset);
-            }
-            catch (Exception)
-            {
-                // Fill manually available fields
-                typedData.Size = entry.Size;
-                typedData.ModBase = entry.ModuleBase;
-                typedData.Offset = entry.Offset;
-                typedData.TypeId = entry.TypeId;
-                typedData.Tag = (SymTag)entry.Tag;
-            }
-
-            InitializeCache();
-            Data = typedData.Data;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Variable"/> class.
-        /// </summary>
-        /// <param name="moduleId">The module identifier.</param>
-        /// <param name="typeId">The type identifier.</param>
-        /// <param name="offset">The offset.</param>
-        /// <param name="name">The name.</param>
-        internal Variable(ulong moduleId, uint typeId, ulong offset, string name = ComputedName)
-            : this(GetTypedData(moduleId, typeId, offset), name)
-        {
-            InitializeCache();
-            Data = typedData.Data;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Variable"/> class.
-        /// </summary>
-        /// <param name="typedData">The typed data.</param>
-        /// <param name="name">The name.</param>
-        internal Variable(DEBUG_TYPED_DATA typedData, string name = ComputedName)
-        {
-            this.name = name;
-            this.typedData = typedData;
-            InitializeCache();
-            Data = typedData.Data;
-        }
-
-        internal ulong Data { get; private set; }
-
-        private void InitializeCache()
-        {
-            Process process = Process.Current;
-            codeType = SimpleCache.Create(() => process.ModulesById[typedData.ModBase].TypesById[typedData.TypeId]);
+            // Initialize caches
+            data = SimpleCache.Create(ReadData);
             runtimeType = SimpleCache.Create(FindRuntimeType);
             fields = SimpleCache.Create(FindFields);
             userTypeCastedFields = SimpleCache.Create(FindUserTypeCastedFields);
             fieldsByName = new GlobalCache<string, Variable>(GetOriginalField);
             userTypeCastedFieldsByName = new GlobalCache<string, Variable>(GetUserTypeCastedFieldByName);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Variable"/> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="codeType">The code type.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="data">The loaded data value (this can be used only with pointers).</param>
+        private Variable(CodeType codeType, ulong address, string name, ulong data)
+            : this(codeType, address, name)
+        {
+            if (!codeType.IsPointer)
+            {
+                throw new Exception("You cannot assign data to non-pointer type variable. Type was " + codeType);
+            }
+
+            this.data.Value = data;
+        }
+
+        /// <summary>
+        /// The address where this variable value is stored
+        /// </summary>
+        internal ulong Address { get; private set; }
+
+        /// <summary>
+        /// Gets the loaded data value.
+        /// </summary>
+        internal ulong Data
+        {
+            get
+            {
+                return data.Value;
+            }
         }
 
         #region Simple casts
@@ -168,7 +135,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator bool (Variable v)
         {
-            if (!v.GetCodeType().IsSimple && !v.GetCodeType().IsPointer)
+            if (!v.codeType.IsSimple && !v.codeType.IsPointer)
             {
                 return bool.Parse(v.ToString());
             }
@@ -185,7 +152,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator byte (Variable v)
         {
-            if (!v.GetCodeType().IsSimple)
+            if (!v.codeType.IsSimple)
             {
                 return byte.Parse(v.ToString());
             }
@@ -202,7 +169,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator char (Variable v)
         {
-            if (!v.GetCodeType().IsSimple)
+            if (!v.codeType.IsSimple)
             {
                 return char.Parse(v.ToString());
             }
@@ -219,7 +186,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator short (Variable v)
         {
-            if (!v.GetCodeType().IsSimple)
+            if (!v.codeType.IsSimple)
             {
                 return short.Parse(v.ToString());
             }
@@ -236,7 +203,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator ushort (Variable v)
         {
-            if (!v.GetCodeType().IsSimple)
+            if (!v.codeType.IsSimple)
             {
                 return ushort.Parse(v.ToString());
             }
@@ -253,7 +220,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator int (Variable v)
         {
-            if (!v.GetCodeType().IsSimple)
+            if (!v.codeType.IsSimple)
             {
                 return int.Parse(v.ToString());
             }
@@ -270,7 +237,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator uint (Variable v)
         {
-            if (!v.GetCodeType().IsSimple)
+            if (!v.codeType.IsSimple)
             {
                 return uint.Parse(v.ToString());
             }
@@ -287,7 +254,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator long (Variable v)
         {
-            if (!v.GetCodeType().IsSimple)
+            if (!v.codeType.IsSimple)
             {
                 return long.Parse(v.ToString());
             }
@@ -304,7 +271,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator ulong (Variable v)
         {
-            if (!v.GetCodeType().IsSimple)
+            if (!v.codeType.IsSimple)
             {
                 return ulong.Parse(v.ToString());
             }
@@ -319,11 +286,9 @@ namespace CsScripts
         /// <returns>
         /// A <see cref="System.String" /> that represents this instance.
         /// </returns>
-        /// <exception cref="System.ArgumentException">Incorrect data size  + typedData.Size</exception>
+        /// <exception cref="System.ArgumentException">Incorrect data size</exception>
         public override string ToString()
         {
-            var type = GetCodeType();
-
             // Check if it is null
             if (IsNullPointer())
             {
@@ -331,34 +296,34 @@ namespace CsScripts
             }
 
             // ANSI string
-            if (type.IsAnsiString)
+            if (codeType.IsAnsiString)
             {
                 uint stringLength;
                 StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
 
-                Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
+                Context.DataSpaces.ReadMultiByteStringVirtual(Address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
                 return sb.ToString();
             }
 
             // Unicode string
-            if (type.IsWideString)
+            if (codeType.IsWideString)
             {
                 uint stringLength;
                 StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
 
-                Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
+                Context.DataSpaces.ReadUnicodeStringVirtualWide(Address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
                 return sb.ToString();
             }
 
             // Simple type
-            if (type.IsSimple)
+            if (codeType.IsSimple)
             {
-                if (type.Name == "bool" || type.Name == "BOOL")
+                if (codeType.Name == "bool" || codeType.Name == "BOOL")
                 {
                     return (Data != 0).ToString();
                 }
 
-                switch (GetCodeType().Size)
+                switch (codeType.Size)
                 {
                     case 1:
                         return ((byte)Data).ToString();
@@ -369,16 +334,16 @@ namespace CsScripts
                     case 8:
                         return ((long)Data).ToString();
                     default:
-                        throw new ArgumentException("Incorrect data size " + GetCodeType().Size);
+                        throw new ArgumentException("Incorrect data size " + codeType.Size);
                 }
             }
 
             // TODO: Call custom caster (e.g. std::string, std::wstring)
 
             // Check if it is pointer
-            if (type.IsPointer)
+            if (codeType.IsPointer)
             {
-                if (type.Size == 4)
+                if (codeType.Size == 4)
                 {
                     return string.Format("0x{0:X4}", Data);
                 }
@@ -388,7 +353,7 @@ namespace CsScripts
                 }
             }
 
-            return "{" + type.Name + "}";
+            return "{" + codeType.Name + "}";
         }
 
         /// <summary>
@@ -397,7 +362,7 @@ namespace CsScripts
         /// <returns></returns>
         public bool IsNullPointer()
         {
-            return GetCodeType().IsPointer && GetPointerAddress() == 0;
+            return codeType.IsPointer && GetPointerAddress() == 0;
         }
 
         /// <summary>
@@ -406,7 +371,7 @@ namespace CsScripts
         /// <exception cref="System.ArgumentException">Variable is not a pointer type, but ...</exception>
         public ulong GetPointerAddress()
         {
-            return typedData.Tag == SymTag.PointerType ? Data : typedData.Offset;
+            return codeType.IsPointer ? Data : Address;
         }
 
         /// <summary>
@@ -422,7 +387,7 @@ namespace CsScripts
         /// </summary>
         public CodeType GetCodeType()
         {
-            return codeType.Value;
+            return codeType;
         }
 
         /// <summary>
@@ -438,7 +403,7 @@ namespace CsScripts
         /// </summary>
         public string[] GetFieldNames()
         {
-            return GetCodeType().FieldNames;
+            return codeType.FieldNames;
         }
 
         /// <summary>
@@ -463,14 +428,16 @@ namespace CsScripts
         /// <param name="index">The index.</param>
         public Variable GetArrayElement(int index)
         {
-            var response = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+            if (!codeType.IsArray && !codeType.IsPointer)
             {
-                Operation = ExtTdop.GetArrayElement,
-                InData = typedData,
-                In64 = (ulong)index,
-            }).OutData;
+                throw new ArgumentException("Variable is not a array or pointer type, but " + codeType);
+            }
 
-            return CastVariableToUserType(new Variable(response));
+            CodeType elementType = codeType.ElementType;
+            ulong address = Data + (ulong)(index * elementType.Size);
+            Variable variable = new Variable(elementType, address);
+
+            return CastVariableToUserType(variable);
         }
 
         /// <summary>
@@ -479,9 +446,9 @@ namespace CsScripts
         /// <exception cref="System.ArgumentException">Variable is not a pointer type, but ...</exception>
         public Variable DereferencePointer()
         {
-            if (typedData.Tag != SymTag.PointerType)
+            if (!codeType.IsPointer)
             {
-                throw new ArgumentException("Variable is not a pointer type, but " + typedData.Tag);
+                throw new ArgumentException("Variable is not a pointer type, but " + codeType);
             }
 
             return GetArrayElement(0);
@@ -491,24 +458,21 @@ namespace CsScripts
         /// Adjusts the pointer.
         /// </summary>
         /// <param name="offset">The offset.</param>
+        /// <remarks>Returned variable is not casted to the user type. Use CastAs function to cast to suitable type.</remarks>
         /// <returns>Computed variable that points to new address</returns>
         /// <exception cref="System.ArgumentException">Variable is not a pointer type, but ...</exception>
         public Variable AdjustPointer(int offset)
         {
-            if (typedData.Tag == SymTag.PointerType)
+            if (codeType.IsPointer)
             {
-                return DereferencePointer().AdjustPointer(offset);
+                return new Variable(codeType, Address, name, Data + (ulong)offset);
+            }
+            else if (Address != 0)
+            {
+                return new Variable(codeType, Address + (ulong)offset, name);
             }
 
-            if (typedData.Offset != 0)
-            {
-                DEBUG_TYPED_DATA newTypedData = typedData;
-
-                newTypedData.Offset += (ulong)offset;
-                return new Variable(newTypedData);
-            }
-
-            throw new ArgumentException("Variable is not a pointer type, but " + typedData.Tag);
+            throw new ArgumentException("Variable is not a pointer type, but " + codeType + " and its address is 0");
         }
 
         /// <summary>
@@ -518,12 +482,16 @@ namespace CsScripts
         /// <returns>Computed variable that is of new type.</returns>
         public Variable CastAs(CodeType newType)
         {
-            if (typedData.Tag == SymTag.PointerType)
+            if (codeType.IsPointer)
             {
-                return DereferencePointer().CastAs(newType);
+                return new Variable(newType, Address, name, Data);
+            }
+            else if (Address != 0)
+            {
+                return new Variable(newType, Address, name);
             }
 
-            return CastVariableToUserType(new Variable(newType.ModuleId, newType.TypeId, typedData.Offset, name));
+            throw new ArgumentException("Variable is not a pointer type, but " + codeType + " and its address is 0");
         }
 
         /// <summary>
@@ -549,24 +517,20 @@ namespace CsScripts
         /// <returns>Computed variable that is of new type.</returns>
         public Variable CastAs(string newType)
         {
-            if (typedData.Tag == SymTag.PointerType)
-            {
-                return DereferencePointer().CastAs(newType);
-            }
-
-            uint newTypeId = Context.Symbols.GetTypeIdWide(typedData.ModBase, newType);
+            Module module = codeType.Module;
             int moduleIndex = newType.IndexOf('!');
-            ulong moduleId = typedData.ModBase;
 
             if (moduleIndex > 0)
             {
                 string moduleName = newType.Substring(moduleIndex);
-                uint index;
 
-                Context.Symbols.GetModuleByModuleName(moduleName, 0, out index, out moduleId);
+                module = module.Process.ModulesByName[moduleName];
+                newType = newType.Substring(moduleIndex + 1);
             }
 
-            return CastVariableToUserType(new Variable(moduleId, newTypeId, typedData.Offset, name));
+            CodeType newCodeType = codeType.Module.TypesByName[newType];
+
+            return CastVariableToUserType(new Variable(newCodeType, GetPointerAddress(), name));
         }
 
         /// <summary>
@@ -586,14 +550,10 @@ namespace CsScripts
         /// <returns>Field variable if the specified field exists.</returns>
         private Variable GetOriginalField(string name)
         {
-            var response = Context.Advanced.RequestExtended(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
-            {
-                Operation = ExtTdop.GetField,
-                InData = typedData,
-                InStrIndex = (uint)Marshal.SizeOf<EXT_TYPED_DATA>(),
-            }, name);
+            CodeType fieldType = codeType.GetFieldType(name);
+            ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
 
-            return new Variable(response.OutData, name);
+            return new Variable(fieldType, fieldAddress, name);
         }
 
         /// <summary>
@@ -634,14 +594,14 @@ namespace CsScripts
             }
 
             // Look at the type and see if it should be converted to user type
-            var typesBasedOnModule = userTypes.Where(t => t.Module == originalVariable.GetCodeType().Module);
-            var typesBasedOnName = typesBasedOnModule.Where(t => t.UserType.TypeId == (originalVariable.GetCodeType().IsPointer ? originalVariable.GetCodeType().ElementType.TypeId : originalVariable.GetCodeType().TypeId));
+            var typesBasedOnModule = userTypes.Where(t => t.Module == originalVariable.codeType.Module);
+            var typesBasedOnName = typesBasedOnModule.Where(t => t.UserType.TypeId == (originalVariable.codeType.IsPointer ? originalVariable.codeType.ElementType.TypeId : originalVariable.codeType.TypeId));
 
             var types = typesBasedOnName.ToArray();
 
             if (types.Length > 1)
             {
-                throw new Exception(string.Format("Multiple types ({0}) are targeting same type {1}", string.Join(", ", types.Select(t => t.Type.FullName)), originalVariable.GetCodeType().Name));
+                throw new Exception(string.Format("Multiple types ({0}) are targeting same type {1}", string.Join(", ", types.Select(t => t.Type.FullName)), originalVariable.codeType.Name));
             }
 
             if (types.Length == 0)
@@ -677,14 +637,12 @@ namespace CsScripts
         /// <exception cref="System.ArgumentException">Variable is not an array, but  + type.Name</exception>
         public int GetArrayLength()
         {
-            var type = GetCodeType();
-
-            if (!type.IsArray)
+            if (!codeType.IsArray)
             {
-                throw new ArgumentException("Variable is not an array, but " + type.Name);
+                throw new ArgumentException("Variable is not an array, but " + codeType.Name);
             }
 
-            return (int)(type.Size / type.ElementType.Size);
+            return (int)(codeType.Size / codeType.ElementType.Size);
         }
 
         /// <summary>
@@ -781,9 +739,8 @@ namespace CsScripts
             try
             {
                 int index = Convert.ToInt32(indexes[0]);
-                var tag = GetCodeType().Tag;
 
-                if (tag == SymTag.PointerType || tag == SymTag.ArrayType)
+                if (codeType.IsPointer || codeType.IsArray)
                 {
                     result = GetArrayElement(index);
                     return true;
@@ -857,7 +814,7 @@ namespace CsScripts
         /// </summary>
         public int GetFieldOffset(string fieldName)
         {
-            return GetCodeType().GetFieldOffset(fieldName);
+            return codeType.GetFieldOffset(fieldName);
         }
 
         /// <summary>
@@ -865,7 +822,7 @@ namespace CsScripts
         /// </summary>
         private Variable[] FindFields()
         {
-            if (GetCodeType().IsArray)
+            if (codeType.IsArray)
             {
                 return new Variable[0];
             }
@@ -904,19 +861,17 @@ namespace CsScripts
                 }
             }
 
-            GlobalCache.VariablesUserTypeCastedFields.Add(this.userTypeCastedFields);
+            GlobalCache.VariablesUserTypeCastedFields.Add(userTypeCastedFields);
             return fields;
         }
 
         /// <summary>
-        /// Gets the typed data.
+        /// Reads the data value of this variable.
         /// </summary>
-        /// <param name="moduleId">The module identifier.</param>
-        /// <param name="typeId">The type identifier.</param>
-        /// <param name="offset">The offset.</param>
-        private static DEBUG_TYPED_DATA GetTypedData(ulong moduleId, uint typeId, ulong offset)
+        private ulong ReadData()
         {
-            return GlobalCache.TypedData[Tuple.Create(moduleId, typeId, offset)];
+            // TODO: Read correct data and not only pointer values
+            return Context.DataSpaces.ReadPointersVirtual(1, Address);
         }
     }
 }

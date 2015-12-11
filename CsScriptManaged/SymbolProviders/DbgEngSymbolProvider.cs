@@ -9,6 +9,39 @@ namespace CsScriptManaged.SymbolProviders
     internal class DbgEngSymbolProvider : ISymbolProvider
     {
         /// <summary>
+        /// Gets the global variable address.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="globalVariableName">Name of the global variable.</param>
+        public ulong GetGlobalVariableAddress(Module module, string globalVariableName)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            {
+                string name = module.Name + "!" + globalVariableName;
+
+                return Context.Symbols.GetOffsetByNameWide(name);
+            }
+        }
+
+        /// <summary>
+        /// Gets the global variable type identifier.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="globalVariableName">Name of the global variable.</param>
+        public uint GetGlobalVariableTypeId(Module module, string globalVariableName)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            {
+                string name = module.Name + "!" + globalVariableName;
+                uint typeId;
+                ulong moduleId;
+
+                Context.Symbols.GetSymbolTypeIdWide(name, out typeId, out moduleId);
+                return typeId;
+            }
+        }
+
+        /// <summary>
         /// Gets the element type of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -122,7 +155,7 @@ namespace CsScriptManaged.SymbolProviders
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
             {
-                return Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+                var tag = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
                 {
                     Operation = ExtTdop.SetFromTypeIdAndU64,
                     InData = new DEBUG_TYPED_DATA()
@@ -133,6 +166,8 @@ namespace CsScriptManaged.SymbolProviders
                         Offset = module.Process.PEB,
                     },
                 }).OutData.Tag;
+
+                return tag;
             }
         }
     }
