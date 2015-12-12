@@ -253,13 +253,11 @@ namespace CsScripts
                     {
                         throw new ArgumentException("Type name contains wrong module name. Don't add it manually, it will be added automatically.");
                     }
-                }
-                else
-                {
-                    name = Name + "!" + name;
+
+                    name = name.Substring(moduleIndex + 1);
                 }
 
-                uint typeId = Context.Symbols.GetTypeIdWide(Id, name);
+                uint typeId = Context.SymbolProvider.GetTypeId(this, name);
 
                 return TypesById[typeId];
             }

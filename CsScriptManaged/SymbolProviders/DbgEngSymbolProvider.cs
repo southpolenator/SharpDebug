@@ -175,6 +175,19 @@ namespace CsScriptManaged.SymbolProviders
         }
 
         /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeName">Name of the type.</param>
+        public uint GetTypeId(Module module, string typeName)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            {
+                return Context.Symbols.GetTypeIdWide(module.Id, module.Name + "!" + typeName);
+            }
+        }
+
+        /// <summary>
         /// Gets the source file name and line for the specified stack frame.
         /// </summary>
         /// <param name="stackFrame">The stack frame.</param>

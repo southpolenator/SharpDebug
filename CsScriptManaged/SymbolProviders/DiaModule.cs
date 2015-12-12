@@ -62,6 +62,18 @@ namespace CsScriptManaged.SymbolProviders
         }
 
         /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        public uint GetTypeId(string typeName)
+        {
+            // TODO: Add support for basic types
+            IDiaSymbol type = session.globalScope.GetChild(typeName);
+
+            return type.symIndexId;
+        }
+
+        /// <summary>
         /// Gets the name of the specified type.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>

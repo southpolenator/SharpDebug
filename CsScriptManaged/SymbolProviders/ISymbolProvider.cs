@@ -85,5 +85,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="stackFrame">The stack frame.</param>
         /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
         VariableCollection GetFrameLocals(StackFrame stackFrame, bool arguments);
+
+        /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeName">Name of the type.</param>
+        uint GetTypeId(Module module, string typeName);
     }
 }
