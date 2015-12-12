@@ -1,10 +1,9 @@
-﻿using Dia2Lib;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace GenerateUserTypesFromPdb
+namespace Dia2Lib
 {
-    enum DataKind
+    public enum DataKind
     {
         DataIsUnknown,
         DataIsLocal,
@@ -18,7 +17,7 @@ namespace GenerateUserTypesFromPdb
         DataIsConstant
     };
 
-    enum BasicType
+    public enum BasicType
     {
         btNoType = 0,
         btVoid = 1,
@@ -40,7 +39,7 @@ namespace GenerateUserTypesFromPdb
         btHresult = 31
     };
 
-    static class DiaHelpers
+    public static class DiaHelpers
     {
         public static IEnumerable<IDiaSymbol> Enum(this IDiaEnumSymbols container)
         {

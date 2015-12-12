@@ -748,7 +748,7 @@ namespace CsScripts
             }
             catch (Exception)
             {
-                // Index is not a number, fall back to getting member
+                // Index is not a number, fall back to getting the member
             }
 
             return TryGetMember(indexes[0].ToString(), out result);
