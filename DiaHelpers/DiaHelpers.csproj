@@ -7,7 +7,7 @@
     <ProjectGuid>{3CA2D1D6-136F-4032-901E-043FA25B6255}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DiaLib</RootNamespace>
+    <RootNamespace>Dia2Lib</RootNamespace>
     <AssemblyName>DiaHelpers</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -81,6 +81,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BasicType.cs" />
+    <Compile Include="DataKind.cs" />
     <Compile Include="DiaHelpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

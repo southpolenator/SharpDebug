@@ -94,7 +94,7 @@ namespace GenerateUserTypesFromPdb
                 output.WriteLine(@"{");
                 foreach (var field in fields)
                 {
-                    bool isStatic = (DataKind)field.dataKind == DataKind.DataIsStaticMember;
+                    bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                     string fieldTypeString = GetTypeString(field.type, symbols.Keys, field.length);
 
                     output.WriteLine("    private {0}UserMember<{1}> _{2}", isStatic ? "static " : "", fieldTypeString, field.name);
@@ -110,7 +110,7 @@ namespace GenerateUserTypesFromPdb
 
                     foreach (var field in fields)
                     {
-                        bool isStatic = (DataKind)field.dataKind == DataKind.DataIsStaticMember;
+                        bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                         string fieldTypeString = GetTypeString(field.type, symbols.Keys, field.length);
 
                         if (isStatic)
@@ -144,7 +144,7 @@ namespace GenerateUserTypesFromPdb
 
                     foreach (var field in fields)
                     {
-                        bool isStatic = (DataKind)field.dataKind == DataKind.DataIsStaticMember;
+                        bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                         string fieldTypeString = GetTypeString(field.type, symbols.Keys, field.length);
 
                         if (!isStatic)
@@ -172,7 +172,7 @@ namespace GenerateUserTypesFromPdb
                 bool firstField = true;
                 foreach (var field in fields)
                 {
-                    bool isStatic = (DataKind)field.dataKind == DataKind.DataIsStaticMember;
+                    bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                     string fieldTypeString = GetTypeString(field.type, symbols.Keys, field.length);
 
                     if (singleLineProperty)
@@ -247,20 +247,20 @@ namespace GenerateUserTypesFromPdb
                         return "bool";
                     switch ((BasicType)type.baseType)
                     {
-                        case BasicType.btBit:
-                        case BasicType.btBool:
+                        case BasicType.Bit:
+                        case BasicType.Bool:
                             return "bool";
-                        case BasicType.btChar:
-                        case BasicType.btWChar:
+                        case BasicType.Char:
+                        case BasicType.WChar:
                             return "char";
-                        case BasicType.btBSTR:
+                        case BasicType.BSTR:
                             return "string";
-                        case BasicType.btVoid:
+                        case BasicType.Void:
                             return "void";
-                        case BasicType.btFloat:
+                        case BasicType.Float:
                             return type.length <= 4 ? "float" : "double";
-                        case BasicType.btInt:
-                        case BasicType.btLong:
+                        case BasicType.Int:
+                        case BasicType.Long:
                             switch (type.length)
                             {
                                 case 0:
@@ -277,8 +277,8 @@ namespace GenerateUserTypesFromPdb
                                     throw new Exception("Unexpected type length " + type.length);
                             }
 
-                        case BasicType.btUInt:
-                        case BasicType.btULong:
+                        case BasicType.UInt:
+                        case BasicType.ULong:
                             switch (type.length)
                             {
                                 case 0:
@@ -295,7 +295,7 @@ namespace GenerateUserTypesFromPdb
                                     throw new Exception("Unexpected type length " + type.length);
                             }
 
-                        case BasicType.btHresult:
+                        case BasicType.Hresult:
                             return "Hresult";
                         default:
                             throw new Exception("Unexpected basic type " + (BasicType)type.baseType);
