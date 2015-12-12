@@ -6,7 +6,7 @@ namespace CsScriptManaged
     /// <summary>
     /// Helper class for capturing debugger output while executing commands
     /// </summary>
-    public class DebuggerOutputSaver : IDebugOutputCallbacksWide
+    public class DebuggerOutputCapture : IDebugOutputCallbacksWide
     {
         /// <summary>
         /// The string builder
@@ -14,10 +14,10 @@ namespace CsScriptManaged
         private StringBuilder sb = new StringBuilder();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DebuggerOutputSaver"/> class.
+        /// Initializes a new instance of the <see cref="DebuggerOutputCapture"/> class.
         /// </summary>
         /// <param name="captureFlags">The capture flags.</param>
-        public DebuggerOutputSaver(DebugOutput captureFlags)
+        public DebuggerOutputCapture(DebugOutput captureFlags)
         {
             CaptureFlags = captureFlags;
         }

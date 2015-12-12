@@ -31,7 +31,7 @@ namespace CsScripts
         /// <returns>Captured text</returns>
         public static string ExecuteAndCapture(DebugOutput captureFlags, string command, params object[] parameters)
         {
-            var callbacks = new DebuggerOutputSaver(captureFlags);
+            var callbacks = new DebuggerOutputCapture(captureFlags);
             using (OutputCallbacksSwitcher switcher = new OutputCallbacksSwitcher(callbacks))
             {
                 Execute(command, parameters);
