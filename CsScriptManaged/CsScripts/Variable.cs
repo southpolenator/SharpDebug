@@ -375,6 +375,14 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the memory address where value of this Variable is stored.
+        /// </summary>
+        public ulong GetAddress()
+        {
+            return Address;
+        }
+
+        /// <summary>
         /// Gets the name of variable.
         /// </summary>
         public string GetName()

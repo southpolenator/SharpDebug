@@ -82,8 +82,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BasicType.cs" />
+    <Compile Include="CV_HREG_e.cs" />
     <Compile Include="DataKind.cs" />
     <Compile Include="DiaHelpers.cs" />
+    <Compile Include="LocationType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

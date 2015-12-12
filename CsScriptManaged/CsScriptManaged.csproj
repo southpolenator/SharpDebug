@@ -76,6 +76,10 @@
       <HintPath>$(OutputPath)\DbgEngManaged.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
+    <Reference Include="Dia2Lib">
+      <HintPath>..\DiaHelpers\Dia2Lib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -96,6 +100,7 @@
     <Compile Include="CsScripts\Process.cs" />
     <Compile Include="CsScripts\ScriptBase.cs" />
     <Compile Include="CsScripts\Thread.cs" />
+    <Compile Include="CsScripts\ThreadContext.cs" />
     <Compile Include="CsScripts\UserMember.cs" />
     <Compile Include="CsScripts\UserType.cs" />
     <Compile Include="CsScripts\UserTypeAttribute.cs" />
@@ -108,8 +113,8 @@
     <Compile Include="IExecutor.cs" />
     <Compile Include="InteractiveExecution.cs" />
     <Compile Include="InteractiveScriptBase.cs" />
-    <Compile Include="MarshalArrayReader.cs" />
-    <Compile Include="MarshalStructure.cs" />
+    <Compile Include="Marshaling\MarshalArrayReader.cs" />
+    <Compile Include="Marshaling\MarshalStructure.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="OutputCallbacksSwitcher.cs" />
     <Compile Include="ProcessSwitcher.cs" />
@@ -119,10 +124,18 @@
     <Compile Include="SimpleCache.cs" />
     <Compile Include="StackFrameSwitcher.cs" />
     <Compile Include="SymbolProviders\DbgEngSymbolProvider.cs" />
+    <Compile Include="SymbolProviders\DiaModule.cs" />
+    <Compile Include="SymbolProviders\DiaSymbolProvider.cs" />
     <Compile Include="SymbolProviders\ISymbolProvider.cs" />
     <Compile Include="ThreadSwitcher.cs" />
     <Compile Include="UserTypeDescription.cs" />
     <Compile Include="UserTypeMetadata.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaHelpers\DiaHelpers.csproj">
+      <Project>{3ca2d1d6-136f-4032-901e-043fa25b6255}</Project>
+      <Name>DiaHelpers</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

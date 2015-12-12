@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace CsScriptManaged
+namespace CsScriptManaged.Marshaling
 {
     /// <summary>
     /// Marshaled structure

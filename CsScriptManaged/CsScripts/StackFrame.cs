@@ -10,7 +10,7 @@ namespace CsScripts
         /// <summary>
         /// The frame
         /// </summary>
-        private _DEBUG_STACK_FRAME frame;
+        private _DEBUG_STACK_FRAME_EX frame;
 
         /// <summary>
         /// The source file name, line and displacement
@@ -43,18 +43,20 @@ namespace CsScripts
         private SimpleCache<VariableCollection> userTypeConvertedArguments;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StackFrame"/> class.
+        /// Initializes a new instance of the <see cref="StackFrame" /> class.
         /// </summary>
         /// <param name="stackTrace">The stack trace.</param>
         /// <param name="frame">The frame.</param>
-        internal StackFrame(StackTrace stackTrace, _DEBUG_STACK_FRAME frame)
+        /// <param name="frameContext">The frame context.</param>
+        internal StackFrame(StackTrace stackTrace, _DEBUG_STACK_FRAME_EX frame, ThreadContext frameContext)
         {
             StackTrace = stackTrace;
+            FrameContext = frameContext;
             this.frame = frame;
             sourceFileNameAndLine = SimpleCache.Create(ReadSourceFileNameAndLine);
             functionNameAndDisplacement = SimpleCache.Create(ReadFunctionNameAndDisplacement);
-            locals = SimpleCache.Create(() => GetVariables(DebugScopeGroup.Locals));
-            arguments = SimpleCache.Create(() => GetVariables(DebugScopeGroup.Arguments));
+            locals = SimpleCache.Create(() => Context.SymbolProvider.GetFrameLocals(this, false));
+            arguments = SimpleCache.Create(() => Context.SymbolProvider.GetFrameLocals(this, true));
             userTypeConvertedLocals = SimpleCache.Create(() =>
             {
                 VariableCollection collection = Variable.CastVariableCollectionToUserType(locals.Value);
@@ -75,6 +77,11 @@ namespace CsScripts
         /// Gets the owning stack trace.
         /// </summary>
         public StackTrace StackTrace { get; internal set; }
+
+        /// <summary>
+        /// Gets the frame context.
+        /// </summary>
+        public ThreadContext FrameContext { get; private set; }
 
         /// <summary>
         /// Gets the owning thread.
@@ -273,12 +280,12 @@ namespace CsScripts
         {
             try
             {
-                uint fileNameLength, sourceFileLine;
+                string sourceFileName;
+                uint sourceFileLine;
                 ulong displacement;
-                StringBuilder sb = new StringBuilder(Constants.MaxFileName);
 
-                Context.Symbols.GetLineByOffset(InstructionOffset, out sourceFileLine, sb, (uint)sb.Capacity, out fileNameLength, out displacement);
-                return Tuple.Create(sb.ToString(), sourceFileLine, displacement);
+                Context.SymbolProvider.GetStackFrameSourceFileNameAndLine(this, out sourceFileName, out sourceFileLine, out displacement);
+                return Tuple.Create(sourceFileName, sourceFileLine, displacement);
             }
             catch (Exception ex)
             {
@@ -295,47 +302,15 @@ namespace CsScripts
         {
             try
             {
-                uint functionNameSize;
                 ulong displacement;
-                StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+                string functionName;
 
-                Context.Symbols.GetNameByOffset(InstructionOffset, sb, (uint)sb.Capacity, out functionNameSize, out displacement);
-                return Tuple.Create(sb.ToString(), displacement);
+                Context.SymbolProvider.GetStackFrameFunctionName(this, out functionName, out displacement);
+                return Tuple.Create(functionName, displacement);
             }
             catch (Exception ex)
             {
                 throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
-            }
-        }
-
-        /// <summary>
-        /// Gets the variables based on the scope group.
-        /// </summary>
-        /// <param name="scopeGroup">The scope group.</param>
-        /// <returns>Array of variables</returns>
-        private VariableCollection GetVariables(DebugScopeGroup scopeGroup)
-        {
-            using (StackFrameSwitcher switcher = new StackFrameSwitcher(this))
-            {
-                IDebugSymbolGroup2 symbolGroup;
-                Context.Symbols.GetScopeSymbolGroup2((uint)scopeGroup, null, out symbolGroup);
-                uint localsCount = symbolGroup.GetNumberSymbols();
-                Variable[] variables = new Variable[localsCount];
-                for (uint i = 0; i < localsCount; i++)
-                {
-                    StringBuilder name = new StringBuilder(Constants.MaxSymbolName);
-                    uint nameSize;
-
-                    symbolGroup.GetSymbolName(i, name, (uint)name.Capacity, out nameSize);
-                    var entry = symbolGroup.GetSymbolEntryInformation(i);
-                    var module = Process.ModulesById[entry.ModuleBase];
-                    var codeType = module.TypesById[entry.TypeId];
-                    var address = entry.Offset;
-
-                    variables[i] = new Variable(codeType, address, name.ToString());
-                }
-
-                return new VariableCollection(variables);
             }
         }
     }

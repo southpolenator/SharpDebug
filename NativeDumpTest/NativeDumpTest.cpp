@@ -24,7 +24,7 @@ void BreakPointFunction()
 {
 }
 
-int main()
+int main(int argc, char** argv)
 {
 	MyTestClass * p = &globalVariable;
 	MyTestClass ** q = &p;

@@ -37,6 +37,16 @@ namespace CsScripts
         private SimpleCache<UserTypeDescription[]> userTypes;
 
         /// <summary>
+        /// The actual processor type
+        /// </summary>
+        private SimpleCache<ImageFileMachine> actualProcessorType;
+
+        /// <summary>
+        /// The effective processor type
+        /// </summary>
+        private SimpleCache<ImageFileMachine> effectiveProcessorType;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Process"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -48,6 +58,8 @@ namespace CsScripts
             upTime = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessUpTime()));
             pebAddress = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessPeb()));
             executableName = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessExecutableName()));
+            actualProcessorType = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => (ImageFileMachine)Context.Control.GetActualProcessorType()));
+            effectiveProcessorType = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => (ImageFileMachine)Context.Control.GetEffectiveProcessorType()));
             threads = SimpleCache.Create(GetThreads);
             modules = SimpleCache.Create(GetModules);
             userTypes = SimpleCache.Create(GetUserTypes);
@@ -198,6 +210,28 @@ namespace CsScripts
             get
             {
                 return modules.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the actual type of the processor.
+        /// </summary>
+        public ImageFileMachine ActualProcessorType
+        {
+            get
+            {
+                return actualProcessorType.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the effective type of the processor.
+        /// </summary>
+        public ImageFileMachine EffectiveProcessorType
+        {
+            get
+            {
+                return effectiveProcessorType.Value;
             }
         }
 

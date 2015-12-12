@@ -61,5 +61,29 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         /// <param name="globalVariableName">Name of the global variable.</param>
         uint GetGlobalVariableTypeId(Module module, string globalVariableName);
+
+        /// <summary>
+        /// Gets the source file name and line for the specified stack frame.
+        /// </summary>
+        /// <param name="stackFrame">The stack frame.</param>
+        /// <param name="sourceFileName">Name of the source file.</param>
+        /// <param name="sourceFileLine">The source file line.</param>
+        /// <param name="displacement">The displacement.</param>
+        void GetStackFrameSourceFileNameAndLine(StackFrame stackFrame, out string sourceFileName, out uint sourceFileLine, out ulong displacement);
+
+        /// <summary>
+        /// Gets the name of the function for the specified stack frame.
+        /// </summary>
+        /// <param name="stackFrame">The stack frame.</param>
+        /// <param name="functionName">Name of the function.</param>
+        /// <param name="displacement">The displacement.</param>
+        void GetStackFrameFunctionName(StackFrame stackFrame, out string functionName, out ulong displacement);
+
+        /// <summary>
+        /// Gets the stack frame locals.
+        /// </summary>
+        /// <param name="stackFrame">The stack frame.</param>
+        /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
+        VariableCollection GetFrameLocals(StackFrame stackFrame, bool arguments);
     }
 }

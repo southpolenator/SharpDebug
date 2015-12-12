@@ -48,6 +48,16 @@ namespace CsScriptManaged
         public static ISymbolProvider SymbolProvider;
 
         /// <summary>
+        /// The DbgEng.dll symbol provider
+        /// </summary>
+        private static DbgEngSymbolProvider DbgEngSymbolProvider = new DbgEngSymbolProvider();
+
+        /// <summary>
+        /// The DIA symbol provider
+        /// </summary>
+        private static DiaSymbolProvider DiaSymbolProvider = new DiaSymbolProvider();
+
+        /// <summary>
         /// The user type metadata (used for casting to user types)
         /// </summary>
         internal static UserTypeMetadata[] UserTypeMetadata;
@@ -91,7 +101,8 @@ namespace CsScriptManaged
             Registers = client as IDebugRegisters2;
             Symbols = client as IDebugSymbols5;
             SystemObjects = client as IDebugSystemObjects4;
-            SymbolProvider = new DbgEngSymbolProvider();
+            SymbolProvider = DbgEngSymbolProvider;
+            //SymbolProvider = DiaSymbolProvider;
         }
 
         /// <summary>
