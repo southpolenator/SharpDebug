@@ -114,7 +114,8 @@ namespace CsScriptManaged
         /// Compiles the specified code.
         /// </summary>
         /// <param name="code">The code.</param>
-        protected CompilerResults Compile(string code)
+        /// <param name="referencedAssemblies">The referenced assemblies.</param>
+        protected CompilerResults Compile(string code, params string[] referencedAssemblies)
         {
             // Create compiler parameters
             string tempDir = Path.GetTempPath() + @"\CsScripts\";
@@ -128,6 +129,7 @@ namespace CsScriptManaged
             };
 
             compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
+            compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies);
 
             // Check if Microsoft.CSharp.dll should be added to the list of referenced assemblies
             const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
@@ -145,22 +147,37 @@ namespace CsScriptManaged
         /// Gets the full path of the file.
         /// </summary>
         /// <param name="path">The path.</param>
-        /// <param name="parentPath">The parent path.</param>
-        protected string GetFullPath(string path, string parentPath = "")
+        /// <param name="parentPaths">The array of parent paths.</param>
+        protected string GetFullPath(string path, params string[] parentPaths)
         {
             if (Path.IsPathRooted(path))
             {
                 return path;
             }
 
-            if (!string.IsNullOrEmpty(parentPath))
+            foreach (var pp in parentPaths)
             {
-                if (File.Exists(parentPath))
-                {
-                    parentPath = Path.GetDirectoryName(parentPath);
-                }
+                string parentPath = pp;
 
-                string newPath = Path.Combine(parentPath, path);
+                if (!string.IsNullOrEmpty(parentPath))
+                {
+                    if (File.Exists(parentPath))
+                    {
+                        parentPath = Path.GetDirectoryName(parentPath);
+                    }
+
+                    string newPath = Path.Combine(parentPath, path);
+
+                    if (File.Exists(newPath))
+                    {
+                        return newPath;
+                    }
+                }
+            }
+
+            foreach (string folder in SearchFolders)
+            {
+                string newPath = Path.Combine(folder, path);
 
                 if (File.Exists(newPath))
                 {
@@ -168,9 +185,9 @@ namespace CsScriptManaged
                 }
             }
 
-            foreach (string folder in SearchFolders)
+            if (Path.GetExtension(path).ToLower() == ".dll")
             {
-                string newPath = Path.Combine(folder, path);
+                string newPath = Path.Combine(Context.GetAssemblyDirectory(), path);
 
                 if (File.Exists(newPath))
                 {
@@ -185,9 +202,10 @@ namespace CsScriptManaged
         /// Loads the code from the script and imported files. It acts as precompiler.
         /// </summary>
         /// <param name="path">The path.</param>
+        /// <param name="referencedAssemblies">The referenced assemblies.</param>
         /// <param name="defaultUsings">The array of default using namespaces. If null is supplied, it will be { System, System.Linq, CsScripts }</param>
         /// <returns>Merged code of all imported script files</returns>
-        protected string LoadCode(string path, string[] defaultUsings = null)
+        protected string LoadCode(string path, ISet<string> referencedAssemblies = null, string[] defaultUsings = null)
         {
             HashSet<string> loadedScripts = new HashSet<string>();
             HashSet<string> usings = new HashSet<string>(defaultUsings ?? new string[] { "System", "System.Linq", "CsScripts" });
@@ -205,10 +223,20 @@ namespace CsScriptManaged
                 {
                     if (!loadedScripts.Contains(import))
                     {
-                        string code = ImportFile(import, usings, newImports);
+                        if (Path.GetExtension(import).ToLower() == ".dll")
+                        {
+                            if (referencedAssemblies != null)
+                            {
+                                referencedAssemblies.Add(import);
+                            }
+                        }
+                        else
+                        {
+                            string code = ImportFile(import, usings, newImports);
 
-                        importedCode.AppendLine(code);
-                        loadedScripts.Add(import);
+                            importedCode.AppendLine(code);
+                            loadedScripts.Add(import);
+                        }
                     }
                 }
 

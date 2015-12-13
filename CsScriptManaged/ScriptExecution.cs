@@ -1,5 +1,6 @@
 ﻿using System;
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -17,10 +18,11 @@ namespace CsScriptManaged
         /// <param name="args">The arguments.</param>
         internal void Execute(string path, params string[] args)
         {
-            string code = LoadCode(path);
+            HashSet<string> referencedAssemblies = new HashSet<string>();
+            string code = LoadCode(path, referencedAssemblies);
 
             // Compile the script
-            CompilerResults results = Compile(code);
+            CompilerResults results = Compile(code, referencedAssemblies.ToArray());
 
             if (results.Errors.Count > 0)
                 throw new Exception(string.Join("\n", results.Errors.Cast<CompilerError>()));

@@ -1,7 +1,8 @@
-﻿using System;
+﻿using CsScriptManaged.SymbolProviders;
 using DbgEngManaged;
+using System;
 using System.IO;
-using CsScriptManaged.SymbolProviders;
+using System.Reflection;
 
 namespace CsScriptManaged
 {
@@ -200,6 +201,24 @@ namespace CsScriptManaged
                 Console.SetOut(originalConsoleOut);
                 Console.SetError(originalConsoleError);
             }
+        }
+
+        /// <summary>
+        /// Gets the assembly directory.
+        /// </summary>
+        internal static string GetAssemblyDirectory()
+        {
+            string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+            UriBuilder uri = new UriBuilder(codeBase);
+            string path = Uri.UnescapeDataString(uri.Path);
+
+            path = Path.GetDirectoryName(path);
+            if (!path.EndsWith("\\"))
+            {
+                path += "\\";
+            }
+
+            return path;
         }
     }
 }

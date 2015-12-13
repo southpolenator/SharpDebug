@@ -172,6 +172,7 @@ namespace CsScriptManaged
             HashSet<string> newLoadedScripts = new HashSet<string>(loadedScripts);
             HashSet<string> newUsings = new HashSet<string>(usings);
             HashSet<string> imports = new HashSet<string>();
+            HashSet<string> referencedAssemblies = new HashSet<string>();
             StringBuilder newImportedCode = new StringBuilder(importedCode);
 
             code = ImportCode(code, newUsings, imports);
@@ -183,10 +184,17 @@ namespace CsScriptManaged
                 {
                     if (!newLoadedScripts.Contains(import))
                     {
-                        string file = ImportFile(import, usings, newImports);
+                        if (Path.GetExtension(import).ToLower() == ".dll")
+                        {
+                            referencedAssemblies.Add(import);
+                        }
+                        else
+                        {
+                            string file = ImportFile(import, usings, newImports);
 
-                        newImportedCode.AppendLine(file);
-                        newLoadedScripts.Add(import);
+                            newImportedCode.AppendLine(file);
+                            newLoadedScripts.Add(import);
+                        }
                     }
                 }
 
@@ -194,7 +202,7 @@ namespace CsScriptManaged
             }
 
             // Compile code
-            var compileResult = CompileByReplacingVariables(ref code, newUsings, newImportedCode.ToString());
+            var compileResult = CompileByReplacingVariables(ref code, newUsings, newImportedCode.ToString(), referencedAssemblies.ToArray());
 
             // Report compile error
             List<CompilerError> errors = new List<CompilerError>();
@@ -242,14 +250,17 @@ namespace CsScriptManaged
         /// Compiles the code, but replaces any undeclared variable with dynamic one in InteractiveScriptBase.
         /// </summary>
         /// <param name="code">The code.</param>
-        private CompilerResults CompileByReplacingVariables(ref string code, IEnumerable<string> usings, string importedCode)
+        /// <param name="usings">The usings.</param>
+        /// <param name="importedCode">The imported code.</param>
+        /// <param name="referencedAssemblies">The referenced assemblies.</param>
+        private CompilerResults CompileByReplacingVariables(ref string code, IEnumerable<string> usings, string importedCode, params string[] referencedAssemblies)
         {
             while (true)
             {
                 string generatedCode = "#line 1 \"" + InteractiveScriptName + "\"\n" + code + "\n#line default\n";
                 generatedCode = GenerateCode(usings, importedCode, generatedCode, "CsScriptManaged.InteractiveScriptBase");
 
-                var compileResult = Compile(generatedCode);
+                var compileResult = Compile(generatedCode, referencedAssemblies);
 
                 bool fixedError = false;
 
