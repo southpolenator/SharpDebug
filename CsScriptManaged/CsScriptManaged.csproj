@@ -127,6 +127,7 @@
     <Compile Include="SymbolProviders\DiaModule.cs" />
     <Compile Include="SymbolProviders\DiaSymbolProvider.cs" />
     <Compile Include="SymbolProviders\ISymbolProvider.cs" />
+    <Compile Include="SymbolProviders\ISymbolProviderModule.cs" />
     <Compile Include="ThreadSwitcher.cs" />
     <Compile Include="UserTypeDescription.cs" />
     <Compile Include="UserTypeMetadata.cs" />

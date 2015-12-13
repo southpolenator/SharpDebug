@@ -9,7 +9,7 @@ namespace CsScriptManaged.SymbolProviders
     /// <summary>
     /// Symbol provider that is being implemented over DbgEng.dll.
     /// </summary>
-    internal class DbgEngSymbolProvider : ISymbolProvider
+    internal class DbgEngSymbolProvider : ISymbolProvider, ISymbolProviderModule
     {
         /// <summary>
         /// Gets the global variable address.
@@ -255,6 +255,43 @@ namespace CsScriptManaged.SymbolProviders
 
                 return new VariableCollection(variables);
             }
+        }
+
+        /// <summary>
+        /// Gets the source file name and line for the specified stack frame.
+        /// </summary>
+        /// <param name="stackFrame">The stack frame.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="sourceFileName">Name of the source file.</param>
+        /// <param name="sourceFileLine">The source file line.</param>
+        /// <param name="displacement">The displacement.</param>
+        public void GetSourceFileNameAndLine(StackFrame stackFrame, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
+        {
+            GetStackFrameSourceFileNameAndLine(stackFrame, out sourceFileName, out sourceFileLine, out displacement);
+        }
+
+        /// <summary>
+        /// Gets the name of the function for the specified stack frame.
+        /// </summary>
+        /// <param name="stackFrame">The stack frame.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="functionName">Name of the function.</param>
+        /// <param name="displacement">The displacement.</param>
+        public void GetFunctionNameAndDisplacement(StackFrame stackFrame, uint address, out string functionName, out ulong displacement)
+        {
+            GetStackFrameFunctionName(stackFrame, out functionName, out displacement);
+        }
+
+        /// <summary>
+        /// Gets the stack frame locals.
+        /// </summary>
+        /// <param name="frame">The frame.</param>
+        /// <param name="module">The module.</param>
+        /// <param name="relativeAddress">The relative address.</param>
+        /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
+        public VariableCollection GetFrameLocals(StackFrame frame, Module module, uint relativeAddress, bool arguments)
+        {
+            return GetFrameLocals(frame, arguments);
         }
     }
 }

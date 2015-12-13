@@ -1,5 +1,6 @@
 ﻿using CsScripts;
 using System;
+using System.IO;
 
 namespace CsScriptManaged.SymbolProviders
 {
@@ -11,7 +12,21 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// The modules cache
         /// </summary>
-        private GlobalCache<string, DiaModule> modules = new GlobalCache<string, DiaModule>((pdb) => new DiaModule(pdb));
+        private GlobalCache<string, ISymbolProviderModule> modules = new GlobalCache<string, ISymbolProviderModule>(LoadModule);
+
+        /// <summary>
+        /// Loads the module from PDB file.
+        /// </summary>
+        /// <param name="pdb">The PDB path.</param>
+        private static ISymbolProviderModule LoadModule(string pdb)
+        {
+            if (string.IsNullOrEmpty(pdb) || Path.GetExtension(pdb) != "pdb")
+            {
+                return new DbgEngSymbolProvider();
+            }
+
+            return new DiaModule(pdb);
+        }
 
         /// <summary>
         /// Gets the global variable address.
@@ -20,7 +35,7 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="globalVariableName">Name of the global variable.</param>
         public ulong GetGlobalVariableAddress(Module module, string globalVariableName)
         {
-            DiaModule diaModule = GetDiaModule(module);
+            ISymbolProviderModule diaModule = GetDiaModule(module);
 
             throw new NotImplementedException();
         }
@@ -32,7 +47,7 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="globalVariableName">Name of the global variable.</param>
         public uint GetGlobalVariableTypeId(Module module, string globalVariableName)
         {
-            DiaModule diaModule = GetDiaModule(module);
+            ISymbolProviderModule diaModule = GetDiaModule(module);
 
             throw new NotImplementedException();
         }
@@ -44,9 +59,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypeElementTypeId(Module module, uint typeId)
         {
-            DiaModule diaModule = GetDiaModule(module);
+            ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            return diaModule.GetGetTypeElementTypeId(typeId);
+            return diaModule.GetTypeElementTypeId(module, typeId);
         }
 
         /// <summary>
@@ -56,9 +71,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string[] GetTypeFieldNames(Module module, uint typeId)
         {
-            DiaModule diaModule = GetDiaModule(module);
+            ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            return diaModule.GetTypeFieldNames(typeId);
+            return diaModule.GetTypeFieldNames(module, typeId);
         }
 
         /// <summary>
@@ -69,9 +84,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="fieldName">Name of the field.</param>
         public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
-            DiaModule diaModule = GetDiaModule(module);
+            ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            return diaModule.GetTypeFieldTypeAndOffset(typeId, fieldName);
+            return diaModule.GetTypeFieldTypeAndOffset(module, typeId, fieldName);
         }
 
         /// <summary>
@@ -81,9 +96,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string GetTypeName(Module module, uint typeId)
         {
-            DiaModule diaModule = GetDiaModule(module);
+            ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            return diaModule.GetTypeName(typeId);
+            return diaModule.GetTypeName(module, typeId);
         }
 
         /// <summary>
@@ -93,9 +108,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypeSize(Module module, uint typeId)
         {
-            DiaModule diaModule = GetDiaModule(module);
+            ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            return diaModule.GetTypeSize(typeId);
+            return diaModule.GetTypeSize(module, typeId);
         }
 
         /// <summary>
@@ -105,9 +120,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public SymTag GetTypeTag(Module module, uint typeId)
         {
-            DiaModule diaModule = GetDiaModule(module);
+            ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            return diaModule.GetTypeTag(typeId);
+            return diaModule.GetTypeTag(module, typeId);
         }
 
         /// <summary>
@@ -117,9 +132,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeName">Name of the type.</param>
         public uint GetTypeId(Module module, string typeName)
         {
-            DiaModule diaModule = GetDiaModule(module);
+            ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            return diaModule.GetTypeId(typeName);
+            return diaModule.GetTypeId(module, typeName);
         }
 
         /// <summary>
@@ -133,10 +148,9 @@ namespace CsScriptManaged.SymbolProviders
         {
             ulong distance;
             Module module;
-            DiaModule diaModule = GetDiaModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
+            ISymbolProviderModule diaModule = GetDiaModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
 
-            diaModule.GetSourceFileNameAndLine((uint)distance, out sourceFileName, out sourceFileLine);
-            displacement = 0;
+            diaModule.GetSourceFileNameAndLine(stackFrame, (uint)distance, out sourceFileName, out sourceFileLine, out displacement);
         }
 
         /// <summary>
@@ -149,12 +163,10 @@ namespace CsScriptManaged.SymbolProviders
         {
             ulong distance;
             Module module;
-            DiaModule diaModule = GetDiaModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
-            int innerDisplacement;
+            ISymbolProviderModule diaModule = GetDiaModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
 
-            diaModule.GetFunctionNameAndDisplacement((uint)distance, out functionName, out innerDisplacement);
+            diaModule.GetFunctionNameAndDisplacement(stackFrame, (uint)distance, out functionName, out displacement);
             functionName = module.Name + "!" + functionName;
-            displacement = (ulong)innerDisplacement;
         }
 
         /// <summary>
@@ -166,7 +178,7 @@ namespace CsScriptManaged.SymbolProviders
         {
             ulong distance;
             Module module;
-            DiaModule diaModule = GetDiaModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
+            ISymbolProviderModule diaModule = GetDiaModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
 
             return diaModule.GetFrameLocals(stackFrame, module, (uint)distance, arguments);
         }
@@ -175,7 +187,7 @@ namespace CsScriptManaged.SymbolProviders
         /// Gets the DIA module.
         /// </summary>
         /// <param name="module">The module.</param>
-        private DiaModule GetDiaModule(Module module)
+        private ISymbolProviderModule GetDiaModule(Module module)
         {
             return modules[module.SymbolFileName];
         }
@@ -186,7 +198,7 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="process">The process.</param>
         /// <param name="instructionOffset">The instruction offset.</param>
         /// <param name="distance">The distance.</param>
-        private DiaModule GetDiaModule(Process process, ulong instructionOffset, out ulong distance, out Module module)
+        private ISymbolProviderModule GetDiaModule(Process process, ulong instructionOffset, out ulong distance, out Module module)
         {
             module = null;
             distance = ulong.MaxValue;

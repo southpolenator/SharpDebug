@@ -8,7 +8,7 @@ namespace CsScriptManaged.SymbolProviders
     /// <summary>
     /// DIA library module representation
     /// </summary>
-    internal class DiaModule
+    internal class DiaModule : ISymbolProviderModule
     {
         /// <summary>
         /// The DIA data source
@@ -46,8 +46,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the symbol tag of the specified type.
         /// </summary>
+        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public SymTag GetTypeTag(uint typeId)
+        public SymTag GetTypeTag(Module module, uint typeId)
         {
             return (SymTag)GetTypeFromId(typeId).symTag;
         }
@@ -55,8 +56,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the size of the specified type.
         /// </summary>
+        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public uint GetTypeSize(uint typeId)
+        public uint GetTypeSize(Module module, uint typeId)
         {
             return (uint)GetTypeFromId(typeId).length;
         }
@@ -64,8 +66,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the type identifier.
         /// </summary>
+        /// <param name="module">The module.</param>
         /// <param name="typeName">Name of the type.</param>
-        public uint GetTypeId(string typeName)
+        public uint GetTypeId(Module module, string typeName)
         {
             // TODO: Add support for basic types
             IDiaSymbol type = session.globalScope.GetChild(typeName);
@@ -76,8 +79,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the name of the specified type.
         /// </summary>
+        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string GetTypeName(uint typeId)
+        public string GetTypeName(Module module, uint typeId)
         {
             return GetTypeName(GetTypeFromId(typeId));
         }
@@ -173,8 +177,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the element type of the specified type.
         /// </summary>
+        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public uint GetGetTypeElementTypeId(uint typeId)
+        public uint GetTypeElementTypeId(Module module, uint typeId)
         {
             return GetTypeFromId(typeId).typeId;
         }
@@ -182,8 +187,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the names of all fields of the specified type.
         /// </summary>
+        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string[] GetTypeFieldNames(uint typeId)
+        public string[] GetTypeFieldNames(Module module, uint typeId)
         {
             return GetTypeFieldNames(GetTypeFromId(typeId));
         }
@@ -213,9 +219,10 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the field type id and offset of the specified type.
         /// </summary>
+        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
-        public Tuple<uint, int> GetTypeFieldTypeAndOffset(uint typeId, string fieldName)
+        public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
             return GetTypeFieldTypeAndOffset(GetTypeFromId(typeId), fieldName);
         }
@@ -248,10 +255,13 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the source file name and line for the specified stack frame.
         /// </summary>
+        /// <param name="stackFrame">The stack frame.</param>
         /// <param name="address">The address.</param>
         /// <param name="sourceFileName">Name of the source file.</param>
         /// <param name="sourceFileLine">The source file line.</param>
-        public void GetSourceFileNameAndLine(uint address, out string sourceFileName, out uint sourceFileLine)
+        /// <param name="displacement">The displacement.</param>
+        /// <exception cref="Exception">Address not found</exception>
+        public void GetSourceFileNameAndLine(StackFrame stackFrame, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
             IDiaEnumLineNumbers lineNumbers;
             IDiaSymbol function;
@@ -264,6 +274,7 @@ namespace CsScriptManaged.SymbolProviders
                 {
                     sourceFileName = lineNumber.sourceFile.fileName;
                     sourceFileLine = lineNumber.lineNumber;
+                    displacement = 0;
                     return;
                 }
             }
@@ -274,14 +285,17 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the name of the function for the specified stack frame.
         /// </summary>
+        /// <param name="stackFrame">The stack frame.</param>
         /// <param name="address">The address.</param>
         /// <param name="functionName">Name of the function.</param>
         /// <param name="displacement">The displacement.</param>
-        public void GetFunctionNameAndDisplacement(uint address, out string functionName, out int displacement)
+        public void GetFunctionNameAndDisplacement(StackFrame stackFrame, uint address, out string functionName, out ulong displacement)
         {
+            int innerDisplacement;
             IDiaSymbol function;
 
-            session.findSymbolByRVAEx(address, SymTagEnum.SymTagFunction, out function, out displacement);
+            session.findSymbolByRVAEx(address, SymTagEnum.SymTagFunction, out function, out innerDisplacement);
+            displacement = (ulong)innerDisplacement;
             functionName = function.name;
         }
 
