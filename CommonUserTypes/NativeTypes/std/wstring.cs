@@ -9,11 +9,6 @@ namespace CsScripts.CommonUserTypes.NativeTypes.std
     public class wstring
     {
         /// <summary>
-        /// The code type regular expression validator
-        /// </summary>
-        private static Regex codeTypeRegexValidator = new Regex(@"std::basic_string\s*<\s*wchar_t\s*,\s*std::char_traits\s*<\s*wchar_t\s*>\s*,\s*.*>", RegexOptions.Compiled);
-
-        /// <summary>
         /// The internal value field inside the std::wstring
         /// </summary>
         private UserMember<Variable> value;
@@ -46,7 +41,7 @@ namespace CsScripts.CommonUserTypes.NativeTypes.std
             }
 
             // Initialize members
-            value = UserMember.Create(() => variable.GetField("_MyPair").GetField("_Myval2"));
+            value = UserMember.Create(() => variable.GetField("_Mypair").GetField("_Myval2"));
             length = UserMember.Create(() => (int)Value.GetField("_Mysize"));
             reserved = UserMember.Create(() => (int)Value.GetField("_Myres"));
             text = UserMember.Create(GetText);
@@ -128,17 +123,32 @@ namespace CsScripts.CommonUserTypes.NativeTypes.std
         /// <param name="codeType">The code type.</param>
         private static bool VerifyCodeType(CodeType codeType)
         {
-            string codeTypeName = codeType.Name;
-            var matches = codeTypeRegexValidator.Matches(codeTypeName);
+            // We want to have this kind of hierarchy
+            // _Mypair
+            // | _Myval2
+            //   | _Bx
+            //     | _Buf
+            //     | _Ptr
+            //   | _Mysize
+            //   | _Myres
+            CodeType _Mypair, _Myval2, _Bx, _Buf, _Ptr, _Mysize, _Myres;
 
-            if (matches.Count != 1)
-            {
+            if (!codeType.GetFieldTypes().TryGetValue("_Mypair", out _Mypair))
                 return false;
-            }
+            if (!_Mypair.GetFieldTypes().TryGetValue("_Myval2", out _Myval2))
+                return false;
 
-            var match = matches[0];
+            var _Myval2Fields = _Myval2.GetFieldTypes();
 
-            return match.Length == codeTypeName.Length;
+            if (!_Myval2Fields.TryGetValue("_Bx", out _Bx) || !_Myval2Fields.TryGetValue("_Mysize", out _Mysize) || !_Myval2Fields.TryGetValue("_Myres", out _Myres))
+                return false;
+
+            var _BxFields = _Bx.GetFieldTypes();
+
+            if (!_BxFields.TryGetValue("_Buf", out _Buf) || !_BxFields.TryGetValue("_Ptr", out _Ptr))
+                return false;
+
+            return true;
         }
     }
 }
