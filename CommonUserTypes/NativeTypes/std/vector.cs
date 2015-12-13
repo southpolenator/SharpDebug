@@ -10,7 +10,7 @@ namespace CsScripts.CommonUserTypes.NativeTypes.std
     public class vector<T> : IReadOnlyList<T>
     {
         /// <summary>
-        /// The internal value field inside the std::wstring
+        /// The internal value field inside the std::vector
         /// </summary>
         private UserMember<Variable> value;
 
@@ -148,7 +148,7 @@ namespace CsScripts.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
-        /// Gets the internal value field inside the std::wstring
+        /// Gets the internal value field inside the std::vector
         /// </summary>
         private Variable Value
         {

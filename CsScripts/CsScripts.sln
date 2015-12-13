@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CsScripts", "CsScripts.vcxproj", "{D907EEFA-048D-45E2-9288-B420930BC97E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{21A929EA-B96B-4523-9D0F-853EA771058D} = {21A929EA-B96B-4523-9D0F-853EA771058D}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsScriptManaged", "..\CsScriptManaged\CsScriptManaged.csproj", "{2A7F1646-9B5A-433C-8A84-2215194F59B9}"
 	ProjectSection(ProjectDependencies) = postProject

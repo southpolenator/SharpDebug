@@ -1,12 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CsScripts.CommonUserTypes.NativeTypes.std
+﻿namespace CsScripts.CommonUserTypes.NativeTypes.std
 {
-    public class @string
+    /// <summary>
+    /// Microsoft implementation of std::string
+    /// </summary>
+    public class @string : basic_string
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="string"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public @string(Variable variable)
+            : base(variable)
+        {
+        }
     }
 }
