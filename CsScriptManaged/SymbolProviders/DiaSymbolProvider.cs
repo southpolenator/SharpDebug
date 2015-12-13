@@ -150,7 +150,7 @@ namespace CsScriptManaged.SymbolProviders
             Module module;
             ISymbolProviderModule diaModule = GetDiaModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
 
-            diaModule.GetSourceFileNameAndLine(stackFrame, (uint)distance, out sourceFileName, out sourceFileLine, out displacement);
+            diaModule.GetSourceFileNameAndLine(stackFrame.Process, stackFrame.InstructionOffset, (uint)distance, out sourceFileName, out sourceFileLine, out displacement);
         }
 
         /// <summary>
@@ -165,7 +165,41 @@ namespace CsScriptManaged.SymbolProviders
             Module module;
             ISymbolProviderModule diaModule = GetDiaModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
 
-            diaModule.GetFunctionNameAndDisplacement(stackFrame, (uint)distance, out functionName, out displacement);
+            diaModule.GetFunctionNameAndDisplacement(stackFrame.Process, stackFrame.InstructionOffset, (uint)distance, out functionName, out displacement);
+            functionName = module.Name + "!" + functionName;
+        }
+
+        /// <summary>
+        /// Gets the source file name and line for the specified address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="sourceFileName">Name of the source file.</param>
+        /// <param name="sourceFileLine">The source file line.</param>
+        /// <param name="displacement">The displacement.</param>
+        public void GetProcessAddressSourceFileNameAndLine(Process process, ulong address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
+        {
+            ulong distance;
+            Module module;
+            ISymbolProviderModule diaModule = GetDiaModule(process, address, out distance, out module);
+
+            diaModule.GetSourceFileNameAndLine(process, address, (uint)distance, out sourceFileName, out sourceFileLine, out displacement);
+        }
+
+        /// <summary>
+        /// Gets the name of the function for the specified address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="functionName">Name of the function.</param>
+        /// <param name="displacement">The displacement.</param>
+        public void GetProcessAddressFunctionName(Process process, ulong address, out string functionName, out ulong displacement)
+        {
+            ulong distance;
+            Module module;
+            ISymbolProviderModule diaModule = GetDiaModule(process, address, out distance, out module);
+
+            diaModule.GetFunctionNameAndDisplacement(process, address, (uint)distance, out functionName, out displacement);
             functionName = module.Name + "!" + functionName;
         }
 

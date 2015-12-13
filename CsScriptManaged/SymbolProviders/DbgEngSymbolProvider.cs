@@ -225,6 +225,45 @@ namespace CsScriptManaged.SymbolProviders
         }
 
         /// <summary>
+        /// Gets the source file name and line for the specified address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="sourceFileName">Name of the source file.</param>
+        /// <param name="sourceFileLine">The source file line.</param>
+        /// <param name="displacement">The displacement.</param>
+        public void GetProcessAddressSourceFileNameAndLine(Process process, ulong address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(process))
+            {
+                uint fileNameLength;
+                StringBuilder sb = new StringBuilder(Constants.MaxFileName);
+
+                Context.Symbols.GetLineByOffset(address, out sourceFileLine, sb, (uint)sb.Capacity, out fileNameLength, out displacement);
+                sourceFileName = sb.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Gets the name of the function for the specified address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="functionName">Name of the function.</param>
+        /// <param name="displacement">The displacement.</param>
+        public void GetProcessAddressFunctionName(Process process, ulong address, out string functionName, out ulong displacement)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(process))
+            {
+                uint functionNameSize;
+                StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+
+                Context.Symbols.GetNameByOffset(address, sb, (uint)sb.Capacity, out functionNameSize, out displacement);
+                functionName = sb.ToString();
+            }
+        }
+
+        /// <summary>
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="stackFrame">The stack frame.</param>
@@ -260,26 +299,28 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the source file name and line for the specified stack frame.
         /// </summary>
-        /// <param name="stackFrame">The stack frame.</param>
+        /// <param name="process">The process.</param>
+        /// <param name="processAddress">The process address.</param>
         /// <param name="address">The address.</param>
         /// <param name="sourceFileName">Name of the source file.</param>
         /// <param name="sourceFileLine">The source file line.</param>
         /// <param name="displacement">The displacement.</param>
-        public void GetSourceFileNameAndLine(StackFrame stackFrame, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
+        public void GetSourceFileNameAndLine(Process process, ulong processAddress, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
-            GetStackFrameSourceFileNameAndLine(stackFrame, out sourceFileName, out sourceFileLine, out displacement);
+            GetProcessAddressSourceFileNameAndLine(process, processAddress, out sourceFileName, out sourceFileLine, out displacement);
         }
 
         /// <summary>
         /// Gets the name of the function for the specified stack frame.
         /// </summary>
-        /// <param name="stackFrame">The stack frame.</param>
+        /// <param name="process">The process.</param>
+        /// <param name="processAddress">The process address.</param>
         /// <param name="address">The address.</param>
         /// <param name="functionName">Name of the function.</param>
         /// <param name="displacement">The displacement.</param>
-        public void GetFunctionNameAndDisplacement(StackFrame stackFrame, uint address, out string functionName, out ulong displacement)
+        public void GetFunctionNameAndDisplacement(Process process, ulong processAddress, uint address, out string functionName, out ulong displacement)
         {
-            GetStackFrameFunctionName(stackFrame, out functionName, out displacement);
+            GetProcessAddressFunctionName(process, processAddress, out functionName, out displacement);
         }
 
         /// <summary>

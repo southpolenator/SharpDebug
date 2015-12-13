@@ -58,21 +58,23 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// Gets the source file name and line for the specified stack frame.
         /// </summary>
-        /// <param name="stackFrame">The stack frame.</param>
+        /// <param name="process">The process.</param>
+        /// <param name="processAddress">The process address.</param>
         /// <param name="address">The address.</param>
         /// <param name="sourceFileName">Name of the source file.</param>
         /// <param name="sourceFileLine">The source file line.</param>
         /// <param name="displacement">The displacement.</param>
-        void GetSourceFileNameAndLine(StackFrame stackFrame, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement);
+        void GetSourceFileNameAndLine(Process process, ulong processAddress, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement);
 
         /// <summary>
         /// Gets the name of the function for the specified stack frame.
         /// </summary>
-        /// <param name="stackFrame">The stack frame.</param>
+        /// <param name="process">The process.</param>
+        /// <param name="processAddress">The process address.</param>
         /// <param name="address">The address.</param>
         /// <param name="functionName">Name of the function.</param>
         /// <param name="displacement">The displacement.</param>
-        void GetFunctionNameAndDisplacement(StackFrame stackFrame, uint address, out string functionName, out ulong displacement);
+        void GetFunctionNameAndDisplacement(Process process, ulong processAddress, uint address, out string functionName, out ulong displacement);
 
         /// <summary>
         /// Gets the stack frame locals.

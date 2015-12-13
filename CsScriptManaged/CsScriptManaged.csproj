@@ -92,6 +92,7 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="Context.cs" />
+    <Compile Include="CsScripts\CodeFunction.cs" />
     <Compile Include="CsScripts\Debugger.cs" />
     <Compile Include="CsScripts\CodeType.cs" />
     <Compile Include="CsScripts\Module.cs" />
