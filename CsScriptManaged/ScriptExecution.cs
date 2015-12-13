@@ -28,7 +28,15 @@ namespace CsScriptManaged
                 throw new Exception(string.Join("\n", results.Errors.Cast<CompilerError>()));
 
             // Extract metadata
-            var metadata = ExtractMetadata(new Assembly[] { results.CompiledAssembly });
+            var metadataAssemblies = new List<Assembly>();
+
+            metadataAssemblies.Add(results.CompiledAssembly);
+            foreach (var referencedAssembly in referencedAssemblies)
+            {
+                metadataAssemblies.Add(Assembly.LoadFrom(referencedAssembly));
+            }
+
+            var metadata = ExtractMetadata(metadataAssemblies);
 
             Context.UserTypeMetadata = metadata;
 
