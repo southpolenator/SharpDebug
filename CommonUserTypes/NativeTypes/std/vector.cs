@@ -105,9 +105,7 @@ namespace CsScripts.CommonUserTypes.NativeTypes.std
                 if (index < 0 || index >= Reserved)
                     throw new ArgumentOutOfRangeException("index", index, "Querying index outside of the vector buffer");
 
-                dynamic first = First;
-
-                return Convert.ChangeType(first[index], typeof(T));
+                return First.GetArrayElement(index).CastAs<T>();
             }
         }
 

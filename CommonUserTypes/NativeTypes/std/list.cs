@@ -38,7 +38,7 @@ namespace CsScripts.CommonUserTypes.NativeTypes.std
             {
                 next = UserMember.Create(() => new item(variable.GetField("_Next")));
                 previous = UserMember.Create(() => new item(variable.GetField("_Prev")));
-                value = UserMember.Create(() => (T)Convert.ChangeType(variable.GetField("_Myval"), typeof(T)));
+                value = UserMember.Create(() => variable.GetField("_Myval").CastAs<T>());
             }
 
             /// <summary>

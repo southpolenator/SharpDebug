@@ -7,7 +7,7 @@ using System.Text;
 
 namespace CsScripts
 {
-    public class Variable : DynamicObject
+    public class Variable : DynamicObject, IConvertible
     {
         /// <summary>
         /// The name of variable when its value is computed
@@ -182,6 +182,23 @@ namespace CsScripts
             }
 
             return (byte)v.Data;
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Variable"/> to <see cref="System.SByte"/>.
+        /// </summary>
+        /// <param name="v">The v.</param>
+        /// <returns>
+        /// The result of the conversion.
+        /// </returns>
+        public static explicit operator sbyte (Variable v)
+        {
+            if (!v.codeType.IsSimple)
+            {
+                return sbyte.Parse(v.ToString());
+            }
+
+            return (sbyte)v.Data;
         }
 
         /// <summary>
@@ -532,19 +549,61 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Casts variable to new type.
+        /// Casts variable to the new type.
         /// </summary>
-        /// <param name="newType">The type.</param>
+        /// <param name="newType">The new type.</param>
         /// <returns>Computed variable that is of new type.</returns>
         public T CastAs<T>()
-            where T : Variable
         {
-            ulong address = GetPointerAddress();
-            UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(typeof(T));
-            UserTypeDescription description = metadata.ConvertToDescription();
-            Variable variable = CastAs(description.UserType);
+            return (T)CastAs(typeof(T));
+        }
 
-            return (T)variable;
+        /// <summary>
+        /// Casts variable to the new type.
+        /// </summary>
+        /// <param name="newType">The new type.</param>
+        public object CastAs(Type conversionType)
+        {
+            // If we are converting Variable to Variable, just return us
+            if (conversionType == typeof(Variable))
+            {
+                return this;
+            }
+
+            // Check if we should do CastAs
+            if (conversionType.IsSubclassOf(typeof(Variable)))
+            {
+                ulong address = GetPointerAddress();
+                UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(conversionType);
+                UserTypeDescription description = metadata.ConvertToDescription();
+
+                return CastAs(description.UserType);
+            }
+
+            // Check if type has constructor with one argument and that argument is inherited from Variable
+            var constructors = conversionType.GetConstructors();
+
+            foreach (var constructor in constructors)
+            {
+                if (!constructor.IsPublic)
+                {
+                    continue;
+                }
+
+                var parameters = constructor.GetParameters();
+
+                if (parameters.Length < 1 || parameters.Count(p => !p.HasDefaultValue) > 1)
+                {
+                    continue;
+                }
+
+                if (parameters[0].ParameterType == typeof(Variable))
+                {
+                    return Activator.CreateInstance(conversionType, this);
+                }
+            }
+
+            throw new InvalidCastException("Cannot cast Variable to " + conversionType);
         }
 
         /// <summary>
@@ -910,5 +969,92 @@ namespace CsScripts
             // TODO: Read correct data and not only pointer values
             return Context.DataSpaces.ReadPointersVirtual(1, Address);
         }
+
+        #region IConvertible
+        public TypeCode GetTypeCode()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ToBoolean(IFormatProvider provider)
+        {
+            return (bool)this;
+        }
+
+        public char ToChar(IFormatProvider provider)
+        {
+            return (char)this;
+        }
+
+        public sbyte ToSByte(IFormatProvider provider)
+        {
+            return (sbyte)this;
+        }
+
+        public byte ToByte(IFormatProvider provider)
+        {
+            return (byte)this;
+        }
+
+        public short ToInt16(IFormatProvider provider)
+        {
+            return (short)this;
+        }
+
+        public ushort ToUInt16(IFormatProvider provider)
+        {
+            return (ushort)this;
+        }
+
+        public int ToInt32(IFormatProvider provider)
+        {
+            return (int)this;
+        }
+
+        public uint ToUInt32(IFormatProvider provider)
+        {
+            return (uint)this;
+        }
+
+        public long ToInt64(IFormatProvider provider)
+        {
+            return (long)this;
+        }
+
+        public ulong ToUInt64(IFormatProvider provider)
+        {
+            return (ulong)this;
+        }
+
+        public float ToSingle(IFormatProvider provider)
+        {
+            throw new NotImplementedException();
+        }
+
+        public double ToDouble(IFormatProvider provider)
+        {
+            throw new NotImplementedException();
+        }
+
+        public decimal ToDecimal(IFormatProvider provider)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DateTime ToDateTime(IFormatProvider provider)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string ToString(IFormatProvider provider)
+        {
+            return ToString();
+        }
+
+        public object ToType(Type conversionType, IFormatProvider provider)
+        {
+            return CastAs(conversionType);
+        }
+        #endregion
     }
 }
