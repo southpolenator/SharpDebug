@@ -36,6 +36,11 @@ namespace CsScriptManaged
         internal static List<SimpleCache<VariableCollection>> UserTypeCastedVariableCollections = new List<SimpleCache<VariableCollection>>();
 
         /// <summary>
+        /// The user type casted variables that should be invalidated after metadata is removed so that new metadata can create new caches...
+        /// </summary>
+        internal static List<GlobalCache<Variable, Variable>> UserTypeCastedVariables = new List<GlobalCache<Variable, Variable>>();
+
+        /// <summary>
         /// Creates the process.
         /// </summary>
         /// <param name="processKey">The process key.</param>

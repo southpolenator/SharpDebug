@@ -76,7 +76,7 @@ namespace CsScripts
         /// <param name="name">The name.</param>
         /// <param name="codeType">The code type.</param>
         /// <param name="address">The address.</param>
-        public Variable(CodeType codeType, ulong address, string name = ComputedName)
+        internal Variable(CodeType codeType, ulong address, string name)
         {
             this.codeType = codeType;
             this.name = name;
@@ -94,9 +94,9 @@ namespace CsScripts
         /// <summary>
         /// Initializes a new instance of the <see cref="Variable"/> class.
         /// </summary>
-        /// <param name="name">The name.</param>
         /// <param name="codeType">The code type.</param>
         /// <param name="address">The address.</param>
+        /// <param name="name">The name.</param>
         /// <param name="data">The loaded data value (this can be used only with pointers).</param>
         private Variable(CodeType codeType, ulong address, string name, ulong data)
             : this(codeType, address, name)
@@ -107,6 +107,30 @@ namespace CsScripts
             }
 
             this.data.Value = data;
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable"/> class.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="name">The name.</param>
+        public static Variable Create(CodeType codeType, ulong address, string name = ComputedName)
+        {
+            Variable variable = CreateNoCast(codeType, address, name);
+
+            return codeType.Module.Process.UserTypeCastedVariables[variable];
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable"/> class and doesn't cast it to user code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="name">The name.</param>
+        internal static Variable CreateNoCast(CodeType codeType, ulong address, string name)
+        {
+            return codeType.Module.Process.Variables[Tuple.Create(codeType, address, name)];
         }
 
         /// <summary>
@@ -443,9 +467,8 @@ namespace CsScripts
 
             CodeType elementType = codeType.ElementType;
             ulong address = Data + (ulong)(index * elementType.Size);
-            Variable variable = new Variable(elementType, address);
 
-            return CastVariableToUserType(variable);
+            return Create(elementType, address, ComputedName);
         }
 
         /// <summary>
@@ -477,7 +500,7 @@ namespace CsScripts
             }
             else if (Address != 0)
             {
-                return new Variable(codeType, Address + (ulong)offset, name);
+                return CreateNoCast(codeType, Address + (ulong)offset, name);
             }
 
             throw new ArgumentException("Variable is not a pointer type, but " + codeType + " and its address is 0");
@@ -490,16 +513,22 @@ namespace CsScripts
         /// <returns>Computed variable that is of new type.</returns>
         public Variable CastAs(CodeType newType)
         {
+            Variable variable;
+
             if (codeType.IsPointer)
             {
-                return new Variable(newType, Address, name, Data);
+                variable = new Variable(newType, Address, name, Data);
             }
             else if (Address != 0)
             {
-                return new Variable(newType, Address, name);
+                return Create(newType, Address, name);
+            }
+            else
+            {
+                throw new ArgumentException("Variable is not a pointer type, but " + codeType + " and its address is 0");
             }
 
-            throw new ArgumentException("Variable is not a pointer type, but " + codeType + " and its address is 0");
+            return newType.Module.Process.UserTypeCastedVariables[variable];
         }
 
         /// <summary>
@@ -536,9 +565,9 @@ namespace CsScripts
                 newType = newType.Substring(moduleIndex + 1);
             }
 
-            CodeType newCodeType = codeType.Module.TypesByName[newType];
+            CodeType newCodeType = module.TypesByName[newType];
 
-            return CastVariableToUserType(new Variable(newCodeType, GetPointerAddress(), name));
+            return CastAs(newCodeType);
         }
 
         /// <summary>
@@ -561,7 +590,7 @@ namespace CsScripts
             CodeType fieldType = codeType.GetFieldType(name);
             ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
 
-            return new Variable(fieldType, fieldAddress, name);
+            return CreateNoCast(fieldType, fieldAddress, name);
         }
 
         /// <summary>
@@ -571,7 +600,7 @@ namespace CsScripts
         /// <returns>Field variable casted to user type if the specified field exists.</returns>
         private Variable GetUserTypeCastedFieldByName(string name)
         {
-            Variable field = CastVariableToUserType(fieldsByName[name]);
+            Variable field = codeType.Module.Process.UserTypeCastedVariables[fieldsByName[name]];
 
             if (userTypeCastedFieldsByName.Count == 0)
             {
@@ -594,7 +623,7 @@ namespace CsScripts
             }
 
             // Get user type descriptions to be used by this process
-            var userTypes = Process.Current.UserTypes;
+            var userTypes = originalVariable.codeType.Module.Process.UserTypes;
 
             if (userTypes.Length == 0)
             {
@@ -632,7 +661,7 @@ namespace CsScripts
 
             for (int i = 0; i < variables.Length; i++)
             {
-                variables[i] = CastVariableToUserType(originalCollection[i]);
+                variables[i] = originalCollection[i].codeType.Module.Process.UserTypeCastedVariables[originalCollection[i]];
                 variablesByName.Add(originalCollection[i].name, variables[i]);
             }
 
@@ -865,7 +894,7 @@ namespace CsScripts
                 }
                 else
                 {
-                    fields[i] = userTypeCastedFieldsByName[name] = CastVariableToUserType(originalFields[i]);
+                    fields[i] = userTypeCastedFieldsByName[name] = codeType.Module.Process.UserTypeCastedVariables[originalFields[i]];
                 }
             }
 

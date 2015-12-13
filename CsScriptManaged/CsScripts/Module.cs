@@ -50,7 +50,7 @@ namespace CsScripts
             GlobalVariables = new GlobalCache<string, Variable>(GetGlobalVariable);
             UserTypeCastedGlobalVariables = new GlobalCache<string, Variable>((name) =>
             {
-                Variable variable = Variable.CastVariableToUserType(GlobalVariables[name]);
+                Variable variable = Process.UserTypeCastedVariables[GlobalVariables[name]];
 
                 if (UserTypeCastedGlobalVariables.Count == 0)
                 {
@@ -72,7 +72,7 @@ namespace CsScripts
                 uint typeId = Context.SymbolProvider.GetGlobalVariableTypeId(this, name);
                 ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
 
-                return new Variable(TypesById[typeId], address, name);
+                return Variable.CreateNoCast(TypesById[typeId], address, name);
             }
         }
 

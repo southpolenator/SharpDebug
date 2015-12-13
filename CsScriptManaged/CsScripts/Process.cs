@@ -65,6 +65,9 @@ namespace CsScripts
             userTypes = SimpleCache.Create(GetUserTypes);
             ModulesByName = new GlobalCache<string, Module>(GetModuleByName);
             ModulesById = new GlobalCache<ulong, Module>(GetModuleById);
+            Variables = new GlobalCache<Tuple<CodeType, ulong, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3));
+            UserTypeCastedVariables = new GlobalCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
+            GlobalCache.UserTypeCastedVariables.Add(UserTypeCastedVariables);
         }
 
         /// <summary>
@@ -120,6 +123,16 @@ namespace CsScripts
         /// The modules by identifier
         /// </summary>
         internal GlobalCache<ulong, Module> ModulesById { get; private set; }
+
+        /// <summary>
+        /// Gets the variables by constructor key.
+        /// </summary>
+        internal GlobalCache<Tuple<CodeType, ulong, string>, Variable> Variables { get; private set; }
+
+        /// <summary>
+        /// Gets the user type casted variables.
+        /// </summary>
+        internal GlobalCache<Variable, Variable> UserTypeCastedVariables { get; private set; }
 
         /// <summary>
         /// Gets the user types.

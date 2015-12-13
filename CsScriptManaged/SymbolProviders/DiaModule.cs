@@ -309,7 +309,7 @@ namespace CsScriptManaged.SymbolProviders
                 CodeType codeType = module.TypesById[symbol.typeId];
                 ulong address = ResolveAddress(symbol, frame.FrameContext);
 
-                variables.Add(new Variable(codeType, address, symbol.name));
+                variables.Add(Variable.CreateNoCast(codeType, address, symbol.name));
             }
 
             return new VariableCollection(variables.ToArray());

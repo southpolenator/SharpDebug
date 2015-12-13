@@ -250,7 +250,7 @@ namespace CsScriptManaged.SymbolProviders
                     var codeType = module.TypesById[entry.TypeId];
                     var address = entry.Offset;
 
-                    variables[i] = new Variable(codeType, address, name.ToString());
+                    variables[i] = Variable.CreateNoCast(codeType, address, name.ToString());
                 }
 
                 return new VariableCollection(variables);

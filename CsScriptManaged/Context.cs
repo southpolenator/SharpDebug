@@ -166,6 +166,11 @@ namespace CsScriptManaged
                 cacheEntry.Cached = false;
             }
 
+            foreach (var cacheEntry in GlobalCache.UserTypeCastedVariables)
+            {
+                cacheEntry.Clear();
+            }
+
             GlobalCache.VariablesUserTypeCastedFields.Clear();
             GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
             GlobalCache.UserTypeCastedVariableCollections.Clear();
