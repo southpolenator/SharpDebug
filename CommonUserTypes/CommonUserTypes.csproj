@@ -77,6 +77,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NativeTypes\std\string.cs" />
+    <Compile Include="NativeTypes\std\vector.cs" />
     <Compile Include="NativeTypes\std\wstring.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
