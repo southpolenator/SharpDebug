@@ -3,6 +3,9 @@ using System;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Helper class that represents function pointer
+    /// </summary>
     public class CodeFunction
     {
         /// <summary>

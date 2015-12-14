@@ -5,6 +5,10 @@ using System.Collections;
 
 namespace CsScriptManaged.CsScripts
 {
+    /// <summary>
+    /// Helper class that represents "static" array. For example "int a[4]";
+    /// </summary>
+    /// <typeparam name="T">The type of elements in the array</typeparam>
     public class CodeArray<T> : IReadOnlyList<T>
     {
         /// <summary>
