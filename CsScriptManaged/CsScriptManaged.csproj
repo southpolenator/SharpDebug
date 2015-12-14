@@ -98,6 +98,7 @@
     <Compile Include="CsScripts\Debugger.cs" />
     <Compile Include="CsScripts\CodeType.cs" />
     <Compile Include="CsScripts\Module.cs" />
+    <Compile Include="CsScripts\NakedPointer.cs" />
     <Compile Include="CsScripts\StackFrame.cs" />
     <Compile Include="CsScripts\StackTrace.cs" />
     <Compile Include="CsScripts\Process.cs" />
