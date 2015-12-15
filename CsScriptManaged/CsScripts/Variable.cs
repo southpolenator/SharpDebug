@@ -565,10 +565,30 @@ namespace CsScripts
         public object CastAs(Type conversionType)
         {
             // If we are converting Variable to Variable, just return us
-            if (conversionType == typeof(Variable))
-            {
+            if (conversionType == typeof(Variable) || conversionType == GetType())
                 return this;
-            }
+
+            // Check if it is basic type
+            else if (conversionType == typeof(bool))
+                return (bool)this;
+            else if (conversionType == typeof(char))
+                return (char)this;
+            else if (conversionType == typeof(byte))
+                return (byte)this;
+            else if (conversionType == typeof(sbyte))
+                return (sbyte)this;
+            else if (conversionType == typeof(short))
+                return (short)this;
+            else if (conversionType == typeof(ushort))
+                return (ushort)this;
+            else if (conversionType == typeof(int))
+                return (int)this;
+            else if (conversionType == typeof(uint))
+                return (uint)this;
+            else if (conversionType == typeof(long))
+                return (long)this;
+            else if (conversionType == typeof(ulong))
+                return (ulong)this;
 
             // Check if we should do CastAs
             if (conversionType.IsSubclassOf(typeof(Variable)))

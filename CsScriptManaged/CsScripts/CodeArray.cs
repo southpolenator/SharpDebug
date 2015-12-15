@@ -27,6 +27,7 @@ namespace CsScriptManaged.CsScripts
                 throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
             }
 
+            this.variable = variable;
             Length = variable.GetArrayLength();
         }
 

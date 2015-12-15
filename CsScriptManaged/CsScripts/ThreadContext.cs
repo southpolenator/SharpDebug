@@ -8,6 +8,8 @@ namespace CsScripts
     public class ThreadContext
     {
         #region Native structures
+#pragma warning disable 0649
+#pragma warning disable 0169
         private const int SIZE_OF_80387_REGISTERS = 80;
         private const int MAXIMUM_SUPPORTED_EXTENSION = 512;
         private const int WOW64_SIZE_OF_80387_REGISTERS = 80;
@@ -227,6 +229,8 @@ namespace CsScripts
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = WOW64_MAXIMUM_SUPPORTED_EXTENSION)]
             public byte[] ExtendedRegisters;
         }
+#pragma warning restore 0169
+#pragma warning restore 0649
         #endregion
 
         /// <summary>
