@@ -77,5 +77,16 @@ namespace CsScriptManaged
                 outputCallbacks.Output((uint)OutputType, value);
             }
         }
+
+        /// <summary>
+        /// Writes the specified buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer.</param>
+        /// <param name="index">The index.</param>
+        /// <param name="count">The count.</param>
+        public override void Write(char[] buffer, int index, int count)
+        {
+            Write(new string(buffer, index, count));
+        }
     }
 }
