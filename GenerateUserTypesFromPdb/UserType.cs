@@ -13,6 +13,7 @@ namespace GenerateUserTypesFromPdb
             Symbol = symbol;
             ModuleName = moduleName;
             InnerTypes = new List<UserType>();
+            Usings = new HashSet<string>(new string[] { "CsScripts" });
         }
 
         public IDiaSymbol Symbol { get; private set; }
@@ -24,6 +25,8 @@ namespace GenerateUserTypesFromPdb
         public UserType DeclaredInType { get; private set; }
 
         public List<UserType> InnerTypes { get; private set; }
+
+        public HashSet<string> Usings { get; private set; }
 
         public string ClassName
         {
@@ -64,8 +67,28 @@ namespace GenerateUserTypesFromPdb
             bool hasStatic = false, hasNonStatic = false;
             string baseType = GetBaseTypeString(error, symbol, exportedTypes);
 
+            if (DeclaredInType == null)
+            {
+                if (Usings.Count > 0)
+                {
+                    foreach (var u in Usings.OrderBy(s => s))
+                    {
+                        output.WriteLine(indentation, "using {0};", u);
+                    }
+
+                    output.WriteLine();
+                }
+
+                if (!string.IsNullOrEmpty(Namespace))
+                {
+                    output.WriteLine(indentation, "namespace {0}", Namespace);
+                    output.WriteLine(indentation, "{{");
+                    indentation++;
+                }
+            }
+
             output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, symbol.name);
-            output.WriteLine(indentation, @"public class {0} : {1}", ClassName, baseType);
+            output.WriteLine(indentation, @"public partial class {0} : {1}", ClassName, baseType);
             output.WriteLine(indentation, @"{{");
             foreach (var field in fields)
             {
@@ -188,12 +211,22 @@ namespace GenerateUserTypesFromPdb
             }
 
             output.WriteLine(indentation, @"}}");
+
+            if (DeclaredInType == null && !string.IsNullOrEmpty(Namespace))
+            {
+                indentation--;
+                output.WriteLine(indentation, "}}");
+            }
         }
 
         public void SetDeclaredInType(UserType declaredInType)
         {
             DeclaredInType = declaredInType;
             declaredInType.InnerTypes.Add(this);
+            foreach (var u in Usings)
+            {
+                declaredInType.Usings.Add(u);
+            }
         }
 
         private static string GetCastingType(string typeString)
