@@ -1,7 +1,6 @@
-﻿using CsScripts;
-using System;
+﻿using System;
 
-namespace CsScriptManaged.CsScripts
+namespace CsScripts
 {
     /// <summary>
     /// Helper class that represents pointer

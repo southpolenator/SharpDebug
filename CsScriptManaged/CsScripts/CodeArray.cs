@@ -1,9 +1,8 @@
-﻿using CsScripts;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections;
 
-namespace CsScriptManaged.CsScripts
+namespace CsScripts
 {
     /// <summary>
     /// Helper class that represents "static" array. For example "int a[4]";
