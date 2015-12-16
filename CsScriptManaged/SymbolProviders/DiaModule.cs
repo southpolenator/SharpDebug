@@ -366,5 +366,16 @@ namespace CsScriptManaged.SymbolProviders
                     throw new Exception("Unknown location type " + (LocationType)symbol.locationType);
             }
         }
+
+        /// <summary>
+        /// Reads the simple data (1 to 8 bytes) for specified type and address to read from.
+        /// </summary>
+        /// <param name="codeType">Type of the code.</param>
+        /// <param name="address">The address.</param>
+        public ulong ReadSimpleData(CodeType codeType, ulong address)
+        {
+            // TODO: Read correct data and not only pointer values
+            return Context.DataSpaces.ReadPointersVirtual(1, address);
+        }
     }
 }

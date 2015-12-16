@@ -84,5 +84,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="relativeAddress">The relative address.</param>
         /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
         VariableCollection GetFrameLocals(StackFrame frame, Module module, uint relativeAddress, bool arguments);
+
+        /// <summary>
+        /// Reads the simple data (1 to 8 bytes) for specified type and address to read from.
+        /// </summary>
+        /// <param name="codeType">Type of the code.</param>
+        /// <param name="address">The address.</param>
+        ulong ReadSimpleData(CodeType codeType, ulong address);
     }
 }

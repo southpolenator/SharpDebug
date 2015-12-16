@@ -986,8 +986,7 @@ namespace CsScripts
         /// </summary>
         private ulong ReadData()
         {
-            // TODO: Read correct data and not only pointer values
-            return Context.DataSpaces.ReadPointersVirtual(1, Address);
+            return Context.SymbolProvider.ReadSimpleData(codeType, Address);
         }
 
         #region IConvertible

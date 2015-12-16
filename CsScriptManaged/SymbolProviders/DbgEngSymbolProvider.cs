@@ -158,19 +158,7 @@ namespace CsScriptManaged.SymbolProviders
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
             {
-                var tag = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
-                {
-                    Operation = ExtTdop.SetFromTypeIdAndU64,
-                    InData = new DEBUG_TYPED_DATA()
-                    {
-                        ModBase = module.Id,
-                        TypeId = typeId,
-                        Data = module.Process.PEB,
-                        Offset = module.Process.PEB,
-                    },
-                }).OutData.Tag;
-
-                return tag;
+                return GlobalCache.TypedData[Tuple.Create(module.Id, typeId, module.Process.PEB)].Tag;
             }
         }
 
@@ -333,6 +321,21 @@ namespace CsScriptManaged.SymbolProviders
         public VariableCollection GetFrameLocals(StackFrame frame, Module module, uint relativeAddress, bool arguments)
         {
             return GetFrameLocals(frame, arguments);
+        }
+
+        /// <summary>
+        /// Reads the simple data (1 to 8 bytes) for specified type and address to read from.
+        /// </summary>
+        /// <param name="codeType">Type of the code.</param>
+        /// <param name="address">The address.</param>
+        public ulong ReadSimpleData(CodeType codeType, ulong address)
+        {
+            Module module = codeType.Module;
+
+            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            {
+                return GlobalCache.TypedData[Tuple.Create(module.Id, codeType.TypeId, address)].Data;
+            }
         }
     }
 }

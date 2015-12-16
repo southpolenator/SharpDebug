@@ -111,5 +111,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         /// <param name="typeName">Name of the type.</param>
         uint GetTypeId(Module module, string typeName);
+
+        /// <summary>
+        /// Reads the simple data (1 to 8 bytes) for specified type and address to read from.
+        /// </summary>
+        /// <param name="codeType">Type of the code.</param>
+        /// <param name="address">The address.</param>
+        ulong ReadSimpleData(CodeType codeType, ulong address);
     }
 }

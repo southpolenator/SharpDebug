@@ -247,5 +247,17 @@ namespace CsScriptManaged.SymbolProviders
 
             return GetDiaModule(module);
         }
+
+        /// <summary>
+        /// Reads the simple data (1 to 8 bytes) for specified type and address to read from.
+        /// </summary>
+        /// <param name="codeType">Type of the code.</param>
+        /// <param name="address">The address.</param>
+        public ulong ReadSimpleData(CodeType codeType, ulong address)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(codeType.Module);
+
+            return diaModule.ReadSimpleData(codeType, address);
+        }
     }
 }
