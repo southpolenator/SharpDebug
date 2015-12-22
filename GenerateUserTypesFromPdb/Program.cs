@@ -41,7 +41,7 @@ namespace GenerateUserTypesFromPdb
 
             string pdbPath = args[0];
             string[] typeNames = args[1].Split(",".ToCharArray());
-            bool singleLineProperty = true;
+            UserTypeGenerationFlags options = UserTypeGenerationFlags.GenerateFieldComment | UserTypeGenerationFlags.SingleLineProperty;
 
             string moduleName = Path.GetFileNameWithoutExtension(pdbPath).ToLower();
             Dictionary<string, UserType> symbols = new Dictionary<string, UserType>();
@@ -87,7 +87,7 @@ namespace GenerateUserTypesFromPdb
             string outputDirectory = currentDirectory + "\\output\\";
             Directory.CreateDirectory(outputDirectory);
 
-            string[] allUDTs = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).Select(s => s.name).ToArray();
+            string[] allUDTs = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).Select(s => s.name).Distinct().OrderBy(s => s).ToArray();
 
             File.WriteAllLines(outputDirectory + "symbols.txt", allUDTs);
 
@@ -102,9 +102,9 @@ namespace GenerateUserTypesFromPdb
                     continue;
                 }
 
-                using (TextWriter output = new StreamWriter(string.Format("{0}{1}.cs", outputDirectory, symbol.name)))
+                using (TextWriter output = new StreamWriter(string.Format("{0}{1}.exported.cs", outputDirectory, symbol.name)))
                 {
-                    userType.WriteCode(new IndentedWriter(output), error, symbols, singleLineProperty);
+                    userType.WriteCode(new IndentedWriter(output), error, symbols, options);
                 }
             }
         }

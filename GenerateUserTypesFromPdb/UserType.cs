@@ -6,6 +6,13 @@ using System.Linq;
 
 namespace GenerateUserTypesFromPdb
 {
+    [Flags]
+    enum UserTypeGenerationFlags
+    {
+        SingleLineProperty,
+        GenerateFieldComment,
+    }
+
     class UserType
     {
         public UserType(IDiaSymbol symbol, string moduleName)
@@ -59,7 +66,7 @@ namespace GenerateUserTypesFromPdb
             }
         }
 
-        public void WriteCode(IndentedWriter output, TextWriter error, Dictionary<string, UserType> exportedTypes, bool singleLineProperty, int indentation = 0)
+        public void WriteCode(IndentedWriter output, TextWriter error, Dictionary<string, UserType> exportedTypes, UserTypeGenerationFlags options, int indentation = 0)
         {
             var symbol = Symbol;
             var moduleName = ModuleName;
@@ -95,7 +102,11 @@ namespace GenerateUserTypesFromPdb
                 bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                 string fieldTypeString = GetTypeString(field.type, exportedTypes, field.length);
 
+                if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldComment))
+                    output.WriteLine(indentation + 1, "// {0} {1};", GetOriginalTypeString(field.type), field.name);
                 output.WriteLine(indentation + 1, "private {0}UserMember<{1}> _{2};", isStatic ? "static " : "", fieldTypeString, field.name);
+                if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldComment))
+                    output.WriteLine();
                 hasStatic = hasStatic || isStatic;
                 hasNonStatic = hasNonStatic || !isStatic;
             }
@@ -181,7 +192,7 @@ namespace GenerateUserTypesFromPdb
                 bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                 string fieldTypeString = GetTypeString(field.type, exportedTypes, field.length);
 
-                if (singleLineProperty)
+                if (options.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
                 {
                     if (firstField)
                     {
@@ -207,7 +218,7 @@ namespace GenerateUserTypesFromPdb
             foreach (var innerType in InnerTypes)
             {
                 output.WriteLine();
-                innerType.WriteCode(output, error, exportedTypes, singleLineProperty, indentation + 1);
+                innerType.WriteCode(output, error, exportedTypes, options, indentation + 1);
             }
 
             output.WriteLine(indentation, @"}}");
@@ -245,7 +256,7 @@ namespace GenerateUserTypesFromPdb
             if (baseClasses.Length > 1)
             {
                 //throw new Exception(string.Format("Multiple inheritance is not supported. Type {0} is inherited from {1}", type.name, string.Join(", ", baseClasses.Select(c => c.name))));
-                error.WriteLine(string.Format("Multiple inheritance is not supported, defaulting to 'UserType' as base class. Type {0} is inherited from {1}", type.name, string.Join(", ", baseClasses.Select(c => c.name))));
+                error.WriteLine(string.Format("Multiple inheritance is not supported, defaulting to 'UserType' as base class. Type {0} is inherited from:\n  {1}", type.name, string.Join("\n  ", baseClasses.Select(c => c.name))));
                 return "UserType";
             }
 
@@ -365,6 +376,11 @@ namespace GenerateUserTypesFromPdb
                             return userType.FullClassName;
                         }
 
+                        if ((SymTagEnum)type.symTag == SymTagEnum.SymTagEnum)
+                        {
+                            return "uint";
+                        }
+
                         return "Variable";
                     }
 
@@ -373,6 +389,90 @@ namespace GenerateUserTypesFromPdb
 
                 case SymTagEnum.SymTagFunctionType:
                     return "CodeFunction";
+
+                default:
+                    throw new Exception("Unexpected type tag " + (SymTagEnum)type.symTag);
+            }
+        }
+
+        private static string GetOriginalTypeString(IDiaSymbol type)
+        {
+            switch ((SymTagEnum)type.symTag)
+            {
+                case SymTagEnum.SymTagBaseType:
+                    switch ((BasicType)type.baseType)
+                    {
+                        case BasicType.Bit:
+                        case BasicType.Bool:
+                            return "bool";
+                        case BasicType.Char:
+                            return "char";
+                        case BasicType.WChar:
+                            return "wchar_t";
+                        case BasicType.BSTR:
+                            return "string";
+                        case BasicType.Void:
+                            return "void";
+                        case BasicType.Float:
+                            return type.length <= 4 ? "float" : type.length > 9 ? "long double" : "double";
+                        case BasicType.Int:
+                        case BasicType.Long:
+                            switch (type.length)
+                            {
+                                case 0:
+                                    return "void";
+                                case 1:
+                                    return "char";
+                                case 2:
+                                    return "short";
+                                case 4:
+                                    return "int";
+                                case 8:
+                                    return "long long";
+                                default:
+                                    throw new Exception("Unexpected type length " + type.length);
+                            }
+
+                        case BasicType.UInt:
+                        case BasicType.ULong:
+                            switch (type.length)
+                            {
+                                case 0:
+                                    return "void";
+                                case 1:
+                                    return "unsigned char";
+                                case 2:
+                                    return "unsigned short";
+                                case 4:
+                                    return "unsigned int";
+                                case 8:
+                                    return "unsigned long long";
+                                default:
+                                    throw new Exception("Unexpected type length " + type.length);
+                            }
+
+                        case BasicType.Hresult:
+                            return "HRESULT";
+                        default:
+                            throw new Exception("Unexpected basic type " + (BasicType)type.baseType);
+                    }
+
+                case SymTagEnum.SymTagPointerType:
+                    {
+                        IDiaSymbol pointerType = type.type;
+
+                        return GetOriginalTypeString(pointerType) + "*";
+                    }
+
+                case SymTagEnum.SymTagUDT:
+                case SymTagEnum.SymTagEnum:
+                    {
+                        return type.name;
+                    }
+
+                case SymTagEnum.SymTagFunctionType:
+                case SymTagEnum.SymTagArrayType:
+                    return GetOriginalTypeString(type.type) + "[]";
 
                 default:
                     throw new Exception("Unexpected type tag " + (SymTagEnum)type.symTag);
