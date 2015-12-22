@@ -35,7 +35,7 @@ namespace CsScriptManaged.SymbolProviders
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
             {
-                string name = module.Name + "!" + globalVariableName;
+                string name = module.Name + "!" + globalVariableName.Replace("::", ".");
                 uint typeId;
                 ulong moduleId;
 

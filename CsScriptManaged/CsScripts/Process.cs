@@ -385,14 +385,19 @@ namespace CsScripts
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(this))
             {
-                UserTypeDescription[] userTypes = new UserTypeDescription[Context.UserTypeMetadata.Length];
-
-                for (int i = 0; i < userTypes.Length; i++)
+                if (Context.UserTypeMetadata != null && Context.UserTypeMetadata.Length > 0)
                 {
-                    userTypes[i] = Context.UserTypeMetadata[i].ConvertToDescription();
+                    UserTypeDescription[] userTypes = new UserTypeDescription[Context.UserTypeMetadata.Length];
+
+                    for (int i = 0; i < userTypes.Length; i++)
+                    {
+                        userTypes[i] = Context.UserTypeMetadata[i].ConvertToDescription();
+                    }
+
+                    return userTypes;
                 }
 
-                return userTypes;
+                return new UserTypeDescription[0];
             }
         }
     }

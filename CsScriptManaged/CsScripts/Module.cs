@@ -70,9 +70,10 @@ namespace CsScripts
             using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
             {
                 uint typeId = Context.SymbolProvider.GetGlobalVariableTypeId(this, name);
+                var codeType = TypesById[typeId];
                 ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
 
-                return Variable.CreateNoCast(TypesById[typeId], address, name);
+                return Variable.CreateNoCast(codeType, address, name);
             }
         }
 
