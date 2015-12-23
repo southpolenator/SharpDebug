@@ -70,7 +70,7 @@ namespace CsScriptManaged.SymbolProviders
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string[] GetTypeFieldNames(Module module, uint typeId)
+        public string[] GetTypeAllFieldNames(Module module, uint typeId)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
             {
@@ -101,7 +101,7 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
-        public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
+        public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
             {
@@ -336,6 +336,38 @@ namespace CsScriptManaged.SymbolProviders
             {
                 return GlobalCache.TypedData[Tuple.Create(module.Id, codeType.TypeId, address)].Data;
             }
+        }
+
+        /// <summary>
+        /// Gets the names of fields of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public string[] GetTypeFieldNames(Module module, uint typeId)
+        {
+            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+        }
+
+        /// <summary>
+        /// Gets the field type id and offset of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
+        {
+            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+        }
+
+        /// <summary>
+        /// Gets the type's base class type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="className">Name of the class.</param>
+        public Tuple<uint, int> GetTypeBaseClass(Module module, uint typeId, string className)
+        {
+            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
         }
     }
 }

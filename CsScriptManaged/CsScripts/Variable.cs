@@ -456,6 +456,14 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the field names.
+        /// </summary>
+        public string[] GetClassFieldNames()
+        {
+            return codeType.ClassFieldNames;
+        }
+
+        /// <summary>
         /// Gets the fields.
         /// </summary>
         public Variable[] GetFields()
@@ -532,7 +540,11 @@ namespace CsScripts
         {
             Variable variable;
 
-            if (codeType.IsPointer)
+            if (newType == codeType)
+            {
+                return this;
+            }
+            else if (codeType.IsPointer)
             {
                 variable = new Variable(newType, Address, name, Data);
             }
@@ -647,6 +659,32 @@ namespace CsScripts
             CodeType newCodeType = module.TypesByName[newType];
 
             return CastAs(newCodeType);
+        }
+
+        /// <summary>
+        /// Gets the variable that is casted to base class given by name.
+        /// This is mostly used by auto generated code (exported from PDB) or to access multi inheritance base classes.
+        /// </summary>
+        /// <remarks>This is not casted to user type</remarks>
+        /// <param name="className">The class name.</param>
+        public Variable GetBaseClass(string className)
+        {
+            var tuple = codeType.BaseClasses[className];
+
+            return CreateNoCast(tuple.Item1, GetPointerAddress() + (uint)tuple.Item2, className);
+        }
+
+        /// <summary>
+        /// Gets the class field (it doesn't go through base classes).
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        public Variable GetClassField(string fieldName)
+        {
+            var tuple = codeType.ClassFields[fieldName];
+            CodeType fieldType = tuple.Item1;
+            ulong fieldAddress = GetPointerAddress() + (ulong)tuple.Item2;
+
+            return Create(fieldType, fieldAddress, fieldName);
         }
 
         /// <summary>

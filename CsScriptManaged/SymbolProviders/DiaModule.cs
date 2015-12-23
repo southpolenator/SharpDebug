@@ -28,6 +28,11 @@ namespace CsScriptManaged.SymbolProviders
         private GlobalCache<uint, List<Tuple<string, uint, int>>> typeAllFields;
 
         /// <summary>
+        /// The cache of type all fields
+        /// </summary>
+        private GlobalCache<uint, List<Tuple<string, uint, int>>> typeFields;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DiaModule"/> class.
         /// </summary>
         /// <param name="pdbPath">The PDB path.</param>
@@ -36,26 +41,37 @@ namespace CsScriptManaged.SymbolProviders
             dia = new DiaSource();
             dia.loadDataFromPdb(pdbPath);
             dia.openSession(out session);
-            typeAllFields = new GlobalCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);
+            typeAllFields = new GlobalCache<uint, List<Tuple<string, uint, int>>>(GetTypeAllFields);
+            typeFields = new GlobalCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);
         }
 
-        private List<Tuple<string, uint, int>> GetTypeFields(uint typeId)
+        /// <summary>
+        /// Gets all fields from the type (including base classes).
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        private List<Tuple<string, uint, int>> GetTypeAllFields(uint typeId)
         {
             var type = GetTypeFromId(typeId);
             List<Tuple<string, uint, int>> fields = new List<Tuple<string, uint, int>>();
 
-            GetTypeFields(type, fields);
+            GetTypeAllFields(type, fields);
             return fields;
         }
 
-        private void GetTypeFields(IDiaSymbol type, List<Tuple<string, uint, int>> typeFields, int offset = 0)
+        /// <summary>
+        /// Gets all fields from the type (including base classes).
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="typeFields">The type fields.</param>
+        /// <param name="offset">The offset.</param>
+        private void GetTypeAllFields(IDiaSymbol type, List<Tuple<string, uint, int>> typeFields, int offset = 0)
         {
             // Get all fields from base classes
             var bases = type.GetBaseClasses();
 
             foreach (var b in bases)
             {
-                GetTypeFields(b, typeFields, offset + b.offset);
+                GetTypeAllFields(b, typeFields, offset + b.offset);
             }
 
             // Get type fields
@@ -67,6 +83,27 @@ namespace CsScriptManaged.SymbolProviders
 
                 typeFields.Add(Tuple.Create(field.name, field.typeId, offset + field.offset));
             }
+        }
+
+        /// <summary>
+        /// Gets the type fields.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        private List<Tuple<string, uint, int>> GetTypeFields(uint typeId)
+        {
+            var type = GetTypeFromId(typeId);
+            List<Tuple<string, uint, int>> typeFields = new List<Tuple<string, uint, int>>();
+            var fields = type.GetChildren(SymTagEnum.SymTagData);
+
+            foreach (var field in fields)
+            {
+                if ((DataKind)field.dataKind == DataKind.StaticMember)
+                    continue;
+
+                typeFields.Add(Tuple.Create(field.name, field.typeId, field.offset));
+            }
+
+            return typeFields;
         }
 
         /// <summary>
@@ -234,16 +271,16 @@ namespace CsScriptManaged.SymbolProviders
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string[] GetTypeFieldNames(Module module, uint typeId)
+        public string[] GetTypeAllFieldNames(Module module, uint typeId)
         {
-            return GetTypeFieldNames(GetTypeFromId(typeId));
+            return GetTypeAllFieldNames(GetTypeFromId(typeId));
         }
 
         /// <summary>
         /// Gets the names of all fields of the specified type.
         /// </summary>
         /// <param name="type">The type.</param>
-        private string[] GetTypeFieldNames(IDiaSymbol type)
+        private string[] GetTypeAllFieldNames(IDiaSymbol type)
         {
             if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
                 type = type.type;
@@ -259,7 +296,7 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
-        public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
+        public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
             return GetTypeFieldTypeAndOffset(GetTypeFromId(typeId), fieldName);
         }
@@ -484,6 +521,92 @@ namespace CsScriptManaged.SymbolProviders
                 throw new Exception("Global variable not found " + globalVariableName);
 
             return globalVariable;
+        }
+
+        /// <summary>
+        /// Gets the names of fields of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public string[] GetTypeFieldNames(Module module, uint typeId)
+        {
+            var type = GetTypeFromId(typeId);
+
+            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+                type = type.type;
+
+            var fields = typeFields[type.symIndexId];
+
+            return fields.Select(t => t.Item1).ToArray();
+        }
+
+        /// <summary>
+        /// Gets the field type id and offset of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
+        {
+            var type = GetTypeFromId(typeId);
+
+            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+                type = type.type;
+
+            var fields = typeFields[type.symIndexId];
+
+            foreach (var field in fields)
+            {
+                if (field.Item1 != fieldName)
+                    continue;
+
+                return Tuple.Create(field.Item2, field.Item3);
+            }
+
+            throw new Exception("Field not found");
+        }
+
+        /// <summary>
+        /// Gets the type's base class type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="className">Name of the class.</param>
+        public Tuple<uint, int> GetTypeBaseClass(Module module, uint typeId, string className)
+        {
+            var type = GetTypeFromId(typeId);
+
+            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+                type = type.type;
+
+            if (type.name == className)
+            {
+                return Tuple.Create(type.symIndexId, 0);
+            }
+
+            Stack<Tuple<IDiaSymbol, int>> classes = new Stack<Tuple<IDiaSymbol, int>>();
+
+            classes.Push(Tuple.Create(type, 0));
+
+            while (classes.Count > 0)
+            {
+                var tuple = classes.Pop();
+                var bases = tuple.Item1.GetBaseClasses();
+
+                foreach (var b in bases.Reverse())
+                {
+                    int offset = tuple.Item2 + b.offset;
+
+                    if (b.name == className)
+                    {
+                        return Tuple.Create(b.symIndexId, offset);
+                    }
+
+                    classes.Push(Tuple.Create(b, offset));
+                }
+            }
+
+            throw new Exception("Base class not found");
         }
     }
 }

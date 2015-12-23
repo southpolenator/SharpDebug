@@ -25,14 +25,29 @@ namespace CsScripts
         private SimpleCache<uint> size;
 
         /// <summary>
+        /// The all field names (including all base classes)
+        /// </summary>
+        private SimpleCache<string[]> allFieldNames;
+
+        /// <summary>
+        /// All field types and offsets
+        /// </summary>
+        private GlobalCache<string, Tuple<CodeType, int>> allFieldTypesAndOffsets;
+
+        /// <summary>
         /// The field names
         /// </summary>
         private SimpleCache<string[]> fieldNames;
 
         /// <summary>
-        /// The field offsets
+        /// The field type and offsets
         /// </summary>
-        private GlobalCache<string, Tuple<uint, int>> fieldTypeAndOffsets;
+        private GlobalCache<string, Tuple<CodeType, int>> fieldTypeAndOffsets;
+
+        /// <summary>
+        /// The base classes and offsets
+        /// </summary>
+        private GlobalCache<string, Tuple<CodeType, int>> baseClassesAndOffsets;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CodeType"/> class.
@@ -56,14 +71,43 @@ namespace CsScripts
             elementType = SimpleCache.Create(GetElementType);
             name = SimpleCache.Create(() => Context.SymbolProvider.GetTypeName(Module, TypeId));
             size = SimpleCache.Create(() => Context.SymbolProvider.GetTypeSize(Module, TypeId));
+            allFieldNames = SimpleCache.Create(() => Context.SymbolProvider.GetTypeAllFieldNames(Module, TypeId));
+            allFieldTypesAndOffsets = new GlobalCache<string, Tuple<CodeType, int>>((fieldName) =>
+            {
+                var field = Context.SymbolProvider.GetTypeAllFieldTypeAndOffset(Module, TypeId, fieldName);
+
+                return Tuple.Create(Module.TypesById[field.Item1], field.Item2);
+            });
             fieldNames = SimpleCache.Create(() => Context.SymbolProvider.GetTypeFieldNames(Module, TypeId));
-            fieldTypeAndOffsets = new GlobalCache<string, Tuple<uint, int>>((fieldName) => Context.SymbolProvider.GetTypeFieldTypeAndOffset(Module, TypeId, fieldName));
+            fieldTypeAndOffsets = new GlobalCache<string, Tuple<CodeType, int>>((fieldName) =>
+            {
+                var field = Context.SymbolProvider.GetTypeFieldTypeAndOffset(Module, TypeId, fieldName);
+
+                return Tuple.Create(Module.TypesById[field.Item1], field.Item2);
+            });
+            baseClassesAndOffsets = new GlobalCache<string, Tuple<CodeType, int>>((className) =>
+            {
+                var baseClass = Context.SymbolProvider.GetTypeBaseClass(Module, TypeId, className);
+
+                return Tuple.Create(Module.TypesById[baseClass.Item1], baseClass.Item2);
+            });
         }
 
         /// <summary>
-        /// Gets the type field names.
+        /// Gets the type field names (including base classes).
         /// </summary>
         public string[] FieldNames
+        {
+            get
+            {
+                return allFieldNames.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the class field names (it doesn't include base classes).
+        /// </summary>
+        public string[] ClassFieldNames
         {
             get
             {
@@ -228,12 +272,31 @@ namespace CsScripts
         /// </summary>
         internal SymTag Tag { get; private set; }
 
+        internal GlobalCache<string, Tuple<CodeType, int>> ClassFields
+        {
+            get
+            {
+                return fieldTypeAndOffsets;
+            }
+        }
+
+        /// <summary>
+        /// Gets the base classes.
+        /// </summary>
+        internal GlobalCache<string, Tuple<CodeType, int>> BaseClasses
+        {
+            get
+            {
+                return baseClassesAndOffsets;
+            }
+        }
+
         /// <summary>
         /// Gets field offset.
         /// </summary>
         public int GetFieldOffset(string fieldName)
         {
-            return fieldTypeAndOffsets[fieldName].Item2;
+            return allFieldTypesAndOffsets[fieldName].Item2;
         }
 
         /// <summary>
@@ -256,7 +319,7 @@ namespace CsScripts
         /// </summary>
         public CodeType GetFieldType(string fieldName)
         {
-            return Module.TypesById[fieldTypeAndOffsets[fieldName].Item1];
+            return allFieldTypesAndOffsets[fieldName].Item1;
         }
 
         /// <summary>

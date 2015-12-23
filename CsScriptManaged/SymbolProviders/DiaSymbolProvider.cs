@@ -69,11 +69,11 @@ namespace CsScriptManaged.SymbolProviders
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string[] GetTypeFieldNames(Module module, uint typeId)
+        public string[] GetTypeAllFieldNames(Module module, uint typeId)
         {
             ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            return diaModule.GetTypeFieldNames(module, typeId);
+            return diaModule.GetTypeAllFieldNames(module, typeId);
         }
 
         /// <summary>
@@ -82,11 +82,11 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
-        public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
+        public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
             ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            return diaModule.GetTypeFieldTypeAndOffset(module, typeId, fieldName);
+            return diaModule.GetTypeAllFieldTypeAndOffset(module, typeId, fieldName);
         }
 
         /// <summary>
@@ -258,6 +258,44 @@ namespace CsScriptManaged.SymbolProviders
             ISymbolProviderModule diaModule = GetDiaModule(codeType.Module);
 
             return diaModule.ReadSimpleData(codeType, address);
+        }
+
+        /// <summary>
+        /// Gets the names of fields of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public string[] GetTypeFieldNames(Module module, uint typeId)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetTypeFieldNames(module, typeId);
+        }
+
+        /// <summary>
+        /// Gets the field type id and offset of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetTypeFieldTypeAndOffset(module, typeId, fieldName);
+        }
+
+        /// <summary>
+        /// Gets the type's base class type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="className">Name of the class.</param>
+        public Tuple<uint, int> GetTypeBaseClass(Module module, uint typeId, string className)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetTypeBaseClass(module, typeId, className);
         }
     }
 }

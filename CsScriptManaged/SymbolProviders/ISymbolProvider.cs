@@ -13,7 +13,22 @@ namespace CsScriptManaged.SymbolProviders
         SymTag GetTypeTag(Module module, uint typeId);
 
         /// <summary>
-        /// Gets the names of all fields of the specified type.
+        /// Gets the names of all fields of the specified type (including all base classes).
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        string[] GetTypeAllFieldNames(Module module, uint typeId);
+
+        /// <summary>
+        /// Gets the field type id and offset of the specified type (from the list of all fields, including all base classes).
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        Tuple<uint, int> GetTypeAllFieldTypeAndOffset(Module module, uint typeId, string fieldName);
+
+        /// <summary>
+        /// Gets the names of fields of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
@@ -26,6 +41,14 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
         Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName);
+
+        /// <summary>
+        /// Gets the type's base class type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="className">Name of the class.</param>
+        Tuple<uint, int> GetTypeBaseClass(Module module, uint typeId, string className);
 
         /// <summary>
         /// Gets the name of the specified type.
