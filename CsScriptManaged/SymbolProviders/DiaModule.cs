@@ -3,6 +3,7 @@ using Dia2Lib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CsScriptManaged.SymbolProviders
 {
@@ -382,8 +383,30 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="address">The address.</param>
         public ulong ReadSimpleData(CodeType codeType, ulong address)
         {
-            // TODO: Read correct data and not only pointer values
-            return Context.DataSpaces.ReadPointersVirtual(1, address);
+            uint read, bufferSize = codeType.Size;
+            IntPtr buffer = Marshal.AllocHGlobal((int)bufferSize);
+
+            try
+            {
+                Context.DataSpaces.ReadVirtual(address, buffer, bufferSize, out read);
+                switch (bufferSize)
+                {
+                    case 1:
+                        return Marshal.ReadByte(buffer);
+                    case 2:
+                        return (ushort)Marshal.ReadInt16(buffer);
+                    case 4:
+                        return (uint)Marshal.ReadInt32(buffer);
+                    case 8:
+                        return (ulong)Marshal.ReadInt64(buffer);
+                    default:
+                        throw new Exception("Unexpected data size " + bufferSize);
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
         }
 
         /// <summary>
