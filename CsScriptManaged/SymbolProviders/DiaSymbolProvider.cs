@@ -20,7 +20,7 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="pdb">The PDB path.</param>
         private static ISymbolProviderModule LoadModule(string pdb)
         {
-            if (string.IsNullOrEmpty(pdb) || Path.GetExtension(pdb) != "pdb")
+            if (string.IsNullOrEmpty(pdb) || Path.GetExtension(pdb).ToLower() != ".pdb")
             {
                 return new DbgEngSymbolProvider();
             }
@@ -37,7 +37,7 @@ namespace CsScriptManaged.SymbolProviders
         {
             ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            throw new NotImplementedException();
+            return diaModule.GetGlobalVariableAddress(module, globalVariableName);
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace CsScriptManaged.SymbolProviders
         {
             ISymbolProviderModule diaModule = GetDiaModule(module);
 
-            throw new NotImplementedException();
+            return diaModule.GetGlobalVariableTypeId(module, globalVariableName);
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
 using Dia2Lib;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CsScriptManaged.SymbolProviders
 {
@@ -71,8 +72,15 @@ namespace CsScriptManaged.SymbolProviders
         public uint GetTypeId(Module module, string typeName)
         {
             // TODO: Add support for basic types
-            IDiaSymbol type = session.globalScope.GetChild(typeName);
+            return GetTypeId(session.globalScope.GetChild(typeName));
+        }
 
+        /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        private uint GetTypeId(IDiaSymbol type)
+        {
             return type.symIndexId;
         }
 
@@ -376,6 +384,57 @@ namespace CsScriptManaged.SymbolProviders
         {
             // TODO: Read correct data and not only pointer values
             return Context.DataSpaces.ReadPointersVirtual(1, address);
+        }
+
+        /// <summary>
+        /// Gets the global variable address.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="globalVariableName">Name of the global variable.</param>
+        public ulong GetGlobalVariableAddress(Module module, string globalVariableName)
+        {
+            var globalVariable = GetGlobalVariable(globalVariableName);
+
+            return globalVariable.relativeVirtualAddress + module.Offset;
+        }
+
+        /// <summary>
+        /// Gets the global variable type identifier.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="globalVariableName">Name of the global variable.</param>
+        public uint GetGlobalVariableTypeId(Module module, string globalVariableName)
+        {
+            var globalVariable = GetGlobalVariable(globalVariableName);
+
+            return GetTypeId(globalVariable.type);
+        }
+
+        /// <summary>
+        /// Gets the global variable.
+        /// </summary>
+        /// <param name="globalVariableName">Name of the global variable.</param>
+        private IDiaSymbol GetGlobalVariable(string globalVariableName)
+        {
+            var globalVariable = session.globalScope.GetChild(globalVariableName);
+
+            if (globalVariable == null)
+            {
+                var spaces = globalVariableName.Split(new string[] { "::" }, StringSplitOptions.None);
+
+                if (spaces.Length > 0)
+                {
+                    var type = session.globalScope.GetChild(string.Join("::", spaces.Take(spaces.Length - 1)));
+
+                    if (type != null)
+                        globalVariable = type.GetChild(spaces.Last(), SymTagEnum.SymTagData);
+                }
+            }
+
+            if (globalVariable == null)
+                throw new Exception("Global variable not found " + globalVariableName);
+
+            return globalVariable;
         }
     }
 }

@@ -6,6 +6,20 @@ namespace CsScriptManaged.SymbolProviders
     public interface ISymbolProviderModule
     {
         /// <summary>
+        /// Gets the global variable address.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="globalVariableName">Name of the global variable.</param>
+        ulong GetGlobalVariableAddress(Module module, string globalVariableName);
+
+        /// <summary>
+        /// Gets the global variable type identifier.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="globalVariableName">Name of the global variable.</param>
+        uint GetGlobalVariableTypeId(Module module, string globalVariableName);
+
+        /// <summary>
         /// Gets the symbol tag of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
