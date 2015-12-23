@@ -23,6 +23,11 @@ namespace CsScriptManaged.SymbolProviders
         private IDiaSession session;
 
         /// <summary>
+        /// The cache of type all fields
+        /// </summary>
+        private GlobalCache<uint, List<Tuple<string, uint, int>>> typeAllFields;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DiaModule"/> class.
         /// </summary>
         /// <param name="pdbPath">The PDB path.</param>
@@ -31,6 +36,37 @@ namespace CsScriptManaged.SymbolProviders
             dia = new DiaSource();
             dia.loadDataFromPdb(pdbPath);
             dia.openSession(out session);
+            typeAllFields = new GlobalCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);
+        }
+
+        private List<Tuple<string, uint, int>> GetTypeFields(uint typeId)
+        {
+            var type = GetTypeFromId(typeId);
+            List<Tuple<string, uint, int>> fields = new List<Tuple<string, uint, int>>();
+
+            GetTypeFields(type, fields);
+            return fields;
+        }
+
+        private void GetTypeFields(IDiaSymbol type, List<Tuple<string, uint, int>> typeFields, int offset = 0)
+        {
+            // Get all fields from base classes
+            var bases = type.GetBaseClasses();
+
+            foreach (var b in bases)
+            {
+                GetTypeFields(b, typeFields, offset + b.offset);
+            }
+
+            // Get type fields
+            var fields = type.GetChildren(SymTagEnum.SymTagData);
+            foreach (var field in fields)
+            {
+                if ((DataKind)field.dataKind == DataKind.StaticMember)
+                    continue;
+
+                typeFields.Add(Tuple.Create(field.name, field.typeId, offset + field.offset));
+            }
         }
 
         /// <summary>
@@ -212,17 +248,9 @@ namespace CsScriptManaged.SymbolProviders
             if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
                 type = type.type;
 
-            var fields = type.GetChildren(SymTagEnum.SymTagData);
-            List<string> fieldNames = new List<string>();
+            var fields = typeAllFields[type.symIndexId];
 
-            foreach (var field in fields)
-            {
-                if ((DataKind)field.dataKind == DataKind.StaticMember)
-                    continue;
-                fieldNames.Add(field.name);
-            }
-
-            return fieldNames.ToArray();
+            return fields.Select(t => t.Item1).ToArray();
         }
 
         /// <summary>
@@ -246,16 +274,14 @@ namespace CsScriptManaged.SymbolProviders
             if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
                 type = type.type;
 
-            var fields = type.GetChildren(SymTagEnum.SymTagData);
+            var fields = typeAllFields[type.symIndexId];
 
             foreach (var field in fields)
             {
-                if ((DataKind)field.dataKind == DataKind.StaticMember)
-                    continue;
-                if (field.name != fieldName)
+                if (field.Item1 != fieldName)
                     continue;
 
-                return Tuple.Create(field.typeId, field.offset);
+                return Tuple.Create(field.Item2, field.Item3);
             }
 
             throw new Exception("Field not found");
