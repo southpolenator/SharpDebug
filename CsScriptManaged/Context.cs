@@ -103,7 +103,7 @@ namespace CsScriptManaged
             Symbols = client as IDebugSymbols5;
             SystemObjects = client as IDebugSystemObjects4;
             SymbolProvider = DbgEngSymbolProvider;
-            //SymbolProvider = DiaSymbolProvider;
+            SymbolProvider = DiaSymbolProvider;
         }
 
         /// <summary>
