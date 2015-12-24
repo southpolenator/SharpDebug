@@ -11,6 +11,7 @@ namespace GenerateUserTypesFromPdb
     {
         SingleLineProperty,
         GenerateFieldComment,
+        UseClassFieldsFromDiaSymbolProvider,
     }
 
     class UserType
@@ -89,33 +90,37 @@ namespace GenerateUserTypesFromPdb
                 if (!string.IsNullOrEmpty(Namespace))
                 {
                     output.WriteLine(indentation, "namespace {0}", Namespace);
-                    output.WriteLine(indentation, "{{");
-                    indentation++;
+                    output.WriteLine(indentation++, "{{");
                 }
             }
 
             output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, symbol.name);
             output.WriteLine(indentation, @"public partial class {0} : {1}", ClassName, baseType);
-            output.WriteLine(indentation, @"{{");
+            output.WriteLine(indentation++, @"{{");
             foreach (var field in fields)
             {
                 bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                 string fieldTypeString = GetTypeString(field.type, exportedTypes, field.length);
 
                 if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldComment))
-                    output.WriteLine(indentation + 1, "// {0} {1};", GetOriginalTypeString(field.type), field.name);
-                output.WriteLine(indentation + 1, "private {0}UserMember<{1}> _{2};", isStatic ? "static " : "", fieldTypeString, field.name);
+                    output.WriteLine(indentation, "// {0} {1};", GetOriginalTypeString(field.type), field.name);
+                output.WriteLine(indentation, "private {0}UserMember<{1}> _{2};", isStatic ? "static " : "", fieldTypeString, field.name);
                 if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldComment))
                     output.WriteLine();
                 hasStatic = hasStatic || isStatic;
                 hasNonStatic = hasNonStatic || !isStatic;
             }
 
+            if (hasNonStatic && options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
+            {
+                output.WriteLine(indentation, "private UserMember<Variable> thisClass;");
+            }
+
             if (hasStatic)
             {
                 output.WriteLine();
-                output.WriteLine(indentation + 1, "static {0}()", ClassName);
-                output.WriteLine(indentation + 1, "{{");
+                output.WriteLine(indentation, "static {0}()", ClassName);
+                output.WriteLine(indentation++, "{{");
 
                 foreach (var field in fields)
                 {
@@ -128,32 +133,37 @@ namespace GenerateUserTypesFromPdb
 
                         if (castingTypeString.StartsWith("BasicType<"))
                         {
-                            output.WriteLine(indentation + 2, "_{0} = UserMember.Create(() => {1}.GetValue(Process.Current.GetGlobal(\"{2}!{3}::{0}\")));", field.name, castingTypeString, moduleName, symbol.name);
+                            output.WriteLine(indentation, "_{0} = UserMember.Create(() => {1}.GetValue(Process.Current.GetGlobal(\"{2}!{3}::{0}\")));", field.name, castingTypeString, moduleName, symbol.name);
                         }
                         else if (string.IsNullOrEmpty(castingTypeString))
                         {
-                            output.WriteLine(indentation + 2, "_{0} = UserMember.Create(() => Process.Current.GetGlobal(\"{1}!{2}::{0}\"));", field.name, moduleName, symbol.name);
+                            output.WriteLine(indentation, "_{0} = UserMember.Create(() => Process.Current.GetGlobal(\"{1}!{2}::{0}\"));", field.name, moduleName, symbol.name);
                         }
                         else if (castingTypeString == "NakedPointer" || castingTypeString == "CodeFunction" || castingTypeString.StartsWith("CodeArray") || castingTypeString.StartsWith("CodePointer"))
                         {
-                            output.WriteLine(indentation + 2, "_{0} = UserMember.Create(() => new {1}(Process.Current.GetGlobal(\"{2}!{3}::{0}\")));", field.name, castingTypeString, moduleName, symbol.name);
+                            output.WriteLine(indentation, "_{0} = UserMember.Create(() => new {1}(Process.Current.GetGlobal(\"{2}!{3}::{0}\")));", field.name, castingTypeString, moduleName, symbol.name);
                         }
                         else
                         {
-                            output.WriteLine(indentation + 2, "_{0} = UserMember.Create(() => ({1})Process.Current.GetGlobal(\"{2}!{3}::{0}\"));", field.name, castingTypeString, moduleName, symbol.name);
+                            output.WriteLine(indentation, "_{0} = UserMember.Create(() => ({1})Process.Current.GetGlobal(\"{2}!{3}::{0}\"));", field.name, castingTypeString, moduleName, symbol.name);
                         }
                     }
                 }
 
-                output.WriteLine(indentation + 1, "}}");
+                output.WriteLine(--indentation, "}}");
             }
 
             if (hasNonStatic)
             {
                 output.WriteLine();
-                output.WriteLine(indentation + 1, "public {0}(Variable variable)", ClassName);
-                output.WriteLine(indentation + 2, ": base(variable)");
-                output.WriteLine(indentation + 1, "{{");
+                output.WriteLine(indentation, "public {0}(Variable variable)", ClassName);
+                output.WriteLine(indentation + 1, ": base(variable)");
+                output.WriteLine(indentation++, "{{");
+
+                if (options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
+                {
+                    output.WriteLine(indentation, "thisClass = UserMember.Create(() => variable.GetBaseClass(\"{0}\"));", symbol.name);
+                }
 
                 foreach (var field in fields)
                 {
@@ -163,27 +173,33 @@ namespace GenerateUserTypesFromPdb
                     if (!isStatic)
                     {
                         string castingTypeString = GetCastingType(fieldTypeString);
+                        string gettingField = "variable.GetField";
+
+                        if (options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
+                        {
+                            gettingField = "thisClass.GetClassField";
+                        }
 
                         if (castingTypeString.StartsWith("BasicType<"))
                         {
-                            output.WriteLine(indentation + 2, "_{0} = UserMember.Create(() => {1}.GetValue(variable.GetField(\"{0}\")));", field.name, castingTypeString);
+                            output.WriteLine(indentation, "_{0} = UserMember.Create(() => {1}.GetValue({2}(\"{0}\")));", field.name, castingTypeString, gettingField);
                         }
                         else if (string.IsNullOrEmpty(castingTypeString))
                         {
-                            output.WriteLine(indentation + 2, "_{0} = UserMember.Create(() => variable.GetField(\"{0}\"));", field.name);
+                            output.WriteLine(indentation, "_{0} = UserMember.Create(() => {1}(\"{0}\"));", field.name, gettingField);
                         }
                         else if (castingTypeString == "NakedPointer" || castingTypeString == "CodeFunction" || castingTypeString.StartsWith("CodeArray") || castingTypeString.StartsWith("CodePointer"))
                         {
-                            output.WriteLine(indentation + 2, "_{0} = UserMember.Create(() => new {1}(variable.GetField(\"{0}\")));", field.name, castingTypeString);
+                            output.WriteLine(indentation, "_{0} = UserMember.Create(() => new {1}({2}(\"{0}\")));", field.name, castingTypeString, gettingField);
                         }
                         else
                         {
-                            output.WriteLine(indentation + 2, "_{0} = UserMember.Create(() => ({1})variable.GetField(\"{0}\"));", field.name, castingTypeString);
+                            output.WriteLine(indentation, "_{0} = UserMember.Create(() => ({1}){2}(\"{0}\"));", field.name, castingTypeString, gettingField);
                         }
                     }
                 }
 
-                output.WriteLine(indentation + 1, "}}");
+                output.WriteLine(--indentation, "}}");
             }
 
             bool firstField = true;
@@ -200,33 +216,32 @@ namespace GenerateUserTypesFromPdb
                         firstField = false;
                     }
 
-                    output.WriteLine(indentation + 1, "public {0}{1} {2} {{ get {{ return _{2}.Value; }} }}", isStatic ? "static " : "", fieldTypeString, field.name);
+                    output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return _{2}.Value; }} }}", isStatic ? "static " : "", fieldTypeString, field.name);
                 }
                 else
                 {
                     output.WriteLine();
-                    output.WriteLine(indentation + 1, "public {0}{1} {2}", isStatic ? "static " : "", fieldTypeString, field.name);
-                    output.WriteLine(indentation + 1, "{{");
-                    output.WriteLine(indentation + 2, "get");
-                    output.WriteLine(indentation + 2, "{{");
-                    output.WriteLine(indentation + 3, "return _{0}.Value;", field.name);
-                    output.WriteLine(indentation + 2, "}}");
-                    output.WriteLine(indentation + 1, "}}");
+                    output.WriteLine(indentation, "public {0}{1} {2}", isStatic ? "static " : "", fieldTypeString, field.name);
+                    output.WriteLine(indentation++, "{{");
+                    output.WriteLine(indentation, "get");
+                    output.WriteLine(indentation++, "{{");
+                    output.WriteLine(indentation, "return _{0}.Value;", field.name);
+                    output.WriteLine(--indentation, "}}");
+                    output.WriteLine(--indentation, "}}");
                 }
             }
 
             foreach (var innerType in InnerTypes)
             {
                 output.WriteLine();
-                innerType.WriteCode(output, error, exportedTypes, options, indentation + 1);
+                innerType.WriteCode(output, error, exportedTypes, options, indentation);
             }
 
-            output.WriteLine(indentation, @"}}");
+            output.WriteLine(--indentation, @"}}");
 
             if (DeclaredInType == null && !string.IsNullOrEmpty(Namespace))
             {
-                indentation--;
-                output.WriteLine(indentation, "}}");
+                output.WriteLine(--indentation, "}}");
             }
         }
 

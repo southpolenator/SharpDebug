@@ -41,7 +41,7 @@ namespace GenerateUserTypesFromPdb
 
             string pdbPath = args[0];
             string[] typeNames = args[1].Split(",".ToCharArray());
-            UserTypeGenerationFlags options = UserTypeGenerationFlags.GenerateFieldComment | UserTypeGenerationFlags.SingleLineProperty;
+            UserTypeGenerationFlags options = UserTypeGenerationFlags.GenerateFieldComment | UserTypeGenerationFlags.SingleLineProperty | UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
 
             string moduleName = Path.GetFileNameWithoutExtension(pdbPath).ToLower();
             Dictionary<string, UserType> symbols = new Dictionary<string, UserType>();
