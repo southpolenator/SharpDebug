@@ -33,6 +33,11 @@ namespace CsScriptManaged.SymbolProviders
         private DictionaryCache<uint, List<Tuple<string, uint, int>>> typeFields;
 
         /// <summary>
+        /// The basic types
+        /// </summary>
+        private SimpleCache<Dictionary<string, IDiaSymbol>> basicTypes;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DiaModule"/> class.
         /// </summary>
         /// <param name="pdbPath">The PDB path.</param>
@@ -43,6 +48,40 @@ namespace CsScriptManaged.SymbolProviders
             dia.openSession(out session);
             typeAllFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeAllFields);
             typeFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);
+            basicTypes = SimpleCache.Create(() =>
+            {
+                var types = new Dictionary<string, IDiaSymbol>();
+                var basicTypes = session.globalScope.GetChildren(SymTagEnum.SymTagBaseType);
+
+                foreach (var type in basicTypes)
+                {
+                    try
+                    {
+                        string typeString = TypeToString.GetTypeString(type);
+
+                        if (!types.ContainsKey(typeString))
+                        {
+                            types.Add(typeString, type);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                return types;
+            });
+        }
+
+        /// <summary>
+        /// Gets the basic types.
+        /// </summary>
+        private Dictionary<string, IDiaSymbol> BasicTypes
+        {
+            get
+            {
+                return basicTypes.Value;
+            }
         }
 
         /// <summary>
@@ -145,8 +184,14 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeName">Name of the type.</param>
         public uint GetTypeId(Module module, string typeName)
         {
-            // TODO: Add support for basic types
-            return GetTypeId(session.globalScope.GetChild(typeName));
+            IDiaSymbol type;
+
+            if (!BasicTypes.TryGetValue(typeName, out type))
+            {
+                type = session.globalScope.GetChild(typeName);
+            }
+
+            return GetTypeId(type);
         }
 
         /// <summary>
@@ -363,6 +408,7 @@ namespace CsScriptManaged.SymbolProviders
 
             try
             {
+                // TODO: This doesn't work with bit fields
                 Context.DataSpaces.ReadVirtual(address, buffer, bufferSize, out read);
                 switch (bufferSize)
                 {
