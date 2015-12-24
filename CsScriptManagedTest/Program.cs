@@ -33,7 +33,14 @@ namespace CsScriptManagedTest
             var frames = Thread.Current.StackTrace.Frames;
             Console.WriteLine("Call stack:");
             foreach (var frame in frames)
-                Console.WriteLine("  {0,3:x} {1}+0x{2:x}", frame.FrameNumber, frame.FunctionName, frame.FunctionDisplacement);
+                try
+                {
+                    Console.WriteLine("  {0,3:x} {1}+0x{2:x}   ({3}:{4})", frame.FrameNumber, frame.FunctionName, frame.FunctionDisplacement, frame.SourceFileName, frame.SourceFileLine);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("  {0,3:x} {1}+0x{2:x}", frame.FrameNumber, frame.FunctionName, frame.FunctionDisplacement);
+                }
         }
 
         public static IDebugClient OpenDumpFile(string dumpFile, string symbolPath)
