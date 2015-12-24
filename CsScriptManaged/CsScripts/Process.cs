@@ -63,10 +63,10 @@ namespace CsScripts
             threads = SimpleCache.Create(GetThreads);
             modules = SimpleCache.Create(GetModules);
             userTypes = SimpleCache.Create(GetUserTypes);
-            ModulesByName = new GlobalCache<string, Module>(GetModuleByName);
-            ModulesById = new GlobalCache<ulong, Module>(GetModuleById);
-            Variables = new GlobalCache<Tuple<CodeType, ulong, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3));
-            UserTypeCastedVariables = new GlobalCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
+            ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
+            ModulesById = new DictionaryCache<ulong, Module>(GetModuleById);
+            Variables = new DictionaryCache<Tuple<CodeType, ulong, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3));
+            UserTypeCastedVariables = new DictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
             GlobalCache.UserTypeCastedVariables.Add(UserTypeCastedVariables);
         }
 
@@ -117,22 +117,22 @@ namespace CsScripts
         /// <summary>
         /// The modules by name
         /// </summary>
-        internal GlobalCache<string, Module> ModulesByName { get; private set; }
+        internal DictionaryCache<string, Module> ModulesByName { get; private set; }
 
         /// <summary>
         /// The modules by identifier
         /// </summary>
-        internal GlobalCache<ulong, Module> ModulesById { get; private set; }
+        internal DictionaryCache<ulong, Module> ModulesById { get; private set; }
 
         /// <summary>
         /// Gets the variables by constructor key.
         /// </summary>
-        internal GlobalCache<Tuple<CodeType, ulong, string>, Variable> Variables { get; private set; }
+        internal DictionaryCache<Tuple<CodeType, ulong, string>, Variable> Variables { get; private set; }
 
         /// <summary>
         /// Gets the user type casted variables.
         /// </summary>
-        internal GlobalCache<Variable, Variable> UserTypeCastedVariables { get; private set; }
+        internal DictionaryCache<Variable, Variable> UserTypeCastedVariables { get; private set; }
 
         /// <summary>
         /// Gets the user types.

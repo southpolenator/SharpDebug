@@ -45,10 +45,10 @@ namespace CsScripts
             loadedImageName = SimpleCache.Create(() => GetName(DebugModname.LoadedImage));
             symbolFileName = SimpleCache.Create(() => GetName(DebugModname.SymbolFile));
             mappedImageName = SimpleCache.Create(() => GetName(DebugModname.MappedImage));
-            TypesByName = new GlobalCache<string, CodeType>(GetTypeByName);
-            TypesById = new GlobalCache<uint, CodeType>(GetTypeById);
-            GlobalVariables = new GlobalCache<string, Variable>(GetGlobalVariable);
-            UserTypeCastedGlobalVariables = new GlobalCache<string, Variable>((name) =>
+            TypesByName = new DictionaryCache<string, CodeType>(GetTypeByName);
+            TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
+            GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
+            UserTypeCastedGlobalVariables = new DictionaryCache<string, Variable>((name) =>
             {
                 Variable variable = Process.UserTypeCastedVariables[GlobalVariables[name]];
 
@@ -91,22 +91,22 @@ namespace CsScripts
         /// <summary>
         /// Types by the name
         /// </summary>
-        internal GlobalCache<string, CodeType> TypesByName { get; private set; }
+        internal DictionaryCache<string, CodeType> TypesByName { get; private set; }
 
         /// <summary>
         /// Types by the identifier
         /// </summary>
-        internal GlobalCache<uint, CodeType> TypesById { get; private set; }
+        internal DictionaryCache<uint, CodeType> TypesById { get; private set; }
 
         /// <summary>
         /// Cache of global variables.
         /// </summary>
-        internal GlobalCache<string, Variable> GlobalVariables { get; private set; }
+        internal DictionaryCache<string, Variable> GlobalVariables { get; private set; }
 
         /// <summary>
         /// Cache of user type casted global variables.
         /// </summary>
-        internal GlobalCache<string, Variable> UserTypeCastedGlobalVariables { get; private set; }
+        internal DictionaryCache<string, Variable> UserTypeCastedGlobalVariables { get; private set; }
 
         /// <summary>
         /// Gets the identifier.

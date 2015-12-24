@@ -47,12 +47,12 @@ namespace CsScripts
         /// <summary>
         /// The fields indexed by name
         /// </summary>
-        private GlobalCache<string, Variable> fieldsByName;
+        private DictionaryCache<string, Variable> fieldsByName;
 
         /// <summary>
         /// The fields that are casted to user type if metadata is provided, indexed by name
         /// </summary>
-        private GlobalCache<string, Variable> userTypeCastedFieldsByName;
+        private DictionaryCache<string, Variable> userTypeCastedFieldsByName;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Variable"/> class.
@@ -87,8 +87,8 @@ namespace CsScripts
             runtimeType = SimpleCache.Create(FindRuntimeType);
             fields = SimpleCache.Create(FindFields);
             userTypeCastedFields = SimpleCache.Create(FindUserTypeCastedFields);
-            fieldsByName = new GlobalCache<string, Variable>(GetOriginalField);
-            userTypeCastedFieldsByName = new GlobalCache<string, Variable>(GetUserTypeCastedFieldByName);
+            fieldsByName = new DictionaryCache<string, Variable>(GetOriginalField);
+            userTypeCastedFieldsByName = new DictionaryCache<string, Variable>(GetUserTypeCastedFieldByName);
         }
 
         /// <summary>

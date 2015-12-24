@@ -25,12 +25,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// The cache of type all fields
         /// </summary>
-        private GlobalCache<uint, List<Tuple<string, uint, int>>> typeAllFields;
+        private DictionaryCache<uint, List<Tuple<string, uint, int>>> typeAllFields;
 
         /// <summary>
         /// The cache of type all fields
         /// </summary>
-        private GlobalCache<uint, List<Tuple<string, uint, int>>> typeFields;
+        private DictionaryCache<uint, List<Tuple<string, uint, int>>> typeFields;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DiaModule"/> class.
@@ -41,8 +41,8 @@ namespace CsScriptManaged.SymbolProviders
             dia = new DiaSource();
             dia.loadDataFromPdb(pdbPath);
             dia.openSession(out session);
-            typeAllFields = new GlobalCache<uint, List<Tuple<string, uint, int>>>(GetTypeAllFields);
-            typeFields = new GlobalCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);
+            typeAllFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeAllFields);
+            typeFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);
         }
 
         /// <summary>

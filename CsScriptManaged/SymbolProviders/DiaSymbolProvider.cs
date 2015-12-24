@@ -12,7 +12,7 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// The modules cache
         /// </summary>
-        private GlobalCache<string, ISymbolProviderModule> modules = new GlobalCache<string, ISymbolProviderModule>(LoadModule);
+        private DictionaryCache<string, ISymbolProviderModule> modules = new DictionaryCache<string, ISymbolProviderModule>(LoadModule);
 
         /// <summary>
         /// Loads the module from PDB file.

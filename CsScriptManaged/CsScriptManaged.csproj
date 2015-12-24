@@ -112,6 +112,7 @@
     <Compile Include="CsScripts\VariableCollection.cs" />
     <Compile Include="DebuggerOutputCapture.cs" />
     <Compile Include="DebuggerTextWriter.cs" />
+    <Compile Include="DictionaryCache.cs" />
     <Compile Include="Executor.cs" />
     <Compile Include="GlobalCache.cs" />
     <Compile Include="IExecutor.cs" />
