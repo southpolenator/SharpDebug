@@ -82,6 +82,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BasicType.cs" />
+    <Compile Include="TypeToString.cs" />
+    <Compile Include="CV_CFL_LANG.cs" />
     <Compile Include="CV_HREG_e.cs" />
     <Compile Include="DataKind.cs" />
     <Compile Include="DiaHelpers.cs" />

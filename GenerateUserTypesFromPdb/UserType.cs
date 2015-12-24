@@ -104,7 +104,7 @@ namespace GenerateUserTypesFromPdb
                 string fieldTypeString = GetTypeString(field.type, exportedTypes, field.length);
 
                 if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
-                    output.WriteLine(indentation, "// {0} {1};", GetOriginalTypeString(field.type), field.name);
+                    output.WriteLine(indentation, "// {0} {1};", TypeToString.GetTypeString(field.type), field.name);
                 output.WriteLine(indentation, "private {0}UserMember<{1}> _{2};", isStatic ? "static " : "", fieldTypeString, field.name);
                 if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                     output.WriteLine();
@@ -405,90 +405,6 @@ namespace GenerateUserTypesFromPdb
 
                 case SymTagEnum.SymTagFunctionType:
                     return "CodeFunction";
-
-                default:
-                    throw new Exception("Unexpected type tag " + (SymTagEnum)type.symTag);
-            }
-        }
-
-        private static string GetOriginalTypeString(IDiaSymbol type)
-        {
-            switch ((SymTagEnum)type.symTag)
-            {
-                case SymTagEnum.SymTagBaseType:
-                    switch ((BasicType)type.baseType)
-                    {
-                        case BasicType.Bit:
-                        case BasicType.Bool:
-                            return "bool";
-                        case BasicType.Char:
-                            return "char";
-                        case BasicType.WChar:
-                            return "wchar_t";
-                        case BasicType.BSTR:
-                            return "string";
-                        case BasicType.Void:
-                            return "void";
-                        case BasicType.Float:
-                            return type.length <= 4 ? "float" : type.length > 9 ? "long double" : "double";
-                        case BasicType.Int:
-                        case BasicType.Long:
-                            switch (type.length)
-                            {
-                                case 0:
-                                    return "void";
-                                case 1:
-                                    return "char";
-                                case 2:
-                                    return "short";
-                                case 4:
-                                    return "int";
-                                case 8:
-                                    return "long long";
-                                default:
-                                    throw new Exception("Unexpected type length " + type.length);
-                            }
-
-                        case BasicType.UInt:
-                        case BasicType.ULong:
-                            switch (type.length)
-                            {
-                                case 0:
-                                    return "void";
-                                case 1:
-                                    return "unsigned char";
-                                case 2:
-                                    return "unsigned short";
-                                case 4:
-                                    return "unsigned int";
-                                case 8:
-                                    return "unsigned long long";
-                                default:
-                                    throw new Exception("Unexpected type length " + type.length);
-                            }
-
-                        case BasicType.Hresult:
-                            return "HRESULT";
-                        default:
-                            throw new Exception("Unexpected basic type " + (BasicType)type.baseType);
-                    }
-
-                case SymTagEnum.SymTagPointerType:
-                    {
-                        IDiaSymbol pointerType = type.type;
-
-                        return GetOriginalTypeString(pointerType) + "*";
-                    }
-
-                case SymTagEnum.SymTagUDT:
-                case SymTagEnum.SymTagEnum:
-                    {
-                        return type.name;
-                    }
-
-                case SymTagEnum.SymTagFunctionType:
-                case SymTagEnum.SymTagArrayType:
-                    return GetOriginalTypeString(type.type) + "[]";
 
                 default:
                     throw new Exception("Unexpected type tag " + (SymTagEnum)type.symTag);
