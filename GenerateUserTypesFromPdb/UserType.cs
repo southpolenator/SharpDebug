@@ -9,8 +9,9 @@ namespace GenerateUserTypesFromPdb
     [Flags]
     enum UserTypeGenerationFlags
     {
+        None = 0,
         SingleLineProperty,
-        GenerateFieldComment,
+        GenerateFieldTypeInfoComment,
         UseClassFieldsFromDiaSymbolProvider,
     }
 
@@ -102,10 +103,10 @@ namespace GenerateUserTypesFromPdb
                 bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                 string fieldTypeString = GetTypeString(field.type, exportedTypes, field.length);
 
-                if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldComment))
+                if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                     output.WriteLine(indentation, "// {0} {1};", GetOriginalTypeString(field.type), field.name);
                 output.WriteLine(indentation, "private {0}UserMember<{1}> _{2};", isStatic ? "static " : "", fieldTypeString, field.name);
-                if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldComment))
+                if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                     output.WriteLine();
                 hasStatic = hasStatic || isStatic;
                 hasNonStatic = hasNonStatic || !isStatic;

@@ -1,13 +1,37 @@
-﻿using Dia2Lib;
+﻿using CommandLine;
+using CommandLine.Text;
+using Dia2Lib;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb
 {
+    class Options
+    {
+        [Option('p', "pdb", Required = true, HelpText = "Path to PDB which will be used to generate the code")]
+        public string PdbPath { get; set; }
+
+        [OptionList('t', "types", ',', Required = true, HelpText = "List of types to be exported", MutuallyExclusiveSet = "cmdSettings")]
+        public IList<string> Types { get; set; }
+
+        [Option("no-type-info-comment", DefaultValue = false, HelpText = "Generate filed type info comment", Required = false, MutuallyExclusiveSet = "cmdSettings")]
+        public bool DontGenerateFieldTypeInfoComment { get; set; }
+
+        [Option("multi-line-properties", DefaultValue = false, HelpText = "Generate properties as multi line", Required = false, MutuallyExclusiveSet = "cmdSettings")]
+        public bool MultiLineProperties { get; set; }
+
+        [Option("use-dia-symbol-provider", DefaultValue = false, HelpText = "Use DIA symbol provider and access fields for specific type", Required = false, MutuallyExclusiveSet = "cmdSettings")]
+        public bool UseDiaSymbolProvider { get; set; }
+
+        [HelpOption]
+        public string GetUsage()
+        {
+            return HelpText.AutoBuild(this, (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
+        }
+    }
+
     class Program
     {
         private static void OpenPdb(string path, out IDiaDataSource dia, out IDiaSession session)
@@ -30,18 +54,20 @@ namespace GenerateUserTypesFromPdb
         static void Main(string[] args)
         {
             var error = Console.Error;
+            var options = new Options();
 
-            if (args.Length < 2)
-            {
-                error.WriteLine("Not enough arguments, expected 2:");
-                error.WriteLine("  [pdbPath]          Path to PDB file");
-                error.WriteLine("  type1,type2,...    Types to be exported");
-                return;
-            }
+            Parser.Default.ParseArgumentsStrict(args, options);
 
-            string pdbPath = args[0];
-            string[] typeNames = args[1].Split(",".ToCharArray());
-            UserTypeGenerationFlags options = UserTypeGenerationFlags.GenerateFieldComment | UserTypeGenerationFlags.SingleLineProperty | UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
+            string pdbPath = options.PdbPath;
+            IList<string> typeNames = options.Types;
+            UserTypeGenerationFlags generationOptions = UserTypeGenerationFlags.None;
+
+            if (!options.DontGenerateFieldTypeInfoComment)
+                generationOptions |= UserTypeGenerationFlags.GenerateFieldTypeInfoComment;
+            if (!options.MultiLineProperties)
+                generationOptions |= UserTypeGenerationFlags.SingleLineProperty;
+            if (options.UseDiaSymbolProvider)
+                generationOptions |= UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
 
             string moduleName = Path.GetFileNameWithoutExtension(pdbPath).ToLower();
             Dictionary<string, UserType> symbols = new Dictionary<string, UserType>();
@@ -104,7 +130,7 @@ namespace GenerateUserTypesFromPdb
 
                 using (TextWriter output = new StreamWriter(string.Format("{0}{1}.exported.cs", outputDirectory, symbol.name)))
                 {
-                    userType.WriteCode(new IndentedWriter(output), error, symbols, options);
+                    userType.WriteCode(new IndentedWriter(output), error, symbols, generationOptions);
                 }
             }
         }
