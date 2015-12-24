@@ -1,4 +1,5 @@
-﻿using CsScriptManaged;
+﻿using CommandLine;
+using CsScriptManaged;
 using CsScripts;
 using DbgEngManaged;
 using System;
@@ -6,11 +7,23 @@ using System.Runtime.InteropServices;
 
 namespace CsScriptManagedTest
 {
+    class Options
+    {
+        [Option('d', "dump", DefaultValue = "NativeDump1.dmp", HelpText = "Path to memory dump file that will be debugged")]
+        public string DumpPath { get; set; }
+
+        [Option('p', "symbol-path", DefaultValue = @"srv*;.\", HelpText = "Symbol path to be set in debugger")]
+        public string SymbolPath { get; set; }
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
-            var client = OpenDumpFile(@"C:\Users\vujova\Downloads\defect4327276\SQLDUMP0001.MDMP", @"srv*;C:\Users\vujova\Downloads\defect4327276");
+            var options = new Options();
+            Parser.Default.ParseArgumentsStrict(args, options);
+
+            var client = OpenDumpFile(options.DumpPath, options.SymbolPath);
 
             Context.Initalize(client);
             //Context.Execute(@"..\..\..\..\samples\script.cs", new string[] { });
@@ -18,25 +31,9 @@ namespace CsScriptManagedTest
             Console.WriteLine("Threads: {0}", Thread.All.Length);
             Console.WriteLine("Current thread: {0}", Thread.Current.Id);
             var frames = Thread.Current.StackTrace.Frames;
-            //Console.WriteLine("Call stack:");
-            //foreach (var frame in frames)
-            //    Console.WriteLine("  {0,3:x} {1}+0x{2:x}", frame.FrameNumber, frame.FunctionName, frame.FunctionDisplacement);
-            var test = Process.Current.GetGlobal("sqldk!SOS_Task::NoPoolTracking");
-            Console.WriteLine(test);
-            var f = frames[34];
-            var locals = f.Locals;
-            dynamic pTask = locals["pTask"];
-            var aa = pTask.GetBaseClass("SOSListElem").GetBaseClass("SEListElem");
-            Console.WriteLine(string.Join(", ", aa.GetClassFieldNames()));
-            var bb = pTask.GetClassField("m_Params").GetClassField("m_flags");
-            Console.WriteLine(bb);
-            var fieldNames = pTask.GetCodeType().FieldNames;
-            var m_prev = pTask.m_prev;
-            Console.WriteLine(m_prev);
-            Variable list = pTask.m_pList;
-            var ct = list.GetCodeType();
-            var fieldOffsets = ct.GetFieldOffsets();
-            var fields = ct.FieldNames;
+            Console.WriteLine("Call stack:");
+            foreach (var frame in frames)
+                Console.WriteLine("  {0,3:x} {1}+0x{2:x}", frame.FrameNumber, frame.FunctionName, frame.FunctionDisplacement);
         }
 
         public static IDebugClient OpenDumpFile(string dumpFile, string symbolPath)
