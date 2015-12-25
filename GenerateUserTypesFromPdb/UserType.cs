@@ -17,12 +17,13 @@ namespace GenerateUserTypesFromPdb
 
     class UserType
     {
-        public UserType(IDiaSymbol symbol, string moduleName)
+        public UserType(IDiaSymbol symbol, XmlType xmlType, string moduleName)
         {
             Symbol = symbol;
             ModuleName = moduleName;
             InnerTypes = new List<UserType>();
             Usings = new HashSet<string>(new string[] { "CsScripts" });
+            XmlType = xmlType;
         }
 
         public IDiaSymbol Symbol { get; private set; }
@@ -36,6 +37,8 @@ namespace GenerateUserTypesFromPdb
         public List<UserType> InnerTypes { get; private set; }
 
         public HashSet<string> Usings { get; private set; }
+
+        public XmlType XmlType { get; private set; }
 
         public string ClassName
         {
@@ -100,6 +103,9 @@ namespace GenerateUserTypesFromPdb
             output.WriteLine(indentation++, @"{{");
             foreach (var field in fields)
             {
+                if (IsFieldFiltered(field))
+                    continue;
+
                 bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                 string fieldTypeString = GetTypeString(field.type, exportedTypes, field.length);
 
@@ -125,6 +131,9 @@ namespace GenerateUserTypesFromPdb
 
                 foreach (var field in fields)
                 {
+                    if (IsFieldFiltered(field))
+                        continue;
+
                     bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                     string fieldTypeString = GetTypeString(field.type, exportedTypes, field.length);
 
@@ -168,6 +177,9 @@ namespace GenerateUserTypesFromPdb
 
                 foreach (var field in fields)
                 {
+                    if (IsFieldFiltered(field))
+                        continue;
+
                     bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                     string fieldTypeString = GetTypeString(field.type, exportedTypes, field.length);
 
@@ -206,6 +218,9 @@ namespace GenerateUserTypesFromPdb
             bool firstField = true;
             foreach (var field in fields)
             {
+                if (IsFieldFiltered(field))
+                    continue;
+
                 bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
                 string fieldTypeString = GetTypeString(field.type, exportedTypes, field.length);
 
@@ -244,6 +259,12 @@ namespace GenerateUserTypesFromPdb
             {
                 output.WriteLine(--indentation, "}}");
             }
+        }
+
+        private bool IsFieldFiltered(IDiaSymbol field)
+        {
+            return (XmlType.IncludedFields.Count > 0 && !XmlType.IncludedFields.Contains(field.name))
+                || XmlType.ExcludedFields.Contains(field.name);
         }
 
         public void SetDeclaredInType(UserType declaredInType)

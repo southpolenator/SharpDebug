@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Xml.Serialization;
 
 namespace GenerateUserTypesFromPdb
@@ -29,5 +30,9 @@ namespace GenerateUserTypesFromPdb
     {
         [XmlAttribute]
         public string Name { get; set; }
+
+        public HashSet<string> ExcludedFields { get; set; }
+
+        public HashSet<string> IncludedFields { get; set; }
     }
 }

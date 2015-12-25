@@ -108,7 +108,7 @@ namespace GenerateUserTypesFromPdb
                 }
                 else
                 {
-                    symbols.Add(type.Name, new UserType(symbol, moduleName));
+                    symbols.Add(type.Name, new UserType(symbol, type, moduleName));
                 }
             }
 
