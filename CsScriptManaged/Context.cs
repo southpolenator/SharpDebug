@@ -69,6 +69,11 @@ namespace CsScriptManaged
         private static InteractiveExecution interactiveExecution = new InteractiveExecution();
 
         /// <summary>
+        /// The settings for script execution
+        /// </summary>
+        internal static Settings Settings = new Settings();
+
+        /// <summary>
         /// Gets a value indicating whether this instance is live debugging.
         /// </summary>
         /// <value>

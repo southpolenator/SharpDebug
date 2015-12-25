@@ -95,12 +95,20 @@ namespace CsScriptManaged
         /// <summary>
         /// Gets the list of search folders.
         /// </summary>
-        internal List<string> SearchFolders { get; } = new List<string>();
+        internal List<string> SearchFolders { get; private set; }
 
         /// <summary>
         /// The code provider
         /// </summary>
         private CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ScriptCompiler"/> class.
+        /// </summary>
+        public ScriptCompiler()
+        {
+            SearchFolders = Context.Settings.SearchFolders;
+        }
 
         /// <summary>
         /// Releases unmanaged and - optionally - managed resources.
