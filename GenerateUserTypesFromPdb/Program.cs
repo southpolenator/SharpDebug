@@ -1,5 +1,4 @@
 ﻿using CommandLine;
-using CommandLine.Text;
 using Dia2Lib;
 using System;
 using System.Collections.Generic;
@@ -13,23 +12,20 @@ namespace GenerateUserTypesFromPdb
         [Option('p', "pdb", Required = true, HelpText = "Path to PDB which will be used to generate the code")]
         public string PdbPath { get; set; }
 
-        [OptionList('t', "types", ',', Required = true, HelpText = "List of types to be exported", MutuallyExclusiveSet = "cmdSettings")]
+        [Option('t', "types", Separator = ',', Required = true, HelpText = "List of types to be exported", SetName = "cmdSettings")]
         public IList<string> Types { get; set; }
 
-        [Option("no-type-info-comment", DefaultValue = false, HelpText = "Generate filed type info comment", Required = false, MutuallyExclusiveSet = "cmdSettings")]
+        [Option("no-type-info-comment", Default = false, HelpText = "Generate filed type info comment", Required = false, SetName = "cmdSettings")]
         public bool DontGenerateFieldTypeInfoComment { get; set; }
 
-        [Option("multi-line-properties", DefaultValue = false, HelpText = "Generate properties as multi line", Required = false, MutuallyExclusiveSet = "cmdSettings")]
+        [Option("multi-line-properties", Default = false, HelpText = "Generate properties as multi line", Required = false, SetName = "cmdSettings")]
         public bool MultiLineProperties { get; set; }
 
-        [Option("use-dia-symbol-provider", DefaultValue = false, HelpText = "Use DIA symbol provider and access fields for specific type", Required = false, MutuallyExclusiveSet = "cmdSettings")]
+        [Option("use-dia-symbol-provider", Default = false, HelpText = "Use DIA symbol provider and access fields for specific type", Required = false, SetName = "cmdSettings")]
         public bool UseDiaSymbolProvider { get; set; }
 
-        [HelpOption]
-        public string GetUsage()
-        {
-            return HelpText.AutoBuild(this, (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
-        }
+        [Option('x', "xml-config", HelpText = "Path to xml file with configuration", SetName = "xmlConfig")]
+        public string XmlConfigPath { get; set; }
     }
 
     class Program
@@ -54,9 +50,13 @@ namespace GenerateUserTypesFromPdb
         static void Main(string[] args)
         {
             var error = Console.Error;
-            var options = new Options();
+            Options options = null;
 
-            Parser.Default.ParseArgumentsStrict(args, options);
+            Parser.Default.ParseArguments<Options>(args)
+                .WithParsed(o => options = o);
+
+            if (options == null)
+                return;
 
             string pdbPath = options.PdbPath;
             IList<string> typeNames = options.Types;
