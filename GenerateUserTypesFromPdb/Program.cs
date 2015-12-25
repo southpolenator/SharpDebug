@@ -12,7 +12,7 @@ namespace GenerateUserTypesFromPdb
         [Option('p', "pdb", Required = true, HelpText = "Path to PDB which will be used to generate the code")]
         public string PdbPath { get; set; }
 
-        [Option('t', "types", Separator = ',', Required = true, HelpText = "List of types to be exported", SetName = "cmdSettings")]
+        [Option('t', "types", Separator = ',', Required = false, HelpText = "List of types to be exported", SetName = "cmdSettings")]
         public IList<string> Types { get; set; }
 
         [Option("no-type-info-comment", Default = false, HelpText = "Generate filed type info comment", Required = false, SetName = "cmdSettings")]
@@ -58,15 +58,38 @@ namespace GenerateUserTypesFromPdb
             if (options == null)
                 return;
 
+            XmlConfig config;
+
+            if (!string.IsNullOrEmpty(options.XmlConfigPath))
+            {
+                config = XmlConfig.Read(options.XmlConfigPath);
+            }
+            else
+            {
+                config = new XmlConfig()
+                {
+                    DontGenerateFieldTypeInfoComment = options.DontGenerateFieldTypeInfoComment,
+                    MultiLineProperties = options.MultiLineProperties,
+                    UseDiaSymbolProvider = options.UseDiaSymbolProvider,
+                    Types = new XmlType[options.Types.Count],
+                };
+
+                for (int i = 0; i < options.Types.Count; i++)
+                    config.Types[i] = new XmlType()
+                    {
+                        Name = options.Types[i],
+                    };
+            }
+
             string pdbPath = options.PdbPath;
-            IList<string> typeNames = options.Types;
+            XmlType[] typeNames = config.Types;
             UserTypeGenerationFlags generationOptions = UserTypeGenerationFlags.None;
 
-            if (!options.DontGenerateFieldTypeInfoComment)
+            if (!config.DontGenerateFieldTypeInfoComment)
                 generationOptions |= UserTypeGenerationFlags.GenerateFieldTypeInfoComment;
-            if (!options.MultiLineProperties)
+            if (!config.MultiLineProperties)
                 generationOptions |= UserTypeGenerationFlags.SingleLineProperty;
-            if (options.UseDiaSymbolProvider)
+            if (config.UseDiaSymbolProvider)
                 generationOptions |= UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
 
             string moduleName = Path.GetFileNameWithoutExtension(pdbPath).ToLower();
@@ -75,17 +98,17 @@ namespace GenerateUserTypesFromPdb
             IDiaSession session;
 
             OpenPdb(pdbPath, out dia, out session);
-            foreach (var typeName in typeNames)
+            foreach (var type in typeNames)
             {
-                IDiaSymbol symbol = session.globalScope.GetChild(typeName, SymTagEnum.SymTagUDT);
+                IDiaSymbol symbol = session.globalScope.GetChild(type.Name, SymTagEnum.SymTagUDT);
 
                 if (symbol == null)
                 {
-                    error.WriteLine("Symbol not found: {0}", typeName);
+                    error.WriteLine("Symbol not found: {0}", type.Name);
                 }
                 else
                 {
-                    symbols.Add(typeName, new UserType(symbol, moduleName));
+                    symbols.Add(type.Name, new UserType(symbol, moduleName));
                 }
             }
 
