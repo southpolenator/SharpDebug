@@ -153,7 +153,7 @@ namespace GenerateUserTypesFromPdb
 
                 using (TextWriter output = new StreamWriter(string.Format("{0}{1}.exported.cs", outputDirectory, symbol.name)))
                 {
-                    userType.WriteCode(new IndentedWriter(output), error, symbols, generationOptions);
+                    userType.WriteCode(new IndentedWriter(output), error, symbols, config.Transformations, generationOptions);
                 }
             }
         }
