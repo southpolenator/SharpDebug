@@ -145,15 +145,36 @@ namespace GenerateUserTypesFromPdb
 
                 if (transformation != null)
                 {
+                    Func<string, string> typeConverter = null;
+
+                    typeConverter = (inputType) =>
+                    {
+                        UserType userType;
+
+                        if (exportedTypes.TryGetValue(inputType, out userType))
+                        {
+                            return userType.FullClassName;
+                        }
+
+                        var tr = typeTransformations.Where(t => t.Matches(inputType)).FirstOrDefault();
+
+                        if (tr != null)
+                        {
+                            return tr.TransformType(inputType, ClassName, typeConverter);
+                        }
+
+                        return "Variable";
+                    };
+                    string newFieldTypeString = transformation.TransformType(originalFieldTypeString, ClassName, typeConverter);
                     string fieldOffset = string.Format("{0}.GetFieldOffset(\"{1}\")", useThisClass ? "variable" : "thisClass", field.name);
 
                     if (isStatic)
                     {
-                        fieldOffset = "<FieldOffsetUsedOnStaticMember>";
+                        fieldOffset = "<Field offset was used on a static member>";
                     }
 
-                    constructorText = transformation.TransformConstructor(originalFieldTypeString, simpleFieldValue, fieldOffset, ClassName);
-                    fieldTypeString = transformation.TransformType(originalFieldTypeString, ClassName);
+                    constructorText = transformation.TransformConstructor(originalFieldTypeString, simpleFieldValue, fieldOffset, ClassName, typeConverter);
+                    fieldTypeString = newFieldTypeString;
                 }
 
                 yield return new UserTypeField

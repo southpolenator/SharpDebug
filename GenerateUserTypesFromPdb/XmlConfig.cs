@@ -43,7 +43,7 @@ namespace GenerateUserTypesFromPdb
 
         private static XmlSerializer CreateSerializer()
         {
-            return new XmlSerializer(typeof(XmlConfig), new Type[] { typeof(RegexTransformation), typeof(PlainStringTransformation) });
+            return new XmlSerializer(typeof(XmlConfig), new Type[] { });
         }
     }
 
@@ -57,89 +57,148 @@ namespace GenerateUserTypesFromPdb
         public HashSet<string> IncludedFields { get; set; }
     }
 
-    [XmlInclude(typeof(PlainStringTransformation))]
-    [XmlInclude(typeof(RegexTransformation))]
-    public abstract class XmlTypeTransformation
+    public class XmlTypeTransformation
     {
         public const string FieldRegexGroup = "${field}";
         public const string FieldOffsetRegexGroup = "${fieldOffset}";
         public const string NewTypeRegexGroup = "${newType}";
         public const string ClassNameRegexGroup = "${className}";
-
-        [XmlAttribute]
-        public string TypeText { get; set; }
-
-        [XmlAttribute]
-        public string ConstructorText { get; set; }
-
-        public abstract bool Matches(string originalType);
-
-        public string TransformType(string originalType, string className)
+        public static readonly Dictionary<string, string> CastRegexGroups = new Dictionary<string, string>()
         {
-            return Transform(originalType, TypeText).Replace(ClassNameRegexGroup, className);
+            { "${new}", "new ${newType}(${field})" },
+            { "${newOffset}", "new ${newType}(${field}, ${fieldOffset})" },
+            { "${cast}", "(${newType})${field}" },
+        };
+
+        [XmlAttribute]
+        public string NewType { get; set; }
+
+        [XmlAttribute]
+        public string Constructor { get; set; }
+
+        [XmlAttribute]
+        public string OriginalType { get; set; }
+
+        public bool Matches(string inputType)
+        {
+            return ParseType(OriginalType, inputType);
         }
 
-        public string TransformConstructor(string originalType, string field, string fieldOffset, string className)
+        public string TransformType(string inputType, string className, Func<string, string> typeConverter)
         {
-            string transform = ConstructorText.Replace(FieldRegexGroup, field).Replace(FieldOffsetRegexGroup, fieldOffset).Replace(ClassNameRegexGroup, className);
+            Dictionary<string, string> groups = new Dictionary<string, string>(CastRegexGroups);
 
-            if (transform.Contains(NewTypeRegexGroup))
-                transform = transform.Replace(NewTypeRegexGroup, TransformType(originalType, className));
-            return Transform(originalType, transform);
+            ParseType(OriginalType, inputType, groups, typeConverter);
+            groups.Add(ClassNameRegexGroup, className);
+            return Transform(NewType, groups);
         }
 
-        protected abstract string Transform(string input, string transform);
-    }
-
-    public class RegexTransformation : XmlTypeTransformation
-    {
-        [XmlIgnore]
-        private string regexText;
-
-        [XmlIgnore]
-        public Regex Regex { get; private set; }
-
-        [XmlAttribute]
-        public string RegexText
+        public string TransformConstructor(string inputType, string field, string fieldOffset, string className, Func<string, string> typeConverter)
         {
-            get
+            Dictionary<string, string> groups = new Dictionary<string, string>(CastRegexGroups);
+
+            ParseType(OriginalType, inputType, groups, typeConverter);
+            groups.Add(FieldRegexGroup, field);
+            groups.Add(FieldOffsetRegexGroup, fieldOffset);
+            groups.Add(ClassNameRegexGroup, className);
+            groups.Add(NewTypeRegexGroup, TransformType(inputType, className, typeConverter));
+            return Transform(Constructor, groups);
+        }
+
+        private string Transform(string input, Dictionary<string, string> groups)
+        {
+            for (bool changed = true; changed; )
             {
-                return regexText;
+                changed = false;
+                foreach (var g in groups)
+                {
+                    string transformed = input.Replace(g.Key, g.Value);
+
+                    if (transformed != input)
+                    {
+                        changed = true;
+                        input = transformed;
+                        break;
+                    }
+                }
             }
 
-            set
+            return input;
+        }
+
+        private static bool ParseType(string originalType, string inputType, Dictionary<string, string> groups = null, Func<string, string> typeConverter = null)
+        {
+            int i = 0, j = 0;
+
+            while (i < originalType.Length && j < inputType.Length)
             {
-                regexText = value;
-                Regex = new Regex(regexText);
+                if (originalType[i] != '$')
+                {
+                    if (originalType[i] != inputType[j])
+                    {
+                        return false;
+                    }
+
+                    i++;
+                    j++;
+                    continue;
+                }
+
+                string newType = ExtractNewCastName(originalType, i);
+                string extractedType = ExtractType(inputType, j);
+
+                i += newType.Length;
+                j += extractedType.Length;
+                if (groups != null)
+                {
+                    extractedType = extractedType.Trim();
+                    groups.Add(newType, typeConverter != null ? typeConverter(extractedType) : extractedType);
+                }
             }
+
+            return i == originalType.Length && j == inputType.Length;
         }
 
-        public override bool Matches(string input)
+        private static string ExtractType(string inputType, int j)
         {
-            Match match = Regex.Match(input);
+            int k = j;
+            int openedTypes = 0;
 
-            return match != null && match.Success && match.Length == input.Length;
+            while (k < inputType.Length && (openedTypes != 0 || (inputType[k] != ',' && inputType[k] != '>')))
+            {
+                switch (inputType[k])
+                {
+                    case '<':
+                        openedTypes++;
+                        break;
+                    case '>':
+                        openedTypes--;
+                        break;
+                }
+
+                k++;
+            }
+
+            return inputType.Substring(j, k - j);
         }
 
-        protected override string Transform(string input, string transform)
+        private static string ExtractNewCastName(string originalType, int i)
         {
-            return Regex.Replace(input, transform);
-        }
-    }
+            int k = i;
+            bool correct = k < originalType.Length && originalType[k++] == '$';
 
-    public class PlainStringTransformation : XmlTypeTransformation
-    {
-        [XmlAttribute]
-        public string InputText { get; set; }
+            correct = correct && k < originalType.Length && originalType[k++] == '{';
+            while (correct && k < originalType.Length && originalType[k] != '}')
+            {
+                correct = char.IsLetterOrDigit(originalType[k]) || originalType[k] == '_';
+                k++;
+            }
+            correct = correct && k < originalType.Length && originalType[k++] == '}';
+            correct = correct && k < originalType.Length && (originalType[k] == ',' || originalType[k] == '>');
+            if (!correct)
+                throw new Exception("Incorrect format of OriginalType '" + originalType + "' at char " + i);
 
-        public override bool Matches(string input)
-        {
-            return input == InputText;
-        }
-
-        protected override string Transform(string input, string transform)
-        {
-            return transform;
+            return originalType.Substring(i, k - i);
         }
     }
 }

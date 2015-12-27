@@ -9,10 +9,10 @@ namespace CsScriptManagedTest
 {
     class Options
     {
-        [Option('d', "dump", DefaultValue = "NativeDump1.dmp", HelpText = "Path to memory dump file that will be debugged")]
+        [Option('d', "dump", Default = "NativeDump1.dmp", HelpText = "Path to memory dump file that will be debugged")]
         public string DumpPath { get; set; }
 
-        [Option('p', "symbol-path", DefaultValue = @"srv*;.\", HelpText = "Symbol path to be set in debugger")]
+        [Option('p', "symbol-path", Default = @"srv*;.\", HelpText = "Symbol path to be set in debugger")]
         public string SymbolPath { get; set; }
     }
 
@@ -20,8 +20,13 @@ namespace CsScriptManagedTest
     {
         static void Main(string[] args)
         {
-            var options = new Options();
-            Parser.Default.ParseArgumentsStrict(args, options);
+            Options options = null;
+
+            Parser.Default.ParseArguments<Options>(args)
+                .WithParsed(o => options = o);
+
+            if (options == null)
+                return;
 
             var client = OpenDumpFile(options.DumpPath, options.SymbolPath);
 
