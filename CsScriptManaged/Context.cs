@@ -64,14 +64,14 @@ namespace CsScriptManaged
         internal static UserTypeMetadata[] UserTypeMetadata;
 
         /// <summary>
-        /// The interactive execution
-        /// </summary>
-        private static InteractiveExecution interactiveExecution = new InteractiveExecution();
-
-        /// <summary>
         /// The settings for script execution
         /// </summary>
         internal static Settings Settings = new Settings();
+
+        /// <summary>
+        /// The interactive execution
+        /// </summary>
+        private static InteractiveExecution interactiveExecution = new InteractiveExecution();
 
         /// <summary>
         /// Gets a value indicating whether this instance is live debugging.
