@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged;
+using CsScriptManaged.Utility;
 using DbgEngManaged;
 using System;
 using System.Text;

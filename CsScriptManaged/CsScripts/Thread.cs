@@ -1,5 +1,6 @@
 ﻿using CsScriptManaged;
 using CsScriptManaged.Marshaling;
+using CsScriptManaged.Utility;
 using DbgEngManaged;
 using System.Linq;
 

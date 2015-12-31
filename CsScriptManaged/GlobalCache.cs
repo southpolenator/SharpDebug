@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged.Native;
+using CsScriptManaged.Utility;
 using CsScripts;
 using DbgEngManaged;
 using System;
@@ -9,17 +10,17 @@ namespace CsScriptManaged
     /// <summary>
     /// Helper class for caching global objects.
     /// </summary>
-    public class GlobalCache
+    internal class GlobalCache
     {
         /// <summary>
         /// The processes
         /// </summary>
-        public static DictionaryCache<Tuple<uint, uint>, Process> Processes = new DictionaryCache<Tuple<uint, uint>, Process>(CreateProcess);
+        internal static DictionaryCache<Tuple<uint, uint>, Process> Processes = new DictionaryCache<Tuple<uint, uint>, Process>(CreateProcess);
 
         /// <summary>
         /// The typed data
         /// </summary>
-        public static DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA> TypedData = new DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA>(GetTypedData);
+        internal static DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA> TypedData = new DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA>(GetTypedData);
 
         /// <summary>
         /// The list of simple caches that should be invalidated after medatada is removed so that new metadata can create new caches...

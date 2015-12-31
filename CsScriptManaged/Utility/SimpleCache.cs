@@ -1,24 +1,18 @@
 ﻿using System;
 
-namespace CsScriptManaged
+namespace CsScriptManaged.Utility
 {
     /// <summary>
     /// Helper class for caching results - it is being used as lazy evaluation
     /// </summary>
-    public class SimpleCache
+    public static class SimpleCache
     {
         /// <summary>
-        /// Prevents a default instance of the <see cref="SimpleCache"/> class from being created.
-        /// </summary>
-        private SimpleCache()
-        {
-        }
-
-        /// <summary>
-        /// Creates a new instance of the <see cref="SimpleCache{T}"/> class.
+        /// Creates a new instance of the <see cref="SimpleCache{T}" /> class.
         /// </summary>
         /// <typeparam name="T">Type to be cached</typeparam>
-        /// <param name="populateAction">The populate action.</param>
+        /// <param name="populateAction">The function that populates the cache on demand.</param>
+        /// <returns>Simple cache of &lt;T&gt;</returns>
         public static SimpleCache<T> Create<T>(Func<T> populateAction)
         {
             return new SimpleCache<T>(populateAction);

@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged.Native;
+using CsScriptManaged.Utility;
 using CsScripts;
 using Dia2Lib;
 using System;

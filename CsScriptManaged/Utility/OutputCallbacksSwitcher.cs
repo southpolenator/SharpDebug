@@ -1,7 +1,7 @@
 ﻿using DbgEngManaged;
 using System;
 
-namespace CsScriptManaged
+namespace CsScriptManaged.Utility
 {
     /// <summary>
     /// Helper class for replacing debugger output callbacks - used when capturing command output

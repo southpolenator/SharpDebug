@@ -1,7 +1,7 @@
 ﻿using CsScripts;
 using System;
 
-namespace CsScriptManaged
+namespace CsScriptManaged.Utility
 {
     /// <summary>
     /// Used for scoped thread switching

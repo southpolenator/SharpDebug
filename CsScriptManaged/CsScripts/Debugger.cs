@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged;
+using CsScriptManaged.Utility;
 using DbgEngManaged;
 
 namespace CsScripts

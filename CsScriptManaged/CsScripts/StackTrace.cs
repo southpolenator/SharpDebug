@@ -1,6 +1,7 @@
 ﻿using CsScriptManaged;
 using System.Linq;
 using DbgEngManaged;
+using CsScriptManaged.Utility;
 
 namespace CsScripts
 {

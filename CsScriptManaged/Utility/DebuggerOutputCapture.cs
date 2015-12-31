@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text;
 
-namespace CsScriptManaged
+namespace CsScriptManaged.Utility
 {
     /// <summary>
     /// Helper class for capturing debugger output while executing commands

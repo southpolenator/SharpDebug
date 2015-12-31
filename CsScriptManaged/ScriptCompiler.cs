@@ -10,28 +10,8 @@ using System.Text.RegularExpressions;
 
 namespace CsScriptManaged
 {
-    public class ScriptCompiler : IDisposable
+    internal class ScriptCompiler : IDisposable
     {
-        /// <summary>
-        /// Exception that contains all compiler errors that happened
-        /// </summary>
-        public class CompileException : Exception
-        {
-            /// <summary>
-            /// Initializes a new instance of the <see cref="CompileException"/> class.
-            /// </summary>
-            /// <param name="errors">The errors.</param>
-            public CompileException(CompilerError[] errors)
-            {
-                Errors = errors;
-            }
-
-            /// <summary>
-            /// Gets the errors.
-            /// </summary>
-            public CompilerError[] Errors { get; private set; }
-        }
-
         /// <summary>
         /// The automatically generated namespace for the script
         /// </summary>

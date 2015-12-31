@@ -9,7 +9,7 @@ namespace CsScriptManaged
     /// <summary>
     /// Compiles and executes scripts
     /// </summary>
-    public class ScriptExecution : ScriptCompiler
+    internal class ScriptExecution : ScriptCompiler
     {
         /// <summary>
         /// Executes the specified script.

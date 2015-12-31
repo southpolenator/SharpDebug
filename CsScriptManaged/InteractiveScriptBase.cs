@@ -11,7 +11,8 @@ namespace CsScriptManaged
     public class InteractiveScriptBase : ScriptBase
     {
         /// <summary>
-        /// The interactive script variables
+        /// The interactive script collection of saved variables.
+        /// Don't use this directly, all undeclared variables are being redirected to this one.
         /// </summary>
         public dynamic _Interactive_Script_Variables_;
 
@@ -19,6 +20,7 @@ namespace CsScriptManaged
         /// Gets the available commands.
         /// </summary>
         /// <param name="nameFilter">The name filter.</param>
+        /// <returns>Enumeration of available commands</returns>
         public IEnumerable<string> GetCommands(string nameFilter = "")
         {
             Type type = GetType();
@@ -59,9 +61,10 @@ namespace CsScriptManaged
         }
 
         /// <summary>
-        /// Gets the available commands.
+        /// Gets the available commands including all base classes.
         /// </summary>
         /// <param name="nameFilter">The name filter.</param>
+        /// <returns>Enumeration of available commands.</returns>
         public IEnumerable<string> GetAllCommands(string nameFilter = "")
         {
             Type type = GetType();

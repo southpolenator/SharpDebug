@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged.SymbolProviders;
+using CsScriptManaged.Utility;
 using DbgEngManaged;
 using System;
 using System.IO;
