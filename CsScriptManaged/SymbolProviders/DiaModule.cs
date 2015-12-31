@@ -301,11 +301,11 @@ namespace CsScriptManaged.SymbolProviders
             session.findLinesByRVA(address, (uint)function.length, out lineNumbers);
             foreach (IDiaLineNumber lineNumber in lineNumbers)
             {
-                if (address == lineNumber.relativeVirtualAddress)
+                if (address >= lineNumber.relativeVirtualAddress)
                 {
                     sourceFileName = lineNumber.sourceFile.fileName;
                     sourceFileLine = lineNumber.lineNumber;
-                    displacement = 0;
+                    displacement = address - lineNumber.relativeVirtualAddress;
                     return;
                 }
             }

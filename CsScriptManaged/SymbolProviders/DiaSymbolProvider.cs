@@ -166,7 +166,10 @@ namespace CsScriptManaged.SymbolProviders
             ISymbolProviderModule diaModule = GetDiaModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
 
             diaModule.GetFunctionNameAndDisplacement(stackFrame.Process, stackFrame.InstructionOffset, (uint)distance, out functionName, out displacement);
-            functionName = module.Name + "!" + functionName;
+            if (!functionName.Contains("!"))
+            {
+                functionName = module.Name + "!" + functionName;
+            }
         }
 
         /// <summary>
