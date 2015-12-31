@@ -126,7 +126,14 @@
     <Compile Include="InteractiveScriptBase.cs" />
     <Compile Include="Marshaling\MarshalArrayReader.cs" />
     <Compile Include="Marshaling\MarshalStructure.cs" />
-    <Compile Include="NativeMethods.cs" />
+    <Compile Include="Native\NamespaceDoc.cs" />
+    <Compile Include="Native\NativeMethods.cs" />
+    <Compile Include="Native\DEBUG_TYPED_DATA.cs" />
+    <Compile Include="Native\Extensions.cs" />
+    <Compile Include="Native\ExtTdop.cs" />
+    <Compile Include="Native\EXT_TYPED_DATA.cs" />
+    <Compile Include="Native\ImageFileMachine.cs" />
+    <Compile Include="Native\SymTag.cs" />
     <Compile Include="OutputCallbacksSwitcher.cs" />
     <Compile Include="ProcessSwitcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -151,6 +158,7 @@
       <Name>DiaHelpers</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"$(TargetFrameworkSDKToolsDirectory)tlbexp" "$(TargetPath)"</PostBuildEvent>

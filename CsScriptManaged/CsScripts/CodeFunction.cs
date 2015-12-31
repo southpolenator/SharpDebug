@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged;
+using CsScriptManaged.Native;
 using System;
 
 namespace CsScripts
@@ -129,7 +130,7 @@ namespace CsScripts
         /// <param name="codeType">The code type.</param>
         private static bool VerifyCodeType(CodeType codeType)
         {
-            return codeType.Tag == CsScriptManaged.SymTag.FunctionType;
+            return codeType.Tag == SymTag.FunctionType;
         }
 
         /// <summary>

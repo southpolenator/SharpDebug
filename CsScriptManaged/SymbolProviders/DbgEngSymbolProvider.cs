@@ -1,4 +1,5 @@
-﻿using CsScripts;
+﻿using CsScriptManaged.Native;
+using CsScripts;
 using DbgEngManaged;
 using System;
 using System.Collections.Generic;

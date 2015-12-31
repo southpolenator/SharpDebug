@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged;
+using CsScriptManaged.Native;
 using System;
 using System.Collections.Generic;
 

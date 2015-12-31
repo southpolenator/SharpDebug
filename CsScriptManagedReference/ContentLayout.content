@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Topics>
-  <Topic id="62d4580f-ebeb-492a-859c-16eee9981f9b" visible="True" isDefault="true" isSelected="true" title="Welcome to the [TODO: Add project name]">
+  <Topic id="62d4580f-ebeb-492a-859c-16eee9981f9b" visible="True" isDefault="true" isSelected="true" title="Welcome to the CsScripts">
     <HelpKeywords>
       <HelpKeyword index="K" term="Welcome" />
     </HelpKeywords>
@@ -9,9 +9,9 @@
     <HelpKeywords>
       <HelpKeyword index="K" term="version, history" />
     </HelpKeywords>
-    <Topic id="0f414275-632b-4672-abf4-6ff1af646b09" visible="True" title="Version 1.0.0.0">
+    <Topic id="0f414275-632b-4672-abf4-6ff1af646b09" visible="True" title="Version 1.0.0.1">
       <HelpKeywords>
-        <HelpKeyword index="K" term="version, 1.0.0.0" />
+        <HelpKeyword index="K" term="version, 1.0.0.1" />
       </HelpKeywords>
     </Topic>
   </Topic>

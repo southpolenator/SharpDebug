@@ -6,40 +6,43 @@ using System.Reflection;
 
 namespace CsScriptManaged
 {
-    public class Context
+    /// <summary>
+    /// Static class that has the whole debugging context
+    /// </summary>
+    public static class Context
     {
         /// <summary>
-        /// The advanced interface
+        /// The DbgEng.dll Advanced interface
         /// </summary>
         public static IDebugAdvanced3 Advanced;
 
         /// <summary>
-        /// The client interface
+        /// The DbgEng.dll Client interface
         /// </summary>
         public static IDebugClient7 Client;
 
         /// <summary>
-        /// The control interface
+        /// The DbgEng.dll Control interface
         /// </summary>
         public static IDebugControl7 Control;
 
         /// <summary>
-        /// The data spaces interface
+        /// The DbgEng.dll Data spaces interface
         /// </summary>
         public static IDebugDataSpaces4 DataSpaces;
 
         /// <summary>
-        /// The registers interface
+        /// The DbgEng.dll Registers interface
         /// </summary>
         public static IDebugRegisters2 Registers;
 
         /// <summary>
-        /// The symbols interface
+        /// The DbgEng.dll Symbols interface
         /// </summary>
         public static IDebugSymbols5 Symbols;
 
         /// <summary>
-        /// The system objects interface
+        /// The DbgEng.dll System objects interface
         /// </summary>
         public static IDebugSystemObjects4 SystemObjects;
 
@@ -74,12 +77,12 @@ namespace CsScriptManaged
         private static InteractiveExecution interactiveExecution = new InteractiveExecution();
 
         /// <summary>
-        /// Gets a value indicating whether this instance is live debugging.
+        /// Gets a value indicating whether debugger is currently in live debugging.
         /// </summary>
         /// <value>
-        /// <c>true</c> if this instance is live debugging; otherwise, <c>false</c>.
+        /// <c>true</c> if debugger is currently in live debugging; otherwise, <c>false</c>.
         /// </value>
-        public bool IsLiveDebugging
+        public static bool IsLiveDebugging
         {
             get
             {
@@ -95,9 +98,9 @@ namespace CsScriptManaged
         }
 
         /// <summary>
-        /// Initalizes the Context with the specified client.
+        /// Initalizes the Context with the specified DbgEng.dll Client interface.
         /// </summary>
-        /// <param name="client">The client.</param>
+        /// <param name="client">The DbgEng.dll Client interface.</param>
         public static void Initalize(IDebugClient client)
         {
             Advanced = client as IDebugAdvanced3;
@@ -114,7 +117,7 @@ namespace CsScriptManaged
         /// <summary>
         /// Executes the specified script.
         /// </summary>
-        /// <param name="path">The path.</param>
+        /// <param name="path">The script path.</param>
         /// <param name="args">The arguments.</param>
         public static void Execute(string path, params string[] args)
         {
@@ -136,7 +139,7 @@ namespace CsScriptManaged
         }
 
         /// <summary>
-        /// Interprets C# code.
+        /// Interprets the C# code.
         /// </summary>
         /// <param name="code">The C# code.</param>
         public static void Interpret(string code)

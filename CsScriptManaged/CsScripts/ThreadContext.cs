@@ -1,5 +1,6 @@
 ﻿using CsScriptManaged;
 using CsScriptManaged.Marshaling;
+using CsScriptManaged.Native;
 using System;
 using System.Runtime.InteropServices;
 

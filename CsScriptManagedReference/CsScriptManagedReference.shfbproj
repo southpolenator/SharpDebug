@@ -28,7 +28,8 @@
     </TransformComponentArguments>
     <DocumentationSources>
       <DocumentationSource sourceFile="..\CsScriptManaged\CsScriptManaged.csproj" />
-<DocumentationSource sourceFile="..\CommonUserTypes\CommonUserTypes.csproj" /></DocumentationSources>
+      <DocumentationSource sourceFile="..\CommonUserTypes\CommonUserTypes.csproj" />
+    </DocumentationSources>
   </PropertyGroup>
   <!-- There are no properties for these groups.  AnyCPU needs to appear in order for Visual Studio to perform
 			 the build.  The others are optional common platform types that may appear. -->
@@ -55,7 +56,7 @@
     <Folder Include="media" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Content\VersionHistory\v1.0.0.0.aml" />
+    <None Include="Content\VersionHistory\v1.0.0.1.aml" />
     <None Include="Content\VersionHistory\VersionHistory.aml" />
     <None Include="Content\Welcome.aml" />
   </ItemGroup>

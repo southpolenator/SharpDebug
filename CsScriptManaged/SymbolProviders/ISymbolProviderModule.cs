@@ -1,4 +1,5 @@
-﻿using CsScripts;
+﻿using CsScriptManaged.Native;
+using CsScripts;
 using System;
 
 namespace CsScriptManaged.SymbolProviders
