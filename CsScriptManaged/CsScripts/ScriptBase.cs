@@ -6,14 +6,14 @@ using System.Collections.Generic;
 namespace CsScripts
 {
     /// <summary>
-    /// Base class for all scripts
+    /// Base class for all C# scripts.
     /// </summary>
     public class ScriptBase
     {
         /// <summary>
         /// Helper class for making Modules be dynamic object inside the scripts.
         /// </summary>
-        public class ModulesDynamicObject : DynamicObject
+        private class ModulesDynamicObject : DynamicObject
         {
             /// <summary>
             /// Tries the get member.
@@ -39,7 +39,7 @@ namespace CsScripts
         /// <summary>
         /// Helper class for making one Module be dynamic object inside the scripts (after getting it from Modules dynamic object).
         /// </summary>
-        public class ModuleGlobalsDynamicObject : DynamicObject
+        private class ModuleGlobalsDynamicObject : DynamicObject
         {
             /// <summary>
             /// The module
@@ -99,7 +99,7 @@ namespace CsScripts
         /// <summary>
         /// Helper class for making Globals be dynamic object inside the scripts.
         /// </summary>
-        public class GlobalsDynamicObject : DynamicObject
+        private class GlobalsDynamicObject : DynamicObject
         {
             /// <summary>
             /// Tries the get member.
@@ -123,17 +123,17 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// The Modules dynamic object
+        /// The Modules dynamic object. You can use this dynamic variable to easily access Modules and afterwards global variables.
         /// </summary>
         protected dynamic Modules = new ModulesDynamicObject();
 
         /// <summary>
-        /// The Globals dynamic object
+        /// The Globals dynamic object. You can use this dynamic variable to easily access global variables.
         /// </summary>
         protected dynamic Globals = new GlobalsDynamicObject();
 
         /// <summary>
-        /// Gets the processes.
+        /// Gets the array of all processes being debugged.
         /// </summary>
         public static Process[] Processes
         {
@@ -144,7 +144,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the threads in the current process.
+        /// Gets the array of all threads in the current process.
         /// </summary>
         public static Thread[] Threads
         {

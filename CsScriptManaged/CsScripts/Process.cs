@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// The process being debugged.
+    /// </summary>
     public class Process
     {
         /// <summary>
@@ -53,7 +56,7 @@ namespace CsScripts
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <param name="systemId">The system identifier.</param>
-        public Process(uint id, uint systemId)
+        internal Process(uint id, uint systemId)
         {
             Id = id;
             SystemId = systemId;
@@ -87,7 +90,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets all processes.
+        /// Gets the array of all processes.
         /// </summary>
         public static Process[] All
         {
@@ -207,7 +210,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the threads.
+        /// Gets the array of process threads.
         /// </summary>
         public Thread[] Threads
         {
@@ -218,7 +221,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the modules.
+        /// Gets the array of process modules.
         /// </summary>
         public Module[] Modules
         {

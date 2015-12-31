@@ -6,6 +6,9 @@ using System.Text;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Stack frame of the process being debugged.
+    /// </summary>
     public class StackFrame
     {
         /// <summary>
@@ -217,7 +220,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the name of the function.
+        /// Gets the name of the function (including module name).
         /// </summary>
         public string FunctionName
         {

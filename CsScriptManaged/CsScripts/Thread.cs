@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Thread of the process being debugged.
+    /// </summary>
     public class Thread
     {
         /// <summary>
@@ -28,7 +31,7 @@ namespace CsScripts
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <param name="systemId">The system identifier.</param>
-        public Thread(uint id, uint systemId, Process process)
+        internal Thread(uint id, uint systemId, Process process)
         {
             Id = id;
             SystemId = systemId;
@@ -50,7 +53,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets all threads in current process.
+        /// Gets the array of all threads in current process.
         /// </summary>
         public static Thread[] All
         {

@@ -3,7 +3,7 @@
 namespace CsScripts
 {
     /// <summary>
-    /// Helper class that represents pointer
+    /// Wrapper class that represents a pointer.
     /// </summary>
     /// <typeparam name="T">The type of element this pointer points to.</typeparam>
     public class CodePointer<T>

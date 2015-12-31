@@ -5,30 +5,25 @@ namespace CsScripts
     /// <summary>
     /// Helper class for caching user members (fields) in auto generated classes
     /// </summary>
-    public class UserMember
+    public static class UserMember
     {
         /// <summary>
-        /// Prevents a default instance of the <see cref="UserMember"/> class from being created.
-        /// </summary>
-        private UserMember()
-        {
-        }
-
-        /// <summary>
-        /// Creates a new instance of the <see cref="UserMember{T}"/> class.
+        /// Creates a new instance of the <see cref="UserMember{T}" /> class.
         /// </summary>
         /// <typeparam name="T">Type to be cached</typeparam>
-        /// <param name="populateAction">The populate action.</param>
+        /// <param name="populateAction">The function that populates the cache on demand.</param>
+        /// <returns><see cref="UserMember{T}" /></returns>
         public static UserMember<T> Create<T>(Func<T> populateAction)
         {
             return new UserMember<T>(populateAction);
         }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="UserMember{T}"/> class.
+        /// Creates a new instance of the <see cref="UserMember{T}" /> class.
         /// </summary>
         /// <typeparam name="T">Type to be cached</typeparam>
-        /// <param name="populateAction">The populate action.</param>
+        /// <param name="populateAction">The function that populates the cache on demand.</param>
+        /// <returns><see cref="UserMember{T}" /></returns>
         public static UserMember<T> Create<T>(Func<Variable> populateAction)
         {
             return new UserMember<T>(() => (T)Convert.ChangeType(populateAction(), typeof(T)));
@@ -54,7 +49,7 @@ namespace CsScripts
         /// <summary>
         /// Initializes a new instance of the <see cref="UserMember{T}"/> class.
         /// </summary>
-        /// <param name="populateAction">The populate action.</param>
+        /// <param name="populateAction">The function that populates the cache on demand.</param>
         public UserMember(Func<T> populateAction)
         {
             this.populateAction = populateAction;

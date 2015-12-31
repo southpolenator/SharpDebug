@@ -6,7 +6,7 @@ using System;
 namespace CsScripts
 {
     /// <summary>
-    /// Helper class that represents function pointer
+    /// Wrapper class that represents a function pointer.
     /// </summary>
     public class CodeFunction
     {
@@ -48,12 +48,12 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// The function address
+        /// The function pointer address.
         /// </summary>
         public ulong Address { get; private set; }
 
         /// <summary>
-        /// The process where this function is located
+        /// The process where this function is located.
         /// </summary>
         public Process Process { get; private set; }
 

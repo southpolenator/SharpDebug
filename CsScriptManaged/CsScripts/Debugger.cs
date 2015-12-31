@@ -7,7 +7,7 @@ namespace CsScripts
     /// <summary>
     /// Helper class that controls the debugger
     /// </summary>
-    public class Debugger
+    public static class Debugger
     {
         /// <summary>
         /// Executes the specified command and captures its output.

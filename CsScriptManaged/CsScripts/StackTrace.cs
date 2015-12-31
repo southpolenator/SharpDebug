@@ -5,6 +5,9 @@ using CsScriptManaged.Utility;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Stack trace of the process being debugged.
+    /// </summary>
     public class StackTrace
     {
         /// <summary>
@@ -29,7 +32,7 @@ namespace CsScripts
         public Thread Thread { get; internal set; }
 
         /// <summary>
-        /// Gets the frames.
+        /// Gets the array of all frames.
         /// </summary>
         public StackFrame[] Frames { get; internal set; }
 

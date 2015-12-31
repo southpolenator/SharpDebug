@@ -43,7 +43,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the <see cref="Variable"/> with the specified name.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="name">The variable name.</param>
         public Variable this[string name]
         {
             get
@@ -55,7 +55,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the <see cref="Variable"/> at the specified index.
         /// </summary>
-        /// <param name="index">The index.</param>
+        /// <param name="index">The array index.</param>
         public Variable this[int index]
         {
             get

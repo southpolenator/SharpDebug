@@ -123,17 +123,6 @@ namespace CsScripts
         public Module Module { get; private set; }
 
         /// <summary>
-        /// Gets the module identifier.
-        /// </summary>
-        public ulong ModuleId
-        {
-            get
-            {
-                return Module.Id;
-            }
-        }
-
-        /// <summary>
         /// Gets the type identifier.
         /// </summary>
         public uint TypeId { get; private set; }

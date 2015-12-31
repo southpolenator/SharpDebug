@@ -1,11 +1,13 @@
-﻿using CsScriptManaged;
-using CsScriptManaged.Marshaling;
+﻿using CsScriptManaged.Marshaling;
 using CsScriptManaged.Native;
 using System;
 using System.Runtime.InteropServices;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Thread context of the process being debugged.
+    /// </summary>
     public class ThreadContext
     {
         #region Native structures
@@ -67,7 +69,7 @@ namespace CsScripts
             public byte[] ExtendedRegisters;
         }
 
-        struct XMM_SAVE_AREA32
+        private struct XMM_SAVE_AREA32
         {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2 * 2)]
             public ulong[] Header;
@@ -83,7 +85,7 @@ namespace CsScripts
         }
 
         //[StructLayout(LayoutKind.Explicit)]
-        struct CONTEXT_X64
+        private struct CONTEXT_X64
         {
 
             // Register parameter home addresses.
@@ -233,6 +235,13 @@ namespace CsScripts
 #pragma warning restore 0169
 #pragma warning restore 0649
         #endregion
+
+        /// <summary>
+        /// Prevents a default instance of the <see cref="ThreadContext"/> class from being created.
+        /// </summary>
+        private ThreadContext()
+        {
+        }
 
         /// <summary>
         /// Gets the size of the native structure.

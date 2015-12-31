@@ -6,6 +6,9 @@ using System.Text;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Module of the debugging process.
+    /// </summary>
     public class Module
     {
         /// <summary>
@@ -79,7 +82,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets all modules for the current process.
+        /// Gets the array of all modules for the current process.
         /// </summary>
         public static Module[] All
         {
@@ -120,7 +123,7 @@ namespace CsScripts
         public Process Process { get; private set; }
 
         /// <summary>
-        /// Gets the offset (address location of module base).
+        /// Gets the offset (address location of the module base).
         /// </summary>
         public ulong Offset
         {
@@ -195,9 +198,9 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the variable.
+        /// Gets the global or static variable.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="name">The variable name.</param>
         /// <returns>Variable if found</returns>
         /// <exception cref="System.ArgumentException">Variable name contains wrong module name. Don't add it manually, it will be added automatically.</exception>
         public Variable GetVariable(string name)

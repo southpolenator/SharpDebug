@@ -38,7 +38,7 @@ namespace CsScriptManaged.Utility
         /// <summary>
         /// Initializes a new instance of the <see cref="SimpleCache{T}"/> class.
         /// </summary>
-        /// <param name="populateAction">The populate action.</param>
+        /// <param name="populateAction">The function that populates the cache on demand.</param>
         public SimpleCache(Func<T> populateAction)
         {
             this.populateAction = populateAction;

@@ -5,7 +5,7 @@ using System.Collections;
 namespace CsScripts
 {
     /// <summary>
-    /// Helper class that represents "static" array. For example "int a[4]";
+    /// Wrapper class that represents a "static" array. For example "int a[4]";
     /// </summary>
     /// <typeparam name="T">The type of elements in the array</typeparam>
     public class CodeArray<T> : IReadOnlyList<T>
@@ -30,6 +30,9 @@ namespace CsScripts
             Length = variable.GetArrayLength();
         }
 
+        /// <summary>
+        /// Gets the number of elements in the collection.
+        /// </summary>
         public int Length { get; private set; }
 
         /// <summary>
@@ -44,9 +47,9 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the <see cref="T"/> at the specified index.
+        /// Gets the &lt;T&gt; at the specified index.
         /// </summary>
-        /// <param name="index">The index.</param>
+        /// <param name="index">The array index.</param>
         public T this[int index]
         {
             get

@@ -3,7 +3,7 @@
 namespace CsScripts
 {
     /// <summary>
-    /// Helper class that represents pointer to void (i.e. void*)
+    /// Wrapper class that represents a pointer to void (i.e. void*)
     /// </summary>
     public class NakedPointer
     {

@@ -8,6 +8,9 @@ using System.Text;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Ultimate class for working with variables from process being debugged.
+    /// </summary>
     public class Variable : DynamicObject, IConvertible
     {
         /// <summary>
@@ -449,7 +452,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the field names.
+        /// Gets the field names (including base classes).
         /// </summary>
         public string[] GetFieldNames()
         {
@@ -457,7 +460,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the field names.
+        /// Gets the field names (it doesn't include base classes).
         /// </summary>
         public string[] GetClassFieldNames()
         {
@@ -465,7 +468,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the fields.
+        /// Gets the fields (including base classes).
         /// </summary>
         public Variable[] GetFields()
         {
