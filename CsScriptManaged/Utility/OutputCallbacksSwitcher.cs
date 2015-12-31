@@ -4,7 +4,8 @@ using System;
 namespace CsScriptManaged.Utility
 {
     /// <summary>
-    /// Helper class for replacing debugger output callbacks - used when capturing command output
+    /// Helper class for replacing debugger output callbacks - used when capturing command output. Example usage:
+    /// <para>using (var switcher = new OutputCallbacksSwitcher(outputCallbacks) { }</para>
     /// </summary>
     public class OutputCallbacksSwitcher : IDisposable
     {

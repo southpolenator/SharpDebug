@@ -5,7 +5,7 @@ using CsScriptManaged.Native;
 namespace CsScriptManaged.Marshaling
 {
     /// <summary>
-    /// Marshaled structure
+    /// Marshaled structure that can have extended part of the structure.
     /// </summary>
     /// <typeparam name="T">The structure type</typeparam>
     public class MarshalStructure<T> : IDisposable
@@ -32,7 +32,7 @@ namespace CsScriptManaged.Marshaling
         }
 
         /// <summary>
-        /// Gets or sets the extended size.
+        /// Gets or sets the size of extended part of the structure.
         /// </summary>
         public int ExtendedSize
         {
@@ -55,18 +55,18 @@ namespace CsScriptManaged.Marshaling
         }
 
         /// <summary>
-        /// Gets the size.
+        /// Gets the total size of the structure with extended part.
         /// </summary>
         public int Size
         {
             get
             {
-                return BaseSize + (int)ExtendedSize;
+                return BaseSize + ExtendedSize;
             }
         }
 
         /// <summary>
-        /// Gets the unsigned size.
+        /// Gets the unsigned integer of the total size of the structure with extended part.
         /// </summary>
         public uint USize
         {
@@ -77,7 +77,7 @@ namespace CsScriptManaged.Marshaling
         }
 
         /// <summary>
-        /// Gets or sets the structure.
+        /// Gets or sets the structure by marshaling.
         /// </summary>
         public T Structure
         {
@@ -93,7 +93,7 @@ namespace CsScriptManaged.Marshaling
         }
 
         /// <summary>
-        /// Gets or sets the extended pointer.
+        /// Gets or sets the native pointer to the extended part of the structure.
         /// </summary>
         public IntPtr ExtendedPointer
         {
@@ -109,7 +109,7 @@ namespace CsScriptManaged.Marshaling
         }
 
         /// <summary>
-        /// Gets the pointer.
+        /// Gets the native pointer to the structure.
         /// </summary>
         public IntPtr Pointer { get; private set; }
 
@@ -123,14 +123,14 @@ namespace CsScriptManaged.Marshaling
     }
 
     /// <summary>
-    /// Marshaled structure followed by ANSI string
+    /// Marshaled structure extended by ANSI string.
     /// </summary>
     /// <typeparam name="T">The structure type</typeparam>
     public class MarshalStructureExtendedWithAnsiString<T> : MarshalStructure<T>
         where T : struct
     {
         /// <summary>
-        /// Gets or sets the extended value.
+        /// Gets or sets the extended part string value.
         /// </summary>
         public string Extended
         {

@@ -84,6 +84,7 @@
   <ItemGroup>
     <Compile Include="NativeTypes\std\basic_string.cs" />
     <Compile Include="NativeTypes\std\list.cs" />
+    <Compile Include="NativeTypes\std\NamespaceDoc.cs" />
     <Compile Include="NativeTypes\std\string.cs" />
     <Compile Include="NativeTypes\std\vector.cs" />
     <Compile Include="NativeTypes\std\wstring.cs" />

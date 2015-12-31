@@ -4,6 +4,9 @@ using System;
 
 namespace CsScriptManaged.SymbolProviders
 {
+    /// <summary>
+    /// Debugging symbol provider.
+    /// </summary>
     public interface ISymbolProvider
     {
         /// <summary>

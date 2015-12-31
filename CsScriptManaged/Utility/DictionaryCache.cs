@@ -6,8 +6,8 @@ namespace CsScriptManaged.Utility
     /// <summary>
     /// Helper class for caching objects inside the dictionary. New object will be cached on the request.
     /// </summary>
-    /// <typeparam name="TKey">The type of the key.</typeparam>
-    /// <typeparam name="TValue">The type of the value.</typeparam>
+    /// <typeparam name="TKey">Type of the key.</typeparam>
+    /// <typeparam name="TValue">Type of the value.</typeparam>
     public class DictionaryCache<TKey, TValue>
     {
         /// <summary>
@@ -60,12 +60,9 @@ namespace CsScriptManaged.Utility
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="TValue"/> with the specified key.
+        /// Gets or sets the &lt;TValue&gt; with the specified key.
         /// </summary>
-        /// <value>
-        /// The <see cref="TValue"/>.
-        /// </value>
-        /// <param name="key">The key.</param>
+        /// <param name="key">The key value.</param>
         public TValue this[TKey key]
         {
             get

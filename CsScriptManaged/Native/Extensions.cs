@@ -5,7 +5,7 @@ using System.Text;
 namespace CsScriptManaged.Native
 {
     /// <summary>
-    /// Extensions for debugger interfaces for easier manipulation
+    /// Extensions for DbgEng.dll interfaces for easier manipulation
     /// </summary>
     public static class Extensions
     {

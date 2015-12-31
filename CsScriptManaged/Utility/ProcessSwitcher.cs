@@ -4,7 +4,10 @@ using System;
 namespace CsScriptManaged.Utility
 {
     /// <summary>
-    /// Used for scoped process switching
+    /// Used for scoped process switching. Example usage:
+    /// <para>using (var switcher = new ProcessSwitcher(process) { }</para>
+    /// <para>Note: Use this class for accessing process information from DbgEng.dll interfaces to insure correct process information access.</para>
+    /// <para>Note: For performance reasons, after using scope, previous process won't be set until is needed. Use this class to insure correctness.</para>
     /// </summary>
     public class ProcessSwitcher : IDisposable
     {
