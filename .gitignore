@@ -219,3 +219,4 @@ ModelManifest.xml
 /NuGet.Packager/lib/CsScriptManaged.dll
 /NuGet.Packager/lib/CommandLine.dll
 /NuGet.Packager/CsScripts.Package.1.0.0.nupkg.bak
+/CsScriptManagedReference/Help

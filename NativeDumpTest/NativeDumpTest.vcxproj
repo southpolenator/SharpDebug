@@ -100,7 +100,7 @@
       <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>del /F /Q $(OutDir)\NativeDump1.dmp</Command>
+      <Command>IF EXIST "$(OutDir)\NativeDump1.dmp" del /F /Q "$(OutDir)\NativeDump1.dmp"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -118,7 +118,7 @@
       <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>IF EXIST $(OutDir)\NativeDump1.dmp del /F /Q $(OutDir)\NativeDump1.dmp</Command>
+      <Command>IF EXIST "$(OutDir)\NativeDump1.dmp" del /F /Q "$(OutDir)\NativeDump1.dmp"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -140,7 +140,7 @@
       <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>del /F /Q $(OutDir)\NativeDump1.dmp</Command>
+      <Command>IF EXIST "$(OutDir)\NativeDump1.dmp" del /F /Q "$(OutDir)\NativeDump1.dmp"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -162,7 +162,7 @@
       <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>del /F /Q $(OutDir)\NativeDump1.dmp</Command>
+      <Command>IF EXIST "$(OutDir)\NativeDump1.dmp" del /F /Q "$(OutDir)\NativeDump1.dmp"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
