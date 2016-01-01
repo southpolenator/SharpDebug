@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Topics>
-  <Topic id="6defcd89-6d94-4be3-acbe-1121013b6664" visible="True" isDefault="true" isSelected="true" title="Wiki">
+  <Topic id="6defcd89-6d94-4be3-acbe-1121013b6664" visible="True" isDefault="true" isSelected="true" title="Using C# scripts">
     <HelpKeywords>
       <HelpKeyword index="K" term="Wiki" />
     </HelpKeywords>

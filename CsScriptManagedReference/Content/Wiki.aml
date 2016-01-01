@@ -1,81 +1,619 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <topic id="6defcd89-6d94-4be3-acbe-1121013b6664" revisionNumber="1">
-  <developerHowToDocument
+  <developerSampleDocument
     xmlns="http://ddue.schemas.microsoft.com/authoring/2003/5"
     xmlns:xlink="http://www.w3.org/1999/xlink">
 
-    <!--
-    <summary>
-      <para>Optional summary abstract</para>
-    </summary>
-    -->
-
     <introduction>
-      <para>Required introduction</para>
+      <autoOutline>2</autoOutline>
     </introduction>
 
-    <!-- Optional procedures followed by optional code example but must have
-         at least one procedure or code example -->
-    <procedure>
-      <title>Procedure title</title>
-      <steps class="ordered">
-        <step>
+    <section address="Installing_CSharp_scripts_and_using_it_in_WinDbg">
+      <title>Installing C# scripts and using it in WinDbg</title>
+      <content/>
+      <sections>
+        <section address="Installing_CSharp_scripts_support">
+          <title>Installing C# scripts support</title>
           <content>
-            <para>First step</para>
+            <para>
+              Copy flavor you need from Offical build location (or build it yourself from
+              <externalLink>
+                <linkText>source code</linkText>
+                <linkUri>https://github.com/southpolenator/WinDbgCs</linkUri>
+              </externalLink>) to your local hard drive.
+            </para>
+            <para>
+              Since builds are linked with Visual Studio 2015, you need to install
+              <externalLink>
+                <linkText>Visual C++ Redistributable for Visual Studio 2015</linkText>
+                <linkUri>http://www.microsoft.com/en-us/download/details.aspx?id=48145</linkUri>
+              </externalLink>.
+            </para>
+            <para>
+              <quoteInline>(note: you can use only release build if you don't have Visual Studio 2015 installed).</quoteInline>
+            </para>
           </content>
-        </step>
-        <step>
+        </section>
+        <section address="Loading_CsScripts_plugin_into_WinDbg">
+          <title>Loading CsScripts plugin into WinDbg</title>
           <content>
-            <para>Second step</para>
+            <para>
+              Use WinDbg
+              <externalLink>
+                <linkText>.load</linkText>
+                <linkUri>https://msdn.microsoft.com/en-us/library/windows/hardware/ff563964%28v=vs.85%29.aspx</linkUri>
+              </externalLink>
+              command and point it to address of CsScripts.dll. For example:
+            </para>
+            <code>
+              .load C:\debuggers\winext\CsScripts.dll
+            </code>
           </content>
-        </step>
-      </steps>
-      <!-- <conclusion>Optional conclusion</conclusion> -->
-    </procedure>
+        </section>
+        <section address="Executing_CSharp_script">
+          <title>Executing C# script</title>
+          <content>
+            <para>
+              Use <codeInline>!execute</codeInline> command exported from CsScripts extension:
+            </para>
+            <code>
+              !execute path_to_cs_script [optional arguments given to the script]
+            </code>
+            <para>
+              For example:
+            </para>
+            <code>
+              !execute C:\Scripts\myscript.cs
+            </code>
+            <para>
+              In case you have one more extension that exports <codeInline>!execute</codeInline> command, you must specify extension at the beginning:
+            </para>
+            <code>
+              !CsScripts.execute c:\Scripts\myscript.cs
+            </code>
+          </content>
+        </section>
+        <section address="Entering_interactive_mode">
+          <title>Entering interactive mode</title>
+          <content>
+            <para>
+              Use <codeInline>!interactive</codeInline> command exported from CsScripts extension:
+            </para>
+            <code>
+              !CsScripts.interactive
+            </code>
+            <para>
+              Interactive mode can execute both WinDbg commands and C# expressions. C# expression saves the state and must end with semicolon (;). For example you can enter following commands and not get an error:
+            </para>
+            <code language="c#">
+              a = Threads[0];
+              kn
+              writeln("{0}:{1}", a.Id, a.SystemId);
+            </code>
+            <para>
+              Only variable that are not declared in the code will be saved. For example:
+            </para>
+            <code language="c#">
+              int i = 5;
+            </code>
+            <para>
+              Won't be saved.
+            </para>
+          </content>
+        </section>
+      </sections>
+    </section>
 
-    <!-- <codeExample>Optional code example</codeExample> -->
+    <section address="Tutorial_scripts">
+      <title>Tutorial scripts</title>
+      <content/>
+      <sections>
+        <section address="Enumerating_processes_being_debugged">
+          <title>Enumerating processes being debugged</title>
+          <content>
+            <code language="c#">
+              foreach (Process process in Process.All)
+                  writeln("{0}:{1} {2}", process.Id, process.SystemId, process.ExecutableName);
+              Console.Writeln("Current process: {0}", Process.Current.SystemId);
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Process</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>M:CsScripts.ScriptBase.writeln(System.String,System.Object[])</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="Enumeratung_all_threads_in_current_process_being_debugged">
+          <title>Enumerating all threads in current process being debugged</title>
+          <content>
+            <code language="c#">
+              foreach (Thread thread in Thread.All)
+                  writeln("{0}:{1}", thread.Id, thread.SystemId);
+              writeln("Current thread: {0}:{1}", Thread.Current.Id, Thread.Current.SystemId);
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Thread</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>M:CsScripts.ScriptBase.writeln(System.String,System.Object[])</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="Enumerating_all_modules_in_current_process_being_debugged">
+          <title>Enumerating all modules in current process being debugged</title>
+          <content>
+            <code language="c#">
+              foreach (Module module in Module.All)
+                  writeln("0x{0:X} {1}", module.Offset, module.Name);
+            </code>
+            <para>
+              You can also access modules for a given process:
+            </para>
+            <code language="c#">
+              foreach (Module module in Process.Current.Modules)
+                  writeln("{0}", module.ImageName);
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Module</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference linkText="Process.Modules">P:CsScripts.Process.Modules</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>M:CsScripts.ScriptBase.writeln(System.String,System.Object[])</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="List_all_functions_on_a_call_stack_of_the_current_thread">
+          <title>List all functions on a call stack of the current thread</title>
+          <content>
+            <code language="c#">
+              foreach (StackFrame frame in Thread.Current.StackTrace.Frames)
+                  writeln(frame.FunctionName);
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Thread</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.StackTrace</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.StackFrame</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>M:CsScripts.ScriptBase.writeln(System.Object)</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="Accessing_local_variables">
+          <title>Accessing local variables</title>
+          <content>
+            <code language="c#">
+              VariableCollection locals = Thread.Current.StackTrace.Frames[0].Locals;
+              foreach (Variable l in locals)
+                  writeln(l.GetName());
+              dynamic myVar = locals["myVar"];
+              writeln(myVar);
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Thread</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.StackTrace</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.StackFrame</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.VariableCollection</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.Variable</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>M:CsScripts.ScriptBase.writeln(System.Object)</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="Accessing_global_variables">
+          <title>Accessing global variables</title>
+          <content>
+            <code language="c#">
+              dynamic globalVariable = Process.Current.GetGlobal("mymodule!globalVariable");
+              dynamic staticClassVariable = Process.Current.GetGlobal("mymodule!Class::staticVariable");
+            </code>
+            <para>
+              You can also access through <codeEntityReference>F:CsScripts.ScriptBase.Modules</codeEntityReference>:
+            </para>
+            <code language="c#">
+              dynamic globalVariable = Modules.mymodule.globalVariable;
+              dynamic staticClassVariable = Modules.mymodule.GetVariable("Class::staticVariable");
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Process</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.Variable</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>F:CsScripts.ScriptBase.Modules</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="Accessing_variable_fields">
+          <title>Accessing variable fields</title>
+          <content>
+            <code language="c#">
+              Variable variable = Process.Current.GetGlobal("mymodule!globalVariable");
+              Variable field = variable.GetField("field");
+            </code>
+            <para>
+              Or if you use dynamic:
+            </para>
+            <code language="c#">
+              dynamic globalVariable = Modules.mymodule.globalVariable;
+              dynamic field = variable.field;
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Process</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.Variable</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>F:CsScripts.ScriptBase.Modules</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="Getting_variable_type">
+          <title>Getting variable type</title>
+          <content>
+            <code language="c#">
+              CodeType type = myVariable.GetCodeType();
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.CodeType</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.Variable</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="Casting_variable_to_built_in_type">
+          <title>Casting variable to built-in type</title>
+          <content>
+            <code language="c#">
+              Variable variable = Process.Current.GetGlobal("mymodule!globalVariable");
+              int intValue = (int)variable;
+              ulong ulongValue = (ulong)variable;
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Process</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.Variable</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="Casting_variable_to_user_type">
+          <title>Casting variable to user type</title>
+          <content>
+            <code language="c#">
+              Variable variable = Process.Current.GetGlobal("mymodule!globalVariable");
+              std.wstring s = variable.CastAs&lt;std.wstring&gt;();
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Process</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.Variable</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="Casting_variable_to_code_type_given_by_string">
+          <title>Casting variable to code type given by string</title>
+          <content>
+            <code language="c#">
+              Variable p = Process.Current.GetGlobal("mymodule!voidPointerVariable");
+              writeln(p); // This will print address of void* pointer
+              Variable s = p.CastAs("wchar_t*");
+              writeln(s); // This will print string value pointed by s
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Process</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.Variable</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+        <section address="Getting_array_element_of_variable_array">
+          <title>Getting array element of variable array</title>
+          <content>
+            <code language="c#">
+              Variable a = Process.Current.GetGlobal("mymodule!intArrayVariable");
+              int i = (int)a.GetArrayElement(0);
+            </code>
+            <para>
+              Or if you use dynamic:
+            </para>
+            <code language="c#">
+              dynamic a = Modules.mymodule.intArrayVariable;
+              int i = (int)a[0];
+            </code>
+            References:
+            <list class="bullet">
+              <listItem>
+                <codeEntityReference>T:CsScripts.Process</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>T:CsScripts.Variable</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference>F:CsScripts.ScriptBase.Modules</codeEntityReference>
+              </listItem>
+            </list>
+          </content>
+        </section>
+      </sections>
+    </section>
 
-    <!-- <buildInstructions>Optional instructions for building a
-         code example.</buildInstructions> -->
+    <section address="Advanced_scripting">
+      <title>Advanced scripting</title>
+      <content>
+        <para>Previous examples show that scripts don't have namespace and class definition inside. That part is automatically generated by the script compiler.</para>
+      </content>
+      <sections>
+        <section address="How_to_use_using_in_scripts">
+          <title>How to use using in scripts</title>
+          <content>
+            <para>
+              Using C# statement should be located at the top of the script. It is supposed to be used as in any other C# file but its scope is for entire script file:
+            </para>
+            <code language="c#">
+              using System;
+              using System.Linq;
+            </code>
+          </content>
+        </section>
+        <section address="Importing_files_into_scripts">
+          <title>Importing files into scripts</title>
+          <content>
+            <para>
+              Having multiple script files is preferable as script files should share common code. That being said, imported scripts can only contain class and function
+              definitions and cannot have code outside of them. For example, having this helper script file:
+            </para>
+            <code title="helper.cs" language="c#">
+              using System;
 
-    <!-- <robustProgramming>Optional discussion of error handling and other
-         issues related to writing solid code.</robustProgramming> -->
+              void HelpMe(string text)
+              {
+                  writeln(text);
+              }
+            </code>
+            <para>
+              we can have sample script that is referencing that helper file:
+            </para>
+            <code title="script.cs" language="c#">
+              import helper.cs;
 
-    <!-- <security>Optional discussion of security issues.</security> -->
+              Console.Error.WriteLine("This is sample error");
+              HelpMe("It works!");
+            </code>
+          </content>
+        </section>
+        <section address="Referencing_assemblies_in_scripts">
+          <title>Referencing assemblies in scripts</title>
+          <content>
+            <para>
+              You now have huge collection of common code and compiling scripts is not that fast any more, you should create .NET library (dll) and just reference it from the script:
+            </para>
+            <code language="c#">
+              using std = CsScripts.CommonUserTypes.NativeTypes.std;
+              import CsScripts.CommonUserTypes.dll;
+
+              Variable variable = Process.Current.GetGlobal("mymodule!globalVariable");
+              std.wstring s = variable.CastAs&lt;std.wstring&gt;();
+            </code>
+          </content>
+        </section>
+        <section address="I_would_like_to_automate_dump_processing_with_CSharp">
+          <title>I would like to automate dump processing with C#</title>
+          <content>
+            <para>
+              Please take a look at
+              <externalLink>
+                <linkText>CsScripts managed test</linkText>
+                <linkUri>https://github.com/southpolenator/WinDbgCs/blob/master/CsScriptManagedTest/Program.cs</linkUri>
+              </externalLink>.
+              It shows how to:
+            </para>
+            <list class="bullet">
+              <listItem>Open a dump</listItem>
+              <listItem>Execute some C# code against it</listItem>
+              <listItem>Execute C# script</listItem>
+            </list>
+          </content>
+        </section>
+      </sections>
+    </section>
+
+    <section address="Exporting_User_types_from_PDB_file">
+      <title>Exporting User types from PDB file</title>
+      <content>
+        <para>
+          You have a lot of classes in your project and you would like to have typed access in scripts or be safe when field gets renamed. Use geniously named tool GenerateUserTypesFromPdb.
+        </para>
+      </content>
+      <sections>
+        <section address="Sample_usage">
+          <title>Sample usage</title>
+          <content>
+            <para>
+              This command will export only MyType from the PDB. Built-in types will also be exported.
+            </para>
+            <code language="powershell">
+              GenerateUserTypesFromPdb -p myPdb.pdb -t MyType
+            </code>
+            <para>
+              This command will export two user types and if one of them has field that points to another, it will be correctly exported.
+            </para>
+            <code language="powershell">
+              GenerateUserTypesFromPdb -p myPdb.pdb -t MyType,MySecondType
+            </code>
+          </content>
+        </section>
+        <section address="Using_XML_export_configuration_file">
+          <title>Using XML export configuration file</title>
+          <content>
+            <code language="powershell">
+              GenerateUserTypesFromPdb -p myPdb.pdb -x export.xml
+            </code>
+            <para>
+              Where export.xml looks like:
+            </para>
+            <code title="export.xml" language="xml">
+              &lt;XmlConfig&gt;
+                &lt;Types&gt;
+                  &lt;Type Name="MyTestClass" /&gt;
+                &lt;/Types&gt;
+                &lt;Transformations&gt;
+                  &lt;Transformation OriginalType="std::basic_string&amp;lt;wchar_t,${char_traits},${allocator}&amp;gt;" NewType="CsScripts.CommonUserTypes.NativeTypes.std.wstring" Constructor="${new}" /&gt;
+                  &lt;Transformation OriginalType="std::vector&amp;lt;${T},${allocator}&amp;gt;" NewType="CsScripts.CommonUserTypes.NativeTypes.std.vector&amp;lt;${T}&amp;gt;" Constructor="${new}" /&gt;
+                &lt;/Transformations&gt;
+              &lt;/XmlConfig&gt;
+            </code>
+            <para>
+              And if you have class MyTestClass in cpp code:
+            </para>
+            <code language="cpp">
+              struct MyTestClass
+              {
+                  std::vector&lt;std::wstring&gt; strings;
+              };
+            </code>
+            <para>
+              You will get exported code that looks like this (note: for readability not all generated code is shown):
+            </para>
+            <code language="c#">
+              public partial class MyTestClass
+              {
+                  private UserMember&lt;std.vector&lt;std.wstring&gt;&gt; _strings;
+
+                  public MyTestClass(Variable variable)
+                  {
+                      _strings = UserMember.Create(() => new std.vector&lt;std.wstring&gt;(variable.GetField("strings"));
+                  }
+
+                  public std.vector&lt;std.wstring&gt; strings { get { return _strings.Value; } }
+              }
+            </code>
+          </content>
+        </section>
+        <section address="How_transformations_work">
+          <title>How transformations work</title>
+          <content>
+            <para>Transformation has three properties that defines it:</para>
+            <definitionTable>
+              <definedTerm>OriginalType</definedTerm>
+              <definition>
+                <para>consists of original type and template arguments that are being extracted</para>
+              </definition>
+              <definedTerm>NewType</definedTerm>
+              <definition>
+                <para>transformation string that generates the new type</para>
+              </definition>
+              <definedTerm>Constructor</definedTerm>
+              <definition>
+                <para>
+                  transformation string that generates constructor (body of the lambda that is used with <codeInline>UserMember.Create</codeInline> function)
+                </para>
+              </definition>
+            </definitionTable>
+            <para>
+              Template arguments are extracted from OriginalType string and can be used inside transformation strings. Here is the list of predefined variables:
+            </para>
+            <definitionTable>
+              <definedTerm>${field}</definedTerm>
+              <definition>
+                <para>
+                  Maps to: <codeInline>variable.GetField("&lt;field_name&gt;")</codeInline>
+                </para>
+              </definition>
+              <definedTerm>${fieldOffset}</definedTerm>
+              <definition>
+                <para>
+                  Maps to: <codeInline>variable.GetFieldOffset("&lt;field_name&gt;")</codeInline>
+                </para>
+              </definition>
+              <definedTerm>${newType}</definedTerm>
+              <definition>
+                <para>It maps to output of NewType trasformation string</para>
+              </definition>
+              <definedTerm>${className}</definedTerm>
+              <definition>
+                <para>Replaced with UserType that is currently being exported</para>
+              </definition>
+              <definedTerm>${new}</definedTerm>
+              <definition>
+                <para>
+                  <codeInline>new ${newType}(${field})</codeInline>
+                </para>
+              </definition>
+              <definedTerm>${newOffset}</definedTerm>
+              <definition>
+                <para>
+                  <codeInline>new ${newType}(${field}, ${fieldOffset})</codeInline>
+                </para>
+              </definition>
+              <definedTerm>${cast}</definedTerm>
+              <definition>
+                <para>
+                  <codeInline>(${newType})${field}</codeInline>
+                </para>
+              </definition>
+            </definitionTable>
+          </content>
+        </section>
+      </sections>
+    </section>
 
     <relatedTopics>
-      <!-- One or more of the following:
-           - A local link
-           - An external link
-           - A code entity reference
-
-      <link xlink:href="Other Topic's ID">Link text</link>
-      <externalLink>
-          <linkText>Link text</linkText>
-          <linkAlternateText>Optional alternate link text</linkAlternateText>
-          <linkUri>URI</linkUri>
-      </externalLink>
-      <codeEntityReference>API member ID</codeEntityReference>
-
-      Examples:
-
-      <link xlink:href="00e97994-e9e6-46e0-b420-5be86b2f8278">Some other topic</link>
-
-      <externalLink>
-          <linkText>SHFB on GitHub</linkText>
-          <linkAlternateText>Go to GitHub</linkAlternateText>
-          <linkUri>https://GitHub.com/EWSoftware/SHFB</linkUri>
-      </externalLink>
-
-      <codeEntityReference>T:TestDoc.TestClass</codeEntityReference>
-      <codeEntityReference>P:TestDoc.TestClass.SomeProperty</codeEntityReference>
-      <codeEntityReference>M:TestDoc.TestClass.#ctor</codeEntityReference>
-      <codeEntityReference>M:TestDoc.TestClass.#ctor(System.String,System.Int32)</codeEntityReference>
-      <codeEntityReference>M:TestDoc.TestClass.ToString</codeEntityReference>
-      <codeEntityReference>M:TestDoc.TestClass.FirstMethod</codeEntityReference>
-      <codeEntityReference>M:TestDoc.TestClass.SecondMethod(System.Int32,System.String)</codeEntityReference>
-      -->
       <link xlink:href="b76ffd2d-4d7f-4b4f-9b3b-277603e78dd6" />
     </relatedTopics>
-  </developerHowToDocument>
+  </developerSampleDocument>
 </topic>
