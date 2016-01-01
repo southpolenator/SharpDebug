@@ -4,10 +4,15 @@ using System;
 namespace CsScriptManaged.Utility
 {
     /// <summary>
-    /// Used for scoped process switching. Example usage:
-    /// <para>using (var switcher = new ProcessSwitcher(process) { }</para>
-    /// <para>Note: Use this class for accessing process information from DbgEng.dll interfaces to insure correct process information access.</para>
-    /// <para>Note: For performance reasons, after using scope, previous process won't be set until is needed. Use this class to insure correctness.</para>
+    /// Used for scoped process switching.
+    /// <example><code>
+    ///     using (var switcher = new ProcessSwitcher(process))
+    ///     {
+    ///         // Invoke DbgEng.dll interface function
+    ///     }
+    /// </code></example>
+    /// <remarks>Use this class for accessing process information from DbgEng.dll interfaces to insure correct process information access.</remarks>
+    /// <remarks>For performance reasons, after using scope, previous process won't be set until is needed. Use this class to insure correctness.</remarks>
     /// </summary>
     public class ProcessSwitcher : IDisposable
     {
@@ -56,7 +61,7 @@ namespace CsScriptManaged.Utility
         /// <typeparam name="T">The specified type</typeparam>
         /// <param name="process">The process.</param>
         /// <param name="action">The action.</param>
-        public static Func<T> DelegateProtector<T>(Process process, Func<T> action)
+        internal static Func<T> DelegateProtector<T>(Process process, Func<T> action)
         {
             return () =>
             {
