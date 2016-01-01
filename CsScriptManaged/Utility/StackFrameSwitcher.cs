@@ -4,10 +4,15 @@ using System;
 namespace CsScriptManaged.Utility
 {
     /// <summary>
-    /// Used for scoped stack frame switching. Example usage:
-    /// <para>using (var switcher = new StackFrameSwitcher(stackFrame) { }</para>
-    /// <para>Note: Use this class for accessing stack frame information from DbgEng.dll interfaces to insure correct stack frame information access.</para>
-    /// <para>Note: For performance reasons, after using scope, previous stack frame won't be set until is needed. Use this class to insure correctness.</para>
+    /// Used for scoped stack frame switching.
+    /// <example><code>
+    ///     using (var switcher = new StackFrameSwitcher(stackFrame))
+    ///     {
+    ///         // Invoke DbgEng.dll interface function
+    ///     }
+    /// </code></example>
+    /// <remarks>Use this class for accessing stack frame information from DbgEng.dll interfaces to insure correct stack frame information access.</remarks>
+    /// <remarks>For performance reasons, after using scope, previous stack frame won't be set until is needed. Use this class to insure correctness.</remarks>
     /// </summary>
     public class StackFrameSwitcher : IDisposable
     {
