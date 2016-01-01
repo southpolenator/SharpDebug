@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Topics>
-  <Topic id="62d4580f-ebeb-492a-859c-16eee9981f9b" visible="True" isDefault="true" isSelected="true" title="Welcome to the CsScripts">
+  <Topic id="6defcd89-6d94-4be3-acbe-1121013b6664" visible="True" isDefault="true" isSelected="true" title="Wiki">
     <HelpKeywords>
-      <HelpKeyword index="K" term="Welcome" />
+      <HelpKeyword index="K" term="Wiki" />
     </HelpKeywords>
   </Topic>
   <Topic id="b76ffd2d-4d7f-4b4f-9b3b-277603e78dd6" visible="True" isExpanded="true" title="Version History">

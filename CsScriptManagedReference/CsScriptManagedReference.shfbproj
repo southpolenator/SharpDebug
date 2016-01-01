@@ -15,7 +15,7 @@
     <!-- SHFB properties -->
     <FrameworkVersion>.NET Framework 4.5.2</FrameworkVersion>
     <OutputPath>.\Help\</OutputPath>
-    <HtmlHelpName>CsScriptManagedReference</HtmlHelpName>
+    <HtmlHelpName>CsScripts</HtmlHelpName>
     <Language>en-US</Language>
     <TransformComponentArguments>
       <Argument Key="logoFile" Value="Help.png" xmlns="" />
@@ -77,6 +77,7 @@
     <None Include="Content\VersionHistory\v1.0.0.1.aml" />
     <None Include="Content\VersionHistory\VersionHistory.aml" />
     <None Include="Content\Welcome.aml" />
+    <None Include="Content\Wiki.aml" />
   </ItemGroup>
   <ItemGroup>
     <ContentLayout Include="ContentLayout.content" />
