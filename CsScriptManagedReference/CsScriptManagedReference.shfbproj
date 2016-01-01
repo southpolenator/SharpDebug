@@ -31,7 +31,7 @@
       <DocumentationSource sourceFile="..\CsScriptManaged\CsScriptManaged.csproj" />
     </DocumentationSources>
     <BuildAssemblerVerbosity>OnlyWarningsAndErrors</BuildAssemblerVerbosity>
-    <HelpFileFormat>HtmlHelp1, MSHelpViewer</HelpFileFormat>
+    <HelpFileFormat>HtmlHelp1, MSHelpViewer, Website</HelpFileFormat>
     <IndentHtml>False</IndentHtml>
     <KeepLogFile>False</KeepLogFile>
     <DisableCodeBlockComponent>False</DisableCodeBlockComponent>
@@ -44,10 +44,14 @@
     <RootNamespaceContainer>False</RootNamespaceContainer>
     <PresentationStyle>VS2013</PresentationStyle>
     <Preliminary>False</Preliminary>
-    <NamingMethod>MemberName</NamingMethod>
+    <NamingMethod>Guid</NamingMethod>
     <HelpTitle>C# scripting documentation</HelpTitle>
     <ContentPlacement>AboveNamespaces</ContentPlacement>
     <VisibleItems>InheritedMembers, Protected, ProtectedInternalAsProtected</VisibleItems>
+    <WebsiteSdkLinkType>Msdn</WebsiteSdkLinkType>
+    <HtmlSdkLinkType>Msdn</HtmlSdkLinkType>
+    <IncludeFavorites>False</IncludeFavorites>
+    <BinaryTOC>True</BinaryTOC>
   </PropertyGroup>
   <!-- There are no properties for these groups.  AnyCPU needs to appear in order for Visual Studio to perform
 			 the build.  The others are optional common platform types that may appear. -->
