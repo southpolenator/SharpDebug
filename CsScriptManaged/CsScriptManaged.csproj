@@ -119,6 +119,7 @@
     <Compile Include="CsScripts\Variable.cs" />
     <Compile Include="CsScripts\VariableCollection.cs" />
     <Compile Include="Marshaling\NamespaceDoc.cs" />
+    <Compile Include="StateCache.cs" />
     <Compile Include="SymbolProviders\NamespaceDoc.cs" />
     <Compile Include="Utility\DebuggerOutputCapture.cs" />
     <Compile Include="Utility\DebuggerTextWriter.cs" />

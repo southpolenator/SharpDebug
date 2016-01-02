@@ -17,6 +17,11 @@ namespace CsScripts
         private SimpleCache<string> executableName;
 
         /// <summary>
+        /// The system identifier
+        /// </summary>
+        private SimpleCache<uint> systemId;
+
+        /// <summary>
         /// Up time
         /// </summary>
         private SimpleCache<uint> upTime;
@@ -55,11 +60,10 @@ namespace CsScripts
         /// Initializes a new instance of the <see cref="Process"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
-        /// <param name="systemId">The system identifier.</param>
-        internal Process(uint id, uint systemId)
+        internal Process(uint id)
         {
             Id = id;
-            SystemId = systemId;
+            systemId = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessSystemId()));
             upTime = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessUpTime()));
             pebAddress = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessPeb()));
             executableName = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessExecutableName()));
@@ -82,10 +86,7 @@ namespace CsScripts
         {
             get
             {
-                uint currentId = Context.SystemObjects.GetCurrentProcessId();
-                uint currentSystemId = Context.SystemObjects.GetCurrentProcessSystemId();
-
-                return GlobalCache.Processes[Tuple.Create(currentId, currentSystemId)];
+                return Context.StateCache.CurrentProcess;
             }
         }
 
@@ -112,7 +113,8 @@ namespace CsScripts
 
                 for (uint i = 0; i < processCount; i++)
                 {
-                    processes[i] = GlobalCache.Processes[Tuple.Create(processIds[i], processSytemIds[i])];
+                    processes[i] = GlobalCache.Processes[processIds[i]];
+                    processes[i].systemId.Value = processSytemIds[i];
                 }
 
                 return processes;
@@ -158,7 +160,13 @@ namespace CsScripts
         /// <summary>
         /// Gets the system identifier.
         /// </summary>
-        public uint SystemId { get; private set; }
+        public uint SystemId
+        {
+            get
+            {
+                return systemId.Value;
+            }
+        }
 
         /// <summary>
         /// Gets the name of the executable.
@@ -200,12 +208,7 @@ namespace CsScripts
         {
             get
             {
-                using (ProcessSwitcher process = new ProcessSwitcher(this))
-                {
-                    uint currentId = Context.SystemObjects.GetCurrentThreadId();
-
-                    return Threads.FirstOrDefault(t => t.Id == currentId);
-                }
+                return Context.StateCache.CurrentThread[this];
             }
         }
 

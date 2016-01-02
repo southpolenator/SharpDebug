@@ -48,6 +48,7 @@ namespace CsScripts
         public static void Execute(string command, params object[] parameters)
         {
             command = string.Join(" ", command, string.Join(" ", parameters));
+            Context.StateCache.SyncState();
             Context.Control.Execute((uint)DebugOutctl.ThisClient, command, (uint)(DebugExecute.NotLogged_ | DebugExecute.NoRepeat));
         }
     }

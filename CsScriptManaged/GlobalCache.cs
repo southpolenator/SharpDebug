@@ -15,7 +15,7 @@ namespace CsScriptManaged
         /// <summary>
         /// The processes
         /// </summary>
-        internal static DictionaryCache<Tuple<uint, uint>, Process> Processes = new DictionaryCache<Tuple<uint, uint>, Process>(CreateProcess);
+        internal static DictionaryCache<uint, Process> Processes = new DictionaryCache<uint, Process>(CreateProcess);
 
         /// <summary>
         /// The typed data
@@ -45,18 +45,16 @@ namespace CsScriptManaged
         /// <summary>
         /// Creates the process.
         /// </summary>
-        /// <param name="processKey">The process key.</param>
-        private static Process CreateProcess(Tuple<uint, uint> processKey)
+        /// <param name="processId">The process identifier.</param>
+        private static Process CreateProcess(uint processId)
         {
-            return new Process(processKey.Item1, processKey.Item2);
+            return new Process(processId);
         }
 
         /// <summary>
         /// Gets the typed data.
         /// </summary>
-        /// <param name="moduleId">The module identifier.</param>
-        /// <param name="typeId">The type identifier.</param>
-        /// <param name="offset">The offset.</param>
+        /// <param name="typedDataId">The typed data identifier.</param>
         private static DEBUG_TYPED_DATA GetTypedData(Tuple<ulong, uint, ulong> typedDataId)
         {
             return Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()

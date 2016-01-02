@@ -78,6 +78,11 @@ namespace CsScriptManaged
         private static InteractiveExecution interactiveExecution = new InteractiveExecution();
 
         /// <summary>
+        /// The state cache
+        /// </summary>
+        internal static StateCache StateCache = new StateCache();
+
+        /// <summary>
         /// Gets a value indicating whether debugger is currently in live debugging.
         /// </summary>
         /// <value>
@@ -113,6 +118,7 @@ namespace CsScriptManaged
             SystemObjects = client as IDebugSystemObjects4;
             SymbolProvider = DbgEngSymbolProvider;
             SymbolProvider = DiaSymbolProvider;
+            StateCache = new StateCache();
         }
 
         /// <summary>
@@ -209,6 +215,7 @@ namespace CsScriptManaged
             {
                 Console.SetOut(originalConsoleOut);
                 Console.SetError(originalConsoleError);
+                StateCache.SyncState();
             }
         }
 

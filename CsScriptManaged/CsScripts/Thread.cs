@@ -27,10 +27,11 @@ namespace CsScripts
         private SimpleCache<ThreadContext> threadContext;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Thread"/> class.
+        /// Initializes a new instance of the <see cref="Thread" /> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <param name="systemId">The system identifier.</param>
+        /// <param name="process">The process.</param>
         internal Thread(uint id, uint systemId, Process process)
         {
             Id = id;
