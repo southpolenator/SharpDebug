@@ -43,13 +43,18 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the current thread in current process.
+        /// Gets or sets the current thread in current process.
         /// </summary>
         public static Thread Current
         {
             get
             {
                 return Process.Current.CurrentThread;
+            }
+
+            set
+            {
+                Context.StateCache.SetCurrentThread(value);
             }
         }
 

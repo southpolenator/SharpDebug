@@ -25,6 +25,17 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the current stack trace in current thread of current process.
+        /// </summary>
+        public static StackTrace Current
+        {
+            get
+            {
+                return Thread.Current.StackTrace;
+            }
+        }
+
+        /// <summary>
         /// Gets the owning thread.
         /// </summary>
         public Thread Thread { get; internal set; }

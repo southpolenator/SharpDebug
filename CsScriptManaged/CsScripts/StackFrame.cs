@@ -78,6 +78,22 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets or sets the current stack frame in current thread of current process.
+        /// </summary>
+        public static StackFrame Current
+        {
+            get
+            {
+                return Context.StateCache.CurrentStackFrame[Thread.Current];
+            }
+
+            set
+            {
+                Context.StateCache.SetCurrentStackFrame(value);
+            }
+        }
+
+        /// <summary>
         /// Gets the owning stack trace.
         /// </summary>
         public StackTrace StackTrace { get; internal set; }

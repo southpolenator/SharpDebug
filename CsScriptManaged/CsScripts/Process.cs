@@ -80,13 +80,18 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the current process.
+        /// Gets or sets the current process.
         /// </summary>
         public static Process Current
         {
             get
             {
                 return Context.StateCache.CurrentProcess;
+            }
+
+            set
+            {
+                Context.StateCache.CurrentProcess = value;
             }
         }
 
@@ -202,13 +207,23 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the current thread.
+        /// Gets or sets the current thread.
         /// </summary>
         public Thread CurrentThread
         {
             get
             {
                 return Context.StateCache.CurrentThread[this];
+            }
+
+            set
+            {
+                if (value.Process != this)
+                {
+                    throw new Exception("Cannot set current thread to be from different process");
+                }
+
+                Context.StateCache.SetCurrentThread(value);
             }
         }
 

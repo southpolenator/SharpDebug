@@ -2,6 +2,7 @@
 using CsScripts;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace CsScriptManaged
 {
@@ -49,6 +50,31 @@ namespace CsScriptManaged
                 CacheCurrentProcess();
                 return currentProcess;
             }
+
+            set
+            {
+                currentProcess = value;
+            }
+        }
+
+        /// <summary>
+        /// Sets the current thread.
+        /// </summary>
+        /// <param name="thread">The thread.</param>
+        internal void SetCurrentThread(Thread thread)
+        {
+            currentProcess = thread.Process;
+            CurrentThread[thread.Process] = thread;
+        }
+
+        /// <summary>
+        /// Sets the current stack frame.
+        /// </summary>
+        /// <param name="stackFrame">The stack frame.</param>
+        internal void SetCurrentStackFrame(StackFrame stackFrame)
+        {
+            SetCurrentThread(stackFrame.Thread);
+            CurrentStackFrame[stackFrame.Thread] = stackFrame;
         }
 
         /// <summary>
@@ -76,14 +102,28 @@ namespace CsScriptManaged
                 SwitchProcess(currentProcess);
             }
 
-            if (!switchedThread.ContainsKey(currentProcess))
+            Thread currentThread;
+
+            if (!CurrentThread.TryGetExistingValue(currentProcess, out currentThread))
             {
                 return;
             }
 
-            if (switchedThread[currentProcess] != CurrentThread[currentProcess])
+            if (!switchedThread.ContainsKey(currentProcess) || switchedThread[currentProcess] != currentThread)
             {
-                SwitchThread(CurrentThread[currentProcess]);
+                SwitchThread(currentThread);
+            }
+
+            StackFrame currentStackFrame;
+
+            if (!CurrentStackFrame.TryGetExistingValue(currentThread, out currentStackFrame))
+            {
+                return;
+            }
+
+            if (!switchedStackFrame.ContainsKey(currentThread) || switchedStackFrame[currentThread] != currentStackFrame)
+            {
+                SwitchStackFrame(currentStackFrame);
             }
         }
 
