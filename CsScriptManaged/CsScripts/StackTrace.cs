@@ -1,7 +1,5 @@
 ﻿using CsScriptManaged;
-using System.Linq;
 using DbgEngManaged;
-using CsScriptManaged.Utility;
 
 namespace CsScripts
 {
@@ -43,12 +41,7 @@ namespace CsScripts
         {
             get
             {
-                using (ThreadSwitcher switcher = new ThreadSwitcher(Thread))
-                {
-                    uint current = Context.Symbols.GetCurrentScopeFrameIndex();
-
-                    return Frames.FirstOrDefault(f => f.FrameNumber == current);
-                }
+                return Context.StateCache.CurrentStackFrame[Thread];
             }
         }
     }
