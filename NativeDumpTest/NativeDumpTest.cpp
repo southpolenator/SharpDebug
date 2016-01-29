@@ -13,6 +13,7 @@ class MyTestClass
 public:
 	wstring string1;
 	list<wstring> strings;
+	wstring stringArray[100];
 	vector<string> ansiStrings;
 
 	static int staticVariable;

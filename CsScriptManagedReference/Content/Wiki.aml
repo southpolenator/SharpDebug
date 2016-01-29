@@ -16,7 +16,7 @@
           <title>Installing C# scripts support</title>
           <content>
             <para>
-              Copy flavor you need from Offical build location (or build it yourself from
+              Copy flavor you need from Official build location (or build it yourself from
               <externalLink>
                 <linkText>source code</linkText>
                 <linkUri>https://github.com/southpolenator/WinDbgCs</linkUri>

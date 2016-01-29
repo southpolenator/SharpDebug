@@ -495,7 +495,8 @@ namespace CsScripts
             }
 
             CodeType elementType = codeType.ElementType;
-            ulong address = Data + (ulong)(index * elementType.Size);
+            ulong baseAddress = codeType.IsPointer ? Data : Address;
+            ulong address = baseAddress + (ulong)(index * elementType.Size);
 
             return Create(elementType, address, ComputedName);
         }

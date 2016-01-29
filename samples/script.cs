@@ -47,6 +47,9 @@ writeln("std::list.Length = {0}", strings2.Length);
 foreach (var ss in strings2)
     writeln("strings[??] = {0}", ss);
 
+var qqq = p.GetField("stringArray");
+var qs = new std.wstring(qqq.GetArrayElement(1));
+
 writeln(frame.Locals);
 writeln("Proccesses: {0}", Process.All.Length);
 
