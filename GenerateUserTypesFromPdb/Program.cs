@@ -24,6 +24,9 @@ namespace GenerateUserTypesFromPdb
         [Option("use-dia-symbol-provider", Default = false, HelpText = "Use DIA symbol provider and access fields for specific type", Required = false, SetName = "cmdSettings")]
         public bool UseDiaSymbolProvider { get; set; }
 
+        [Option("force-user-types-to-new-instead-of-casting", Default = false, HelpText = "Force using new during type casting instead of direct casting", Required = false, SetName = "cmdSettings")]
+        public bool ForceUserTypesToNewInsteadOfCasting { get; set; }
+
         [Option('x', "xml-config", HelpText = "Path to xml file with configuration", SetName = "xmlConfig")]
         public string XmlConfigPath { get; set; }
     }
@@ -69,6 +72,7 @@ namespace GenerateUserTypesFromPdb
                 config = new XmlConfig()
                 {
                     DontGenerateFieldTypeInfoComment = options.DontGenerateFieldTypeInfoComment,
+                    ForceUserTypesToNewInsteadOfCasting = options.ForceUserTypesToNewInsteadOfCasting,
                     MultiLineProperties = options.MultiLineProperties,
                     UseDiaSymbolProvider = options.UseDiaSymbolProvider,
                     Types = new XmlType[options.Types.Count],
@@ -91,6 +95,8 @@ namespace GenerateUserTypesFromPdb
                 generationOptions |= UserTypeGenerationFlags.SingleLineProperty;
             if (config.UseDiaSymbolProvider)
                 generationOptions |= UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
+            if (config.ForceUserTypesToNewInsteadOfCasting)
+                generationOptions |= UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting;
 
             string moduleName = Path.GetFileNameWithoutExtension(pdbPath).ToLower();
             Dictionary<string, UserType> symbols = new Dictionary<string, UserType>();

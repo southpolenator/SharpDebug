@@ -13,6 +13,7 @@ namespace GenerateUserTypesFromPdb
         SingleLineProperty,
         GenerateFieldTypeInfoComment,
         UseClassFieldsFromDiaSymbolProvider,
+        ForceUserTypesToNewInsteadOfCasting,
     }
 
     class UserTypeField
@@ -93,6 +94,7 @@ namespace GenerateUserTypesFromPdb
             var fields = symbol.GetChildren(SymTagEnum.SymTagData);
             bool hasNonStatic = false;
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
+            bool forceUserTypesToNewInsteadOfCasting = options.HasFlag(UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting);
 
             foreach (var field in fields)
             {
@@ -106,6 +108,7 @@ namespace GenerateUserTypesFromPdb
                 string fieldName = field.name;
                 string simpleFieldValue;
                 string constructorText;
+                bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && exportedTypes.Values.Select(t => t.FullClassName).Contains(castingTypeString);
 
                 if (isStatic)
                 {
@@ -132,7 +135,7 @@ namespace GenerateUserTypesFromPdb
                 {
                     constructorText = simpleFieldValue;
                 }
-                else if (castingTypeString == "NakedPointer" || castingTypeString == "CodeFunction" || castingTypeString.StartsWith("CodeArray") || castingTypeString.StartsWith("CodePointer"))
+                else if (castingTypeString == "NakedPointer" || castingTypeString == "CodeFunction" || castingTypeString.StartsWith("CodeArray") || castingTypeString.StartsWith("CodePointer") || castWithNewInsteadOfCasting)
                 {
                     constructorText = string.Format("new {0}({1})", castingTypeString, simpleFieldValue);
                 }
