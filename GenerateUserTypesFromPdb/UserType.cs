@@ -117,7 +117,7 @@ namespace GenerateUserTypesFromPdb
 
                     if (options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
                     {
-                        gettingField = "thisClass.GetClassField";
+                        gettingField = "thisClass.Value.GetClassField";
                     }
 
                     simpleFieldValue = string.Format("{0}(\"{1}\")", gettingField, field.name);
@@ -166,7 +166,7 @@ namespace GenerateUserTypesFromPdb
                         return "Variable";
                     };
                     string newFieldTypeString = transformation.TransformType(originalFieldTypeString, ClassName, typeConverter);
-                    string fieldOffset = string.Format("{0}.GetFieldOffset(\"{1}\")", useThisClass ? "variable" : "thisClass", field.name);
+                    string fieldOffset = string.Format("{0}.GetFieldOffset(\"{1}\")", useThisClass ? "variable" : "thisClass.Value", field.name);
 
                     if (isStatic)
                     {
@@ -259,7 +259,8 @@ namespace GenerateUserTypesFromPdb
                 output.WriteLine(--indentation, "}}");
             }
 
-            if (hasNonStatic)
+            // We always want to have constructor because base class expects variable as parameter in its constructor
+            //if (hasNonStatic)
             {
                 output.WriteLine();
                 output.WriteLine(indentation, "public {0}(Variable variable)", ClassName);
