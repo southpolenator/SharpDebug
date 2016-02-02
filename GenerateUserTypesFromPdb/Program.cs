@@ -1,9 +1,12 @@
 ﻿using CommandLine;
 using Dia2Lib;
+using Microsoft.CSharp;
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace GenerateUserTypesFromPdb
 {
@@ -26,6 +29,9 @@ namespace GenerateUserTypesFromPdb
 
         [Option("force-user-types-to-new-instead-of-casting", Default = false, HelpText = "Force using new during type casting instead of direct casting", Required = false, SetName = "cmdSettings")]
         public bool ForceUserTypesToNewInsteadOfCasting { get; set; }
+
+        [Option("generated-assembly-name", Default = "", HelpText = "Name of the assembly that will be generated next to sources in output folder", Required = false, SetName = "cmdSettings")]
+        public string GeneratedAssemblyName { get; set; }
 
         [Option('x', "xml-config", HelpText = "Path to xml file with configuration", SetName = "xmlConfig")]
         public string XmlConfigPath { get; set; }
@@ -75,6 +81,7 @@ namespace GenerateUserTypesFromPdb
                     ForceUserTypesToNewInsteadOfCasting = options.ForceUserTypesToNewInsteadOfCasting,
                     MultiLineProperties = options.MultiLineProperties,
                     UseDiaSymbolProvider = options.UseDiaSymbolProvider,
+                    GeneratedAssemblyName = options.GeneratedAssemblyName,
                     Types = new XmlType[options.Types.Count],
                 };
 
@@ -141,6 +148,7 @@ namespace GenerateUserTypesFromPdb
             string currentDirectory = Directory.GetCurrentDirectory();
             string outputDirectory = currentDirectory + "\\output\\";
             Directory.CreateDirectory(outputDirectory);
+            List<string> generatedFiles = new List<string>();
 
             string[] allUDTs = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).Select(s => s.name).Distinct().OrderBy(s => s).ToArray();
 
@@ -157,9 +165,47 @@ namespace GenerateUserTypesFromPdb
                     continue;
                 }
 
-                using (TextWriter output = new StreamWriter(string.Format("{0}{1}.exported.cs", outputDirectory, symbol.name)))
+                string filename = string.Format("{0}{1}.exported.cs", outputDirectory, symbol.name);
+
+                using (TextWriter output = new StreamWriter(filename))
                 {
                     userType.WriteCode(new IndentedWriter(output), error, symbols, config.Transformations, generationOptions);
+                    generatedFiles.Add(filename);
+                }
+            }
+
+            // Check whether we should generate assembly
+            if (!string.IsNullOrEmpty(config.GeneratedAssemblyName))
+            {
+                var codeProvider = new CSharpCodeProvider();
+                var compilerParameters = new CompilerParameters()
+                {
+                    IncludeDebugInformation = true,
+                    OutputAssembly = outputDirectory + config.GeneratedAssemblyName,
+                };
+
+                compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
+                //compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies);
+
+                const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
+
+                if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.Contains(MicrosoftCSharpDll)).Any())
+                {
+                    compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
+                }
+
+                string binFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScriptManaged.dll"));
+                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll"));
+
+                var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, generatedFiles.ToArray());
+
+                if (compileResult.Errors.Count > 0)
+                {
+                    Console.Error.WriteLine("Compile errors:");
+                    foreach (CompilerError err in compileResult.Errors)
+                        Console.Error.WriteLine(err);
                 }
             }
         }
