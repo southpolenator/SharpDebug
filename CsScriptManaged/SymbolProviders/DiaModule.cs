@@ -40,10 +40,11 @@ namespace CsScriptManaged.SymbolProviders
         private SimpleCache<Dictionary<string, IDiaSymbol>> basicTypes;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DiaModule"/> class.
+        /// Initializes a new instance of the <see cref="DiaModule" /> class.
         /// </summary>
         /// <param name="pdbPath">The PDB path.</param>
-        public DiaModule(string pdbPath)
+        /// <param name="moduleAddress">The module address.</param>
+        public DiaModule(string pdbPath, ulong moduleAddress)
         {
             dia = new DiaSource();
             dia.loadDataFromPdb(pdbPath);
@@ -73,6 +74,8 @@ namespace CsScriptManaged.SymbolProviders
 
                 return types;
             });
+
+            session.loadAddress = moduleAddress;
         }
 
         /// <summary>
@@ -393,6 +396,10 @@ namespace CsScriptManaged.SymbolProviders
 
                     address += (ulong)symbol.offset;
                     return address;
+
+                case LocationType.Static:
+                    return symbol.virtualAddress;
+
                 default:
                     throw new Exception("Unknown location type " + (LocationType)symbol.locationType);
             }
