@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace CsScriptManaged
 {
-    class UserTypeDescription
+    internal class UserTypeDescription : IEquatable<UserTypeDescription>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="UserTypeDescription"/> class.
@@ -54,5 +54,17 @@ namespace CsScriptManaged
         /// Gets the user type.
         /// </summary>
         public Type Type { get; private set; }
+
+        /// <summary>
+        /// Determines whether the specified <see cref="CsScriptManaged.UserTypeDescription" />, is equal to this instance.
+        /// </summary>
+        /// <param name="other">The <see cref="CsScriptManaged.UserTypeDescription" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="CsScriptManaged.UserTypeDescription" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
+        public bool Equals(UserTypeDescription other)
+        {
+            return other.Module == Module && other.UserType == UserType && other.Type == Type;
+        }
     }
 }
