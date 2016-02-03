@@ -139,6 +139,10 @@ namespace GenerateUserTypesFromPdb
                 {
                     constructorText = string.Format("new {0}({1})", castingTypeString, simpleFieldValue);
                 }
+                else if (castingTypeString == "string")
+                {
+                    constructorText = string.Format("{0}.ToString()", simpleFieldValue);
+                }
                 else
                 {
                     constructorText = string.Format("({0}){1}", castingTypeString, simpleFieldValue);
