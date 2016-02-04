@@ -48,7 +48,8 @@ namespace CsScriptManaged.SymbolProviders
         /// Initializes a new instance of the <see cref="DiaModule"/> class.
         /// </summary>
         /// <param name="pdbPath">The PDB path.</param>
-        public DiaModule(string pdbPath)
+        /// <param name="moduleAddress">The module address.</param>
+        public DiaModule(string pdbPath, ulong moduleAddress)
         {
             dia = new DiaSource();
             dia.loadDataFromPdb(pdbPath);
@@ -78,6 +79,8 @@ namespace CsScriptManaged.SymbolProviders
 
                 return types;
             });
+
+            session.loadAddress = moduleAddress;
             enumTypeNames = new DictionaryCache<uint, Dictionary<ulong, string>>(GetEnumName);
         }
 
@@ -399,6 +402,10 @@ namespace CsScriptManaged.SymbolProviders
 
                     address += (ulong)symbol.offset;
                     return address;
+
+                case LocationType.Static:
+                    return symbol.virtualAddress;
+
                 default:
                     throw new Exception("Unknown location type " + (LocationType)symbol.locationType);
             }
@@ -565,7 +572,7 @@ namespace CsScriptManaged.SymbolProviders
 
                     if (b.name == className)
                     {
-                        return Tuple.Create(b.symIndexId, offset);
+                        return Tuple.Create(GetTypeId(module, b.name), offset);
                     }
 
                     classes.Push(Tuple.Create(b, offset));

@@ -14,20 +14,23 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// The modules cache
         /// </summary>
-        private DictionaryCache<string, ISymbolProviderModule> modules = new DictionaryCache<string, ISymbolProviderModule>(LoadModule);
+        private DictionaryCache<Tuple<string, ulong>, ISymbolProviderModule> modules = new DictionaryCache<Tuple<string, ulong>, ISymbolProviderModule>(LoadModule);
 
         /// <summary>
         /// Loads the module from PDB file.
         /// </summary>
-        /// <param name="pdb">The PDB path.</param>
-        private static ISymbolProviderModule LoadModule(string pdb)
+        /// <param name="pdbAndModuleAddress">The tuple of PDB path and module address.</param>
+        private static ISymbolProviderModule LoadModule(Tuple<string, ulong> pdbAndModuleAddress)
         {
+            string pdb = pdbAndModuleAddress.Item1;
+            ulong moduleAddress = pdbAndModuleAddress.Item2;
+
             if (string.IsNullOrEmpty(pdb) || Path.GetExtension(pdb).ToLower() != ".pdb")
             {
                 return new DbgEngSymbolProvider();
             }
 
-            return new DiaModule(pdb);
+            return new DiaModule(pdb, moduleAddress);
         }
 
         /// <summary>
@@ -228,7 +231,7 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         private ISymbolProviderModule GetDiaModule(Module module)
         {
-            return modules[module.SymbolFileName];
+            return modules[Tuple.Create(module.SymbolFileName, module.Offset)];
         }
 
         /// <summary>

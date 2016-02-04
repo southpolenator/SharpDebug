@@ -15,6 +15,10 @@ namespace GenerateUserTypesFromPdb
 
         public bool UseDiaSymbolProvider { get; set; }
 
+        public bool ForceUserTypesToNewInsteadOfCasting { get; set; }
+
+        public string GeneratedAssemblyName { get; set; }
+
         [XmlArrayItem("Type")]
         public XmlType[] Types { get; set; }
 

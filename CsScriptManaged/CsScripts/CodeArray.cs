@@ -59,7 +59,14 @@ namespace CsScripts
                     throw new ArgumentOutOfRangeException("index", index, "Index out of array length");
                 }
 
-                return variable.GetArrayElement(index).CastAs<T>();
+                Variable item = variable.GetArrayElement(index);
+
+                if (item == null)
+                {
+                    return default(T);
+                }
+
+                return item.CastAs<T>();
             }
         }
 

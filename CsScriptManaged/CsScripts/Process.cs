@@ -2,7 +2,7 @@
 using CsScriptManaged.Native;
 using CsScriptManaged.Utility;
 using System;
-using System.Linq;
+using System.Collections.Generic;
 
 namespace CsScripts
 {
@@ -44,7 +44,7 @@ namespace CsScripts
         /// <summary>
         /// The user types
         /// </summary>
-        private SimpleCache<UserTypeDescription[]> userTypes;
+        private SimpleCache<List<UserTypeDescription>> userTypes;
 
         /// <summary>
         /// The actual processor type
@@ -149,7 +149,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the user types.
         /// </summary>
-        internal UserTypeDescription[] UserTypes
+        internal List<UserTypeDescription> UserTypes
         {
             get
             {
@@ -404,23 +404,23 @@ namespace CsScripts
         /// <summary>
         /// Gets the user types.
         /// </summary>
-        private UserTypeDescription[] GetUserTypes()
+        private List<UserTypeDescription> GetUserTypes()
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(this))
             {
                 if (Context.UserTypeMetadata != null && Context.UserTypeMetadata.Length > 0)
                 {
-                    UserTypeDescription[] userTypes = new UserTypeDescription[Context.UserTypeMetadata.Length];
+                    List<UserTypeDescription> userTypes = new List<UserTypeDescription>(Context.UserTypeMetadata.Length);
 
-                    for (int i = 0; i < userTypes.Length; i++)
+                    for (int i = 0; i < userTypes.Count; i++)
                     {
-                        userTypes[i] = Context.UserTypeMetadata[i].ConvertToDescription();
+                        userTypes.Add(Context.UserTypeMetadata[i].ConvertToDescription());
                     }
 
                     return userTypes;
                 }
 
-                return new UserTypeDescription[0];
+                return new List<UserTypeDescription>();
             }
         }
     }

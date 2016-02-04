@@ -72,6 +72,7 @@ namespace CsScripts
             userTypeCastedFields = variable.userTypeCastedFields;
             fieldsByName = variable.fieldsByName;
             userTypeCastedFieldsByName = variable.userTypeCastedFieldsByName;
+            data = variable.data;
         }
 
         /// <summary>
@@ -344,9 +345,10 @@ namespace CsScripts
             if (codeType.IsAnsiString)
             {
                 uint stringLength;
+                ulong address = GetPointerAddress();
                 StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
 
-                Context.DataSpaces.ReadMultiByteStringVirtual(Address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
+                Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
                 return sb.ToString();
             }
 
@@ -354,9 +356,10 @@ namespace CsScripts
             if (codeType.IsWideString)
             {
                 uint stringLength;
+                ulong address = GetPointerAddress();
                 StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
 
-                Context.DataSpaces.ReadUnicodeStringVirtualWide(Address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
+                Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
                 return sb.ToString();
             }
 
@@ -501,10 +504,10 @@ namespace CsScripts
             }
 
             CodeType elementType = codeType.ElementType;
-            ulong baseAddress = codeType.IsPointer ? Data : Address;
+            ulong baseAddress = GetPointerAddress();
             ulong address = baseAddress + (ulong)(index * elementType.Size);
 
-            return Create(elementType, address, ComputedName);
+            return Create(elementType, address, GenerateNewName("[{0}]", index));
         }
 
         /// <summary>
@@ -555,9 +558,17 @@ namespace CsScripts
             {
                 return this;
             }
-            else if (codeType.IsPointer)
+            else if (codeType.IsPointer && newType.IsPointer)
             {
                 variable = new Variable(newType, Address, name, Data);
+            }
+            else if (newType.IsPointer)
+            {
+                variable = new Variable(newType, 0, name, Address);
+            }
+            else if (codeType.IsPointer)
+            {
+                variable = new Variable(newType, Data, name);
             }
             else if (Address != 0)
             {
@@ -584,7 +595,7 @@ namespace CsScripts
         /// <summary>
         /// Casts variable to the new type.
         /// </summary>
-        /// <param name="newType">The new type.</param>
+        /// <param name="conversionType">The new type.</param>
         public object CastAs(Type conversionType)
         {
             // If we are converting Variable to Variable, just return us
@@ -619,8 +630,16 @@ namespace CsScripts
                 ulong address = GetPointerAddress();
                 UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(conversionType);
                 UserTypeDescription description = metadata.ConvertToDescription();
+                CodeType newType = description.UserType;
 
-                return CastAs(description.UserType);
+                // TODO: Fix this in the future
+                // We are lazy loading user types if they haven't been loaded (for example in non-scripting mode)
+                if (!newType.Module.Process.UserTypes.Contains(description))
+                {
+                    newType.Module.Process.UserTypes.Add(description);
+                }
+
+                return CastAs(newType);
             }
 
             // Check if type has constructor with one argument and that argument is inherited from Variable
@@ -682,7 +701,7 @@ namespace CsScripts
         {
             var tuple = codeType.BaseClasses[className];
 
-            return CreateNoCast(tuple.Item1, GetPointerAddress() + (uint)tuple.Item2, className);
+            return CreateNoCast(tuple.Item1, GetPointerAddress() + (uint)tuple.Item2, name);
         }
 
         /// <summary>
@@ -695,7 +714,7 @@ namespace CsScripts
             CodeType fieldType = tuple.Item1;
             ulong fieldAddress = GetPointerAddress() + (ulong)tuple.Item2;
 
-            return Create(fieldType, fieldAddress, fieldName);
+            return Create(fieldType, fieldAddress, GenerateNewName(".{0}", fieldName));
         }
 
         /// <summary>
@@ -718,7 +737,7 @@ namespace CsScripts
             CodeType fieldType = codeType.GetFieldType(name);
             ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
 
-            return CreateNoCast(fieldType, fieldAddress, name);
+            return CreateNoCast(fieldType, fieldAddress, GenerateNewName(".{0}", name));
         }
 
         /// <summary>
@@ -744,16 +763,10 @@ namespace CsScripts
         /// <param name="originalVariable">The original variable.</param>
         internal static Variable CastVariableToUserType(Variable originalVariable)
         {
-            // Check if it is null
-            if (originalVariable.IsNullPointer())
-            {
-                return null;
-            }
-
             // Get user type descriptions to be used by this process
             var userTypes = originalVariable.codeType.Module.Process.UserTypes;
 
-            if (userTypes.Length == 0)
+            if (userTypes.Count == 0)
             {
                 return originalVariable;
             }
@@ -772,6 +785,12 @@ namespace CsScripts
             if (types.Length == 0)
             {
                 return originalVariable;
+            }
+
+            // Check if it is null
+            if (originalVariable.IsNullPointer())
+            {
+                return null;
             }
 
             // Create new instance of user defined type
@@ -1036,6 +1055,23 @@ namespace CsScripts
         private ulong ReadData()
         {
             return Context.SymbolProvider.ReadSimpleData(codeType, Address);
+        }
+
+        /// <summary>
+        /// Generates the new variable name.
+        /// If existing name is computed, it will remain like that. If not, new format will be appended to existing name.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns></returns>
+        private string GenerateNewName(string format, params object[] args)
+        {
+            if (name == ComputedName)
+            {
+                return name;
+            }
+
+            return name + string.Format(format, args);
         }
 
         #region IConvertible

@@ -99,6 +99,7 @@
     <Compile Include="CompileException.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Context.cs" />
+    <Compile Include="CsScripts\BasicType.cs" />
     <Compile Include="CsScripts\CodeArray.cs" />
     <Compile Include="CsScripts\CodeFunction.cs" />
     <Compile Include="CsScripts\CodePointer.cs" />
