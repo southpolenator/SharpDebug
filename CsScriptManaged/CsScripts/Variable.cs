@@ -501,7 +501,7 @@ namespace CsScripts
             ulong baseAddress = codeType.IsPointer ? Data : Address;
             ulong address = baseAddress + (ulong)(index * elementType.Size);
 
-            return Create(elementType, address, ComputedName);
+            return Create(elementType, address, GenerateNewName("[{0}]", index));
         }
 
         /// <summary>
@@ -695,7 +695,7 @@ namespace CsScripts
         {
             var tuple = codeType.BaseClasses[className];
 
-            return CreateNoCast(tuple.Item1, GetPointerAddress() + (uint)tuple.Item2, className);
+            return CreateNoCast(tuple.Item1, GetPointerAddress() + (uint)tuple.Item2, name);
         }
 
         /// <summary>
@@ -708,7 +708,7 @@ namespace CsScripts
             CodeType fieldType = tuple.Item1;
             ulong fieldAddress = GetPointerAddress() + (ulong)tuple.Item2;
 
-            return Create(fieldType, fieldAddress, fieldName);
+            return Create(fieldType, fieldAddress, GenerateNewName(".{0}", fieldName));
         }
 
         /// <summary>
@@ -731,7 +731,7 @@ namespace CsScripts
             CodeType fieldType = codeType.GetFieldType(name);
             ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
 
-            return CreateNoCast(fieldType, fieldAddress, name);
+            return CreateNoCast(fieldType, fieldAddress, GenerateNewName(".{0}", name));
         }
 
         /// <summary>
@@ -1049,6 +1049,23 @@ namespace CsScripts
         private ulong ReadData()
         {
             return Context.SymbolProvider.ReadSimpleData(codeType, Address);
+        }
+
+        /// <summary>
+        /// Generates the new variable name.
+        /// If existing name is computed, it will remain like that. If not, new format will be appended to existing name.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns></returns>
+        private string GenerateNewName(string format, params object[] args)
+        {
+            if (name == ComputedName)
+            {
+                return name;
+            }
+
+            return name + string.Format(format, args);
         }
 
         #region IConvertible
