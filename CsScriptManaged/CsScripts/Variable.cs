@@ -72,6 +72,7 @@ namespace CsScripts
             userTypeCastedFields = variable.userTypeCastedFields;
             fieldsByName = variable.fieldsByName;
             userTypeCastedFieldsByName = variable.userTypeCastedFieldsByName;
+            data = variable.data;
         }
 
         /// <summary>

@@ -566,7 +566,7 @@ namespace CsScriptManaged.SymbolProviders
 
                     if (b.name == className)
                     {
-                        return Tuple.Create(b.symIndexId, offset);
+                        return Tuple.Create(GetTypeId(module, b.name), offset);
                     }
 
                     classes.Push(Tuple.Create(b, offset));
