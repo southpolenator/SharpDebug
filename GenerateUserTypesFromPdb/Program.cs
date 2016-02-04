@@ -125,6 +125,11 @@ namespace GenerateUserTypesFromPdb
                 }
             }
 
+            foreach (var userType in symbols.Values.ToArray())
+            {
+                userType.UpdateUserTypes(symbols);
+            }
+
             foreach (var symbolEntry in symbols)
             {
                 var userType = symbolEntry.Value;
@@ -153,11 +158,6 @@ namespace GenerateUserTypesFromPdb
             string[] allUDTs = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).Select(s => s.name).Distinct().OrderBy(s => s).ToArray();
 
             File.WriteAllLines(outputDirectory + "symbols.txt", allUDTs);
-
-            foreach (var userType in symbols.Values.ToArray())
-            {
-                userType.UpdateUserTypes(symbols);
-            }
 
             foreach (var symbolEntry in symbols)
             {

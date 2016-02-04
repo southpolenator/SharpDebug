@@ -22,11 +22,21 @@ enum MyEnum
 class MyTestClass
 {
 public:
+	enum MyEnumInner
+	{
+		simple0,
+		simple1,
+		simple2,
+		simple3,
+		simple4,
+	};
+
 	wstring string1;
 	list<wstring> strings;
 	wstring stringArray[100];
 	vector<string> ansiStrings;
 	MyEnum enumeration;
+	MyEnumInner innerEnumeration;
 
 	static int staticVariable;
 } globalVariable;
