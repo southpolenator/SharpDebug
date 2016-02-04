@@ -8,6 +8,17 @@
 
 using namespace std;
 
+enum MyEnum
+{
+	enumEntry0,
+	enumEntry1,
+	enumEntry2,
+	enumEntry3,
+	enumEntry4,
+	enumEntry5,
+	enumEntry6,
+};
+
 class MyTestClass
 {
 public:
@@ -15,6 +26,7 @@ public:
 	list<wstring> strings;
 	wstring stringArray[100];
 	vector<string> ansiStrings;
+	MyEnum enumeration;
 
 	static int staticVariable;
 } globalVariable;
@@ -29,6 +41,7 @@ int main(int argc, char** argv)
 {
 	MyTestClass * p = &globalVariable;
 	MyTestClass ** q = &p;
+	MyEnum e = enumEntry3;
 
 	p->string1 = L"qwerty";
 	p->strings.push_back(L"Foo");

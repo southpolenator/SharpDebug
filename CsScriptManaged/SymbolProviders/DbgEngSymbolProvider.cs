@@ -371,5 +371,23 @@ namespace CsScriptManaged.SymbolProviders
         {
             throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
         }
+
+        /// <summary>
+        /// Gets the name of the enumeration value.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        /// <param name="enumValue">The enumeration value.</param>
+        public string GetEnumName(Module module, uint enumTypeId, ulong enumValue)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            {
+                uint enumNameSize;
+                StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+
+                Context.Symbols.GetConstantNameWide(module.Offset, enumTypeId, enumValue, sb, (uint)sb.Capacity, out enumNameSize);
+                return sb.ToString();
+            }
+        }
     }
 }

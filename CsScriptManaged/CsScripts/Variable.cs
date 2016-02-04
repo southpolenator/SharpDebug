@@ -163,7 +163,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator bool (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsPointer)
+            if (!v.codeType.IsSimple && !v.codeType.IsPointer && !v.codeType.IsEnum)
             {
                 return bool.Parse(v.ToString());
             }
@@ -180,7 +180,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator byte (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return byte.Parse(v.ToString());
             }
@@ -197,7 +197,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator sbyte (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return sbyte.Parse(v.ToString());
             }
@@ -214,7 +214,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator char (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return char.Parse(v.ToString());
             }
@@ -231,7 +231,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator short (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return short.Parse(v.ToString());
             }
@@ -248,7 +248,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator ushort (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return ushort.Parse(v.ToString());
             }
@@ -265,7 +265,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator int (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return int.Parse(v.ToString());
             }
@@ -282,7 +282,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator uint (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return uint.Parse(v.ToString());
             }
@@ -299,7 +299,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator long (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return long.Parse(v.ToString());
             }
@@ -316,7 +316,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator ulong (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return ulong.Parse(v.ToString());
             }
@@ -381,6 +381,12 @@ namespace CsScripts
                     default:
                         throw new ArgumentException("Incorrect data size " + codeType.Size);
                 }
+            }
+
+            // Enumeration
+            if (codeType.IsEnum)
+            {
+                return Context.SymbolProvider.GetEnumName(codeType.Module, codeType.TypeId, Data);
             }
 
             // TODO: Call custom caster (e.g. std::string, std::wstring)

@@ -40,6 +40,11 @@ namespace CsScriptManaged.SymbolProviders
         private SimpleCache<Dictionary<string, IDiaSymbol>> basicTypes;
 
         /// <summary>
+        /// The cache of enumeration types to {enumeration value, name}
+        /// </summary>
+        private DictionaryCache<uint, Dictionary<ulong, string>> enumTypeNames;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DiaModule"/> class.
         /// </summary>
         /// <param name="pdbPath">The PDB path.</param>
@@ -73,6 +78,7 @@ namespace CsScriptManaged.SymbolProviders
 
                 return types;
             });
+            enumTypeNames = new DictionaryCache<uint, Dictionary<ulong, string>>(GetEnumName);
         }
 
         /// <summary>
@@ -567,6 +573,46 @@ namespace CsScriptManaged.SymbolProviders
             }
 
             throw new Exception("Base class not found");
+        }
+
+        /// <summary>
+        /// Gets the name of the enumeration value.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        /// <param name="enumValue">The enumeration value.</param>
+        public string GetEnumName(Module module, uint enumTypeId, ulong enumValue)
+        {
+            return enumTypeNames[enumTypeId][enumValue];
+        }
+
+        /// <summary>
+        /// Gets the name of all enumeration values.
+        /// </summary>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        private Dictionary<ulong, string> GetEnumName(uint enumTypeId)
+        {
+            var type = GetTypeFromId(enumTypeId);
+
+            if ((SymTagEnum)type.symTag != SymTagEnum.SymTagEnum)
+            {
+                throw new Exception("type must be enum");
+            }
+
+            var children = type.GetChildren().ToArray();
+            var result = new Dictionary<ulong, string>();
+
+            foreach (var child in children)
+            {
+                ulong value = (ulong)child.value;
+
+                if (!result.ContainsKey(value))
+                {
+                    result.Add(value, child.name);
+                }
+            }
+
+            return result;
         }
     }
 }

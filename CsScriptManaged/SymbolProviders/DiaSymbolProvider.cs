@@ -302,5 +302,18 @@ namespace CsScriptManaged.SymbolProviders
 
             return diaModule.GetTypeBaseClass(module, typeId, className);
         }
+
+        /// <summary>
+        /// Gets the name of the enumeration value.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        /// <param name="enumValue">The enumeration value.</param>
+        public string GetEnumName(Module module, uint enumTypeId, ulong enumValue)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetEnumName(module, enumTypeId, enumValue);
+        }
     }
 }

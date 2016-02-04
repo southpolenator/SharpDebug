@@ -132,5 +132,13 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="codeType">Type of the code.</param>
         /// <param name="address">The address.</param>
         ulong ReadSimpleData(CodeType codeType, ulong address);
+
+        /// <summary>
+        /// Gets the name of the enumeration value.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        /// <param name="enumValue">The enumeration value.</param>
+        string GetEnumName(Module module, uint enumTypeId, ulong enumValue);
     }
 }
