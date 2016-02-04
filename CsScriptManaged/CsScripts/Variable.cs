@@ -345,7 +345,7 @@ namespace CsScripts
             if (codeType.IsAnsiString)
             {
                 uint stringLength;
-                ulong address = codeType.IsPointer ? Data : Address;
+                ulong address = GetPointerAddress();
                 StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
 
                 Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
@@ -356,7 +356,7 @@ namespace CsScripts
             if (codeType.IsWideString)
             {
                 uint stringLength;
-                ulong address = codeType.IsPointer ? Data : Address;
+                ulong address = GetPointerAddress();
                 StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
 
                 Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
@@ -498,7 +498,7 @@ namespace CsScripts
             }
 
             CodeType elementType = codeType.ElementType;
-            ulong baseAddress = codeType.IsPointer ? Data : Address;
+            ulong baseAddress = GetPointerAddress();
             ulong address = baseAddress + (ulong)(index * elementType.Size);
 
             return Create(elementType, address, GenerateNewName("[{0}]", index));
