@@ -127,6 +127,11 @@ namespace GenerateUserTypesFromPdb
             {
                 constructorText = simpleFieldValue;
             }
+            else if ((exportedTypes.ContainsKey(castingTypeString) && exportedTypes[castingTypeString] is EnumUserType)
+                || exportedTypes.Values.Where(t => t is EnumUserType && t.FullClassName == castingTypeString).Any())
+            {
+                constructorText = string.Format("({0})(ulong){1}", castingTypeString, simpleFieldValue);
+            }
             else if (castingTypeString == "NakedPointer" || castingTypeString == "CodeFunction" || castingTypeString.StartsWith("CodeArray") || castingTypeString.StartsWith("CodePointer") || castWithNewInsteadOfCasting)
             {
                 constructorText = string.Format("new {0}({1})", castingTypeString, simpleFieldValue);
@@ -134,10 +139,6 @@ namespace GenerateUserTypesFromPdb
             else if (castingTypeString == "string")
             {
                 constructorText = string.Format("{0}.ToString()", simpleFieldValue);
-            }
-            else if (exportedTypes.ContainsKey(castingTypeString) && exportedTypes[castingTypeString] is EnumUserType)
-            {
-                constructorText = string.Format("({0})(ulong){1}", castingTypeString, simpleFieldValue);
             }
             else
             {
