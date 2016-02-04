@@ -154,6 +154,11 @@ namespace GenerateUserTypesFromPdb
 
             File.WriteAllLines(outputDirectory + "symbols.txt", allUDTs);
 
+            foreach (var userType in symbols.Values.ToArray())
+            {
+                userType.UpdateUserTypes(symbols);
+            }
+
             foreach (var symbolEntry in symbols)
             {
                 var userType = symbolEntry.Value;

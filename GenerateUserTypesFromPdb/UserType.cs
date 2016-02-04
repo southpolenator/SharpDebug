@@ -135,6 +135,10 @@ namespace GenerateUserTypesFromPdb
             {
                 constructorText = string.Format("{0}.ToString()", simpleFieldValue);
             }
+            else if (exportedTypes.ContainsKey(castingTypeString) && exportedTypes[castingTypeString] is EnumUserType)
+            {
+                constructorText = string.Format("({0})(ulong){1}", castingTypeString, simpleFieldValue);
+            }
             else
             {
                 constructorText = string.Format("({0}){1}", castingTypeString, simpleFieldValue);
@@ -187,6 +191,24 @@ namespace GenerateUserTypesFromPdb
             };
         }
 
+        internal void UpdateUserTypes(Dictionary<string, UserType> symbols)
+        {
+            var fields = Symbol.GetChildren(SymTagEnum.SymTagData);
+
+            foreach (var field in fields)
+            {
+                var type = field.type;
+
+                if ((SymTagEnum)type.symTag == SymTagEnum.SymTagEnum)
+                {
+                    if (!symbols.ContainsKey(type.name))
+                    {
+                        symbols.Add(type.name, new EnumUserType(type, ModuleName));
+                    }
+                }
+            }
+        }
+
         private IEnumerable<UserTypeField> ExtractFields(Dictionary<string, UserType> exportedTypes, IEnumerable<XmlTypeTransformation> typeTransformations, UserTypeGenerationFlags options)
         {
             var symbol = Symbol;
@@ -219,7 +241,7 @@ namespace GenerateUserTypesFromPdb
             }
         }
 
-        public void WriteCode(IndentedWriter output, TextWriter error, Dictionary<string, UserType> exportedTypes, IEnumerable<XmlTypeTransformation> typeTransformations, UserTypeGenerationFlags options, int indentation = 0)
+        public virtual void WriteCode(IndentedWriter output, TextWriter error, Dictionary<string, UserType> exportedTypes, IEnumerable<XmlTypeTransformation> typeTransformations, UserTypeGenerationFlags options, int indentation = 0)
         {
             var symbol = Symbol;
             var moduleName = ModuleName;
@@ -544,6 +566,42 @@ namespace GenerateUserTypesFromPdb
 
                 default:
                     throw new Exception("Unexpected type tag " + (SymTagEnum)type.symTag);
+            }
+        }
+    }
+
+    class EnumUserType : UserType
+    {
+        public EnumUserType(IDiaSymbol symbol, string moduleName)
+            : base(symbol, new XmlType() { Name = symbol.name, IncludedFields = new HashSet<string>(), ExcludedFields = new HashSet<string>() }, moduleName)
+        {
+        }
+
+        public override void WriteCode(IndentedWriter output, TextWriter error, Dictionary<string, UserType> exportedTypes, IEnumerable<XmlTypeTransformation> typeTransformations, UserTypeGenerationFlags options, int indentation = 0)
+        {
+            if (DeclaredInType == null)
+            {
+                if (!string.IsNullOrEmpty(Namespace))
+                {
+                    output.WriteLine(indentation, "namespace {0}", Namespace);
+                    output.WriteLine(indentation++, "{{");
+                }
+            }
+
+            output.WriteLine(indentation, @"public enum {0}", ClassName);
+            output.WriteLine(indentation++, @"{{");
+
+            foreach (var enumValue in Symbol.GetChildren())
+            {
+                output.WriteLine(indentation, "{0} = {1},", enumValue.name, enumValue.value);
+            }
+
+            // Class end
+            output.WriteLine(--indentation, @"}}");
+
+            if (DeclaredInType == null && !string.IsNullOrEmpty(Namespace))
+            {
+                output.WriteLine(--indentation, "}}");
             }
         }
     }
