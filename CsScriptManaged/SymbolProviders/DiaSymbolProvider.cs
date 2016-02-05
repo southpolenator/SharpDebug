@@ -4,6 +4,7 @@ using CsScripts;
 using Dia2Lib;
 using System;
 using System.IO;
+using System.Collections.Generic;
 
 namespace CsScriptManaged.SymbolProviders
 {
@@ -330,6 +331,18 @@ namespace CsScriptManaged.SymbolProviders
             ISymbolProviderModule diaModule = GetDiaModule(module);
 
             return diaModule.GetTypeBasicType(module, typeId);
+        }
+
+        /// <summary>
+        /// Gets the type's direct base classes type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetTypeDirectBaseClasses(module, typeId);
         }
     }
 }

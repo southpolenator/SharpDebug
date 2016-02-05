@@ -401,5 +401,15 @@ namespace CsScriptManaged.SymbolProviders
             // TODO: This is currently unsupported
             return BasicType.NoType;
         }
+
+        /// <summary>
+        /// Gets the type's direct base classes type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId)
+        {
+            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+        }
     }
 }

@@ -2,6 +2,7 @@
 using CsScriptManaged.Native;
 using CsScriptManaged.Utility;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace CsScripts
@@ -52,6 +53,11 @@ namespace CsScripts
         private DictionaryCache<string, Tuple<CodeType, int>> baseClassesAndOffsets;
 
         /// <summary>
+        /// The direct base classes and offsets
+        /// </summary>
+        private SimpleCache<Dictionary<string, Tuple<CodeType, int>>> directBaseClassesAndOffsets;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CodeType"/> class.
         /// </summary>
         /// <remarks>This should not be used directly, but through Module.TypesById[typeId]</remarks>
@@ -96,6 +102,18 @@ namespace CsScripts
 
                 return Tuple.Create(Module.TypesById[baseClass.Item1], baseClass.Item2);
             });
+            directBaseClassesAndOffsets = SimpleCache.Create(() =>
+            {
+                var baseClasses = Context.SymbolProvider.GetTypeDirectBaseClasses(Module, TypeId);
+                var result = new Dictionary<string, Tuple<CodeType, int>>();
+
+                foreach (var baseClass in baseClasses)
+                {
+                    result.Add(baseClass.Key, Tuple.Create(Module.TypesById[baseClass.Value.Item1], baseClass.Value.Item2));
+                }
+
+                return result;
+            });
         }
 
         /// <summary>
@@ -117,6 +135,38 @@ namespace CsScripts
             get
             {
                 return fieldNames.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the base classes - classes that this class inherits from.
+        /// </summary>
+        public Dictionary<string, Tuple<CodeType, int>> InheritedClasses
+        {
+            get
+            {
+                return directBaseClassesAndOffsets.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the inherited class.
+        /// </summary>
+        public CodeType InheritedClass
+        {
+            get
+            {
+                if (InheritedClasses.Count > 1)
+                {
+                    throw new Exception("Multiple inheritance is not supported");
+                }
+
+                if (InheritedClasses.Count == 0)
+                {
+                    throw new Exception("This type doesn't inherit any class");
+                }
+
+                return InheritedClasses.Values.First().Item1;
             }
         }
 

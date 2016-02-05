@@ -2,6 +2,7 @@
 using CsScripts;
 using Dia2Lib;
 using System;
+using System.Collections.Generic;
 
 namespace CsScriptManaged.SymbolProviders
 {
@@ -61,6 +62,13 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         /// <param name="className">Name of the class.</param>
         Tuple<uint, int> GetTypeBaseClass(Module module, uint typeId, string className);
+
+        /// <summary>
+        /// Gets the type's direct base classes type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId);
 
         /// <summary>
         /// Gets the name of the specified type.

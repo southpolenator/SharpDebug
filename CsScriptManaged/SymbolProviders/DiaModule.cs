@@ -631,5 +631,30 @@ namespace CsScriptManaged.SymbolProviders
         {
             return (BasicType)GetTypeFromId(typeId).baseType;
         }
+
+        /// <summary>
+        /// Gets the type's direct base classes type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId)
+        {
+            var type = GetTypeFromId(typeId);
+
+            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+                type = type.type;
+
+            var bases = type.GetBaseClasses();
+            var result = new Dictionary<string, Tuple<uint, int>>();
+
+            foreach (var b in bases.Reverse())
+            {
+                int offset = b.offset;
+
+                result.Add(b.name, Tuple.Create(GetTypeId(module, b.name), offset));
+            }
+
+            return result;
+        }
     }
 }

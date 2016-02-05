@@ -2,6 +2,7 @@
 using CsScripts;
 using Dia2Lib;
 using System;
+using System.Collections.Generic;
 
 namespace CsScriptManaged.SymbolProviders
 {
@@ -148,5 +149,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="enumTypeId">The enumeration type identifier.</param>
         /// <param name="enumValue">The enumeration value.</param>
         string GetEnumName(Module module, uint enumTypeId, ulong enumValue);
+
+        /// <summary>
+        /// Gets the type's direct base classes type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId);
     }
 }
