@@ -324,6 +324,50 @@ namespace CsScripts
 
             return v.Data;
         }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Variable"/> to <see cref="System.Single"/>.
+        /// </summary>
+        /// <param name="v">The v.</param>
+        /// <returns>
+        /// The result of the conversion.
+        /// </returns>
+        public static explicit operator float (Variable v)
+        {
+            if (v.codeType.IsDouble)
+            {
+                return (float)(double)v;
+            }
+
+            if (v.codeType.IsFloat)
+            {
+                return BitConverter.ToSingle(BitConverter.GetBytes((uint)v.Data), 0);
+            }
+
+            return float.Parse(v.ToString());
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Variable"/> to <see cref="System.Double"/>.
+        /// </summary>
+        /// <param name="v">The v.</param>
+        /// <returns>
+        /// The result of the conversion.
+        /// </returns>
+        public static explicit operator double (Variable v)
+        {
+            if (v.codeType.IsDouble)
+            {
+                return BitConverter.Int64BitsToDouble((long)v.Data);
+            }
+
+            if (v.codeType.IsFloat)
+            {
+                return (float)v;
+            }
+
+            return double.Parse(v.ToString());
+        }
         #endregion
 
         /// <summary>
@@ -361,6 +405,17 @@ namespace CsScripts
 
                 Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
                 return sb.ToString();
+            }
+
+            // Check float/double
+            if (codeType.IsFloat)
+            {
+                return ((float)this).ToString();
+            }
+
+            if (codeType.IsDouble)
+            {
+                return ((double)this).ToString();
             }
 
             // Simple type
@@ -585,7 +640,6 @@ namespace CsScripts
         /// <summary>
         /// Casts variable to the new type.
         /// </summary>
-        /// <param name="newType">The new type.</param>
         /// <returns>Computed variable that is of new type.</returns>
         public T CastAs<T>()
         {
@@ -1132,12 +1186,12 @@ namespace CsScripts
 
         public float ToSingle(IFormatProvider provider)
         {
-            throw new NotImplementedException();
+            return (float)this;
         }
 
         public double ToDouble(IFormatProvider provider)
         {
-            throw new NotImplementedException();
+            return (double)this;
         }
 
         public decimal ToDecimal(IFormatProvider provider)

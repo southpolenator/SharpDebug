@@ -1,6 +1,7 @@
 ﻿using CsScriptManaged.Native;
 using CsScriptManaged.Utility;
 using CsScripts;
+using Dia2Lib;
 using System;
 using System.IO;
 
@@ -317,6 +318,18 @@ namespace CsScriptManaged.SymbolProviders
             ISymbolProviderModule diaModule = GetDiaModule(module);
 
             return diaModule.GetEnumName(module, enumTypeId, enumValue);
+        }
+
+        /// <summary>
+        /// Gets the type of the basic type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public BasicType GetTypeBasicType(Module module, uint typeId)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetTypeBasicType(module, typeId);
         }
     }
 }

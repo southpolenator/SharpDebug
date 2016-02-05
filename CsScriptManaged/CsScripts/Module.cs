@@ -274,7 +274,7 @@ namespace CsScripts
         /// <param name="typeId">The type identifier.</param>
         private CodeType GetTypeById(uint typeId)
         {
-            return new CodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId));
+            return new CodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId), Context.SymbolProvider.GetTypeBasicType(this, typeId));
         }
         #endregion
     }

@@ -1,5 +1,6 @@
 ﻿using CsScriptManaged.Native;
 using CsScripts;
+using Dia2Lib;
 using System;
 
 namespace CsScriptManaged.SymbolProviders
@@ -29,6 +30,13 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         SymTag GetTypeTag(Module module, uint typeId);
+
+        /// <summary>
+        /// Gets the type of the basic type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        BasicType GetTypeBasicType(Module module, uint typeId);
 
         /// <summary>
         /// Gets the size of the specified type.

@@ -57,11 +57,14 @@ namespace CsScripts
         /// <remarks>This should not be used directly, but through Module.TypesById[typeId]</remarks>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        internal CodeType(Module module, uint typeId, SymTag tag)
+        /// <param name="tag">The symbol tag.</param>
+        /// <param name="basicType">Type of the basic type.</param>
+        internal CodeType(Module module, uint typeId, SymTag tag, Dia2Lib.BasicType basicType)
         {
             Module = module;
             TypeId = typeId;
             Tag = tag;
+            BasicType = basicType;
             InitializeCache();
         }
 
@@ -245,6 +248,48 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets a value indicating whether this instance is floating point number (float or double).
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is floating point number; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsReal
+        {
+            get
+            {
+                return BasicType == Dia2Lib.BasicType.Float;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is float.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is float; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsFloat
+        {
+            get
+            {
+                return IsReal && Size == 4;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is double.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is double; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsDouble
+        {
+            get
+            {
+                return IsReal && Size == 8;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this type is simple type.
         /// </summary>
         /// <value>
@@ -259,9 +304,14 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the tag.
+        /// Gets the symbol tag.
         /// </summary>
         internal SymTag Tag { get; private set; }
+
+        /// <summary>
+        /// Gets the type of the basic type.
+        /// </summary>
+        internal Dia2Lib.BasicType BasicType { get; private set; }
 
         internal DictionaryCache<string, Tuple<CodeType, int>> ClassFields
         {

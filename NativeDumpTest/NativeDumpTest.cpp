@@ -63,3 +63,10 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
+struct DoubleTest
+{
+	double d;
+	float f;
+	int i;
+} doubleTest{ 3.5, 2.5, 5 };

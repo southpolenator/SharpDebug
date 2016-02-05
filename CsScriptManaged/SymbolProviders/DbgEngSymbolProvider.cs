@@ -2,6 +2,7 @@
 using CsScriptManaged.Utility;
 using CsScripts;
 using DbgEngManaged;
+using Dia2Lib;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -388,6 +389,17 @@ namespace CsScriptManaged.SymbolProviders
                 Context.Symbols.GetConstantNameWide(module.Offset, enumTypeId, enumValue, sb, (uint)sb.Capacity, out enumNameSize);
                 return sb.ToString();
             }
+        }
+
+        /// <summary>
+        /// Gets the type of the basic type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public BasicType GetTypeBasicType(Module module, uint typeId)
+        {
+            // TODO: This is currently unsupported
+            return BasicType.NoType;
         }
     }
 }

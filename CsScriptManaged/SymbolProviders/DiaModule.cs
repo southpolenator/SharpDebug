@@ -621,5 +621,15 @@ namespace CsScriptManaged.SymbolProviders
 
             return result;
         }
+
+        /// <summary>
+        /// Gets the type of the basic type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public BasicType GetTypeBasicType(Module module, uint typeId)
+        {
+            return (BasicType)GetTypeFromId(typeId).baseType;
+        }
     }
 }
