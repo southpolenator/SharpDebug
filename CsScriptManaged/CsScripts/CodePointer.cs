@@ -57,5 +57,14 @@ namespace CsScripts
                 return variable.IsNullPointer();
             }
         }
+
+        /// <summary>
+        /// Converts pointer to array of specified length.
+        /// </summary>
+        /// <param name="length">The length.</param>
+        public CodeArray<T> ConvertToArray(int length)
+        {
+            return new CodeArray<T>(variable, length);
+        }
     }
 }

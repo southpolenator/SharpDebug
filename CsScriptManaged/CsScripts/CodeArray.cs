@@ -31,6 +31,22 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray{T}"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, int length)
+        {
+            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
+            {
+                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+            }
+
+            this.variable = variable;
+            Length = length;
+        }
+
+        /// <summary>
         /// Gets the number of elements in the collection.
         /// </summary>
         public int Length { get; private set; }
