@@ -9,4 +9,4 @@ WinDbg extension for executing C# scripts
 Take a look a [Wiki page](https://github.com/southpolenator/WinDbgCs/wiki/Using-C%23-scripts) to get hooked up :)
 
 # Code reference
-You can find code reference [here](http://southpolenator.github.io/WinDbgCsReference/).
+Now that you are hooked up, cou can take a look at [code reference](http://southpolenator.github.io/WinDbgCsReference/).
