@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace CsScripts
 {
@@ -65,6 +66,15 @@ namespace CsScripts
         public CodeArray<T> ConvertToArray(int length)
         {
             return new CodeArray<T>(variable, length);
+        }
+
+        /// <summary>
+        /// Converts pointer to array of specified length.
+        /// </summary>
+        /// <param name="length">The length.</param>
+        public T[] ToArray(int length)
+        {
+            return ConvertToArray(length).ToArray();
         }
     }
 }

@@ -63,6 +63,12 @@ namespace CsScripts
         /// <summary>
         /// Finds the pattern in memory of the current process.
         /// </summary>
+        /// <example><code>
+        ///     int pattern = 1212121212;
+        ///     ulong address = Debugger.FindPatternInMemory(pattern);
+        ///     if (address != 0)
+        ///         Console.WriteLine("Found occurrence: {0}", address);
+        /// </code></example>
         /// <typeparam name="T"></typeparam>
         /// <param name="structure">The structure.</param>
         /// <param name="searchAlignment">The search alignment in number of bytes. For a successful match, the difference between the location of the found pattern and memoryStart must be a multiple of searchAlignment.</param>
@@ -127,6 +133,10 @@ namespace CsScripts
         /// <summary>
         /// Finds pattern in memory of the current process and returns all of its occurrences.
         /// </summary>
+        /// <example><code>
+        ///     int pattern = 1212121212;
+        ///     IEnumerable&lt;ulong&gt; addresses = Debugger.FindAllPatternInMemory(pattern);
+        /// </code></example>
         /// <param name="structure">The structure.</param>
         /// <param name="searchAlignment">The search alignment in number of bytes. For a successful match, the difference between the location of the found pattern and memoryStart must be a multiple of searchAlignment.</param>
         /// <param name="searchWritableMemoryOnly">if set to <c>true</c> search through writable memory only.</param>
@@ -188,6 +198,11 @@ namespace CsScripts
         /// <summary>
         /// Finds the specified text in memory of the current process. Unicode encoding will be used.
         /// </summary>
+        /// <example><code>
+        ///     ulong address = Debugger.FindTextPatternInMemory("qwerty");
+        ///     if (address != 0)
+        ///         Console.WriteLine("Found occurrence: {0}", address);
+        /// </code></example>
         /// <param name="text">The text.</param>
         /// <param name="searchAlignment">The search alignment in number of bytes. For a successful match, the difference between the location of the found pattern and memoryStart must be a multiple of searchAlignment.</param>
         /// <param name="searchWritableMemoryOnly">if set to <c>true</c> search through writable memory only.</param>
@@ -260,6 +275,9 @@ namespace CsScripts
         /// <summary>
         /// Finds pattern in memory of the current process and returns all of its occurrences. Unicode encoding will be used.
         /// </summary>
+        /// <example><code>
+        ///     IEnumerable&lt;ulong&gt; addresses = Debugger.FindAllTextPatternInMemory("qwerty");
+        /// </code></example>
         /// <param name="text">The text.</param>
         /// <param name="searchAlignment">The search alignment in number of bytes. For a successful match, the difference between the location of the found pattern and memoryStart must be a multiple of searchAlignment.</param>
         /// <param name="searchWritableMemoryOnly">if set to <c>true</c> search through writable memory only.</param>
