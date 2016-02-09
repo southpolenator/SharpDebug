@@ -96,7 +96,7 @@ namespace GenerateUserTypesFromPdb
 
             bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
             string originalFieldTypeString = TypeToString.GetTypeString(field.type);
-            string fieldTypeString = GetTypeString(field.type, exportedTypes, field.length);
+            string fieldTypeString = GetTypeString(field.type, exportedTypes, typeTransformations, field.length);
             string castingTypeString = GetCastingType(fieldTypeString);
             string fieldName = field.name;
             string simpleFieldValue;
@@ -452,7 +452,7 @@ namespace GenerateUserTypesFromPdb
             return "UserType";
         }
 
-        private static string GetTypeString(IDiaSymbol type, Dictionary<string, UserType> exportedTypes, ulong bitLength = 0)
+        private string GetTypeString(IDiaSymbol type, Dictionary<string, UserType> exportedTypes, IEnumerable<XmlTypeTransformation> typeTransformations, ulong bitLength = 0)
         {
             switch ((SymTagEnum)type.symTag)
             {
@@ -524,7 +524,7 @@ namespace GenerateUserTypesFromPdb
                             case SymTagEnum.SymTagBaseType:
                             case SymTagEnum.SymTagEnum:
                                 {
-                                    string innerType = GetTypeString(pointerType, exportedTypes);
+                                    string innerType = GetTypeString(pointerType, exportedTypes, typeTransformations);
 
                                     if (innerType == "void")
                                         return "NakedPointer";
@@ -534,9 +534,9 @@ namespace GenerateUserTypesFromPdb
                                 }
 
                             case SymTagEnum.SymTagUDT:
-                                return GetTypeString(pointerType, exportedTypes);
+                                return GetTypeString(pointerType, exportedTypes, typeTransformations);
                             default:
-                                return "CodePointer<" + GetTypeString(pointerType, exportedTypes) + ">";
+                                return "CodePointer<" + GetTypeString(pointerType, exportedTypes, typeTransformations) + ">";
                         }
                     }
 
@@ -556,11 +556,38 @@ namespace GenerateUserTypesFromPdb
                             return "uint";
                         }
 
+                        var transformation = typeTransformations.Where(t => t.Matches(typeName)).FirstOrDefault();
+
+                        if (transformation != null)
+                        {
+                            Func<string, string> typeConverter = null;
+
+                            typeConverter = (inputType) =>
+                            {
+                                UserType ut;
+
+                                if (exportedTypes.TryGetValue(inputType, out ut))
+                                {
+                                    return ut.FullClassName;
+                                }
+
+                                var tr = typeTransformations.Where(t => t.Matches(inputType)).FirstOrDefault();
+
+                                if (tr != null)
+                                {
+                                    return tr.TransformType(inputType, ClassName, typeConverter);
+                                }
+
+                                return "Variable";
+                            };
+                            return transformation.TransformType(typeName, ClassName, typeConverter);
+                        }
+
                         return "Variable";
                     }
 
                 case SymTagEnum.SymTagArrayType:
-                    return "CodeArray<" + GetTypeString(type.type, exportedTypes) + ">";
+                    return "CodeArray<" + GetTypeString(type.type, exportedTypes, typeTransformations) + ">";
 
                 case SymTagEnum.SymTagFunctionType:
                     return "CodeFunction";
