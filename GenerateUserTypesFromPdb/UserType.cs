@@ -142,7 +142,7 @@ namespace GenerateUserTypesFromPdb
             }
             else
             {
-                constructorText = string.Format("({0}){1}", castingTypeString, simpleFieldValue);
+                constructorText = string.Format("{1}.CastAs<{0}>()", castingTypeString, simpleFieldValue);
             }
 
             var transformation = typeTransformations.Where(t => t.Matches(originalFieldTypeString)).FirstOrDefault();
