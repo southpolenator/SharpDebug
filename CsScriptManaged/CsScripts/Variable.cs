@@ -1044,7 +1044,45 @@ namespace CsScripts
         private CodeType FindRuntimeType()
         {
             // TODO: See if it is complex type and try to get VTable
-            return null;
+            try
+            {
+                if (!codeType.IsSimple || codeType.IsPointer)
+                {
+                    CodeType ulongType = codeType.Module.TypesByName["unsigned long long"];
+                    ulong vtableAddress = Context.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
+                    StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+                    ulong displacement;
+                    uint nameSize;
+
+                    Context.Symbols.GetNameByOffsetWide(vtableAddress, sb, (uint)sb.Capacity, out nameSize, out displacement);
+
+                    string vtableName = sb.ToString();
+
+                    if (vtableName.EndsWith("::`vftable'"))
+                    {
+                        Module module = codeType.Module;
+                        int moduleIndex = vtableName.IndexOf('!');
+
+                        if (moduleIndex > 0)
+                        {
+                            string moduleName = vtableName.Substring(0, moduleIndex);
+
+                            module = module.Process.ModulesByName[moduleName];
+                            vtableName = vtableName.Substring(moduleIndex + 1);
+                        }
+
+                        string typeName = vtableName.Substring(0, vtableName.Length - 11);
+
+                        return module.TypesByName[typeName];
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Fall back to original code type
+            }
+
+            return codeType;
         }
 
         /// <summary>

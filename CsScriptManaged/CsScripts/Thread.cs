@@ -2,7 +2,9 @@
 using CsScriptManaged.Marshaling;
 using CsScriptManaged.Utility;
 using DbgEngManaged;
+using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CsScripts
 {
@@ -144,6 +146,40 @@ namespace CsScripts
                 return new StackTrace(this, frameBuffer.Elements.Take((int)framesCount).ToArray(), threadContextBuffer.Elements.Take((int)framesCount).ToArray());
             }
         }
+
+        /// <summary>
+        /// Get StackTrace from Thread Context.
+        /// </summary>
+        /// <param name="contextAddress">Thread Context Address.</param>
+        /// <param name="contextSize">Thread Context Size.</param>
+        /// <returns></returns>
+        public static StackTrace GetStackTraceFromContext(ulong contextAddress, uint contextSize)
+        {
+            Thread thread = new Thread(0, 0, Process.Current);
+            IntPtr buffer = Marshal.AllocHGlobal((int)contextSize);
+
+            try
+            {
+                uint read;
+                Context.DataSpaces.ReadVirtual(contextAddress, buffer, contextSize, out read);
+
+                const int MaxCallStack = 1024;
+                using (ThreadSwitcher switcher = new ThreadSwitcher(thread))
+                using (MarshalArrayReader<_DEBUG_STACK_FRAME_EX> frameBuffer = new RegularMarshalArrayReader<_DEBUG_STACK_FRAME_EX>(MaxCallStack))
+                using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(MaxCallStack))
+                {
+                    uint framesCount;
+
+                    Context.Control.GetContextStackTraceEx(buffer, contextSize, frameBuffer.Pointer, (uint)frameBuffer.Count, threadContextBuffer.Pointer, (uint)(threadContextBuffer.Size * threadContextBuffer.Count), (uint)threadContextBuffer.Size, out framesCount);
+                    return new StackTrace(thread, frameBuffer.Elements.Take((int)framesCount).ToArray(), threadContextBuffer.Elements.Take((int)framesCount).ToArray());
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+
 
         /// <summary>
         /// Gets the thread context.
