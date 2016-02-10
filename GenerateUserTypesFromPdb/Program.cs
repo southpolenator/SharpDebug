@@ -170,7 +170,7 @@ namespace GenerateUserTypesFromPdb
                     continue;
                 }
 
-                string filename = string.Format("{0}{1}.exported.cs", outputDirectory, symbol.name);
+                string filename = string.Format("{0}{1}.exported.cs", outputDirectory, userType.ClassName);
 
                 using (TextWriter output = new StreamWriter(filename))
                 {

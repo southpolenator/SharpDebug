@@ -60,12 +60,20 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                if (DeclaredInType != null)
+                string symbolName = Symbol.name;
+                string newSymbolName = symbolName.Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace("__", "_").Replace("__", "_").TrimEnd('_');
+
+                if (symbolName != newSymbolName)
                 {
-                    return Symbol.name.Substring(DeclaredInType.Symbol.name.Length + 2);
+                    symbolName = newSymbolName;
                 }
 
-                return Symbol.name;
+                if (DeclaredInType != null)
+                {
+                    return symbolName.Substring(DeclaredInType.FullClassName.Length + 2);
+                }
+
+                return symbolName;
             }
         }
 
