@@ -729,18 +729,16 @@ namespace CsScripts
         /// <returns>Computed variable that is of new type.</returns>
         public Variable CastAs(string newType)
         {
-            Module module = codeType.Module;
-            int moduleIndex = newType.IndexOf('!');
+            CodeType newCodeType;
 
-            if (moduleIndex > 0)
+            if (newType.IndexOf('!') > 0)
             {
-                string moduleName = newType.Substring(moduleIndex);
-
-                module = module.Process.ModulesByName[moduleName];
-                newType = newType.Substring(moduleIndex + 1);
+                newCodeType = CodeType.Create(newType);
             }
-
-            CodeType newCodeType = module.TypesByName[newType];
+            else
+            {
+                newCodeType = CodeType.Create(newType, codeType.Module);
+            }
 
             return CastAs(newCodeType);
         }
@@ -1048,7 +1046,7 @@ namespace CsScripts
             {
                 if (!codeType.IsSimple || codeType.IsPointer)
                 {
-                    CodeType ulongType = codeType.Module.TypesByName["unsigned long long"];
+                    CodeType ulongType = CodeType.Create("unsigned long long", codeType.Module);
                     ulong vtableAddress = Context.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
                     StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
                     ulong displacement;
@@ -1060,24 +1058,12 @@ namespace CsScripts
 
                     if (vtableName.EndsWith("::`vftable'"))
                     {
-                        Module module = codeType.Module;
-                        int moduleIndex = vtableName.IndexOf('!');
-
-                        if (moduleIndex > 0)
-                        {
-                            string moduleName = vtableName.Substring(0, moduleIndex);
-
-                            module = module.Process.ModulesByName[moduleName];
-                            vtableName = vtableName.Substring(moduleIndex + 1);
-                        }
-
-                        string typeName = vtableName.Substring(0, vtableName.Length - 11);
-
-                        return module.TypesByName[typeName];
+                        vtableName = vtableName.Substring(0, vtableName.Length - 11);
+                        return vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Fall back to original code type
             }
