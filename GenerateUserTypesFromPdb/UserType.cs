@@ -405,11 +405,11 @@ namespace GenerateUserTypesFromPdb
             {
                 constructorText = string.Format("{0}.ToString()", simpleFieldValue);
             }
-            else if (fieldType is UserTypeTreeBaseType)
+            else if (fieldType is UserTypeTreeBaseType && castingTypeString != "NakedPointer")
             {
                 constructorText = string.Format("({0}){1}", castingTypeString, simpleFieldValue);
             }
-            else if (fieldType is UserTypeTreeCodeFunction || fieldType is UserTypeTreeCodeArray || fieldType is UserTypeTreeCodePointer || castWithNewInsteadOfCasting)
+            else if (fieldType is UserTypeTreeBaseType || fieldType is UserTypeTreeCodeFunction || fieldType is UserTypeTreeCodeArray || fieldType is UserTypeTreeCodePointer || castWithNewInsteadOfCasting)
             {
                 constructorText = string.Format("new {0}({1})", castingTypeString, simpleFieldValue);
             }
