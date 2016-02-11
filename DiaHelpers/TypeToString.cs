@@ -85,6 +85,7 @@ namespace Dia2Lib
                             return GetTypeString(pointerType) + "*";
                         }
 
+                    case SymTagEnum.SymTagBaseClass:
                     case SymTagEnum.SymTagUDT:
                     case SymTagEnum.SymTagEnum:
                         {

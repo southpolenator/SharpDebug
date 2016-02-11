@@ -676,7 +676,7 @@ namespace GenerateUserTypesFromPdb
             return typeTree.GetUserTypeString();
         }
 
-        private static UserTypeTree GetBaseTypeString(TextWriter error, IDiaSymbol type, UserTypeFactory factory)
+        private UserTypeTree GetBaseTypeString(TextWriter error, IDiaSymbol type, UserTypeFactory factory)
         {
             var baseClasses = type.GetBaseClasses().ToArray();
 
@@ -694,6 +694,13 @@ namespace GenerateUserTypesFromPdb
                 if (factory.GetUserType(type, out userType))
                 {
                     return new UserTypeTreeUserType(userType);
+                }
+
+                var transformation = factory.FindTransformation(type, this);
+
+                if (transformation != null)
+                {
+                    return new UserTypeTreeTransformation(transformation);
                 }
 
                 return GetBaseTypeString(error, type, factory);
