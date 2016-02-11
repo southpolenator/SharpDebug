@@ -102,7 +102,14 @@ namespace CsScripts
                     throw new Exception(string.Format("Module specified inside codeTypeName doesn't match specified module parameter.\ncodeTypeName: {0}\nmodule.Name = {1}", codeTypeName, module.Name));
                 }
 
-                module = module.Process.ModulesByName[moduleName];
+                if (module == null && string.IsNullOrEmpty(moduleName) == false)
+                {
+                    module = Process.Current.ModulesByName[moduleName];
+                }
+                else
+                {
+                    module = module.Process.ModulesByName[moduleName];
+                }
                 codeTypeName = codeTypeName.Substring(moduleIndex + 1);
             }
             else if (module == null)

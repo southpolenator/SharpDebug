@@ -377,14 +377,14 @@ namespace GenerateUserTypesFromPdb
             string constructorText;
             bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.Symbols.Select(t => t.FullClassName).Contains(castingTypeString);
 
+            string gettingField = "variable.GetField";
+
             if (isStatic)
             {
                 simpleFieldValue = string.Format("Process.Current.GetGlobal(\"{0}!{1}::{2}\")", moduleName, symbol.name, field.name);
             }
             else
             {
-                string gettingField = "variable.GetField";
-
                 if (options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
                 {
                     gettingField = "thisClass.Value.GetClassField";
@@ -415,7 +415,14 @@ namespace GenerateUserTypesFromPdb
             }
             else
             {
-                constructorText = string.Format("{1}.CastAs<{0}>()", castingTypeString, simpleFieldValue);
+                if (isStatic || !options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
+                {
+                    constructorText = string.Format("{1}.CastAs<{0}>()", castingTypeString, simpleFieldValue);
+                }
+                else
+                {
+                    constructorText = string.Format("{0}<{1}>(\"{2}\")", gettingField, castingTypeString, field.name);
+                }
             }
 
             var fieldTypeString = fieldType.GetUserTypeString();
