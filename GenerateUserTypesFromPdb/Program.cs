@@ -106,7 +106,7 @@ namespace GenerateUserTypesFromPdb
                 generationOptions |= UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting;
 
             string moduleName = Path.GetFileNameWithoutExtension(pdbPath).ToLower();
-            Dictionary<string, UserType> symbols = new Dictionary<string, UserType>();
+            var factory = new UserTypeFactory(config.Transformations);
             IDiaDataSource dia;
             IDiaSession session;
 
@@ -121,34 +121,16 @@ namespace GenerateUserTypesFromPdb
                 }
                 else
                 {
-                    symbols.Add(type.Name, new UserType(symbol, type, moduleName));
+                    factory.AddSymbol(symbol, type, moduleName);
                 }
             }
 
-            foreach (var userType in symbols.Values.ToArray())
+            foreach (var userType in factory.Symbols.ToArray())
             {
-                userType.UpdateUserTypes(symbols);
+                userType.UpdateUserTypes(factory);
             }
 
-            foreach (var symbolEntry in symbols)
-            {
-                var userType = symbolEntry.Value;
-
-                if (userType.Symbol.name.Contains("::"))
-                {
-                    string[] names = userType.Symbol.name.Split(new string[] { "::" }, StringSplitOptions.None);
-
-                    string parentTypeName = string.Join("::", names.Take(names.Length - 1));
-                    if (symbols.ContainsKey(parentTypeName))
-                    {
-                        userType.SetDeclaredInType(symbols[parentTypeName]);
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported namespace of class " + userType.Symbol.name);
-                    }
-                }
-            }
+            factory.ProcessTypes();
 
             string currentDirectory = Directory.GetCurrentDirectory();
             string outputDirectory = currentDirectory + "\\output\\";
@@ -159,12 +141,12 @@ namespace GenerateUserTypesFromPdb
 
             File.WriteAllLines(outputDirectory + "symbols.txt", allUDTs);
 
-            foreach (var symbolEntry in symbols)
+            foreach (var symbolEntry in factory.Symbols)
             {
-                var userType = symbolEntry.Value;
+                var userType = symbolEntry;
                 var symbol = userType.Symbol;
 
-                Console.WriteLine(symbolEntry.Key);
+                Console.WriteLine(symbolEntry.XmlType.Name);
                 if (userType.DeclaredInType != null)
                 {
                     continue;
@@ -174,7 +156,7 @@ namespace GenerateUserTypesFromPdb
 
                 using (TextWriter output = new StreamWriter(filename))
                 {
-                    userType.WriteCode(new IndentedWriter(output), error, symbols, config.Transformations, generationOptions);
+                    userType.WriteCode(new IndentedWriter(output), error, factory, generationOptions);
                     generatedFiles.Add(filename);
                 }
             }
