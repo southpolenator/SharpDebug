@@ -337,7 +337,7 @@ namespace GenerateUserTypesFromPdb
 
                 if (DeclaredInType != null)
                 {
-                    return symbolName.Substring(DeclaredInType.FullClassName.Length + 2);
+                    return symbolName.Substring(DeclaredInType.FullClassName.Length + 1);
                 }
 
                 return symbolName;
@@ -405,7 +405,11 @@ namespace GenerateUserTypesFromPdb
             {
                 constructorText = string.Format("{0}.ToString()", simpleFieldValue);
             }
-            else if (fieldType is UserTypeTreeBaseType || fieldType is UserTypeTreeCodeFunction || fieldType is UserTypeTreeCodeArray || fieldType is UserTypeTreeCodePointer || castWithNewInsteadOfCasting)
+            else if (fieldType is UserTypeTreeBaseType)
+            {
+                constructorText = string.Format("({0}){1}", castingTypeString, simpleFieldValue);
+            }
+            else if (fieldType is UserTypeTreeCodeFunction || fieldType is UserTypeTreeCodeArray || fieldType is UserTypeTreeCodePointer || castWithNewInsteadOfCasting)
             {
                 constructorText = string.Format("new {0}({1})", castingTypeString, simpleFieldValue);
             }
