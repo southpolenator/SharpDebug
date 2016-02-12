@@ -71,7 +71,7 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                return Name.Contains('<') || Name.Contains('>');
+                return Name.EndsWith("<>");
             }
         }
 
@@ -81,7 +81,7 @@ namespace GenerateUserTypesFromPdb
             {
                 if (!IsTemplate)
                     return Name;
-                return Name.Replace("<", "<*").Replace(">", "*>");
+                return Name.Replace("<>", "<*>");
             }
         }
 
