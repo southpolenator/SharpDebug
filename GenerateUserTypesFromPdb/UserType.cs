@@ -10,13 +10,13 @@ namespace GenerateUserTypesFromPdb
     enum UserTypeGenerationFlags
     {
         None = 0,
-        SingleLineProperty,
-        GenerateFieldTypeInfoComment,
-        UseClassFieldsFromDiaSymbolProvider,
-        ForceUserTypesToNewInsteadOfCasting,
-        CacheUserTypeFields,
-        CacheStaticUserTypeFields,
-        LazyCacheUserTypeFields,
+        SingleLineProperty = 1,
+        GenerateFieldTypeInfoComment = 2,
+        UseClassFieldsFromDiaSymbolProvider = 4,
+        ForceUserTypesToNewInsteadOfCasting = 8,
+        CacheUserTypeFields = 16,
+        CacheStaticUserTypeFields = 32,
+        LazyCacheUserTypeFields = 64,
     }
 
     abstract class UserTypeTree
@@ -808,7 +808,7 @@ namespace GenerateUserTypesFromPdb
                     UseUserMember = false,
                     CacheResult = true,
                 };
-        }
+            }
         }
 
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
@@ -860,7 +860,7 @@ namespace GenerateUserTypesFromPdb
                 if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(field.FieldTypeInfoComment))
                     output.WriteLine(indentation, field.FieldTypeInfoComment);
                 if (field.UseUserMember && field.CacheResult)
-                output.WriteLine(indentation, "private {0}UserMember<{1}> {2};", field.Static ? "static " : "", field.FieldType, field.FieldName);
+                    output.WriteLine(indentation, "private {0}UserMember<{1}> {2};", field.Static ? "static " : "", field.FieldType, field.FieldName);
                 else if (field.CacheResult)
                     output.WriteLine(indentation, "private {0}{1} {2};", field.Static ? "static " : "", field.FieldType, field.FieldName);
                 if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
@@ -884,7 +884,7 @@ namespace GenerateUserTypesFromPdb
                     if (field.Static)
                     {
                         if (field.UseUserMember && field.CacheResult)
-                        output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", field.FieldName, field.ConstructorText);
+                            output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", field.FieldName, field.ConstructorText);
                         else if (field.CacheResult)
                             output.WriteLine(indentation, "{0} = {1};", field.FieldName, field.ConstructorText);
                     }
@@ -911,7 +911,7 @@ namespace GenerateUserTypesFromPdb
                     if (!field.Static)
                     {
                         if (field.UseUserMember && field.CacheResult)
-                        output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", field.FieldName, field.ConstructorText);
+                            output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", field.FieldName, field.ConstructorText);
                         else if (field.CacheResult)
                             output.WriteLine(indentation, "{0} = {1};", field.FieldName, field.ConstructorText);
                     }
@@ -937,7 +937,7 @@ namespace GenerateUserTypesFromPdb
                     }
 
                     if (field.UseUserMember)
-                    output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}.Value; }} }}", field.Static ? "static " : "", field.FieldType, field.PropertyName, field.FieldName);
+                        output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}.Value; }} }}", field.Static ? "static " : "", field.FieldType, field.PropertyName, field.FieldName);
                     else
                         output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}; }} }}", field.Static ? "static " : "", field.FieldType, field.PropertyName, field.FieldName);
                 }
@@ -949,7 +949,7 @@ namespace GenerateUserTypesFromPdb
                     output.WriteLine(indentation, "get");
                     output.WriteLine(indentation++, "{{");
                     if (field.UseUserMember && field.CacheResult)
-                    output.WriteLine(indentation, "return {0}.Value;", field.FieldName);
+                        output.WriteLine(indentation, "return {0}.Value;", field.FieldName);
                     else if (field.CacheResult)
                         output.WriteLine(indentation, "return {0};", field.FieldName);
                     else
