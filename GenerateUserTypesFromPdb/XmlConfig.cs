@@ -63,9 +63,9 @@ namespace GenerateUserTypesFromPdb
         [XmlAttribute]
         public string Name { get; set; }
 
-        public HashSet<string> ExcludedFields { get; set; }
+        public HashSet<string> ExcludedFields { get; set; } = new HashSet<string>();
 
-        public HashSet<string> IncludedFields { get; set; }
+        public HashSet<string> IncludedFields { get; set; } = new HashSet<string>();
 
         public bool IsTemplate
         {

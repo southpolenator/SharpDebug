@@ -241,15 +241,14 @@ namespace GenerateUserTypesFromPdb
 
         internal virtual bool GetUserType(string typeString, out UserType userType)
         {
-            userType = userTypes.FirstOrDefault(t => t.Symbol.name == typeString);
+            userType = userTypes.FirstOrDefault(t => t.Matches(typeString, this));
             return userType != null;
         }
 
         internal virtual bool GetUserType(IDiaSymbol type, out UserType userType)
         {
-            //userType = userTypes.FirstOrDefault(t => t.Symbol.symIndexId == type.symIndexId);
-            //return userType != null;
-            return GetUserType(type.name, out userType);
+            userType = userTypes.FirstOrDefault(t => t.Matches(type, this));
+            return userType != null;
         }
 
         internal void AddSymbol(IDiaSymbol symbol, XmlType type, string moduleName)
@@ -279,7 +278,8 @@ namespace GenerateUserTypesFromPdb
                 for (int i = 0; i < symbols.Length; i++)
                     try
                     {
-                        templates.Add(new TemplateUserType(session, symbols[i], type, moduleName, this));
+                        if (symbols[i].length > 0) // We want to ignore "empty" generic classes (for now)
+                            templates.Add(new TemplateUserType(session, symbols[i], type, moduleName, this));
                     }
                     catch (Exception)
                     {
@@ -291,22 +291,14 @@ namespace GenerateUserTypesFromPdb
                 foreach (var template in templates)
                 {
                     int args = template.GenericsArguments;
-                    TemplateUserType previuosTemplate;
+                    TemplateUserType previousTemplate;
 
-                    if (!buckets.TryGetValue(args, out previuosTemplate))
+                    if (!buckets.TryGetValue(args, out previousTemplate))
                         buckets.Add(args, template);
                     else
                     {
-                        // Verify that all fields are of the same type
-                        var f1 = template.ExtractFields(this, UserTypeGenerationFlags.None).OrderBy(f => f.FieldName).ToArray();
-                        var f2 = previuosTemplate.ExtractFields(this, UserTypeGenerationFlags.None).OrderBy(f => f.FieldName).ToArray();
-
-                        if (f1.Length != f2.Length)
-                            throw new Exception("Specialization is not supported");
-
-                        for (int i = 0; i < f1.Length; i++)
-                            if (f1[i].FieldName != f2[i].FieldName || f1[i].FieldType != f2[i].FieldType)
-                                throw new Exception("Templates are not matching field names and types");
+                        if (!TemplateUserType.Matches(template, previousTemplate, this))
+                            throw new Exception("Templates are not matching field names and types");
                     }
                 }
 
@@ -412,9 +404,12 @@ namespace GenerateUserTypesFromPdb
             : base(factory)
         {
             TemplateType = templateType;
+            OriginalFactory = factory;
         }
 
         public TemplateUserType TemplateType { get; private set; }
+
+        public UserTypeFactory OriginalFactory { get; private set; }
 
         internal override bool GetUserType(IDiaSymbol type, out UserType userType)
         {
@@ -446,6 +441,7 @@ namespace GenerateUserTypesFromPdb
     class TemplateUserType : UserType
     {
         private Dictionary<string, string> arguments = new Dictionary<string, string>();
+        private IDiaSession session;
 
         public TemplateUserType(IDiaSession session, IDiaSymbol symbol, XmlType xmlType, string moduleName, UserTypeFactory factory)
             : base(symbol, xmlType, moduleName)
@@ -454,6 +450,7 @@ namespace GenerateUserTypesFromPdb
             int templateStart = symbolName.IndexOf('<');
             var arguments = new List<string>();
 
+            this.session = session;
             for (int i = templateStart + 1; i < symbolName.Length; i++)
             {
                 var extractedType = XmlTypeTransformation.ExtractType(symbolName, i);
@@ -471,9 +468,11 @@ namespace GenerateUserTypesFromPdb
                     if (type == null)
                         throw new Exception("Wrongly formed template argument");
 
-                    this.arguments.Add(extractedType, "T" + this.arguments.Count);
+                    this.arguments.Add(extractedType, "T" + (this.arguments.Count+1));
                 }
             }
+
+            // Unused types should be removed
 
             if (this.arguments.Count == 1)
                 this.arguments[this.arguments.Keys.First()] = "T";
@@ -517,7 +516,7 @@ namespace GenerateUserTypesFromPdb
                 }
 
                 return symbolName;
-    }
+            }
         }
 
         public int GenericsArguments
@@ -535,13 +534,6 @@ namespace GenerateUserTypesFromPdb
 
         protected override UserTypeTree GetTypeString(IDiaSymbol type, UserTypeFactory factory, ulong bitLength = 0)
         {
-            //string argumentType;
-
-            //if ((SymTagEnum)type.symTag == SymTagEnum.SymTagUDT && arguments.TryGetValue(type.name, out argumentType))
-            //{
-            //    return new UserTypeTreeGenericsType(argumentType);
-            //}
-
             return base.GetTypeString(type, CreateFactory(factory), bitLength);
         }
 
@@ -550,9 +542,37 @@ namespace GenerateUserTypesFromPdb
             return base.GetBaseTypeString(error, type, CreateFactory(factory));
         }
 
-        protected override string GetCastingString(UserTypeTree typeTree)
+        internal override bool Matches(IDiaSymbol type, UserTypeFactory factory)
         {
-            return base.GetCastingString(typeTree);
+            return base.Matches(type, factory);
+        }
+
+        internal override bool Matches(string typeString, UserTypeFactory factory)
+        {
+            if (typeString.Contains('<'))
+            {
+                var templateType = new TemplateUserType(session, session.globalScope.GetChild(typeString), new XmlType() { Name = typeString }, ModuleName, factory);
+
+                return Matches(this, templateType, factory);
+            }
+
+            return base.Matches(typeString, factory);
+        }
+
+        internal static bool Matches(TemplateUserType template1, TemplateUserType template2, UserTypeFactory factory)
+        {
+            // Verify that all fields are of the same type
+            var t1 = template1.Symbol.name;
+            var t2 = template2.Symbol.name;
+            var f1 = template1.ExtractFields(factory, UserTypeGenerationFlags.None).OrderBy(f => f.FieldName).ToArray();
+            var f2 = template2.ExtractFields(factory, UserTypeGenerationFlags.None).OrderBy(f => f.FieldName).ToArray();
+
+            if (f1.Length != f2.Length)
+                return false;
+            for (int i = 0; i < f1.Length; i++)
+                if (f1[i].FieldName != f2[i].FieldName || f1[i].FieldType != f2[i].FieldType)
+                    return false;
+            return true;
         }
 
         private UserTypeFactory CreateFactory(UserTypeFactory factory)
@@ -562,7 +582,7 @@ namespace GenerateUserTypesFromPdb
             if (templateFactory != null)
             {
                 if (templateFactory.TemplateType != this)
-                    throw new Exception("Something went wrong");
+                    return CreateFactory(templateFactory.OriginalFactory);
                 return templateFactory;
             }
 
@@ -944,6 +964,8 @@ namespace GenerateUserTypesFromPdb
                 else
                 {
                     output.WriteLine();
+                    if (!field.UseUserMember && !field.CacheResult && options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(field.FieldTypeInfoComment))
+                        output.WriteLine(indentation, field.FieldTypeInfoComment);
                     output.WriteLine(indentation, "public {0}{1} {2}", field.Static ? "static " : "", field.FieldType, field.PropertyName);
                     output.WriteLine(indentation++, "{{");
                     output.WriteLine(indentation, "get");
@@ -1181,12 +1203,22 @@ namespace GenerateUserTypesFromPdb
                     throw new Exception("Unexpected type tag " + (SymTagEnum)type.symTag);
             }
         }
+
+        internal virtual bool Matches(string typeString, UserTypeFactory factory)
+        {
+            return Symbol.name == typeString;
+        }
+
+        internal virtual bool Matches(IDiaSymbol type, UserTypeFactory factory)
+        {
+            return Matches(type.name, factory);
+        }
     }
 
     class EnumUserType : UserType
     {
         public EnumUserType(IDiaSymbol symbol, string moduleName)
-            : base(symbol, new XmlType() { Name = symbol.name, IncludedFields = new HashSet<string>(), ExcludedFields = new HashSet<string>() }, moduleName)
+            : base(symbol, new XmlType() { Name = symbol.name }, moduleName)
         {
         }
 
