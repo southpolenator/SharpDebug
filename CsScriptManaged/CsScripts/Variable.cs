@@ -643,7 +643,39 @@ namespace CsScripts
         /// <returns>Computed variable that is of new type.</returns>
         public T CastAs<T>()
         {
-            return (T)CastAs(typeof(T));
+            object obj = CastAs(typeof(T));
+
+            // TODO: Investigate this issue
+            if (obj is T)
+            {
+                return (T)obj;
+            }
+
+            Type conversionType = typeof(T);
+
+            var constructors = conversionType.GetConstructors();
+
+            foreach (var constructor in constructors)
+            {
+                if (!constructor.IsPublic)
+                {
+                    continue;
+                }
+
+                var parameters = constructor.GetParameters();
+
+                if (parameters.Length < 1 || parameters.Count(p => !p.HasDefaultValue) > 1)
+                {
+                    continue;
+                }
+
+                if (parameters[0].ParameterType == typeof(Variable))
+                {
+                    return (T)Activator.CreateInstance(conversionType, this);
+                }
+            }
+
+            throw new InvalidCastException("Cannot cast Variable to " + conversionType);
         }
 
         /// <summary>
@@ -757,6 +789,17 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// GetBaseClass with cast.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="className"></param>
+        /// <returns></returns>
+        public T GetBaseClass<T>(string className) where T : UserType
+        {
+            return GetBaseClass(className).CastAs<T>();
+        }
+
+        /// <summary>
         /// Gets the class field (it doesn't go through base classes).
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
@@ -767,6 +810,24 @@ namespace CsScripts
             ulong fieldAddress = GetPointerAddress() + (ulong)tuple.Item2;
 
             return Create(fieldType, fieldAddress, GenerateNewName(".{0}", fieldName));
+        }
+
+        /// <summary>
+        /// Gets the class field as T.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="fieldName"></param>
+        /// <returns></returns>
+        public T GetClassField<T>(string fieldName) where T : UserType
+        {
+            Variable field = GetClassField(fieldName);
+
+            if (field == null)
+            {
+                return null;
+            }
+
+            return field.CastAs<T>();
         }
 
         /// <summary>

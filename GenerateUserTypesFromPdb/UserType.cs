@@ -517,7 +517,7 @@ namespace GenerateUserTypesFromPdb
                 }
 
                 return symbolName;
-            }
+    }
         }
 
         public int GenericsArguments
@@ -666,14 +666,14 @@ namespace GenerateUserTypesFromPdb
             string constructorText;
             bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.Symbols.Select(t => t.FullClassName).Contains(castingTypeString);
 
+            string gettingField = "variable.GetField";
+
             if (isStatic)
             {
                 simpleFieldValue = string.Format("Process.Current.GetGlobal(\"{0}!{1}::{2}\")", moduleName, symbol.name, field.name);
             }
             else
             {
-                string gettingField = "variable.GetField";
-
                 if (options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
                 {
                     gettingField = "thisClass.Value.GetClassField";
@@ -694,13 +694,24 @@ namespace GenerateUserTypesFromPdb
             {
                 constructorText = string.Format("{0}.ToString()", simpleFieldValue);
             }
+            else if (fieldType is UserTypeTreeBaseType && castingTypeString != "NakedPointer")
+            {
+                constructorText = string.Format("({0}){1}", castingTypeString, simpleFieldValue);
+            }
             else if (fieldType is UserTypeTreeBaseType || fieldType is UserTypeTreeCodeFunction || fieldType is UserTypeTreeCodeArray || fieldType is UserTypeTreeCodePointer || castWithNewInsteadOfCasting)
             {
                 constructorText = string.Format("new {0}({1})", castingTypeString, simpleFieldValue);
             }
             else
             {
+                if (isStatic || !options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
+                {
                 constructorText = string.Format("{1}.CastAs<{0}>()", castingTypeString, simpleFieldValue);
+            }
+                else
+                {
+                    constructorText = string.Format("{0}<{1}>(\"{2}\")", gettingField, castingTypeString, field.name);
+                }
             }
 
             var fieldTypeString = fieldType.GetUserTypeString();
@@ -797,7 +808,7 @@ namespace GenerateUserTypesFromPdb
                     UseUserMember = false,
                     CacheResult = true,
                 };
-            }
+        }
         }
 
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
@@ -849,7 +860,7 @@ namespace GenerateUserTypesFromPdb
                 if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(field.FieldTypeInfoComment))
                     output.WriteLine(indentation, field.FieldTypeInfoComment);
                 if (field.UseUserMember && field.CacheResult)
-                    output.WriteLine(indentation, "private {0}UserMember<{1}> {2};", field.Static ? "static " : "", field.FieldType, field.FieldName);
+                output.WriteLine(indentation, "private {0}UserMember<{1}> {2};", field.Static ? "static " : "", field.FieldType, field.FieldName);
                 else if (field.CacheResult)
                     output.WriteLine(indentation, "private {0}{1} {2};", field.Static ? "static " : "", field.FieldType, field.FieldName);
                 if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
@@ -873,7 +884,7 @@ namespace GenerateUserTypesFromPdb
                     if (field.Static)
                     {
                         if (field.UseUserMember && field.CacheResult)
-                            output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", field.FieldName, field.ConstructorText);
+                        output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", field.FieldName, field.ConstructorText);
                         else if (field.CacheResult)
                             output.WriteLine(indentation, "{0} = {1};", field.FieldName, field.ConstructorText);
                     }
@@ -900,7 +911,7 @@ namespace GenerateUserTypesFromPdb
                     if (!field.Static)
                     {
                         if (field.UseUserMember && field.CacheResult)
-                            output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", field.FieldName, field.ConstructorText);
+                        output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", field.FieldName, field.ConstructorText);
                         else if (field.CacheResult)
                             output.WriteLine(indentation, "{0} = {1};", field.FieldName, field.ConstructorText);
                     }
@@ -926,7 +937,7 @@ namespace GenerateUserTypesFromPdb
                     }
 
                     if (field.UseUserMember)
-                        output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}.Value; }} }}", field.Static ? "static " : "", field.FieldType, field.PropertyName, field.FieldName);
+                    output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}.Value; }} }}", field.Static ? "static " : "", field.FieldType, field.PropertyName, field.FieldName);
                     else
                         output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}; }} }}", field.Static ? "static " : "", field.FieldType, field.PropertyName, field.FieldName);
                 }
@@ -938,7 +949,7 @@ namespace GenerateUserTypesFromPdb
                     output.WriteLine(indentation, "get");
                     output.WriteLine(indentation++, "{{");
                     if (field.UseUserMember && field.CacheResult)
-                        output.WriteLine(indentation, "return {0}.Value;", field.FieldName);
+                    output.WriteLine(indentation, "return {0}.Value;", field.FieldName);
                     else if (field.CacheResult)
                         output.WriteLine(indentation, "return {0};", field.FieldName);
                     else
@@ -1030,6 +1041,13 @@ namespace GenerateUserTypesFromPdb
                 if (factory.GetUserType(type, out userType))
                 {
                     return new UserTypeTreeUserType(userType);
+                }
+
+                var transformation = factory.FindTransformation(type, this);
+
+                if (transformation != null)
+                {
+                    return new UserTypeTreeTransformation(transformation);
                 }
 
                 return GetBaseTypeString(error, type, factory);
