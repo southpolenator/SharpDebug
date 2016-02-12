@@ -30,11 +30,30 @@ namespace GenerateUserTypesFromPdb
         [Option("force-user-types-to-new-instead-of-casting", Default = false, HelpText = "Force using new during type casting instead of direct casting", Required = false, SetName = "cmdSettings")]
         public bool ForceUserTypesToNewInsteadOfCasting { get; set; }
 
+        [Option("cache-user-type-fields", Default = false, HelpText = "Caches result of getting user type field when exporting user type", Required = false, SetName = "cmdSettings")]
+        public bool CacheUserTypeFields { get; set; }
+
+        [Option("cache-static-user-type-fields", Default = false, HelpText = "Caches result of getting static user type field when exporting user type", Required = false, SetName = "cmdSettings")]
+        public bool CacheStaticUserTypeFields { get; set; }
+
+        [Option("lazy-cache-user-type-fields", Default = false, HelpText = "Cache result of getting user type field inside UserMember when exporting user type", Required = false, SetName = "cmdSettings")]
+        public bool LazyCacheUserTypeFields { get; set; }
+
         [Option("generated-assembly-name", Default = "", HelpText = "Name of the assembly that will be generated next to sources in output folder", Required = false, SetName = "cmdSettings")]
         public string GeneratedAssemblyName { get; set; }
 
         [Option('x', "xml-config", HelpText = "Path to xml file with configuration", SetName = "xmlConfig")]
         public string XmlConfigPath { get; set; }
+    }
+
+    class MyTest<T>
+    {
+        public static string testString = "asdfasdf";
+
+        static MyTest()
+        {
+            var t = typeof(MyTest<T>);
+        }
     }
 
     class Program
@@ -82,6 +101,9 @@ namespace GenerateUserTypesFromPdb
                     MultiLineProperties = options.MultiLineProperties,
                     UseDiaSymbolProvider = options.UseDiaSymbolProvider,
                     GeneratedAssemblyName = options.GeneratedAssemblyName,
+                    CacheStaticUserTypeFields = options.CacheStaticUserTypeFields,
+                    CacheUserTypeFields = options.CacheUserTypeFields,
+                    LazyCacheUserTypeFields = options.LazyCacheUserTypeFields,
                     Types = new XmlType[options.Types.Count],
                 };
 
@@ -104,6 +126,12 @@ namespace GenerateUserTypesFromPdb
                 generationOptions |= UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
             if (config.ForceUserTypesToNewInsteadOfCasting)
                 generationOptions |= UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting;
+            if (config.CacheUserTypeFields)
+                generationOptions |= UserTypeGenerationFlags.CacheUserTypeFields;
+            if (config.CacheStaticUserTypeFields)
+                generationOptions |= UserTypeGenerationFlags.CacheStaticUserTypeFields;
+            if (config.LazyCacheUserTypeFields)
+                generationOptions |= UserTypeGenerationFlags.LazyCacheUserTypeFields;
 
             string moduleName = Path.GetFileNameWithoutExtension(pdbPath).ToLower();
             var factory = new UserTypeFactory(config.Transformations);
@@ -113,15 +141,15 @@ namespace GenerateUserTypesFromPdb
             OpenPdb(pdbPath, out dia, out session);
             foreach (var type in typeNames)
             {
-                IDiaSymbol symbol = session.globalScope.GetChild(type.Name, SymTagEnum.SymTagUDT);
+                IDiaSymbol[] symbols = session.globalScope.GetChildrenWildcard(type.NameWildcard, SymTagEnum.SymTagUDT).ToArray();
 
-                if (symbol == null)
+                if (symbols.Length == 0)
                 {
                     error.WriteLine("Symbol not found: {0}", type.Name);
                 }
                 else
                 {
-                    factory.AddSymbol(symbol, type, moduleName);
+                    factory.AddSymbol(session, symbols, type, moduleName);
                 }
             }
 
@@ -152,7 +180,7 @@ namespace GenerateUserTypesFromPdb
                     continue;
                 }
 
-                string filename = string.Format("{0}{1}.exported.cs", outputDirectory, userType.ClassName);
+                string filename = string.Format("{0}{1}.exported.cs", outputDirectory, userType.ConstructorName);
 
                 using (TextWriter output = new StreamWriter(filename))
                 {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 
@@ -18,6 +19,12 @@ namespace GenerateUserTypesFromPdb
         public bool ForceUserTypesToNewInsteadOfCasting { get; set; }
 
         public string GeneratedAssemblyName { get; set; }
+
+        public bool CacheUserTypeFields { get; set; }
+
+        public bool CacheStaticUserTypeFields { get; set; }
+
+        public bool LazyCacheUserTypeFields { get; set; }
 
         [XmlArrayItem("Type")]
         public XmlType[] Types { get; set; }
@@ -59,6 +66,29 @@ namespace GenerateUserTypesFromPdb
         public HashSet<string> ExcludedFields { get; set; }
 
         public HashSet<string> IncludedFields { get; set; }
+
+        public bool IsTemplate
+        {
+            get
+            {
+                return Name.Contains('<') || Name.Contains('>');
+            }
+        }
+
+        public string NameWildcard
+        {
+            get
+            {
+                if (!IsTemplate)
+                    return Name;
+                return Name.Replace("<", "<*").Replace(">", "*>");
+            }
+        }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     public class XmlTypeTransformation
@@ -163,7 +193,7 @@ namespace GenerateUserTypesFromPdb
             return i == originalType.Length && j == inputType.Length;
         }
 
-        private static string ExtractType(string inputType, int j)
+        internal static string ExtractType(string inputType, int j)
         {
             int k = j;
             int openedTypes = 0;
@@ -203,6 +233,11 @@ namespace GenerateUserTypesFromPdb
                 throw new Exception("Incorrect format of OriginalType '" + originalType + "' at char " + i);
 
             return originalType.Substring(i, k - i);
+        }
+
+        public override string ToString()
+        {
+            return OriginalType + " => " + NewType;
         }
     }
 }
