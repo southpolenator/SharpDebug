@@ -42,6 +42,15 @@ namespace GenerateUserTypesFromPdb
         {
             return UserType.FullClassName;
         }
+
+        internal static UserTypeTree Create(UserType userType, UserTypeFactory factory)
+        {
+            var templateType = userType as TemplateUserType;
+
+            if (templateType != null)
+                return new UserTypeTreeGenericsType(templateType, factory);
+            return new UserTypeTreeUserType(userType);
+        }
     }
 
     class UserTypeTreeBaseType : UserTypeTree
@@ -59,18 +68,30 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class UserTypeTreeGenericsType : UserTypeTree
+    class UserTypeTreeGenericsType : UserTypeTreeUserType
     {
-        public UserTypeTreeGenericsType(string genericsType)
+        public UserTypeTreeGenericsType(TemplateUserType genericsType, UserTypeFactory factory)
+            : base(genericsType)
         {
             GenericsType = genericsType;
+
+            string[] arguments = genericsType.ExtractSpecializedTypes();
+
+            SpecializedArguments = new UserTypeTree[arguments.Length];
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                var symbol = genericsType.DiaSession.globalScope.GetChild(arguments[i], SymTagEnum.SymTagUDT);
+
+                SpecializedArguments[i] = genericsType.GetTypeString(symbol, factory);
+            }
         }
 
-        public string GenericsType { get; private set; }
+        public TemplateUserType GenericsType { get; private set; }
+        public UserTypeTree[] SpecializedArguments { get; private set; }
 
         public override string GetUserTypeString()
         {
-            return GenericsType;
+            return GenericsType.GetSpecializedType(SpecializedArguments.Select(t => t.GetUserTypeString()).ToArray());
         }
     }
 
@@ -440,8 +461,7 @@ namespace GenerateUserTypesFromPdb
 
     class TemplateUserType : UserType
     {
-        private Dictionary<string, string> arguments = new Dictionary<string, string>();
-        private IDiaSession session;
+        private List<string> arguments = new List<string>();
 
         public TemplateUserType(IDiaSession session, IDiaSymbol symbol, XmlType xmlType, string moduleName, UserTypeFactory factory)
             : base(symbol, xmlType, moduleName)
@@ -450,7 +470,7 @@ namespace GenerateUserTypesFromPdb
             int templateStart = symbolName.IndexOf('<');
             var arguments = new List<string>();
 
-            this.session = session;
+            DiaSession = session;
             for (int i = templateStart + 1; i < symbolName.Length; i++)
             {
                 var extractedType = XmlTypeTransformation.ExtractType(symbolName, i);
@@ -462,24 +482,20 @@ namespace GenerateUserTypesFromPdb
 
                 if (!int.TryParse(extractedType, out constant))
                 {
-                    var type = session.globalScope.GetChild(extractedType);
+                    var type = session.globalScope.GetChild(extractedType, SymTagEnum.SymTagUDT);
 
                     // Check if type is existing type
                     if (type == null)
                         throw new Exception("Wrongly formed template argument");
 
-                    this.arguments.Add(extractedType, "T" + (this.arguments.Count+1));
+                    this.arguments.Add(extractedType);
                 }
             }
 
-            // Unused types should be removed
-
-            if (this.arguments.Count == 1)
-                this.arguments[this.arguments.Keys.First()] = "T";
-
-            //UserTypeTree fieldType = GetTypeString(field.type, factory, field.length);
-            //string castingTypeString = GetCastingString(fieldType);
+            // TODO: Unused types should be removed
         }
+
+        public IDiaSession DiaSession { get; private set; }
 
         protected override bool ExportStaticFields { get { return false; } }
 
@@ -527,12 +543,49 @@ namespace GenerateUserTypesFromPdb
             }
         }
 
-        public bool TryGetArgument(string typeName, out string argument)
+        public string[] ExtractSpecializedTypes()
         {
-            return arguments.TryGetValue(typeName, out argument);
+            return arguments.ToArray();
         }
 
-        protected override UserTypeTree GetTypeString(IDiaSymbol type, UserTypeFactory factory, ulong bitLength = 0)
+        public string GetSpecializedType(string[] types)
+        {
+            if (types == null)
+            {
+            }
+
+            if (types.Length != GenericsArguments)
+                throw new Exception("Wrong number of generics arguments");
+
+            string symbolName = FullClassName;
+            int templateStart = symbolName.IndexOf('<');
+
+            if (templateStart > 0)
+            {
+                symbolName = symbolName.Substring(0, templateStart);
+                symbolName += "<";
+                symbolName += string.Join(", ", types);
+                symbolName += ">";
+            }
+
+            return symbolName;
+        }
+
+        public bool TryGetArgument(string typeName, out string argument)
+        {
+            int index = arguments.IndexOf(typeName);
+
+            if (index >= 0)
+            {
+                argument = "T" + (index + 1);
+                return true;
+            }
+
+            argument = "";
+            return false;
+        }
+
+        public override UserTypeTree GetTypeString(IDiaSymbol type, UserTypeFactory factory, ulong bitLength = 0)
         {
             return base.GetTypeString(type, CreateFactory(factory), bitLength);
         }
@@ -551,7 +604,7 @@ namespace GenerateUserTypesFromPdb
         {
             if (typeString.Contains('<'))
             {
-                var templateType = new TemplateUserType(session, session.globalScope.GetChild(typeString), new XmlType() { Name = typeString }, ModuleName, factory);
+                var templateType = new TemplateUserType(DiaSession, DiaSession.globalScope.GetChild(typeString, SymTagEnum.SymTagUDT), new XmlType() { Name = typeString }, ModuleName, factory);
 
                 return Matches(this, templateType, factory);
             }
@@ -1062,7 +1115,7 @@ namespace GenerateUserTypesFromPdb
 
                 if (factory.GetUserType(type, out userType))
                 {
-                    return new UserTypeTreeUserType(userType);
+                    return UserTypeTreeUserType.Create(userType, factory);
                 }
 
                 var transformation = factory.FindTransformation(type, this);
@@ -1078,7 +1131,7 @@ namespace GenerateUserTypesFromPdb
             return new UserTypeTreeVariable(false);
         }
 
-        protected virtual UserTypeTree GetTypeString(IDiaSymbol type, UserTypeFactory factory, ulong bitLength = 0)
+        public virtual UserTypeTree GetTypeString(IDiaSymbol type, UserTypeFactory factory, ulong bitLength = 0)
         {
             switch ((SymTagEnum)type.symTag)
             {
@@ -1175,7 +1228,7 @@ namespace GenerateUserTypesFromPdb
                         {
                             if (userType is EnumUserType)
                                 return new UserTypeTreeEnum((EnumUserType)userType);
-                            return new UserTypeTreeUserType(userType);
+                            return UserTypeTreeUserType.Create(userType, factory);
                         }
 
                         if ((SymTagEnum)type.symTag == SymTagEnum.SymTagEnum)
