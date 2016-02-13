@@ -514,6 +514,84 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Checks if this instance inherits the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        public bool Inherits(CodeType codeType)
+        {
+            if (this == codeType)
+            {
+                return true;
+            }
+
+            foreach (var inheritedClass in InheritedClasses.Values)
+            {
+                if (inheritedClass.Item1.Inherits(codeType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if this instance inherits the specified type name.
+        /// </summary>
+        /// <param name="typeName">The type name.</param>
+        public bool Inherits(string typeName)
+        {
+            if (Name == typeName)
+            {
+                return true;
+            }
+
+            foreach (var inheritedClass in InheritedClasses.Values)
+            {
+                if (inheritedClass.Item1.Inherits(typeName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if this instance inherits the specified type.
+        /// </summary>
+        /// <typeparam name="T">Type to check if this instance inherits it</typeparam>
+        public bool Inherits<T>()
+            where T : UserType
+        {
+            return Inherits(typeof(T));
+        }
+
+        /// <summary>
+        /// Checks if this instance inherits the specified type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        public bool Inherits(Type type)
+        {
+            if (type.IsSubclassOf(typeof(Variable)))
+            {
+                UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(type);
+                UserTypeDescription description = metadata.ConvertToDescription();
+                CodeType newType = description.UserType;
+
+                // Check if it was non-unique generics type
+                if (newType != null)
+                {
+                    return Inherits(newType);
+                }
+
+                return Inherits(metadata.TypeName);
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Gets the element type.
         /// </summary>
         private CodeType GetElementType()
