@@ -699,7 +699,12 @@ namespace GenerateUserTypesFromPdb
 
         protected override UserTypeTree GetBaseTypeString(TextWriter error, IDiaSymbol type, UserTypeFactory factory)
         {
-            return base.GetBaseTypeString(error, type, CreateFactory(factory));
+            UserTypeTree baseType = base.GetBaseTypeString(error, type, CreateFactory(factory));
+
+            // Check if base type is template argument. It if is, export it as if it is multi class inheritance.
+            if (baseType is UserTypeTreeUserType && ((UserTypeTreeUserType)baseType).UserType is FakeUserType)
+                return new UserTypeTreeMultiClassInheritance();
+            return baseType;
         }
 
         internal override bool Matches(IDiaSymbol type, UserTypeFactory factory)
@@ -833,7 +838,7 @@ namespace GenerateUserTypesFromPdb
             }
         }
 
-        protected virtual UserTypeField ExtractField(IDiaSymbol field, UserTypeFactory factory, UserTypeGenerationFlags options)
+        protected virtual UserTypeField ExtractField(IDiaSymbol field, UserTypeFactory factory, UserTypeGenerationFlags options, bool extractingBaseClass = false)
         {
             var symbol = Symbol;
             var moduleName = ModuleName;
@@ -859,7 +864,7 @@ namespace GenerateUserTypesFromPdb
             }
             else
             {
-                if (options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
+                if (useThisClass)
                 {
                     gettingField = "thisClass.Value.GetClassField";
                 }
@@ -889,10 +894,10 @@ namespace GenerateUserTypesFromPdb
             }
             else
             {
-                if (isStatic || !options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
+                if (isStatic || !useThisClass)
                 {
-                constructorText = string.Format("{1}.CastAs<{0}>()", castingTypeString, simpleFieldValue);
-            }
+                    constructorText = string.Format("{1}.CastAs<{0}>()", castingTypeString, simpleFieldValue);
+                }
                 else
                 {
                     constructorText = string.Format("{0}<{1}>(\"{2}\")", gettingField, castingTypeString, field.name);
@@ -914,6 +919,16 @@ namespace GenerateUserTypesFromPdb
 
                 constructorText = transformation.TransformConstructor(simpleFieldValue, fieldOffset);
                 fieldTypeString = newFieldTypeString;
+            }
+
+            if (extractingBaseClass)
+            {
+                if (fieldType is UserTypeTreeUserType && ((UserTypeTreeUserType)fieldType).UserType is FakeUserType)
+                    constructorText = string.Format("CastAs<{0}>()", fieldType.GetUserTypeString());
+                else if (useThisClass)
+                    constructorText = constructorText.Replace("thisClass.Value.GetClassField", "GetBaseClass");
+                else
+                    constructorText = constructorText.Replace("variable.GetField", "GetBaseClass");
             }
 
             return new UserTypeField
@@ -1158,17 +1173,16 @@ namespace GenerateUserTypesFromPdb
                 // Write all properties for getting base classes
                 foreach (var type in baseClasses)
                 {
-                    var field = ExtractField(type, factory, options);
+                    var field = ExtractField(type, factory, options, true);
 
                     field.PropertyName = field.PropertyName.Replace(" ", "").Replace('<', '_').Replace('>', '_').Replace(',', '_').Replace("__", "_").TrimEnd('_');
-                    if (options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider))
-                        field.ConstructorText = field.ConstructorText.Replace("thisClass.Value.GetClassField", "GetBaseClass");
-                    else
-                        field.ConstructorText = field.ConstructorText.Replace("variable.GetField", "GetBaseClass");
                     output.WriteLine();
                     if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(field.FieldTypeInfoComment))
                         output.WriteLine(indentation, "// Property for getting base class: {0}", type.name);
-                    output.WriteLine(indentation, "public {0} BaseClass_{1}", field.FieldType, field.PropertyName);
+                    if (baseClasses.Length == 1)
+                        output.WriteLine(indentation, "public {0} BaseClass", field.FieldType);
+                    else
+                        output.WriteLine(indentation, "public {0} BaseClass_{1}", field.FieldType, field.PropertyName);
                     output.WriteLine(indentation++, "{{");
                     output.WriteLine(indentation, "get");
                     output.WriteLine(indentation++, "{{");

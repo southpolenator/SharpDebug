@@ -798,7 +798,7 @@ namespace CsScripts
         /// <typeparam name="T"></typeparam>
         /// <param name="className"></param>
         /// <returns></returns>
-        public T GetBaseClass<T>(string className) where T : UserType
+        public T GetBaseClass<T>(string className)
         {
             return GetBaseClass(className).CastAs<T>();
         }
