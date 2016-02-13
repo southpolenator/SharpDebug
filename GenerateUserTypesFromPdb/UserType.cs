@@ -19,6 +19,70 @@ namespace GenerateUserTypesFromPdb
         LazyCacheUserTypeFields = 64,
     }
 
+    static class MoreDiaExtensions
+    {
+        static Dictionary<string, IDiaSymbol> basicTypes;
+
+        public static IDiaSymbol GetTypeSymbol(this IDiaSession session, string name)
+        {
+            if (basicTypes == null)
+            {
+                var types = session.globalScope.GetChildren(SymTagEnum.SymTagBaseType);
+
+                basicTypes = new Dictionary<string, IDiaSymbol>();
+                foreach (var type in types)
+                {
+                    try
+                    {
+                        string typeString = TypeToString.GetTypeString(type);
+
+                        if (!basicTypes.ContainsKey(typeString))
+                        {
+                            basicTypes.Add(typeString, type);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+            }
+
+            string originalName = name;
+
+            if (name == "unsigned __int64")
+                name = "unsigned long long";
+            else if (name == "__int64")
+                name = "long long";
+
+            IDiaSymbol symbol;
+
+            if (basicTypes.TryGetValue(name, out symbol))
+            {
+                return symbol;
+            }
+
+            int pointer = 0;
+
+            while (name.EndsWith("*"))
+            {
+                pointer++;
+                name = name.Substring(0, name.Length - 1);
+            }
+
+            if (pointer > 0)
+                name = name.Trim();
+
+            symbol = session.globalScope.GetChild(name);
+
+            if (symbol == null)
+                Console.WriteLine("   '{0}' not found", originalName);
+            else
+                for (int i = 0; i < pointer; i++)
+                    symbol = symbol.objectPointerType;
+            return symbol;
+        }
+    }
+
     abstract class UserTypeTree
     {
         public abstract string GetUserTypeString();
@@ -80,7 +144,7 @@ namespace GenerateUserTypesFromPdb
             SpecializedArguments = new UserTypeTree[arguments.Length];
             for (int i = 0; i < arguments.Length; i++)
             {
-                var symbol = genericsType.DiaSession.globalScope.GetChild(arguments[i], SymTagEnum.SymTagUDT);
+                var symbol = genericsType.DiaSession.GetTypeSymbol(arguments[i]);
 
                 SpecializedArguments[i] = genericsType.GetTypeString(symbol, factory);
             }
@@ -435,8 +499,9 @@ namespace GenerateUserTypesFromPdb
         internal override bool GetUserType(IDiaSymbol type, out UserType userType)
         {
             string argumentName;
+            string typeString = TypeToString.GetTypeString(type);
 
-            if (TemplateType.TryGetArgument(type.name, out argumentName))
+            if (TryGetArgument(typeString, out argumentName))
             {
                 userType = new FakeUserType(argumentName);
                 return true;
@@ -449,13 +514,54 @@ namespace GenerateUserTypesFromPdb
         {
             string argumentName;
 
-            if (TemplateType.TryGetArgument(typeString, out argumentName))
+            if (TryGetArgument(typeString, out argumentName))
             {
                 userType = new FakeUserType(argumentName);
                 return true;
             }
 
             return base.GetUserType(typeString, out userType);
+        }
+
+        private bool TryGetArgument(string typeString, out string argumentName)
+        {
+            if (TemplateType.TryGetArgument(typeString, out argumentName))
+            {
+                return true;
+            }
+
+            if (typeString == "wchar_t")
+            {
+                if (TemplateType.TryGetArgument("unsigned short", out argumentName))
+                    return true;
+            }
+            else if (typeString == "unsigned short")
+            {
+                if (TemplateType.TryGetArgument("whcar_t", out argumentName))
+                    return true;
+            }
+            else if (typeString == "unsigned long long")
+            {
+                if (TemplateType.TryGetArgument("unsigned __int64", out argumentName))
+                    return true;
+            }
+            else if (typeString == "unsigned __int64")
+            {
+                if (TemplateType.TryGetArgument("unsigned long long", out argumentName))
+                    return true;
+            }
+            else if (typeString == "long long")
+            {
+                if (TemplateType.TryGetArgument("__int64", out argumentName))
+                    return true;
+            }
+            else if (typeString == "__int64")
+            {
+                if (TemplateType.TryGetArgument("long long", out argumentName))
+                    return true;
+            }
+
+            return false;
         }
     }
 
@@ -479,10 +585,11 @@ namespace GenerateUserTypesFromPdb
                 i += extractedType.Length;
 
                 int constant;
+                extractedType = extractedType.Trim();
 
                 if (!int.TryParse(extractedType, out constant))
                 {
-                    var type = session.globalScope.GetChild(extractedType, SymTagEnum.SymTagUDT);
+                    var type = session.GetTypeSymbol(extractedType);
 
                     // Check if type is existing type
                     if (type == null)
@@ -577,7 +684,7 @@ namespace GenerateUserTypesFromPdb
 
             if (index >= 0)
             {
-                argument = "T" + (index + 1);
+                argument = arguments.Count == 1 ? "T" : "T" + (index + 1);
                 return true;
             }
 
@@ -604,7 +711,12 @@ namespace GenerateUserTypesFromPdb
         {
             if (typeString.Contains('<'))
             {
-                var templateType = new TemplateUserType(DiaSession, DiaSession.globalScope.GetChild(typeString, SymTagEnum.SymTagUDT), new XmlType() { Name = typeString }, ModuleName, factory);
+                var typeStringStart = typeString.Substring(0, typeString.IndexOf('<'));
+
+                if (!ClassName.StartsWith(typeStringStart))
+                    return false;
+
+                var templateType = new TemplateUserType(DiaSession, DiaSession.GetTypeSymbol(typeString), new XmlType() { Name = typeString }, ModuleName, factory);
 
                 return Matches(this, templateType, factory);
             }
@@ -1133,6 +1245,13 @@ namespace GenerateUserTypesFromPdb
 
         public virtual UserTypeTree GetTypeString(IDiaSymbol type, UserTypeFactory factory, ulong bitLength = 0)
         {
+            UserType fakeUserType;
+
+            if (factory.GetUserType(type, out fakeUserType) && fakeUserType is FakeUserType)
+            {
+                return new UserTypeTreeUserType(fakeUserType);
+            }
+
             switch ((SymTagEnum)type.symTag)
             {
                 case SymTagEnum.SymTagBaseType:
@@ -1197,6 +1316,11 @@ namespace GenerateUserTypesFromPdb
                 case SymTagEnum.SymTagPointerType:
                     {
                         IDiaSymbol pointerType = type.type;
+
+                        if (factory.GetUserType(pointerType, out fakeUserType) && fakeUserType is FakeUserType)
+                        {
+                            return new UserTypeTreeCodePointer(new UserTypeTreeUserType(fakeUserType));
+                        }
 
                         switch ((SymTagEnum)pointerType.symTag)
                         {
@@ -1264,7 +1388,7 @@ namespace GenerateUserTypesFromPdb
 
         internal virtual bool Matches(IDiaSymbol type, UserTypeFactory factory)
         {
-            return Matches(type.name, factory);
+            return Matches(TypeToString.GetTypeString(type), factory);
         }
     }
 
