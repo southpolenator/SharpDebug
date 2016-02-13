@@ -718,14 +718,18 @@ namespace CsScripts
                 UserTypeDescription description = metadata.ConvertToDescription();
                 CodeType newType = description.UserType;
 
-                // TODO: Fix this in the future
-                // We are lazy loading user types if they haven't been loaded (for example in non-scripting mode)
-                if (!newType.Module.Process.UserTypes.Contains(description))
+                // Check if it was non-unique generics type
+                if (newType != null)
                 {
-                    newType.Module.Process.UserTypes.Add(description);
-                }
+                    // TODO: Fix this in the future
+                    // We are lazy loading user types if they haven't been loaded (for example in non-scripting mode)
+                    if (!newType.Module.Process.UserTypes.Contains(description))
+                    {
+                        newType.Module.Process.UserTypes.Add(description);
+                    }
 
-                return CastAs(newType);
+                    return CastAs(newType);
+                }
             }
 
             // Check if type has constructor with one argument and that argument is inherited from Variable

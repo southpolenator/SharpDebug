@@ -36,7 +36,11 @@ namespace CsScriptManaged
                 Module = modules[0];
             }
 
-            UserType = Module.TypesByName[typeName];
+            if (!typeName.EndsWith("<>"))
+            {
+                UserType = Module.TypesByName[typeName];
+            }
+
             Type = type;
         }
 
