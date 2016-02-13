@@ -197,7 +197,7 @@ namespace GenerateUserTypesFromPdb
             {
                 using (TextWriter output = new StreamWriter(outputDirectory + config.GeneratedPropsFileName))
                 {
-                    output.WriteLine(@"<?xml version=""1.0"" encoding=""utf - 8""?>");
+                    output.WriteLine(@"<?xml version=""1.0"" encoding=""utf-8""?>");
                     output.WriteLine(@"<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">");
                     output.WriteLine(@"  <ItemGroup>");
                     foreach (var file in generatedFiles)
