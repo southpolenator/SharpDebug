@@ -42,6 +42,9 @@ namespace GenerateUserTypesFromPdb
         [Option("generated-assembly-name", Default = "", HelpText = "Name of the assembly that will be generated next to sources in output folder", Required = false, SetName = "cmdSettings")]
         public string GeneratedAssemblyName { get; set; }
 
+        [Option("generated-props-file-name", Default = "", HelpText = "Name of the props file that will be generated next to sources in output folder. It can be later included into project that will be compiled", Required = false, SetName = "cmdSettings")]
+        public string GeneratedPropsFileName { get; set; }
+
         [Option('x', "xml-config", HelpText = "Path to xml file with configuration", SetName = "xmlConfig")]
         public string XmlConfigPath { get; set; }
     }
@@ -101,6 +104,7 @@ namespace GenerateUserTypesFromPdb
                     MultiLineProperties = options.MultiLineProperties,
                     UseDiaSymbolProvider = options.UseDiaSymbolProvider,
                     GeneratedAssemblyName = options.GeneratedAssemblyName,
+                    GeneratedPropsFileName = options.GeneratedPropsFileName,
                     CacheStaticUserTypeFields = options.CacheStaticUserTypeFields,
                     CacheUserTypeFields = options.CacheUserTypeFields,
                     LazyCacheUserTypeFields = options.LazyCacheUserTypeFields,
@@ -186,6 +190,20 @@ namespace GenerateUserTypesFromPdb
                 {
                     userType.WriteCode(new IndentedWriter(output), error, factory, generationOptions);
                     generatedFiles.Add(filename);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(config.GeneratedPropsFileName))
+            {
+                using (TextWriter output = new StreamWriter(outputDirectory + config.GeneratedPropsFileName))
+                {
+                    output.WriteLine(@"<?xml version=""1.0"" encoding=""utf - 8""?>");
+                    output.WriteLine(@"<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">");
+                    output.WriteLine(@"  <ItemGroup>");
+                    foreach (var file in generatedFiles)
+                        output.WriteLine(@"    <Compile Include=""{0}"" />", file);
+                    output.WriteLine(@" </ItemGroup>");
+                    output.WriteLine(@"</Project>");
                 }
             }
 

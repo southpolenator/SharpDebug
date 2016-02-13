@@ -20,6 +20,8 @@ namespace GenerateUserTypesFromPdb
 
         public string GeneratedAssemblyName { get; set; }
 
+        public string GeneratedPropsFileName { get; set; }
+
         public bool CacheUserTypeFields { get; set; }
 
         public bool CacheStaticUserTypeFields { get; set; }
