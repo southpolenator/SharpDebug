@@ -365,8 +365,9 @@ namespace CsScriptManaged.SymbolProviders
 
                 CodeType codeType = module.TypesById[symbol.typeId];
                 ulong address = ResolveAddress(symbol, frame.FrameContext);
+                var variableName = symbol.name;
 
-                variables.Add(Variable.CreateNoCast(codeType, address, symbol.name));
+                variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
             }
 
             return new VariableCollection(variables.ToArray());

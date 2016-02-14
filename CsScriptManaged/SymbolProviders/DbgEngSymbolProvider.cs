@@ -279,8 +279,9 @@ namespace CsScriptManaged.SymbolProviders
                     var module = stackFrame.Process.ModulesById[entry.ModuleBase];
                     var codeType = module.TypesById[entry.TypeId];
                     var address = entry.Offset;
+                    var variableName = name.ToString();
 
-                    variables[i] = Variable.CreateNoCast(codeType, address, name.ToString());
+                    variables[i] = Variable.CreateNoCast(codeType, address, variableName, variableName);
                 }
 
                 return new VariableCollection(variables);

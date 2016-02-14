@@ -19,9 +19,24 @@ namespace CsScripts
         public const string ComputedName = "<computed>";
 
         /// <summary>
+        /// The unknown path
+        /// </summary>
+        public const string UnknownPath = "<unknown>";
+
+        /// <summary>
+        /// The untracked path
+        /// </summary>
+        public const string UntrackedPath = "<untracked>";
+
+        /// <summary>
         /// The name
         /// </summary>
         private string name;
+
+        /// <summary>
+        /// The path
+        /// </summary>
+        private string path;
 
         /// <summary>
         /// The code type
@@ -65,6 +80,7 @@ namespace CsScripts
         public Variable(Variable variable)
         {
             name = variable.name;
+            path = variable.path;
             Address = variable.Address;
             codeType = variable.codeType;
             runtimeType = variable.runtimeType;
@@ -76,15 +92,17 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Variable"/> class.
+        /// Initializes a new instance of the <see cref="Variable" /> class.
         /// </summary>
-        /// <param name="name">The name.</param>
         /// <param name="codeType">The code type.</param>
         /// <param name="address">The address.</param>
-        internal Variable(CodeType codeType, ulong address, string name)
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        internal Variable(CodeType codeType, ulong address, string name, string path)
         {
             this.codeType = codeType;
             this.name = name;
+            this.path = path;
             Address = address;
 
             // Initialize caches
@@ -97,14 +115,15 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Variable"/> class.
+        /// Initializes a new instance of the <see cref="Variable" /> class.
         /// </summary>
         /// <param name="codeType">The code type.</param>
         /// <param name="address">The address.</param>
         /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
         /// <param name="data">The loaded data value (this can be used only with pointers).</param>
-        private Variable(CodeType codeType, ulong address, string name, ulong data)
-            : this(codeType, address, name)
+        private Variable(CodeType codeType, ulong address, string name, string path, ulong data)
+            : this(codeType, address, name, path)
         {
             if (!codeType.IsPointer)
             {
@@ -115,27 +134,41 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="Variable"/> class.
+        /// Creates a new instance of the <see cref="Variable" /> class.
         /// </summary>
         /// <param name="codeType">The code type.</param>
         /// <param name="address">The address.</param>
         /// <param name="name">The name.</param>
-        public static Variable Create(CodeType codeType, ulong address, string name = ComputedName)
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static Variable Create(CodeType codeType, ulong address, string name = ComputedName, string path = UnknownPath)
         {
-            Variable variable = CreateNoCast(codeType, address, name);
+            Variable variable = CreateNoCast(codeType, address, name, path);
 
-            return codeType.Module.Process.UserTypeCastedVariables[variable];
+            if (Context.EnableUserCastedVariableCaching)
+            {
+                return codeType.Module.Process.UserTypeCastedVariables[variable];
+            }
+
+            return CastVariableToUserType(variable);
         }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="Variable"/> class and doesn't cast it to user code type.
+        /// Creates a new instance of the <see cref="Variable" /> class and doesn't cast it to user code type.
         /// </summary>
         /// <param name="codeType">The code type.</param>
         /// <param name="address">The address.</param>
         /// <param name="name">The name.</param>
-        internal static Variable CreateNoCast(CodeType codeType, ulong address, string name)
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        internal static Variable CreateNoCast(CodeType codeType, ulong address, string name, string path)
         {
-            return codeType.Module.Process.Variables[Tuple.Create(codeType, address, name)];
+            if (Context.EnableVariableCaching)
+            {
+                return codeType.Module.Process.Variables[Tuple.Create(codeType, address, name, path)];
+            }
+
+            return new Variable(codeType, address, name, path);
         }
 
         /// <summary>
@@ -500,6 +533,14 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the path of variable.
+        /// </summary>
+        public string GetPath()
+        {
+            return path;
+        }
+
+        /// <summary>
         /// Gets the code type.
         /// </summary>
         public CodeType GetCodeType()
@@ -562,7 +603,7 @@ namespace CsScripts
             ulong baseAddress = GetPointerAddress();
             ulong address = baseAddress + (ulong)(index * elementType.Size);
 
-            return Create(elementType, address, GenerateNewName("[{0}]", index));
+            return Create(elementType, address, ComputedName, GenerateNewName("[{0}]", index));
         }
 
         /// <summary>
@@ -590,11 +631,11 @@ namespace CsScripts
         {
             if (codeType.IsPointer)
             {
-                return new Variable(codeType, Address, name, Data + (ulong)offset);
+                return new Variable(codeType, Address, name, path, Data + (ulong)offset);
             }
             else if (Address != 0)
             {
-                return CreateNoCast(codeType, Address + (ulong)offset, name);
+                return CreateNoCast(codeType, Address + (ulong)offset, name, path);
             }
 
             throw new ArgumentException("Variable is not a pointer type, but " + codeType + " and its address is 0");
@@ -615,19 +656,19 @@ namespace CsScripts
             }
             else if (codeType.IsPointer && newType.IsPointer)
             {
-                variable = new Variable(newType, Address, name, Data);
+                variable = new Variable(newType, Address, name, path, Data);
             }
             else if (newType.IsPointer)
             {
-                variable = new Variable(newType, 0, name, Address);
+                variable = new Variable(newType, 0, name, path, Address);
             }
             else if (codeType.IsPointer)
             {
-                variable = new Variable(newType, Data, name);
+                variable = new Variable(newType, Data, name, path);
             }
             else if (Address != 0)
             {
-                return Create(newType, Address, name);
+                return Create(newType, Address, name, path);
             }
             else
             {
@@ -789,7 +830,7 @@ namespace CsScripts
         {
             var tuple = codeType.BaseClasses[className];
 
-            return CreateNoCast(tuple.Item1, GetPointerAddress() + (uint)tuple.Item2, name);
+            return CreateNoCast(tuple.Item1, GetPointerAddress() + (uint)tuple.Item2, name, path);
         }
 
         /// <summary>
@@ -813,7 +854,7 @@ namespace CsScripts
             CodeType fieldType = tuple.Item1;
             ulong fieldAddress = GetPointerAddress() + (ulong)tuple.Item2;
 
-            return Create(fieldType, fieldAddress, GenerateNewName(".{0}", fieldName));
+            return Create(fieldType, fieldAddress, fieldName, GenerateNewName(".{0}", fieldName));
         }
 
         /// <summary>
@@ -854,7 +895,7 @@ namespace CsScripts
             CodeType fieldType = codeType.GetFieldType(name);
             ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
 
-            return CreateNoCast(fieldType, fieldAddress, GenerateNewName(".{0}", name));
+            return CreateNoCast(fieldType, fieldAddress, name, GenerateNewName(".{0}", name));
         }
 
         /// <summary>
@@ -1209,6 +1250,11 @@ namespace CsScripts
         /// <returns></returns>
         private string GenerateNewName(string format, params object[] args)
         {
+            if (!Context.EnableVariablePathTracking)
+            {
+                return UntrackedPath;
+            }
+
             if (name == ComputedName)
             {
                 return name;

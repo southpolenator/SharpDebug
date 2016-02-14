@@ -74,7 +74,7 @@ namespace CsScripts
             userTypes = SimpleCache.Create(GetUserTypes);
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
             ModulesById = new DictionaryCache<ulong, Module>(GetModuleById);
-            Variables = new DictionaryCache<Tuple<CodeType, ulong, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3));
+            Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
             UserTypeCastedVariables = new DictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
             GlobalCache.UserTypeCastedVariables.Add(UserTypeCastedVariables);
         }
@@ -139,7 +139,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the variables by constructor key.
         /// </summary>
-        internal DictionaryCache<Tuple<CodeType, ulong, string>, Variable> Variables { get; private set; }
+        internal DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable> Variables { get; private set; }
 
         /// <summary>
         /// Gets the user type casted variables.

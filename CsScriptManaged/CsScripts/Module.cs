@@ -77,7 +77,7 @@ namespace CsScripts
                 var codeType = TypesById[typeId];
                 ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
 
-                return Variable.CreateNoCast(codeType, address, name);
+                return Variable.CreateNoCast(codeType, address, name, name);
             }
         }
 

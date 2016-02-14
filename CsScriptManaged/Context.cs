@@ -83,6 +83,30 @@ namespace CsScriptManaged
         internal static StateCache StateCache = new StateCache();
 
         /// <summary>
+        /// Gets or sets a value indicating whether variable caching is enabled.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if variable caching is enabled; otherwise, <c>false</c>.
+        /// </value>
+        public static bool EnableVariableCaching { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether user casted variable caching is enabled.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if user casted variable caching is enabled; otherwise, <c>false</c>.
+        /// </value>
+        public static bool EnableUserCastedVariableCaching { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether variable path tracking is enabled.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if variable path tracking is enabled; otherwise, <c>false</c>.
+        /// </value>
+        public static bool EnableVariablePathTracking { get; set; } = true;
+
+        /// <summary>
         /// Gets a value indicating whether debugger is currently in live debugging.
         /// </summary>
         /// <value>
