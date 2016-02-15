@@ -145,12 +145,7 @@ namespace CsScripts
         {
             Variable variable = CreateNoCast(codeType, address, name, path);
 
-            if (Context.EnableUserCastedVariableCaching)
-            {
-                return codeType.Module.Process.UserTypeCastedVariables[variable];
-            }
-
-            return CastVariableToUserType(variable);
+            return codeType.Module.Process.CastVariableToUserType(variable);
         }
 
         /// <summary>
@@ -421,23 +416,29 @@ namespace CsScripts
             // ANSI string
             if (codeType.IsAnsiString)
             {
-                uint stringLength;
-                ulong address = GetPointerAddress();
-                StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+                using (ProcessSwitcher switcher = new ProcessSwitcher(codeType.Module.Process))
+                {
+                    uint stringLength;
+                    ulong address = GetPointerAddress();
+                    StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
 
-                Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
-                return sb.ToString();
+                    Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
+                    return sb.ToString();
+                }
             }
 
             // Unicode string
             if (codeType.IsWideString)
             {
-                uint stringLength;
-                ulong address = GetPointerAddress();
-                StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+                using (ProcessSwitcher switcher = new ProcessSwitcher(codeType.Module.Process))
+                {
+                    uint stringLength;
+                    ulong address = GetPointerAddress();
+                    StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
 
-                Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
-                return sb.ToString();
+                    Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
+                    return sb.ToString();
+                }
             }
 
             // Check float/double
@@ -675,7 +676,22 @@ namespace CsScripts
                 throw new ArgumentException("Variable is not a pointer type, but " + codeType + " and its address is 0");
             }
 
-            return newType.Module.Process.UserTypeCastedVariables[variable];
+            return newType.Module.Process.CastVariableToUserType(variable);
+        }
+
+        /// <summary>
+        /// Casts the specified variable to the new type.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <returns>Computed variable that is of new type.</returns>
+        public static T CastAs<T>(Variable variable)
+        {
+            if (variable == null)
+            {
+                return default(T);
+            }
+
+            return variable.CastAs<T>();
         }
 
         /// <summary>
@@ -905,7 +921,7 @@ namespace CsScripts
         /// <returns>Field variable casted to user type if the specified field exists.</returns>
         private Variable GetUserTypeCastedFieldByName(string name)
         {
-            Variable field = codeType.Module.Process.UserTypeCastedVariables[fieldsByName[name]];
+            Variable field = codeType.Module.Process.CastVariableToUserType(fieldsByName[name]);
 
             if (userTypeCastedFieldsByName.Count == 0)
             {
@@ -946,7 +962,7 @@ namespace CsScripts
             }
 
             // Check if it is null
-            if (originalVariable.IsNullPointer())
+            if (originalVariable.GetPointerAddress() == 0)
             {
                 return null;
             }
@@ -966,7 +982,7 @@ namespace CsScripts
 
             for (int i = 0; i < variables.Length; i++)
             {
-                variables[i] = originalCollection[i].codeType.Module.Process.UserTypeCastedVariables[originalCollection[i]];
+                variables[i] = originalCollection[i].codeType.Module.Process.CastVariableToUserType(originalCollection[i]);
                 variablesByName.Add(originalCollection[i].name, variables[i]);
             }
 
@@ -1225,7 +1241,7 @@ namespace CsScripts
                 }
                 else
                 {
-                    fields[i] = userTypeCastedFieldsByName[name] = codeType.Module.Process.UserTypeCastedVariables[originalFields[i]];
+                    fields[i] = userTypeCastedFieldsByName[name] = codeType.Module.Process.CastVariableToUserType(originalFields[i]);
                 }
             }
 

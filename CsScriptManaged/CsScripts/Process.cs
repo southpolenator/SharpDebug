@@ -144,7 +144,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the user type casted variables.
         /// </summary>
-        internal DictionaryCache<Variable, Variable> UserTypeCastedVariables { get; private set; }
+        private DictionaryCache<Variable, Variable> UserTypeCastedVariables { get; set; }
 
         /// <summary>
         /// Gets the user types.
@@ -318,6 +318,20 @@ namespace CsScripts
         internal void ClearMetadataCache()
         {
             userTypes.Cached = false;
+        }
+
+        /// <summary>
+        /// Casts the specified variable to a user type.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        internal Variable CastVariableToUserType(Variable variable)
+        {
+            if (Context.EnableUserCastedVariableCaching)
+            {
+                return UserTypeCastedVariables[variable];
+            }
+
+            return Variable.CastVariableToUserType(variable);
         }
 
         /// <summary>

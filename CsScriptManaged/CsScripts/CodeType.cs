@@ -457,6 +457,15 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the type of the class field.
+        /// </summary>
+        /// <param name="classFieldName">Name of the class field.</param>
+        public CodeType GetClassFieldType(string classFieldName)
+        {
+            return ClassFields[classFieldName].Item1;
+        }
+
+        /// <summary>
         /// Gets field offset.
         /// </summary>
         public int GetFieldOffset(string fieldName)

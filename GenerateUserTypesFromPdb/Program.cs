@@ -39,6 +39,9 @@ namespace GenerateUserTypesFromPdb
         [Option("lazy-cache-user-type-fields", Default = false, HelpText = "Cache result of getting user type field inside UserMember when exporting user type", Required = false, SetName = "cmdSettings")]
         public bool LazyCacheUserTypeFields { get; set; }
 
+        [Option("generate-physical-mapping-of-user-types", Default = false, HelpText = "Generate physical access to fields in exported user types (instead of symbolic/by name)", Required = false, SetName = "cmdSettings")]
+        public bool GeneratePhysicalMappingOfUserTypes { get; set; }
+
         [Option("generated-assembly-name", Default = "", HelpText = "Name of the assembly that will be generated next to sources in output folder", Required = false, SetName = "cmdSettings")]
         public string GeneratedAssemblyName { get; set; }
 
@@ -108,6 +111,7 @@ namespace GenerateUserTypesFromPdb
                     CacheStaticUserTypeFields = options.CacheStaticUserTypeFields,
                     CacheUserTypeFields = options.CacheUserTypeFields,
                     LazyCacheUserTypeFields = options.LazyCacheUserTypeFields,
+                    GeneratePhysicalMappingOfUserTypes = options.GeneratePhysicalMappingOfUserTypes,
                     Types = new XmlType[options.Types.Count],
                 };
 
@@ -136,6 +140,8 @@ namespace GenerateUserTypesFromPdb
                 generationOptions |= UserTypeGenerationFlags.CacheStaticUserTypeFields;
             if (config.LazyCacheUserTypeFields)
                 generationOptions |= UserTypeGenerationFlags.LazyCacheUserTypeFields;
+            if (config.GeneratePhysicalMappingOfUserTypes)
+                generationOptions |= UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes;
 
             string moduleName = Path.GetFileNameWithoutExtension(pdbPath).ToLower();
             var factory = new UserTypeFactory(config.Transformations);
@@ -153,13 +159,13 @@ namespace GenerateUserTypesFromPdb
                 }
                 else
                 {
-                    factory.AddSymbol(session, symbols, type, moduleName);
+                    factory.AddSymbol(session, symbols, type, moduleName, generationOptions);
                 }
             }
 
             foreach (var userType in factory.Symbols.ToArray())
             {
-                userType.UpdateUserTypes(factory);
+                userType.UpdateUserTypes(factory, generationOptions);
             }
 
             factory.ProcessTypes();

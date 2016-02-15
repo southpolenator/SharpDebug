@@ -54,7 +54,7 @@ namespace CsScripts
             GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
             UserTypeCastedGlobalVariables = new DictionaryCache<string, Variable>((name) =>
             {
-                Variable variable = Process.UserTypeCastedVariables[GlobalVariables[name]];
+                Variable variable = Process.CastVariableToUserType(GlobalVariables[name]);
 
                 if (UserTypeCastedGlobalVariables.Count == 0)
                 {

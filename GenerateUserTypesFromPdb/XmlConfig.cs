@@ -28,6 +28,8 @@ namespace GenerateUserTypesFromPdb
 
         public bool LazyCacheUserTypeFields { get; set; }
 
+        public bool GeneratePhysicalMappingOfUserTypes { get; set; }
+
         [XmlArrayItem("Type")]
         public XmlType[] Types { get; set; }
 

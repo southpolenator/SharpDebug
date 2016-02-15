@@ -554,5 +554,35 @@ namespace CsScripts
             }
         }
         #endregion
+
+        /// <summary>
+        /// Reads the memory from the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The memory address.</param>
+        /// <param name="size">The buffer size.</param>
+        /// <returns>Buffer containing read memory</returns>
+        public static byte[] ReadMemory(Process process, ulong address, uint size)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(process))
+            {
+                IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                uint read;
+
+                try
+                {
+                    Context.DataSpaces.ReadVirtual(address, buffer, size, out read);
+
+                    byte[] bytes = new byte[size];
+
+                    Marshal.Copy(buffer, bytes, 0, (int)size);
+                    return bytes;
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(buffer);
+                }
+            }
+        }
     }
 }
