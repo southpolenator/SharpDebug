@@ -5,14 +5,9 @@ using DbgEngManaged;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 
 namespace CsScriptManaged
 {
-    delegate object ObjectActivator(params object[] args);
-
     /// <summary>
     /// Helper class for caching global objects.
     /// </summary>
@@ -78,32 +73,6 @@ namespace CsScriptManaged
                     Offset = typedDataId.Item3,
                 },
             }).OutData;
-        }
-
-
-        private static ObjectActivator GetActivator(ConstructorInfo ctor)
-        {
-            var args = Expression.Parameter(typeof(object[]), "args");
-            var parameters = ctor.GetParameters().Select((parameter, index) => Expression.Convert(Expression.ArrayIndex(args, Expression.Constant(index)), parameter.ParameterType));
-            return Expression.Lambda<ObjectActivator>(Expression.New(ctor, parameters), args).Compile();
-        }
-
-        /// <summary>
-        /// Gets object activate for requested type.
-        /// </summary>
-        /// <param name="requestedType"></param>
-        /// <returns></returns>
-        internal static ObjectActivator GetObjectActivator(Type requestedType)
-        {
-            ObjectActivator activator;
-            if (VariableActivators.TryGetValue(requestedType, out activator) == false)
-            {
-                ConstructorInfo ctor = requestedType.GetConstructors().First();
-                activator = GetActivator(ctor);
-                VariableActivators.TryAdd(requestedType, activator);
-            }
-
-            return activator;
         }
     }
 }

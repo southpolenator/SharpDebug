@@ -6,6 +6,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 
 namespace CsScripts
@@ -780,6 +781,18 @@ namespace CsScripts
             }
 
             // Check if type has constructor with one argument and that argument is inherited from Variable
+            UserTypeConstructor activator = typeToConstructor[conversionType];
+
+            return activator(this);
+        }
+
+        private delegate Variable UserTypeConstructor(Variable variable);
+
+        /// <summary>
+        /// The cache of type to constructor delegate
+        /// </summary>
+        private static DictionaryCache<Type, UserTypeConstructor> typeToConstructor = new DictionaryCache<Type, UserTypeConstructor>((conversionType) =>
+        {
             var constructors = conversionType.GetConstructors();
 
             foreach (var constructor in constructors)
@@ -798,14 +811,18 @@ namespace CsScripts
 
                 if (parameters[0].ParameterType == typeof(Variable))
                 {
-                    ObjectActivator activator = GlobalCache.GetObjectActivator(conversionType);
+                    DynamicMethod method = new DynamicMethod("CreateIntance", conversionType, new Type[] { typeof(Variable) });
+                    ILGenerator gen = method.GetILGenerator();
 
-                    return activator(this);
+                    gen.Emit(OpCodes.Ldarg_0);//arr
+                    gen.Emit(OpCodes.Newobj, constructor); // calls constructor
+                    gen.Emit(OpCodes.Ret);
+                    return (UserTypeConstructor)method.CreateDelegate(typeof(UserTypeConstructor));
                 }
             }
 
             throw new InvalidCastException("Cannot cast Variable to " + conversionType);
-        }
+        });
 
         /// <summary>
         /// Casts variable to new type.
@@ -1108,7 +1125,7 @@ namespace CsScripts
             return TryGetMember(indexes[0].ToString(), out result);
         }
 
-        #region Forbidden setters/deleters
+#region Forbidden setters/deleters
         /// <summary>
         /// Tries to delete the member - it is forbidden.
         /// </summary>
@@ -1152,7 +1169,7 @@ namespace CsScripts
         {
             throw new UnauthorizedAccessException();
         }
-        #endregion
+#endregion
 
         /// <summary>
         /// Finds the runtime type.
@@ -1274,7 +1291,7 @@ namespace CsScripts
             return name + string.Format(format, args);
         }
 
-        #region IConvertible
+#region IConvertible
         public TypeCode GetTypeCode()
         {
             throw new NotImplementedException();
@@ -1359,6 +1376,6 @@ namespace CsScripts
         {
             return CastAs(conversionType);
         }
-        #endregion
+#endregion
     }
 }
