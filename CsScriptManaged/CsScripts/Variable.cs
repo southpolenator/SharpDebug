@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 namespace CsScripts
@@ -712,7 +714,9 @@ namespace CsScripts
 
                 if (parameters[0].ParameterType == typeof(Variable))
                 {
-                    return (T)Activator.CreateInstance(conversionType, this);
+                    ObjectActivator activator = GlobalCache.GetObjectActivator(conversionType);
+
+                    return (T)activator(this);
                 }
             }
 
@@ -794,7 +798,9 @@ namespace CsScripts
 
                 if (parameters[0].ParameterType == typeof(Variable))
                 {
-                    return Activator.CreateInstance(conversionType, this);
+                    ObjectActivator activator = GlobalCache.GetObjectActivator(conversionType);
+
+                    return activator(this);
                 }
             }
 
@@ -954,7 +960,11 @@ namespace CsScripts
             }
 
             // Create new instance of user defined type
-            return (Variable)Activator.CreateInstance(types[0].Type, originalVariable);
+            ObjectActivator activator = GlobalCache.GetObjectActivator(types[0].Type);
+
+            Variable instance = (Variable)activator(originalVariable);
+
+            return instance;
         }
 
         /// <summary>
