@@ -53,6 +53,14 @@ namespace CsScriptManaged.Utility
                             };
                             lastEnd += descriptor.DataSize;
                         }
+
+                        int newEnd = 0;
+                        for (int i = 1; i < ranges.Length; i++)
+                            if (ranges[i].MemoryStart == ranges[newEnd].MemoryEnd)
+                                ranges[newEnd].MemoryEnd = ranges[i].MemoryEnd;
+                            else
+                                ranges[++newEnd] = ranges[i];
+                        Array.Resize(ref ranges, newEnd);
                     }
                     finally
                     {
@@ -176,9 +184,24 @@ namespace CsScriptManaged.Utility
 
         private ulong FindDumpPosition(ulong address)
         {
-            for (int i = 0; i < ranges.Length; i++)
-                if (ranges[i].MemoryStart <= address && ranges[i].MemoryEnd > address)
-                    return ranges[i].FilePosition + address - ranges[i].MemoryStart;
+            int low = 0, high = ranges.Length - 1;
+
+            while (low < high)
+            {
+                int middle = (high + low) / 2;
+
+                if (ranges[middle].MemoryStart > address)
+                    high = middle;
+                else if (ranges[middle].MemoryEnd < address)
+                {
+                    if (low == middle)
+                        break;
+                    low = middle;
+                }
+                else
+                    return ranges[middle].FilePosition + address - ranges[middle].MemoryStart;
+            }
+
             return 0;
         }
 
