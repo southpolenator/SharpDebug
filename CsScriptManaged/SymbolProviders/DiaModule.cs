@@ -45,6 +45,11 @@ namespace CsScriptManaged.SymbolProviders
         private DictionaryCache<uint, Dictionary<ulong, string>> enumTypeNames;
 
         /// <summary>
+        /// The cache of symbol names by address
+        /// </summary>
+        private DictionaryCache<uint, Tuple<string, ulong>> symbolNamesByAddress;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DiaModule"/> class.
         /// </summary>
         /// <param name="pdbPath">The PDB path.</param>
@@ -78,6 +83,16 @@ namespace CsScriptManaged.SymbolProviders
                 }
 
                 return types;
+            });
+            symbolNamesByAddress = new DictionaryCache<uint, Tuple<string, ulong>>((distance) =>
+            {
+                IDiaSymbol symbol;
+                int displacement;
+                string name;
+
+                session.findSymbolByRVAEx(distance, SymTagEnum.SymTagNull, out symbol, out displacement);
+                symbol.get_undecoratedNameEx(0 | 0x8000 | 0x1000, out name);
+                return Tuple.Create(name, (ulong)displacement);
             });
 
             session.loadAddress = moduleAddress;
@@ -662,6 +677,17 @@ namespace CsScriptManaged.SymbolProviders
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Gets the symbol name by address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="distance">The distance within the module.</param>
+        public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address, uint distance)
+        {
+            return symbolNamesByAddress[distance];
         }
     }
 }

@@ -156,5 +156,13 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId);
+
+        /// <summary>
+        /// Gets the symbol name by address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="distance">The distance within the module.</param>
+        Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address, uint distance);
     }
 }

@@ -344,5 +344,19 @@ namespace CsScriptManaged.SymbolProviders
 
             return diaModule.GetTypeDirectBaseClasses(module, typeId);
         }
+
+        /// <summary>
+        /// Gets the symbol name by address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address)
+        {
+            ulong distance;
+            Module module;
+            ISymbolProviderModule diaModule = GetDiaModule(process, address, out distance, out module);
+
+            return diaModule.GetSymbolNameByAddress(process, address, (uint)distance);
+        }
     }
 }

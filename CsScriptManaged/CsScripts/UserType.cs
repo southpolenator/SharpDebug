@@ -1,6 +1,7 @@
 ﻿using CsScriptManaged;
 using CsScriptManaged.Utility;
 using System;
+using System.Linq;
 using System.Text;
 
 namespace CsScripts
@@ -348,7 +349,7 @@ namespace CsScripts
                 throw new Exception("Unsupported pointer size");
         }
 
-        private static DictionaryCache<Tuple<Process, ulong, int>, string> stringCache = new DictionaryCache<Tuple<Process, ulong, int>, string>(DoReadString);
+        private static DictionaryCache<Tuple<uint, ulong, int>, string> stringCache = new DictionaryCache<Tuple<uint, ulong, int>, string>(DoReadString);
 
         /// <summary>
         /// Reads the ANSI/Unicode string from the specified address.
@@ -361,12 +362,12 @@ namespace CsScripts
             if (address == 0)
                 return null;
 
-            return stringCache[Tuple.Create(process, address, charSize)];
+           return stringCache[Tuple.Create(process.Id, address, charSize)];
         }
 
-        private static string DoReadString(Tuple<Process, ulong, int> tuple)
+        private static string DoReadString(Tuple<uint, ulong, int> tuple)
         {
-            Process process = tuple.Item1;
+            Process process = Process.All.Where(p => p.Id == tuple.Item1).First();
             ulong address = tuple.Item2;
             int charSize = tuple.Item3;
 

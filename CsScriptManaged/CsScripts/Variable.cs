@@ -1156,17 +1156,16 @@ namespace CsScripts
                 {
                     CodeType ulongType = CodeType.Create("unsigned long long", codeType.Module);
                     ulong vtableAddress = Context.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
-                    StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
-                    ulong displacement;
-                    uint nameSize;
-
-                    Context.Symbols.GetNameByOffsetWide(vtableAddress, sb, (uint)sb.Capacity, out nameSize, out displacement);
-
-                    string vtableName = sb.ToString();
+                    string vtableName = Context.SymbolProvider.GetSymbolNameByAddress(codeType.Module.Process, vtableAddress).Item1;
 
                     if (vtableName.EndsWith("::`vftable'"))
                     {
                         vtableName = vtableName.Substring(0, vtableName.Length - 11);
+                        if (vtableName.StartsWith("const "))
+                        {
+                            vtableName = vtableName.Substring(6);
+                        }
+
                         return vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
                     }
                 }

@@ -412,5 +412,34 @@ namespace CsScriptManaged.SymbolProviders
         {
             throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
         }
-    }
+
+        /// <summary>
+        /// Gets the symbol name by address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(process))
+            {
+                StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+                ulong displacement;
+                uint nameSize;
+
+                Context.Symbols.GetNameByOffsetWide(address, sb, (uint)sb.Capacity, out nameSize, out displacement);
+                return Tuple.Create(sb.ToString(), displacement);
+            }
+        }
+
+        /// <summary>
+        /// Gets the symbol name by address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="distance">The distance within the module.</param>
+        public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address, uint distance)
+        {
+            return GetSymbolNameByAddress(process, address);
+        }
+}
 }

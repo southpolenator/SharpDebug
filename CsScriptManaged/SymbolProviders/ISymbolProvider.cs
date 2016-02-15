@@ -169,5 +169,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="codeType">Type of the code.</param>
         /// <param name="address">The address.</param>
         ulong ReadSimpleData(CodeType codeType, ulong address);
+
+        /// <summary>
+        /// Gets the symbol name by address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address);
     }
 }
