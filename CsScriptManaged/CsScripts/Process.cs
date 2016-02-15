@@ -3,6 +3,7 @@ using CsScriptManaged.Native;
 using CsScriptManaged.Utility;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace CsScripts
 {
@@ -15,6 +16,11 @@ namespace CsScripts
         /// The executable name
         /// </summary>
         private SimpleCache<string> executableName;
+
+        /// <summary>
+        /// The dump file name
+        /// </summary>
+        private SimpleCache<string> dumpFileName;
 
         /// <summary>
         /// The system identifier
@@ -57,6 +63,11 @@ namespace CsScripts
         private SimpleCache<ImageFileMachine> effectiveProcessorType;
 
         /// <summary>
+        /// The dump file memory reader
+        /// </summary>
+        private SimpleCache<DumpFileMemoryReader> dumpFileMemoryReader;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Process"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -67,6 +78,7 @@ namespace CsScripts
             upTime = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessUpTime()));
             pebAddress = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessPeb()));
             executableName = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessExecutableName()));
+            dumpFileName = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, GetDumpFileName));
             actualProcessorType = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => (ImageFileMachine)Context.Control.GetActualProcessorType()));
             effectiveProcessorType = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => (ImageFileMachine)Context.Control.GetEffectiveProcessorType()));
             threads = SimpleCache.Create(GetThreads);
@@ -77,6 +89,17 @@ namespace CsScripts
             Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
             UserTypeCastedVariables = new DictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
             GlobalCache.UserTypeCastedVariables.Add(UserTypeCastedVariables);
+            dumpFileMemoryReader = SimpleCache.Create(() =>
+            {
+                try
+                {
+                    return string.IsNullOrEmpty(DumpFileName) ? null : new DumpFileMemoryReader(DumpFileName);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            });
         }
 
         /// <summary>
@@ -158,6 +181,17 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the dump file memory reader.
+        /// </summary>
+        internal DumpFileMemoryReader DumpFileMemoryReader
+        {
+            get
+            {
+                return dumpFileMemoryReader.Value;
+            }
+        }
+
+        /// <summary>
         /// Gets the identifier.
         /// </summary>
         public uint Id { get; private set; }
@@ -181,6 +215,17 @@ namespace CsScripts
             get
             {
                 return executableName.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the name of the dump file.
+        /// </summary>
+        public string DumpFileName
+        {
+            get
+            {
+                return dumpFileName.Value;
             }
         }
 
@@ -436,6 +481,31 @@ namespace CsScripts
 
                 return new List<UserTypeDescription>();
             }
+        }
+
+        /// <summary>
+        /// Gets the name of the dump file.
+        /// </summary>
+        private string GetDumpFileName()
+        {
+            uint dumpsFiles = Context.Client.GetNumberDumpFiles();
+
+            if (dumpsFiles > 1)
+            {
+                throw new Exception("Unexpected number of dump files");
+            }
+
+            if (dumpsFiles == 1)
+            {
+                StringBuilder sb = new StringBuilder(Constants.MaxFileName);
+                uint nameSize, type;
+                ulong handle;
+
+                Context.Client.GetDumpFileWide(0, sb, (uint)sb.Capacity, out nameSize, out handle, out type);
+                return sb.ToString();
+            }
+
+            return "";
         }
     }
 }

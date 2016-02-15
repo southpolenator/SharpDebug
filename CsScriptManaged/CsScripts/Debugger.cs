@@ -564,23 +564,32 @@ namespace CsScripts
         /// <returns>Buffer containing read memory</returns>
         public static byte[] ReadMemory(Process process, ulong address, uint size)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(process))
+            var dumpReader = process.DumpFileMemoryReader;
+
+            if (dumpReader != null)
             {
-                IntPtr buffer = Marshal.AllocHGlobal((int)size);
-                uint read;
-
-                try
+                return dumpReader.ReadMemory(address, (int)size);
+            }
+            else
+            {
+                using (ProcessSwitcher switcher = new ProcessSwitcher(process))
                 {
-                    Context.DataSpaces.ReadVirtual(address, buffer, size, out read);
+                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                    uint read;
 
-                    byte[] bytes = new byte[size];
+                    try
+                    {
+                        Context.DataSpaces.ReadVirtual(address, buffer, size, out read);
 
-                    Marshal.Copy(buffer, bytes, 0, (int)size);
-                    return bytes;
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(buffer);
+                        byte[] bytes = new byte[size];
+
+                        Marshal.Copy(buffer, bytes, 0, (int)size);
+                        return bytes;
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(buffer);
+                    }
                 }
             }
         }

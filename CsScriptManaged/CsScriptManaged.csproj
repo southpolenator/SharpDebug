@@ -141,6 +141,7 @@
     <Compile Include="Native\EXT_TYPED_DATA.cs" />
     <Compile Include="Native\ImageFileMachine.cs" />
     <Compile Include="Native\SymTag.cs" />
+    <Compile Include="Utility\DumpFileMemoryReader.cs" />
     <Compile Include="Utility\OutputCallbacksSwitcher.cs" />
     <Compile Include="Utility\ProcessSwitcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
