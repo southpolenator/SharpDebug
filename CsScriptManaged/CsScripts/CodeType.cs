@@ -584,8 +584,7 @@ namespace CsScripts
         {
             if (type.IsSubclassOf(typeof(Variable)))
             {
-                UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(type);
-                UserTypeDescription description = metadata.ConvertToDescription();
+                UserTypeDescription description = Module.Process.TypeToUserTypeDescription[type];
                 CodeType newType = description.UserType;
 
                 // Check if it was non-unique generics type
@@ -593,6 +592,9 @@ namespace CsScripts
                 {
                     return Inherits(newType);
                 }
+
+                // TODO: Do better with generics
+                UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(type);
 
                 return Inherits(metadata.TypeName);
             }

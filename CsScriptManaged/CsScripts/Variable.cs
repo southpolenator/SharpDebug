@@ -416,29 +416,13 @@ namespace CsScripts
             // ANSI string
             if (codeType.IsAnsiString)
             {
-                using (ProcessSwitcher switcher = new ProcessSwitcher(codeType.Module.Process))
-                {
-                    uint stringLength;
-                    ulong address = GetPointerAddress();
-                    StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
-
-                    Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
-                    return sb.ToString();
-                }
+                return UserType.ReadString(codeType.Module.Process, GetPointerAddress(), 1);
             }
 
             // Unicode string
             if (codeType.IsWideString)
             {
-                using (ProcessSwitcher switcher = new ProcessSwitcher(codeType.Module.Process))
-                {
-                    uint stringLength;
-                    ulong address = GetPointerAddress();
-                    StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
-
-                    Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
-                    return sb.ToString();
-                }
+                return UserType.ReadString(codeType.Module.Process, GetPointerAddress(), 2);
             }
 
             // Check float/double
@@ -746,26 +730,29 @@ namespace CsScripts
                 return this;
 
             // Check if it is basic type
-            else if (conversionType == typeof(bool))
-                return (bool)this;
-            else if (conversionType == typeof(char))
-                return (char)this;
-            else if (conversionType == typeof(byte))
-                return (byte)this;
-            else if (conversionType == typeof(sbyte))
-                return (sbyte)this;
-            else if (conversionType == typeof(short))
-                return (short)this;
-            else if (conversionType == typeof(ushort))
-                return (ushort)this;
-            else if (conversionType == typeof(int))
-                return (int)this;
-            else if (conversionType == typeof(uint))
-                return (uint)this;
-            else if (conversionType == typeof(long))
-                return (long)this;
-            else if (conversionType == typeof(ulong))
-                return (ulong)this;
+            else if (conversionType.IsPrimitive)
+            {
+                if (conversionType == typeof(bool))
+                    return (bool)this;
+                else if (conversionType == typeof(char))
+                    return (char)this;
+                else if (conversionType == typeof(byte))
+                    return (byte)this;
+                else if (conversionType == typeof(sbyte))
+                    return (sbyte)this;
+                else if (conversionType == typeof(short))
+                    return (short)this;
+                else if (conversionType == typeof(ushort))
+                    return (ushort)this;
+                else if (conversionType == typeof(int))
+                    return (int)this;
+                else if (conversionType == typeof(uint))
+                    return (uint)this;
+                else if (conversionType == typeof(long))
+                    return (long)this;
+                else if (conversionType == typeof(ulong))
+                    return (ulong)this;
+            }
 
             // Check if we should do CastAs
             if (conversionType.IsSubclassOf(typeof(Variable)))

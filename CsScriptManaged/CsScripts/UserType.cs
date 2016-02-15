@@ -373,26 +373,48 @@ namespace CsScripts
             if (address == 0)
                 return null;
 
-            using (ProcessSwitcher switcher = new ProcessSwitcher(process))
-            {
-                uint stringLength;
+            var dumpReader = process.DumpFileMemoryReader;
 
+            if (dumpReader != null)
+            {
                 if (charSize == 1)
                 {
-                    StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
-
-                    Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
-                    return sb.ToString();
+                    return dumpReader.ReadAnsiString(address);
                 }
                 else if (charSize == 2)
                 {
-                    StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
-
-                    Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
-                    return sb.ToString();
+                    return dumpReader.ReadWideString(address);
                 }
                 else
+                {
                     throw new Exception("Unsupported char size");
+                }
+            }
+            else
+            {
+                using (ProcessSwitcher switcher = new ProcessSwitcher(process))
+                {
+                    uint stringLength;
+
+                    if (charSize == 1)
+                    {
+                        StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+
+                        Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
+                        return sb.ToString();
+                    }
+                    else if (charSize == 2)
+                    {
+                        StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+
+                        Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
+                        return sb.ToString();
+                    }
+                    else
+                    {
+                        throw new Exception("Unsupported char size");
+                    }
+                }
             }
         }
     }

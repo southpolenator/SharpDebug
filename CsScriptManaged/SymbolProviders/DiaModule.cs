@@ -419,30 +419,21 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="address">The address.</param>
         public ulong ReadSimpleData(CodeType codeType, ulong address)
         {
-            uint read, bufferSize = codeType.Size;
-            IntPtr buffer = Marshal.AllocHGlobal((int)bufferSize);
+            byte[] buffer = Debugger.ReadMemory(codeType.Module.Process, address, codeType.Size);
 
-            try
+            // TODO: This doesn't work with bit fields
+            switch (codeType.Size)
             {
-                // TODO: This doesn't work with bit fields
-                Context.DataSpaces.ReadVirtual(address, buffer, bufferSize, out read);
-                switch (bufferSize)
-                {
-                    case 1:
-                        return Marshal.ReadByte(buffer);
-                    case 2:
-                        return (ushort)Marshal.ReadInt16(buffer);
-                    case 4:
-                        return (uint)Marshal.ReadInt32(buffer);
-                    case 8:
-                        return (ulong)Marshal.ReadInt64(buffer);
-                    default:
-                        throw new Exception("Unexpected data size " + bufferSize);
-                }
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buffer);
+                case 1:
+                    return buffer[0];
+                case 2:
+                    return BitConverter.ToUInt16(buffer, 0);
+                case 4:
+                    return BitConverter.ToUInt32(buffer, 0);
+                case 8:
+                    return BitConverter.ToUInt64(buffer, 0);
+                default:
+                    throw new Exception("Unexpected data size " + codeType.Size);
             }
         }
 
