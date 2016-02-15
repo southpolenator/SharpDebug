@@ -771,8 +771,7 @@ namespace CsScripts
             if (conversionType.IsSubclassOf(typeof(Variable)))
             {
                 ulong address = GetPointerAddress();
-                UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(conversionType);
-                UserTypeDescription description = metadata.ConvertToDescription();
+                var description = codeType.Module.Process.TypeToUserTypeDescription[conversionType];
                 CodeType newType = description.UserType;
 
                 // Check if it was non-unique generics type

@@ -13,15 +13,27 @@ namespace CsScriptManaged
         /// <param name="typeName">Name of the type.</param>
         /// <param name="type">The type.</param>
         public UserTypeDescription(string moduleName, string typeName, Type type)
+            : this(Process.Current, moduleName, typeName, type)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserTypeDescription" /> class.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="moduleName">Name of the module.</param>
+        /// <param name="typeName">Name of the type.</param>
+        /// <param name="type">The type.</param>
+        public UserTypeDescription(Process process, string moduleName, string typeName, Type type)
         {
             if (moduleName != null)
             {
-                Module = Process.Current.ModulesByName[moduleName];
+                Module = process.ModulesByName[moduleName];
             }
             else
             {
                 CodeType userType;
-                var modules = Process.Current.Modules.Where(m => m.TypesByName.TryGetValue(typeName, out userType)).ToArray();
+                var modules = process.Modules.Where(m => m.TypesByName.TryGetValue(typeName, out userType)).ToArray();
 
                 if (modules.Length > 1)
                 {

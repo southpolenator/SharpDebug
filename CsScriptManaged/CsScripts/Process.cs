@@ -100,6 +100,7 @@ namespace CsScripts
                     return null;
                 }
             });
+            TypeToUserTypeDescription = new DictionaryCache<Type, UserTypeDescription>(GetUserTypeDescription);
         }
 
         /// <summary>
@@ -168,6 +169,11 @@ namespace CsScripts
         /// Gets the user type casted variables.
         /// </summary>
         private DictionaryCache<Variable, Variable> UserTypeCastedVariables { get; set; }
+
+        /// <summary>
+        /// Gets the type to user type description cache.
+        /// </summary>
+        internal DictionaryCache<Type, UserTypeDescription> TypeToUserTypeDescription { get; private set; }
 
         /// <summary>
         /// Gets the user types.
@@ -506,6 +512,16 @@ namespace CsScripts
             }
 
             return "";
+        }
+
+        /// <summary>
+        /// Gets the user type description from the specified type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        private UserTypeDescription GetUserTypeDescription(Type type)
+        {
+            UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(type);
+            return metadata.ConvertToDescription(this);
         }
     }
 }
