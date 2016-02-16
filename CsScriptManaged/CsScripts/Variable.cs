@@ -108,7 +108,6 @@ namespace CsScripts
         /// <param name="address">The address.</param>
         /// <param name="name">The name.</param>
         /// <param name="path">The path.</param>
-        /// <returns></returns>
         public static Variable Create(CodeType codeType, ulong address, string name = ComputedName, string path = UnknownPath)
         {
             Variable variable = CreateNoCast(codeType, address, name, path);
@@ -123,7 +122,6 @@ namespace CsScripts
         /// <param name="address">The address.</param>
         /// <param name="name">The name.</param>
         /// <param name="path">The path.</param>
-        /// <returns></returns>
         internal static Variable CreateNoCast(CodeType codeType, ulong address, string name, string path)
         {
             if (Context.EnableVariableCaching)
@@ -132,6 +130,32 @@ namespace CsScripts
             }
 
             return new Variable(codeType, address, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class of pointer type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        public static Variable CreatePointer(CodeType codeType, ulong address, string name = ComputedName, string path = UnknownPath)
+        {
+            Variable variable = CreatePointerNoCast(codeType, address, name, path);
+
+            return codeType.Module.Process.CastVariableToUserType(variable);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class of pointer type and doesn't cast it to user code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        internal static Variable CreatePointerNoCast(CodeType codeType, ulong address, string name, string path)
+        {
+            return new Variable(codeType, 0, name, path, address);
         }
 
         /// <summary>
@@ -610,7 +634,7 @@ namespace CsScripts
         {
             if (codeType.IsPointer)
             {
-                return new Variable(codeType, Address, name, path, Data + (ulong)offset);
+                return CreatePointerNoCast(codeType, GetPointerAddress() + (ulong)offset, name, path);
             }
             else if (Address != 0)
             {
@@ -639,11 +663,11 @@ namespace CsScripts
             }
             else if (newType.IsPointer)
             {
-                variable = new Variable(newType, 0, name, path, Address);
+                variable = CreatePointerNoCast(newType, Address, name, path);
             }
             else if (codeType.IsPointer)
             {
-                variable = new Variable(newType, Data, name, path);
+                variable = CreateNoCast(newType, Data, name, path);
             }
             else if (Address != 0)
             {
@@ -740,6 +764,11 @@ namespace CsScripts
                         return CastAs(newType);
                     }
 
+                    if (codeType.IsPointer && !newType.IsPointer)
+                    {
+                        newType = newType.PointerToType;
+                    }
+
                     activatorParameter = CastAs(newType);
                 }
             }
@@ -824,13 +853,31 @@ namespace CsScripts
             }
 
             var tuple = codeType.BaseClasses[className];
+            var newCodeType = tuple.Item1;
 
-            if (tuple.Item1 == codeType)
+            if (newCodeType == codeType)
             {
                 return this;
             }
 
-            return CreateNoCast(tuple.Item1, GetPointerAddress() + (uint)tuple.Item2, name, path);
+            if (!newCodeType.IsPointer && codeType.IsPointer)
+            {
+                newCodeType = newCodeType.PointerToType;
+            }
+
+            if (newCodeType == codeType)
+            {
+                return this;
+            }
+
+            if (newCodeType.IsPointer)
+            {
+                return CreatePointerNoCast(newCodeType, GetPointerAddress() + (uint)tuple.Item2, name, path);
+            }
+            else
+            {
+                return CreateNoCast(newCodeType, GetPointerAddress() + (uint)tuple.Item2, name, path);
+            }
         }
 
         /// <summary>
@@ -973,7 +1020,7 @@ namespace CsScripts
         /// </summary>
         public Variable GetPointer()
         {
-            return new Variable(codeType.PointerToType, 0, name, path, GetPointerAddress());
+            return CreatePointerNoCast(codeType.PointerToType, GetPointerAddress(), name, path);
         }
 
         /// <summary>
