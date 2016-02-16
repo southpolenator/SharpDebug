@@ -18,6 +18,11 @@ namespace CsScripts
         private SimpleCache<CodeType> elementType;
 
         /// <summary>
+        /// The pointer to type
+        /// </summary>
+        private SimpleCache<CodeType> pointerToType;
+
+        /// <summary>
         /// The name
         /// </summary>
         private SimpleCache<string> name;
@@ -126,6 +131,7 @@ namespace CsScripts
         private void InitializeCache()
         {
             elementType = SimpleCache.Create(GetElementType);
+            pointerToType = SimpleCache.Create(GetPointerToType);
             name = SimpleCache.Create(() => Context.SymbolProvider.GetTypeName(Module, TypeId));
             size = SimpleCache.Create(() => Context.SymbolProvider.GetTypeSize(Module, TypeId));
             allFieldNames = SimpleCache.Create(() => Context.SymbolProvider.GetTypeAllFieldNames(Module, TypeId));
@@ -236,6 +242,17 @@ namespace CsScripts
             get
             {
                 return elementType.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the type of the pointer to this type.
+        /// </summary>
+        public CodeType PointerToType
+        {
+            get
+            {
+                return pointerToType.Value;
             }
         }
 
@@ -612,7 +629,10 @@ namespace CsScripts
                 try
                 {
                     uint elementTypeId = Context.SymbolProvider.GetTypeElementTypeId(Module, TypeId);
-                    return Module.TypesById[elementTypeId];
+                    CodeType elementType = Module.TypesById[elementTypeId];
+
+                    elementType.pointerToType.Value = this;
+                    return elementType;
                 }
                 catch (Exception)
                 {
@@ -620,6 +640,47 @@ namespace CsScripts
             }
 
             return this;
+        }
+
+        /// <summary>
+        /// Gets the pointer to type.
+        /// </summary>
+        private CodeType GetPointerToType()
+        {
+            try
+            {
+                uint elementTypeId = Context.SymbolProvider.GetTypePointerToTypeId(Module, TypeId);
+                return Module.TypesById[elementTypeId];
+            }
+            catch (Exception)
+            {
+                CodeType codeType = new CodeType(Module, Module.GetNextFakeCodeTypeId(), SymTag.PointerType, Dia2Lib.BasicType.NoType);
+
+                codeType.elementType.Value = this;
+                codeType.name.Value = name.Value + "*";
+                codeType.size.Value = Module.Process.GetPointerSize();
+                if (!IsPointer)
+                {
+                    codeType.allFieldNames = allFieldNames;
+                    codeType.allFieldTypesAndOffsets = allFieldTypesAndOffsets;
+                    codeType.fieldNames = fieldNames;
+                    codeType.fieldTypeAndOffsets = fieldTypeAndOffsets;
+                    codeType.baseClassesAndOffsets = baseClassesAndOffsets;
+                    codeType.directBaseClassesAndOffsets = directBaseClassesAndOffsets;
+                    codeType.templateArguments = templateArguments;
+                    codeType.templateArgumentsStrings = templateArgumentsStrings;
+                }
+                else
+                {
+                    codeType.allFieldNames.Value = new string[0];
+                    codeType.fieldNames.Value = new string[0];
+                    codeType.directBaseClassesAndOffsets.Value = new Dictionary<string, Tuple<CodeType, int>>();
+                    codeType.templateArguments.Value = new object[0];
+                    codeType.templateArgumentsStrings.Value = new string[0];
+                }
+
+                return codeType;
+            }
         }
 
         /// <summary>

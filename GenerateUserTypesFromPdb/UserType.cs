@@ -63,18 +63,7 @@ namespace GenerateUserTypesFromPdb
             }
 
             string originalName = name;
-
-            if (name == "unsigned __int64")
-                name = "unsigned long long";
-            else if (name == "__int64")
-                name = "long long";
-
             IDiaSymbol symbol;
-
-            if (basicTypes.TryGetValue(name, out symbol))
-            {
-                return symbol;
-            }
 
             int pointer = 0;
 
@@ -84,10 +73,23 @@ namespace GenerateUserTypesFromPdb
                 name = name.Substring(0, name.Length - 1);
             }
 
-            if (pointer > 0)
-                name = name.Trim();
+            name = name.Trim();
+            if (name.EndsWith(" const"))
+                name = name.Substring(0, name.Length - 6);
+            if (name.StartsWith("enum "))
+                name = name.Substring(5);
 
-            symbol = session.globalScope.GetChild(name);
+            if (name == "unsigned __int64")
+                name = "unsigned long long";
+            else if (name == "__int64")
+                name = "long long";
+            else if (name == "long")
+                name = "int";
+            else if (name == "unsigned long")
+                name = "unsigned int";
+
+            if (!basicTypes.TryGetValue(name, out symbol))
+                symbol = session.globalScope.GetChild(name);
 
             if (symbol == null)
                 Console.WriteLine("   '{0}' not found", originalName);
@@ -725,7 +727,7 @@ namespace GenerateUserTypesFromPdb
                     if (type == null)
                         throw new Exception("Wrongly formed template argument");
 
-                    this.arguments.Add(extractedType);
+                    this.arguments.Add(TypeToString.GetTypeString(type));
                 }
             }
 
@@ -921,16 +923,12 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                string symbolName = Symbol.name;
-                string newSymbolName = symbolName.Replace("::", ".").Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace("__", "_").Replace("__", "_").TrimEnd('_');
-
-                if (symbolName != newSymbolName)
-                {
-                    symbolName = newSymbolName;
-                }
+                string symbolName = Symbol.name.Replace("::", ".").Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace("__", "_").Replace("__", "_").TrimEnd('_');
 
                 if (DeclaredInType != null)
                 {
+                    if (Namespace != null)
+                        symbolName = Namespace + "." + symbolName;
                     return symbolName.Substring(DeclaredInType.FullClassName.Length + 1);
                 }
 
@@ -955,15 +953,9 @@ namespace GenerateUserTypesFromPdb
             get
             {
                 if (DeclaredInType != null)
-                {
                     return string.Format("{0}.{1}", DeclaredInType.FullClassName, ClassName);
-                }
-
                 if (Namespace != null)
-                {
                     return string.Format("{0}.{1}", Namespace, ClassName);
-                }
-
                 return ClassName;
             }
         }

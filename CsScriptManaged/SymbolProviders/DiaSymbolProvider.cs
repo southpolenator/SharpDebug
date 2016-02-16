@@ -72,6 +72,18 @@ namespace CsScriptManaged.SymbolProviders
         }
 
         /// <summary>
+        /// Gets the type pointer to type of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public uint GetTypePointerToTypeId(Module module, uint typeId)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetTypePointerToTypeId(module, typeId);
+        }
+
+        /// <summary>
         /// Gets the names of all fields of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>

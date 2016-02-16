@@ -52,31 +52,6 @@ namespace CsScripts
         private SimpleCache<ulong> data;
 
         /// <summary>
-        /// The runtime type
-        /// </summary>
-        private SimpleCache<CodeType> runtimeType;
-
-        /// <summary>
-        /// The fields
-        /// </summary>
-        private SimpleCache<Variable[]> fields;
-
-        /// <summary>
-        /// The fields that are casted to user type if metadata is provided
-        /// </summary>
-        private SimpleCache<Variable[]> userTypeCastedFields;
-
-        /// <summary>
-        /// The fields indexed by name
-        /// </summary>
-        private DictionaryCache<string, Variable> fieldsByName;
-
-        /// <summary>
-        /// The fields that are casted to user type if metadata is provided, indexed by name
-        /// </summary>
-        private DictionaryCache<string, Variable> userTypeCastedFieldsByName;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="Variable"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
@@ -86,11 +61,6 @@ namespace CsScripts
             path = variable.path;
             Address = variable.Address;
             codeType = variable.codeType;
-            runtimeType = variable.runtimeType;
-            fields = variable.fields;
-            userTypeCastedFields = variable.userTypeCastedFields;
-            fieldsByName = variable.fieldsByName;
-            userTypeCastedFieldsByName = variable.userTypeCastedFieldsByName;
             data = variable.data;
         }
 
@@ -110,11 +80,6 @@ namespace CsScripts
 
             // Initialize caches
             data = SimpleCache.Create(ReadData);
-            runtimeType = SimpleCache.Create(FindRuntimeType);
-            fields = SimpleCache.Create(FindFields);
-            userTypeCastedFields = SimpleCache.Create(FindUserTypeCastedFields);
-            fieldsByName = new DictionaryCache<string, Variable>(GetOriginalField);
-            userTypeCastedFieldsByName = new DictionaryCache<string, Variable>(GetUserTypeCastedFieldByName);
         }
 
         /// <summary>
@@ -541,7 +506,33 @@ namespace CsScripts
         /// </summary>
         public CodeType GetRuntimeType()
         {
-            return runtimeType.Value;
+            // TODO: See if it is complex type and try to get VTable
+            try
+            {
+                if (!codeType.IsSimple || codeType.IsPointer)
+                {
+                    CodeType ulongType = CodeType.Create("unsigned long long", codeType.Module);
+                    ulong vtableAddress = Context.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
+                    string vtableName = Context.SymbolProvider.GetSymbolNameByAddress(codeType.Module.Process, vtableAddress).Item1;
+
+                    if (vtableName.EndsWith("::`vftable'"))
+                    {
+                        vtableName = vtableName.Substring(0, vtableName.Length - 11);
+                        if (vtableName.StartsWith("const "))
+                        {
+                            vtableName = vtableName.Substring(6);
+                        }
+
+                        return vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Fall back to original code type
+            }
+
+            return codeType;
         }
 
         /// <summary>
@@ -565,7 +556,7 @@ namespace CsScripts
         /// </summary>
         public Variable[] GetFields()
         {
-            return userTypeCastedFields.Value;
+            return FindUserTypeCastedFields();
         }
 
         /// <summary>
@@ -573,7 +564,7 @@ namespace CsScripts
         /// </summary>
         internal Variable[] GetOriginalFields()
         {
-            return fields.Value;
+            return FindFields();
         }
 
         /// <summary>
@@ -760,7 +751,7 @@ namespace CsScripts
             return activator(activatorParameter);
         }
 
-        private delegate Variable UserTypeConstructor(Variable variable);
+        private delegate object UserTypeConstructor(Variable variable);
 
         /// <summary>
         /// The cache of type to constructor delegate
@@ -828,6 +819,11 @@ namespace CsScripts
         /// <param name="className">The class name.</param>
         public Variable GetBaseClass(string className)
         {
+            if (codeType.Name == className)
+            {
+                return this;
+            }
+
             var tuple = codeType.BaseClasses[className];
 
             if (tuple.Item1 == codeType)
@@ -887,7 +883,7 @@ namespace CsScripts
         /// <returns>Field variable if the specified field exists.</returns>
         public Variable GetField(string name)
         {
-            return userTypeCastedFieldsByName[name];
+            return GetUserTypeCastedFieldByName(name);
         }
 
         /// <summary>
@@ -910,14 +906,7 @@ namespace CsScripts
         /// <returns>Field variable casted to user type if the specified field exists.</returns>
         private Variable GetUserTypeCastedFieldByName(string name)
         {
-            Variable field = codeType.Module.Process.CastVariableToUserType(fieldsByName[name]);
-
-            if (userTypeCastedFieldsByName.Count == 0)
-            {
-                GlobalCache.VariablesUserTypeCastedFieldsByName.Add(userTypeCastedFieldsByName);
-            }
-
-            return field;
+            return codeType.Module.Process.CastVariableToUserType(GetOriginalField(name));
         }
 
         /// <summary>
@@ -959,7 +948,7 @@ namespace CsScripts
             // Create new instance of user defined type
             UserTypeConstructor activator = typeToConstructor[types[0].Type];
 
-            return activator(originalVariable);
+            return (Variable)activator(originalVariable);
         }
 
         /// <summary>
@@ -978,6 +967,14 @@ namespace CsScripts
             }
 
             return new VariableCollection(variables, variablesByName);
+        }
+
+        /// <summary>
+        /// Gets the pointer to this variable.
+        /// </summary>
+        public Variable GetPointer()
+        {
+            return new Variable(codeType.PointerToType, 0, name, path, GetPointerAddress());
         }
 
         /// <summary>
@@ -1049,7 +1046,7 @@ namespace CsScripts
         {
             try
             {
-                result = userTypeCastedFieldsByName[name];
+                result = GetUserTypeCastedFieldByName(name);
                 return true;
             }
             catch (Exception)
@@ -1150,40 +1147,6 @@ namespace CsScripts
 #endregion
 
         /// <summary>
-        /// Finds the runtime type.
-        /// </summary>
-        private CodeType FindRuntimeType()
-        {
-            // TODO: See if it is complex type and try to get VTable
-            try
-            {
-                if (!codeType.IsSimple || codeType.IsPointer)
-                {
-                    CodeType ulongType = CodeType.Create("unsigned long long", codeType.Module);
-                    ulong vtableAddress = Context.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
-                    string vtableName = Context.SymbolProvider.GetSymbolNameByAddress(codeType.Module.Process, vtableAddress).Item1;
-
-                    if (vtableName.EndsWith("::`vftable'"))
-                    {
-                        vtableName = vtableName.Substring(0, vtableName.Length - 11);
-                        if (vtableName.StartsWith("const "))
-                        {
-                            vtableName = vtableName.Substring(6);
-                        }
-
-                        return vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                // Fall back to original code type
-            }
-
-            return codeType;
-        }
-
-        /// <summary>
         /// Gets field offset.
         /// </summary>
         public int GetFieldOffset(string fieldName)
@@ -1206,7 +1169,7 @@ namespace CsScripts
 
             for (int i = 0; i < fieldNames.Length; i++)
             {
-                fields[i] = fieldsByName[fieldNames[i]];
+                fields[i] = GetOriginalField(fieldNames[i]);
             }
 
             return fields;
@@ -1222,20 +1185,9 @@ namespace CsScripts
 
             for (int i = 0; i < originalFields.Length; i++)
             {
-                string name = originalFields[i].name;
-                Variable field;
-
-                if (userTypeCastedFieldsByName.TryGetExistingValue(name, out field))
-                {
-                    fields[i] = field;
-                }
-                else
-                {
-                    fields[i] = userTypeCastedFieldsByName[name] = codeType.Module.Process.CastVariableToUserType(originalFields[i]);
-                }
+                fields[i] = codeType.Module.Process.CastVariableToUserType(originalFields[i]);
             }
 
-            GlobalCache.VariablesUserTypeCastedFields.Add(userTypeCastedFields);
             return fields;
         }
 

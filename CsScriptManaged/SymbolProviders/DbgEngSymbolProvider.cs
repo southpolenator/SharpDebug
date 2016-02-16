@@ -69,6 +69,27 @@ namespace CsScriptManaged.SymbolProviders
         }
 
         /// <summary>
+        /// Gets the type pointer to type of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public uint GetTypePointerToTypeId(Module module, uint typeId)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            {
+                var typedData = GlobalCache.TypedData[Tuple.Create(module.Id, typeId, module.Process.PEB)];
+                typedData.Data = module.Process.PEB;
+                var result = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+                {
+                    Operation = ExtTdop.GetPointerTo,
+                    InData = typedData,
+                }).OutData.TypeId;
+
+                return result;
+            }
+        }
+
+        /// <summary>
         /// Gets the names of all fields of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -441,5 +462,5 @@ namespace CsScriptManaged.SymbolProviders
         {
             return GetSymbolNameByAddress(process, address);
         }
-}
+    }
 }

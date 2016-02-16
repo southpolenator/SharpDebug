@@ -32,20 +32,21 @@ namespace CsScriptManaged
             }
             else
             {
-                CodeType userType;
-                var modules = process.Modules.Where(m => m.TypesByName.TryGetValue(typeName, out userType)).ToArray();
+                // TODO: Check if this is needed for some scenario...
+                //CodeType userType;
+                //var modules = process.Modules.Where(m => m.TypesByName.TryGetValue(typeName, out userType)).ToArray();
 
-                if (modules.Length > 1)
-                {
-                    throw new Exception(string.Format("Type {0} exists in multiple modules: {1}", typeName, string.Join(", ", modules.Select(m => m.Name))));
-                }
+                //if (modules.Length > 1)
+                //{
+                //    throw new Exception(string.Format("Type {0} exists in multiple modules: {1}", typeName, string.Join(", ", modules.Select(m => m.Name))));
+                //}
 
-                if (modules.Length <= 0)
-                {
-                    throw new Exception(string.Format("Type {0} wasn't found in any module", typeName));
-                }
+                //if (modules.Length <= 0)
+                //{
+                //    throw new Exception(string.Format("Type {0} wasn't found in any module", typeName));
+                //}
 
-                Module = modules[0];
+                //Module = modules[0];
             }
 
             if (!typeName.EndsWith("<>"))
