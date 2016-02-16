@@ -43,6 +43,22 @@ namespace CsScriptManaged
             UserTypeAttribute attribute = type.GetCustomAttribute<UserTypeAttribute>();
             bool derivedFromUserType = IsDerivedFrom(type, typeof(UserType));
 
+            if (type.IsGenericType)
+            {
+                foreach(Type genericArgument in type.GetGenericArguments())
+                {
+                    UserTypeAttribute genericAttribute = genericArgument.GetCustomAttribute<UserTypeAttribute>();
+                    if (genericAttribute != null)
+                    {
+                        string moduleName = genericAttribute.ModuleName;
+                        // #fixme temp workaround
+                        string typeName = type.Name + "<>";
+
+                        return new UserTypeMetadata(moduleName, typeName, type);
+                    }
+                }
+            }
+
             if (attribute != null && !derivedFromUserType)
             {
                 throw new Exception(string.Format("Type {0} has defined UserTypeAttribute, but it does not inherit UserType", type.FullName));
