@@ -43,6 +43,7 @@ namespace CsScriptManaged
             UserTypeAttribute attribute = type.GetCustomAttribute<UserTypeAttribute>();
             bool derivedFromUserType = IsDerivedFrom(type, typeof(UserType));
 
+            /* #fixme temp workaround for genertic types
             if (type.IsGenericType)
             {
                 foreach(Type genericArgument in type.GetGenericArguments())
@@ -58,6 +59,7 @@ namespace CsScriptManaged
                     }
                 }
             }
+            */
 
             if (attribute != null && !derivedFromUserType)
             {
