@@ -827,6 +827,11 @@ namespace CsScripts
         /// <param name="className">The class name.</param>
         public Variable GetBaseClass(string className)
         {
+            if (codeType.Name == className)
+            {
+                return this;
+            }
+
             var tuple = codeType.BaseClasses[className];
 
             if (tuple.Item1 == codeType)
