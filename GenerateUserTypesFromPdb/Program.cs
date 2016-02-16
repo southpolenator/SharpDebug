@@ -170,6 +170,14 @@ namespace GenerateUserTypesFromPdb
 
             factory.ProcessTypes();
 
+            if (!string.IsNullOrEmpty(config.DefaultNamespace))
+            {
+                foreach (var userType in factory.Symbols)
+                {
+                    userType.Namespace = config.DefaultNamespace;
+                }
+            }
+
             string currentDirectory = Directory.GetCurrentDirectory();
             string outputDirectory = currentDirectory + "\\output\\";
             Directory.CreateDirectory(outputDirectory);
@@ -190,7 +198,14 @@ namespace GenerateUserTypesFromPdb
                     continue;
                 }
 
-                string filename = string.Format("{0}{1}.exported.cs", outputDirectory, userType.ConstructorName);
+                string classOutputDirectory = outputDirectory;
+
+                if (!string.IsNullOrEmpty(userType.Namespace))
+                    classOutputDirectory += userType.Namespace + "\\";
+
+                Directory.CreateDirectory(classOutputDirectory);
+
+                string filename = string.Format("{0}{1}.exported.cs", classOutputDirectory, userType.ConstructorName);
 
                 using (TextWriter output = new StreamWriter(filename))
                 {
