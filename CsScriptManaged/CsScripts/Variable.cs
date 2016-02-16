@@ -57,26 +57,6 @@ namespace CsScripts
         private SimpleCache<CodeType> runtimeType;
 
         /// <summary>
-        /// The fields
-        /// </summary>
-        private SimpleCache<Variable[]> fields;
-
-        /// <summary>
-        /// The fields that are casted to user type if metadata is provided
-        /// </summary>
-        private SimpleCache<Variable[]> userTypeCastedFields;
-
-        /// <summary>
-        /// The fields indexed by name
-        /// </summary>
-        private DictionaryCache<string, Variable> fieldsByName;
-
-        /// <summary>
-        /// The fields that are casted to user type if metadata is provided, indexed by name
-        /// </summary>
-        private DictionaryCache<string, Variable> userTypeCastedFieldsByName;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="Variable"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
@@ -87,10 +67,6 @@ namespace CsScripts
             Address = variable.Address;
             codeType = variable.codeType;
             runtimeType = variable.runtimeType;
-            fields = variable.fields;
-            userTypeCastedFields = variable.userTypeCastedFields;
-            fieldsByName = variable.fieldsByName;
-            userTypeCastedFieldsByName = variable.userTypeCastedFieldsByName;
             data = variable.data;
         }
 
@@ -111,10 +87,6 @@ namespace CsScripts
             // Initialize caches
             data = SimpleCache.Create(ReadData);
             runtimeType = SimpleCache.Create(FindRuntimeType);
-            fields = SimpleCache.Create(FindFields);
-            userTypeCastedFields = SimpleCache.Create(FindUserTypeCastedFields);
-            fieldsByName = new DictionaryCache<string, Variable>(GetOriginalField);
-            userTypeCastedFieldsByName = new DictionaryCache<string, Variable>(GetUserTypeCastedFieldByName);
         }
 
         /// <summary>
@@ -565,7 +537,7 @@ namespace CsScripts
         /// </summary>
         public Variable[] GetFields()
         {
-            return userTypeCastedFields.Value;
+            return FindUserTypeCastedFields();
         }
 
         /// <summary>
@@ -573,7 +545,7 @@ namespace CsScripts
         /// </summary>
         internal Variable[] GetOriginalFields()
         {
-            return fields.Value;
+            return FindFields();
         }
 
         /// <summary>
@@ -759,7 +731,7 @@ namespace CsScripts
             return activator(activatorParameter);
         }
 
-        private delegate Variable UserTypeConstructor(Variable variable);
+        private delegate object UserTypeConstructor(Variable variable);
 
         /// <summary>
         /// The cache of type to constructor delegate
@@ -891,7 +863,7 @@ namespace CsScripts
         /// <returns>Field variable if the specified field exists.</returns>
         public Variable GetField(string name)
         {
-            return userTypeCastedFieldsByName[name];
+            return GetUserTypeCastedFieldByName(name);
         }
 
         /// <summary>
@@ -914,14 +886,7 @@ namespace CsScripts
         /// <returns>Field variable casted to user type if the specified field exists.</returns>
         private Variable GetUserTypeCastedFieldByName(string name)
         {
-            Variable field = codeType.Module.Process.CastVariableToUserType(fieldsByName[name]);
-
-            if (userTypeCastedFieldsByName.Count == 0)
-            {
-                GlobalCache.VariablesUserTypeCastedFieldsByName.Add(userTypeCastedFieldsByName);
-            }
-
-            return field;
+            return codeType.Module.Process.CastVariableToUserType(GetOriginalField(name));
         }
 
         /// <summary>
@@ -963,7 +928,7 @@ namespace CsScripts
             // Create new instance of user defined type
             UserTypeConstructor activator = typeToConstructor[types[0].Type];
 
-            return activator(originalVariable);
+            return (Variable)activator(originalVariable);
         }
 
         /// <summary>
@@ -1053,7 +1018,7 @@ namespace CsScripts
         {
             try
             {
-                result = userTypeCastedFieldsByName[name];
+                result = GetUserTypeCastedFieldByName(name);
                 return true;
             }
             catch (Exception)
@@ -1210,7 +1175,7 @@ namespace CsScripts
 
             for (int i = 0; i < fieldNames.Length; i++)
             {
-                fields[i] = fieldsByName[fieldNames[i]];
+                fields[i] = GetOriginalField(fieldNames[i]);
             }
 
             return fields;
@@ -1226,20 +1191,9 @@ namespace CsScripts
 
             for (int i = 0; i < originalFields.Length; i++)
             {
-                string name = originalFields[i].name;
-                Variable field;
-
-                if (userTypeCastedFieldsByName.TryGetExistingValue(name, out field))
-                {
-                    fields[i] = field;
-                }
-                else
-                {
-                    fields[i] = userTypeCastedFieldsByName[name] = codeType.Module.Process.CastVariableToUserType(originalFields[i]);
-                }
+                fields[i] = codeType.Module.Process.CastVariableToUserType(originalFields[i]);
             }
 
-            GlobalCache.VariablesUserTypeCastedFields.Add(userTypeCastedFields);
             return fields;
         }
 
