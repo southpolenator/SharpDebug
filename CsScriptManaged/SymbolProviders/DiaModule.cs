@@ -250,6 +250,24 @@ namespace CsScriptManaged.SymbolProviders
         }
 
         /// <summary>
+        /// Gets the type pointer to type of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public uint GetTypePointerToTypeId(Module module, uint typeId)
+        {
+            var symbol = GetTypeFromId(typeId);
+            var pointer = symbol.objectPointerType;
+
+            if (pointer != null)
+            {
+                return pointer.symIndexId;
+            }
+
+            return GetTypeId(module, symbol.name + "*");
+        }
+
+        /// <summary>
         /// Gets the names of all fields of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>

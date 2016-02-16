@@ -37,6 +37,11 @@ namespace CsScripts
         private SimpleCache<string> mappedImageName;
 
         /// <summary>
+        /// The next fake code type identifier
+        /// </summary>
+        private uint nextFakeCodeTypeId = uint.MaxValue;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Module"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -275,6 +280,14 @@ namespace CsScripts
         private CodeType GetTypeById(uint typeId)
         {
             return new CodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId), Context.SymbolProvider.GetTypeBasicType(this, typeId));
+        }
+
+        /// <summary>
+        /// Gets the next fake code type identifier.
+        /// </summary>
+        internal uint GetNextFakeCodeTypeId()
+        {
+            return nextFakeCodeTypeId--;
         }
         #endregion
     }

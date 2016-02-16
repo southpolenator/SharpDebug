@@ -50,7 +50,7 @@ namespace CsScriptManaged
             else if (derivedFromUserType)
             {
                 string moduleName = attribute != null ? attribute.ModuleName : null;
-                string typeName = attribute != null ? attribute.TypeName : type.Name;
+                string typeName = attribute != null ? attribute.TypeName : !type.IsGenericType ? type.Name : type.Name.Substring(0, type.Name.IndexOf('`')) + "<>"; // TODO: Form better name for generics type
 
                 return new UserTypeMetadata(moduleName, typeName, type);
             }

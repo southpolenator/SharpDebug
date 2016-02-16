@@ -523,5 +523,14 @@ namespace CsScripts
             UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(type);
             return metadata.ConvertToDescription(this);
         }
+
+        /// <summary>
+        /// Gets the size of the pointer.
+        /// </summary>
+        /// <returns></returns>
+        public uint GetPointerSize()
+        {
+            return ActualProcessorType == ImageFileMachine.I386 || EffectiveProcessorType == ImageFileMachine.I386 ? 4U : 8U;
+        }
     }
 }

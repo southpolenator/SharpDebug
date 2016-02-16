@@ -93,6 +93,13 @@ namespace CsScriptManaged.SymbolProviders
         uint GetTypeElementTypeId(Module module, uint typeId);
 
         /// <summary>
+        /// Gets the type pointer to type of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        uint GetTypePointerToTypeId(Module module, uint typeId);
+
+        /// <summary>
         /// Gets the size of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>

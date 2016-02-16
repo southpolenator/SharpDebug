@@ -969,6 +969,14 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the pointer to this variable.
+        /// </summary>
+        public Variable GetPointer()
+        {
+            return new Variable(codeType.PointerToType, 0, name, path, GetPointerAddress());
+        }
+
+        /// <summary>
         /// Gets the length of the array represented with this variable.
         /// </summary>
         /// <exception cref="System.ArgumentException">Variable is not an array, but  + type.Name</exception>
