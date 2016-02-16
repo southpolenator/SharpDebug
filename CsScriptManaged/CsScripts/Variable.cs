@@ -584,7 +584,8 @@ namespace CsScripts
         {
             if (!codeType.IsArray && !codeType.IsPointer)
             {
-                throw new ArgumentException("Variable is not a array or pointer type, but " + codeType);
+                //#fixme
+                //throw new ArgumentException("Variable is not a array or pointer type, but " + codeType);
             }
 
             CodeType elementType = codeType.ElementType;

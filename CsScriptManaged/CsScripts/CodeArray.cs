@@ -39,7 +39,8 @@ namespace CsScripts
         {
             if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
             {
-                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+                //#fixme
+                //throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
             }
 
             this.variable = variable;
