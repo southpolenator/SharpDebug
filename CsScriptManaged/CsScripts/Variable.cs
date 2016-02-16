@@ -697,31 +697,10 @@ namespace CsScripts
 
             Type conversionType = typeof(T);
 
-            var constructors = conversionType.GetConstructors();
+            // Check if type has constructor with one argument and that argument is inherited from Variable
+            UserTypeConstructor activator = typeToConstructor[conversionType];
 
-            foreach (var constructor in constructors)
-            {
-                if (!constructor.IsPublic)
-                {
-                    continue;
-                }
-
-                var parameters = constructor.GetParameters();
-
-                if (parameters.Length < 1 || parameters.Count(p => !p.HasDefaultValue) > 1)
-                {
-                    continue;
-                }
-
-                if (parameters[0].ParameterType == typeof(Variable))
-                {
-                    ObjectActivator activator = GlobalCache.GetObjectActivator(conversionType);
-
-                    return (T)activator(this);
-                }
-            }
-
-            throw new InvalidCastException("Cannot cast Variable to " + conversionType);
+            return (T)(object)activator(this);
         }
 
         /// <summary>
@@ -814,10 +793,11 @@ namespace CsScripts
                     DynamicMethod method = new DynamicMethod("CreateIntance", conversionType, new Type[] { typeof(Variable) });
                     ILGenerator gen = method.GetILGenerator();
 
-                    gen.Emit(OpCodes.Ldarg_0);//arr
-                    gen.Emit(OpCodes.Newobj, constructor); // calls constructor
+                    gen.Emit(OpCodes.Ldarg_0);
+                    gen.Emit(OpCodes.Newobj, constructor);
                     gen.Emit(OpCodes.Ret);
                     return (UserTypeConstructor)method.CreateDelegate(typeof(UserTypeConstructor));
+
                 }
             }
 
@@ -977,11 +957,9 @@ namespace CsScripts
             }
 
             // Create new instance of user defined type
-            ObjectActivator activator = GlobalCache.GetObjectActivator(types[0].Type);
+            UserTypeConstructor activator = typeToConstructor[types[0].Type];
 
-            Variable instance = (Variable)activator(originalVariable);
-
-            return instance;
+            return activator(originalVariable);
         }
 
         /// <summary>

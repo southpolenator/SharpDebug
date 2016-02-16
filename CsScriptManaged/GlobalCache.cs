@@ -44,11 +44,6 @@ namespace CsScriptManaged
         internal static List<DictionaryCache<Variable, Variable>> UserTypeCastedVariables = new List<DictionaryCache<Variable, Variable>>();
 
         /// <summary>
-        /// Cached constructor for user types generated using lambda expression.
-        /// </summary>
-        internal static ConcurrentDictionary<Type, ObjectActivator> VariableActivators = new ConcurrentDictionary<Type, ObjectActivator>();
-
-        /// <summary>
         /// Creates the process.
         /// </summary>
         /// <param name="processId">The process identifier.</param>
