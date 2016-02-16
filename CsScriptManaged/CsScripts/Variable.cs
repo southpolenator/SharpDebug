@@ -52,11 +52,6 @@ namespace CsScripts
         private SimpleCache<ulong> data;
 
         /// <summary>
-        /// The runtime type
-        /// </summary>
-        private SimpleCache<CodeType> runtimeType;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="Variable"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
@@ -66,7 +61,6 @@ namespace CsScripts
             path = variable.path;
             Address = variable.Address;
             codeType = variable.codeType;
-            runtimeType = variable.runtimeType;
             data = variable.data;
         }
 
@@ -86,7 +80,6 @@ namespace CsScripts
 
             // Initialize caches
             data = SimpleCache.Create(ReadData);
-            runtimeType = SimpleCache.Create(FindRuntimeType);
         }
 
         /// <summary>
@@ -513,7 +506,33 @@ namespace CsScripts
         /// </summary>
         public CodeType GetRuntimeType()
         {
-            return runtimeType.Value;
+            // TODO: See if it is complex type and try to get VTable
+            try
+            {
+                if (!codeType.IsSimple || codeType.IsPointer)
+                {
+                    CodeType ulongType = CodeType.Create("unsigned long long", codeType.Module);
+                    ulong vtableAddress = Context.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
+                    string vtableName = Context.SymbolProvider.GetSymbolNameByAddress(codeType.Module.Process, vtableAddress).Item1;
+
+                    if (vtableName.EndsWith("::`vftable'"))
+                    {
+                        vtableName = vtableName.Substring(0, vtableName.Length - 11);
+                        if (vtableName.StartsWith("const "))
+                        {
+                            vtableName = vtableName.Substring(6);
+                        }
+
+                        return vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Fall back to original code type
+            }
+
+            return codeType;
         }
 
         /// <summary>
@@ -1117,40 +1136,6 @@ namespace CsScripts
             throw new UnauthorizedAccessException();
         }
 #endregion
-
-        /// <summary>
-        /// Finds the runtime type.
-        /// </summary>
-        private CodeType FindRuntimeType()
-        {
-            // TODO: See if it is complex type and try to get VTable
-            try
-            {
-                if (!codeType.IsSimple || codeType.IsPointer)
-                {
-                    CodeType ulongType = CodeType.Create("unsigned long long", codeType.Module);
-                    ulong vtableAddress = Context.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
-                    string vtableName = Context.SymbolProvider.GetSymbolNameByAddress(codeType.Module.Process, vtableAddress).Item1;
-
-                    if (vtableName.EndsWith("::`vftable'"))
-                    {
-                        vtableName = vtableName.Substring(0, vtableName.Length - 11);
-                        if (vtableName.StartsWith("const "))
-                        {
-                            vtableName = vtableName.Substring(6);
-                        }
-
-                        return vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                // Fall back to original code type
-            }
-
-            return codeType;
-        }
 
         /// <summary>
         /// Gets field offset.
