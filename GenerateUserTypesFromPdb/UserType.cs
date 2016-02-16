@@ -1590,7 +1590,7 @@ namespace GenerateUserTypesFromPdb
                         if (!isEmbedded)
                         {
                             string fieldAddress = string.Format("ReadPointer(memoryBuffer, memoryBufferOffset + {0}, {1})", field.offset, field.type.length);
-                            string fieldVariable = string.Format("Variable.Create({0}.GetClassFieldType(\"{1}\").ElementType, {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
+                            string fieldVariable = string.Format("Variable.CreatePointer({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 
                             constructorText = string.Format("CastAs<{1}>({0})", fieldVariable, fieldTypeString);
                         }
