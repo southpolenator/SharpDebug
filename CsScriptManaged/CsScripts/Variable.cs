@@ -687,20 +687,7 @@ namespace CsScripts
         /// <returns>Computed variable that is of new type.</returns>
         public T CastAs<T>()
         {
-            object obj = CastAs(typeof(T));
-
-            // TODO: Investigate this issue
-            if (obj is T)
-            {
-                return (T)obj;
-            }
-
-            Type conversionType = typeof(T);
-
-            // Check if type has constructor with one argument and that argument is inherited from Variable
-            UserTypeConstructor activator = typeToConstructor[conversionType];
-
-            return (T)(object)activator(this);
+            return (T)CastAs(typeof(T));
         }
 
         /// <summary>
@@ -738,6 +725,14 @@ namespace CsScripts
                     return (ulong)this;
             }
 
+            // Check if it is null
+            if (GetPointerAddress() == 0)
+            {
+                return null;
+            }
+
+            Variable activatorParameter = this;
+
             // Check if we should do CastAs
             if (conversionType.IsSubclassOf(typeof(Variable)))
             {
@@ -748,21 +743,20 @@ namespace CsScripts
                 // Check if it was non-unique generics type
                 if (newType != null)
                 {
-                    // TODO: Fix this in the future
-                    // We are lazy loading user types if they haven't been loaded (for example in non-scripting mode)
-                    if (!newType.Module.Process.UserTypes.Contains(description))
+                    // If type is already in the metadata cache, use it
+                    if (newType.Module.Process.UserTypes.Contains(description))
                     {
-                        newType.Module.Process.UserTypes.Add(description);
+                        return CastAs(newType);
                     }
 
-                    return CastAs(newType);
+                    activatorParameter = CastAs(newType);
                 }
             }
 
             // Check if type has constructor with one argument and that argument is inherited from Variable
             UserTypeConstructor activator = typeToConstructor[conversionType];
 
-            return activator(this);
+            return activator(activatorParameter);
         }
 
         private delegate Variable UserTypeConstructor(Variable variable);
@@ -834,6 +828,11 @@ namespace CsScripts
         public Variable GetBaseClass(string className)
         {
             var tuple = codeType.BaseClasses[className];
+
+            if (tuple.Item1 == codeType)
+            {
+                return this;
+            }
 
             return CreateNoCast(tuple.Item1, GetPointerAddress() + (uint)tuple.Item2, name, path);
         }
