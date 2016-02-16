@@ -282,6 +282,8 @@ namespace GenerateUserTypesFromPdb
 
         public string FieldTypeInfoComment { get; set; }
 
+        public string ConstantValue { get; set; }
+
         public bool Static { get; set; }
 
         public bool UseUserMember { get; set; }
@@ -292,7 +294,9 @@ namespace GenerateUserTypesFromPdb
         {
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
                 output.WriteLine(indentation, FieldTypeInfoComment);
-            if (UseUserMember && CacheResult)
+            if (!string.IsNullOrEmpty(ConstantValue))
+                output.WriteLine(indentation, "public static {0} {1} = ({0}){2};", FieldType, FieldName, ConstantValue);
+            else if (UseUserMember && CacheResult)
                 output.WriteLine(indentation, "private {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName);
             else if (CacheResult)
                 output.WriteLine(indentation, "private {0}{1} {2};", Static ? "static " : "", FieldType, FieldName);
@@ -302,45 +306,47 @@ namespace GenerateUserTypesFromPdb
 
         public void WriteConstructorCode(IndentedWriter output, int indentation)
         {
-            if (UseUserMember && CacheResult)
-                output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", FieldName, ConstructorText);
-            else if (CacheResult)
-                output.WriteLine(indentation, "{0} = {1};", FieldName, ConstructorText);
+            if (string.IsNullOrEmpty(ConstantValue))
+                if (UseUserMember && CacheResult)
+                    output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", FieldName, ConstructorText);
+                else if (CacheResult)
+                    output.WriteLine(indentation, "{0} = {1};", FieldName, ConstructorText);
         }
 
         public void WritePropertyCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options, ref bool firstField)
         {
-            if (options.HasFlag(UserTypeGenerationFlags.SingleLineProperty) && CacheResult)
-            {
-                if (firstField)
+            if (string.IsNullOrEmpty(ConstantValue))
+                if (options.HasFlag(UserTypeGenerationFlags.SingleLineProperty) && CacheResult)
+                {
+                    if (firstField)
+                    {
+                        output.WriteLine();
+                        firstField = false;
+                    }
+
+                    if (UseUserMember)
+                        output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}.Value; }} }}", Static ? "static " : "", FieldType, PropertyName, FieldName);
+                    else
+                        output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}; }} }}", Static ? "static " : "", FieldType, PropertyName, FieldName);
+                }
+                else
                 {
                     output.WriteLine();
-                    firstField = false;
+                    if (!UseUserMember && !CacheResult && options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
+                        output.WriteLine(indentation, FieldTypeInfoComment);
+                    output.WriteLine(indentation, "public {0}{1} {2}", Static ? "static " : "", FieldType, PropertyName);
+                    output.WriteLine(indentation++, "{{");
+                    output.WriteLine(indentation, "get");
+                    output.WriteLine(indentation++, "{{");
+                    if (UseUserMember && CacheResult)
+                        output.WriteLine(indentation, "return {0}.Value;", FieldName);
+                    else if (CacheResult)
+                        output.WriteLine(indentation, "return {0};", FieldName);
+                    else
+                        output.WriteLine(indentation, "return {0};", ConstructorText);
+                    output.WriteLine(--indentation, "}}");
+                    output.WriteLine(--indentation, "}}");
                 }
-
-                if (UseUserMember)
-                    output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}.Value; }} }}", Static ? "static " : "", FieldType, PropertyName, FieldName);
-                else
-                    output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}; }} }}", Static ? "static " : "", FieldType, PropertyName, FieldName);
-            }
-            else
-            {
-                output.WriteLine();
-                if (!UseUserMember && !CacheResult && options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
-                    output.WriteLine(indentation, FieldTypeInfoComment);
-                output.WriteLine(indentation, "public {0}{1} {2}", Static ? "static " : "", FieldType, PropertyName);
-                output.WriteLine(indentation++, "{{");
-                output.WriteLine(indentation, "get");
-                output.WriteLine(indentation++, "{{");
-                if (UseUserMember && CacheResult)
-                    output.WriteLine(indentation, "return {0}.Value;", FieldName);
-                else if (CacheResult)
-                    output.WriteLine(indentation, "return {0};", FieldName);
-                else
-                    output.WriteLine(indentation, "return {0};", ConstructorText);
-                output.WriteLine(--indentation, "}}");
-                output.WriteLine(--indentation, "}}");
-            }
         }
     }
 
@@ -455,6 +461,11 @@ namespace GenerateUserTypesFromPdb
         {
             userType = userTypes.FirstOrDefault(t => t.Matches(type, this));
             return userType != null;
+        }
+
+        internal void AddUserType(UserType userType)
+        {
+            userTypes.Add(userType);
         }
 
         internal void AddSymbol(IDiaSymbol symbol, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
@@ -960,11 +971,11 @@ namespace GenerateUserTypesFromPdb
             }
         }
 
-        protected virtual UserTypeField ExtractField(IDiaSymbol field, UserTypeFactory factory, UserTypeGenerationFlags options, bool extractingBaseClass = false)
+        protected virtual UserTypeField ExtractField(IDiaSymbol field, UserTypeFactory factory, UserTypeGenerationFlags options, bool extractingBaseClass = false, bool forceIsStatic = false)
         {
             var symbol = Symbol;
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
-            bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember;
+            bool isStatic = (DataKind)field.dataKind == DataKind.StaticMember || forceIsStatic;
             UserTypeTree fieldType = GetTypeString(field.type, factory, field.length);
             string fieldName = field.name;
             string gettingField = "variable.GetField";
@@ -1026,6 +1037,13 @@ namespace GenerateUserTypesFromPdb
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
             bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.ContainsSymbol(castingTypeString);
             var fieldTypeString = fieldType.GetUserTypeString();
+            bool isConstant = (LocationType)field.locationType == LocationType.Constant;
+            string constantString = "";
+
+            if (isConstant && options.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
+            {
+                constantString = field.value.ToString();
+            }
 
             if (string.IsNullOrEmpty(castingTypeString))
             {
@@ -1070,6 +1088,7 @@ namespace GenerateUserTypesFromPdb
                 UseUserMember = lazyCacheUserTypeFields,
                 CacheResult = cacheUserTypeFields || (isStatic && cacheStaticUserTypeFields),
                 SimpleFieldValue = simpleFieldValue,
+                ConstantValue = constantString,
             };
         }
 
@@ -1091,7 +1110,7 @@ namespace GenerateUserTypesFromPdb
             }
         }
 
-        internal IEnumerable<UserTypeField> ExtractFields(UserTypeFactory factory, UserTypeGenerationFlags options)
+        internal virtual IEnumerable<UserTypeField> ExtractFields(UserTypeFactory factory, UserTypeGenerationFlags options)
         {
             var symbol = Symbol;
             var fields = symbol.GetChildren(SymTagEnum.SymTagData);
@@ -1184,7 +1203,7 @@ namespace GenerateUserTypesFromPdb
 
             foreach (var field in fields)
             {
-                if ((field.Static && !ExportStaticFields && field.FieldTypeInfoComment != null) || (!field.CacheResult && !field.UseUserMember))
+                if (((field.Static && !ExportStaticFields && field.FieldTypeInfoComment != null) || (!field.CacheResult && !field.UseUserMember)) && string.IsNullOrEmpty(field.ConstantValue))
                     continue;
                 field.WriteFieldCode(output, indentation, options);
             }
@@ -1259,7 +1278,7 @@ namespace GenerateUserTypesFromPdb
             };
         }
 
-        private bool IsFieldFiltered(IDiaSymbol field)
+        protected bool IsFieldFiltered(IDiaSymbol field)
         {
             return (XmlType.IncludedFields.Count > 0 && !XmlType.IncludedFields.Contains(field.name))
                 || XmlType.ExcludedFields.Contains(field.name);
@@ -1380,7 +1399,7 @@ namespace GenerateUserTypesFromPdb
                             }
 
                         case BasicType.Hresult:
-                            return new UserTypeTreeBaseType("Hresult");
+                            return new UserTypeTreeBaseType("uint"); // TODO: Create Hresult type
                         default:
                             throw new Exception("Unexpected basic type " + (BasicType)type.baseType);
                     }
@@ -1656,6 +1675,73 @@ namespace GenerateUserTypesFromPdb
             {
                 output.WriteLine(--indentation, "}}");
             }
+        }
+    }
+
+    class GlobalsUserType : UserType
+    {
+        private IDiaSession session;
+
+        public GlobalsUserType(IDiaSession session, string moduleName)
+            : base(session.globalScope, new XmlType() { Name = "Globals" }, moduleName)
+        {
+            this.session = session;
+        }
+
+        public override string ClassName
+        {
+            get
+            {
+                return "ModuleGlobals";
+            }
+        }
+
+        internal override IEnumerable<UserTypeField> ExtractFields(UserTypeFactory factory, UserTypeGenerationFlags options)
+        {
+            var fields = session.globalScope.GetChildren(SymTagEnum.SymTagData).OrderBy(s => s.name).ToArray();
+            bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
+            string previousName = "";
+
+            foreach (var field in fields)
+            {
+                if (IsFieldFiltered(field) || field.name == previousName)
+                    continue;
+
+                var userField = ExtractField(field, factory, options, forceIsStatic: true);
+
+                userField.FieldName = userField.FieldName.Replace("?", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
+                userField.PropertyName = userField.PropertyName.Replace("?", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
+
+                yield return userField;
+                previousName = field.name;
+            }
+
+            foreach (var field in GetAutoGeneratedFields(false, useThisClass))
+                yield return field;
+        }
+
+        internal override bool Matches(IDiaSymbol type, UserTypeFactory factory)
+        {
+            return false;
+        }
+
+        internal override bool Matches(string typeString, UserTypeFactory factory)
+        {
+            return false;
+        }
+
+        protected override UserTypeTree GetBaseTypeString(TextWriter error, IDiaSymbol type, UserTypeFactory factory)
+        {
+            return new UserTypeTreeVariable();
+        }
+
+        protected override IEnumerable<UserTypeConstructor> GenerateConstructors()
+        {
+            yield return new UserTypeConstructor()
+            {
+                ContainsFieldDefinitions = true,
+                Static = true,
+            };
         }
     }
 }

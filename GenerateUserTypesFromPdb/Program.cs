@@ -169,6 +169,7 @@ namespace GenerateUserTypesFromPdb
             }
 
             factory.ProcessTypes();
+            factory.AddUserType(new GlobalsUserType(session, moduleName));
 
             if (!string.IsNullOrEmpty(config.DefaultNamespace))
             {
