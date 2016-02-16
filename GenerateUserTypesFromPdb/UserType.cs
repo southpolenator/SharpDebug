@@ -527,7 +527,7 @@ namespace GenerateUserTypesFromPdb
                 var parentTypeName = lastIndex > 0 ? fullClassName.Substring(0, lastIndex) : null;
                 if (parentTypeName != userType.Namespace)
                 {
-                    var parentType = userTypes.First(t => t.FullClassName == parentTypeName);
+                    var parentType = userTypes.FirstOrDefault(t => t.FullClassName == parentTypeName);
 
                     if (parentType != null)
                     {
