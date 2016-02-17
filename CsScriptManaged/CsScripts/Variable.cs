@@ -47,6 +47,11 @@ namespace CsScripts
         private CodeType codeType;
 
         /// <summary>
+        /// Runtime code type.
+        /// </summary>
+        private CodeType runtimeCodeType;
+
+        /// <summary>
         /// The data
         /// </summary>
         private SimpleCache<ulong> data;
@@ -530,6 +535,11 @@ namespace CsScripts
         /// </summary>
         public CodeType GetRuntimeType()
         {
+            if (runtimeCodeType != null)
+            {
+                return runtimeCodeType;
+            }
+
             // TODO: See if it is complex type and try to get VTable
             try
             {
@@ -547,7 +557,8 @@ namespace CsScripts
                             vtableName = vtableName.Substring(6);
                         }
 
-                        return vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
+                        runtimeCodeType = vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
+                        return runtimeCodeType;
                     }
                 }
             }
@@ -556,7 +567,8 @@ namespace CsScripts
                 // Fall back to original code type
             }
 
-            return codeType;
+            runtimeCodeType = codeType;
+            return runtimeCodeType;
         }
 
         /// <summary>

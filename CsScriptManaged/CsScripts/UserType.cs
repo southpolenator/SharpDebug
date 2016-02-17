@@ -7,6 +7,50 @@ using System.Text;
 namespace CsScripts
 {
     /// <summary>
+    /// Extension class providing cast functionality.
+    /// </summary>
+    public static class VariableCastExtender
+    {
+        /// <summary>
+        /// Dynamic Cast, cast with type check.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="variable"></param>
+        /// <returns></returns>
+        public static T DynamicCastAs<T>(this Variable variable) where T : UserType
+        {
+            if (variable == null || !variable.GetRuntimeType().Inherits<T>())
+                return null;
+
+            return variable.CastAs<T>();
+        }
+
+        /// <summary>
+        /// Downcast Interface, looks up the type based on virtual table.
+        /// </summary>
+        /// <param name="userType"></param>
+        /// <returns></returns>
+        public static Variable DowncastInterface(this Variable userType)
+        {
+            if (userType == null)
+                return null;
+
+            return userType.CastAs(userType.GetRuntimeType());
+        }
+
+        /// <summary>
+        /// Check if inherits from given type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="userType"></param>
+        /// <returns></returns>
+        public static bool Inherits<T>(this Variable userType) where T : UserType
+        {
+            return userType.GetRuntimeType().Inherits<T>();
+        }
+    }
+
+    /// <summary>
     /// Base class for user defined types in C# scripts
     /// </summary>
     public class UserType : Variable
