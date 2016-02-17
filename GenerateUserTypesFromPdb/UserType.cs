@@ -245,6 +245,18 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
+    class UserTypeStaticClass : UserTypeTree
+    {
+        public UserTypeStaticClass()
+        {
+        }
+
+        public override string GetUserTypeString()
+        {
+            return string.Empty;
+        }
+    }
+
     class UserTypeTreeMultiClassInheritance : UserTypeTreeVariable
     {
         public UserTypeTreeMultiClassInheritance()
@@ -451,10 +463,19 @@ namespace GenerateUserTypesFromPdb
             }
         }
 
-        internal virtual bool GetUserType(string typeString, out UserType userType)
+        internal virtual bool TryGetUserType(string typeString, out UserType userType)
         {
-            userType = userTypes.FirstOrDefault(t => t.Matches(typeString, this));
-            return userType != null;
+            try
+            {
+                userType = userTypes.FirstOrDefault(t => t.Matches(typeString, this));
+                return userType != null;
+            }
+            catch (Exception)
+            {
+                // unable to match the type
+                userType = null;
+                return false;
+            }
         }
 
         internal virtual bool GetUserType(IDiaSymbol type, out UserType userType)
@@ -573,7 +594,7 @@ namespace GenerateUserTypesFromPdb
             {
                 UserType userType;
 
-                if (GetUserType(inputType, out userType))
+                if (TryGetUserType(inputType, out userType))
                 {
                     return userType.FullClassName;
                 }
@@ -595,7 +616,7 @@ namespace GenerateUserTypesFromPdb
         {
             UserType userType;
 
-            return GetUserType(typeString, out userType);
+            return TryGetUserType(typeString, out userType);
         }
     }
 
@@ -653,7 +674,7 @@ namespace GenerateUserTypesFromPdb
             return base.GetUserType(type, out userType);
         }
 
-        internal override bool GetUserType(string typeString, out UserType userType)
+        internal override bool TryGetUserType(string typeString, out UserType userType)
         {
             string argumentName;
 
@@ -663,7 +684,7 @@ namespace GenerateUserTypesFromPdb
                 return true;
             }
 
-            return base.GetUserType(typeString, out userType);
+            return base.TryGetUserType(typeString, out userType);
         }
 
         private bool TryGetArgument(string typeString, out string argumentName)
@@ -861,6 +882,12 @@ namespace GenerateUserTypesFromPdb
             {
                 var typeStringStart = typeString.Substring(0, typeString.IndexOf('<'));
 
+                if (string.IsNullOrEmpty(typeStringStart))
+                {
+                    // do not match unnamed templates
+                    return false;
+                }
+
                 if (!ClassName.StartsWith(typeStringStart))
                     return false;
 
@@ -1042,7 +1069,7 @@ namespace GenerateUserTypesFromPdb
 
             if (isConstant && options.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
             {
-                constantString = field.value.ToString();
+                constantString = string.Format("({0})", field.value.ToString());
             }
 
             if (string.IsNullOrEmpty(castingTypeString))
@@ -1198,7 +1225,9 @@ namespace GenerateUserTypesFromPdb
                     output.WriteLine(indentation, "//   {0}", type.name);
             }
             output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, XmlType.Name);
-            output.WriteLine(indentation, @"public partial class {0} : {1}", ClassName, baseType);
+
+            output.WriteLine(indentation, @"public partial class {0} {1} {2}", ClassName, !string.IsNullOrEmpty(baseType.GetUserTypeString()) ? ":" : "", baseType);
+
             output.WriteLine(indentation++, @"{{");
 
             foreach (var field in fields)
@@ -1704,8 +1733,21 @@ namespace GenerateUserTypesFromPdb
 
             foreach (var field in fields)
             {
+                if (string.IsNullOrEmpty(field.type.name))
+                {
+                    continue;
+                }
+
                 if (IsFieldFiltered(field) || field.name == previousName)
                     continue;
+
+                UserType userType;
+                factory.TryGetUserType(field.type.name, out userType);
+
+                if (userType == null)
+                {
+                    continue;
+                }
 
                 var userField = ExtractField(field, factory, options, forceIsStatic: true);
 
@@ -1732,7 +1774,7 @@ namespace GenerateUserTypesFromPdb
 
         protected override UserTypeTree GetBaseTypeString(TextWriter error, IDiaSymbol type, UserTypeFactory factory)
         {
-            return new UserTypeTreeVariable();
+            return new UserTypeStaticClass();
         }
 
         protected override IEnumerable<UserTypeConstructor> GenerateConstructors()
