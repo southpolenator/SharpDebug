@@ -12,6 +12,8 @@ namespace CsScripts
     /// <typeparam name="T">The type of elements in the array</typeparam>
     public class CodeArray<T> : IReadOnlyList<T>
     {
+        private const uint MaxBufferSize = 1024 * 1024;
+
         /// <summary>
         /// The actual variable where we get all the values.
         /// </summary>
@@ -226,16 +228,27 @@ namespace CsScripts
 
                         if (activator != null)
                         {
-                            // Read memory and create objects from it
-                            var bufferSize = elementType.Size * Length;
+                            // Calculate "ideal" buffer size
+                            uint bufferSize = MaxBufferSize;
+                            ulong totalArraySize = (ulong)(elementType.Size * Length);
+                            var address = variable.GetPointerAddress();
 
-                            if (bufferSize < uint.MaxValue)
+                            if (bufferSize < elementType.Size)
                             {
-                                ulong address = variable.GetPointerAddress();
-                                var buffer = Debugger.ReadMemory(process, address, (uint)bufferSize);
-
-                                return new ElementCreatorReadOnlyList(activator, elementType, buffer, (uint)bufferSize, address);
+                                bufferSize = elementType.Size;
                             }
+                            else if (bufferSize > totalArraySize)
+                            {
+                                bufferSize = (uint)totalArraySize;
+                            }
+                            else
+                            {
+                                var idealNumberOfElements = (totalArraySize + bufferSize - 1) / bufferSize;
+
+                                bufferSize = (uint)(totalArraySize / idealNumberOfElements);
+                            }
+
+                            return new ElementCreatorReadOnlyList(activator, elementType, address, bufferSize);
                         }
                     }
                 }
@@ -248,24 +261,40 @@ namespace CsScripts
         {
             private TypeConstructor activator;
             private CodeType elementType;
+            private ulong arrayStartAddress;
             private byte[] buffer;
-            private uint bufferSize;
             private ulong bufferAddress;
+            private uint bufferSize;
+            private int bufferStart;
+            private int bufferEnd;
 
-            public ElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, byte[] buffer, uint bufferSize, ulong bufferAddress)
+            public ElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, ulong arrayStartAddress, uint bufferSize)
             {
                 this.activator = activator;
-                this.buffer = buffer;
-                this.bufferSize = bufferSize;
-                this.bufferAddress = bufferAddress;
                 this.elementType = elementType;
+                this.arrayStartAddress = arrayStartAddress;
+                this.bufferSize = bufferSize;
+                buffer = Debugger.ReadMemory(elementType.Module.Process, arrayStartAddress, bufferSize);
+                bufferAddress = arrayStartAddress;
+                bufferStart = 0;
+                bufferEnd = bufferStart + (int)(bufferSize / elementType.Size);
             }
 
             public T this[int index]
             {
                 get
                 {
-                    int offset = index * (int)elementType.Size;
+                    if (index < bufferStart || index >= bufferEnd)
+                    {
+                        var bufferElements = bufferEnd - bufferStart;
+                        bufferStart = index / bufferElements * bufferElements;
+                        bufferEnd = bufferStart + bufferElements;
+                        bufferAddress = arrayStartAddress + (ulong)bufferStart * elementType.Size;
+                        buffer = Debugger.ReadMemory(elementType.Module.Process, bufferAddress, bufferSize);
+                    }
+
+                    int bufferIndex = index - bufferStart;
+                    int offset = bufferIndex * (int)elementType.Size;
                     ulong address = bufferAddress;
 
                     return activator(Variable.CreateNoCast(elementType, address + (ulong)offset), buffer, offset, address);
