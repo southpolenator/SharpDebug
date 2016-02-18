@@ -131,9 +131,9 @@ namespace CsScriptManaged.Utility
             var position = positionAndSize.Item1;
             var maxSize = positionAndSize.Item2;
 
-            if (size <= 0 || size > maxSize)
+            if (size <= 0 || (ulong)size > maxSize)
             {
-                size = maxSize;
+                size = (int)Math.Min(maxSize, int.MaxValue);
             }
 
             do
@@ -167,9 +167,9 @@ namespace CsScriptManaged.Utility
             var position = positionAndSize.Item1;
             var maxSize = positionAndSize.Item2;
 
-            if (size <= 0 || size > maxSize)
+            if (size <= 0 || (ulong)size > maxSize)
             {
-                size = maxSize;
+                size = (int)Math.Min(maxSize, int.MaxValue);
             }
 
             do
