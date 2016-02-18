@@ -122,7 +122,7 @@ namespace CsScripts
         /// <param name="address">The address.</param>
         /// <param name="name">The name.</param>
         /// <param name="path">The path.</param>
-        internal static Variable CreateNoCast(CodeType codeType, ulong address, string name, string path)
+        internal static Variable CreateNoCast(CodeType codeType, ulong address, string name = ComputedName, string path = UnknownPath)
         {
             if (Context.EnableVariableCaching)
             {
@@ -153,7 +153,7 @@ namespace CsScripts
         /// <param name="address">The address.</param>
         /// <param name="name">The name.</param>
         /// <param name="path">The path.</param>
-        internal static Variable CreatePointerNoCast(CodeType codeType, ulong address, string name, string path)
+        internal static Variable CreatePointerNoCast(CodeType codeType, ulong address, string name = ComputedName, string path = UnknownPath)
         {
             return new Variable(codeType, 0, name, path, address);
         }
@@ -751,7 +751,6 @@ namespace CsScripts
             // Check if we should do CastAs
             if (conversionType.IsSubclassOf(typeof(Variable)))
             {
-                ulong address = GetPointerAddress();
                 var description = codeType.Module.Process.TypeToUserTypeDescription[conversionType];
                 CodeType newType = description.UserType;
 

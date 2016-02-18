@@ -108,7 +108,14 @@ namespace CsScriptManaged.Utility
         public byte[] ReadMemory(ulong address, int size)
         {
             byte[] bytes = new byte[size];
-            ulong position = FindDumpPosition(address);
+            var positionAndSize = FindDumpPositionAndSize(address);
+            var position = positionAndSize.Item1;
+            var maxSize = positionAndSize.Item2;
+
+            if ((ulong)size > maxSize)
+            {
+                throw new Exception("Reading more that it is found");
+            }
 
             accessor.ReadArray((long)position, bytes, 0, size);
             return bytes;
@@ -120,11 +127,13 @@ namespace CsScriptManaged.Utility
             int read;
             bool end = false;
             StringBuilder sb = new StringBuilder();
-            ulong position = FindDumpPosition(address);
+            var positionAndSize = FindDumpPositionAndSize(address);
+            var position = positionAndSize.Item1;
+            var maxSize = positionAndSize.Item2;
 
-            if (size <= 0)
+            if (size <= 0 || size > maxSize)
             {
-                size = int.MaxValue;
+                size = maxSize;
             }
 
             do
@@ -154,11 +163,13 @@ namespace CsScriptManaged.Utility
             int read;
             bool end = false;
             StringBuilder sb = new StringBuilder();
-            ulong position = FindDumpPosition(address);
+            var positionAndSize = FindDumpPositionAndSize(address);
+            var position = positionAndSize.Item1;
+            var maxSize = positionAndSize.Item2;
 
-            if (size <= 0)
+            if (size <= 0 || size > maxSize)
             {
-                size = int.MaxValue;
+                size = maxSize;
             }
 
             do
@@ -182,7 +193,7 @@ namespace CsScriptManaged.Utility
             return sb.ToString();
         }
 
-        private ulong FindDumpPosition(ulong address)
+        private Tuple<ulong, ulong> FindDumpPositionAndSize(ulong address)
         {
             int low = 0, high = ranges.Length - 1;
 
@@ -199,10 +210,10 @@ namespace CsScriptManaged.Utility
                     low = middle;
                 }
                 else
-                    return ranges[middle].FilePosition + address - ranges[middle].MemoryStart;
+                    return Tuple.Create(ranges[middle].FilePosition + address - ranges[middle].MemoryStart, ranges[middle].MemoryEnd - address);
             }
 
-            return 0;
+            return Tuple.Create(0UL, 0UL);
         }
 
         private struct MemoryLocation

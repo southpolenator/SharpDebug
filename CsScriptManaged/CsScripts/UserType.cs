@@ -194,6 +194,29 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Returns array of 64-bit unsigned integers converted from four/eight bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="buffer">The array of bytes.</param>
+        /// <param name="offset">The starting position within value.</param>
+        /// <param name="elements">The number of elements to be read.</param>
+        /// <param name="pointerSize">Size of the pointer.</param>
+        /// <exception cref="System.Exception">Unsupported pointer size</exception>
+        public static ulong[] ReadPointerArray(byte[] buffer, int offset, int elements, uint pointerSize)
+        {
+            ulong[] array = new ulong[elements];
+
+            if (pointerSize == 4)
+                for (int i = 0; i < elements; i++, offset += 4)
+                    array[i] = ReadUint(buffer, offset);
+            else if (pointerSize == 8)
+                for (int i = 0; i < elements; i++, offset += 8)
+                    array[i] = ReadUlong(buffer, offset);
+            else
+                throw new Exception("Unsupported pointer size");
+            return array;
+        }
+
+        /// <summary>
         /// Returns a 16-bit unsigned integer converted from two bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="buffer">The array of bytes.</param>
@@ -337,7 +360,6 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="pointerSize">Size of the pointer.</param>
-        /// <returns></returns>
         /// <exception cref="System.Exception">Unsupported pointer size</exception>
         public static ulong ReadPointer(byte[] buffer, int offset, int pointerSize)
         {
