@@ -61,8 +61,14 @@ namespace CsScriptManaged.Utility
             {
                 if (!Cached)
                 {
-                    value = populateAction();
-                    Cached = true;
+                    lock(this)
+                    {
+                        if (!Cached)
+                        {
+                            value = populateAction();
+                            Cached = true;
+                        }
+                    }
                 }
 
                 return value;

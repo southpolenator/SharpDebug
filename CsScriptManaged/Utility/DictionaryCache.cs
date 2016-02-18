@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace CsScriptManaged.Utility
@@ -18,7 +19,8 @@ namespace CsScriptManaged.Utility
         /// <summary>
         /// The cached values
         /// </summary>
-        private Dictionary<TKey, TValue> values = new Dictionary<TKey, TValue>();
+        //private Dictionary<TKey, TValue> values = new Dictionary<TKey, TValue>();
+        private ConcurrentDictionary<TKey, TValue> values = new ConcurrentDictionary<TKey, TValue>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DictionaryCache{TKey, TValue}"/> class.
@@ -71,8 +73,11 @@ namespace CsScriptManaged.Utility
 
                 if (!values.TryGetValue(key, out value))
                 {
-                    value = populateAction(key);
-                    values.Add(key, value);
+                    lock (values)
+                    {
+                        value = populateAction(key);
+                        values.TryAdd(key, value);
+                    }
                 }
 
                 return value;
