@@ -110,8 +110,8 @@ namespace CsScriptManaged.Utility
         /// <summary>
         /// Gets the value in the cache associated with the specified key. Value will be populated if it is not in cache.
         /// </summary>
-        /// <param name="key">The key of the value to get.</param>
-        /// <param name="value">When this method returns, contains the value associated with the specified key,
+        /// <param name="typeName">The key of the value to get.</param>
+        /// <param name="userType">When this method returns, contains the value associated with the specified key,
         /// if the key is found; otherwise, the default value for the type of the value parameter. This parameter
         /// is passed uninitialized.</param>
         /// <returns>
