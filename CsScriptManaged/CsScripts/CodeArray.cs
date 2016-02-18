@@ -12,8 +12,6 @@ namespace CsScripts
     /// <typeparam name="T">The type of elements in the array</typeparam>
     public class CodeArray<T> : IReadOnlyList<T>
     {
-        private const uint MaxBufferSize = 1024 * 1024;
-
         /// <summary>
         /// The actual variable where we get all the values.
         /// </summary>
@@ -228,27 +226,9 @@ namespace CsScripts
 
                         if (activator != null)
                         {
-                            // Calculate "ideal" buffer size
-                            uint bufferSize = MaxBufferSize;
-                            ulong totalArraySize = (ulong)(elementType.Size * Length);
                             var address = variable.GetPointerAddress();
 
-                            if (bufferSize < elementType.Size)
-                            {
-                                bufferSize = elementType.Size;
-                            }
-                            else if (bufferSize > totalArraySize)
-                            {
-                                bufferSize = (uint)totalArraySize;
-                            }
-                            else
-                            {
-                                var idealNumberOfElements = (totalArraySize + bufferSize - 1) / bufferSize;
-
-                                bufferSize = (uint)(totalArraySize / idealNumberOfElements);
-                            }
-
-                            return new ElementCreatorReadOnlyList(activator, elementType, address, bufferSize);
+                            return new ElementCreatorReadOnlyList(activator, elementType, address);
                         }
                     }
                 }
@@ -262,42 +242,24 @@ namespace CsScripts
             private TypeConstructor activator;
             private CodeType elementType;
             private ulong arrayStartAddress;
-            private byte[] buffer;
-            private ulong bufferAddress;
-            private uint bufferSize;
-            private int bufferStart;
-            private int bufferEnd;
+            private uint elementTypeSize;
 
-            public ElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, ulong arrayStartAddress, uint bufferSize)
+            public ElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, ulong arrayStartAddress)
             {
                 this.activator = activator;
                 this.elementType = elementType;
                 this.arrayStartAddress = arrayStartAddress;
-                this.bufferSize = bufferSize;
-                buffer = Debugger.ReadMemory(elementType.Module.Process, arrayStartAddress, bufferSize);
-                bufferAddress = arrayStartAddress;
-                bufferStart = 0;
-                bufferEnd = bufferStart + (int)(bufferSize / elementType.Size);
+                elementTypeSize = elementType.Size;
             }
 
             public T this[int index]
             {
                 get
                 {
-                    if (index < bufferStart || index >= bufferEnd)
-                    {
-                        var bufferElements = bufferEnd - bufferStart;
-                        bufferStart = index / bufferElements * bufferElements;
-                        bufferEnd = bufferStart + bufferElements;
-                        bufferAddress = arrayStartAddress + (ulong)bufferStart * elementType.Size;
-                        buffer = Debugger.ReadMemory(elementType.Module.Process, bufferAddress, bufferSize);
-                    }
+                    ulong address = arrayStartAddress + (ulong)index * elementTypeSize;
+                    var buffer = Debugger.ReadMemory(elementType.Module.Process, address, elementTypeSize);
 
-                    int bufferIndex = index - bufferStart;
-                    int offset = bufferIndex * (int)elementType.Size;
-                    ulong address = bufferAddress;
-
-                    return activator(Variable.CreateNoCast(elementType, address + (ulong)offset), buffer, offset, address);
+                    return activator(Variable.CreateNoCast(elementType, address), buffer, 0, address);
                 }
             }
 
