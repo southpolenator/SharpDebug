@@ -75,8 +75,11 @@ namespace CsScriptManaged.Utility
                 {
                     lock (values)
                     {
-                        value = populateAction(key);
-                        values.TryAdd(key, value);
+                        if (!values.TryGetValue(key, out value))
+                        {
+                            value = populateAction(key);
+                            values.TryAdd(key, value);
+                        }
                     }
                 }
 
