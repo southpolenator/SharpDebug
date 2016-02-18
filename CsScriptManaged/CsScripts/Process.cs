@@ -68,6 +68,16 @@ namespace CsScripts
         private SimpleCache<DumpFileMemoryReader> dumpFileMemoryReader;
 
         /// <summary>
+        /// The ANSI string cache
+        /// </summary>
+        private DictionaryCache<ulong, string> ansiStringCache;
+
+        /// <summary>
+        /// The unicode string cache
+        /// </summary>
+        private DictionaryCache<ulong, string> unicodeStringCache;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Process"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -101,6 +111,8 @@ namespace CsScripts
                 }
             });
             TypeToUserTypeDescription = new DictionaryCache<Type, UserTypeDescription>(GetUserTypeDescription);
+            ansiStringCache = new DictionaryCache<ulong, string>(DoReadAnsiString);
+            unicodeStringCache = new DictionaryCache<ulong, string>(DoReadUnicodeString);
         }
 
         /// <summary>
@@ -531,6 +543,94 @@ namespace CsScripts
         public uint GetPointerSize()
         {
             return ActualProcessorType == ImageFileMachine.I386 || EffectiveProcessorType == ImageFileMachine.I386 ? 4U : 8U;
+        }
+
+        /// <summary>
+        /// Reads the string and caches it inside this object.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="charSize">Size of the character.</param>
+        internal string ReadString(ulong address, int charSize)
+        {
+            if (address == 0)
+            {
+                return null;
+            }
+
+            if (charSize == 1)
+            {
+                return ansiStringCache[address];
+            }
+            else if (charSize == 2)
+            {
+                return unicodeStringCache[address];
+            }
+            else
+            {
+                throw new Exception("Unsupported char size");
+            }
+        }
+
+        /// <summary>
+        /// Does the actual ANSI string read.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        private string DoReadAnsiString(ulong address)
+        {
+            if (address == 0)
+            {
+                return null;
+            }
+
+            var dumpReader = DumpFileMemoryReader;
+
+            if (dumpReader != null)
+            {
+                return dumpReader.ReadAnsiString(address);
+            }
+            else
+            {
+                using (ProcessSwitcher switcher = new ProcessSwitcher(this))
+                {
+                    uint stringLength;
+
+                    StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+
+                    Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
+                    return sb.ToString();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Does the actual unicode string read.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        private string DoReadUnicodeString(ulong address)
+        {
+            if (address == 0)
+            {
+                return null;
+            }
+
+            var dumpReader = DumpFileMemoryReader;
+
+            if (dumpReader != null)
+            {
+                return dumpReader.ReadWideString(address);
+            }
+            else
+            {
+                using (ProcessSwitcher switcher = new ProcessSwitcher(this))
+                {
+                    uint stringLength;
+
+                    StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+
+                    Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
+                    return sb.ToString();
+                }
+            }
         }
     }
 }

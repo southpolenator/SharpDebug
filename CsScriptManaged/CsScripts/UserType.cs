@@ -415,8 +415,6 @@ namespace CsScripts
                 throw new Exception("Unsupported pointer size");
         }
 
-        private static DictionaryCache<Tuple<uint, ulong, int>, string> stringCache = new DictionaryCache<Tuple<uint, ulong, int>, string>(DoReadString);
-
         /// <summary>
         /// Reads the ANSI/Unicode string from the specified address.
         /// </summary>
@@ -428,61 +426,7 @@ namespace CsScripts
             if (address == 0)
                 return null;
 
-           return stringCache[Tuple.Create(process.Id, address, charSize)];
-        }
-
-        private static string DoReadString(Tuple<uint, ulong, int> tuple)
-        {
-            Process process = Process.All.Where(p => p.Id == tuple.Item1).First();
-            ulong address = tuple.Item2;
-            int charSize = tuple.Item3;
-
-            if (address == 0)
-                return null;
-
-            var dumpReader = process.DumpFileMemoryReader;
-
-            if (dumpReader != null)
-            {
-                if (charSize == 1)
-                {
-                    return dumpReader.ReadAnsiString(address);
-                }
-                else if (charSize == 2)
-                {
-                    return dumpReader.ReadWideString(address);
-                }
-                else
-                {
-                    throw new Exception("Unsupported char size");
-                }
-            }
-            else
-            {
-                using (ProcessSwitcher switcher = new ProcessSwitcher(process))
-                {
-                    uint stringLength;
-
-                    if (charSize == 1)
-                    {
-                        StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
-
-                        Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
-                        return sb.ToString();
-                    }
-                    else if (charSize == 2)
-                    {
-                        StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
-
-                        Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
-                        return sb.ToString();
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported char size");
-                    }
-                }
-            }
+            return process.ReadString(address, charSize);
         }
     }
 }
