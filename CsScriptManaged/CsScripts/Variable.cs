@@ -49,7 +49,7 @@ namespace CsScripts
         /// <summary>
         /// Runtime code type.
         /// </summary>
-        private CodeType runtimeCodeType;
+        private SimpleCache<CodeType> runtimeCodeType;
 
         /// <summary>
         /// The data
@@ -67,6 +67,7 @@ namespace CsScripts
             Address = variable.Address;
             codeType = variable.codeType;
             data = variable.data;
+            runtimeCodeType = variable.runtimeCodeType;
         }
 
         /// <summary>
@@ -85,6 +86,7 @@ namespace CsScripts
 
             // Initialize caches
             data = SimpleCache.Create(ReadData);
+            runtimeCodeType = SimpleCache.Create(FindRuntimeCodeType);
         }
 
         /// <summary>
@@ -535,11 +537,14 @@ namespace CsScripts
         /// </summary>
         public CodeType GetRuntimeType()
         {
-            if (runtimeCodeType != null)
-            {
-                return runtimeCodeType;
-            }
+            return runtimeCodeType.Value;
+        }
 
+        /// <summary>
+        /// Finds the runtime code type by looking at the v-table.
+        /// </summary>
+        private CodeType FindRuntimeCodeType()
+        {
             // TODO: See if it is complex type and try to get VTable
             try
             {
@@ -557,8 +562,7 @@ namespace CsScripts
                             vtableName = vtableName.Substring(6);
                         }
 
-                        runtimeCodeType = vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
-                        return runtimeCodeType;
+                        return vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
                     }
                 }
             }
@@ -567,8 +571,7 @@ namespace CsScripts
                 // Fall back to original code type
             }
 
-            runtimeCodeType = codeType;
-            return runtimeCodeType;
+            return codeType;
         }
 
         /// <summary>
