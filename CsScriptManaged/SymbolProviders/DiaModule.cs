@@ -5,7 +5,6 @@ using Dia2Lib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace CsScriptManaged.SymbolProviders
 {
@@ -63,36 +62,42 @@ namespace CsScriptManaged.SymbolProviders
             typeFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);
             basicTypes = SimpleCache.Create(() =>
             {
-                var types = new Dictionary<string, IDiaSymbol>();
-                var basicTypes = session.globalScope.GetChildren(SymTagEnum.SymTagBaseType);
-
-                foreach (var type in basicTypes)
+                lock (this)
                 {
-                    try
-                    {
-                        string typeString = TypeToString.GetTypeString(type);
+                    var types = new Dictionary<string, IDiaSymbol>();
+                    var basicTypes = session.globalScope.GetChildren(SymTagEnum.SymTagBaseType);
 
-                        if (!types.ContainsKey(typeString))
+                    foreach (var type in basicTypes)
+                    {
+                        try
                         {
-                            types.Add(typeString, type);
+                            string typeString = TypeToString.GetTypeString(type);
+
+                            if (!types.ContainsKey(typeString))
+                            {
+                                types.Add(typeString, type);
+                            }
+                        }
+                        catch (Exception)
+                        {
                         }
                     }
-                    catch (Exception)
-                    {
-                    }
-                }
 
-                return types;
+                    return types;
+                }
             });
             symbolNamesByAddress = new DictionaryCache<uint, Tuple<string, ulong>>((distance) =>
             {
-                IDiaSymbol symbol;
-                int displacement;
-                string name;
+                lock (this)
+                {
+                    IDiaSymbol symbol;
+                    int displacement;
+                    string name;
 
-                session.findSymbolByRVAEx(distance, SymTagEnum.SymTagNull, out symbol, out displacement);
-                symbol.get_undecoratedNameEx(0 | 0x8000 | 0x1000, out name);
-                return Tuple.Create(name, (ulong)displacement);
+                    session.findSymbolByRVAEx(distance, SymTagEnum.SymTagNull, out symbol, out displacement);
+                    symbol.get_undecoratedNameEx(0 | 0x8000 | 0x1000, out name);
+                    return Tuple.Create(name, (ulong)displacement);
+                }
             });
 
             session.loadAddress = moduleAddress;
@@ -116,11 +121,15 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         private List<Tuple<string, uint, int>> GetTypeAllFields(uint typeId)
         {
-            var type = GetTypeFromId(typeId);
-            List<Tuple<string, uint, int>> fields = new List<Tuple<string, uint, int>>();
+            lock (this)
+            {
+                var type = GetTypeFromId(typeId);
+                List<Tuple<string, uint, int>> fields = new List<Tuple<string, uint, int>>();
 
-            GetTypeAllFields(type, fields);
-            return fields;
+                GetTypeAllFields(type, fields);
+
+                return fields;
+            }
         }
 
         /// <summary>
@@ -156,19 +165,22 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         private List<Tuple<string, uint, int>> GetTypeFields(uint typeId)
         {
-            var type = GetTypeFromId(typeId);
-            List<Tuple<string, uint, int>> typeFields = new List<Tuple<string, uint, int>>();
-            var fields = type.GetChildren(SymTagEnum.SymTagData);
-
-            foreach (var field in fields)
+            lock (this)
             {
-                if ((DataKind)field.dataKind == DataKind.StaticMember)
-                    continue;
+                var type = GetTypeFromId(typeId);
+                List<Tuple<string, uint, int>> typeFields = new List<Tuple<string, uint, int>>();
+                var fields = type.GetChildren(SymTagEnum.SymTagData);
 
-                typeFields.Add(Tuple.Create(field.name, field.typeId, field.offset));
+                foreach (var field in fields)
+                {
+                    if ((DataKind)field.dataKind == DataKind.StaticMember)
+                        continue;
+
+                    typeFields.Add(Tuple.Create(field.name, field.typeId, field.offset));
+                }
+
+                return typeFields;
             }
-
-            return typeFields;
         }
 
         /// <summary>
@@ -177,10 +189,13 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         private IDiaSymbol GetTypeFromId(uint typeId)
         {
-            IDiaSymbol type;
+            lock (this)
+            {
+                IDiaSymbol type;
 
-            session.symbolById(typeId, out type);
-            return type;
+                session.symbolById(typeId, out type);
+                return type;
+            }
         }
 
         /// <summary>
@@ -210,14 +225,17 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeName">Name of the type.</param>
         public uint GetTypeId(Module module, string typeName)
         {
-            IDiaSymbol type;
-
-            if (!BasicTypes.TryGetValue(typeName, out type))
+            lock (this)
             {
-                type = session.globalScope.GetChild(typeName);
-            }
+                IDiaSymbol type;
 
-            return GetTypeId(type);
+                if (!BasicTypes.TryGetValue(typeName, out type))
+                {
+                    type = session.globalScope.GetChild(typeName);
+                }
+
+                return GetTypeId(type);
+            }
         }
 
         /// <summary>
@@ -236,7 +254,10 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string GetTypeName(Module module, uint typeId)
         {
-            return TypeToString.GetTypeString(GetTypeFromId(typeId));
+            lock (this)
+            {
+                return TypeToString.GetTypeString(GetTypeFromId(typeId));
+            }
         }
 
         /// <summary>
@@ -256,15 +277,18 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypePointerToTypeId(Module module, uint typeId)
         {
-            var symbol = GetTypeFromId(typeId);
-            var pointer = symbol.objectPointerType;
-
-            if (pointer != null)
+            lock (this)
             {
-                return pointer.symIndexId;
-            }
+                var symbol = GetTypeFromId(typeId);
+                var pointer = symbol.objectPointerType;
 
-            return GetTypeId(module, symbol.name + "*");
+                if (pointer != null)
+                {
+                    return pointer.symIndexId;
+                }
+
+                return GetTypeId(module, symbol.name + "*");
+            }
         }
 
         /// <summary>
@@ -274,7 +298,10 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string[] GetTypeAllFieldNames(Module module, uint typeId)
         {
-            return GetTypeAllFieldNames(GetTypeFromId(typeId));
+            lock (this)
+            {
+                return GetTypeAllFieldNames(GetTypeFromId(typeId));
+            }
         }
 
         /// <summary>
@@ -299,7 +326,10 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="fieldName">Name of the field.</param>
         public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
-            return GetTypeFieldTypeAndOffset(GetTypeFromId(typeId), fieldName);
+            lock (this)
+            {
+                return GetTypeFieldTypeAndOffset(GetTypeFromId(typeId), fieldName);
+            }
         }
 
         /// <summary>
@@ -338,23 +368,26 @@ namespace CsScriptManaged.SymbolProviders
         /// <exception cref="Exception">Address not found</exception>
         public void GetSourceFileNameAndLine(Process process, ulong processAddress, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
-            IDiaEnumLineNumbers lineNumbers;
-            IDiaSymbol function;
-
-            session.findSymbolByRVA(address, SymTagEnum.SymTagFunction, out function);
-            session.findLinesByRVA(address, (uint)function.length, out lineNumbers);
-            foreach (IDiaLineNumber lineNumber in lineNumbers)
+            lock (this)
             {
-                if (address >= lineNumber.relativeVirtualAddress)
-                {
-                    sourceFileName = lineNumber.sourceFile.fileName;
-                    sourceFileLine = lineNumber.lineNumber;
-                    displacement = address - lineNumber.relativeVirtualAddress;
-                    return;
-                }
-            }
+                IDiaEnumLineNumbers lineNumbers;
+                IDiaSymbol function;
 
-            throw new Exception("Address not found");
+                session.findSymbolByRVA(address, SymTagEnum.SymTagFunction, out function);
+                session.findLinesByRVA(address, (uint)function.length, out lineNumbers);
+                foreach (IDiaLineNumber lineNumber in lineNumbers)
+                {
+                    if (address >= lineNumber.relativeVirtualAddress)
+                    {
+                        sourceFileName = lineNumber.sourceFile.fileName;
+                        sourceFileLine = lineNumber.lineNumber;
+                        displacement = address - lineNumber.relativeVirtualAddress;
+                        return;
+                    }
+                }
+
+                throw new Exception("Address not found");
+            }
         }
 
         /// <summary>
@@ -367,12 +400,15 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="displacement">The displacement.</param>
         public void GetFunctionNameAndDisplacement(Process process, ulong processAddress, uint address, out string functionName, out ulong displacement)
         {
-            int innerDisplacement;
-            IDiaSymbol function;
+            lock (this)
+            {
+                int innerDisplacement;
+                IDiaSymbol function;
 
-            session.findSymbolByRVAEx(address, SymTagEnum.SymTagFunction, out function, out innerDisplacement);
-            displacement = (ulong)innerDisplacement;
-            functionName = function.name;
+                session.findSymbolByRVAEx(address, SymTagEnum.SymTagFunction, out function, out innerDisplacement);
+                displacement = (ulong)innerDisplacement;
+                functionName = function.name;
+            }
         }
 
         /// <summary>
@@ -384,26 +420,29 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
         public VariableCollection GetFrameLocals(StackFrame frame, Module module, uint relativeAddress, bool arguments)
         {
-            IDiaSymbol function;
-            int displacement;
-            List<Variable> variables = new List<Variable>();
-
-            session.findSymbolByRVAEx(relativeAddress, SymTagEnum.SymTagFunction, out function, out displacement);
-            foreach (var symbol in function.GetChildren(SymTagEnum.SymTagData))
+            lock (this)
             {
-                if (arguments && (DataKind)symbol.dataKind != DataKind.Param)
+                IDiaSymbol function;
+                int displacement;
+                List<Variable> variables = new List<Variable>();
+
+                session.findSymbolByRVAEx(relativeAddress, SymTagEnum.SymTagFunction, out function, out displacement);
+                foreach (var symbol in function.GetChildren(SymTagEnum.SymTagData))
                 {
-                    continue;
+                    if (arguments && (DataKind)symbol.dataKind != DataKind.Param)
+                    {
+                        continue;
+                    }
+
+                    CodeType codeType = module.TypesById[symbol.typeId];
+                    ulong address = ResolveAddress(symbol, frame.FrameContext);
+                    var variableName = symbol.name;
+
+                    variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
                 }
 
-                CodeType codeType = module.TypesById[symbol.typeId];
-                ulong address = ResolveAddress(symbol, frame.FrameContext);
-                var variableName = symbol.name;
-
-                variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
+                return new VariableCollection(variables.ToArray());
             }
-
-            return new VariableCollection(variables.ToArray());
         }
 
         /// <summary>
@@ -452,21 +491,24 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="address">The address.</param>
         public ulong ReadSimpleData(CodeType codeType, ulong address)
         {
-            byte[] buffer = Debugger.ReadMemory(codeType.Module.Process, address, codeType.Size);
-
-            // TODO: This doesn't work with bit fields
-            switch (codeType.Size)
+            lock (this)
             {
-                case 1:
-                    return buffer[0];
-                case 2:
-                    return BitConverter.ToUInt16(buffer, 0);
-                case 4:
-                    return BitConverter.ToUInt32(buffer, 0);
-                case 8:
-                    return BitConverter.ToUInt64(buffer, 0);
-                default:
-                    throw new Exception("Unexpected data size " + codeType.Size);
+                byte[] buffer = Debugger.ReadMemory(codeType.Module.Process, address, codeType.Size);
+
+                // TODO: This doesn't work with bit fields
+                switch (codeType.Size)
+                {
+                    case 1:
+                        return buffer[0];
+                    case 2:
+                        return BitConverter.ToUInt16(buffer, 0);
+                    case 4:
+                        return BitConverter.ToUInt32(buffer, 0);
+                    case 8:
+                        return BitConverter.ToUInt64(buffer, 0);
+                    default:
+                        throw new Exception("Unexpected data size " + codeType.Size);
+                }
             }
         }
 
@@ -477,9 +519,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="globalVariableName">Name of the global variable.</param>
         public ulong GetGlobalVariableAddress(Module module, string globalVariableName)
         {
-            var globalVariable = GetGlobalVariable(globalVariableName);
+            lock (this)
+            {
+                var globalVariable = GetGlobalVariable(globalVariableName);
 
-            return globalVariable.relativeVirtualAddress + module.Offset;
+                return globalVariable.relativeVirtualAddress + module.Offset;
+            }
         }
 
         /// <summary>
@@ -489,9 +534,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="globalVariableName">Name of the global variable.</param>
         public uint GetGlobalVariableTypeId(Module module, string globalVariableName)
         {
-            var globalVariable = GetGlobalVariable(globalVariableName);
+            lock (this)
+            {
+                var globalVariable = GetGlobalVariable(globalVariableName);
 
-            return GetTypeId(globalVariable.type);
+                return GetTypeId(globalVariable.type);
+            }
         }
 
         /// <summary>
@@ -528,14 +576,17 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string[] GetTypeFieldNames(Module module, uint typeId)
         {
-            var type = GetTypeFromId(typeId);
+            lock (this)
+            {
+                var type = GetTypeFromId(typeId);
 
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
-                type = type.type;
+                if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+                    type = type.type;
 
-            var fields = typeFields[type.symIndexId];
+                var fields = typeFields[type.symIndexId];
 
-            return fields.Select(t => t.Item1).ToArray();
+                return fields.Select(t => t.Item1).ToArray();
+            }
         }
 
         /// <summary>
@@ -546,22 +597,25 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="fieldName">Name of the field.</param>
         public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
-            var type = GetTypeFromId(typeId);
-
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
-                type = type.type;
-
-            var fields = typeFields[type.symIndexId];
-
-            foreach (var field in fields)
+            lock (this)
             {
-                if (field.Item1 != fieldName)
-                    continue;
+                var type = GetTypeFromId(typeId);
 
-                return Tuple.Create(field.Item2, field.Item3);
+                if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+                    type = type.type;
+
+                var fields = typeFields[type.symIndexId];
+
+                foreach (var field in fields)
+                {
+                    if (field.Item1 != fieldName)
+                        continue;
+
+                    return Tuple.Create(field.Item2, field.Item3);
+                }
+
+                throw new Exception("Field not found");
             }
-
-            throw new Exception("Field not found");
         }
 
         /// <summary>
@@ -572,39 +626,42 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="className">Name of the class.</param>
         public Tuple<uint, int> GetTypeBaseClass(Module module, uint typeId, string className)
         {
-            var type = GetTypeFromId(typeId);
-
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
-                type = type.type;
-
-            if (TypeNameMatches(type.name, className))
+            lock (this)
             {
-                return Tuple.Create(type.symIndexId, 0);
-            }
+                var type = GetTypeFromId(typeId);
 
-            Stack<Tuple<IDiaSymbol, int>> classes = new Stack<Tuple<IDiaSymbol, int>>();
+                if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+                    type = type.type;
 
-            classes.Push(Tuple.Create(type, 0));
-
-            while (classes.Count > 0)
-            {
-                var tuple = classes.Pop();
-                var bases = tuple.Item1.GetBaseClasses();
-
-                foreach (var b in bases.Reverse())
+                if (TypeNameMatches(type.name, className))
                 {
-                    int offset = tuple.Item2 + b.offset;
-
-                    if (TypeNameMatches(b.name, className))
-                    {
-                        return Tuple.Create(GetTypeId(module, b.name), offset);
-                    }
-
-                    classes.Push(Tuple.Create(b, offset));
+                    return Tuple.Create(type.symIndexId, 0);
                 }
-            }
 
-            throw new Exception("Base class not found");
+                Stack<Tuple<IDiaSymbol, int>> classes = new Stack<Tuple<IDiaSymbol, int>>();
+
+                classes.Push(Tuple.Create(type, 0));
+
+                while (classes.Count > 0)
+                {
+                    var tuple = classes.Pop();
+                    var bases = tuple.Item1.GetBaseClasses();
+
+                    foreach (var b in bases.Reverse())
+                    {
+                        int offset = tuple.Item2 + b.offset;
+
+                        if (TypeNameMatches(b.name, className))
+                        {
+                            return Tuple.Create(GetTypeId(module, b.name), offset);
+                        }
+
+                        classes.Push(Tuple.Create(b, offset));
+                    }
+                }
+
+                throw new Exception("Base class not found");
+            }
         }
 
         private static bool TypeNameMatches(string name, string className)
@@ -679,22 +736,25 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId)
         {
-            var type = GetTypeFromId(typeId);
-
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
-                type = type.type;
-
-            var bases = type.GetBaseClasses();
-            var result = new Dictionary<string, Tuple<uint, int>>();
-
-            foreach (var b in bases.Reverse())
+            lock (this)
             {
-                int offset = b.offset;
+                var type = GetTypeFromId(typeId);
 
-                result.Add(b.name, Tuple.Create(GetTypeId(module, b.name), offset));
+                if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+                    type = type.type;
+
+                var bases = type.GetBaseClasses();
+                var result = new Dictionary<string, Tuple<uint, int>>();
+
+                foreach (var b in bases.Reverse())
+                {
+                    int offset = b.offset;
+
+                    result.Add(b.name, Tuple.Create(GetTypeId(module, b.name), offset));
+                }
+
+                return result;
             }
-
-            return result;
         }
 
         /// <summary>
