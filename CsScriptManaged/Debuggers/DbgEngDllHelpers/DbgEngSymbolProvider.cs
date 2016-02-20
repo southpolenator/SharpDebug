@@ -41,7 +41,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="globalVariableName">Name of the global variable.</param>
         public ulong GetGlobalVariableAddress(Module module, string globalVariableName)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 string name = module.Name + "!" + globalVariableName;
 
@@ -56,7 +56,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="globalVariableName">Name of the global variable.</param>
         public uint GetGlobalVariableTypeId(Module module, string globalVariableName)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 string name = module.Name + "!" + globalVariableName.Replace("::", ".");
                 uint typeId;
@@ -74,7 +74,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypeElementTypeId(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 var typedData = DbgEngSymbolProvider.typedData[Tuple.Create(module.Address, typeId, module.Process.PEB)];
                 typedData.Data = module.Process.PEB;
@@ -95,7 +95,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypePointerToTypeId(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 var typedData = DbgEngSymbolProvider.typedData[Tuple.Create(module.Address, typeId, module.Process.PEB)];
                 typedData.Data = module.Process.PEB;
@@ -116,7 +116,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="typeId">The type identifier.</param>
         public string[] GetTypeAllFieldNames(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 List<string> fields = new List<string>();
                 uint nameSize;
@@ -147,7 +147,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="fieldName">Name of the field.</param>
         public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 try
                 {
@@ -170,7 +170,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="typeId">The type identifier.</param>
         public string GetTypeName(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 uint nameSize;
                 StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
@@ -187,7 +187,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypeSize(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 return dbgEngDll.Symbols.GetTypeSize(module.Address, typeId);
             }
@@ -200,7 +200,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="typeId">The type identifier.</param>
         public SymTag GetTypeTag(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 return typedData[Tuple.Create(module.Address, typeId, module.Process.PEB)].Tag;
             }
@@ -213,7 +213,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="typeName">Name of the type.</param>
         public uint GetTypeId(Module module, string typeName)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 return dbgEngDll.Symbols.GetTypeIdWide(module.Address, module.Name + "!" + typeName);
             }
@@ -228,7 +228,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="displacement">The displacement.</param>
         public void GetStackFrameSourceFileNameAndLine(StackFrame stackFrame, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
-            using (StackFrameSwitcher switcher = new StackFrameSwitcher(dbgEngDll.stateCache, stackFrame))
+            using (StackFrameSwitcher switcher = new StackFrameSwitcher(DbgEngDll.StateCache, stackFrame))
             {
                 uint fileNameLength;
                 StringBuilder sb = new StringBuilder(Constants.MaxFileName);
@@ -246,7 +246,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="displacement">The displacement.</param>
         public void GetStackFrameFunctionName(StackFrame stackFrame, out string functionName, out ulong displacement)
         {
-            using (StackFrameSwitcher switcher = new StackFrameSwitcher(dbgEngDll.stateCache, stackFrame))
+            using (StackFrameSwitcher switcher = new StackFrameSwitcher(DbgEngDll.StateCache, stackFrame))
             {
                 uint functionNameSize;
                 StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
@@ -266,7 +266,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="displacement">The displacement.</param>
         public void GetProcessAddressSourceFileNameAndLine(Process process, ulong address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, process))
             {
                 uint fileNameLength;
                 StringBuilder sb = new StringBuilder(Constants.MaxFileName);
@@ -285,7 +285,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="displacement">The displacement.</param>
         public void GetProcessAddressFunctionName(Process process, ulong address, out string functionName, out ulong displacement)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, process))
             {
                 uint functionNameSize;
                 StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
@@ -304,7 +304,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         {
             DebugScopeGroup scopeGroup = arguments ? DebugScopeGroup.Arguments : DebugScopeGroup.Locals;
 
-            using (StackFrameSwitcher switcher = new StackFrameSwitcher(dbgEngDll.stateCache, stackFrame))
+            using (StackFrameSwitcher switcher = new StackFrameSwitcher(DbgEngDll.StateCache, stackFrame))
             {
                 IDebugSymbolGroup2 symbolGroup;
                 dbgEngDll.Symbols.GetScopeSymbolGroup2((uint)scopeGroup, null, out symbolGroup);
@@ -377,7 +377,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         {
             Module module = codeType.Module;
 
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 return typedData[Tuple.Create(module.Address, codeType.TypeId, address)].Data;
             }
@@ -423,7 +423,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="enumValue">The enumeration value.</param>
         public string GetEnumName(Module module, uint enumTypeId, ulong enumValue)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 uint enumNameSize;
                 StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
@@ -461,7 +461,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="address">The address.</param>
         public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, process))
             {
                 StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
                 ulong displacement;

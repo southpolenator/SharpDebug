@@ -15,49 +15,63 @@ namespace CsScriptManaged.Debuggers
     internal class DbgEngDll : IDebuggerEngine
     {
         /// <summary>
-        /// The original client interface
+        /// The original debug client interface
         /// </summary>
-        private IDebugClient originalClient;
+        private static IDebugClient originalClient;
+
+        /// <summary>
+        /// The thread debug client interface
+        /// </summary>
+        [ThreadStatic]
+        private static IDebugClient threadClient;
 
         /// <summary>
         /// The state cache
         /// </summary>
-        internal StateCache stateCache;
+        [ThreadStatic]
+        private static StateCache stateCache;
 
         /// <summary>
         /// The DbgEng.dll Advanced interface
         /// </summary>
-        private IDebugAdvanced3 advanced;
+        [ThreadStatic]
+        private static IDebugAdvanced3 advanced;
 
         /// <summary>
         /// The DbgEng.dll Client interface
         /// </summary>
-        private IDebugClient7 client;
+        [ThreadStatic]
+        private static IDebugClient7 client;
 
         /// <summary>
         /// The DbgEng.dll Control interface
         /// </summary>
-        private IDebugControl7 control;
+        [ThreadStatic]
+        private static IDebugControl7 control;
 
         /// <summary>
         /// The DbgEng.dll Data spaces interface
         /// </summary>
-        private IDebugDataSpaces4 dataSpaces;
+        [ThreadStatic]
+        private static IDebugDataSpaces4 dataSpaces;
 
         /// <summary>
         /// The DbgEng.dll Registers interface
         /// </summary>
-        private IDebugRegisters2 registers;
+        [ThreadStatic]
+        private static IDebugRegisters2 registers;
 
         /// <summary>
         /// The DbgEng.dll Symbols interface
         /// </summary>
-        private IDebugSymbols5 symbols;
+        [ThreadStatic]
+        private static IDebugSymbols5 symbols;
 
         /// <summary>
         /// The DbgEng.dll System objects interface
         /// </summary>
-        private IDebugSystemObjects4 systemObjects;
+        [ThreadStatic]
+        private static IDebugSystemObjects4 systemObjects;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbgEngDll"/> class.
@@ -66,13 +80,7 @@ namespace CsScriptManaged.Debuggers
         public DbgEngDll(IDebugClient client)
         {
             originalClient = client;
-            advanced = client as IDebugAdvanced3;
-            this.client = client as IDebugClient7;
-            control = client as IDebugControl7;
-            dataSpaces = client as IDebugDataSpaces4;
-            registers = client as IDebugRegisters2;
-            symbols = client as IDebugSymbols5;
-            systemObjects = client as IDebugSystemObjects4;
+            threadClient = client;
             stateCache = new StateCache(this);
         }
 
@@ -97,6 +105,35 @@ namespace CsScriptManaged.Debuggers
             }
         }
 
+        internal static StateCache StateCache
+        {
+            get
+            {
+                if (stateCache == null)
+                {
+                    stateCache = new StateCache((DbgEngDll)Context.Debugger);
+                }
+
+                return stateCache;
+            }
+        }
+
+        /// <summary>
+        /// Gets the thread debug client interface.
+        /// </summary>
+        private static IDebugClient ThreadClient
+        {
+            get
+            {
+                if (threadClient == null)
+                {
+                    threadClient = originalClient.CreateClient();
+                }
+
+                return threadClient;
+            }
+        }
+
         /// <summary>
         /// Gets the DbgEng.dll Advanced interface
         /// </summary>
@@ -104,6 +141,11 @@ namespace CsScriptManaged.Debuggers
         {
             get
             {
+                if (advanced == null)
+                {
+                    advanced = ThreadClient as IDebugAdvanced3;
+                }
+
                 return advanced;
             }
         }
@@ -115,6 +157,11 @@ namespace CsScriptManaged.Debuggers
         {
             get
             {
+                if (client == null)
+                {
+                    client = ThreadClient as IDebugClient7;
+                }
+
                 return client;
             }
         }
@@ -126,6 +173,11 @@ namespace CsScriptManaged.Debuggers
         {
             get
             {
+                if (control == null)
+                {
+                    control = ThreadClient as IDebugControl7;
+                }
+
                 return control;
             }
         }
@@ -137,6 +189,11 @@ namespace CsScriptManaged.Debuggers
         {
             get
             {
+                if (dataSpaces == null)
+                {
+                    dataSpaces = ThreadClient as IDebugDataSpaces4;
+                }
+
                 return dataSpaces;
             }
         }
@@ -148,6 +205,11 @@ namespace CsScriptManaged.Debuggers
         {
             get
             {
+                if (registers == null)
+                {
+                    registers = ThreadClient as IDebugRegisters2;
+                }
+
                 return registers;
             }
         }
@@ -159,6 +221,11 @@ namespace CsScriptManaged.Debuggers
         {
             get
             {
+                if (symbols == null)
+                {
+                    symbols = ThreadClient as IDebugSymbols5;
+                }
+
                 return symbols;
             }
         }
@@ -170,6 +237,11 @@ namespace CsScriptManaged.Debuggers
         {
             get
             {
+                if (systemObjects == null)
+                {
+                    systemObjects = ThreadClient as IDebugSystemObjects4;
+                }
+
                 return systemObjects;
             }
         }
@@ -182,7 +254,7 @@ namespace CsScriptManaged.Debuggers
         public void Execute(string command, params object[] parameters)
         {
             command = string.Join(" ", command, string.Join(" ", parameters));
-            stateCache.SyncState();
+            StateCache.SyncState();
             Control.Execute((uint)DebugOutctl.ThisClient, command, (uint)(DebugExecute.NotLogged_ | DebugExecute.NoRepeat));
         }
 
@@ -211,7 +283,7 @@ namespace CsScriptManaged.Debuggers
             try
             {
                 Marshal.Copy(pattern, patternStart, pointer, patternSize);
-                using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+                using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
                 {
                     return DataSpaces.SearchVirtual2(memoryStart, memoryEnd - memoryStart, searchWritableMemoryOnly ? 1U : 0U, pointer, (uint)patternSize, searchAlignment);
                 }
@@ -242,7 +314,7 @@ namespace CsScriptManaged.Debuggers
         /// </returns>
         public byte[] ReadMemory(Process process, ulong address, uint size)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 IntPtr buffer = Marshal.AllocHGlobal((int)size);
                 uint read;
@@ -320,7 +392,7 @@ namespace CsScriptManaged.Debuggers
         /// <returns>Read name</returns>
         private string GetModuleName(Module module, DebugModname modname)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, module.Process))
             {
                 uint nameSize;
                 StringBuilder sb = new StringBuilder(Constants.MaxFileName);
@@ -336,7 +408,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="thread">The thread.</param>
         public StackFrame GetThreadCurrentStackFrame(Thread thread)
         {
-            return stateCache.CurrentStackFrame[thread];
+            return StateCache.CurrentStackFrame[thread];
         }
 
         /// <summary>
@@ -345,7 +417,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="stackFrame">The stack frame.</param>
         public void SetCurrentStackFrame(StackFrame stackFrame)
         {
-            stateCache.SetCurrentStackFrame(stackFrame);
+            StateCache.SetCurrentStackFrame(stackFrame);
         }
 
         /// <summary>
@@ -366,7 +438,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="thread">The thread.</param>
         public void SetCurrentThread(Thread thread)
         {
-            stateCache.SetCurrentThread(thread);
+            StateCache.SetCurrentThread(thread);
         }
 
         /// <summary>
@@ -375,7 +447,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="thread">The thread.</param>
         public ulong GetThreadEnvironmentBlockAddress(Thread thread)
         {
-            using (ThreadSwitcher switcher = new ThreadSwitcher(stateCache, thread))
+            using (ThreadSwitcher switcher = new ThreadSwitcher(StateCache, thread))
             {
                 return SystemObjects.GetCurrentThreadTeb();
             }
@@ -387,7 +459,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="thread">The thread.</param>
         public ThreadContext GetThreadContext(Thread thread)
         {
-            using (ThreadSwitcher switcher = new ThreadSwitcher(stateCache, thread))
+            using (ThreadSwitcher switcher = new ThreadSwitcher(StateCache, thread))
             using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(1))
             {
                 Advanced.GetThreadContext(threadContextBuffer.Pointer, (uint)(threadContextBuffer.Count * threadContextBuffer.Size));
@@ -444,7 +516,7 @@ namespace CsScriptManaged.Debuggers
         private StackTrace GetStackTraceFromContext(Thread thread, IntPtr contextAddress, uint contextSize)
         {
             const int MaxCallStack = 10240;
-            using (ThreadSwitcher switcher = new ThreadSwitcher(stateCache, thread))
+            using (ThreadSwitcher switcher = new ThreadSwitcher(StateCache, thread))
             using (MarshalArrayReader<_DEBUG_STACK_FRAME_EX> frameBuffer = new RegularMarshalArrayReader<_DEBUG_STACK_FRAME_EX>(MaxCallStack))
             using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(MaxCallStack))
             {
@@ -461,7 +533,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public uint GetProcessSystemId(Process process)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 return SystemObjects.GetCurrentProcessSystemId();
             }
@@ -473,7 +545,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public uint GetProcessUpTime(Process process)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 return SystemObjects.GetCurrentProcessUpTime();
             }
@@ -485,7 +557,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public ulong GetProcessEnvironmentBlockAddress(Process process)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 return SystemObjects.GetCurrentProcessPeb();
             }
@@ -497,7 +569,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public string GetProcessExecutableName(Process process)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 return SystemObjects.GetCurrentProcessExecutableName();
             }
@@ -509,7 +581,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public string GetProcessDumpFileName(Process process)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 uint dumpsFiles = Client.GetNumberDumpFiles();
 
@@ -538,7 +610,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public ImageFileMachine GetProcessActualProcessorType(Process process)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 return (ImageFileMachine)Control.GetActualProcessorType();
             }
@@ -550,7 +622,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public ImageFileMachine GetProcessEffectiveProcessorType(Process process)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 return (ImageFileMachine)Control.GetEffectiveProcessorType();
             }
@@ -562,7 +634,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public Thread[] GetProcessThreads(Process process)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 uint threadCount = SystemObjects.GetNumberThreads();
                 Thread[] threads = new Thread[threadCount];
@@ -593,7 +665,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public Module[] GetProcessModules(Process process)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 uint loaded, unloaded;
 
@@ -616,7 +688,7 @@ namespace CsScriptManaged.Debuggers
         /// </summary>
         public Process GetCurrentProcess()
         {
-            return stateCache.CurrentProcess;
+            return StateCache.CurrentProcess;
         }
 
         /// <summary>
@@ -625,7 +697,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public void SetCurrentProcess(Process process)
         {
-            stateCache.CurrentProcess = process;
+            StateCache.CurrentProcess = process;
         }
 
         /// <summary>
@@ -662,7 +734,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="process">The process.</param>
         public Thread GetProcessCurrentThread(Process process)
         {
-            return stateCache.CurrentThread[process];
+            return StateCache.CurrentThread[process];
         }
 
         /// <summary>
@@ -672,7 +744,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="moduleName">Name of the module.</param>
         public ulong GetModuleAddress(Process process, string moduleName)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 uint index;
                 ulong moduleAddress;
@@ -689,7 +761,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="address">The address.</param>
         public string ReadAnsiString(Process process, ulong address)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 uint stringLength;
                 StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
@@ -706,7 +778,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="address">The address.</param>
         public string ReadUnicodeString(Process process, ulong address)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(stateCache, process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
                 uint stringLength;
                 StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
@@ -755,7 +827,7 @@ namespace CsScriptManaged.Debuggers
             {
                 Console.SetOut(originalConsoleOut);
                 Console.SetError(originalConsoleError);
-                stateCache.SyncState();
+                StateCache.SyncState();
             }
         }
     }
