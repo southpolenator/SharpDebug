@@ -19,11 +19,6 @@ namespace CsScriptManaged
         internal static DictionaryCache<uint, Process> Processes = new DictionaryCache<uint, Process>(CreateProcess);
 
         /// <summary>
-        /// The typed data
-        /// </summary>
-        internal static DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA> TypedData = new DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA>(GetTypedData);
-
-        /// <summary>
         /// The list of simple caches that should be invalidated after medatada is removed so that new metadata can create new caches...
         /// </summary>
         internal static List<SimpleCache<Variable[]>> VariablesUserTypeCastedFields = new List<SimpleCache<Variable[]>>();
@@ -50,24 +45,6 @@ namespace CsScriptManaged
         private static Process CreateProcess(uint processId)
         {
             return new Process(processId);
-        }
-
-        /// <summary>
-        /// Gets the typed data.
-        /// </summary>
-        /// <param name="typedDataId">The typed data identifier.</param>
-        private static DEBUG_TYPED_DATA GetTypedData(Tuple<ulong, uint, ulong> typedDataId)
-        {
-            return Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
-            {
-                Operation = ExtTdop.SetFromTypeIdAndU64,
-                InData = new DEBUG_TYPED_DATA()
-                {
-                    ModBase = typedDataId.Item1,
-                    TypeId = typedDataId.Item2,
-                    Offset = typedDataId.Item3,
-                },
-            }).OutData;
         }
     }
 }

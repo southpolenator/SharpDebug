@@ -1,4 +1,5 @@
-﻿using CsScriptManaged.Utility;
+﻿using CsScriptManaged.Debuggers;
+using CsScriptManaged.Utility;
 using CsScripts;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +22,11 @@ namespace CsScriptManaged
         private Process currentProcess = null;
 
         /// <summary>
+        /// The DbgEngDll debugger engine interface
+        /// </summary>
+        private DbgEngDll dbgEngDll;
+
+        /// <summary>
         /// The thread we switched to.
         /// </summary>
         private Dictionary<Process, Thread> switchedThread = new Dictionary<Process, Thread>();
@@ -33,10 +39,11 @@ namespace CsScriptManaged
         /// <summary>
         /// Initializes a new instance of the <see cref="StateCache"/> class.
         /// </summary>
-        public StateCache()
+        public StateCache(DbgEngDll dbgEngDll)
         {
             CurrentThread = new DictionaryCache<Process, Thread>(CacheCurrentThread);
             CurrentStackFrame = new DictionaryCache<Thread, StackFrame>(CacheCurrentStackFrame);
+            this.dbgEngDll = dbgEngDll;
         }
 
         /// <summary>
@@ -136,7 +143,7 @@ namespace CsScriptManaged
             if (switchedProcess != process)
             {
                 switchedProcess = process;
-                Context.SystemObjects.SetCurrentProcessId(process.Id);
+                dbgEngDll.SystemObjects.SetCurrentProcessId(process.Id);
             }
         }
 
@@ -149,7 +156,7 @@ namespace CsScriptManaged
             CacheCurrentThread();
             switchedThread[thread.Process] = thread;
             SwitchProcess(thread.Process);
-            Context.SystemObjects.SetCurrentThreadId(thread.Id);
+            dbgEngDll.SystemObjects.SetCurrentThreadId(thread.Id);
         }
 
         /// <summary>
@@ -161,7 +168,7 @@ namespace CsScriptManaged
             CacheCurrentStackFrame();
             switchedStackFrame[stackFrame.Thread] = stackFrame;
             SwitchThread(stackFrame.Thread);
-            Context.Symbols.SetScopeFrameByIndex(stackFrame.FrameNumber);
+            dbgEngDll.Symbols.SetScopeFrameByIndex(stackFrame.FrameNumber);
         }
 
         /// <summary>
@@ -171,7 +178,7 @@ namespace CsScriptManaged
         {
             if (currentProcess == null)
             {
-                uint currentId = Context.SystemObjects.GetCurrentProcessId();
+                uint currentId = dbgEngDll.SystemObjects.GetCurrentProcessId();
 
                 currentProcess = GlobalCache.Processes[currentId];
             }
@@ -185,7 +192,7 @@ namespace CsScriptManaged
         {
             SwitchProcess(process);
 
-            uint currentThreadId = Context.SystemObjects.GetCurrentThreadId();
+            uint currentThreadId = dbgEngDll.SystemObjects.GetCurrentThreadId();
 
             return process.Threads.FirstOrDefault(t => t.Id == currentThreadId);
         }
@@ -207,7 +214,7 @@ namespace CsScriptManaged
         {
             SwitchThread(thread);
 
-            uint current = Context.Symbols.GetCurrentScopeFrameIndex();
+            uint current = dbgEngDll.Symbols.GetCurrentScopeFrameIndex();
 
             return thread.StackTrace.Frames.FirstOrDefault(f => f.FrameNumber == current);
         }

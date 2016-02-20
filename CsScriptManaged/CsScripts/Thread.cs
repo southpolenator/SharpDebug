@@ -56,7 +56,7 @@ namespace CsScripts
 
             set
             {
-                Context.StateCache.SetCurrentThread(value);
+                Context.Debugger.SetCurrentThread(value);
             }
         }
 
@@ -135,16 +135,7 @@ namespace CsScripts
         /// </summary>
         private StackTrace GetStackTrace()
         {
-            const int MaxCallStack = 1024;
-            using (ThreadSwitcher switcher = new ThreadSwitcher(this))
-            using (MarshalArrayReader<_DEBUG_STACK_FRAME_EX> frameBuffer = new RegularMarshalArrayReader<_DEBUG_STACK_FRAME_EX>(MaxCallStack))
-            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(MaxCallStack))
-            {
-                uint framesCount;
-
-                Context.Control.GetContextStackTraceEx(System.IntPtr.Zero, 0, frameBuffer.Pointer, (uint)frameBuffer.Count, threadContextBuffer.Pointer, (uint)(threadContextBuffer.Size * threadContextBuffer.Count), (uint)threadContextBuffer.Size, out framesCount);
-                return new StackTrace(this, frameBuffer.Elements.Take((int)framesCount).ToArray(), threadContextBuffer.Elements.Take((int)framesCount).ToArray());
-            }
+            return Context.Debugger.GetThreadStackTrace(this);
         }
 
         /// <summary>
@@ -155,29 +146,7 @@ namespace CsScripts
         /// <returns></returns>
         public static StackTrace GetStackTraceFromContext(ulong contextAddress, uint contextSize)
         {
-            Thread thread = new Thread(0, 0, Process.Current);
-            IntPtr buffer = Marshal.AllocHGlobal((int)contextSize);
-
-            try
-            {
-                uint read;
-                Context.DataSpaces.ReadVirtual(contextAddress, buffer, contextSize, out read);
-
-                const int MaxCallStack = 1024;
-                using (ThreadSwitcher switcher = new ThreadSwitcher(thread))
-                using (MarshalArrayReader<_DEBUG_STACK_FRAME_EX> frameBuffer = new RegularMarshalArrayReader<_DEBUG_STACK_FRAME_EX>(MaxCallStack))
-                using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(MaxCallStack))
-                {
-                    uint framesCount;
-
-                    Context.Control.GetContextStackTraceEx(buffer, contextSize, frameBuffer.Pointer, (uint)frameBuffer.Count, threadContextBuffer.Pointer, (uint)(threadContextBuffer.Size * threadContextBuffer.Count), (uint)threadContextBuffer.Size, out framesCount);
-                    return new StackTrace(thread, frameBuffer.Elements.Take((int)framesCount).ToArray(), threadContextBuffer.Elements.Take((int)framesCount).ToArray());
-                }
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buffer);
-            }
+            return Context.Debugger.GetStackTraceFromContext(Process.Current, contextAddress, contextSize);
         }
 
 
@@ -186,13 +155,7 @@ namespace CsScripts
         /// </summary>
         private ThreadContext GetThreadContext()
         {
-            using (ThreadSwitcher switcher = new ThreadSwitcher(this))
-            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(1))
-            {
-                Context.Advanced.GetThreadContext(threadContextBuffer.Pointer, (uint)(threadContextBuffer.Count * threadContextBuffer.Size));
-
-                return threadContextBuffer.Elements.FirstOrDefault();
-            }
+            return Context.Debugger.GetThreadContext(this);
         }
 
         /// <summary>
@@ -200,10 +163,7 @@ namespace CsScripts
         /// </summary>
         private ulong GetTEB()
         {
-            using (ThreadSwitcher switcher = new ThreadSwitcher(this))
-            {
-                return Context.SystemObjects.GetCurrentThreadTeb();
-            }
+            return Context.Debugger.GetThreadEnvironmentBlockAddress(this);
         }
     }
 }
