@@ -1655,7 +1655,7 @@ namespace GenerateUserTypesFromPdb
                 }
                 else if (transformationType != null)
                 {
-                    if (!isEmbedded)
+                    if (isEmbedded)
                     {
                         string thisClassCodeType = "thisClass.Value.GetCodeType()";
                         string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.offset);
