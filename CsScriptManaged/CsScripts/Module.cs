@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged;
+using CsScriptManaged.SymbolProviders;
 using CsScriptManaged.Utility;
 using System;
 
@@ -38,6 +39,11 @@ namespace CsScripts
         /// The next fake code type identifier
         /// </summary>
         private uint nextFakeCodeTypeId = uint.MaxValue;
+
+        /// <summary>
+        /// The symbol provider module cache
+        /// </summary>
+        internal ISymbolProviderModule SymbolProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Module" /> class.

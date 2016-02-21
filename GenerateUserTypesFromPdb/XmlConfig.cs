@@ -119,6 +119,9 @@ namespace GenerateUserTypesFromPdb
         [XmlAttribute]
         public string OriginalType { get; set; }
 
+        [XmlAttribute]
+        public bool HasPhysicalConstructor { get; set; }
+
         public bool Matches(string inputType)
         {
             return ParseType(OriginalType, inputType);

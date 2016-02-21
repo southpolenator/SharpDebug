@@ -17,6 +17,17 @@ namespace CsScriptManaged.Utility
         {
             return new SimpleCache<T>(populateAction);
         }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="SimpleCacheStruct{T}" /> class.
+        /// </summary>
+        /// <typeparam name="T">Type to be cached</typeparam>
+        /// <param name="populateAction">The function that populates the cache on demand.</param>
+        /// <returns>Simple cache of &lt;T&gt;</returns>
+        public static SimpleCacheStruct<T> CreateStruct<T>(Func<T> populateAction)
+        {
+            return new SimpleCacheStruct<T>(populateAction);
+        }
     }
 
     /// <summary>
@@ -79,6 +90,65 @@ namespace CsScriptManaged.Utility
                 this.value = value;
                 Cached = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// Helper class for caching results - it is being used as lazy evaluation
+    /// </summary>
+    /// <typeparam name="T">Type to be cached</typeparam>
+    public struct SimpleCacheStruct<T>
+    {
+        /// <summary>
+        /// The populate action
+        /// </summary>
+        private Func<T> populateAction;
+
+        /// <summary>
+        /// The value that is cached
+        /// </summary>
+        private T value;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SimpleCacheStruct{T}"/> class.
+        /// </summary>
+        /// <param name="populateAction">The function that populates the cache on demand.</param>
+        public SimpleCacheStruct(Func<T> populateAction)
+        {
+            this.populateAction = populateAction;
+            value = default(T);
+            Cached = false;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether value is cached.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if cached; otherwise, <c>false</c>.
+        /// </value>
+        public bool Cached { get; internal set; }
+
+        public T GetValue(object lockingObject)
+        {
+            if (!Cached)
+            {
+                lock (lockingObject)
+                {
+                    if (!Cached)
+                    {
+                        value = populateAction();
+                        Cached = true;
+                    }
+                }
+            }
+
+            return value;
+        }
+
+        public void SetValue(T value)
+        {
+            this.value = value;
+            Cached = true;
         }
     }
 }
