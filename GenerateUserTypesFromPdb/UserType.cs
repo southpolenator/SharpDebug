@@ -411,31 +411,32 @@ namespace GenerateUserTypesFromPdb
 
     class UserTypeTransformation
     {
-        private XmlTypeTransformation transformation;
         private Func<string, string> typeConverter;
         private UserType ownerUserType;
         private IDiaSymbol type;
 
         public UserTypeTransformation(XmlTypeTransformation transformation, Func<string, string> typeConverter, UserType ownerUserType, IDiaSymbol type)
         {
-            this.transformation = transformation;
+            Transformation = transformation;
             this.typeConverter = typeConverter;
             this.ownerUserType = ownerUserType;
             this.type = type;
         }
 
+        public XmlTypeTransformation Transformation { get; private set; }
+
         internal string TransformType()
         {
             string originalFieldTypeString = TypeToString.GetTypeString(type);
 
-            return transformation.TransformType(originalFieldTypeString, ownerUserType.ClassName, typeConverter);
+            return Transformation.TransformType(originalFieldTypeString, ownerUserType.ClassName, typeConverter);
         }
 
         internal string TransformConstructor(string field, string fieldOffset)
         {
             string originalFieldTypeString = TypeToString.GetTypeString(type);
 
-            return transformation.TransformConstructor(originalFieldTypeString, field, fieldOffset, ownerUserType.ClassName, typeConverter);
+            return Transformation.TransformConstructor(originalFieldTypeString, field, fieldOffset, ownerUserType.ClassName, typeConverter);
         }
     }
 
@@ -878,7 +879,7 @@ namespace GenerateUserTypesFromPdb
 
         internal override bool Matches(string typeString, UserTypeFactory factory)
         {
-            if (typeString.Contains('<'))
+            if (typeString.Contains('<') && typeString.EndsWith(">"))
             {
                 var typeStringStart = typeString.Substring(0, typeString.IndexOf('<'));
 
@@ -1588,6 +1589,7 @@ namespace GenerateUserTypesFromPdb
                 UserTypeTreeBaseType baseType = fieldType as UserTypeTreeBaseType;
                 UserTypeTreeCodeArray codeArrayType = fieldType as UserTypeTreeCodeArray;
                 UserTypeTreeUserType userType = fieldType as UserTypeTreeUserType;
+                UserTypeTreeTransformation transformationType = fieldType as UserTypeTreeTransformation;
                 bool isEmbedded = (SymTagEnum)field.type.symTag != SymTagEnum.SymTagPointerType;
 
                 if (baseType != null)
@@ -1640,7 +1642,7 @@ namespace GenerateUserTypesFromPdb
                             string fieldAddress = string.Format("ReadPointer(memoryBuffer, memoryBufferOffset + {0}, {1})", field.offset, field.type.length);
                             string fieldVariable = string.Format("Variable.CreatePointer({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 
-                            constructorText = string.Format("CastAs<{1}>({0})", fieldVariable, fieldTypeString);
+                            constructorText = string.Format("ReadPointer<{0}>(thisClass, \"{1}\", memoryBuffer, memoryBufferOffset + {2}, {3})", fieldTypeString, fieldName, field.offset, field.type.length);
                         }
                         else
                         {
@@ -1649,6 +1651,23 @@ namespace GenerateUserTypesFromPdb
 
                             constructorText = string.Format("new {0}({1}, memoryBuffer, memoryBufferOffset + {2}, memoryBufferAddress)", fieldTypeString, fieldVariable, field.offset);
                         }
+                    }
+                }
+                else if (transformationType != null)
+                {
+                    if (!isEmbedded)
+                    {
+                        string thisClassCodeType = "thisClass.Value.GetCodeType()";
+                        string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.offset);
+                        string fieldVariable = string.Format("Variable.Create({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
+
+                        if (transformationType.Transformation.Transformation.HasPhysicalConstructor)
+                        {
+                            fieldVariable = string.Format("{0}, memoryBuffer, memoryBufferOffset + {1}, memoryBufferAddress", fieldVariable, field.offset);
+                        }
+
+                        simpleFieldValue = fieldVariable;
+                        constructorText = string.Format("new {0}({1})", fieldTypeString, fieldVariable);
                     }
                 }
 
