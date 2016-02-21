@@ -4,10 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
 
 namespace CsScripts
 {
@@ -49,12 +46,12 @@ namespace CsScripts
         /// <summary>
         /// Runtime code type.
         /// </summary>
-        private SimpleCache<CodeType> runtimeCodeType;
+        private SimpleCacheStruct<CodeType> runtimeCodeType;
 
         /// <summary>
         /// The data
         /// </summary>
-        private SimpleCache<ulong> data;
+        private SimpleCacheStruct<ulong> data;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Variable"/> class.
@@ -85,8 +82,8 @@ namespace CsScripts
             Address = address;
 
             // Initialize caches
-            data = SimpleCache.Create(ReadData);
-            runtimeCodeType = SimpleCache.Create(FindRuntimeCodeType);
+            data = SimpleCache.CreateStruct(ReadData);
+            runtimeCodeType = SimpleCache.CreateStruct(FindRuntimeCodeType);
         }
 
         /// <summary>
@@ -105,7 +102,7 @@ namespace CsScripts
                 throw new Exception("You cannot assign data to non-pointer type variable. Type was " + codeType);
             }
 
-            this.data.Value = data;
+            this.data.SetValue(data);
         }
 
         /// <summary>
@@ -177,7 +174,7 @@ namespace CsScripts
         {
             get
             {
-                return data.Value;
+                return data.GetValue(this);
             }
         }
 
@@ -537,7 +534,7 @@ namespace CsScripts
         /// </summary>
         public CodeType GetRuntimeType()
         {
-            return runtimeCodeType.Value;
+            return runtimeCodeType.GetValue(this);
         }
 
         /// <summary>
