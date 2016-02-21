@@ -245,7 +245,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         private ISymbolProviderModule GetDiaModule(Module module)
         {
-            return modules[Tuple.Create(module.SymbolFileName, module.Offset)];
+            if (module.SymbolProvider == null)
+            {
+                module.SymbolProvider = modules[Tuple.Create(module.SymbolFileName, module.Offset)];
+            }
+
+            return module.SymbolProvider;
         }
 
         /// <summary>
