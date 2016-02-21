@@ -124,6 +124,22 @@ namespace CsScripts
             return array;
         }
 
+
+        /// <summary>
+        /// Returns array of bool.
+        /// </summary>
+        /// <param name="buffer">The array of bytes.</param>
+        /// <param name="offset">The starting position within value.</param>
+        /// <param name="elements">The number of elements to be read.</param>
+        public static bool[] ReadBoolArray(byte[] buffer, int offset, int elements)
+        {
+            bool[] array = new bool[elements];
+
+            for (int i = 0; i < elements; i++, offset += 2)
+                array[i] = ReadBool(buffer, offset);
+            return array;
+        }
+
         /// <summary>
         /// Returns array of 32-bit unsigned integers converted from four bytes at a specified position in a byte array.
         /// </summary>
@@ -210,6 +226,44 @@ namespace CsScripts
             byte[] array = new byte[elements];
 
             Array.Copy(buffer, offset, array, 0, elements);
+            return array;
+        }
+
+        /// <summary>
+        /// Returns array of floats.
+        /// </summary>
+        /// <param name="buffer">The array of bytes.</param>
+        /// <param name="offset">The starting position within value.</param>
+        /// <param name="elements">The number of elements to be read.</param>
+        public static float[] ReadFloatArray(byte[] buffer, int offset, int elements)
+        {
+            float[] array = new float[elements];
+
+            for (int i = 0; i < elements; i++)
+            {
+                array[i] = BitConverter.ToSingle(buffer, offset);
+                offset += sizeof(float);
+            }
+
+            return array;
+        }
+
+        /// <summary>
+        /// Returns array of floats.
+        /// </summary>
+        /// <param name="buffer">The array of bytes.</param>
+        /// <param name="offset">The starting position within value.</param>
+        /// <param name="elements">The number of elements to be read.</param>
+        public static double[] ReadDoubleArray(byte[] buffer, int offset, int elements)
+        {
+            double[] array = new double[elements];
+
+            for (int i = 0; i < elements; i++)
+            {
+                array[i] = BitConverter.ToDouble(buffer, offset);
+                offset += sizeof(float);
+            }
+
             return array;
         }
 
@@ -357,6 +411,16 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Returns a single-precision floating point number converted from hour bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="buffer">The array of bytes.</param>
+        /// <param name="offset">The starting position within value.</param>
+        public static float ReadFloat(byte[] buffer, int offset)
+        {
+            return BitConverter.ToSingle(buffer, offset);
+        }
+
+        /// <summary>
         /// Returns a double-precision floating point number converted from eight bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="buffer">The array of bytes.</param>
@@ -397,6 +461,27 @@ namespace CsScripts
                 value = (byte)((value >> bitsOffset) & ((1 << bits) - 1));
             return value;
         }
+
+        /// <summary>
+        /// Returns a signed byte.
+        /// </summary>
+        /// <param name="buffer">The array of bytes.</param>
+        /// <param name="offset">The starting position within value.</param>
+        public static sbyte ReadSbyte(byte[] buffer, int offset)
+        {
+            return (sbyte)buffer[offset];
+        }
+
+        /// <summary>
+        /// Returns a single character.
+        /// </summary>
+        /// <param name="buffer">The array of bytes.</param>
+        /// <param name="offset">The starting position within value.</param>
+        public static char ReadChar(byte[] buffer, int offset)
+        {
+            return (char)buffer[offset];
+        }
+
 
         /// <summary>
         /// Returns a 64-bit unsigned integer converted from four/eight bytes at a specified position in a byte array.
