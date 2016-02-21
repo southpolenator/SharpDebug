@@ -2,7 +2,6 @@
 using CsScriptManaged.Utility;
 using DbgEngManaged;
 using System;
-using System.Text;
 
 namespace CsScripts
 {
@@ -84,12 +83,12 @@ namespace CsScripts
         {
             get
             {
-                return Context.StateCache.CurrentStackFrame[Thread.Current];
+                return Context.Debugger.GetThreadCurrentStackFrame(Thread.Current);
             }
 
             set
             {
-                Context.StateCache.SetCurrentStackFrame(value);
+                Context.Debugger.SetCurrentStackFrame(value);
             }
         }
 

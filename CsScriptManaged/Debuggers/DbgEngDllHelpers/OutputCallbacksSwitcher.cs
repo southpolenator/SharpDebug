@@ -1,13 +1,13 @@
 ﻿using DbgEngManaged;
 using System;
 
-namespace CsScriptManaged.Utility
+namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Helper class for replacing debugger output callbacks - used when capturing command output. Example usage:
     /// <para>using (var switcher = new OutputCallbacksSwitcher(outputCallbacks) { }</para>
     /// </summary>
-    public class OutputCallbacksSwitcher : IDisposable
+    internal class OutputCallbacksSwitcher : IDisposable
     {
         /// <summary>
         /// The previous callbacks interface
@@ -15,13 +15,20 @@ namespace CsScriptManaged.Utility
         private IDebugOutputCallbacksWide previousCallbacks;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="OutputCallbacksSwitcher"/> class.
+        /// The DbgEngDll debugger engine.
         /// </summary>
+        private DbgEngDll dbgEngDll;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OutputCallbacksSwitcher" /> class.
+        /// </summary>
+        /// <param name="dbgEngDll">The DbgEngDll debugger engine.</param>
         /// <param name="newCallbacks">The new callbacks interface.</param>
-        public OutputCallbacksSwitcher(IDebugOutputCallbacksWide newCallbacks)
+        public OutputCallbacksSwitcher(DbgEngDll dbgEngDll, IDebugOutputCallbacksWide newCallbacks)
         {
-            previousCallbacks = Context.Client.GetOutputCallbacksWide();
-            Context.Client.SetOutputCallbacksWide(newCallbacks);
+            previousCallbacks = dbgEngDll.Client.GetOutputCallbacksWide();
+            dbgEngDll.Client.SetOutputCallbacksWide(newCallbacks);
+            this.dbgEngDll = dbgEngDll;
         }
 
         /// <summary>
@@ -29,7 +36,7 @@ namespace CsScriptManaged.Utility
         /// </summary>
         public void Dispose()
         {
-            Context.Client.SetOutputCallbacksWide(previousCallbacks);
+            dbgEngDll.Client.SetOutputCallbacksWide(previousCallbacks);
         }
     }
 }

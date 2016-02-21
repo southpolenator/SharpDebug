@@ -29,7 +29,7 @@ namespace CsScriptManaged.SymbolProviders
 
             if (string.IsNullOrEmpty(pdb) || Path.GetExtension(pdb).ToLower() != ".pdb")
             {
-                return new DbgEngSymbolProvider();
+                return Context.Debugger.CreateDefaultSymbolProviderModule();
             }
 
             return new DiaModule(pdb, moduleAddress);

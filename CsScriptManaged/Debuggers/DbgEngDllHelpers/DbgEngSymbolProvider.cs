@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged.Native;
+using CsScriptManaged.SymbolProviders;
 using CsScriptManaged.Utility;
 using CsScripts;
 using DbgEngManaged;
@@ -7,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CsScriptManaged.SymbolProviders
+namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Symbol provider that is being implemented over DbgEng.dll.
@@ -15,17 +16,36 @@ namespace CsScriptManaged.SymbolProviders
     internal class DbgEngSymbolProvider : ISymbolProvider, ISymbolProviderModule
     {
         /// <summary>
+        /// The DbgEngDll debugged engine
+        /// </summary>
+        private DbgEngDll dbgEngDll;
+
+        /// <summary>
+        /// The typed data
+        /// </summary>
+        private static DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA> typedData = new DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA>(GetTypedData);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DbgEngSymbolProvider"/> class.
+        /// </summary>
+        /// <param name="dbgEngDll">The DbgEngDll debugger engine</param>
+        public DbgEngSymbolProvider(DbgEngDll dbgEngDll)
+        {
+            this.dbgEngDll = dbgEngDll;
+        }
+
+        /// <summary>
         /// Gets the global variable address.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="globalVariableName">Name of the global variable.</param>
         public ulong GetGlobalVariableAddress(Module module, string globalVariableName)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 string name = module.Name + "!" + globalVariableName;
 
-                return Context.Symbols.GetOffsetByNameWide(name);
+                return dbgEngDll.Symbols.GetOffsetByNameWide(name);
             }
         }
 
@@ -36,13 +56,13 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="globalVariableName">Name of the global variable.</param>
         public uint GetGlobalVariableTypeId(Module module, string globalVariableName)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 string name = module.Name + "!" + globalVariableName.Replace("::", ".");
                 uint typeId;
                 ulong moduleId;
 
-                Context.Symbols.GetSymbolTypeIdWide(name, out typeId, out moduleId);
+                dbgEngDll.Symbols.GetSymbolTypeIdWide(name, out typeId, out moduleId);
                 return typeId;
             }
         }
@@ -54,11 +74,11 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypeElementTypeId(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                var typedData = GlobalCache.TypedData[Tuple.Create(module.Id, typeId, module.Process.PEB)];
+                var typedData = DbgEngSymbolProvider.typedData[Tuple.Create(module.Address, typeId, module.Process.PEB)];
                 typedData.Data = module.Process.PEB;
-                var result = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+                var result = dbgEngDll.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
                 {
                     Operation = ExtTdop.GetDereference,
                     InData = typedData,
@@ -75,11 +95,11 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypePointerToTypeId(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                var typedData = GlobalCache.TypedData[Tuple.Create(module.Id, typeId, module.Process.PEB)];
+                var typedData = DbgEngSymbolProvider.typedData[Tuple.Create(module.Address, typeId, module.Process.PEB)];
                 typedData.Data = module.Process.PEB;
-                var result = Context.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+                var result = dbgEngDll.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
                 {
                     Operation = ExtTdop.GetPointerTo,
                     InData = typedData,
@@ -96,7 +116,7 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string[] GetTypeAllFieldNames(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 List<string> fields = new List<string>();
                 uint nameSize;
@@ -107,7 +127,7 @@ namespace CsScriptManaged.SymbolProviders
                     {
                         StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
 
-                        Context.Symbols.GetFieldName(module.Id, typeId, fieldIndex, sb, (uint)sb.Capacity, out nameSize);
+                        dbgEngDll.Symbols.GetFieldName(module.Address, typeId, fieldIndex, sb, (uint)sb.Capacity, out nameSize);
                         fields.Add(sb.ToString());
                     }
                 }
@@ -127,13 +147,13 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="fieldName">Name of the field.</param>
         public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 try
                 {
                     uint fieldTypeId, fieldOffset;
 
-                    Context.Symbols.GetFieldTypeAndOffsetWide(module.Id, typeId, fieldName, out fieldTypeId, out fieldOffset);
+                    dbgEngDll.Symbols.GetFieldTypeAndOffsetWide(module.Address, typeId, fieldName, out fieldTypeId, out fieldOffset);
                     return Tuple.Create(fieldTypeId, (int)fieldOffset);
                 }
                 catch (Exception)
@@ -150,12 +170,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string GetTypeName(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 uint nameSize;
                 StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
 
-                Context.Symbols.GetTypeName(module.Id, typeId, sb, (uint)sb.Capacity, out nameSize);
+                dbgEngDll.Symbols.GetTypeName(module.Address, typeId, sb, (uint)sb.Capacity, out nameSize);
                 return sb.ToString();
             }
         }
@@ -167,9 +187,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypeSize(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                return Context.Symbols.GetTypeSize(module.Id, typeId);
+                return dbgEngDll.Symbols.GetTypeSize(module.Address, typeId);
             }
         }
 
@@ -180,9 +200,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public SymTag GetTypeTag(Module module, uint typeId)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                return GlobalCache.TypedData[Tuple.Create(module.Id, typeId, module.Process.PEB)].Tag;
+                return typedData[Tuple.Create(module.Address, typeId, module.Process.PEB)].Tag;
             }
         }
 
@@ -193,9 +213,9 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="typeName">Name of the type.</param>
         public uint GetTypeId(Module module, string typeName)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                return Context.Symbols.GetTypeIdWide(module.Id, module.Name + "!" + typeName);
+                return dbgEngDll.Symbols.GetTypeIdWide(module.Address, module.Name + "!" + typeName);
             }
         }
 
@@ -208,12 +228,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="displacement">The displacement.</param>
         public void GetStackFrameSourceFileNameAndLine(StackFrame stackFrame, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
-            using (StackFrameSwitcher switcher = new StackFrameSwitcher(stackFrame))
+            using (StackFrameSwitcher switcher = new StackFrameSwitcher(DbgEngDll.StateCache, stackFrame))
             {
                 uint fileNameLength;
                 StringBuilder sb = new StringBuilder(Constants.MaxFileName);
 
-                Context.Symbols.GetLineByOffset(stackFrame.InstructionOffset, out sourceFileLine, sb, (uint)sb.Capacity, out fileNameLength, out displacement);
+                dbgEngDll.Symbols.GetLineByOffset(stackFrame.InstructionOffset, out sourceFileLine, sb, (uint)sb.Capacity, out fileNameLength, out displacement);
                 sourceFileName = sb.ToString();
             }
         }
@@ -226,12 +246,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="displacement">The displacement.</param>
         public void GetStackFrameFunctionName(StackFrame stackFrame, out string functionName, out ulong displacement)
         {
-            using (StackFrameSwitcher switcher = new StackFrameSwitcher(stackFrame))
+            using (StackFrameSwitcher switcher = new StackFrameSwitcher(DbgEngDll.StateCache, stackFrame))
             {
                 uint functionNameSize;
                 StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
 
-                Context.Symbols.GetNameByOffset(stackFrame.InstructionOffset, sb, (uint)sb.Capacity, out functionNameSize, out displacement);
+                dbgEngDll.Symbols.GetNameByOffset(stackFrame.InstructionOffset, sb, (uint)sb.Capacity, out functionNameSize, out displacement);
                 functionName = sb.ToString();
             }
         }
@@ -246,12 +266,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="displacement">The displacement.</param>
         public void GetProcessAddressSourceFileNameAndLine(Process process, ulong address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, process))
             {
                 uint fileNameLength;
                 StringBuilder sb = new StringBuilder(Constants.MaxFileName);
 
-                Context.Symbols.GetLineByOffset(address, out sourceFileLine, sb, (uint)sb.Capacity, out fileNameLength, out displacement);
+                dbgEngDll.Symbols.GetLineByOffset(address, out sourceFileLine, sb, (uint)sb.Capacity, out fileNameLength, out displacement);
                 sourceFileName = sb.ToString();
             }
         }
@@ -265,12 +285,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="displacement">The displacement.</param>
         public void GetProcessAddressFunctionName(Process process, ulong address, out string functionName, out ulong displacement)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, process))
             {
                 uint functionNameSize;
                 StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
 
-                Context.Symbols.GetNameByOffset(address, sb, (uint)sb.Capacity, out functionNameSize, out displacement);
+                dbgEngDll.Symbols.GetNameByOffset(address, sb, (uint)sb.Capacity, out functionNameSize, out displacement);
                 functionName = sb.ToString();
             }
         }
@@ -284,10 +304,10 @@ namespace CsScriptManaged.SymbolProviders
         {
             DebugScopeGroup scopeGroup = arguments ? DebugScopeGroup.Arguments : DebugScopeGroup.Locals;
 
-            using (StackFrameSwitcher switcher = new StackFrameSwitcher(stackFrame))
+            using (StackFrameSwitcher switcher = new StackFrameSwitcher(DbgEngDll.StateCache, stackFrame))
             {
                 IDebugSymbolGroup2 symbolGroup;
-                Context.Symbols.GetScopeSymbolGroup2((uint)scopeGroup, null, out symbolGroup);
+                dbgEngDll.Symbols.GetScopeSymbolGroup2((uint)scopeGroup, null, out symbolGroup);
                 uint localsCount = symbolGroup.GetNumberSymbols();
                 Variable[] variables = new Variable[localsCount];
                 for (uint i = 0; i < localsCount; i++)
@@ -357,9 +377,9 @@ namespace CsScriptManaged.SymbolProviders
         {
             Module module = codeType.Module;
 
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                return GlobalCache.TypedData[Tuple.Create(module.Id, codeType.TypeId, address)].Data;
+                return typedData[Tuple.Create(module.Address, codeType.TypeId, address)].Data;
             }
         }
 
@@ -403,12 +423,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="enumValue">The enumeration value.</param>
         public string GetEnumName(Module module, uint enumTypeId, ulong enumValue)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(module.Process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
                 uint enumNameSize;
                 StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
 
-                Context.Symbols.GetConstantNameWide(module.Offset, enumTypeId, enumValue, sb, (uint)sb.Capacity, out enumNameSize);
+                dbgEngDll.Symbols.GetConstantNameWide(module.Offset, enumTypeId, enumValue, sb, (uint)sb.Capacity, out enumNameSize);
                 return sb.ToString();
             }
         }
@@ -441,13 +461,13 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="address">The address.</param>
         public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(process))
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, process))
             {
                 StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
                 ulong displacement;
                 uint nameSize;
 
-                Context.Symbols.GetNameByOffsetWide(address, sb, (uint)sb.Capacity, out nameSize, out displacement);
+                dbgEngDll.Symbols.GetNameByOffsetWide(address, sb, (uint)sb.Capacity, out nameSize, out displacement);
                 return Tuple.Create(sb.ToString(), displacement);
             }
         }
@@ -461,6 +481,26 @@ namespace CsScriptManaged.SymbolProviders
         public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address, uint distance)
         {
             return GetSymbolNameByAddress(process, address);
+        }
+
+        /// <summary>
+        /// Gets the typed data.
+        /// </summary>
+        /// <param name="typedDataId">The typed data identifier.</param>
+        private static DEBUG_TYPED_DATA GetTypedData(Tuple<ulong, uint, ulong> typedDataId)
+        {
+            var dbgEngDll = (DbgEngDll)Context.Debugger;
+
+            return dbgEngDll.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
+            {
+                Operation = ExtTdop.SetFromTypeIdAndU64,
+                InData = new DEBUG_TYPED_DATA()
+                {
+                    ModBase = typedDataId.Item1,
+                    TypeId = typedDataId.Item2,
+                    Offset = typedDataId.Item3,
+                },
+            }).OutData;
         }
     }
 }

@@ -2,12 +2,12 @@
 using System.IO;
 using System.Text;
 
-namespace CsScriptManaged.Utility
+namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Helper class for redirecting console out/error to debuggers output
     /// </summary>
-    public class DebuggerTextWriter : TextWriter
+    internal class DebuggerTextWriter : TextWriter
     {
         /// <summary>
         /// The output callbacks
@@ -20,14 +20,15 @@ namespace CsScriptManaged.Utility
         private IDebugOutputCallbacksWide outputCallbacksWide;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DebuggerTextWriter"/> class.
+        /// Initializes a new instance of the <see cref="DebuggerTextWriter" /> class.
         /// </summary>
+        /// <param name="dbgEngDll">The DbgEngDll debugger engine.</param>
         /// <param name="outputType">Type of the output.</param>
-        public DebuggerTextWriter(DebugOutput outputType)
+        public DebuggerTextWriter(DbgEngDll dbgEngDll, DebugOutput outputType)
         {
             OutputType = outputType;
-            outputCallbacksWide = Context.Client.GetOutputCallbacksWide();
-            outputCallbacks = Context.Client.GetOutputCallbacks();
+            outputCallbacksWide = dbgEngDll.Client.GetOutputCallbacksWide();
+            outputCallbacks = dbgEngDll.Client.GetOutputCallbacks();
         }
 
         /// <summary>

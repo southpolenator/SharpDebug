@@ -1,6 +1,4 @@
 ﻿using CsScriptManaged;
-using CsScriptManaged.Utility;
-using DbgEngManaged;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -14,6 +12,7 @@ namespace CsScripts
     public static class Debugger
     {
         #region Executing native commands
+#if false
         /// <summary>
         /// Executes the specified command and captures its output.
         /// </summary>
@@ -44,6 +43,7 @@ namespace CsScripts
                 return callbacks.Text;
             }
         }
+#endif
 
         /// <summary>
         /// Executes the specified command, but leaves its output visible to the user.
@@ -52,14 +52,12 @@ namespace CsScripts
         /// <param name="parameters">The parameters.</param>
         public static void Execute(string command, params object[] parameters)
         {
-            command = string.Join(" ", command, string.Join(" ", parameters));
-            Context.StateCache.SyncState();
-            Context.Control.Execute((uint)DebugOutctl.ThisClient, command, (uint)(DebugExecute.NotLogged_ | DebugExecute.NoRepeat));
+            Context.Debugger.Execute(command, parameters);
         }
-        #endregion
+#endregion
 
-        #region Searching memory for a pattern
-        #region Structure types
+#region Searching memory for a pattern
+#region Structure types
         /// <summary>
         /// Finds the pattern in memory of the current process.
         /// </summary>
@@ -125,9 +123,9 @@ namespace CsScripts
         public static ulong FindPatternInMemory<T>(Process process, ulong memoryStart, ulong memoryEnd, T structure, uint searchAlignment = 1, bool searchWritableMemoryOnly = false)
             where T : struct
         {
-            int patternSize = Marshal.SizeOf<T>();
+            byte[] bytes = Convert(structure);
 
-            return FindPatternInMemory(process, memoryStart, memoryEnd, (pointer) => Marshal.StructureToPtr(structure, pointer, true), patternSize, searchAlignment, searchWritableMemoryOnly);
+            return FindBytePatternInMemory(process, memoryStart, memoryEnd, bytes, 0, bytes.Length, searchAlignment, searchWritableMemoryOnly);
         }
 
         /// <summary>
@@ -192,9 +190,9 @@ namespace CsScripts
             return FindAllPatternInMemory(memoryStart, memoryEnd, searchAlignment,
                 (newMemoryStart) => FindPatternInMemory(process, newMemoryStart, memoryEnd, structure, searchAlignment, searchWritableMemoryOnly));
         }
-        #endregion
+#endregion
 
-        #region Text
+#region Text
         /// <summary>
         /// Finds the specified text in memory of the current process. Unicode encoding will be used.
         /// </summary>
@@ -345,9 +343,9 @@ namespace CsScripts
             return FindAllPatternInMemory(memoryStart, memoryEnd, searchAlignment,
                 (newMemoryStart) => FindTextPatternInMemory(process, newMemoryStart, memoryEnd, text, textEncoding, searchAlignment, searchWritableMemoryOnly));
         }
-        #endregion
+#endregion
 
-        #region Bytes
+#region Bytes
         /// <summary>
         /// Finds the pattern in memory of the current process.
         /// </summary>
@@ -427,9 +425,7 @@ namespace CsScripts
                 throw new ArgumentOutOfRangeException("patternEnd", "less than patternStart");
             }
 
-            int patternSize = patternEnd - patternStart;
-
-            return FindPatternInMemory(process, memoryStart, memoryEnd, (pointer) => Marshal.Copy(pattern, patternStart, pointer, patternSize), patternSize, searchAlignment, searchWritableMemoryOnly);
+            return Context.Debugger.FindPatternInMemory(process, memoryStart, memoryEnd, pattern, patternStart, patternEnd, searchAlignment, searchWritableMemoryOnly);
         }
 
         /// <summary>
@@ -505,7 +501,7 @@ namespace CsScripts
                 (newMemoryStart) => FindBytePatternInMemory(process, newMemoryStart, memoryEnd, pattern, patternStart, patternEnd, searchAlignment, searchWritableMemoryOnly));
         }
 
-        #endregion
+#endregion
 
         private static IEnumerable<ulong> FindAllPatternInMemory(ulong memoryStart, ulong memoryEnd, uint searchAlignment, Func<ulong, ulong> patternSearch)
         {
@@ -521,39 +517,7 @@ namespace CsScripts
             }
             while (memoryStart < memoryEnd);
         }
-
-        private static ulong FindPatternInMemory(Process process, ulong memoryStart, ulong memoryEnd, Action<IntPtr> marshallingAction, int patternSize, uint searchAlignment, bool searchWritableMemoryOnly)
-        {
-            if (memoryEnd <= memoryStart)
-            {
-                throw new ArgumentOutOfRangeException("memoryEnd", "less than memoryStart");
-            }
-
-            IntPtr pointer = Marshal.AllocHGlobal(patternSize);
-
-            try
-            {
-                marshallingAction(pointer);
-                using (ProcessSwitcher switcher = new ProcessSwitcher(process))
-                {
-                    return Context.DataSpaces.SearchVirtual2(memoryStart, memoryEnd - memoryStart, searchWritableMemoryOnly ? 1U : 0U, pointer, (uint)patternSize, searchAlignment);
-                }
-            }
-            catch (COMException ex)
-            {
-                if ((uint)ex.HResult == 0x9000001A)
-                {
-                    return 0;
-                }
-
-                throw;
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(pointer);
-            }
-        }
-        #endregion
+#endregion
 
         /// <summary>
         /// Reads the memory from the specified process.
@@ -572,25 +536,31 @@ namespace CsScripts
             }
             else
             {
-                using (ProcessSwitcher switcher = new ProcessSwitcher(process))
-                {
-                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
-                    uint read;
+                return Context.Debugger.ReadMemory(process, address, size);
+            }
+        }
 
-                    try
-                    {
-                        Context.DataSpaces.ReadVirtual(address, buffer, size, out read);
+        /// <summary>
+        /// Converts the specified structure to the bytes array.
+        /// </summary>
+        /// <typeparam name="T">Type of the structure</typeparam>
+        /// <param name="structure">The structure.</param>
+        private static byte[] Convert<T>(T structure)
+            where T : struct
+        {
+            int size = Marshal.SizeOf<T>();
+            byte[] bytes = new byte[size];
+            IntPtr pointer = Marshal.AllocHGlobal(size);
 
-                        byte[] bytes = new byte[size];
-
-                        Marshal.Copy(buffer, bytes, 0, (int)size);
-                        return bytes;
-                    }
-                    finally
-                    {
-                        Marshal.FreeHGlobal(buffer);
-                    }
-                }
+            try
+            {
+                Marshal.StructureToPtr(structure, pointer, true);
+                Marshal.Copy(pointer, bytes, 0, bytes.Length);
+                return bytes;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(pointer);
             }
         }
     }

@@ -360,5 +360,22 @@ namespace CsScripts
                 FramePointer = structure.Rbp,
             };
         }
+
+        /// <summary>
+        /// Gets the size of the context.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        internal static int GetContextSize(Process process)
+        {
+            switch (process.ActualProcessorType)
+            {
+                case ImageFileMachine.I386:
+                    return Marshal.SizeOf<CONTEXT_X86>();
+                case ImageFileMachine.AMD64:
+                    return Process.Current.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf<WOW64_CONTEXT>() : Marshal.SizeOf<CONTEXT_X64>();
+                default:
+                    throw new Exception("Unknown platform " + Process.Current.ActualProcessorType);
+            }
+        }
     }
 }
