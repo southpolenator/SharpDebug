@@ -6,79 +6,65 @@ using System.Text;
 
 namespace CsScriptManaged.Utility
 {
-    internal class DumpFileMemoryReader : IDisposable
+    internal unsafe class DumpFileMemoryReader : IDisposable
     {
         private FileStream fileStream;
         private MemoryMappedFile memoryMappedFile;
         private MemoryMappedViewStream stream;
-        private MemoryMappedViewAccessor accessor;
         private MemoryLocation[] ranges;
+        byte* basePointer = null;
 
         public DumpFileMemoryReader(string dumpFilePath)
         {
             bool dispose = true;
+            FileStream fileStream = null;
+            MemoryMappedFile memoryMappedFile = null;
+            MemoryMappedViewStream stream = null;
 
             try
             {
                 fileStream = new FileStream(dumpFilePath, FileMode.Open, FileAccess.Read);
                 memoryMappedFile = MemoryMappedFile.CreateFromFile(fileStream, Guid.NewGuid().ToString(), fileStream.Length, MemoryMappedFileAccess.Read, new MemoryMappedFileSecurity(), HandleInheritability.Inheritable, false);
                 stream = memoryMappedFile.CreateViewStream(0, fileStream.Length, MemoryMappedFileAccess.Read);
-                accessor = memoryMappedFile.CreateViewAccessor(0, fileStream.Length, MemoryMappedFileAccess.Read);
 
-                unsafe
+                stream.SafeMemoryMappedViewHandle.AcquirePointer(ref basePointer);
+                IntPtr streamPointer = IntPtr.Zero;
+                uint streamSize = 0;
+                MINIDUMP_DIRECTORY directory = new MINIDUMP_DIRECTORY();
+
+                if (!MiniDumpReadDumpStream((IntPtr)basePointer, MINIDUMP_STREAM_TYPE.Memory64ListStream, ref directory, ref streamPointer, ref streamSize))
+                    throw new Exception("Unable to read mini dump stream");
+
+                var data = Marshal.PtrToStructure<MINIDUMP_MEMORY64_LIST>(streamPointer);
+                ulong lastEnd = data.BaseRva;
+
+                ranges = new MemoryLocation[data.NumberOfMemoryRanges];
+                for (int i = 0; i < ranges.Length; i++)
                 {
-                    try
+                    var descriptor = Marshal.PtrToStructure<MINIDUMP_MEMORY_DESCRIPTOR64>(streamPointer + sizeof(MINIDUMP_MEMORY64_LIST) + i * sizeof(MINIDUMP_MEMORY_DESCRIPTOR64));
+                    ranges[i] = new MemoryLocation()
                     {
-                        byte* basePointer = null;
-                        stream.SafeMemoryMappedViewHandle.AcquirePointer(ref basePointer);
-                        IntPtr streamPointer = IntPtr.Zero;
-                        uint streamSize = 0;
-                        MINIDUMP_DIRECTORY directory = new MINIDUMP_DIRECTORY();
-
-                        if (!MiniDumpReadDumpStream((IntPtr)basePointer, MINIDUMP_STREAM_TYPE.Memory64ListStream, ref directory, ref streamPointer, ref streamSize))
-                            throw new Exception("Unable to read mini dump stream");
-
-                        var data = Marshal.PtrToStructure<MINIDUMP_MEMORY64_LIST>(streamPointer);
-                        ulong lastEnd = data.BaseRva;
-
-                        ranges = new MemoryLocation[data.NumberOfMemoryRanges];
-                        for (int i = 0; i < ranges.Length; i++)
-                        {
-                            var descriptor = Marshal.PtrToStructure<MINIDUMP_MEMORY_DESCRIPTOR64>(streamPointer + sizeof(MINIDUMP_MEMORY64_LIST) + i * sizeof(MINIDUMP_MEMORY_DESCRIPTOR64));
-                            ranges[i] = new MemoryLocation()
-                            {
-                                MemoryStart = descriptor.StartOfMemoryRange,
-                                MemoryEnd = descriptor.StartOfMemoryRange + descriptor.DataSize,
-                                FilePosition = lastEnd,
-                            };
-                            lastEnd += descriptor.DataSize;
-                        }
-
-                        int newEnd = 0;
-                        for (int i = 1; i < ranges.Length; i++)
-                            if (ranges[i].MemoryStart == ranges[newEnd].MemoryEnd)
-                                ranges[newEnd].MemoryEnd = ranges[i].MemoryEnd;
-                            else
-                                ranges[++newEnd] = ranges[i];
-                        Array.Resize(ref ranges, newEnd);
-                    }
-                    finally
-                    {
-                        stream.SafeMemoryMappedViewHandle.ReleasePointer();
-                    }
+                        MemoryStart = descriptor.StartOfMemoryRange,
+                        MemoryEnd = descriptor.StartOfMemoryRange + descriptor.DataSize,
+                        FilePosition = lastEnd,
+                    };
+                    lastEnd += descriptor.DataSize;
                 }
 
+                int newEnd = 0;
+                for (int i = 1; i < ranges.Length; i++)
+                    if (ranges[i].MemoryStart == ranges[newEnd].MemoryEnd)
+                        ranges[newEnd].MemoryEnd = ranges[i].MemoryEnd;
+                    else
+                        ranges[++newEnd] = ranges[i];
+                Array.Resize(ref ranges, newEnd);
                 dispose = false;
             }
             finally
             {
                 if (dispose)
                 {
-                    if (accessor != null)
-                    {
-                        accessor.Dispose();
-                    }
-
+                    stream.SafeMemoryMappedViewHandle.ReleasePointer();
                     if (stream != null)
                     {
                         stream.Dispose();
@@ -94,15 +80,33 @@ namespace CsScriptManaged.Utility
                         fileStream.Dispose();
                     }
                 }
+                else
+                {
+                    this.fileStream = fileStream;
+                    this.stream = stream;
+                    this.memoryMappedFile = memoryMappedFile;
+                }
             }
         }
 
         public void Dispose()
         {
-            accessor.Dispose();
+            stream.SafeMemoryMappedViewHandle.ReleasePointer();
             stream.Dispose();
             memoryMappedFile.Dispose();
             fileStream.Dispose();
+        }
+
+        private int ReadMemory(ulong position, char[] buffer)
+        {
+            Marshal.Copy((IntPtr)(basePointer + position), buffer, 0, buffer.Length);
+            return buffer.Length;
+        }
+
+        private int ReadMemory(ulong position, byte[] buffer)
+        {
+            Marshal.Copy((IntPtr)(basePointer + position), buffer, 0, buffer.Length);
+            return buffer.Length;
         }
 
         public byte[] ReadMemory(ulong address, int size)
@@ -117,7 +121,7 @@ namespace CsScriptManaged.Utility
                 throw new Exception("Reading more that it is found");
             }
 
-            accessor.ReadArray((long)position, bytes, 0, size);
+            ReadMemory(position, bytes);
             return bytes;
         }
 
@@ -138,7 +142,7 @@ namespace CsScriptManaged.Utility
 
             do
             {
-                read = accessor.ReadArray((long)position, buffer, 0, buffer.Length);
+                read = ReadMemory(position, buffer);
                 position += (ulong)read;
                 for (int i = 0; i < read && !end; i++)
                 {
@@ -174,7 +178,7 @@ namespace CsScriptManaged.Utility
 
             do
             {
-                read = accessor.ReadArray((long)position, buffer, 0, buffer.Length);
+                read = ReadMemory(position, buffer);
                 position += (ulong)read;
                 for (int i = 0; i < read && !end; i++)
                 {
