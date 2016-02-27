@@ -404,8 +404,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     }
                 }
 
-                // We found the parent type, but continue the search
-                userType.SetDeclaredInType(parentUserType);
+                string fullSymbolName = symbolNamespace;
 
                 // Remove Parent Namespace
                 if (parentSymbolNamespaceIndex > 0 )
@@ -413,7 +412,36 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     symbolNamespace = symbolNamespace.Substring(parentSymbolNamespaceIndex);
                 }
 
-                userType.NamespaceSymbol = symbolNamespace;
+                if (parentUserType != null && !string.IsNullOrEmpty(symbolNamespace))
+                {
+                    string parentSymbolNamespace = fullSymbolName.Substring(0, parentSymbolNamespaceIndex - 2);
+
+                    //  UserType is defined in namespace of Parent Class.
+                    //  Create a new static class to emulate namespace.
+                    //
+                    UserType namespaceUserType;
+
+                    foreach (var innerNamespace in symbolNamespace.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        parentSymbolNamespace += "::" + innerNamespace;
+
+                        if (!GlobalCache.UserTypesBySymbolName.TryGetValue(parentSymbolNamespace, out namespaceUserType))
+                        {
+                            namespaceUserType = new NamespaceUserType(innerNamespace, parentUserType.ModuleName);
+
+                            GlobalCache.UserTypesBySymbolName.TryAdd(parentSymbolNamespace, namespaceUserType);
+                        }
+
+                        namespaceUserType.SetDeclaredInType(parentUserType);
+                        parentUserType = namespaceUserType;
+                    }
+                    userType.SetDeclaredInType(parentUserType);
+                }
+                else
+                {
+                    userType.SetDeclaredInType(parentUserType);
+                    userType.NamespaceSymbol = symbolNamespace;
+                }
 
                 // we done 
 

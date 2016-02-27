@@ -423,16 +423,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 output.WriteLine(indentation++, "{{");
             }
-            else
-            if (!string.IsNullOrEmpty(Namespace))
-            {
-                // Declared In Type with namespace
-                foreach(string innerClass in Namespace.Split('.'))
-                {
-                    output.WriteLine(indentation, "public static class {0}", innerClass);
-                    output.WriteLine(indentation++, @"{{");
-                }
-            }
+
 
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
             {
@@ -512,17 +503,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
             if (DeclaredInType == null)
             {
                 output.WriteLine(--indentation, "}}");
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(Namespace))
-                {
-                    // Declared In Type with namespace
-                    foreach (string innerClass in Namespace.Split('.'))
-                    {
-                        output.WriteLine(--indentation, "}}");
-                    }
-                }
             }
         }
 
