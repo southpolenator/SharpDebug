@@ -229,9 +229,20 @@ namespace CsScriptManaged.SymbolProviders
             {
                 IDiaSymbol type;
 
-                if (!BasicTypes.TryGetValue(typeName, out type))
+                if (basicTypes.Cached)
+                {
+                    if (!BasicTypes.TryGetValue(typeName, out type))
+                    {
+                        type = session.globalScope.GetChild(typeName);
+                    }
+                }
+                else
                 {
                     type = session.globalScope.GetChild(typeName);
+                    if (type == null)
+                    {
+                        type = BasicTypes[typeName];
+                    }
                 }
 
                 return GetTypeId(type);
