@@ -101,7 +101,7 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    abstract class UserTypeTree
+    internal abstract class UserTypeTree
     {
         public abstract string GetUserTypeString();
 
@@ -111,9 +111,9 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class UserTypeTreeUserType : UserTypeTree
+    internal class UserTypeTreeUserType : UserTypeTree
     {
-        public UserTypeTreeUserType(UserType userType)
+        protected UserTypeTreeUserType(UserType userType)
         {
             UserType = userType;
         }
@@ -131,7 +131,7 @@ namespace GenerateUserTypesFromPdb
 
             if (templateType != null)
             {
-                return new UserTypeSpecializedGenericsType(templateType, factory);
+                return new UserTypeTreeGenericsType(templateType, factory);
             }
 
             return new UserTypeTreeUserType(userType);
@@ -153,34 +153,35 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class UserTypeTreeGenericsType : UserTypeSpecializedGenericsType
+    class UserTypeTreeGenericsType : UserTypeTreeUserType
     {
-        public UserTypeTreeGenericsType(TemplateUserType genericsType, UserTypeFactory factory)
-            : base(genericsType, factory)
-        {
-        }
-        public override string GetUserTypeString()
-        {
-            return GenericsType.GetSpecializedType(SpecializedArguments.Select(t => t.GetUserTypeString()).ToArray());
-            //return GenericsType.GetSpecializedType(this.GenericsType.ExtractSpecializedTypes());
-        }
-    }
+        public bool CanInstatiate;
 
-    class UserTypeSpecializedGenericsType : UserTypeTreeUserType
-    {
-        public UserTypeSpecializedGenericsType(TemplateUserType genericsType, UserTypeFactory factory)
+        public UserTypeTreeGenericsType(TemplateUserType genericsType, UserTypeFactory factory)
             : base(genericsType)
         {
             GenericsType = genericsType;
 
-            string[] arguments = genericsType.ExtractSpecializedTypes();
+            IDiaSymbol[] arguments = genericsType.ExtractSpecializedSymbols();
+
+            CanInstatiate = true;
 
             SpecializedArguments = new UserTypeTree[arguments.Length];
             for (int i = 0; i < arguments.Length; i++)
             {
-                var symbol = genericsType.DiaSession.GetTypeSymbol(arguments[i]);
+                UserType userType;
+                factory.GetUserType(arguments[i], out userType);
 
-                SpecializedArguments[i] = genericsType.GetTypeString(symbol, factory);
+                if (userType != null)
+                {
+                    SpecializedArguments[i] = UserTypeTreeUserType.Create(userType, factory);
+                }
+                else
+                {
+                    CanInstatiate = false;
+                    // #fixme can't deal with it
+                    SpecializedArguments[i] = genericsType.GetTypeString(arguments[i], factory);
+                }
             }
         }
 
@@ -189,13 +190,11 @@ namespace GenerateUserTypesFromPdb
 
         public override string GetUserTypeString()
         {
-            //#fixem
-            //return GenericsType.GetSpecializedType(SpecializedArguments.Select(t => t.GetUserTypeString()).ToArray());
-            return GenericsType.GetSpecializedType(this.GenericsType.ExtractSpecializedTypes());
+            return GenericsType.GetSpecializedType(SpecializedArguments.Select(t => t.GetUserTypeString()).ToArray());
         }
     }
 
-    class UserTypeTreeEnum : UserTypeTreeUserType
+    internal class UserTypeTreeEnum : UserTypeTreeUserType
     {
         public UserTypeTreeEnum(EnumUserType userType)
             : base(userType)
@@ -211,7 +210,7 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class UserTypeTreeCodePointer : UserTypeTree
+    internal class UserTypeTreeCodePointer : UserTypeTree
     {
         public UserTypeTreeCodePointer(UserTypeTree innerType)
         {
@@ -226,7 +225,7 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class UserTypeTreeCodeArray : UserTypeTree
+    internal class UserTypeTreeCodeArray : UserTypeTree
     {
         public UserTypeTreeCodeArray(UserTypeTree innerType)
         {
@@ -241,7 +240,7 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class UserTypeTreeCodeFunction : UserTypeTree
+    internal class UserTypeTreeCodeFunction : UserTypeTree
     {
         public override string GetUserTypeString()
         {
@@ -249,7 +248,7 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class UserTypeTreeVariable : UserTypeTree
+    internal class UserTypeTreeVariable : UserTypeTree
     {
         private bool isJustVariable;
 
@@ -264,7 +263,7 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class UserTypeStaticClass : UserTypeTree
+    internal class UserTypeStaticClass : UserTypeTree
     {
         public UserTypeStaticClass()
         {
@@ -276,7 +275,7 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class UserTypeTreeMultiClassInheritance : UserTypeTreeVariable
+    internal class UserTypeTreeMultiClassInheritance : UserTypeTreeVariable
     {
         public UserTypeTreeMultiClassInheritance()
             : base(false)
@@ -284,7 +283,7 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class UserTypeTreeTransformation : UserTypeTree
+    internal class UserTypeTreeTransformation : UserTypeTree
     {
         public UserTypeTreeTransformation(UserTypeTransformation transformation)
         {
@@ -346,10 +345,6 @@ namespace GenerateUserTypesFromPdb
 
         public void WritePropertyCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options, ref bool firstField)
         {
-            if (FieldName == "m_evtWaitFor")
-            {
-
-            }
 
             if (string.IsNullOrEmpty(ConstantValue))
                 if (options.HasFlag(UserTypeGenerationFlags.SingleLineProperty) && CacheResult)
@@ -383,6 +378,39 @@ namespace GenerateUserTypesFromPdb
                     output.WriteLine(--indentation, "}}");
                     output.WriteLine(--indentation, "}}");
                 }
+        }
+
+
+        /// <summary>
+        /// Gets property name based on the fieldName
+        /// </summary>
+        /// <param name="fieldName"></param>
+        /// <returns></returns>
+        public static string GetPropertyName(string fieldName, string className)
+        {
+            if (fieldName == className)
+            {
+                // property name cannot be equal to class name
+                return string.Format("_{0}", fieldName);
+            }
+
+            fieldName = fieldName.Replace("::", "_");
+
+            switch (fieldName)
+            {
+                case "lock":
+                case "base":
+                case "params":
+                case "enum":
+                case "in":
+                case "object":
+                case "event":
+                    return string.Format("_{0}", fieldName);
+                default:
+                    break;
+            }
+
+            return fieldName;
         }
     }
 
@@ -435,14 +463,13 @@ namespace GenerateUserTypesFromPdb
 
     class UserTypeTransformation
     {
-        private XmlTypeTransformation transformation;
         private Func<string, string> typeConverter;
         private UserType ownerUserType;
         private IDiaSymbol type;
 
         public UserTypeTransformation(XmlTypeTransformation transformation, Func<string, string> typeConverter, UserType ownerUserType, IDiaSymbol type)
         {
-            this.transformation = transformation;
+            this.Transformation = transformation;
             this.typeConverter = typeConverter;
             this.ownerUserType = ownerUserType;
             this.type = type;
@@ -452,458 +479,17 @@ namespace GenerateUserTypesFromPdb
         {
             string originalFieldTypeString = TypeToString.GetTypeString(type);
 
-            return transformation.TransformType(originalFieldTypeString, ownerUserType.ClassName, typeConverter);
+            return Transformation.TransformType(originalFieldTypeString, ownerUserType.ClassName, typeConverter);
         }
 
         internal string TransformConstructor(string field, string fieldOffset)
         {
             string originalFieldTypeString = TypeToString.GetTypeString(type);
 
-            return transformation.TransformConstructor(originalFieldTypeString, field, fieldOffset, ownerUserType.ClassName, typeConverter);
-        }
-    }
-
-    class UserTypeFactory
-    {
-        protected List<UserType> userTypes = new List<UserType>();
-        protected XmlTypeTransformation[] typeTransformations;
-
-        public UserTypeFactory(XmlTypeTransformation[] transformations)
-        {
-            typeTransformations = transformations;
+            return Transformation.TransformConstructor(originalFieldTypeString, field, fieldOffset, ownerUserType.ClassName, typeConverter);
         }
 
-        public UserTypeFactory(UserTypeFactory factory)
-            : this(factory.typeTransformations)
-        {
-            userTypes.AddRange(factory.userTypes);
-        }
+        public XmlTypeTransformation Transformation { get; private set; }
 
-        public List<UserType> Symbols
-        {
-            get
-            {
-                return userTypes;
-            }
-        }
-
-        internal virtual bool TryGetUserType(string typeString, out UserType userType)
-        {
-            try
-            {
-                GlobalCache.UserTypesBySymbolName.TryGetValue(typeString, out userType);
-
-                //#fixme, fast aproach for now
-                //userType = userTypes.FirstOrDefault(t => t.Matches(typeString, this));
-                return userType != null;
-            }
-            catch (Exception)
-            {
-                // unable to match the type
-                userType = null;
-                return false;
-            }
-        }
-
-        internal virtual bool GetUserType(IDiaSymbol type, out UserType userType)
-        {
-            if (type.name != null && type.name.StartsWith("CAutoRefc<WaitStatsSink>"))
-            {
-
-            }
-            
-            string typeString = TypeToString.GetTypeString(type);
-
-            GlobalCache.UserTypesBySymbolName.TryGetValue(typeString, out userType);
-
-            if (userType == null)
-            {
-                return false;
-            }
-
-            //#fixme
-            var matchingTypes = userTypes.Where(t => t.Matches(typeString, this)).ToArray(); ;
-
-            userType = matchingTypes.OfType<PhysicalUserType>().FirstOrDefault();
-
-            if (userType != null)
-            {
-                return true;
-            }
-
-            if (matchingTypes.Count() >= 3)
-            {
-
-            }
-
-            userType = matchingTypes.FirstOrDefault(r => r.Symbol.name == type.name);
-
-            if (userType != null)
-            {
-                return true;
-            }
-
-            userType = matchingTypes.FirstOrDefault();
-
-            if (userType != null)
-            {
-                var templateType = userType as TemplateUserType;
-                //#fixme
-                if (userType.Symbol.name == "CAutoRefc<IClassFactory>")
-                {
-
-                }
-
-                string typeName = type.name;
-
-                if (templateType != null)
-                {
-                    var specializedType = templateType.specializedTypes.FirstOrDefault(r => r.Symbol.name == typeName);
-
-                    userType = specializedType;
-                }
-            }
-
-
-            return userType != null;
-        }
-
-        internal void AddUserType(UserType userType)
-        {
-            //#fixme
-            userTypes.Add(userType);
-        }
-
-        internal void InserUserType(UserType userType)
-        {
-            userTypes.Insert(0, userType);
-        }
-
-        internal void AddSymbol(IDiaSymbol symbol, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
-        {
-            UserType newUserType;
-
-            if (type == null)
-            {
-                newUserType = new EnumUserType(symbol, moduleName);
-            }
-            else if (generationOptions.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
-            {
-                newUserType = new PhysicalUserType(symbol, type, moduleName);
-            }
-            else
-            {
-                newUserType = new UserType(symbol, type, moduleName);
-            }
-
-            userTypes.Add(newUserType);
-
-            // Store in global cache
-            string typeName = newUserType.Symbol.name;
-            if (!GlobalCache.UserTypesBySymbolName.TryAdd(typeName, newUserType))
-            {
-                //#failed
-            }
-        }
-
-        internal void AddSymbol(IDiaSession session, IDiaSymbol[] symbols, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
-        {
-            if (!type.IsTemplate && symbols.Length > 1)
-                throw new Exception("Type has more than one symbol for " + type.Name);
-
-            if (!type.IsTemplate)
-                AddSymbol(symbols[0], type, moduleName, generationOptions);
-            else
-            {
-                var buckets = new Dictionary<int, TemplateUserType>();
-
-                foreach (IDiaSymbol diaSymbol in symbols)
-                {
-                    try
-                    {
-                        // We want to ignore "empty" generic classes (for now)
-                        if (diaSymbol.name == null || diaSymbol.length == 0)
-                        {
-                            continue;
-                        }
-
-                        TemplateUserType templateType = new TemplateUserType(session, diaSymbol, type, moduleName, this);
-
-                        int templateArgs = templateType.GenericsArguments;
-
-                        TemplateUserType previousTemplateType;
-
-                        if (!buckets.TryGetValue(templateArgs, out previousTemplateType))
-                        {
-                            // Add new template type
-                            buckets.Add(templateArgs, templateType);
-                        }
-                        else
-                        {
-                            previousTemplateType.specializedTypes.Add(templateType);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-
-                // Add newly generated types
-                foreach (var template in buckets.Values)
-                {
-                    userTypes.Add(template);
-                }
-            }
-        }
-
-        internal void ProcessTypes()
-        {
-            int index = 0;
-            foreach (var userType in userTypes)
-            {
-                string parentClassSymbolName = userType.ParentClassSymbolName;
-                UserType parentUserType;
-
-                GlobalCache.UserTypesBySymbolName.TryGetValue(parentClassSymbolName, out parentUserType);
-
-                if (userType.ClassName.Contains("XE_LiveWriter.MetadataBlockEntry"))
-                {
-
-                }
-
-                //var fullClassName = userType.FullClassName;
-                //int lastIndex = fullClassName.LastIndexOf('.');
-
-
-                //var parentTypeName = lastIndex > 0 ? fullClassName.Substring(0, lastIndex) : null;
-                //if (parentTypeName != userType.Namespace)
-                {
-                    //var parentType = userTypes.FirstOrDefault(t => t.FullClassName == parentTypeName);
-
-                    if (parentUserType != null)
-                    {
-                        userType.SetDeclaredInType(parentUserType);
-                    }
-                    else
-                    if (!string.IsNullOrEmpty(parentClassSymbolName))
-                    {
-                        // if there is not parent class, that set up correct namespace
-                        userType.NamespaceSymbol = parentClassSymbolName;
-
-                        if (parentClassSymbolName == "DetourFindFunction::__l29")
-                        {
-
-                        }
-                       
-                    }
-                    else
-                    {
-                        //throw new Exception("Unsupported namespace of class " + userType.Symbol.name);
-                    }
-                }
-
-                Console.WriteLine("{0}:{1}", index++, userTypes.Count());
-            }
-        }
-
-        internal bool ContainsSymbol(IDiaSymbol type)
-        {
-            UserType userType;
-
-            string typeString = TypeToString.GetTypeString(type);
-
-            GlobalCache.UserTypesBySymbolName.TryGetValue(typeString, out userType);
-
-            return (userType != null);
-        }
-
-        internal UserTypeTransformation FindTransformation(IDiaSymbol type, UserType ownerUserType)
-        {
-            string originalFieldTypeString = TypeToString.GetTypeString(type);
-            var transformation = typeTransformations.Where(t => t.Matches(originalFieldTypeString)).FirstOrDefault();
-
-            if (transformation == null)
-                return null;
-
-            Func<string, string> typeConverter = null;
-
-            typeConverter = (inputType) =>
-            {
-                UserType userType;
-
-                if (TryGetUserType(inputType, out userType))
-                {
-                    return userType.FullClassName;
-                }
-
-                var tr = typeTransformations.Where(t => t.Matches(inputType)).FirstOrDefault();
-
-                if (tr != null)
-                {
-                    return tr.TransformType(inputType, ownerUserType.ClassName, typeConverter);
-                }
-
-                return "Variable";
-            };
-
-            return new UserTypeTransformation(transformation, typeConverter, ownerUserType, type);
-        }
-
-        internal bool ContainsSymbol(string typeString)
-        {
-            UserType userType;
-
-            return TryGetUserType(typeString, out userType);
-        }
-    }
-
-    class FakeUserType : UserType
-    {
-        private string typeName;
-
-        public FakeUserType(string typeName)
-            : base(null, null, null)
-        {
-            this.typeName = typeName;
-        }
-
-        public override string ClassName
-        {
-            get
-            {
-                return typeName;
-            }
-        }
-
-        public override string FullClassName
-        {
-            get
-            {
-                return typeName;
-            }
-        }
-    }
-
-
-
-    class EnumUserType : UserType
-    {
-        public EnumUserType(IDiaSymbol symbol, string moduleName)
-            : base(symbol, new XmlType() { Name = symbol.name }, moduleName)
-        {
-        }
-
-        public override void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
-        {
-            if (DeclaredInType == null)
-            {
-                // always make module namespace
-                if (Namespace != null)
-                {
-                    output.WriteLine(indentation, "namespace {0}.{1}", ModuleName, Namespace);
-                }
-                else
-                {
-                    output.WriteLine(indentation, "namespace {0}", ModuleName);
-                }
-                output.WriteLine(indentation++, "{{");
-            }
-
-            output.WriteLine(indentation, @"public enum {0}", ClassName);
-            output.WriteLine(indentation++, @"{{");
-
-            foreach (var enumValue in Symbol.GetChildren())
-            {
-                output.WriteLine(indentation, "{0} = {1},", enumValue.name, enumValue.value);
-            }
-
-            // Class end
-            output.WriteLine(--indentation, @"}}");
-
-            if (DeclaredInType == null)
-            {
-                output.WriteLine(--indentation, "}}");
-            }
-        }
-    }
-
-    class GlobalsUserType : UserType
-    {
-        private IDiaSession session;
-
-        public GlobalsUserType(IDiaSession session, string moduleName)
-            : base(session.globalScope, new XmlType() { Name = "Globals" }, moduleName)
-        {
-            this.session = session;
-        }
-
-        public override string ClassName
-        {
-            get
-            {
-                return "ModuleGlobals";
-            }
-        }
-
-        internal override IEnumerable<UserTypeField> ExtractFields(UserTypeFactory factory, UserTypeGenerationFlags options)
-        {
-            var fields = session.globalScope.GetChildren(SymTagEnum.SymTagData).OrderBy(s => s.name).ToArray();
-            bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
-            string previousName = "";
-
-            foreach (var field in fields)
-            {
-                if (string.IsNullOrEmpty(field.type.name))
-                {
-                    continue;
-                }
-
-                if (IsFieldFiltered(field) || field.name == previousName)
-                    continue;
-
-                UserType userType;
-                factory.TryGetUserType(field.type.name, out userType);
-
-                if (userType == null)
-                {
-                    continue;
-                }
-
-                var userField = ExtractField(field, factory, options, forceIsStatic: true);
-
-                userField.FieldName = userField.FieldName.Replace("?", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
-                userField.PropertyName = userField.PropertyName.Replace("?", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
-
-                yield return userField;
-                previousName = field.name;
-            }
-
-            foreach (var field in GetAutoGeneratedFields(false, useThisClass))
-                yield return field;
-        }
-
-        internal override bool Matches(IDiaSymbol type, UserTypeFactory factory)
-        {
-            return false;
-        }
-
-        internal override bool Matches(string typeString, UserTypeFactory factory)
-        {
-            return false;
-        }
-
-        protected override UserTypeTree GetBaseTypeString(TextWriter error, IDiaSymbol type, UserTypeFactory factory)
-        {
-            return new UserTypeStaticClass();
-        }
-
-        protected override IEnumerable<UserTypeConstructor> GenerateConstructors()
-        {
-            yield return new UserTypeConstructor()
-            {
-                ContainsFieldDefinitions = true,
-                Static = true,
-            };
-        }
     }
 }

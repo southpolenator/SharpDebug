@@ -921,13 +921,13 @@ namespace CsScripts
         /// <typeparam name="T"></typeparam>
         /// <param name="fieldName"></param>
         /// <returns></returns>
-        public T GetClassField<T>(string fieldName) where T : UserType
+        public T GetClassField<T>(string fieldName)
         {
             Variable field = GetClassField(fieldName);
 
             if (field == null)
             {
-                return null;
+                return default(T);
             }
 
             return field.CastAs<T>();

@@ -9,9 +9,10 @@ using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb
 {
-    class TemplateUserType : UserType
+    internal class TemplateUserType : UserType
     {
-        private List<string> arguments = new List<string>();
+        private List<string> argumentsSymbols = new List<string>();
+        private List<UserType> argumentsUserType = new List<UserType>();
 
         // #fixme, use diferent type
         public List<TemplateUserType> specializedTypes = new List<TemplateUserType>();
@@ -19,11 +20,21 @@ namespace GenerateUserTypesFromPdb
         public TemplateUserType(IDiaSession session, IDiaSymbol symbol, XmlType xmlType, string moduleName, UserTypeFactory factory)
             : base(symbol, xmlType, moduleName)
         {
-            string symbolName = symbol.name;
+            DiaSession = session;
+
+            UpdateArguments(factory);
+        }
+
+        public void UpdateArguments(UserTypeFactory factory)
+        {
+            this.argumentsSymbols.Clear();
+            this.argumentsUserType.Clear();
+
+            string symbolName = Symbol.name;
+
             int templateStart = symbolName.IndexOf('<');
             var arguments = new List<string>();
 
-            DiaSession = session;
             for (int i = templateStart + 1; i < symbolName.Length; i++)
             {
                 var extractedType = XmlTypeTransformation.ExtractType(symbolName, i);
@@ -36,13 +47,25 @@ namespace GenerateUserTypesFromPdb
 
                 if (!int.TryParse(extractedType, out constant))
                 {
-                    var type = session.GetTypeSymbol(extractedType);
+                    IDiaSymbol diaSymbol = DiaSession.GetTypeSymbol(extractedType);
 
                     // Check if type is existing type
-                    if (type == null)
+                    if (diaSymbol == null)
+                    {
                         throw new Exception("Wrongly formed template argument");
+                    }
 
-                    this.arguments.Add(TypeToString.GetTypeString(type));
+                    this.argumentsSymbols.Add(TypeToString.GetTypeString(diaSymbol));
+
+                    UserType specializationUserType;
+                    if (factory.GetUserType(diaSymbol, out specializationUserType) )
+                    {
+                        this.argumentsUserType.Add(specializationUserType);
+                    }
+                    else
+                    {
+                        this.argumentsUserType.Add(null);
+                    }
                 }
             }
 
@@ -58,15 +81,16 @@ namespace GenerateUserTypesFromPdb
             get
             {
                 string symbolName = Symbol.name;
-                string newSymbolName = symbolName.Replace("::", ".");
-
-                if (symbolName != newSymbolName)
-                {
-                    symbolName = newSymbolName;
-                }
 
                 if (DeclaredInType != null)
-                    symbolName = symbolName.Substring(DeclaredInType.FullClassName.Length + 1);
+                {
+                    symbolName = NameHelper.GetFullSymbolNamespaces(symbolName).Last();
+                }
+                else
+                if (Namespace != null)
+                {
+                    symbolName = symbolName.Substring(NamespaceSymbol.Length + 2);
+                }
 
                 int templateStart = symbolName.IndexOf('<');
 
@@ -93,22 +117,67 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                return arguments.Count;
+                return argumentsSymbols.Count;
+            }
+        }
+
+        public List<string> Arguments
+        {
+            get
+            {
+                return argumentsSymbols;
             }
         }
 
         public string[] ExtractSpecializedTypes()
         {
-            return arguments.ToArray();
-        }
-
-        public string GetSpecializedType(string[] types)
-        {
-            if (types == null)
+            List<string> results = new List<string>();
+            foreach (string specializedType in argumentsSymbols)
             {
+                UserType userType;
+
+                if (GlobalCache.UserTypesBySymbolName.TryGetValue(NameHelper.GetLookupNameForSymbol(specializedType), out userType))
+                {
+                    results.Add(userType.ClassName);
+                    continue;
+                }
+
+                if (GlobalCache.UserTypesBySymbolName.TryGetValue(specializedType, out userType))
+                {
+                    results.Add(userType.ClassName);
+                    continue;
+                }
+
+                results.Add(specializedType);
             }
 
-            if (types.Length != GenericsArguments)
+            //#wrong
+            return results.ToArray();
+        }
+
+        public IDiaSymbol[] ExtractSpecializedSymbols()
+        {
+            List<IDiaSymbol> results = new List<IDiaSymbol>();
+            foreach (string specializedType in argumentsSymbols)
+            {
+                UserType userType;
+
+                if (GlobalCache.UserTypesBySymbolName.TryGetValue(specializedType, out userType))
+                {
+                    results.Add(userType.Symbol);
+                }
+                else
+                {
+                    results.Add(DiaSession.GetTypeSymbol(specializedType));
+                }
+            }
+
+            return results.ToArray();
+        }
+
+        public string GetSpecializedType(IEnumerable<string> types)
+        {
+            if (types.Count() != GenericsArguments)
                 throw new Exception("Wrong number of generics arguments");
 
             string symbolName = FullClassName;
@@ -125,13 +194,33 @@ namespace GenerateUserTypesFromPdb
             return symbolName;
         }
 
+        public string GetSpecializedTypeDefinedInstance()
+        {
+            string symbolName = FullClassName;
+
+            int templateStart = symbolName.IndexOf('<');
+
+            if (templateStart > 0)
+            {
+                var types = this.argumentsUserType.Select(r => r is TemplateUserType ? ((TemplateUserType)r).GetSpecializedTypeDefinedInstance() : r.FullClassName);
+
+                symbolName = symbolName.Substring(0, templateStart);
+                symbolName += "<";
+                symbolName += string.Join(", ", types);
+                symbolName += ">";
+            }
+
+            return symbolName;
+        }
+
+
         public bool TryGetArgument(string typeName, out string argument)
         {
-            int index = arguments.IndexOf(typeName);
+            int index = argumentsSymbols.IndexOf(typeName);
 
             if (index >= 0)
             {
-                argument = arguments.Count == 1 ? "T" : "T" + (index + 1);
+                argument = argumentsSymbols.Count == 1 ? "T" : "T" + (index + 1);
                 return true;
             }
 
@@ -149,7 +238,7 @@ namespace GenerateUserTypesFromPdb
             UserTypeTree baseType = base.GetBaseTypeString(error, type, CreateFactory(factory));
 
             // Check if base type is template argument. It if is, export it as if it is multi class inheritance.
-            if (baseType is UserTypeTreeUserType && ((UserTypeTreeUserType)baseType).UserType is FakeUserType)
+            if (baseType is UserTypeTreeUserType && ((UserTypeTreeUserType)baseType).UserType is PrimitiveUserType)
                 return new UserTypeTreeMultiClassInheritance();
             return baseType;
         }
@@ -219,89 +308,173 @@ namespace GenerateUserTypesFromPdb
 
             return new TemplateUserTypeFactory(factory, this);
         }
+
+        /// <summary>
+        /// Checks if given template type can be instantiated.
+        /// </summary>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        public bool IsInstantiable(UserTypeFactory factory)
+        {
+            string symbolName = Symbol.name;
+
+            // Check cache for result
+            bool result;
+            if (GlobalCache.InstantiableTemplateUserTypes.TryGetValue(symbolName, out result))
+            {
+                return result;
+            }
+
+            //List<string> specializationArgs = NameHelper.GetTemplateSpecializationArguments(symbolName);
+
+            List<string> specializationArgs = this.argumentsSymbols;
+
+            result = true;
+
+            foreach (string arg in specializationArgs)
+            {
+                bool isTemplateArg = NameHelper.IsTemplateType(arg);
+
+                // Find DiaSymbol for specialization type
+                IDiaSymbol argSymbol;
+                if (!GlobalCache.DiaSymbolsByName.TryGetValue(arg, out argSymbol))
+                {
+                    //
+                    // TODO, add base symbols to global cache
+                    //
+                    // Symbol is not cached, use dia to verify is this primitive type
+                    argSymbol = DiaSession.GetTypeSymbol(arg);
+                }
+
+                if (argSymbol != null)
+                {
+                    // Find UserType for specialization
+                    UserType argUserType;
+
+                    if (factory.GetUserType(argSymbol, out argUserType))
+                    {
+                        // Specialization is template, verify the template as well.
+                        TemplateUserType argTemplateUserType = argUserType as TemplateUserType;
+                        if (argTemplateUserType != null)
+                        {
+                            // Inner Template cannot be instantiated
+                            if (!argTemplateUserType.IsInstantiable(factory))
+                            {
+                                result = false;
+                                break;
+                            }
+                        }
+
+                        continue;
+                    }
+                }
+
+                // Can't find symbol, class cannot be instantiated
+                result = false;
+                break;
+            }
+
+            // Cache the result
+            GlobalCache.InstantiableTemplateUserTypes.TryAdd(symbolName, result);
+            
+            return result;
+        }
+
+
+        public string[] GetCommonBaseTypesForSpecialization(UserTypeFactory factory)
+        {
+            if (!specializedTypes.Any())
+            {
+                return null;
+            }
+
+            string[] results = new string[GenericsArguments];
+
+            for (int i = 0; i < GenericsArguments; i++)
+            {
+                string[] specializedTypes = this.specializedTypes.Select(r => r.argumentsSymbols[i]).ToArray();
+
+                //
+                // TODO, for now just use Variable
+                //
+                string userTypeName = "Variable";
+
+                foreach (string specializedType in specializedTypes)
+                {
+                    //
+                    // TODO again cache base/primitive dia symbols
+                    //
+                    if (specializedType == "bool" ||
+                        specializedType == "char" ||
+                        specializedType == "void" ||
+                        specializedType == "short" ||
+                        specializedType == "int" ||
+                        specializedType == "long long" ||
+                        specializedType == "unsigned long long" ||
+                        specializedType == "unsigned short" ||
+                        specializedType == "unsigned char" || 
+                        specializedType == "unsigned int" ||
+                        specializedType == "double" ||
+                        specializedType == "float")
+                    {
+                        userTypeName = null;
+                        break;
+                    }
+
+                    // try lookup type 
+                    // TODO
+                    // that might not be enough for the enums nested in template types
+                    UserType userType;
+                    if (factory.TryGetUserType(specializedType, out userType) && userType is EnumUserType)
+                    {
+                        userTypeName = null;
+                        break;
+                    }
+                }
+
+                results[i] = userTypeName;
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        protected override string GetInheritanceTypeConstraint(UserTypeFactory factory)
+        {
+            if (Symbol.name.Contains("SequencedWaitInfo"))
+            {
+
+            }
+
+            string[] commonBaseSpecializationTypes = GetCommonBaseTypesForSpecialization(factory);
+
+            if (commonBaseSpecializationTypes == null || commonBaseSpecializationTypes.All(r => string.IsNullOrEmpty(r)))
+            {
+                // no restrictions
+                return string.Empty;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            if (commonBaseSpecializationTypes.Count() == 1)
+            {
+                sb.Append(string.Format("  where T : {0} ", commonBaseSpecializationTypes[0]));
+            }
+            else
+            {
+                for (int i = 0; i < commonBaseSpecializationTypes.Count(); i++)
+                {
+                    if (!string.IsNullOrEmpty(commonBaseSpecializationTypes[i]))
+                    {
+                        sb.Append(string.Format("  where T{0} : {1} ", i + 1, commonBaseSpecializationTypes[i]));
+                    }
+                }
+            }
+
+            return sb.ToString();
+        }
+
     }
-
-
-    class TemplateUserTypeFactory : UserTypeFactory
-    {
-        public TemplateUserTypeFactory(UserTypeFactory factory, TemplateUserType templateType)
-            : base(factory)
-        {
-            TemplateType = templateType;
-            OriginalFactory = factory;
-        }
-
-        public TemplateUserType TemplateType { get; private set; }
-
-        public UserTypeFactory OriginalFactory { get; private set; }
-
-        internal override bool GetUserType(IDiaSymbol type, out UserType userType)
-        {
-            string argumentName;
-            string typeString = TypeToString.GetTypeString(type);
-
-            if (TryGetArgument(typeString, out argumentName))
-            {
-                userType = new FakeUserType(argumentName);
-                return true;
-            }
-
-            return base.GetUserType(type, out userType);
-        }
-
-        internal override bool TryGetUserType(string typeString, out UserType userType)
-        {
-            string argumentName;
-
-            if (TryGetArgument(typeString, out argumentName))
-            {
-                userType = new FakeUserType(argumentName);
-                return true;
-            }
-
-            return base.TryGetUserType(typeString, out userType);
-        }
-
-        private bool TryGetArgument(string typeString, out string argumentName)
-        {
-            if (TemplateType.TryGetArgument(typeString, out argumentName))
-            {
-                return true;
-            }
-
-            if (typeString == "wchar_t")
-            {
-                if (TemplateType.TryGetArgument("unsigned short", out argumentName))
-                    return true;
-            }
-            else if (typeString == "unsigned short")
-            {
-                if (TemplateType.TryGetArgument("whcar_t", out argumentName))
-                    return true;
-            }
-            else if (typeString == "unsigned long long")
-            {
-                if (TemplateType.TryGetArgument("unsigned __int64", out argumentName))
-                    return true;
-            }
-            else if (typeString == "unsigned __int64")
-            {
-                if (TemplateType.TryGetArgument("unsigned long long", out argumentName))
-                    return true;
-            }
-            else if (typeString == "long long")
-            {
-                if (TemplateType.TryGetArgument("__int64", out argumentName))
-                    return true;
-            }
-            else if (typeString == "__int64")
-            {
-                if (TemplateType.TryGetArgument("long long", out argumentName))
-                    return true;
-            }
-
-            return false;
-        }
-    }
-
 }
