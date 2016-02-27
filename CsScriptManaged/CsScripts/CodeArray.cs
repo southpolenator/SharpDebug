@@ -169,7 +169,7 @@ namespace CsScripts
 
         private delegate T TypeConstructor(Variable variable, byte[] buffer, int offset, ulong bufferAddress);
 
-        private IReadOnlyList<T> ReadArray()
+        private TypeConstructor GetActivator()
         {
             var elementType = variable.GetCodeType().ElementType;
             var type = typeof(T);
@@ -189,7 +189,6 @@ namespace CsScripts
                         // Find constructor that has 4 arguments:
                         // Variable variable, byte[] buffer, int offset, ulong bufferAddress
                         var constructors = type.GetConstructors();
-                        TypeConstructor activator = null;
 
                         foreach (var constructor in constructors)
                         {
@@ -219,19 +218,31 @@ namespace CsScripts
                                 gen.Emit(OpCodes.Ldarg_3);
                                 gen.Emit(OpCodes.Newobj, constructor);
                                 gen.Emit(OpCodes.Ret);
-                                activator = (TypeConstructor)method.CreateDelegate(typeof(TypeConstructor));
-                                break;
+                                return (TypeConstructor)method.CreateDelegate(typeof(TypeConstructor));
                             }
-                        }
-
-                        if (activator != null)
-                        {
-                            var address = variable.GetPointerAddress();
-
-                            return new ElementCreatorReadOnlyList(activator, elementType, address);
                         }
                     }
                 }
+            }
+
+            return null;
+        }
+
+        private IReadOnlyList<T> ReadArray()
+        {
+            var activator = GetActivator();
+
+            if (activator != null)
+            {
+                var address = variable.GetPointerAddress();
+                var elementType = variable.GetCodeType().ElementType;
+
+#if false
+                var buffer = Debugger.ReadMemory(elementType.Module.Process, address, (uint)(Length * elementType.Size));
+
+                return new BufferedElementCreatorReadOnlyList(activator, elementType, buffer, address, address);
+#endif
+                return new ElementCreatorReadOnlyList(activator, elementType, address);
             }
 
             return null;
@@ -260,6 +271,55 @@ namespace CsScripts
                     var buffer = Debugger.ReadMemory(elementType.Module.Process, address, elementTypeSize);
 
                     return activator(Variable.CreateNoCast(elementType, address), buffer, 0, address);
+                }
+            }
+
+            public int Count
+            {
+                get
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                throw new NotImplementedException();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private class BufferedElementCreatorReadOnlyList : IReadOnlyList<T>
+        {
+            private TypeConstructor activator;
+            private CodeType elementType;
+            private ulong arrayStartAddress;
+            private uint elementTypeSize;
+            private byte[] buffer;
+            private ulong bufferAddress;
+
+            public BufferedElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, byte[] buffer, ulong bufferAddress, ulong arrayStartAddress)
+            {
+                this.activator = activator;
+                this.elementType = elementType;
+                this.arrayStartAddress = arrayStartAddress;
+                this.buffer = buffer;
+                this.bufferAddress = bufferAddress;
+                elementTypeSize = elementType.Size;
+            }
+
+            public T this[int index]
+            {
+                get
+                {
+                    int offset = (int)(index * elementTypeSize);
+                    ulong address = arrayStartAddress + (ulong)offset;
+
+                    return activator(Variable.CreateNoCast(elementType, address), buffer, offset, bufferAddress);
                 }
             }
 
