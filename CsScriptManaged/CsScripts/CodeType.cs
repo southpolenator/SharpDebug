@@ -87,6 +87,14 @@ namespace CsScripts
             Tag = tag;
             BasicType = basicType;
             InitializeCache();
+
+            if (IsPointer && module.IsFakeCodeTypeId(typeId))
+            {
+                if (!ElementType.pointerToType.Cached)
+                {
+                    ElementType.pointerToType.Value = this;
+                }
+            }
         }
 
         /// <summary>

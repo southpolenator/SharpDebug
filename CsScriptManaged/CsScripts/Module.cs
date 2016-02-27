@@ -38,7 +38,7 @@ namespace CsScripts
         /// <summary>
         /// The next fake code type identifier
         /// </summary>
-        private uint nextFakeCodeTypeId = uint.MaxValue;
+        private int nextFakeCodeTypeId = -1;
 
         /// <summary>
         /// The symbol provider module cache
@@ -271,7 +271,16 @@ namespace CsScripts
         /// </summary>
         internal uint GetNextFakeCodeTypeId()
         {
-            return nextFakeCodeTypeId--;
+            return (uint)System.Threading.Interlocked.Decrement(ref nextFakeCodeTypeId);
+        }
+
+        /// <summary>
+        /// Determines whether the specified code type identifier is fake.
+        /// </summary>
+        /// <param name="codeTypeId">The code type identifier.</param>
+        internal bool IsFakeCodeTypeId(uint codeTypeId)
+        {
+            return codeTypeId >= (uint)nextFakeCodeTypeId;
         }
         #endregion
     }
