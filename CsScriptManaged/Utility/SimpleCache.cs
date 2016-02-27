@@ -128,27 +128,27 @@ namespace CsScriptManaged.Utility
         /// </value>
         public bool Cached { get; internal set; }
 
-        public T GetValue(object lockingObject)
+        /// <summary>
+        /// Gets or sets the value. The value will be populated if it wasn't cached.
+        /// </summary>
+        public T Value
         {
-            if (!Cached)
+            get
             {
-                lock (lockingObject)
+                if (!Cached)
                 {
-                    if (!Cached)
-                    {
-                        value = populateAction();
-                        Cached = true;
-                    }
+                    value = populateAction();
+                    Cached = true;
                 }
+
+                return value;
             }
 
-            return value;
-        }
-
-        public void SetValue(T value)
-        {
-            this.value = value;
-            Cached = true;
+            set
+            {
+                this.value = value;
+                Cached = true;
+            }
         }
     }
 }
