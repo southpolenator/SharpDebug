@@ -534,5 +534,26 @@ namespace CsScripts
 
             return Variable.CreatePointer(thisClass.Value.GetCodeType().GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
         }
+
+        /// <summary>
+        /// Reads the pointer and casts it to the type.
+        /// </summary>
+        /// <typeparam name="T">Type to be casted to</typeparam>
+        /// <param name="thisClass">Variable that contains UserMember of the this class.</param>
+        /// <param name="classFieldName">Name of the class field.</param>
+        /// <param name="buffer">The buffer.</param>
+        /// <param name="offset">The offset.</param>
+        /// <param name="pointerSize">Size of the pointer.</param>
+        public static T ReadPointer<T>(CodeType classCodeType, string classFieldName, byte[] buffer, int offset, int pointerSize)
+        {
+            ulong pointer = ReadPointer(buffer, offset, pointerSize);
+
+            if (pointer == 0)
+            {
+                return default(T);
+            }
+
+            return Variable.CreatePointer(classCodeType.GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
+        }
     }
 }
