@@ -1,18 +1,53 @@
 ﻿using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Reflection.Emit;
+using System.Collections.Generic;
 
 namespace CsScriptManaged.Utility
 {
     internal unsafe class DumpFileMemoryReader : IDisposable
     {
+        private const int BucketSizeBits = 8;
+
         private FileStream fileStream;
         private MemoryMappedFile memoryMappedFile;
         private MemoryMappedViewStream stream;
         private MemoryLocation[] ranges;
+        private ulong triesStartMask;
+        private int triesStartBits;
+        private TriesElement[] buckets;
+        private int previousRange;
         byte* basePointer = null;
+
+        private delegate void MemCpyFunction(void* des, void* src, uint bytes);
+
+        private static readonly MemCpyFunction MemCpy;
+
+        static DumpFileMemoryReader()
+        {
+            var dynamicMethod = new DynamicMethod
+            (
+                "MemCpy",
+                typeof(void),
+                new[] { typeof(void*), typeof(void*), typeof(uint) },
+                typeof(DumpFileMemoryReader)
+            );
+
+            var ilGenerator = dynamicMethod.GetILGenerator();
+
+            ilGenerator.Emit(OpCodes.Ldarg_0);
+            ilGenerator.Emit(OpCodes.Ldarg_1);
+            ilGenerator.Emit(OpCodes.Ldarg_2);
+
+            ilGenerator.Emit(OpCodes.Cpblk);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            MemCpy = (MemCpyFunction)dynamicMethod.CreateDelegate(typeof(MemCpyFunction));
+        }
 
         public DumpFileMemoryReader(string dumpFilePath)
         {
@@ -58,7 +93,29 @@ namespace CsScriptManaged.Utility
                     else
                         ranges[++newEnd] = ranges[i];
                 Array.Resize(ref ranges, newEnd);
+                var minValue = ranges[0].MemoryStart;
+                var maxValue = ranges[ranges.Length - 1].MemoryEnd;
+
+                triesStartBits = 64 - BucketSizeBits;
+                triesStartMask = ((1UL << BucketSizeBits) - 1) << triesStartBits;
+                while ((triesStartMask & (maxValue - 1)) == 0)
+                {
+                    triesStartMask >>= BucketSizeBits;
+                    triesStartBits -= BucketSizeBits;
+                }
+
+                var rangesTuple = new Tuple<int, MemoryLocation>[ranges.Length];
+                for (int i = 0; i < rangesTuple.Length; i++)
+                    rangesTuple[i] = Tuple.Create(i, ranges[i]);
+                var element = new TriesElement(rangesTuple, triesStartMask, triesStartBits);
+
+                buckets = element.buckets;
                 dispose = false;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex);
+                throw;
             }
             finally
             {
@@ -89,6 +146,9 @@ namespace CsScriptManaged.Utility
             }
         }
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
         public void Dispose()
         {
             stream.SafeMemoryMappedViewHandle.ReleasePointer();
@@ -99,29 +159,37 @@ namespace CsScriptManaged.Utility
 
         private int ReadMemory(ulong position, char[] buffer)
         {
-            Marshal.Copy((IntPtr)(basePointer + position), buffer, 0, buffer.Length);
+            fixed (char* destination = buffer)
+            {
+                byte* source = basePointer + position;
+
+                MemCpy(destination, source, (uint)buffer.Length * sizeof(char));
+            }
             return buffer.Length;
         }
 
         private int ReadMemory(ulong position, byte[] buffer)
         {
-            Marshal.Copy((IntPtr)(basePointer + position), buffer, 0, buffer.Length);
+            fixed (byte* destination = buffer)
+            {
+                byte* source = basePointer + position;
+
+                MemCpy(destination, source, (uint)buffer.Length);
+            }
             return buffer.Length;
         }
 
         public byte[] ReadMemory(ulong address, int size)
         {
             byte[] bytes = new byte[size];
-            var positionAndSize = FindDumpPositionAndSize(address);
-            var position = positionAndSize.Item1;
-            var maxSize = positionAndSize.Item2;
+            var position = FindDumpPositionAndSize(address);
 
-            if ((ulong)size > maxSize)
+            if ((ulong)size > position.size)
             {
                 throw new Exception("Reading more that it is found");
             }
 
-            ReadMemory(position, bytes);
+            ReadMemory(position.position, bytes);
             return bytes;
         }
 
@@ -131,19 +199,17 @@ namespace CsScriptManaged.Utility
             int read;
             bool end = false;
             StringBuilder sb = new StringBuilder();
-            var positionAndSize = FindDumpPositionAndSize(address);
-            var position = positionAndSize.Item1;
-            var maxSize = positionAndSize.Item2;
+            var position = FindDumpPositionAndSize(address);
 
-            if (size <= 0 || (ulong)size > maxSize)
+            if (size <= 0 || (ulong)size > position.size)
             {
-                size = (int)Math.Min(maxSize, int.MaxValue);
+                size = (int)Math.Min(position.size, int.MaxValue);
             }
 
             do
             {
-                read = ReadMemory(position, buffer);
-                position += (ulong)read;
+                read = ReadMemory(position.position, buffer);
+                position.position += (ulong)read;
                 for (int i = 0; i < read && !end; i++)
                 {
                     if (buffer[i] == 0 || sb.Length == size)
@@ -167,19 +233,17 @@ namespace CsScriptManaged.Utility
             int read;
             bool end = false;
             StringBuilder sb = new StringBuilder();
-            var positionAndSize = FindDumpPositionAndSize(address);
-            var position = positionAndSize.Item1;
-            var maxSize = positionAndSize.Item2;
+            var position = FindDumpPositionAndSize(address);
 
-            if (size <= 0 || (ulong)size > maxSize)
+            if (size <= 0 || (ulong)size > position.size)
             {
-                size = (int)Math.Min(maxSize, int.MaxValue);
+                size = (int)Math.Min(position.size, int.MaxValue);
             }
 
             do
             {
-                read = ReadMemory(position, buffer);
-                position += (ulong)read;
+                read = ReadMemory(position.position, buffer);
+                position.position += (ulong)read;
                 for (int i = 0; i < read && !end; i++)
                 {
                     if (buffer[i] == 0 || sb.Length == size)
@@ -197,27 +261,54 @@ namespace CsScriptManaged.Utility
             return sb.ToString();
         }
 
-        private Tuple<ulong, ulong> FindDumpPositionAndSize(ulong address)
+        private DumpPosition FindDumpPositionAndSize(ulong address)
         {
-            int low = 0, high = ranges.Length - 1;
+            var location = ranges[previousRange];
 
-            while (low < high)
+            if (location.MemoryStart <= address && location.MemoryEnd > address)
             {
-                int middle = (high + low) / 2;
-
-                if (ranges[middle].MemoryStart > address)
-                    high = middle;
-                else if (ranges[middle].MemoryEnd < address)
+                return new DumpPosition
                 {
-                    if (low == middle)
-                        break;
-                    low = middle;
-                }
-                else
-                    return Tuple.Create(ranges[middle].FilePosition + address - ranges[middle].MemoryStart, ranges[middle].MemoryEnd - address);
+                    position = location.FilePosition + address - location.MemoryStart,
+                    size = (uint)(location.MemoryEnd - address),
+                };
             }
 
-            return Tuple.Create(0UL, 0UL);
+            var mask = triesStartMask;
+            var offset = triesStartBits;
+            var bucketIndex = (address & mask) >> offset;
+            var bucket = buckets[bucketIndex];
+
+            while (bucket != null && bucket.buckets != null)
+            {
+                mask >>= BucketSizeBits;
+                offset -= BucketSizeBits;
+                bucketIndex = (address & mask) >> offset;
+                bucket = bucket.buckets[bucketIndex];
+            }
+
+            if (bucket != null)
+            {
+                location = ranges[bucket.location];
+
+                if (location.MemoryStart <= address && location.MemoryEnd > address)
+                {
+                    previousRange = bucket.location;
+                    return new DumpPosition
+                    {
+                        position = location.FilePosition + address - location.MemoryStart,
+                        size = (uint)(location.MemoryEnd - address),
+                    };
+                }
+            }
+
+            return new DumpPosition();
+        }
+
+        private struct DumpPosition
+        {
+            public ulong position;
+            public uint size;
         }
 
         private struct MemoryLocation
@@ -225,6 +316,42 @@ namespace CsScriptManaged.Utility
             public ulong MemoryStart;
             public ulong MemoryEnd;
             public ulong FilePosition;
+        }
+
+        private class TriesElement
+        {
+            public TriesElement[] buckets;
+            public int location;
+
+            public TriesElement(IEnumerable<Tuple<int, MemoryLocation>> ranges, ulong triesStartMask, int triesStartBits, ulong minValue = 0, ulong maxValue = ulong.MaxValue)
+            {
+                if (ranges.Count() > 1)
+                {
+                    var division = new List<Tuple<int, MemoryLocation>>[1 << BucketSizeBits];
+
+                    foreach (var range in ranges)
+                    {
+                        var bucketStart = (Math.Max(minValue, range.Item2.MemoryStart) & triesStartMask) >> triesStartBits;
+                        var bucketEnd = (Math.Min(maxValue, range.Item2.MemoryEnd - 1) & triesStartMask) >> triesStartBits;
+
+                        for (var j = bucketStart; j <= bucketEnd; j++)
+                        {
+                            if (division[j] == null)
+                                division[j] = new List<Tuple<int, MemoryLocation>>();
+                            division[j].Add(range);
+                        }
+                    }
+
+                    buckets = new TriesElement[1 << BucketSizeBits];
+                    for (int i = 0; i < 1 << BucketSizeBits; i++)
+                        if (division[i] != null)
+                            buckets[i] = new TriesElement(division[i], triesStartMask >> BucketSizeBits, triesStartBits - BucketSizeBits, minValue | ((ulong)i << triesStartBits), minValue | (((ulong)i + 1) << triesStartBits) - 1);
+                }
+                else
+                {
+                    location = ranges.First().Item1;
+                }
+            }
         }
 
         #region Native structures and methods
