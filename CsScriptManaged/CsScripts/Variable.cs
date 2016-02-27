@@ -102,7 +102,7 @@ namespace CsScripts
                 throw new Exception("You cannot assign data to non-pointer type variable. Type was " + codeType);
             }
 
-            this.data.SetValue(data);
+            this.data.Value = data;
         }
 
         /// <summary>
@@ -174,7 +174,7 @@ namespace CsScripts
         {
             get
             {
-                return data.GetValue(this);
+                return data.Value;
             }
         }
 
@@ -534,7 +534,7 @@ namespace CsScripts
         /// </summary>
         public CodeType GetRuntimeType()
         {
-            return runtimeCodeType.GetValue(this);
+            return runtimeCodeType.Value;
         }
 
         /// <summary>
@@ -972,13 +972,13 @@ namespace CsScripts
         /// <param name="originalVariable">The original variable.</param>
         internal static Variable CastVariableToUserType(Variable originalVariable)
         {
-            // Get user type descriptions to be used by this process
-            var userTypes = originalVariable.codeType.Module.Process.UserTypes;
-
-            if (userTypes.Count == 0)
+            if (Context.UserTypeMetadata == null || Context.UserTypeMetadata.Length == 0)
             {
                 return originalVariable;
             }
+
+            // Get user type descriptions to be used by this process
+            var userTypes = originalVariable.codeType.Module.Process.UserTypes;
 
             // Look at the type and see if it should be converted to user type
             var typesBasedOnModule = userTypes.Where(t => t.Module == originalVariable.codeType.Module);
