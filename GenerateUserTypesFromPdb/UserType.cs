@@ -162,7 +162,7 @@ namespace GenerateUserTypesFromPdb
         {
             GenericsType = genericsType;
 
-            IDiaSymbol[] arguments = genericsType.ExtractSpecializedSymbols();
+            Symbol[] arguments = genericsType.ExtractSpecializedSymbols();
 
             CanInstatiate = true;
 
@@ -465,9 +465,9 @@ namespace GenerateUserTypesFromPdb
     {
         private Func<string, string> typeConverter;
         private UserType ownerUserType;
-        private IDiaSymbol type;
+        private Symbol type;
 
-        public UserTypeTransformation(XmlTypeTransformation transformation, Func<string, string> typeConverter, UserType ownerUserType, IDiaSymbol type)
+        public UserTypeTransformation(XmlTypeTransformation transformation, Func<string, string> typeConverter, UserType ownerUserType, Symbol type)
         {
             this.Transformation = transformation;
             this.typeConverter = typeConverter;
@@ -477,14 +477,14 @@ namespace GenerateUserTypesFromPdb
 
         internal string TransformType()
         {
-            string originalFieldTypeString = TypeToString.GetTypeString(type);
+            string originalFieldTypeString = type.Name;
 
             return Transformation.TransformType(originalFieldTypeString, ownerUserType.ClassName, typeConverter);
         }
 
         internal string TransformConstructor(string field, string fieldOffset)
         {
-            string originalFieldTypeString = TypeToString.GetTypeString(type);
+            string originalFieldTypeString = type.Name;
 
             return Transformation.TransformConstructor(originalFieldTypeString, field, fieldOffset, ownerUserType.ClassName, typeConverter);
         }

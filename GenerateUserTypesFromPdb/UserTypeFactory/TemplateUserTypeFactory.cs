@@ -20,14 +20,10 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         public UserTypeFactory OriginalFactory { get; private set; }
 
-        internal override bool GetUserType(IDiaSymbol type, out UserType userType)
+        internal override bool GetUserType(Symbol type, out UserType userType)
         {
             string argumentName;
-            string typeString = TypeToString.GetTypeString(type);
-
-            if (typeString.Contains("Auto"))
-            {
-            }
+            string typeString = type.Name;
 
             if (TryGetArgument(typeString, out argumentName))
             {

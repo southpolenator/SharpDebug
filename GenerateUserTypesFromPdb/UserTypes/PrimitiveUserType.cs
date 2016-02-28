@@ -1,19 +1,11 @@
-﻿using Dia2Lib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace GenerateUserTypesFromPdb.UserTypes
+﻿namespace GenerateUserTypesFromPdb.UserTypes
 {
-
     class PrimitiveUserType : UserType
     {
         private string typeName;
 
-        public PrimitiveUserType(string typeName, IDiaSymbol diaSymbol)
-            : base(diaSymbol, null, null)
+        public PrimitiveUserType(string typeName, Symbol symbol)
+            : base(symbol, null, null)
         {
             this.typeName = typeName;
         }

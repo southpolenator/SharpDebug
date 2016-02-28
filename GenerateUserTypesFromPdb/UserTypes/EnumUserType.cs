@@ -10,8 +10,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class EnumUserType : UserType
     {
-        public EnumUserType(IDiaSymbol symbol, string moduleName)
-            : base(symbol, new XmlType() { Name = symbol.name }, moduleName)
+        public EnumUserType(Symbol symbol, string moduleName)
+            : base(symbol, new XmlType() { Name = symbol.Name }, moduleName)
         {
         }
 
@@ -31,12 +31,15 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 output.WriteLine(indentation++, "{{");
             }
 
-            output.WriteLine(indentation, @"public enum {0} {1}", ClassName, (Symbol.length != 0) ? " : " + GetEnumType() : string.Empty);
+            if (Symbol.Size != 0)
+                output.WriteLine(indentation, @"public enum {0} : {1}", ClassName, GetEnumType());
+            else
+                output.WriteLine(indentation, @"public enum {0}", ClassName);
             output.WriteLine(indentation++, @"{{");
 
-            foreach (var enumValue in Symbol.GetChildren())
+            foreach (var enumValue in Symbol.GetEnumValues())
             {
-                output.WriteLine(indentation, "{0} = {1},", enumValue.name, enumValue.value);
+                output.WriteLine(indentation, "{0} = {1},", enumValue.Item1, enumValue.Item2);
             }
 
             // Class end
@@ -60,11 +63,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         public string GetEnumType()
         {
-            switch ((BasicType)Symbol.baseType)
+            switch (Symbol.BasicType)
             {
                 case BasicType.Int:
                 case BasicType.Long:
-                    switch (Symbol.length)
+                    switch (Symbol.Size)
                     {
                         case 8:
                             return "long";
@@ -83,7 +86,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 case BasicType.UInt:
                 case BasicType.ULong:
-                    switch (Symbol.length)
+                    switch (Symbol.Size)
                     {
                         case 8:
                             return "ulong";

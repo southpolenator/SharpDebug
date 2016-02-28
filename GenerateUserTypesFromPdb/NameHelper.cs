@@ -1,5 +1,4 @@
-﻿using Dia2Lib;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,9 +8,9 @@ namespace GenerateUserTypesFromPdb
 {
     internal static class NameHelper
     {
-        public static bool IsTemplateType(IDiaSymbol diaSymbol)
+        public static bool IsTemplateType(Symbol diaSymbol)
         {
-            string symbolName = diaSymbol.name;
+            string symbolName = diaSymbol.Name;
             return IsTemplateType(symbolName);
         }
 
@@ -55,14 +54,14 @@ namespace GenerateUserTypesFromPdb
             return string.Join("::", namespaces.Select(r => NameHelper.GetLookupForNamespace(r)));
         }
 
-        public static string GetLookupNameForSymbol(IDiaSymbol diaSymbol)
+        public static string GetLookupNameForSymbol(Symbol diaSymbol)
         {
-            return GetLookupNameForSymbol(diaSymbol.name);
+            return GetLookupNameForSymbol(diaSymbol.Name);
         }
 
-        public static string GetSimpleLookupNameForSymbol(IDiaSymbol diaSymbol)
+        public static string GetSimpleLookupNameForSymbol(Symbol diaSymbol)
         {
-            string symbolName = diaSymbol.name;
+            string symbolName = diaSymbol.Name;
 
             if (string.IsNullOrEmpty(symbolName))
             {

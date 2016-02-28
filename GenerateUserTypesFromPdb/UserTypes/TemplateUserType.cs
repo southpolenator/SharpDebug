@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb
 {
@@ -17,7 +16,7 @@ namespace GenerateUserTypesFromPdb
         // #fixme, use diferent type
         public List<TemplateUserType> specializedTypes = new List<TemplateUserType>();
 
-        public TemplateUserType(IDiaSession session, IDiaSymbol symbol, XmlType xmlType, string moduleName, UserTypeFactory factory)
+        public TemplateUserType(IDiaSession session, Symbol symbol, XmlType xmlType, string moduleName, UserTypeFactory factory)
             : base(symbol, xmlType, moduleName)
         {
             DiaSession = session;
@@ -30,7 +29,7 @@ namespace GenerateUserTypesFromPdb
             this.argumentsSymbols.Clear();
             this.argumentsUserType.Clear();
 
-            string symbolName = Symbol.name;
+            string symbolName = Symbol.Name;
 
             int templateStart = symbolName.IndexOf('<');
             var arguments = new List<string>();
@@ -55,10 +54,12 @@ namespace GenerateUserTypesFromPdb
                         throw new Exception("Wrongly formed template argument");
                     }
 
-                    this.argumentsSymbols.Add(TypeToString.GetTypeString(diaSymbol));
+                    Symbol symbol = new Symbol(diaSymbol);
+
+                    this.argumentsSymbols.Add(symbol.Name);
 
                     UserType specializationUserType;
-                    if (factory.GetUserType(diaSymbol, out specializationUserType) )
+                    if (factory.GetUserType(symbol, out specializationUserType) )
                     {
                         this.argumentsUserType.Add(specializationUserType);
                     }
@@ -80,7 +81,7 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                string symbolName = Symbol.name;
+                string symbolName = Symbol.Name;
 
                 if (DeclaredInType != null)
                 {
@@ -155,9 +156,9 @@ namespace GenerateUserTypesFromPdb
             return results.ToArray();
         }
 
-        public IDiaSymbol[] ExtractSpecializedSymbols()
+        public Symbol[] ExtractSpecializedSymbols()
         {
-            List<IDiaSymbol> results = new List<IDiaSymbol>();
+            List<Symbol> results = new List<Symbol>();
             foreach (string specializedType in argumentsSymbols)
             {
                 UserType userType;
@@ -168,7 +169,7 @@ namespace GenerateUserTypesFromPdb
                 }
                 else
                 {
-                    results.Add(DiaSession.GetTypeSymbol(specializedType));
+                    results.Add(new Symbol(DiaSession.GetTypeSymbol(specializedType)));
                 }
             }
 
@@ -228,12 +229,12 @@ namespace GenerateUserTypesFromPdb
             return false;
         }
 
-        public override UserTypeTree GetTypeString(IDiaSymbol type, UserTypeFactory factory, ulong bitLength = 0)
+        public override UserTypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
             return base.GetTypeString(type, CreateFactory(factory), bitLength);
         }
 
-        protected override UserTypeTree GetBaseTypeString(TextWriter error, IDiaSymbol type, UserTypeFactory factory)
+        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory)
         {
             UserTypeTree baseType = base.GetBaseTypeString(error, type, CreateFactory(factory));
 
@@ -243,7 +244,7 @@ namespace GenerateUserTypesFromPdb
             return baseType;
         }
 
-        internal override bool Matches(IDiaSymbol type, UserTypeFactory factory)
+        internal override bool Matches(Symbol type, UserTypeFactory factory)
         {
             return base.Matches(type, factory);
         }
@@ -271,7 +272,8 @@ namespace GenerateUserTypesFromPdb
                     return false;
                 }
 
-                var templateType = new TemplateUserType(DiaSession, diaTypeSymbol, new XmlType() { Name = typeString }, ModuleName, factory);
+                var symbol = new Symbol(diaTypeSymbol);
+                var templateType = new TemplateUserType(DiaSession, symbol, new XmlType() { Name = typeString }, ModuleName, factory);
 
                 return Matches(this, templateType, factory);
             }
@@ -282,8 +284,8 @@ namespace GenerateUserTypesFromPdb
         internal static bool Matches(TemplateUserType template1, TemplateUserType template2, UserTypeFactory factory)
         {
             // Verify that all fields are of the same type
-            var t1 = template1.Symbol.name;
-            var t2 = template2.Symbol.name;
+            var t1 = template1.Symbol.Name;
+            var t2 = template2.Symbol.Name;
             var f1 = template1.ExtractFields(factory, UserTypeGenerationFlags.None).OrderBy(f => f.FieldName).ToArray();
             var f2 = template2.ExtractFields(factory, UserTypeGenerationFlags.None).OrderBy(f => f.FieldName).ToArray();
 
@@ -316,7 +318,7 @@ namespace GenerateUserTypesFromPdb
         /// <returns></returns>
         public bool IsInstantiable(UserTypeFactory factory)
         {
-            string symbolName = Symbol.name;
+            string symbolName = Symbol.Name;
 
             // Check cache for result
             bool result;
@@ -336,19 +338,14 @@ namespace GenerateUserTypesFromPdb
                 bool isTemplateArg = NameHelper.IsTemplateType(arg);
 
                 // Find DiaSymbol for specialization type
-                Symbol aa;
-                IDiaSymbol argSymbol;
-                if (!GlobalCache.DiaSymbolsByName.TryGetValue(arg, out aa))
+                Symbol argSymbol;
+                if (!GlobalCache.DiaSymbolsByName.TryGetValue(arg, out argSymbol))
                 {
                     //
                     // TODO, add base symbols to global cache
                     //
                     // Symbol is not cached, use dia to verify is this primitive type
-                    argSymbol = DiaSession.GetTypeSymbol(arg);
-                }
-                else
-                {
-                    argSymbol = aa.Dia;
+                    argSymbol = new Symbol(DiaSession.GetTypeSymbol(arg));
                 }
 
                 if (argSymbol != null)
@@ -449,11 +446,6 @@ namespace GenerateUserTypesFromPdb
         /// <returns></returns>
         protected override string GetInheritanceTypeConstraint(UserTypeFactory factory)
         {
-            if (Symbol.name.Contains("SequencedWaitInfo"))
-            {
-
-            }
-
             string[] commonBaseSpecializationTypes = GetCommonBaseTypesForSpecialization(factory);
 
             if (commonBaseSpecializationTypes == null || commonBaseSpecializationTypes.All(r => string.IsNullOrEmpty(r)))

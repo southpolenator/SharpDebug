@@ -9,7 +9,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class PhysicalUserType : UserType
     {
-        public PhysicalUserType(IDiaSymbol symbol, XmlType xmlType, string moduleName)
+        public PhysicalUserType(Symbol symbol, XmlType xmlType, string moduleName)
             : base(symbol, xmlType, moduleName)
         {
         }
@@ -56,7 +56,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             yield return new UserTypeConstructor()
             {
                 Arguments = "Variable variable",
-                BaseClassInitialization = string.Format("this(variable.GetBaseClass(baseClassString), Debugger.ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass(baseClassString).GetPointerAddress(), {0}), 0, variable.GetBaseClass(baseClassString).GetPointerAddress())", Symbol.length),
+                BaseClassInitialization = string.Format("this(variable.GetBaseClass(baseClassString), Debugger.ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass(baseClassString).GetPointerAddress(), {0}), 0, variable.GetBaseClass(baseClassString).GetPointerAddress())", Symbol.Size),
                 ContainsFieldDefinitions = false,
                 Static = false,
             };
@@ -70,7 +70,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             };
         }
 
-        protected override UserTypeField ExtractField(IDiaSymbol field, UserTypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags options, bool extractingBaseClass)
+        protected override UserTypeField ExtractField(SymbolField field, UserTypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags options, bool extractingBaseClass)
         {
             if (!isStatic)
             {
@@ -78,33 +78,28 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 bool cacheUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheUserTypeFields);
                 bool cacheStaticUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheStaticUserTypeFields);
                 string constructorText = "";
-                string fieldName = field.name;
+                string fieldName = field.Name;
                 string fieldTypeString = fieldType.GetUserTypeString();
                 UserTypeTreeBaseType baseType = fieldType as UserTypeTreeBaseType;
                 UserTypeTreeCodeArray codeArrayType = fieldType as UserTypeTreeCodeArray;
                 UserTypeTreeUserType userType = fieldType as UserTypeTreeUserType;
                 UserTypeTreeTransformation transformationType = fieldType as UserTypeTreeTransformation;
-                bool isEmbedded = (SymTagEnum)field.type.symTag != SymTagEnum.SymTagPointerType;
+                bool isEmbedded = field.Type.Tag != SymTagEnum.SymTagPointerType;
 
                 if (baseType != null)
                 {
                     if (baseType.BaseType == "string")
                     {
-                        ulong charSize = field.type.type.length;
+                        int charSize = field.Type.ElementType.Size;
 
-                        constructorText = string.Format("ReadString(GetCodeType().Module.Process, ReadPointer(memoryBuffer, memoryBufferOffset + {0}, {1}), {2})", field.offset, field.type.length, charSize);
+                        constructorText = string.Format("ReadString(GetCodeType().Module.Process, ReadPointer(memoryBuffer, memoryBufferOffset + {0}, {1}), {2})", field.Offset, field.Type.Size, charSize);
                     }
                     else if (baseType.BaseType != "NakedPointer")
                     {
-                        if ((LocationType)field.locationType == LocationType.BitField)
-                        {
-                            ulong bits = field.length;
-                            ulong bitsOffset = field.bitPosition;
-
-                            constructorText = string.Format("Read{0}(memoryBuffer, memoryBufferOffset + {1}, {2}, {3})", baseType.GetUserTypeString().UppercaseFirst(), field.offset, field.length, field.bitPosition);
-                        }
+                        if (field.LocationType == LocationType.BitField)
+                            constructorText = string.Format("Read{0}(memoryBuffer, memoryBufferOffset + {1}, {2}, {3})", baseType.GetUserTypeString().UppercaseFirst(), field.Offset, field.Size, field.BitPosition);
                         else
-                            constructorText = string.Format("Read{0}(memoryBuffer, memoryBufferOffset + {1})", baseType.GetUserTypeString().UppercaseFirst(), field.offset);
+                            constructorText = string.Format("Read{0}(memoryBuffer, memoryBufferOffset + {1})", baseType.GetUserTypeString().UppercaseFirst(), field.Offset);
                     }
                 }
                 else if (codeArrayType != null)
@@ -114,13 +109,13 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         baseType = (UserTypeTreeBaseType)codeArrayType.InnerType;
                         if (baseType != null && baseType.BaseType != "string" && baseType.BaseType != "NakedPointer")
                         {
-                            ulong arraySize = field.type.length;
-                            ulong elementSize = field.type.type.length;
+                            int arraySize = field.Type.Size;
+                            int elementSize = field.Type.ElementType.Size;
 
                             if (baseType.BaseType == "char")
-                                constructorText = string.Format("Read{0}Array(memoryBuffer, memoryBufferOffset + {1}, {2}, {3})", baseType.GetUserTypeString().UppercaseFirst(), field.offset, arraySize / elementSize, elementSize);
+                                constructorText = string.Format("Read{0}Array(memoryBuffer, memoryBufferOffset + {1}, {2}, {3})", baseType.GetUserTypeString().UppercaseFirst(), field.Offset, arraySize / elementSize, elementSize);
                             else
-                                constructorText = string.Format("Read{0}Array(memoryBuffer, memoryBufferOffset + {1}, {2})", baseType.GetUserTypeString().UppercaseFirst(), field.offset, arraySize / elementSize);
+                                constructorText = string.Format("Read{0}Array(memoryBuffer, memoryBufferOffset + {1}, {2})", baseType.GetUserTypeString().UppercaseFirst(), field.Offset, arraySize / elementSize);
                             fieldTypeString = baseType.GetUserTypeString() + "[]";
                         }
                     }
@@ -133,17 +128,17 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                         if (!isEmbedded)
                         {
-                            string fieldAddress = string.Format("ReadPointer(memoryBuffer, memoryBufferOffset + {0}, {1})", field.offset, field.type.length);
+                            string fieldAddress = string.Format("ReadPointer(memoryBuffer, memoryBufferOffset + {0}, {1})", field.Offset, field.Type.Size);
                             string fieldVariable = string.Format("Variable.CreatePointer({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 
-                            constructorText = string.Format("ReadPointer<{0}>(thisClass, \"{1}\", memoryBuffer, memoryBufferOffset + {2}, {3})", fieldTypeString, fieldName, field.offset, field.type.length);
+                            constructorText = string.Format("ReadPointer<{0}>(thisClass, \"{1}\", memoryBuffer, memoryBufferOffset + {2}, {3})", fieldTypeString, fieldName, field.Offset, field.Type.Size);
                         }
                         else
                         {
-                            string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.offset);
+                            string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.Offset);
                             string fieldVariable = string.Format("Variable.Create({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 
-                            constructorText = string.Format("new {0}({1}, memoryBuffer, memoryBufferOffset + {2}, memoryBufferAddress)", fieldTypeString, fieldVariable, field.offset);
+                            constructorText = string.Format("new {0}({1}, memoryBuffer, memoryBufferOffset + {2}, memoryBufferAddress)", fieldTypeString, fieldVariable, field.Offset);
                         }
                     }
                 }
@@ -152,12 +147,12 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     if (!isEmbedded)
                     {
                         string thisClassCodeType = "thisClass.Value.GetCodeType()";
-                        string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.offset);
+                        string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.Offset);
                         string fieldVariable = string.Format("Variable.Create({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 
                         if (transformationType.Transformation.Transformation.HasPhysicalConstructor)
                         {
-                            fieldVariable = string.Format("{0}, memoryBuffer, memoryBufferOffset + {1}, memoryBufferAddress", fieldVariable, field.offset);
+                            fieldVariable = string.Format("{0}, memoryBuffer, memoryBufferOffset + {1}, memoryBufferAddress", fieldVariable, field.Offset);
                         }
 
                         simpleFieldValue = fieldVariable;
@@ -171,8 +166,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         ConstructorText = constructorText,
                         FieldName = "_" + fieldName,
                         FieldType = fieldTypeString,
-                        FieldTypeInfoComment = string.Format("// {0} {1};", TypeToString.GetTypeString(field.type), fieldName),
-                        PropertyName = UserTypeField.GetPropertyName(fieldName, Symbol.name),
+                        FieldTypeInfoComment = string.Format("// {0} {1};", field.Type.Name, fieldName),
+                        PropertyName = UserTypeField.GetPropertyName(fieldName, Symbol.Name),
                         Static = isStatic,
                         UseUserMember = lazyCacheUserTypeFields,
                         CacheResult = cacheUserTypeFields || (isStatic && cacheStaticUserTypeFields),

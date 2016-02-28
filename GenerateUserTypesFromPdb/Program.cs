@@ -137,7 +137,7 @@ namespace GenerateUserTypesFromPdb
 
             foreach (var type in typeNames)
             {
-                IDiaSymbol[] symbols = session.globalScope.GetChildrenWildcard(type.NameWildcard, SymTagEnum.SymTagUDT).ToArray();
+                Symbol[] symbols = session.globalScope.GetChildrenWildcard(type.NameWildcard, SymTagEnum.SymTagUDT).Select(s => new Symbol(s)).ToArray();
 
                 if (symbols.Length == 0)
                 {
@@ -149,12 +149,16 @@ namespace GenerateUserTypesFromPdb
                 }
             }
 
-            ConcurrentDictionary<string, List<IDiaSymbol>> templateSymbols = new ConcurrentDictionary<string, List<IDiaSymbol>>();
-            ConcurrentDictionary<string, IDiaSymbol> specializedClassWithParentSymbol = new ConcurrentDictionary<string, IDiaSymbol>();
+            Dictionary<string, List<Symbol>> templateSymbols = new Dictionary<string, List<Symbol>>();
+            Dictionary<string, Symbol> specializedClassWithParentSymbol = new Dictionary<string, Symbol>();
 
             Console.Write("Enumerating all types... ");
-            var globalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).Select(s => new Symbol(s)).ToList();
-            //globalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType).Select(s => new Symbol(s))); // TODO: When Symbol is used everywhere, uncomment this line
+            var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
+            //diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType)); // TODO: When Symbol is used everywhere, uncomment this line
+            Console.WriteLine(sw.Elapsed);
+
+            Console.Write("Converting dia types to symbols... ");
+            var globalTypes = diaGlobalTypes.Select(s => new Symbol(s)).ToList();
             Console.WriteLine(sw.Elapsed);
 
             foreach (Symbol symbol in globalTypes)
@@ -217,7 +221,7 @@ namespace GenerateUserTypesFromPdb
                             // TODO
                             // Inspect Template
                             //
-                            TemplateUserType templateType = new TemplateUserType(session, symbol.Dia, new XmlType() { Name = symbolName }, moduleName, factory);
+                            TemplateUserType templateType = new TemplateUserType(session, symbol, new XmlType() { Name = symbolName }, moduleName, factory);
 
                             int templateArgs = templateType.GenericsArguments;
                             if (templateSpecializationArgs.Any(r => r == "void" || r == "void const"))
@@ -225,15 +229,15 @@ namespace GenerateUserTypesFromPdb
                                 GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol);
                             }
 
-                            symbolName = NameHelper.GetLookupNameForSymbol(symbol.Dia);
+                            symbolName = NameHelper.GetLookupNameForSymbol(symbol);
 
                             if (templateSymbols.ContainsKey(symbolName) == false)
                             {
-                                templateSymbols[symbolName] = new List<IDiaSymbol>() { symbol.Dia };
+                                templateSymbols[symbolName] = new List<Symbol>() { symbol };
                             }
                             else
                             {
-                                templateSymbols[symbolName].Add(symbol.Dia);
+                                templateSymbols[symbolName].Add(symbol);
                             }
 
                             //
@@ -257,9 +261,9 @@ namespace GenerateUserTypesFromPdb
 
             // Populate specialization first
             //
-            foreach (IDiaSymbol symbol in specializedClassWithParentSymbol.Values)
+            foreach (Symbol symbol in specializedClassWithParentSymbol.Values)
             {
-                string symbolName = symbol.name;
+                string symbolName = symbol.Name;
 
                 XmlType type = new XmlType()
                 {
@@ -273,7 +277,7 @@ namespace GenerateUserTypesFromPdb
 
             // Populate Templates
             //
-            foreach (List<IDiaSymbol> symbols in templateSymbols.Values)
+            foreach (List<Symbol> symbols in templateSymbols.Values)
             {
                 string symbolName = NameHelper.GetLookupNameForSymbol(symbols.First());
 
@@ -315,7 +319,7 @@ namespace GenerateUserTypesFromPdb
                     Name = symbolName
                 };
 
-                factory.AddSymbol(symbol.Dia, type, moduleName, generationOptions);
+                factory.AddSymbol(symbol, type, moduleName, generationOptions);
             }
 
 

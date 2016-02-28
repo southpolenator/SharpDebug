@@ -38,14 +38,14 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return GlobalCache.UserTypesBySymbolName.TryGetValue(typeString, out userType);
         }
 
-        internal virtual bool GetUserType(IDiaSymbol type, out UserType userType)
+        internal virtual bool GetUserType(Symbol type, out UserType userType)
         {
             //#fixme, remove primitive types
             userType = null;
 
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagBaseType)
+            if (type.Tag == SymTagEnum.SymTagBaseType)
             {
-                switch ((BasicType)type.baseType)
+                switch (type.BasicType)
                 {
                     case BasicType.Bit:
                     case BasicType.Bool:
@@ -62,11 +62,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         userType = new PrimitiveUserType("void", type);
                         break;
                     case BasicType.Float:
-                        userType = new PrimitiveUserType(type.length <= 4 ? "float" : "double", type);
+                        userType = new PrimitiveUserType(type.Size <= 4 ? "float" : "double", type);
                         break;
                     case BasicType.Int:
                     case BasicType.Long:
-                        switch (type.length)
+                        switch (type.Size)
                         {
                             case 0:
                                 userType = new PrimitiveUserType("void", type);
@@ -84,12 +84,12 @@ namespace GenerateUserTypesFromPdb.UserTypes
                                 userType = new PrimitiveUserType("long", type);
                                 break;
                             default:
-                                throw new Exception("Unexpected type length " + type.length);
+                                throw new Exception("Unexpected type length " + type.Size);
                         }
                         break;
                     case BasicType.UInt:
                     case BasicType.ULong:
-                        switch (type.length)
+                        switch (type.Size)
                         {
                             case 0:
                                 userType = new PrimitiveUserType("void", type);
@@ -107,8 +107,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                                 userType = new PrimitiveUserType("ulong", type);
                                 break;
                             default:
-                                throw new Exception("Unexpected type length " + type.length);
-                                
+                                throw new Exception("Unexpected type length " + type.Size);                                
                         }
                         break;
                     default:
@@ -116,11 +115,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 }
             }
 
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+            if (type.Tag == SymTagEnum.SymTagPointerType)
             {
-                IDiaSymbol pointerType = type.type;
+                Symbol pointerType = type.ElementType;
 
-                switch ((SymTagEnum)pointerType.symTag)
+                switch (pointerType.Tag)
                 {
                     case SymTagEnum.SymTagBaseType:
                     case SymTagEnum.SymTagEnum:
@@ -135,23 +134,19 @@ namespace GenerateUserTypesFromPdb.UserTypes
                             }
                             break;
                         }
-                        /*
-                            case SymTagEnum.SymTagUDT:
-                                return GetTypeString(pointerType, factory);
-                            default:
-                                return new UserTypeTreeCodePointer(GetTypeString(pointerType, factory));
-                        */
+                    //case SymTagEnum.SymTagUDT:
+                    //    return GetTypeString(pointerType, factory);
+                    //default:
+                    //    return new UserTypeTreeCodePointer(GetTypeString(pointerType, factory));
                 }
             }
-
-            // 
 
             if (userType != null)
             {
                 return true;
             }
 
-            string typeString = TypeToString.GetTypeString(type);
+            string typeString = type.Name;
 
             // Try single lookup, this should match type directly
             typeString = NameHelper.GetSimpleLookupNameForSymbol(type);
@@ -184,9 +179,9 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // For Template Type Find right specialization
             if (userType is TemplateUserType)
             {
-                typeString = TypeToString.GetTypeString(type);
+                typeString = type.Name;
 
-                TemplateUserType specializedUserType = ((TemplateUserType)userType).specializedTypes.FirstOrDefault(r => typeString == TypeToString.GetTypeString(r.Symbol));
+                TemplateUserType specializedUserType = ((TemplateUserType)userType).specializedTypes.FirstOrDefault(r => typeString == r.Symbol.Name);
 
                 if (specializedUserType != null)
                 {
@@ -216,11 +211,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         internal void AddUserType(UserType userType)
         {
-            if (userType.Symbol.name.Contains("_s_ThrowInfo"))
-            {
-
-            }
-
             //#fixme
             userTypes.Add(userType);
         }
@@ -230,7 +220,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             userTypes.Insert(0, userType);
         }
 
-        internal void AddSymbol(IDiaSymbol symbol, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
+        internal void AddSymbol(Symbol symbol, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
         {
             UserType newUserType;
 
@@ -248,18 +238,14 @@ namespace GenerateUserTypesFromPdb.UserTypes
             }
 
             // Store in global cache
-            string typeName = newUserType.Symbol.name;
+            string typeName = newUserType.Symbol.Name;
             if (GlobalCache.UserTypesBySymbolName.TryAdd(typeName, newUserType))
             {
                 userTypes.Add(newUserType);
             }
-            else
-            {
-
-            }
         }
 
-        internal void AddSymbols(IDiaSession session, IEnumerable<IDiaSymbol> symbols, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
+        internal void AddSymbols(IDiaSession session, IEnumerable<Symbol> symbols, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
         {
             if (!type.IsTemplate && symbols.Any())
                 throw new Exception("Type has more than one symbol for " + type.Name);
@@ -272,22 +258,17 @@ namespace GenerateUserTypesFromPdb.UserTypes
             {
                 var buckets = new Dictionary<int, TemplateUserType>();
 
-                foreach (IDiaSymbol diaSymbol in symbols)
+                foreach (Symbol symbol in symbols)
                 {
                     try
                     {
                         // We want to ignore "empty" generic classes (for now)
-                        if (diaSymbol.name == null || diaSymbol.length == 0)
+                        if (symbol.Name == null || symbol.Size == 0)
                         {
                             continue;
                         }
 
-                        if (diaSymbol.name == "std::_Iosb<int>")
-                        {
-
-                        }
-
-                        TemplateUserType templateType = new TemplateUserType(session, diaSymbol, type, moduleName, this);
+                        TemplateUserType templateType = new TemplateUserType(session, symbol, type, moduleName, this);
 
                         int templateArgs = templateType.GenericsArguments;
 
@@ -297,10 +278,10 @@ namespace GenerateUserTypesFromPdb.UserTypes
                             // Make it specialized type
                             XmlType xmlType = new XmlType()
                             {
-                                Name = diaSymbol.name
+                                Name = symbol.Name
                             };
 
-                            this.AddSymbol(diaSymbol, xmlType, moduleName, generationOptions);
+                            this.AddSymbol(symbol, xmlType, moduleName, generationOptions);
                             continue;
                         }
 
@@ -345,7 +326,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         {
             foreach (UserType userType in userTypes)
             {
-                string symbolName = userType.Symbol.name;
+                string symbolName = userType.Symbol.Name;
                 List<string> namespaces = NameHelper.GetFullSymbolNamespaces(symbolName);
 
                 if (namespaces.Count() == 1)
@@ -437,18 +418,18 @@ namespace GenerateUserTypesFromPdb.UserTypes
             }
         }
 
-        internal bool ContainsSymbol(IDiaSymbol type)
+        internal bool ContainsSymbol(Symbol type)
         {
             UserType userType;
-            string typeString = TypeToString.GetTypeString(type);
+            string typeString = type.Name;
 
             GlobalCache.UserTypesBySymbolName.TryGetValue(typeString, out userType);
             return userType != null;
         }
 
-        internal UserTypeTransformation FindTransformation(IDiaSymbol type, UserType ownerUserType)
+        internal UserTypeTransformation FindTransformation(Symbol type, UserType ownerUserType)
         {
-            string originalFieldTypeString = TypeToString.GetTypeString(type);
+            string originalFieldTypeString = type.Name;
             var transformation = typeTransformations.Where(t => t.Matches(originalFieldTypeString)).FirstOrDefault();
 
             if (transformation == null)
