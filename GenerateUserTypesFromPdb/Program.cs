@@ -14,15 +14,6 @@ using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb
 {
-    internal static class GlobalCache
-    {
-        internal static ConcurrentDictionary<string, IDiaSymbol> DiaSymbolsByName = new ConcurrentDictionary<string, IDiaSymbol>();
-
-        internal static ConcurrentDictionary<string, UserType> UserTypesBySymbolName = new ConcurrentDictionary<string, UserType>();
-
-        internal static ConcurrentDictionary<string, bool> InstantiableTemplateUserTypes = new ConcurrentDictionary<string, bool>();
-    };
-
     class Options
     {
         [Option('p', "pdb", Required = true, HelpText = "Path to PDB which will be used to generate the code")]
@@ -163,6 +154,7 @@ namespace GenerateUserTypesFromPdb
 
             Console.Write("Enumerating all types... ");
             var globalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).Select(s => new Symbol(s)).ToList();
+            //globalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType).Select(s => new Symbol(s))); // TODO: When Symbol is used everywhere, uncomment this line
             Console.WriteLine(sw.Elapsed);
 
             foreach (Symbol symbol in globalTypes)
@@ -230,7 +222,7 @@ namespace GenerateUserTypesFromPdb
                             int templateArgs = templateType.GenericsArguments;
                             if (templateSpecializationArgs.Any(r => r == "void" || r == "void const"))
                             {
-                                GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol.Dia);
+                                GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol);
                             }
 
                             symbolName = NameHelper.GetLookupNameForSymbol(symbol.Dia);
@@ -258,7 +250,7 @@ namespace GenerateUserTypesFromPdb
                     }
                 }
 
-                GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol.Dia);
+                GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol);
             }
 
             Console.WriteLine("Collecting types: {0}", sw.Elapsed);
@@ -314,16 +306,16 @@ namespace GenerateUserTypesFromPdb
 
             //   Specialized class
             //
-            foreach (IDiaSymbol symbol in GlobalCache.DiaSymbolsByName.Values)
+            foreach (Symbol symbol in GlobalCache.DiaSymbolsByName.Values)
             {
-                string symbolName = symbol.name;
+                string symbolName = symbol.Name;
 
                 XmlType type = new XmlType()
                 {
                     Name = symbolName
                 };
 
-                factory.AddSymbol(symbol, type, moduleName, generationOptions);
+                factory.AddSymbol(symbol.Dia, type, moduleName, generationOptions);
             }
 
 
@@ -430,6 +422,7 @@ namespace GenerateUserTypesFromPdb
                     filename = string.Format(@"{0}\{1}_{2}.exported.cs", classOutputDirectory, userType.ConstructorName, index++);
                 }
 
+                //using (StringWriter output = new StringWriter())
                 using (TextWriter output = new StreamWriter(filename))
                 {
                     userType.WriteCode(new IndentedWriter(output), errorOutput, factory, generationOptions);

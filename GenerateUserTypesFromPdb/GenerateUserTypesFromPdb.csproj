@@ -91,6 +91,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GlobalCache.cs" />
     <Compile Include="IndentedWriter.cs" />
     <Compile Include="NameHelper.cs" />
     <Compile Include="Program.cs" />

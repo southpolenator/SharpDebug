@@ -336,14 +336,19 @@ namespace GenerateUserTypesFromPdb
                 bool isTemplateArg = NameHelper.IsTemplateType(arg);
 
                 // Find DiaSymbol for specialization type
+                Symbol aa;
                 IDiaSymbol argSymbol;
-                if (!GlobalCache.DiaSymbolsByName.TryGetValue(arg, out argSymbol))
+                if (!GlobalCache.DiaSymbolsByName.TryGetValue(arg, out aa))
                 {
                     //
                     // TODO, add base symbols to global cache
                     //
                     // Symbol is not cached, use dia to verify is this primitive type
                     argSymbol = DiaSession.GetTypeSymbol(arg);
+                }
+                else
+                {
+                    argSymbol = aa.Dia;
                 }
 
                 if (argSymbol != null)
