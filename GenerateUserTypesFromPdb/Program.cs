@@ -74,18 +74,9 @@ namespace GenerateUserTypesFromPdb
             dia.openSession(out session);
         }
 
-        private static void DumpSymbol(IDiaSymbol symbol)
-        {
-            Type type = typeof(IDiaSymbol);
-
-            foreach (var property in type.GetProperties())
-            {
-                Console.WriteLine("{0} = {1}", property.Name, property.GetValue(symbol));
-            }
-        }
-
         static void Main(string[] args)
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             var error = Console.Error;
             Options options = null;
 
@@ -170,11 +161,15 @@ namespace GenerateUserTypesFromPdb
             ConcurrentDictionary<string, List<IDiaSymbol>> templateSymbols = new ConcurrentDictionary<string, List<IDiaSymbol>>();
             ConcurrentDictionary<string, IDiaSymbol> specializedClassWithParentSymbol = new ConcurrentDictionary<string, IDiaSymbol>();
 
-            foreach (IDiaSymbol symbol in session.globalScope.GetChildren(SymTagEnum.SymTagUDT))
+            Console.Write("Enumerating all types... ");
+            var globalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).Select(s => new Symbol(s)).ToList();
+            Console.WriteLine(sw.Elapsed);
+
+            foreach (Symbol symbol in globalTypes)
             {
                 //  TODO add configurable filter
                 //
-                string symbolName = symbol.name;
+                string symbolName = symbol.Name;
                 if (symbolName.StartsWith("$") || symbolName.StartsWith("__vc_attributes") || /*symbolName.StartsWith("ATL::") ||*/ symbolName.StartsWith("`anonymous-namespace'"))
                 {
                     continue;
@@ -194,7 +189,7 @@ namespace GenerateUserTypesFromPdb
 
                 var namespaces = NameHelper.GetFullSymbolNamespaces(symbolName);
 
-                string scopedClassName = NameHelper.GetSymbolScopedClassName(symbol.name);
+                string scopedClassName = NameHelper.GetSymbolScopedClassName(symbolName);
 
                 if (scopedClassName == "<>")
                 {
@@ -206,7 +201,7 @@ namespace GenerateUserTypesFromPdb
 
                 // Parent Class is Template, Nested is Physical
                 // Check if dealing template type.
-                if (NameHelper.ContainsTemplateType(symbol.name))
+                if (NameHelper.ContainsTemplateType(symbolName))
                 {
                     if (!NameHelper.IsTemplateType(scopedClassName))
                     {
@@ -230,23 +225,23 @@ namespace GenerateUserTypesFromPdb
                             // TODO
                             // Inspect Template
                             //
-                            TemplateUserType templateType = new TemplateUserType(session, symbol, new XmlType() { Name = symbolName }, moduleName, factory);
+                            TemplateUserType templateType = new TemplateUserType(session, symbol.Dia, new XmlType() { Name = symbolName }, moduleName, factory);
 
                             int templateArgs = templateType.GenericsArguments;
                             if (templateSpecializationArgs.Any(r => r == "void" || r == "void const"))
                             {
-                                GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol);
+                                GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol.Dia);
                             }
 
-                            symbolName = NameHelper.GetLookupNameForSymbol(symbol);
+                            symbolName = NameHelper.GetLookupNameForSymbol(symbol.Dia);
 
                             if (templateSymbols.ContainsKey(symbolName) == false)
                             {
-                                templateSymbols[symbolName] = new List<IDiaSymbol>() { symbol };
+                                templateSymbols[symbolName] = new List<IDiaSymbol>() { symbol.Dia };
                             }
                             else
                             {
-                                templateSymbols[symbolName].Add(symbol);
+                                templateSymbols[symbolName].Add(symbol.Dia);
                             }
 
                             //
@@ -263,8 +258,10 @@ namespace GenerateUserTypesFromPdb
                     }
                 }
 
-                GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol);
+                GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol.Dia);
             }
+
+            Console.WriteLine("Collecting types: {0}", sw.Elapsed);
 
             // Populate specialization first
             //
@@ -279,6 +276,8 @@ namespace GenerateUserTypesFromPdb
 
                 factory.AddSymbol(symbol, type, moduleName, generationOptions);
             }
+
+            Console.WriteLine("Populating specializations: {0}", sw.Elapsed);
 
             // Populate Templates
             //
@@ -311,6 +310,8 @@ namespace GenerateUserTypesFromPdb
                 }
             }
 
+            Console.WriteLine("Populating templates: {0}", sw.Elapsed);
+
             //   Specialized class
             //
             foreach (IDiaSymbol symbol in GlobalCache.DiaSymbolsByName.Values)
@@ -326,6 +327,8 @@ namespace GenerateUserTypesFromPdb
             }
 
 
+            Console.WriteLine("Populating specialized classes: {0}", sw.Elapsed);
+
             //  To solve template dependencies.
             //  Update specialization arguments once all the templates has been populated.
             //
@@ -334,19 +337,21 @@ namespace GenerateUserTypesFromPdb
                 templateUserType.UpdateArguments(factory);
             }
 
-            int index = 0;
+            Console.WriteLine("Updating template arguments: {0}", sw.Elapsed);
 
             // Update 
             UserType[] userTypesInitialSet = factory.Symbols.ToArray();
             foreach (UserType userType in userTypesInitialSet)
             {
-                Console.WriteLine("{0}/{1}", index++, factory.Symbols.Count());
-
                 userType.UpdateUserTypes(factory, generationOptions);
             }
 
+            Console.WriteLine("Updating user types: {0}", sw.Elapsed);
+
             factory.ProcessTypes();
             factory.InserUserType(new GlobalsUserType(session, moduleName));
+
+            Console.WriteLine("Post processing user types: {0}", sw.Elapsed);
 
             string currentDirectory = Directory.GetCurrentDirectory();
             string outputDirectory = currentDirectory + "\\output\\";
@@ -386,13 +391,14 @@ namespace GenerateUserTypesFromPdb
                     output.WriteLine(@"</Project>");
                 }
             }
+
+            Console.WriteLine("Total time: {0}", sw.Elapsed);
         }
 
         private static bool GenerateUseTypeCode(UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationOptions, ConcurrentDictionary<string, string> generatedFiles)
         {
             var symbol = userType.Symbol;
 
-            Console.WriteLine(userType.XmlType.Name);
             if (userType.DeclaredInType != null)
             {
                 return false;

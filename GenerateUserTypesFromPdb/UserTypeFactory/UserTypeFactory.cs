@@ -343,8 +343,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
         /// </summary>
         internal void ProcessTypes()
         {
-            int index = 0;
-
             foreach (UserType userType in userTypes)
             {
                 string symbolName = userType.Symbol.name;
@@ -442,10 +440,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     userType.SetDeclaredInType(parentUserType);
                     userType.NamespaceSymbol = symbolNamespace;
                 }
-
-                // we done 
-
-                Console.WriteLine("{0}:{1}", index++, userTypes.Count());
             }
         }
 
