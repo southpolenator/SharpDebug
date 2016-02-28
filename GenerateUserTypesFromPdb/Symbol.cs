@@ -5,15 +5,17 @@ using System.Linq;
 
 namespace GenerateUserTypesFromPdb
 {
-    class Symbol
+    internal class Symbol
     {
         private IDiaSymbol symbol;
         private SymbolField[] fields;
         private Symbol[] baseClasses;
+        private Symbol elementType;
 
-        public Symbol(IDiaSymbol symbol)
+        public Symbol(Module module, IDiaSymbol symbol)
         {
             this.symbol = symbol;
+            Module = module;
             Tag = (SymTagEnum)symbol.symTag;
             BasicType = (BasicType)symbol.baseType;
             if (Tag != SymTagEnum.SymTagExe)
@@ -29,6 +31,8 @@ namespace GenerateUserTypesFromPdb
 
         public string Name { get; private set; }
 
+        public Module Module { get; private set; }
+
         public int Size { get; private set; }
 
         public SymTagEnum Tag { get; private set; }
@@ -39,12 +43,16 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                // TODO: We need to cache these values
-                IDiaSymbol type = symbol.type;
+                if (elementType == null)
+                {
+                    // TODO: We need to cache these values
+                    IDiaSymbol type = symbol.type;
 
-                if (type != null)
-                    return new Symbol(type);
-                return null;
+                    if (type != null)
+                        elementType = Module.GetSymbol(type);
+                }
+
+                return elementType;
             }
         }
 
@@ -58,13 +66,31 @@ namespace GenerateUserTypesFromPdb
             }
         }
 
+        internal void InitializeCache()
+        {
+            if (Tag != SymTagEnum.SymTagExe)
+            {
+                var fields = this.Fields;
+                var baseClasses = this.BaseClasses;
+                var elementType = this.ElementType;
+            }
+        }
+
         public Symbol[] BaseClasses
         {
             get
             {
                 if (baseClasses == null)
-                    baseClasses = symbol.GetChildren(SymTagEnum.SymTagBaseClass).Select(s => new Symbol(s)).ToArray();
+                    baseClasses = symbol.GetChildren(SymTagEnum.SymTagBaseClass).Select(s => Module.GetSymbol(s)).ToArray();
                 return baseClasses;
+            }
+        }
+
+        public Symbol PointerType
+        {
+            get
+            {
+                return Module.GetSymbol(symbol.objectPointerType);
             }
         }
 
@@ -85,7 +111,7 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class SymbolField
+    internal class SymbolField
     {
         private IDiaSymbol symbol;
 
@@ -109,10 +135,17 @@ namespace GenerateUserTypesFromPdb
                 throw new ArgumentException("Symbol bit position is unexpected");
             BitPosition = (int)bitPosition;
 
-            // TODO: We need to cache these values
             IDiaSymbol type = symbol.type;
             if (type != null)
-                Type = new Symbol(type);
+                Type = Module.GetSymbol(type);
+        }
+
+        public Module Module
+        {
+            get
+            {
+                return ParentType.Module;
+            }
         }
 
         public Symbol ParentType { get; private set; }

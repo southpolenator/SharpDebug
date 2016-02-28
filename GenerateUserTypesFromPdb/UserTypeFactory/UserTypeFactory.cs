@@ -268,7 +268,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                             continue;
                         }
 
-                        TemplateUserType templateType = new TemplateUserType(session, symbol, type, moduleName, this);
+                        TemplateUserType templateType = new TemplateUserType(symbol, type, moduleName, this);
 
                         int templateArgs = templateType.GenericsArguments;
 

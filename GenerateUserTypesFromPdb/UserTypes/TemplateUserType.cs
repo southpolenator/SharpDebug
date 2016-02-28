@@ -1,5 +1,4 @@
-﻿using Dia2Lib;
-using GenerateUserTypesFromPdb.UserTypes;
+﻿using GenerateUserTypesFromPdb.UserTypes;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,11 +15,9 @@ namespace GenerateUserTypesFromPdb
         // #fixme, use diferent type
         public List<TemplateUserType> specializedTypes = new List<TemplateUserType>();
 
-        public TemplateUserType(IDiaSession session, Symbol symbol, XmlType xmlType, string moduleName, UserTypeFactory factory)
+        public TemplateUserType(Symbol symbol, XmlType xmlType, string moduleName, UserTypeFactory factory)
             : base(symbol, xmlType, moduleName)
         {
-            DiaSession = session;
-
             UpdateArguments(factory);
         }
 
@@ -46,15 +43,13 @@ namespace GenerateUserTypesFromPdb
 
                 if (!int.TryParse(extractedType, out constant))
                 {
-                    IDiaSymbol diaSymbol = DiaSession.GetTypeSymbol(extractedType);
+                    Symbol symbol = Module.GetTypeSymbol(extractedType);
 
                     // Check if type is existing type
-                    if (diaSymbol == null)
+                    if (symbol == null)
                     {
                         throw new Exception("Wrongly formed template argument");
                     }
-
-                    Symbol symbol = new Symbol(diaSymbol);
 
                     this.argumentsSymbols.Add(symbol.Name);
 
@@ -73,7 +68,13 @@ namespace GenerateUserTypesFromPdb
             // TODO: Unused types should be removed
         }
 
-        public IDiaSession DiaSession { get; private set; }
+        public Module Module
+        {
+            get
+            {
+                return Symbol.Module;
+            }
+        }
 
         protected override bool ExportStaticFields { get { return false; } }
 
@@ -169,7 +170,7 @@ namespace GenerateUserTypesFromPdb
                 }
                 else
                 {
-                    results.Add(new Symbol(DiaSession.GetTypeSymbol(specializedType)));
+                    results.Add(Module.GetTypeSymbol(specializedType));
                 }
             }
 
@@ -264,16 +265,15 @@ namespace GenerateUserTypesFromPdb
                 if (!ClassName.StartsWith(typeStringStart))
                     return false;
 
-                IDiaSymbol diaTypeSymbol = DiaSession.GetTypeSymbol(typeString);
+                Symbol typeSymbol = Module.GetTypeSymbol(typeString);
 
                 //#fixme
-                if (diaTypeSymbol == null)
+                if (typeSymbol == null)
                 {
                     return false;
                 }
 
-                var symbol = new Symbol(diaTypeSymbol);
-                var templateType = new TemplateUserType(DiaSession, symbol, new XmlType() { Name = typeString }, ModuleName, factory);
+                var templateType = new TemplateUserType(typeSymbol, new XmlType() { Name = typeString }, ModuleName, factory);
 
                 return Matches(this, templateType, factory);
             }
@@ -345,7 +345,7 @@ namespace GenerateUserTypesFromPdb
                     // TODO, add base symbols to global cache
                     //
                     // Symbol is not cached, use dia to verify is this primitive type
-                    argSymbol = new Symbol(DiaSession.GetTypeSymbol(arg));
+                    argSymbol = Module.GetTypeSymbol(arg);
                 }
 
                 if (argSymbol != null)

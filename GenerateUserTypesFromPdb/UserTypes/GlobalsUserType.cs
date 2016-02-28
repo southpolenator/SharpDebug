@@ -1,21 +1,17 @@
-﻿using Dia2Lib;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb.UserTypes
 {
     class GlobalsUserType : UserType
     {
-        private IDiaSession session;
+        private Module module;
 
-        public GlobalsUserType(IDiaSession session, string moduleName)
-            : base(new Symbol(session.globalScope), new XmlType() { Name = "Globals" }, moduleName)
+        public GlobalsUserType(Module module, string moduleName)
+            : base(module.GlobalScope, new XmlType() { Name = "Globals" }, moduleName)
         {
-            this.session = session;
+            this.module = module;
         }
 
         public override string ClassName

@@ -135,9 +135,11 @@ namespace GenerateUserTypesFromPdb
 
             OpenPdb(pdbPath, out dia, out session);
 
+            Module module = new Module(moduleName, session);
+
             foreach (var type in typeNames)
             {
-                Symbol[] symbols = session.globalScope.GetChildrenWildcard(type.NameWildcard, SymTagEnum.SymTagUDT).Select(s => new Symbol(s)).ToArray();
+                Symbol[] symbols = module.FindGlobalTypeWildcard(type.NameWildcard);
 
                 if (symbols.Length == 0)
                 {
@@ -153,12 +155,7 @@ namespace GenerateUserTypesFromPdb
             Dictionary<string, Symbol> specializedClassWithParentSymbol = new Dictionary<string, Symbol>();
 
             Console.Write("Enumerating all types... ");
-            var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
-            //diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType)); // TODO: When Symbol is used everywhere, uncomment this line
-            Console.WriteLine(sw.Elapsed);
-
-            Console.Write("Converting dia types to symbols... ");
-            var globalTypes = diaGlobalTypes.Select(s => new Symbol(s)).ToList();
+            var globalTypes = module.GetAllTypes();
             Console.WriteLine(sw.Elapsed);
 
             foreach (Symbol symbol in globalTypes)
@@ -221,7 +218,7 @@ namespace GenerateUserTypesFromPdb
                             // TODO
                             // Inspect Template
                             //
-                            TemplateUserType templateType = new TemplateUserType(session, symbol, new XmlType() { Name = symbolName }, moduleName, factory);
+                            TemplateUserType templateType = new TemplateUserType(symbol, new XmlType() { Name = symbolName }, moduleName, factory);
 
                             int templateArgs = templateType.GenericsArguments;
                             if (templateSpecializationArgs.Any(r => r == "void" || r == "void const"))
@@ -345,7 +342,7 @@ namespace GenerateUserTypesFromPdb
             Console.WriteLine("Updating user types: {0}", sw.Elapsed);
 
             factory.ProcessTypes();
-            factory.InserUserType(new GlobalsUserType(session, moduleName));
+            factory.InserUserType(new GlobalsUserType(module, moduleName));
 
             Console.WriteLine("Post processing user types: {0}", sw.Elapsed);
 
@@ -426,8 +423,8 @@ namespace GenerateUserTypesFromPdb
                     filename = string.Format(@"{0}\{1}_{2}.exported.cs", classOutputDirectory, userType.ConstructorName, index++);
                 }
 
-                //using (StringWriter output = new StringWriter())
-                using (TextWriter output = new StreamWriter(filename))
+                using (StringWriter output = new StringWriter())
+                //using (TextWriter output = new StreamWriter(filename))
                 {
                     userType.WriteCode(new IndentedWriter(output), errorOutput, factory, generationOptions);
                 }
