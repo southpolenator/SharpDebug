@@ -346,12 +346,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
             foreach (UserType userType in userTypes)
             {
                 string symbolName = userType.Symbol.name;
-
-                if (symbolName.Contains("CControlFlowGraph::ComputeEnidNodeGraph::__l2::Visitor"))
-                {
-
-                }
-
                 List<string> namespaces = NameHelper.GetFullSymbolNamespaces(symbolName);
 
                 if (namespaces.Count() == 1)
@@ -446,12 +440,10 @@ namespace GenerateUserTypesFromPdb.UserTypes
         internal bool ContainsSymbol(IDiaSymbol type)
         {
             UserType userType;
-
             string typeString = TypeToString.GetTypeString(type);
 
             GlobalCache.UserTypesBySymbolName.TryGetValue(typeString, out userType);
-
-            return (userType != null);
+            return userType != null;
         }
 
         internal UserTypeTransformation FindTransformation(IDiaSymbol type, UserType ownerUserType)
