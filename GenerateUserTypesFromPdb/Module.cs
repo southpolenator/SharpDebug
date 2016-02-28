@@ -1,17 +1,15 @@
 ﻿using Dia2Lib;
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb
 {
     internal class Module
     {
         private IDiaSession session;
-        private Dictionary<uint, Symbol> symbolById = new Dictionary<uint, Symbol>();
-        private Dictionary<string, Symbol> symbolByName = new Dictionary<string, Symbol>();
+        private ConcurrentDictionary<uint, Symbol> symbolById = new ConcurrentDictionary<uint, Symbol>();
+        private ConcurrentDictionary<string, Symbol> symbolByName = new ConcurrentDictionary<string, Symbol>();
 
         public Module(string name, IDiaSession session)
         {
@@ -42,25 +40,23 @@ namespace GenerateUserTypesFromPdb
             if (symbol == null)
                 return null;
 
-            lock (this)
+            Symbol s;
+            uint symbolId = symbol.symIndexId;
+
+            if (!symbolById.TryGetValue(symbolId, out s))
             {
-                Symbol s;
-                uint symbolId = symbol.symIndexId;
-
-                if (!symbolById.TryGetValue(symbolId, out s))
+                s = new Symbol(this, symbol);
+                lock (this)
                 {
-                    s = new Symbol(this, symbol);
-                    symbolById.Add(symbolId, s);
+                    symbolById.TryAdd(symbolId, s);
                     if ((s.Tag == SymTagEnum.SymTagUDT || s.Tag == SymTagEnum.SymTagBaseType) && !symbolByName.ContainsKey(s.Name))
-                        symbolByName.Add(s.Name, s);
-//                    s.InitializeCache();
+                        symbolByName.TryAdd(s.Name, s);
                 }
-
-                return s;
+//                    s.InitializeCache();
             }
-        }
 
-        private Dictionary<string, Symbol> basicTypes;
+            return s;
+        }
 
         public Symbol GetTypeSymbol(string name)
         {
