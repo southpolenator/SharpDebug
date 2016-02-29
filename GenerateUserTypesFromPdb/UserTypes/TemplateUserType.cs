@@ -1,11 +1,10 @@
-﻿using GenerateUserTypesFromPdb.UserTypes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace GenerateUserTypesFromPdb
+namespace GenerateUserTypesFromPdb.UserTypes
 {
     internal class TemplateUserType : UserType
     {
@@ -245,57 +244,7 @@ namespace GenerateUserTypesFromPdb
             return baseType;
         }
 
-        internal override bool Matches(Symbol type, UserTypeFactory factory)
-        {
-            return base.Matches(type, factory);
-        }
-
-        internal override bool Matches(string typeString, UserTypeFactory factory)
-        {
-            if (typeString.Contains('<') && typeString.EndsWith(">"))
-            {
-                var typeStringStart = typeString.Substring(0, typeString.IndexOf('<'));
-
-                if (string.IsNullOrEmpty(typeStringStart))
-                {
-                    // do not match unnamed templates
-                    return false;
-                }
-
-                if (!ClassName.StartsWith(typeStringStart))
-                    return false;
-
-                Symbol typeSymbol = Module.GetTypeSymbol(typeString);
-
-                //#fixme
-                if (typeSymbol == null)
-                {
-                    return false;
-                }
-
-                var templateType = new TemplateUserType(typeSymbol, new XmlType() { Name = typeString }, ModuleName, factory);
-
-                return Matches(this, templateType, factory);
-            }
-
-            return base.Matches(typeString, factory);
-        }
-
-        internal static bool Matches(TemplateUserType template1, TemplateUserType template2, UserTypeFactory factory)
-        {
-            // Verify that all fields are of the same type
-            var t1 = template1.Symbol.Name;
-            var t2 = template2.Symbol.Name;
-            var f1 = template1.ExtractFields(factory, UserTypeGenerationFlags.None).OrderBy(f => f.FieldName).ToArray();
-            var f2 = template2.ExtractFields(factory, UserTypeGenerationFlags.None).OrderBy(f => f.FieldName).ToArray();
-
-            if (f1.Length != f2.Length)
-                return false;
-            for (int i = 0; i < f1.Length; i++)
-                if (f1[i].FieldName != f2[i].FieldName || f1[i].FieldType != f2[i].FieldType)
-                    return false;
-            return true;
-        }
+ 
 
         private UserTypeFactory CreateFactory(UserTypeFactory factory)
         {
@@ -472,6 +421,5 @@ namespace GenerateUserTypesFromPdb
 
             return sb.ToString();
         }
-
     }
 }
