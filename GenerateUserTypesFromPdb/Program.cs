@@ -127,6 +127,8 @@ namespace GenerateUserTypesFromPdb
                 generationOptions |= UserTypeGenerationFlags.LazyCacheUserTypeFields;
             if (config.GeneratePhysicalMappingOfUserTypes)
                 generationOptions |= UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes;
+            if (config.SingleFileExport)
+                generationOptions |= UserTypeGenerationFlags.SingleFileExport;
 
             string moduleName = Path.GetFileNameWithoutExtension(pdbPath).ToLower();
             var factory = new UserTypeFactory(config.Transformations);
@@ -356,20 +358,47 @@ namespace GenerateUserTypesFromPdb
             string[] allUDTs = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).Select(s => s.name).Distinct().OrderBy(s => s).ToArray();
 
             File.WriteAllLines(outputDirectory + "symbols.txt", allUDTs);
-            
-            // Generate Code
-            Parallel.ForEach(factory.Symbols,
-                (symbolEntry) =>
-                {
-                    GenerateUseTypeCode(symbolEntry, factory, outputDirectory, error, generationOptions, generatedFiles);
-                });
 
-            /*
-            foreach(var symbolEntry in factory.Symbols)
+            if (!config.SingleFileExport)
             {
-                GenerateUseTypeCode(symbolEntry, factory, outputDirectory, error, generationOptions, generatedFiles);
+                // Generate Code
+                Parallel.ForEach(factory.Symbols,
+                    (symbolEntry) =>
+                    {
+                        GenerateUseTypeCode(symbolEntry, factory, outputDirectory, error, generationOptions, generatedFiles);
+                    });
             }
-            */
+            else
+            {
+                string filename = string.Format(@"{0}\everything.exported.cs", outputDirectory);
+                HashSet<string> usings = new HashSet<string>();
+                foreach (var symbolEntry in factory.Symbols)
+                    foreach (var u in symbolEntry.Usings)
+                        usings.Add(u);
+
+                generatedFiles.TryAdd(filename.ToLowerInvariant(), filename);
+                using (TextWriter masterOutput = new StreamWriter(filename, false /* append */, System.Text.Encoding.ASCII, 8192))
+                {
+                    foreach (var u in usings.OrderBy(s => s))
+                        masterOutput.WriteLine("using {0};\n", u);
+                    masterOutput.WriteLine();
+
+                    Parallel.ForEach(factory.Symbols,
+                        (symbolEntry) =>
+                        {
+                            using (StringWriter output = new StringWriter())
+                            {
+                                GenerateUseTypeCodeInSingleFile(output, symbolEntry, factory, error, generationOptions);
+                                lock (masterOutput)
+                                {
+                                    masterOutput.WriteLine(output.ToString());
+                                }
+                            }
+                        });
+                }
+            }
+
+            Console.WriteLine("Saving code to disk: {0}", sw.Elapsed);
 
             if (!string.IsNullOrEmpty(config.GeneratedPropsFileName))
             {
@@ -383,6 +412,43 @@ namespace GenerateUserTypesFromPdb
                     output.WriteLine(@" </ItemGroup>");
                     output.WriteLine(@"</Project>");
                 }
+            }
+
+            // Check whether we should generate assembly
+            if (!string.IsNullOrEmpty(config.GeneratedAssemblyName))
+            {
+                var codeProvider = new CSharpCodeProvider();
+                var compilerParameters = new CompilerParameters()
+                {
+                    IncludeDebugInformation = true,
+                    OutputAssembly = outputDirectory + config.GeneratedAssemblyName,
+                };
+
+                compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
+                //compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies);
+
+                const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
+
+                if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.Contains(MicrosoftCSharpDll)).Any())
+                {
+                    compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
+                }
+
+                string binFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScriptManaged.dll"));
+                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll"));
+
+                var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, generatedFiles.Values.ToArray());
+
+                if (compileResult.Errors.Count > 0)
+                {
+                    Console.Error.WriteLine("Compile errors:");
+                    foreach (CompilerError err in compileResult.Errors)
+                        Console.Error.WriteLine(err);
+                }
+
+                Console.WriteLine("Compiling: {0}", sw.Elapsed);
             }
 
             Console.WriteLine("Total time: {0}", sw.Elapsed);
@@ -437,12 +503,40 @@ namespace GenerateUserTypesFromPdb
                     filename = string.Format(@"{0}\{1}_{2}.exported.cs", classOutputDirectory, userType.ConstructorName, index++);
                 }
 
+                //using (StringWriter output = new StringWriter())
                 using (TextWriter output = new StreamWriter(filename, false /* append */, System.Text.Encoding.ASCII, 8192))
                 {
                     userType.WriteCode(new IndentedWriter(output), errorOutput, factory, generationOptions);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool GenerateUseTypeCodeInSingleFile(TextWriter output, UserType userType, UserTypeFactory factory, TextWriter errorOutput, UserTypeGenerationFlags generationOptions)
+        {
+            Symbol symbol = userType.Symbol;
+
+            if (symbol.Tag == SymTagEnum.SymTagBaseType)
+            {
+                // ignore Base (Primitive) types.
+                return false;
+            }
+
+            if (userType.DeclaredInType != null)
+            {
+                return false;
+            }
+
+            try
+            {
+                userType.WriteCode(new IndentedWriter(output), errorOutput, factory, generationOptions);
+            }
+            catch (Exception)
             {
                 return false;
             }
@@ -451,47 +545,3 @@ namespace GenerateUserTypesFromPdb
         }
     }
 }
-
-
-/*
-            // Check whether we should generate assembly
-            if (!string.IsNullOrEmpty(config.GeneratedAssemblyName))
-            {
-                var codeProvider = new CSharpCodeProvider();
-var compilerParameters = new CompilerParameters()
-{
-    IncludeDebugInformation = true,
-    OutputAssembly = outputDirectory + config.GeneratedAssemblyName,
-};
-
-compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
-                //compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies);
-
-                const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
-
-                if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.Contains(MicrosoftCSharpDll)).Any())
-                {
-                    compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
-                }
-
-                string binFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
-compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScriptManaged.dll"));
-                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll"));
-
-                var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, generatedFiles.ToArray());
-
-                if (compileResult.Errors.Count > 0)
-                {
-                    Console.Error.WriteLine("Compile errors:");
-                    foreach (CompilerError err in compileResult.Errors)
-                        Console.Error.WriteLine(err);
-                }
-
-    }
-    }
-}
-
-
-
-*/

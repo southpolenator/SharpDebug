@@ -19,6 +19,7 @@ namespace GenerateUserTypesFromPdb
         CacheStaticUserTypeFields = 32,
         LazyCacheUserTypeFields = 64,
         GeneratePhysicalMappingOfUserTypes = 128,
+        SingleFileExport = 256,
     }
 
     static class StringExtensions

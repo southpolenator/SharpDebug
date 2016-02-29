@@ -385,7 +385,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             if (DeclaredInType == null)
             {
-                if (Usings.Count > 0)
+                if (Usings.Count > 0 && !options.HasFlag(UserTypeGenerationFlags.SingleFileExport))
                 {
                     foreach (var u in Usings.OrderBy(s => s))
                         output.WriteLine(indentation, "using {0};", u);

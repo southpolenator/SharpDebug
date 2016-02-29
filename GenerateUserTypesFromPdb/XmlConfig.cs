@@ -30,6 +30,8 @@ namespace GenerateUserTypesFromPdb
 
         public bool GeneratePhysicalMappingOfUserTypes { get; set; }
 
+        public bool SingleFileExport { get; set; }
+
         public string DefaultNamespace { get; set; }
 
         [XmlArrayItem("Type")]
