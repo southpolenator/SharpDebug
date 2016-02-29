@@ -52,7 +52,7 @@ namespace GenerateUserTypesFromPdb
                     if ((s.Tag == SymTagEnum.SymTagUDT || s.Tag == SymTagEnum.SymTagBaseType) && !symbolByName.ContainsKey(s.Name))
                         symbolByName.TryAdd(s.Name, s);
                 }
-//                    s.InitializeCache();
+                //s.InitializeCache();
             }
 
             return s;

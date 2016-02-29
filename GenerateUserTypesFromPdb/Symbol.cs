@@ -45,7 +45,6 @@ namespace GenerateUserTypesFromPdb
             {
                 if (elementType == null)
                 {
-                    // TODO: We need to cache these values
                     IDiaSymbol type = symbol.type;
 
                     if (type != null)

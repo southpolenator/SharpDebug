@@ -388,6 +388,8 @@ namespace GenerateUserTypesFromPdb
             Console.WriteLine("Total time: {0}", sw.Elapsed);
         }
 
+        private static ConcurrentDictionary<string, string> createdDirectories = new ConcurrentDictionary<string, string>();
+
         private static bool GenerateUseTypeCode(UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationOptions, ConcurrentDictionary<string, string> generatedFiles)
         {
             var symbol = userType.Symbol;
@@ -406,7 +408,13 @@ namespace GenerateUserTypesFromPdb
                 if (!string.IsNullOrEmpty(userType.Namespace))
                     classOutputDirectory = Path.Combine(classOutputDirectory, UserType.NormalizeSymbolName(UserType.NormalizeSymbolName(userType.Namespace).Replace(".", "\\").Replace(":", ".")));
 
-                Directory.CreateDirectory(classOutputDirectory);
+
+                string ss;
+                if (!createdDirectories.TryGetValue(classOutputDirectory, out ss))
+                {
+                    Directory.CreateDirectory(classOutputDirectory);
+                    createdDirectories.TryAdd(classOutputDirectory, classOutputDirectory);
+                }
 
                 bool isEnum = userType is EnumUserType;
 
