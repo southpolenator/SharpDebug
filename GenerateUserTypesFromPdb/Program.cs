@@ -163,7 +163,7 @@ namespace GenerateUserTypesFromPdb
                 //  TODO add configurable filter
                 //
                 string symbolName = symbol.Name;
-                if (symbolName.StartsWith("$") || symbolName.StartsWith("__vc_attributes") || /*symbolName.StartsWith("ATL::") ||*/ symbolName.StartsWith("`anonymous-namespace'"))
+                if (symbolName.StartsWith("$") || symbolName.StartsWith("__vc_attributes") || symbolName.StartsWith("`anonymous-namespace'"))
                 {
                     continue;
                 }
@@ -390,7 +390,13 @@ namespace GenerateUserTypesFromPdb
 
         private static bool GenerateUseTypeCode(UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationOptions, ConcurrentDictionary<string, string> generatedFiles)
         {
-            var symbol = userType.Symbol;
+            Symbol symbol = userType.Symbol;
+
+            if (symbol.Tag == SymTagEnum.SymTagBaseType)
+            {
+                // ignore Base (Primitive) types.
+                return false;
+            }
 
             if (userType.DeclaredInType != null)
             {
@@ -423,8 +429,7 @@ namespace GenerateUserTypesFromPdb
                     filename = string.Format(@"{0}\{1}_{2}.exported.cs", classOutputDirectory, userType.ConstructorName, index++);
                 }
 
-                using (StringWriter output = new StringWriter())
-                //using (TextWriter output = new StreamWriter(filename))
+                using (TextWriter output = new StreamWriter(filename, false /* append */, System.Text.Encoding.ASCII, 8192))
                 {
                     userType.WriteCode(new IndentedWriter(output), errorOutput, factory, generationOptions);
                 }

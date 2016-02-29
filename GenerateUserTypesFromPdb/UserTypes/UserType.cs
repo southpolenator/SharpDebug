@@ -763,15 +763,5 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     throw new Exception("Unexpected type tag " + type.Tag);
             }
         }
-
-        internal virtual bool Matches(string typeString, UserTypeFactory factory)
-        {
-            return Symbol.Name == typeString;
-        }
-
-        internal virtual bool Matches(Symbol type, UserTypeFactory factory)
-        {
-            return Matches(type.Name, factory);
-        }
     }
 }

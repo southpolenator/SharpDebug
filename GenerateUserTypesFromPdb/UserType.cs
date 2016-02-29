@@ -490,6 +490,5 @@ namespace GenerateUserTypesFromPdb
         }
 
         public XmlTypeTransformation Transformation { get; private set; }
-
     }
 }

@@ -59,15 +59,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 yield return field;
         }
 
-        internal override bool Matches(Symbol type, UserTypeFactory factory)
-        {
-            return false;
-        }
-
-        internal override bool Matches(string typeString, UserTypeFactory factory)
-        {
-            return false;
-        }
 
         protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory)
         {
