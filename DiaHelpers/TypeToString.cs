@@ -32,6 +32,7 @@ namespace Dia2Lib
                                 return "wchar_t";
                             case BasicType.BSTR:
                                 return "string";
+                            case BasicType.NoType:
                             case BasicType.Void:
                                 return "void";
                             case BasicType.Float:
@@ -74,6 +75,7 @@ namespace Dia2Lib
 
                             case BasicType.Hresult:
                                 return "HRESULT";
+
                             default:
                                 throw new Exception("Unexpected basic type " + (BasicType)type.baseType);
                         }
