@@ -262,7 +262,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             if (isConstant && options.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
             {
-                constantString = string.Format("({0})", field.Value.ToString());
+                constantString = field.Value.ToString();
             }
 
             if (string.IsNullOrEmpty(castingTypeString))

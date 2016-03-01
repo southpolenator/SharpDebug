@@ -321,12 +321,32 @@ namespace GenerateUserTypesFromPdb
 
         public bool CacheResult { get; set; }
 
+        private string GetConstantValue()
+        {
+            if (ConstantValue.StartsWith("-"))
+                switch (FieldType)
+                {
+                    case "ulong":
+                        return ((ulong)long.Parse(ConstantValue)).ToString();
+                    case "uint":
+                        return ((uint)int.Parse(ConstantValue)).ToString();
+                    case "ushort":
+                        return ((ushort)short.Parse(ConstantValue)).ToString();
+                    case "byte":
+                        return ((byte)sbyte.Parse(ConstantValue)).ToString();
+                }
+
+            if (FieldType == "bool")
+                return (int.Parse(ConstantValue) != 0).ToString();
+            return ConstantValue;
+        }
+
         public void WriteFieldCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options)
         {
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
                 output.WriteLine(indentation, FieldTypeInfoComment);
             if (!string.IsNullOrEmpty(ConstantValue))
-                output.WriteLine(indentation, "public static {0} {1} = ({0})unchecked{2};", FieldType, FieldName, ConstantValue);
+                output.WriteLine(indentation, "public static {0} {1} = ({0}){2};", FieldType, FieldName, GetConstantValue());
             else if (UseUserMember && CacheResult)
                 output.WriteLine(indentation, "private {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName);
             else if (CacheResult)
