@@ -30,6 +30,7 @@ namespace GenerateUserTypesFromPdb
         public Symbol[] GetAllTypes()
         {
             var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
+            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagEnum));
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType));
 
             return diaGlobalTypes.Select(s => GetSymbol(s)).ToArray();

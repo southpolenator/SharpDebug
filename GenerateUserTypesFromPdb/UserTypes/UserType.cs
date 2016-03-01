@@ -93,6 +93,21 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 symbolName = NormalizeSymbolName(symbolName);
 
+                switch (symbolName)
+                {
+                    case "lock":
+                    case "base":
+                    case "params":
+                    case "enum":
+                    case "in":
+                    case "object":
+                    case "event":
+                    case "string":
+                        return string.Format("@{0}", symbolName);
+                    default:
+                        break;
+                }
+
                 return symbolName;
             }
         }
@@ -570,7 +585,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     factory.GetUserType(type, out userType);
 
                     // type is PhysicalType, base class is Template
-                    if (userType is PhysicalUserType && baseUserType is TemplateUserType)
+                    if (baseUserType is TemplateUserType)
                     {
                         // check if template has implementation
                         if (!((TemplateUserType)(baseUserType)).IsInstantiable(factory))

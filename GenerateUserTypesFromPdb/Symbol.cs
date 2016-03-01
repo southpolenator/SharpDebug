@@ -23,6 +23,8 @@ namespace GenerateUserTypesFromPdb
             else
                 Name = "";
 
+            Name = Name.Replace("<enum ", "<").Replace(",enum ", ",");
+
             var size = symbol.length;
             if (size > int.MaxValue)
                 throw new ArgumentException("Symbol size is unexpected");
@@ -93,13 +95,13 @@ namespace GenerateUserTypesFromPdb
             }
         }
 
-        public IEnumerable<Tuple<string, ulong>> GetEnumValues()
+        public IEnumerable<Tuple<string, string>> GetEnumValues()
         {
             if (Tag == SymTagEnum.SymTagEnum)
             {
                 foreach (var enumValue in symbol.GetChildren())
                 {
-                    yield return Tuple.Create(enumValue.name, (ulong)enumValue.value);
+                    yield return Tuple.Create(enumValue.name, enumValue.value.ToString());
                 }
             }
         }

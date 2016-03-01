@@ -326,7 +326,7 @@ namespace GenerateUserTypesFromPdb
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
                 output.WriteLine(indentation, FieldTypeInfoComment);
             if (!string.IsNullOrEmpty(ConstantValue))
-                output.WriteLine(indentation, "public static {0} {1} = ({0}){2};", FieldType, FieldName, ConstantValue);
+                output.WriteLine(indentation, "public static {0} {1} = ({0})unchecked{2};", FieldType, FieldName, ConstantValue);
             else if (UseUserMember && CacheResult)
                 output.WriteLine(indentation, "private {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName);
             else if (CacheResult)

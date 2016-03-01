@@ -224,7 +224,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         {
             UserType newUserType;
 
-            if (type == null)
+            if (type == null || symbol.Tag == SymTagEnum.SymTagEnum)
             {
                 newUserType = new EnumUserType(symbol, moduleName);
             }
