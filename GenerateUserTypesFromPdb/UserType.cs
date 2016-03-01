@@ -426,6 +426,7 @@ namespace GenerateUserTypesFromPdb
                 case "in":
                 case "object":
                 case "event":
+                case "string":
                     return string.Format("_{0}", fieldName);
                 default:
                     break;
