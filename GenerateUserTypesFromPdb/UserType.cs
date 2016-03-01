@@ -337,8 +337,8 @@ namespace GenerateUserTypesFromPdb
                 }
 
             if (FieldType == "bool")
-                return (int.Parse(ConstantValue) != 0).ToString();
-            return ConstantValue;
+                return (int.Parse(ConstantValue) != 0).ToString().ToLower();
+            return "(" + ConstantValue + ")";
         }
 
         public void WriteFieldCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options)
