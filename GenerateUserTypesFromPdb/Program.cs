@@ -370,7 +370,7 @@ namespace GenerateUserTypesFromPdb
             }
             else
             {
-                string filename = string.Format(@"{0}\everything.exported.cs", outputDirectory);
+                string filename = string.Format(@"{0}\{1}_.exported.cs", outputDirectory, module.Name);
                 HashSet<string> usings = new HashSet<string>();
                 foreach (var symbolEntry in factory.Symbols)
                     foreach (var u in symbolEntry.Usings)
