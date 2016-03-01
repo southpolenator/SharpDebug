@@ -76,7 +76,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         case 2:
                             return "short";
                         case 1:
-                            return "char";
+                            return "sbyte";
                         case 0:
                             return string.Empty;
                         default:
