@@ -18,6 +18,7 @@ namespace GenerateUserTypesFromPdb
             Module = module;
             Tag = (SymTagEnum)symbol.symTag;
             BasicType = (BasicType)symbol.baseType;
+            Id = symbol.symIndexId;
             if (Tag != SymTagEnum.SymTagExe)
                 Name = TypeToString.GetTypeString(symbol);
             else
@@ -32,6 +33,8 @@ namespace GenerateUserTypesFromPdb
         }
 
         public string Name { get; private set; }
+
+        public uint Id { get; private set; }
 
         public Module Module { get; private set; }
 
@@ -71,8 +74,6 @@ namespace GenerateUserTypesFromPdb
         {
             if (Tag != SymTagEnum.SymTagExe)
             {
-                var fields = this.Fields;
-                var baseClasses = this.BaseClasses;
                 var elementType = this.ElementType;
             }
         }

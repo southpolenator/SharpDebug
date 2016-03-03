@@ -1,6 +1,7 @@
 ﻿using Dia2Lib;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace GenerateUserTypesFromPdb
@@ -34,6 +35,19 @@ namespace GenerateUserTypesFromPdb
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType));
 
             return diaGlobalTypes.Select(s => GetSymbol(s)).ToArray();
+
+            // TODO: See why we have duplicates
+            //var allSymbols = diaGlobalTypes.Select(s => GetSymbol(s)).OrderBy(s => s.Name);
+            //var symbols = new List<Symbol>();
+            //var previousName = "";
+
+            //foreach (var s in allSymbols)
+            //    if (s.Name != previousName)
+            //    {
+            //        symbols.Add(s);
+            //        previousName = s.Name;
+            //    }
+            //return symbols.ToArray();
         }
 
         internal Symbol GetSymbol(IDiaSymbol symbol)
@@ -53,7 +67,8 @@ namespace GenerateUserTypesFromPdb
                     if ((s.Tag == SymTagEnum.SymTagUDT || s.Tag == SymTagEnum.SymTagBaseType) && !symbolByName.ContainsKey(s.Name))
                         symbolByName.TryAdd(s.Name, s);
                 }
-                //s.InitializeCache();
+
+                s.InitializeCache();
             }
 
             return s;
@@ -68,12 +83,16 @@ namespace GenerateUserTypesFromPdb
             while (name.EndsWith("*"))
             {
                 pointer++;
-                name = name.Substring(0, name.Length - 1);
+                name = name.Substring(0, name.Length - 1).TrimEnd();
             }
 
             name = name.Trim();
+            if (name.StartsWith("::"))
+                name = name.Substring(2);
             if (name.EndsWith(" const"))
                 name = name.Substring(0, name.Length - 6);
+            if (name.EndsWith(" volatile"))
+                name = name.Substring(0, name.Length - 9);
             if (name.StartsWith("enum "))
                 name = name.Substring(5);
 
@@ -85,6 +104,8 @@ namespace GenerateUserTypesFromPdb
                 name = "int";
             else if (name == "unsigned long")
                 name = "unsigned int";
+            else if (name == "signed char")
+                name = "char";
 
             if (!symbolByName.TryGetValue(name, out symbol))
                 symbol = GetSymbol(session.globalScope.GetChild(name));

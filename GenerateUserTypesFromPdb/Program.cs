@@ -1,6 +1,8 @@
 ﻿using CommandLine;
 using Dia2Lib;
 using GenerateUserTypesFromPdb.UserTypes;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
@@ -9,7 +11,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb
@@ -246,7 +247,7 @@ namespace GenerateUserTypesFromPdb
                             // nested in templates
                             continue;
                         }
-                        catch(Exception ex)
+                        catch (Exception)
                         {
                             continue;
                         }
@@ -334,15 +335,6 @@ namespace GenerateUserTypesFromPdb
 
             Console.WriteLine("Updating template arguments: {0}", sw.Elapsed);
 
-            // Update 
-            UserType[] userTypesInitialSet = factory.Symbols.ToArray();
-            foreach (UserType userType in userTypesInitialSet)
-            {
-                userType.UpdateUserTypes(factory, generationOptions);
-            }
-
-            Console.WriteLine("Updating user types: {0}", sw.Elapsed);
-
             factory.ProcessTypes();
             factory.InserUserType(new GlobalsUserType(module, moduleName));
 
@@ -352,20 +344,26 @@ namespace GenerateUserTypesFromPdb
             string outputDirectory = currentDirectory + "\\output\\";
             Directory.CreateDirectory(outputDirectory);
 
-
             ConcurrentDictionary<string, string> generatedFiles = new ConcurrentDictionary<string, string>();
-
+            var syntaxTrees = new List<SyntaxTree>();
             string[] allUDTs = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).Select(s => s.name).Distinct().OrderBy(s => s).ToArray();
 
             File.WriteAllLines(outputDirectory + "symbols.txt", allUDTs);
-
             if (!config.SingleFileExport)
             {
                 // Generate Code
                 Parallel.ForEach(factory.Symbols,
                     (symbolEntry) =>
                     {
-                        GenerateUseTypeCode(symbolEntry, factory, outputDirectory, error, generationOptions, generatedFiles);
+                        Tuple<string, string> result = GenerateUseTypeCode(symbolEntry, factory, outputDirectory, error, generationOptions, generatedFiles);
+                        string text = result.Item1;
+                        string filename = result.Item2;
+
+                        if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName) && !string.IsNullOrEmpty(text))
+                            lock (syntaxTrees)
+                            {
+                                syntaxTrees.Add(CSharpSyntaxTree.ParseText(text, path: filename, encoding: System.Text.UTF8Encoding.Default));
+                            }
                     });
             }
             else
@@ -377,11 +375,18 @@ namespace GenerateUserTypesFromPdb
                         usings.Add(u);
 
                 generatedFiles.TryAdd(filename.ToLowerInvariant(), filename);
+                using (StringWriter stringOutput = new StringWriter())
                 using (TextWriter masterOutput = new StreamWriter(filename, false /* append */, System.Text.Encoding.ASCII, 8192))
                 {
                     foreach (var u in usings.OrderBy(s => s))
+                    {
                         masterOutput.WriteLine("using {0};\n", u);
+                        if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
+                            stringOutput.WriteLine("using {0};\n", u);
+                    }
                     masterOutput.WriteLine();
+                    if (config.GenerateAssemblyWithRoslyn)
+                        stringOutput.WriteLine();
 
                     Parallel.ForEach(factory.Symbols,
                         (symbolEntry) =>
@@ -391,14 +396,68 @@ namespace GenerateUserTypesFromPdb
                                 GenerateUseTypeCodeInSingleFile(output, symbolEntry, factory, error, generationOptions);
                                 lock (masterOutput)
                                 {
-                                    masterOutput.WriteLine(output.ToString());
+                                    string text = output.ToString();
+                                    masterOutput.WriteLine(text);
+                                    if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
+                                        stringOutput.WriteLine(text);
                                 }
                             }
                         });
+
+                    if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
+                        syntaxTrees.Add(CSharpSyntaxTree.ParseText(stringOutput.ToString(), path: filename, encoding: System.Text.UTF8Encoding.Default));
                 }
             }
 
             Console.WriteLine("Saving code to disk: {0}", sw.Elapsed);
+
+            string binFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+            if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
+            {
+                MetadataReference[] references = new MetadataReference[]
+                {
+                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                    MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
+                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsScriptManaged.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll")),
+                };
+
+                CSharpCompilation compilation = CSharpCompilation.Create(
+                    config.GeneratedAssemblyName,
+                    syntaxTrees: syntaxTrees,
+                    references: references,
+                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                Console.WriteLine("Syntax trees: {0}", syntaxTrees.Count);
+
+                string dllFilename = Path.Combine(outputDirectory, config.GeneratedAssemblyName);
+                string pdbFilename = Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(dllFilename) + ".pdb");
+
+                using (var dllStream = new FileStream(dllFilename, FileMode.Create))
+                using (var pdbStream = new FileStream(pdbFilename, FileMode.Create))
+                {
+                    var result = compilation.Emit(dllStream, !config.DisablePdbGeneration ? pdbStream : null);
+
+                    if (!result.Success)
+                    {
+                        IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                            diagnostic.IsWarningAsError ||
+                            diagnostic.Severity == DiagnosticSeverity.Error);
+
+                        foreach (var diagnostic in failures)
+                        {
+                            Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("DLL size: {0}", dllStream.Position);
+                        Console.WriteLine("PDB size: {0}", pdbStream.Position);
+                    }
+                }
+
+                Console.WriteLine("Compiling: {0}", sw.Elapsed);
+            }
 
             if (!string.IsNullOrEmpty(config.GeneratedPropsFileName))
             {
@@ -415,12 +474,12 @@ namespace GenerateUserTypesFromPdb
             }
 
             // Check whether we should generate assembly
-            if (!string.IsNullOrEmpty(config.GeneratedAssemblyName))
+            if (!config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
             {
                 var codeProvider = new CSharpCodeProvider();
                 var compilerParameters = new CompilerParameters()
                 {
-                    IncludeDebugInformation = true,
+                    IncludeDebugInformation = !config.DisablePdbGeneration,
                     OutputAssembly = outputDirectory + config.GeneratedAssemblyName,
                 };
 
@@ -433,8 +492,6 @@ namespace GenerateUserTypesFromPdb
                 {
                     compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
                 }
-
-                string binFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
                 compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScriptManaged.dll"));
                 compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll"));
@@ -456,19 +513,19 @@ namespace GenerateUserTypesFromPdb
 
         private static ConcurrentDictionary<string, string> createdDirectories = new ConcurrentDictionary<string, string>();
 
-        private static bool GenerateUseTypeCode(UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationOptions, ConcurrentDictionary<string, string> generatedFiles)
+        private static Tuple<string, string> GenerateUseTypeCode(UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationOptions, ConcurrentDictionary<string, string> generatedFiles)
         {
             Symbol symbol = userType.Symbol;
 
             if (symbol.Tag == SymTagEnum.SymTagBaseType)
             {
                 // ignore Base (Primitive) types.
-                return false;
+                return Tuple.Create("", "");
             }
 
             if (userType.DeclaredInType != null)
             {
-                return false;
+                return Tuple.Create("", "");
             }
 
             try
@@ -503,18 +560,19 @@ namespace GenerateUserTypesFromPdb
                     filename = string.Format(@"{0}\{1}_{2}.exported.cs", classOutputDirectory, userType.ConstructorName, index++);
                 }
 
-                //using (StringWriter output = new StringWriter())
-                using (TextWriter output = new StreamWriter(filename, false /* append */, System.Text.Encoding.ASCII, 8192))
+                using (TextWriter output = new StreamWriter(filename))
+                using (StringWriter stringOutput = new StringWriter())
                 {
-                    userType.WriteCode(new IndentedWriter(output), errorOutput, factory, generationOptions);
+                    userType.WriteCode(new IndentedWriter(stringOutput), errorOutput, factory, generationOptions);
+                    string text = stringOutput.ToString();
+                    output.WriteLine(text);
+                    return Tuple.Create(text, filename);
                 }
             }
             catch (Exception)
             {
-                return false;
+                return Tuple.Create("", "");
             }
-
-            return true;
         }
 
         private static bool GenerateUseTypeCodeInSingleFile(TextWriter output, UserType userType, UserTypeFactory factory, TextWriter errorOutput, UserTypeGenerationFlags generationOptions)

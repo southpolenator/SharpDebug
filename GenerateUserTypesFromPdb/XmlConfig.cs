@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 
 namespace GenerateUserTypesFromPdb
@@ -19,6 +17,10 @@ namespace GenerateUserTypesFromPdb
         public bool ForceUserTypesToNewInsteadOfCasting { get; set; }
 
         public string GeneratedAssemblyName { get; set; }
+
+        public bool GenerateAssemblyWithRoslyn { get; set; }
+
+        public bool DisablePdbGeneration { get; set; }
 
         public string GeneratedPropsFileName { get; set; }
 
