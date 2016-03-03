@@ -39,22 +39,19 @@ namespace GenerateUserTypesFromPdb
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagArrayType));
 
             var convertedTypes = diaGlobalTypes.Select(s => GetSymbol(s)).ToList();
-            var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).ToArray();
+            var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).OrderBy(s => s.Name).ToArray();
 
-            // TODO: See why we have duplicates
-            //var allSymbols = diaGlobalTypes.Select(s => GetSymbol(s)).OrderBy(s => s.Name);
-            //var symbols = new List<Symbol>();
-            //var previousName = "";
+            // Remove duplicates
+            var symbols = new List<Symbol>();
+            var previousName = "";
 
-            //foreach (var s in allSymbols)
-            //    if (s.Name != previousName)
-            //    {
-            //        symbols.Add(s);
-            //        previousName = s.Name;
-            //    }
-            //return symbols.ToArray();
-
-            return resultingTypes;
+            foreach (var s in resultingTypes)
+                if (s.Name != previousName)
+                {
+                    symbols.Add(s);
+                    previousName = s.Name;
+                }
+            return symbols.ToArray();
         }
 
         internal Symbol GetSymbol(IDiaSymbol symbol)
