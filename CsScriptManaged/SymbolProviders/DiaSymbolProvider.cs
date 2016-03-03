@@ -372,8 +372,9 @@ namespace CsScriptManaged.SymbolProviders
             ulong distance;
             Module module;
             ISymbolProviderModule diaModule = GetDiaModule(process, address, out distance, out module);
+            var result = diaModule.GetSymbolNameByAddress(process, address, (uint)distance);
 
-            return diaModule.GetSymbolNameByAddress(process, address, (uint)distance);
+            return new Tuple<string, ulong>(module.Name + "!" + result.Item1, result.Item2);
         }
     }
 }
