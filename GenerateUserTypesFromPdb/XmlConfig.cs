@@ -34,7 +34,8 @@ namespace GenerateUserTypesFromPdb
 
         public bool SingleFileExport { get; set; }
 
-        public string DefaultNamespace { get; set; }
+        [XmlArrayItem("Module")]
+        public XmlModule[] Modules { get; set; }
 
         [XmlArrayItem("Type")]
         public XmlType[] Types { get; set; }
@@ -66,6 +67,18 @@ namespace GenerateUserTypesFromPdb
         {
             return new XmlSerializer(typeof(XmlConfig), new Type[] { });
         }
+    }
+
+    public class XmlModule
+    {
+        [XmlAttribute]
+        public string Name { get; set; }
+
+        [XmlAttribute]
+        public string PdbPath { get; set; }
+
+        [XmlAttribute]
+        public string Namespace { get; set; }
     }
 
     public class XmlType

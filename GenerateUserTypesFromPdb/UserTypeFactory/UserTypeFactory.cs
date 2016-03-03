@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb.UserTypes
 {
@@ -245,7 +243,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             }
         }
 
-        internal void AddSymbols(IDiaSession session, IEnumerable<Symbol> symbols, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
+        internal void AddSymbols(IEnumerable<Symbol> symbols, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
         {
             if (!type.IsTemplate && symbols.Any())
                 throw new Exception("Type has more than one symbol for " + type.Name);

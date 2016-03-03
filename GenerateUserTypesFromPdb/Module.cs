@@ -8,13 +8,15 @@ namespace GenerateUserTypesFromPdb
 {
     internal class Module
     {
+        private IDiaDataSource dia;
         private IDiaSession session;
         private ConcurrentDictionary<uint, Symbol> symbolById = new ConcurrentDictionary<uint, Symbol>();
         private ConcurrentDictionary<string, Symbol> symbolByName = new ConcurrentDictionary<string, Symbol>();
 
-        public Module(string name, IDiaSession session)
+        public Module(string name, IDiaDataSource dia, IDiaSession session)
         {
             this.session = session;
+            this.dia = dia;
             Name = name;
             GlobalScope = GetSymbol(session.globalScope);
         }
