@@ -11,6 +11,7 @@ namespace GenerateUserTypesFromPdb
         private SymbolField[] fields;
         private Symbol[] baseClasses;
         private Symbol elementType;
+        private Symbol pointerType;
 
         public Symbol(Module module, IDiaSymbol symbol)
         {
@@ -48,12 +49,15 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                if (elementType == null)
+                if (elementType == null && (Tag == SymTagEnum.SymTagPointerType || Tag == SymTagEnum.SymTagArrayType))
                 {
                     IDiaSymbol type = symbol.type;
 
                     if (type != null)
+                    {
                         elementType = Module.GetSymbol(type);
+                        elementType.pointerType = this;
+                    }
                 }
 
                 return elementType;
@@ -92,7 +96,12 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                return Module.GetSymbol(symbol.objectPointerType);
+                if (pointerType == null)
+                {
+                    pointerType = Module.GetSymbol(symbol.objectPointerType);
+                    pointerType.elementType = this;
+                }
+                return pointerType;
             }
         }
 

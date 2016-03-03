@@ -35,8 +35,11 @@ namespace GenerateUserTypesFromPdb
             var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagEnum));
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType));
+            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagPointerType));
+            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagArrayType));
 
-            return diaGlobalTypes.Select(s => GetSymbol(s)).ToArray();
+            var convertedTypes = diaGlobalTypes.Select(s => GetSymbol(s)).ToList();
+            var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).ToArray();
 
             // TODO: See why we have duplicates
             //var allSymbols = diaGlobalTypes.Select(s => GetSymbol(s)).OrderBy(s => s.Name);
@@ -50,6 +53,8 @@ namespace GenerateUserTypesFromPdb
             //        previousName = s.Name;
             //    }
             //return symbols.ToArray();
+
+            return resultingTypes;
         }
 
         internal Symbol GetSymbol(IDiaSymbol symbol)
@@ -66,7 +71,7 @@ namespace GenerateUserTypesFromPdb
                 lock (this)
                 {
                     symbolById.TryAdd(symbolId, s);
-                    if ((s.Tag == SymTagEnum.SymTagUDT || s.Tag == SymTagEnum.SymTagBaseType) && !symbolByName.ContainsKey(s.Name))
+                    if (s.Tag != SymTagEnum.SymTagExe && !symbolByName.ContainsKey(s.Name))
                         symbolByName.TryAdd(s.Name, s);
                 }
 
@@ -109,10 +114,7 @@ namespace GenerateUserTypesFromPdb
             else if (name == "signed char")
                 name = "char";
 
-            if (!symbolByName.TryGetValue(name, out symbol))
-                symbol = GetSymbol(session.globalScope.GetChild(name));
-
-            if (symbol == null)
+            if (!symbolByName.TryGetValue(name, out symbol) || symbol == null)
                 Console.WriteLine("   '{0}' not found", originalName);
             else
                 for (int i = 0; i < pointer; i++)

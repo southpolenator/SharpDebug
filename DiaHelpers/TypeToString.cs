@@ -90,8 +90,10 @@ namespace Dia2Lib
                     case SymTagEnum.SymTagBaseClass:
                     case SymTagEnum.SymTagUDT:
                     case SymTagEnum.SymTagEnum:
+                    case SymTagEnum.SymTagVTable:
+                    case SymTagEnum.SymTagVTableShape:
                         {
-                            return type.name;
+                            return type.name ?? "";
                         }
 
                     case SymTagEnum.SymTagFunctionType:

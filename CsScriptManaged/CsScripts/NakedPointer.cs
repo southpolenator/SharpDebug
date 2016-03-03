@@ -5,25 +5,19 @@ namespace CsScripts
     /// <summary>
     /// Wrapper class that represents a pointer to void (i.e. void*)
     /// </summary>
-    public class NakedPointer
+    public class NakedPointer : Variable
     {
-        /// <summary>
-        /// The actual variable where we get all the values.
-        /// </summary>
-        private Variable variable;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CodePointer{T}"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
         public NakedPointer(Variable variable)
+            : base(variable)
         {
-            if (!variable.GetCodeType().IsPointer)
+            if (GetCodeType().IsPointer)
             {
-                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+                throw new Exception("Wrong code type of passed variable " + GetCodeType().Name);
             }
-
-            this.variable = variable;
         }
 
         /// <summary>
@@ -36,7 +30,7 @@ namespace CsScripts
         {
             get
             {
-                return variable.IsNullPointer();
+                return IsNullPointer();
             }
         }
 
@@ -44,9 +38,9 @@ namespace CsScripts
         /// Casts void pointer to a specified type.
         /// </summary>
         /// <typeparam name="T">The type of element new pointer should point to.</typeparam>
-        public CodePointer<T> CastAs<T>()
+        public new CodePointer<T> CastAs<T>()
         {
-            return new CodePointer<T>(variable);
+            return new CodePointer<T>(this);
         }
     }
 }
