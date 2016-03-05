@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace Dia2Lib
 {
@@ -92,11 +93,28 @@ namespace Dia2Lib
                     case SymTagEnum.SymTagEnum:
                     case SymTagEnum.SymTagVTable:
                     case SymTagEnum.SymTagVTableShape:
-                        {
-                            return type.name ?? "";
-                        }
+                        return type.name ?? "";
 
                     case SymTagEnum.SymTagFunctionType:
+                        {
+                            StringBuilder sb = new StringBuilder();
+                            var arguments = type.GetChildren(SymTagEnum.SymTagFunctionArgType);
+                            bool first = true;
+
+                            sb.Append(GetTypeString(type.type));
+                            sb.Append("(");
+                            foreach (var argument in arguments)
+                            {
+                                if (first)
+                                    first = false;
+                                else
+                                    sb.Append(",");
+                                sb.Append(GetTypeString(argument.type));
+                            }
+                            sb.Append(")");
+                            return sb.ToString();
+                        }
+
                     case SymTagEnum.SymTagArrayType:
                         return GetTypeString(type.type) + "[]";
 
