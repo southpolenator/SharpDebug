@@ -14,7 +14,7 @@ namespace CsScripts
         public NakedPointer(Variable variable)
             : base(variable)
         {
-            if (GetCodeType().IsPointer)
+            if (!GetCodeType().IsPointer)
             {
                 throw new Exception("Wrong code type of passed variable " + GetCodeType().Name);
             }

@@ -119,6 +119,7 @@
     <Compile Include="CsScripts\UserTypeAttribute.cs" />
     <Compile Include="CsScripts\Variable.cs" />
     <Compile Include="CsScripts\VariableCollection.cs" />
+    <Compile Include="CsScripts\VoidType.cs" />
     <Compile Include="Debuggers\DbgEngDll.cs" />
     <Compile Include="Debuggers\IDebuggerEngine.cs" />
     <Compile Include="Marshaling\NamespaceDoc.cs" />
