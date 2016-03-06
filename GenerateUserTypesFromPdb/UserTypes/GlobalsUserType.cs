@@ -38,7 +38,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 // Skip fields that have same name as the type
                 UserType userType;
-                factory.TryGetUserType(field.Type.Name, out userType);
+                factory.TryGetUserType(field.Type.Module, field.Type.Name, out userType);
 
                 if (userType == null)
                     continue;

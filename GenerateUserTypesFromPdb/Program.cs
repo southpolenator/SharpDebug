@@ -144,270 +144,346 @@ namespace GenerateUserTypesFromPdb
             string outputDirectory = currentDirectory + "\\output\\";
             Directory.CreateDirectory(outputDirectory);
 
-            foreach (var xmlModule in xmlModules)
+            // Load modules
+            ConcurrentDictionary<Module, XmlModule> modules = new ConcurrentDictionary<Module, XmlModule>();
+            ConcurrentDictionary<XmlModule, Symbol[]> globalTypesPerModule = new ConcurrentDictionary<XmlModule, Symbol[]>();
+
+            Console.Write("Loading modules...");
+            Parallel.ForEach(xmlModules, (xmlModule) =>
             {
                 Module module = OpenPdb(xmlModule);
+
+                modules.TryAdd(module, xmlModule);
+            });
+
+            Console.WriteLine(" {0}", sw.Elapsed);
+
+            Console.Write("Enumerating symbols...");
+            Parallel.ForEach(modules, (mm) =>
+            {
+                XmlModule xmlModule = mm.Value;
+                Module module = mm.Key;
                 string moduleName = xmlModule.Name;
                 string nameSpace = xmlModule.Namespace;
-                var factory = new UserTypeFactory(module, config.Transformations);
-                List<UserType> userTypes = new List<UserType>();
-
-                userTypes.Add(factory.AddSymbol(module.GlobalScope, new XmlType() { Name = "ModuleGlobals" }, moduleName, nameSpace, generationOptions));
+                List<Symbol> allSymbols = new List<Symbol>();
 
                 foreach (var type in typeNames)
                 {
                     Symbol[] symbols = module.FindGlobalTypeWildcard(type.NameWildcard);
 
                     if (symbols.Length == 0)
-                    {
                         error.WriteLine("Symbol not found: {0}", type.Name);
+                    else
+                        allSymbols.AddRange(symbols);
+                }
+
+                allSymbols.AddRange(module.GetAllTypes());
+                globalTypesPerModule.TryAdd(xmlModule, allSymbols.ToArray());
+            });
+
+            Console.WriteLine(" {0}", sw.Elapsed);
+
+            Console.Write("Deduplicating symbols...");
+
+            // Group duplicated symbols
+            Dictionary<string, List<Symbol>> symbolsByName = new Dictionary<string, List<Symbol>>();
+            Dictionary<Symbol, List<Symbol>> duplicatedSymbols = new Dictionary<Symbol, List<Symbol>>();
+
+            foreach (var symbol in globalTypesPerModule.SelectMany(gt => gt.Value))
+            {
+                List<Symbol> symbols;
+
+                if (!symbolsByName.TryGetValue(symbol.Name, out symbols))
+                    symbolsByName.Add(symbol.Name, symbols = new List<Symbol>());
+
+                bool found = false;
+
+                foreach (var s in symbols.ToArray())
+                {
+                    if (s.Size != 0 && symbol.Size != 0 && s.Size != symbol.Size)
+                    {
+#if DEBUG
+                        Console.WriteLine("{0}!{1} ({2}) {3}!{4} ({5})", s.Module.Name, s.Name, s.Size, symbol.Module.Name, symbol.Name, symbol.Size);
+#endif
+                        continue;
+                    }
+
+                    if (s.Size == 0 && symbol.Size != 0)
+                    {
+                        List<Symbol> duplicates;
+
+                        if (!duplicatedSymbols.TryGetValue(s, out duplicates))
+                            duplicatedSymbols.Add(s, duplicates = new List<Symbol>());
+
+                        duplicatedSymbols.Remove(s);
+                        duplicates.Add(s);
+                        duplicatedSymbols.Add(symbol, duplicates);
+                        symbols.Remove(s);
+                        symbols.Add(symbol);
                     }
                     else
                     {
-                        userTypes.AddRange(factory.AddSymbols(symbols, type, moduleName, nameSpace, generationOptions));
+                        List<Symbol> duplicates;
+
+                        if (!duplicatedSymbols.TryGetValue(s, out duplicates))
+                            duplicatedSymbols.Add(s, duplicates = new List<Symbol>());
+                        duplicates.Add(symbol);
                     }
+
+                    found = true;
+                    break;
                 }
 
-                Dictionary<string, List<Symbol>> templateSymbols = new Dictionary<string, List<Symbol>>();
-                Dictionary<string, Symbol> specializedClassWithParentSymbol = new Dictionary<string, Symbol>();
+                if (!found)
+                    symbols.Add(symbol);
+            }
 
-                Console.Write("Enumerating all types... ");
-                var globalTypes = module.GetAllTypes();
-                Console.WriteLine(sw.Elapsed);
+            // Unlink duplicated symbols if two or more are named the same
+            foreach (var symbols in symbolsByName.Values)
+            {
+                if (symbols.Count <= 1)
+                    continue;
 
-                var diaSymbolsByName = new ConcurrentDictionary<string, Symbol>();
-
-                foreach (Symbol symbol in globalTypes)
+                foreach (var s in symbols.ToArray())
                 {
-                    string symbolName = symbol.Name;
+                    List<Symbol> duplicates;
 
-                    //  TODO add configurable filter
-                    //
-                    if (symbolName.StartsWith("$") || symbolName.StartsWith("__vc_attributes") || symbolName.Contains("`anonymous-namespace'") || symbolName.Contains("`anonymous namespace'") || symbolName.Contains("::$") || symbolName.Contains("`"))
-                    {
+                    if (!duplicatedSymbols.TryGetValue(s, out duplicates))
                         continue;
-                    }
 
-                    // Do not handle template referenced arguments 
-                        if (symbolName.Contains("&"))
+                    symbols.AddRange(duplicates);
+                    duplicatedSymbols.Remove(s);
+                }
+            }
+
+            // Extracting deduplicated symbols
+            Dictionary<string, Symbol[]> deduplicatedSymbols = new Dictionary<string, Symbol[]>();
+            Dictionary<Symbol, string> symbolNamespaces = new Dictionary<Symbol, string>();
+
+            foreach (var symbols in symbolsByName.Values)
+            {
+                if (symbols.Count != 1)
+                    foreach (var s in symbols)
+                        symbolNamespaces.Add(s, modules[s.Module].Namespace);
+                else
+                {
+                    Symbol symbol = symbols.First();
+                    List<Symbol> duplicates;
+
+                    if (!duplicatedSymbols.TryGetValue(symbol, out duplicates))
+                        duplicates = new List<Symbol>();
+                    duplicates.Insert(0, symbol);
+                    deduplicatedSymbols.Add(symbol.Name, duplicates.ToArray());
+
+                    foreach (var s in duplicates)
+                        symbolNamespaces.Add(s, config.CommonTypesNamespace);
+                }
+            }
+
+            var globalTypes = symbolsByName.SelectMany(s => s.Value).ToArray();
+
+            Console.WriteLine(" {0}", sw.Elapsed);
+            Console.WriteLine("  Total symbols: {0}", globalTypesPerModule.Sum(gt => gt.Value.Length));
+            Console.WriteLine("  Unique symbol names: {0}", symbolsByName.Count);
+            Console.WriteLine("  Dedupedlicated symbols: {0}", globalTypes.Length);
+
+            // Initialize GlobalCache with deduplicatedSymbols
+            GlobalCache.Update(deduplicatedSymbols);
+
+            // Collecting types
+            Console.Write("Collecting types...");
+
+            var factory = new UserTypeFactory(config.Transformations);
+            List<UserType> userTypes = new List<UserType>();
+
+            foreach (var module in modules.Keys)
+                userTypes.Add(factory.AddSymbol(module.GlobalScope, new XmlType() { Name = "ModuleGlobals" }, module.Name, modules[module].Namespace, generationOptions));
+
+            ConcurrentBag<Symbol> simpleSymbols = new ConcurrentBag<Symbol>();
+            Dictionary<Tuple<string, string>, List<Symbol>> templateSymbols = new Dictionary<Tuple<string, string>, List<Symbol>>();
+
+            foreach (Symbol symbol in globalTypes)
+            {
+                string symbolName = symbol.Name;
+
+                //  TODO add configurable filter
+                //
+                if (symbolName.StartsWith("$") || symbolName.StartsWith("__vc_attributes") || symbolName.Contains("`anonymous-namespace'") || symbolName.Contains("`anonymous namespace'") || symbolName.Contains("::$") || symbolName.Contains("`"))
+                {
+                    continue;
+                }
+
+                // Do not handle template referenced arguments 
+                if (symbolName.Contains("&"))
+                {
+                    // TODO: Convert this to function pointer
+                    continue;
+                }
+
+                // TODO: C# doesn't support lengthy names
+                if (symbolName.Length > 160)
+                {
+                    continue;
+                }
+
+                // TODO: For now remove all unnamed-type symbols
+                string scopedClassName = NameHelper.GetSymbolScopedClassName(symbolName);
+
+                if (scopedClassName == "<>" || symbolName.Contains("::<"))
+                {
+                    continue;
+                }
+
+                // Parent Class is Template, Nested is Physical
+                // Check if dealing template type.
+                if (NameHelper.ContainsTemplateType(symbolName) && NameHelper.IsTemplateType(scopedClassName))
+                {
+                    List<string> namespaces = NameHelper.GetFullSymbolNamespaces(symbolName);
+                    string className = namespaces.Last();
+                    List<string> templateSpecializationArgs = NameHelper.GetTemplateSpecializationArguments(className);
+                    var symbolId = Tuple.Create(symbolNamespaces[symbol], NameHelper.GetLookupNameForSymbol(symbol));
+
+                    lock (templateSymbols)
                     {
-                        // TODO: Convert this to function pointer
-                        continue;
-                    }
-
-                    // TODO: C# doesn't support lengthy names
-                    if (symbolName.Length > 160)
-                    {
-                        continue;
-                    }
-
-                    // TODO: For now remove all unnamed-type symbols
-                    string scopedClassName = NameHelper.GetSymbolScopedClassName(symbolName);
-
-                    if (scopedClassName == "<>" || symbolName.Contains("::<"))
-                    {
-                        continue;
-                    }
-
-                    // Parent Class is Template, Nested is Physical
-                    // Check if dealing template type.
-                    if (NameHelper.ContainsTemplateType(symbolName))
-                    {
-                        if (!NameHelper.IsTemplateType(scopedClassName))
-                        {
-                            // Parent is template but class itself is not,
-                            // Class needs to be aware of parent context (UserTypeFactory).
-                            //
-                            // TODO
-                            //symbolName = string.Format("{0}:{1}", NameHelper.GetLookupNameForSymbol(symbolName), scopedClassName);
-                            specializedClassWithParentSymbol.Add(symbolName, symbol);
-                            continue;
-                        }
+                        if (templateSymbols.ContainsKey(symbolId) == false)
+                            templateSymbols[symbolId] = new List<Symbol>() { symbol };
                         else
-                        {
-                            try
-                            {
-                                List<string> namespaces = NameHelper.GetFullSymbolNamespaces(symbolName);
-                                string className = namespaces.Last();
-                                List<string> templateSpecializationArgs = NameHelper.GetTemplateSpecializationArguments(className);
-
-                                symbolName = NameHelper.GetLookupNameForSymbol(symbol);
-                                if (templateSymbols.ContainsKey(symbolName) == false)
-                                {
-                                    templateSymbols[symbolName] = new List<Symbol>() { symbol };
-                                }
-                                else
-                                {
-                                    templateSymbols[symbolName].Add(symbol);
-                                }
-
-                                //
-                                // TO DO
-                                // Do not add physical types for template specialization (not now)
-                                // do if types contains static fields
-                                // nested in templates
-                                continue;
-                            }
-                            catch (Exception)
-                            {
-                                continue;
-                            }
-                        }
+                            templateSymbols[symbolId].Add(symbol);
                     }
 
-                    diaSymbolsByName.TryAdd(symbolName, symbol);
-                }
-
-                Console.WriteLine("Collecting types: {0}", sw.Elapsed);
-
-                // Populate specialization first
-                //
-                foreach (Symbol symbol in specializedClassWithParentSymbol.Values)
-                {
-                    string symbolName = symbol.Name;
-
-                    XmlType type = new XmlType()
-                    {
-                        Name = symbolName
-                    };
-
-                    userTypes.Add(factory.AddSymbol(symbol, type, moduleName, nameSpace, generationOptions));
-                }
-
-                Console.WriteLine("Populating specializations: {0}", sw.Elapsed);
-
-                // Populate Templates
-                //
-                foreach (List<Symbol> symbols in templateSymbols.Values)
-                {
-                    string symbolName = NameHelper.GetLookupNameForSymbol(symbols.First());
-
                     //
-                    //  TODO
-                    //  consider adding physical type when dealing with single specialization
-                    //  revisit after adding multiple pdb support
-                    //
-                    ////try
-                    ////{
-                        XmlType type = new XmlType()
-                        {
-                            Name = symbolName
-                        };
-
-                        userTypes.AddRange(factory.AddSymbols(symbols, type, moduleName, nameSpace, generationOptions));
-                    ////}
-                    ////catch (Exception)
-                    ////{
-                    ////    //  failed to add template type
-                    ////    //
-                    ////    //  TODO
-                    ////    //  consider adding specialized types
-                    ////    //
-                    ////    throw;
-                    ////}
+                    // TO DO
+                    // Do not add physical types for template specialization (not now)
+                    // do if types contains static fields
+                    // nested in templates
+                    continue;
                 }
 
-                Console.WriteLine("Populating templates: {0}", sw.Elapsed);
+                simpleSymbols.Add(symbol);
+            }
 
-                // Specialized class
-                //
-                foreach (Symbol symbol in diaSymbolsByName.Values)
+            Console.WriteLine(" {0}", sw.Elapsed);
+
+            // Populate Templates
+            Console.Write("Populating templates...");
+            foreach (List<Symbol> symbols in templateSymbols.Values)
+            {
+                Symbol symbol = symbols.First();
+                string symbolName = NameHelper.GetLookupNameForSymbol(symbol);
+
+                XmlType type = new XmlType()
                 {
-                    string symbolName = symbol.Name;
-                    XmlType type = new XmlType()
+                    Name = symbolName
+                };
+
+                userTypes.AddRange(factory.AddSymbols(symbols, type, symbol.Module.Name, symbolNamespaces[symbol], generationOptions));
+            }
+
+            Console.WriteLine(" {0}", sw.Elapsed);
+
+            // Specialized class
+            Console.Write("Populating specialized classes...");
+            foreach (Symbol symbol in simpleSymbols)
+            {
+                string symbolName = symbol.Name;
+                XmlType type = new XmlType()
+                {
+                    Name = symbolName
+                };
+
+                userTypes.Add(factory.AddSymbol(symbol, type, symbol.Module.Name, symbolNamespaces[symbol], generationOptions));
+            }
+
+            Console.WriteLine(" {0}", sw.Elapsed);
+
+            // To solve template dependencies. Update specialization arguments once all the templates has been populated.
+            Console.Write("Updating template arguments...");
+            foreach (TemplateUserType templateUserType in userTypes.OfType<TemplateUserType>())
+            {
+                foreach (TemplateUserType specializedTemplateUserType in templateUserType.specializedTypes)
+                    if (!specializedTemplateUserType.UpdateArguments(factory))
                     {
-                        Name = symbolName
-                    };
-
-                    userTypes.Add(factory.AddSymbol(symbol, type, moduleName, nameSpace, generationOptions));
-                }
-
-                Console.WriteLine("Populating specialized classes: {0}", sw.Elapsed);
-
-                //  To solve template dependencies.
-                //  Update specialization arguments once all the templates has been populated.
-                //
-                foreach (TemplateUserType templateUserType in userTypes.OfType<TemplateUserType>())
-                {
-                    foreach (TemplateUserType specializedTemplateUserType in templateUserType.specializedTypes)
-                        if (!specializedTemplateUserType.UpdateArguments(factory))
-                        {
 #if DEBUG
-                            Console.WriteLine("Template user type cannot be updated: {0}", specializedTemplateUserType.Symbol.Name);
+                        Console.WriteLine("Template user type cannot be updated: {0}", specializedTemplateUserType.Symbol.Name);
 #endif
-                        }
-                }
+                    }
+            }
 
-                Console.WriteLine("Updating template arguments: {0}", sw.Elapsed);
+            Console.WriteLine(" {0}", sw.Elapsed);
 
-                var namespaceTypes = factory.ProcessTypes(userTypes, nameSpace).ToArray();
-                userTypes.AddRange(namespaceTypes);
+            // Post processing user types (filling DeclaredInType)
+            Console.Write("Post processing user types...");
+            var namespaceTypes = factory.ProcessTypes(userTypes, symbolNamespaces).ToArray();
+            userTypes.AddRange(namespaceTypes);
 
-                Console.WriteLine("Post processing user types: {0}", sw.Elapsed);
+            Console.WriteLine(" {0}", sw.Elapsed);
 
-                if (!config.SingleFileExport)
+            // Code generation and saving it to disk
+            Console.Write("Saving code to disk...");
+
+            if (!config.SingleFileExport)
+            {
+                // Generate Code
+                Parallel.ForEach(userTypes,
+                    (symbolEntry) =>
+                    {
+                        Tuple<string, string> result = GenerateUseTypeCode(symbolEntry, factory, outputDirectory, error, generationOptions, generatedFiles);
+                        string text = result.Item1;
+                        string filename = result.Item2;
+
+                        if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName) && !string.IsNullOrEmpty(text))
+                            lock (syntaxTrees)
+                            {
+                                syntaxTrees.Add(CSharpSyntaxTree.ParseText(text, path: filename, encoding: System.Text.UTF8Encoding.Default));
+                            }
+                    });
+            }
+            else
+            {
+                string filename = string.Format(@"{0}\everything.exported.cs", outputDirectory);
+                HashSet<string> usings = new HashSet<string>();
+                foreach (var symbolEntry in userTypes)
+                    foreach (var u in symbolEntry.Usings)
+                        usings.Add(u);
+
+                generatedFiles.TryAdd(filename.ToLowerInvariant(), filename);
+                using (StringWriter stringOutput = new StringWriter())
+                using (TextWriter masterOutput = new StreamWriter(filename, false /* append */, System.Text.Encoding.ASCII, 8192))
                 {
-                    // Generate Code
+                    foreach (var u in usings.OrderBy(s => s))
+                    {
+                        masterOutput.WriteLine("using {0};\n", u);
+                        if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
+                            stringOutput.WriteLine("using {0};\n", u);
+                    }
+                    masterOutput.WriteLine();
+                    if (config.GenerateAssemblyWithRoslyn)
+                        stringOutput.WriteLine();
+
                     Parallel.ForEach(userTypes,
                         (symbolEntry) =>
                         {
-                            Tuple<string, string> result = GenerateUseTypeCode(symbolEntry, factory, outputDirectory, error, generationOptions, generatedFiles);
-                            string text = result.Item1;
-                            string filename = result.Item2;
-
-                            if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName) && !string.IsNullOrEmpty(text))
-                                lock (syntaxTrees)
-                                {
-                                    syntaxTrees.Add(CSharpSyntaxTree.ParseText(text, path: filename, encoding: System.Text.UTF8Encoding.Default));
-                                }
-                        });
-                }
-                else
-                {
-                    string filename = string.Format(@"{0}\{1}_everything.exported.cs", outputDirectory, module.Name);
-                    HashSet<string> usings = new HashSet<string>();
-                    foreach (var symbolEntry in userTypes)
-                        foreach (var u in symbolEntry.Usings)
-                            usings.Add(u);
-
-                    generatedFiles.TryAdd(filename.ToLowerInvariant(), filename);
-                    using (StringWriter stringOutput = new StringWriter())
-                    using (TextWriter masterOutput = new StreamWriter(filename, false /* append */, System.Text.Encoding.ASCII, 8192))
-                    {
-                        foreach (var u in usings.OrderBy(s => s))
-                        {
-                            masterOutput.WriteLine("using {0};\n", u);
-                            if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
-                                stringOutput.WriteLine("using {0};\n", u);
-                        }
-                        masterOutput.WriteLine();
-                        if (config.GenerateAssemblyWithRoslyn)
-                            stringOutput.WriteLine();
-
-                        Parallel.ForEach(userTypes,
-                            (symbolEntry) =>
+                            using (StringWriter output = new StringWriter())
                             {
-                                using (StringWriter output = new StringWriter())
+                                GenerateUseTypeCodeInSingleFile(output, symbolEntry, factory, error, generationOptions);
+                                lock (masterOutput)
                                 {
-                                    GenerateUseTypeCodeInSingleFile(output, symbolEntry, factory, error, generationOptions);
-                                    lock (masterOutput)
-                                    {
-                                        string text = output.ToString();
-                                        masterOutput.WriteLine(text);
-                                        if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
-                                            stringOutput.WriteLine(text);
-                                    }
+                                    string text = output.ToString();
+                                    masterOutput.WriteLine(text);
+                                    if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
+                                        stringOutput.WriteLine(text);
                                 }
-                            });
+                            }
+                        });
 
-                        if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
-                            syntaxTrees.Add(CSharpSyntaxTree.ParseText(stringOutput.ToString(), path: filename, encoding: System.Text.UTF8Encoding.Default));
-                    }
+                    if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
+                        syntaxTrees.Add(CSharpSyntaxTree.ParseText(stringOutput.ToString(), path: filename, encoding: System.Text.UTF8Encoding.Default));
                 }
-
-                Console.WriteLine("Saving code to disk: {0}", sw.Elapsed);
             }
 
+            Console.WriteLine(" {0}", sw.Elapsed);
+
+            // Compiling the code
             string binFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
@@ -456,20 +532,6 @@ namespace GenerateUserTypesFromPdb
                 Console.WriteLine("Compiling: {0}", sw.Elapsed);
             }
 
-            if (!string.IsNullOrEmpty(config.GeneratedPropsFileName))
-            {
-                using (TextWriter output = new StreamWriter(outputDirectory + config.GeneratedPropsFileName))
-                {
-                    output.WriteLine(@"<?xml version=""1.0"" encoding=""utf-8""?>");
-                    output.WriteLine(@"<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">");
-                    output.WriteLine(@"  <ItemGroup>");
-                    foreach (var file in generatedFiles.Values)
-                        output.WriteLine(@"    <Compile Include=""{0}"" />", file);
-                    output.WriteLine(@" </ItemGroup>");
-                    output.WriteLine(@"</Project>");
-                }
-            }
-
             // Check whether we should generate assembly
             if (!config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
             {
@@ -503,6 +565,21 @@ namespace GenerateUserTypesFromPdb
                 }
 
                 Console.WriteLine("Compiling: {0}", sw.Elapsed);
+            }
+
+            // Generating props file
+            if (!string.IsNullOrEmpty(config.GeneratedPropsFileName))
+            {
+                using (TextWriter output = new StreamWriter(outputDirectory + config.GeneratedPropsFileName))
+                {
+                    output.WriteLine(@"<?xml version=""1.0"" encoding=""utf-8""?>");
+                    output.WriteLine(@"<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">");
+                    output.WriteLine(@"  <ItemGroup>");
+                    foreach (var file in generatedFiles.Values)
+                        output.WriteLine(@"    <Compile Include=""{0}"" />", file);
+                    output.WriteLine(@" </ItemGroup>");
+                    output.WriteLine(@"</Project>");
+                }
             }
 
             Console.WriteLine("Total time: {0}", sw.Elapsed);

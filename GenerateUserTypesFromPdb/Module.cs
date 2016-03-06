@@ -30,7 +30,7 @@ namespace GenerateUserTypesFromPdb
             return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).ToArray();
         }
 
-        public Symbol[] GetAllTypes()
+        public IEnumerable<Symbol> GetAllTypes()
         {
             var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagEnum));
@@ -51,7 +51,7 @@ namespace GenerateUserTypesFromPdb
                     symbols.Add(s);
                     previousName = s.Name;
                 }
-            return symbols.ToArray();
+            return symbols;
         }
 
         internal Symbol GetSymbol(IDiaSymbol symbol)

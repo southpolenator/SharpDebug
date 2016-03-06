@@ -24,6 +24,8 @@ namespace GenerateUserTypesFromPdb
 
         public string GeneratedPropsFileName { get; set; }
 
+        public string CommonTypesNamespace { get; set; }
+
         public bool CacheUserTypeFields { get; set; }
 
         public bool CacheStaticUserTypeFields { get; set; }

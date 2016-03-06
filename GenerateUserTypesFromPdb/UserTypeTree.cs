@@ -77,6 +77,10 @@ namespace GenerateUserTypesFromPdb
                 type = type.DeclaredInType;
             }
 
+            var enumType = userType as EnumUserType;
+
+            if (enumType != null)
+                return new UserTypeTreeEnum(enumType);
             return new UserTypeTreeUserType(userType);
         }
     }

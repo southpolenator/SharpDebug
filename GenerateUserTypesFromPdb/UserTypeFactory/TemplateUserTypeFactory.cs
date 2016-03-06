@@ -35,7 +35,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return base.GetUserType(type, out userType);
         }
 
-        internal override bool TryGetUserType(string typeString, out UserType userType)
+        internal override bool TryGetUserType(Module module, string typeString, out UserType userType)
         {
             string argumentName;
 
@@ -46,7 +46,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 return true;
             }
 
-            return base.TryGetUserType(typeString, out userType);
+            return base.TryGetUserType(module, typeString, out userType);
         }
 
         private bool TryGetArgument(string typeString, out string argumentName)

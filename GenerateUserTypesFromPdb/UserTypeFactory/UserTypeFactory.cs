@@ -7,21 +7,19 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class UserTypeFactory
     {
-        protected Module module;
         protected XmlTypeTransformation[] typeTransformations;
 
-        public UserTypeFactory(Module module, XmlTypeTransformation[] transformations)
+        public UserTypeFactory(XmlTypeTransformation[] transformations)
         {
-            this.module = module;
             typeTransformations = transformations;
         }
 
         public UserTypeFactory(UserTypeFactory factory)
-            : this(factory.module, factory.typeTransformations)
+            : this(factory.typeTransformations)
         {
         }
 
-        internal virtual bool TryGetUserType(string typeString, out UserType userType)
+        internal virtual bool TryGetUserType(Module module, string typeString, out UserType userType)
         {
             userType = GlobalCache.GetUserType(typeString, module);
             return userType != null;
@@ -156,7 +154,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         /// Process Types
         ///     Set Namespace or Parent Type
         /// </summary>
-        internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, string nameSpace)
+        internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, Dictionary<Symbol, string> symbolNamespaces)
         {
             Dictionary<string, UserType> namespaceTypes = new Dictionary<string, UserType>();
 
@@ -196,7 +194,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                     if (namespaceUserType == null)
                     {
-                        namespaceUserType = new NamespaceUserType(new string[] { namespaces[i] }, symbol.Module.Name, previousNamespaceUserType == null ? nameSpace : null);
+                        namespaceUserType = new NamespaceUserType(new string[] { namespaces[i] }, symbol.Module.Name, previousNamespaceUserType == null ? symbolNamespaces[symbol] : null);
                         if (previousNamespaceUserType != null)
                             namespaceUserType.SetDeclaredInType(previousNamespaceUserType);
                         namespaceTypes.Add(currentNamespace, namespaceUserType);
@@ -235,11 +233,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
             }
         }
 
-        internal bool ContainsSymbol(Symbol type)
-        {
-            return type.Module == module && type.UserType != null;
-        }
-
         internal UserTypeTransformation FindTransformation(Symbol type, UserType ownerUserType)
         {
             string originalFieldTypeString = type.Name;
@@ -254,7 +247,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             {
                 UserType userType;
 
-                if (TryGetUserType(inputType, out userType))
+                if (TryGetUserType(type.Module, inputType, out userType))
                 {
                     return userType.FullClassName;
                 }
@@ -272,11 +265,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return new UserTypeTransformation(transformation, typeConverter, ownerUserType, type);
         }
 
-        internal bool ContainsSymbol(string typeString)
+        internal bool ContainsSymbol(Module module, string typeString)
         {
             UserType userType;
 
-            return TryGetUserType(typeString, out userType);
+            return TryGetUserType(module, typeString, out userType);
         }
     }
 }

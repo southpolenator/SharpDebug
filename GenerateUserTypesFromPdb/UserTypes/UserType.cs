@@ -260,7 +260,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             string castingTypeString = GetCastingString(fieldType);
             string constructorText;
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
-            bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.ContainsSymbol(castingTypeString);
+            bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.ContainsSymbol(Symbol.Module, castingTypeString);
             var fieldTypeString = fieldType.GetUserTypeString();
             bool isConstant = field.LocationType == LocationType.Constant;
             string constantString = "";
@@ -323,22 +323,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 SimpleFieldValue = simpleFieldValue,
                 ConstantValue = constantString,
             };
-        }
-
-        internal void UpdateUserTypes(UserTypeFactory factory, UserTypeGenerationFlags generationOptions)
-        {
-            foreach (var field in Symbol.Fields)
-            {
-                var type = field.Type;
-
-                if (type.Tag == SymTagEnum.SymTagEnum)
-                {
-                    if (!factory.ContainsSymbol(type))
-                    {
-                        factory.AddSymbol(type, null, ModuleName, NamespaceSymbol, generationOptions);
-                    }
-                }
-            }
         }
 
         internal virtual IEnumerable<UserTypeField> ExtractFields(UserTypeFactory factory, UserTypeGenerationFlags options)
@@ -711,14 +695,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                         if (factory.GetUserType(type, out userType))
                         {
-
-                            var enumType = userType as EnumUserType;
-
-                            if (enumType != null)
-                            {
-                                return new UserTypeTreeEnum(enumType);
-                            }
-
                             UserTypeTree tree = UserTypeTreeUserType.Create(userType, factory);
                             UserTypeTreeGenericsType genericsTree = tree as UserTypeTreeGenericsType;
 
