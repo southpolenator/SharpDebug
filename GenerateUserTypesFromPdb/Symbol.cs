@@ -1,4 +1,6 @@
-﻿using Dia2Lib;
+﻿using CsScriptManaged.Utility;
+using Dia2Lib;
+using GenerateUserTypesFromPdb.UserTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,10 +10,12 @@ namespace GenerateUserTypesFromPdb
     internal class Symbol
     {
         private IDiaSymbol symbol;
-        private SymbolField[] fields;
-        private Symbol[] baseClasses;
-        private Symbol elementType;
-        private Symbol pointerType;
+        private SimpleCache<SymbolField[]> fields;
+        private SimpleCache<Symbol[]> baseClasses;
+        private SimpleCache<Symbol> elementType;
+        private SimpleCache<Symbol> pointerType;
+        private SimpleCache<UserType> userType;
+        private SimpleCache<Tuple<string, string>[]> enumValues;
 
         public Symbol(Module module, IDiaSymbol symbol)
         {
@@ -31,6 +35,47 @@ namespace GenerateUserTypesFromPdb
             if (size > int.MaxValue)
                 throw new ArgumentException("Symbol size is unexpected");
             Size = (int)size;
+
+            fields = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagData).Select(s => new SymbolField(this, s)).Where(f => f.Type != null).ToArray());
+            baseClasses = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagBaseClass).Select(s => Module.GetSymbol(s)).ToArray());
+            elementType = SimpleCache.Create(() =>
+            {
+                if (Tag == SymTagEnum.SymTagPointerType || Tag == SymTagEnum.SymTagArrayType)
+                {
+                    IDiaSymbol type = symbol.type;
+
+                    if (type != null)
+                    {
+                        var result = Module.GetSymbol(type);
+                        if (Tag == SymTagEnum.SymTagPointerType)
+                           result.pointerType.Value = this;
+                        return result;
+                    }
+                }
+
+                return null;
+            });
+            pointerType = SimpleCache.Create(() =>
+            {
+                var result = Module.GetSymbol(symbol.objectPointerType);
+                result.elementType.Value = this;
+                return result;
+            });
+            userType = SimpleCache.Create(() => (UserType)null);
+            enumValues = SimpleCache.Create(() =>
+            {
+                List<Tuple<string, string>> result = new List<Tuple<string, string>>();
+
+                if (Tag == SymTagEnum.SymTagEnum)
+                {
+                    foreach (var enumValue in symbol.GetChildren())
+                    {
+                        result.Add(Tuple.Create(enumValue.name, enumValue.value.ToString()));
+                    }
+                }
+
+                return result.ToArray();
+            });
         }
 
         public string Name { get; private set; }
@@ -45,22 +90,24 @@ namespace GenerateUserTypesFromPdb
 
         public BasicType BasicType { get; private set; }
 
+        public UserType UserType
+        {
+            get
+            {
+                return userType.Value;
+            }
+
+            set
+            {
+                userType.Value = value;
+            }
+        }
+
         public Symbol ElementType
         {
             get
             {
-                if (elementType == null && (Tag == SymTagEnum.SymTagPointerType || Tag == SymTagEnum.SymTagArrayType))
-                {
-                    IDiaSymbol type = symbol.type;
-
-                    if (type != null)
-                    {
-                        elementType = Module.GetSymbol(type);
-                        elementType.pointerType = this;
-                    }
-                }
-
-                return elementType;
+                return elementType.Value;
             }
         }
 
@@ -68,9 +115,7 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                if (fields == null)
-                    fields = symbol.GetChildren(SymTagEnum.SymTagData).Select(s => new SymbolField(this, s)).ToArray();
-                return fields;
+                return fields.Value;
             }
         }
 
@@ -86,9 +131,7 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                if (baseClasses == null)
-                    baseClasses = symbol.GetChildren(SymTagEnum.SymTagBaseClass).Select(s => Module.GetSymbol(s)).ToArray();
-                return baseClasses;
+                return baseClasses.Value;
             }
         }
 
@@ -96,29 +139,27 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                if (pointerType == null)
-                {
-                    pointerType = Module.GetSymbol(symbol.objectPointerType);
-                    pointerType.elementType = this;
-                }
-                return pointerType;
+                return pointerType.Value;
             }
         }
 
         public IEnumerable<Tuple<string, string>> GetEnumValues()
         {
-            if (Tag == SymTagEnum.SymTagEnum)
-            {
-                foreach (var enumValue in symbol.GetChildren())
-                {
-                    yield return Tuple.Create(enumValue.name, enumValue.value.ToString());
-                }
-            }
+            return enumValues.Value;
         }
 
         public SymbolField CastAsSymbolField()
         {
             return new SymbolField(this, symbol);
+        }
+
+        internal void LinkSymbols(Symbol s)
+        {
+            s.baseClasses = baseClasses;
+            s.elementType = elementType;
+            s.fields = fields;
+            s.pointerType = pointerType;
+            s.userType = userType;
         }
     }
 

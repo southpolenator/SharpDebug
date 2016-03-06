@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace GenerateUserTypesFromPdb
 {
@@ -36,72 +37,6 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    static class MoreDiaExtensions
-    {
-        static Dictionary<string, IDiaSymbol> basicTypes;
-
-        public static IDiaSymbol GetTypeSymbol(this IDiaSession session, string name)
-        {
-            if (basicTypes == null)
-            {
-                var types = session.globalScope.GetChildren(SymTagEnum.SymTagBaseType);
-
-                basicTypes = new Dictionary<string, IDiaSymbol>();
-                foreach (var type in types)
-                {
-                    try
-                    {
-                        string typeString = TypeToString.GetTypeString(type);
-
-                        if (!basicTypes.ContainsKey(typeString))
-                        {
-                            basicTypes.Add(typeString, type);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-            }
-
-            string originalName = name;
-            IDiaSymbol symbol;
-
-            int pointer = 0;
-
-            while (name.EndsWith("*"))
-            {
-                pointer++;
-                name = name.Substring(0, name.Length - 1);
-            }
-
-            name = name.Trim();
-            if (name.EndsWith(" const"))
-                name = name.Substring(0, name.Length - 6);
-            if (name.StartsWith("enum "))
-                name = name.Substring(5);
-
-            if (name == "unsigned __int64")
-                name = "unsigned long long";
-            else if (name == "__int64")
-                name = "long long";
-            else if (name == "long")
-                name = "int";
-            else if (name == "unsigned long")
-                name = "unsigned int";
-
-            if (!basicTypes.TryGetValue(name, out symbol))
-                symbol = session.globalScope.GetChild(name);
-
-            if (symbol == null)
-                Console.WriteLine("   '{0}' not found", originalName);
-            else
-                for (int i = 0; i < pointer; i++)
-                    symbol = symbol.objectPointerType;
-            return symbol;
-        }
-    }
-
     internal abstract class UserTypeTree
     {
         public abstract string GetUserTypeString();
@@ -128,11 +63,18 @@ namespace GenerateUserTypesFromPdb
 
         internal static UserTypeTree Create(UserType userType, UserTypeFactory factory)
         {
-            var templateType = userType as TemplateUserType;
+            if (userType == null)
+                throw new ArgumentNullException("userType");
 
-            if (templateType != null)
+            var type = userType;
+
+            while (type != null)
             {
-                return new UserTypeTreeGenericsType(templateType, factory);
+                var templateType = type as TemplateUserType;
+
+                if (templateType != null)
+                    return new UserTypeTreeGenericsType(userType, factory);
+                type = type.DeclaredInType;
             }
 
             return new UserTypeTreeUserType(userType);
@@ -158,40 +100,95 @@ namespace GenerateUserTypesFromPdb
     {
         public bool CanInstatiate;
 
-        public UserTypeTreeGenericsType(TemplateUserType genericsType, UserTypeFactory factory)
-            : base(genericsType)
+        public UserTypeTreeGenericsType(UserType originalUserType, UserTypeFactory factory)
+            : base(originalUserType)
         {
-            GenericsType = genericsType;
+            // Get all types
+            var type = originalUserType;
+            var declaredInList = new List<UserType>();
 
-            Symbol[] arguments = genericsType.ExtractSpecializedSymbols();
-
-            CanInstatiate = true;
-
-            SpecializedArguments = new UserTypeTree[arguments.Length];
-            for (int i = 0; i < arguments.Length; i++)
+            while (type != null)
             {
-                UserType userType;
-                factory.GetUserType(arguments[i], out userType);
+                declaredInList.Add(type);
+                type = type.DeclaredInType;
+            }
 
-                if (userType != null)
+            declaredInList.Reverse();
+            DeclaredInArray = declaredInList.ToArray();
+            SpecializedArguments = new UserTypeTree[DeclaredInArray.Length][];
+
+            // Extract all template types
+            CanInstatiate = true;
+            for (int j = 0; j < DeclaredInArray.Length; j++)
+            {
+                TemplateUserType templateType = DeclaredInArray[j] as TemplateUserType;
+
+                if (templateType == null)
+                    continue;
+
+                Symbol[] arguments = templateType.ExtractSpecializedSymbols();
+                var specializedArguments = new UserTypeTree[arguments.Length];
+
+                for (int i = 0; i < arguments.Length; i++)
                 {
-                    SpecializedArguments[i] = UserTypeTreeUserType.Create(userType, factory);
+                    UserType userType;
+                    factory.GetUserType(arguments[i], out userType);
+
+                    if (userType != null)
+                    {
+                        specializedArguments[i] = UserTypeTreeUserType.Create(userType, factory);
+                        var genericsTree = specializedArguments[i] as UserTypeTreeGenericsType;
+
+                        if (genericsTree != null && !genericsTree.CanInstatiate)
+                            CanInstatiate = false;
+                    }
+                    else
+                    {
+                        CanInstatiate = false;
+                        // #fixme can't deal with it
+                        specializedArguments[i] = templateType.GetTypeString(arguments[i], factory);
+                    }
                 }
-                else
-                {
-                    CanInstatiate = false;
-                    // #fixme can't deal with it
-                    SpecializedArguments[i] = genericsType.GetTypeString(arguments[i], factory);
-                }
+
+                SpecializedArguments[j] = specializedArguments;
             }
         }
 
-        public TemplateUserType GenericsType { get; private set; }
-        public UserTypeTree[] SpecializedArguments { get; private set; }
+        public UserType[] DeclaredInArray { get; private set; }
+
+        public UserTypeTree[][] SpecializedArguments { get; private set; }
 
         public override string GetUserTypeString()
         {
-            return GenericsType.GetSpecializedType(SpecializedArguments.Select(t => t.GetUserTypeString()).ToArray());
+            StringBuilder sb = new StringBuilder();
+
+            if (DeclaredInArray[0].Namespace != null)
+            {
+                sb.Append(DeclaredInArray[0].Namespace);
+                sb.Append('.');
+            }
+
+            for (int j = 0; j < DeclaredInArray.Length; j++)
+            {
+                UserType userType = DeclaredInArray[j];
+                TemplateUserType templateType = userType as TemplateUserType;
+                NamespaceUserType namespaceType = userType as NamespaceUserType;
+
+                if (templateType != null)
+                    sb.Append(templateType.GetSpecializedType(SpecializedArguments[j].Select(t => t.GetUserTypeString()).ToArray()));
+                else if (namespaceType != null)
+                {
+                    if (j == 0)
+                        continue;
+                    sb.Append(namespaceType.Namespace);
+                }
+                else
+                    sb.Append(userType.ClassName);
+                sb.Append('.');
+            }
+
+            sb.Length--;
+            return sb.ToString();
         }
     }
 
@@ -450,10 +447,11 @@ namespace GenerateUserTypesFromPdb
         {
             if (Static)
             {
-                output.WriteLine();
-                output.WriteLine(indentation, "static {0}()", constructorName);
-                output.WriteLine(indentation++, "{{");
-                if (ContainsFieldDefinitions)
+                if (fields.Where(f => (f.Static && !exportStaticFields && f.FieldTypeInfoComment != null) || (!f.CacheResult && !f.UseUserMember)).Any())
+                {
+                    output.WriteLine();
+                    output.WriteLine(indentation, "static {0}()", constructorName);
+                    output.WriteLine(indentation++, "{{");
                     foreach (var field in fields)
                     {
                         if ((field.Static && !exportStaticFields && field.FieldTypeInfoComment != null) || (!field.CacheResult && !field.UseUserMember))
@@ -461,7 +459,8 @@ namespace GenerateUserTypesFromPdb
                         if (field.Static)
                             field.WriteConstructorCode(output, indentation);
                     }
-                output.WriteLine(--indentation, "}}");
+                    output.WriteLine(--indentation, "}}");
+                }
             }
             else
             {

@@ -10,13 +10,14 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class UserType
     {
-        public UserType(Symbol symbol, XmlType xmlType, string moduleName)
+        public UserType(Symbol symbol, XmlType xmlType, string moduleName, string nameSpace)
         {
             Symbol = symbol;
             XmlType = xmlType;
             ModuleName = moduleName;
             InnerTypes = new List<UserType>();
             Usings = new HashSet<string>(new string[] { "CsScripts" });
+            NamespaceSymbol = nameSpace;
         }
 
         public Symbol Symbol { get; private set; }
@@ -27,7 +28,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         /// <summary>
         /// Namespace in DIA Symbols name
         /// </summary>
-        public string NamespaceSymbol { get; set; }
+        protected string NamespaceSymbol { get; set; }
 
         /// <summary>
         /// Normalized Namespace.
@@ -48,7 +49,20 @@ namespace GenerateUserTypesFromPdb.UserTypes
             }
         }
 
-        public UserType DeclaredInType { get; set; }
+        private UserType declaredInType;
+
+        public virtual UserType DeclaredInType
+        {
+            get
+            {
+                return declaredInType;
+            }
+
+            set
+            {
+                declaredInType = value;
+            }
+        }
 
         public List<UserType> InnerTypes { get; private set; }
 
@@ -72,7 +86,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // Do not trim right, some of the classes start with '_'
             // Cannot replace __ with _ , it will generate class name collisions
             // 
-            return symbolName.Replace("::", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').TrimEnd('_');
+            return symbolName.Replace("::", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').TrimEnd('_');
         }
 
         public virtual string ClassName
@@ -84,11 +98,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 if (DeclaredInType != null)
                 {
                     symbolName = NameHelper.GetFullSymbolNamespaces(symbolName).Last();
-                }
-                else
-                if (Namespace != null)
-                {
-                    symbolName = symbolName.Substring(NamespaceSymbol.Length + 2);
                 }
 
                 symbolName = NormalizeSymbolName(symbolName);
@@ -169,14 +178,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             {
                 if (DeclaredInType != null)
                 {
-                    if (!string.IsNullOrEmpty(Namespace))
-                    {
-                        return string.Format("{0}.{1}.{2}", DeclaredInType.FullClassName, Namespace, ClassName);
-                    }
-                    else
-                    {
-                        return string.Format("{0}.{1}", DeclaredInType.FullClassName, ClassName);
-                    }
+                    return string.Format("{0}.{1}", DeclaredInType.FullClassName, ClassName);
                 }
                 if (!string.IsNullOrEmpty(Namespace))
                 {
@@ -247,6 +249,9 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         protected virtual UserTypeField ExtractField(SymbolField field, UserTypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags options, bool extractingBaseClass)
         {
+            if (fieldType is UserTypeTreeGenericsType && !((UserTypeTreeGenericsType)fieldType).CanInstatiate)
+                throw new Exception("Generics type cannot be instantiated");
+
             bool forceUserTypesToNewInsteadOfCasting = options.HasFlag(UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting);
             bool cacheUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheUserTypeFields);
             bool cacheStaticUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheStaticUserTypeFields);
@@ -310,7 +315,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 ConstructorText = constructorText,
                 FieldName = "_" + fieldName,
                 FieldType = fieldTypeString,
-                FieldTypeInfoComment = string.Format("// {0} {1};", field.Type.Name, this.Symbol.Name),
+                FieldTypeInfoComment = string.Format("// {0} {1};", field.Type.Name, fieldName),
                 PropertyName = fieldName,
                 Static = isStatic,
                 UseUserMember = lazyCacheUserTypeFields,
@@ -330,7 +335,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     if (!factory.ContainsSymbol(type))
                     {
-                        factory.AddSymbol(type, null, ModuleName, generationOptions);
+                        factory.AddSymbol(type, null, ModuleName, NamespaceSymbol, generationOptions);
                     }
                 }
             }
@@ -389,6 +394,18 @@ namespace GenerateUserTypesFromPdb.UserTypes
             }
         }
 
+        protected virtual void WriteClassComment(IndentedWriter output, int indentation)
+        {
+            Symbol[] baseClasses = Symbol.BaseClasses;
+
+            if (baseClasses.Length > 0)
+                output.WriteLine(indentation, "// {0} (original name: {1}) is inherited from:", FullClassName, Symbol.Name);
+            else
+                output.WriteLine(indentation, "// {0} (original name: {1})", FullClassName, Symbol.Name);
+            foreach (var type in baseClasses)
+                output.WriteLine(indentation, "//   {0}", type.Name);
+        }
+
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
             var symbol = Symbol;
@@ -410,30 +427,19 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 //#fixme always put in namespace
                 if (!string.IsNullOrEmpty(Namespace))
                 {
-                    output.WriteLine(indentation, "namespace {0}.{1}", ModuleName, Namespace);
+                    output.WriteLine(indentation, "namespace {0}", Namespace);
+                    output.WriteLine(indentation++, "{{");
                 }
-                else
-                {
-                    output.WriteLine(indentation, "namespace {0}", ModuleName);
-                }
-
-                output.WriteLine(indentation++, "{{");
             }
-
 
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
-            {
-                if (baseClasses.Length > 0)
-                    output.WriteLine(indentation, "// {0} is inherited from:", ClassName);
-                foreach (var type in baseClasses)
-                    output.WriteLine(indentation, "//   {0}", type.Name);
-            }
-
+                WriteClassComment(output, indentation);
             output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, XmlType.Name);
-
             output.WriteLine(indentation, @"public partial class {0} {1} {2}", ClassName, !string.IsNullOrEmpty(baseType.GetUserTypeString()) ? ":" : "", baseType);
 
-            output.WriteLine(indentation, GetInheritanceTypeConstraint(factory));
+            var inheritanceTypeConstrains = GetInheritanceTypeConstraint(factory);
+            if (!string.IsNullOrEmpty(inheritanceTypeConstrains))
+                output.WriteLine(indentation, inheritanceTypeConstrains);
 
             output.WriteLine(indentation++, @"{{");
 
@@ -496,7 +502,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // Class end
             output.WriteLine(--indentation, @"}}");
 
-            if (DeclaredInType == null)
+            if (DeclaredInType == null && !string.IsNullOrEmpty(Namespace))
             {
                 output.WriteLine(--indentation, "}}");
             }
@@ -561,9 +567,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             var baseClasses = type.BaseClasses;
 
             if (baseClasses.Length > 1)
-            {
                 return new UserTypeTreeMultiClassInheritance();
-            }
 
             if (baseClasses.Length == 1)
             {
@@ -573,53 +577,18 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 var transformation = factory.FindTransformation(baseClassType, this);
 
                 if (transformation != null)
-                {
                     return new UserTypeTreeTransformation(transformation);
-                }
 
                 UserType baseUserType;
 
                 if (factory.GetUserType(baseClassType, out baseUserType))
                 {
-                    UserType userType;
-                    factory.GetUserType(type, out userType);
+                    UserTypeTree tree = UserTypeTreeUserType.Create(baseUserType, factory);
+                    UserTypeTreeGenericsType genericsTree = tree as UserTypeTreeGenericsType;
 
-                    // type is PhysicalType, base class is Template
-                    if (baseUserType is TemplateUserType)
-                    {
-                        // check if template has implementation
-                        if (!((TemplateUserType)(baseUserType)).IsInstantiable(factory))
-                        {
-                            return new UserTypeTreeVariable(false);
-                        }
-                    }
-
-                    if (baseUserType is TemplateUserType)
-                    {
-                        return new UserTypeTreeGenericsType(baseUserType as TemplateUserType, factory);
-                    }
-
-                    return UserTypeTreeUserType.Create(baseUserType, factory);
-                }
-
-                //
-                //  TODO another workaround
-                //
-                if (!(this is TemplateUserType))
-                {
-                    // For non template classes make sure that if base class is template 
-                    // can be instantiated
-                    UserTypeTree baseClassUserTree = GetBaseTypeString(error, baseClassType, factory);
-
-                    if (baseClassUserTree is UserTypeTreeGenericsType)
-                    {
-                        if (((UserTypeTreeGenericsType)baseClassUserTree).CanInstatiate == false)
-                        {
-                            return new UserTypeTreeVariable(false);
-                        }
-                    }
-
-                    return baseClassUserTree;
+                    if (genericsTree != null && !genericsTree.CanInstatiate)
+                        return new UserTypeTreeVariable(false);
+                    return tree;
                 }
 
                 return GetBaseTypeString(error, baseClassType, factory);
@@ -634,7 +603,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             if (factory.GetUserType(type, out fakeUserType) && !(fakeUserType is PrimitiveUserType))
             {
-                //return new UserTypeTreeUserType(fakeUserType);
+                //return UserTypeTreeUserType.Create(fakeUserType, factory);
             }
 
             switch (type.Tag)
@@ -653,7 +622,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         case BasicType.BSTR:
                             return new UserTypeTreeBaseType("string");
                         case BasicType.Void:
-                            return new UserTypeTreeBaseType("void");
+                            return new UserTypeTreeBaseType("VoidType");
                         case BasicType.Float:
                             return new UserTypeTreeBaseType(type.Size <= 4 ? "float" : "double");
                         case BasicType.Int:
@@ -661,7 +630,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                             switch (type.Size)
                             {
                                 case 0:
-                                    return new UserTypeTreeBaseType("void");
+                                    return new UserTypeTreeBaseType("VoidType");
                                 case 1:
                                     return new UserTypeTreeBaseType("sbyte");
                                 case 2:
@@ -679,7 +648,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                             switch (type.Size)
                             {
                                 case 0:
-                                    return new UserTypeTreeBaseType("void");
+                                    return new UserTypeTreeBaseType("VoidType");
                                 case 1:
                                     return new UserTypeTreeBaseType("byte");
                                 case 2:
@@ -704,8 +673,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                         if (factory.GetUserType(pointerType, out fakeUserType) && (fakeUserType is PrimitiveUserType))
                         {
-                            //#fixme, might a problem, for now uncomment 
-                            //return new UserTypeTreeCodePointer(new UserTypeTreeUserType(fakeUserType));
+                            //return new UserTypeTreeCodePointer(UserTypeTreeUserType.Create(fakeUserType, factory));
                         }
 
                         switch (pointerType.Tag)
@@ -743,21 +711,20 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                         if (factory.GetUserType(type, out userType))
                         {
-                            if (userType is EnumUserType)
+
+                            var enumType = userType as EnumUserType;
+
+                            if (enumType != null)
                             {
-                                return new UserTypeTreeEnum((EnumUserType)userType);
+                                return new UserTypeTreeEnum(enumType);
                             }
 
-                            if (userType is TemplateUserType)
-                            {
-                                if (!((TemplateUserType)(userType)).IsInstantiable(factory))
-                                {
-                                    // problem
-                                    return new UserTypeTreeVariable();
-                                }
-                            }
+                            UserTypeTree tree = UserTypeTreeUserType.Create(userType, factory);
+                            UserTypeTreeGenericsType genericsTree = tree as UserTypeTreeGenericsType;
 
-                            return UserTypeTreeUserType.Create(userType, factory);
+                            if (genericsTree != null && !genericsTree.CanInstatiate)
+                                return new UserTypeTreeVariable();
+                            return tree;
                         }
 
                         if (type.Tag == SymTagEnum.SymTagEnum)

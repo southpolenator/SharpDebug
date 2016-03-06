@@ -114,8 +114,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="..\Properties\SharedAssemblyInfo.cs" />
+    <Compile Include="..\CsScriptManaged\Utility\SimpleCache.cs" />
     <Compile Include="Symbol.cs" />
-    <Compile Include="UserType.cs" />
+    <Compile Include="UserTypeTree.cs" />
     <Compile Include="UserTypes\EnumUserType.cs" />
     <Compile Include="UserTypes\GlobalsUserType.cs" />
     <Compile Include="UserTypes\NamespaceUserType.cs" />

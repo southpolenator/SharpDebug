@@ -67,9 +67,18 @@ namespace GenerateUserTypesFromPdb
                 s = new Symbol(this, symbol);
                 lock (this)
                 {
+                    Symbol previousSymbol = null;
+
                     symbolById.TryAdd(symbolId, s);
-                    if (s.Tag != SymTagEnum.SymTagExe && !symbolByName.ContainsKey(s.Name))
-                        symbolByName.TryAdd(s.Name, s);
+                    if (s.Tag != SymTagEnum.SymTagExe)
+                        if (!symbolByName.TryGetValue(s.Name, out previousSymbol))
+                        {
+                            symbolByName.TryAdd(s.Name, s);
+                        }
+                        else
+                        {
+                            previousSymbol.LinkSymbols(s);
+                        }
                 }
 
                 s.InitializeCache();
@@ -84,21 +93,15 @@ namespace GenerateUserTypesFromPdb
             string originalName = name;
             int pointer = 0;
 
+            FixSymbolSearchName(ref name);
             while (name.EndsWith("*"))
             {
                 pointer++;
                 name = name.Substring(0, name.Length - 1).TrimEnd();
+                FixSymbolSearchName(ref name);
             }
 
-            name = name.Trim();
-            if (name.StartsWith("::"))
-                name = name.Substring(2);
-            if (name.EndsWith(" const"))
-                name = name.Substring(0, name.Length - 6);
-            if (name.EndsWith(" volatile"))
-                name = name.Substring(0, name.Length - 9);
-            if (name.StartsWith("enum "))
-                name = name.Substring(5);
+            FixSymbolSearchName(ref name);
 
             if (name == "unsigned __int64")
                 name = "unsigned long long";
@@ -112,11 +115,26 @@ namespace GenerateUserTypesFromPdb
                 name = "char";
 
             if (!symbolByName.TryGetValue(name, out symbol) || symbol == null)
+            {
+#if DEBUG
                 Console.WriteLine("   '{0}' not found", originalName);
+#endif
+            }
             else
                 for (int i = 0; i < pointer; i++)
                     symbol = symbol.PointerType;
             return symbol;
+        }
+
+        private static void FixSymbolSearchName(ref string name)
+        {
+            name = name.Trim();
+            if (name.EndsWith(" const"))
+                name = name.Substring(0, name.Length - 6);
+            if (name.EndsWith(" volatile"))
+                name = name.Substring(0, name.Length - 9);
+            if (name.StartsWith("enum "))
+                name = name.Substring(5);
         }
     }
 }

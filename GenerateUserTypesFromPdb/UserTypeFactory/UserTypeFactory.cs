@@ -7,269 +7,99 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class UserTypeFactory
     {
-        protected List<UserType> userTypes = new List<UserType>();
+        protected Module module;
         protected XmlTypeTransformation[] typeTransformations;
 
-        public UserTypeFactory(XmlTypeTransformation[] transformations)
+        public UserTypeFactory(Module module, XmlTypeTransformation[] transformations)
         {
+            this.module = module;
             typeTransformations = transformations;
         }
 
         public UserTypeFactory(UserTypeFactory factory)
-            : this(factory.typeTransformations)
+            : this(factory.module, factory.typeTransformations)
         {
-            //#fixme why!
-            //
-            userTypes.AddRange(factory.userTypes);
-        }
-
-        public List<UserType> Symbols
-        {
-            get
-            {
-                return userTypes;
-            }
         }
 
         internal virtual bool TryGetUserType(string typeString, out UserType userType)
         {
-            return GlobalCache.UserTypesBySymbolName.TryGetValue(typeString, out userType);
+            userType = GlobalCache.GetUserType(typeString, module);
+            return userType != null;
         }
 
         internal virtual bool GetUserType(Symbol type, out UserType userType)
         {
-            //#fixme, remove primitive types
-            userType = null;
-
-            if (type.Tag == SymTagEnum.SymTagBaseType)
-            {
-                switch (type.BasicType)
-                {
-                    case BasicType.Bit:
-                    case BasicType.Bool:
-                        userType = new PrimitiveUserType("bool", type);
-                        break;
-                    case BasicType.Char:
-                    case BasicType.WChar:
-                        userType = new PrimitiveUserType("char", type);
-                        break;
-                    case BasicType.BSTR:
-                        userType = new PrimitiveUserType("string", type);
-                        break;
-                    case BasicType.Void:
-                        userType = new PrimitiveUserType("void", type);
-                        break;
-                    case BasicType.Float:
-                        userType = new PrimitiveUserType(type.Size <= 4 ? "float" : "double", type);
-                        break;
-                    case BasicType.Int:
-                    case BasicType.Long:
-                        switch (type.Size)
-                        {
-                            case 0:
-                                userType = new PrimitiveUserType("void", type);
-                                break;
-                            case 1:
-                                userType = new PrimitiveUserType("sbyte", type);
-                                break;
-                            case 2:
-                                userType = new PrimitiveUserType("short", type);
-                                break;
-                            case 4:
-                                userType = new PrimitiveUserType("int", type);
-                                break;
-                            case 8:
-                                userType = new PrimitiveUserType("long", type);
-                                break;
-                            default:
-                                throw new Exception("Unexpected type length " + type.Size);
-                        }
-                        break;
-                    case BasicType.UInt:
-                    case BasicType.ULong:
-                        switch (type.Size)
-                        {
-                            case 0:
-                                userType = new PrimitiveUserType("void", type);
-                                break;
-                            case 1:
-                                userType = new PrimitiveUserType("byte", type);
-                                break;
-                            case 2:
-                                userType = new PrimitiveUserType("ushort", type);
-                                break;
-                            case 4:
-                                userType = new PrimitiveUserType("uint", type);
-                                break;
-                            case 8:
-                                userType = new PrimitiveUserType("ulong", type);
-                                break;
-                            default:
-                                throw new Exception("Unexpected type length " + type.Size);                                
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            if (type.Tag == SymTagEnum.SymTagPointerType)
-            {
-                Symbol pointerType = type.ElementType;
-
-                switch (pointerType.Tag)
-                {
-                    case SymTagEnum.SymTagBaseType:
-                    case SymTagEnum.SymTagEnum:
-                        {
-                            UserType innerType;
-                            if (this.GetUserType(pointerType, out innerType))
-                            {
-                                if (innerType.ClassName == "void")
-                                    userType = new PrimitiveUserType("NakedPointer", type);
-                                if (innerType.ClassName == "char")
-                                    userType = new PrimitiveUserType("string", type);
-                            }
-                            break;
-                        }
-                    //case SymTagEnum.SymTagUDT:
-                    //    return GetTypeString(pointerType, factory);
-                    //default:
-                    //    return new UserTypeTreeCodePointer(GetTypeString(pointerType, factory));
-                }
-            }
-
-            if (userType != null)
-            {
-                return true;
-            }
-
-            string typeString = type.Name;
-
-            // Try single lookup, this should match type directly
-            typeString = NameHelper.GetSimpleLookupNameForSymbol(type);
-            GlobalCache.UserTypesBySymbolName.TryGetValue(typeString, out userType);
-            if (userType is PhysicalUserType || userType is EnumUserType)
-            {
-                return true;
-            }
-
-            if (userType != null)
-            {
-                throw new InvalidOperationException();
-            }
-
-            // Try generic lookup
-            typeString = NameHelper.GetLookupNameForSymbol(type);
-            GlobalCache.UserTypesBySymbolName.TryGetValue(typeString, out userType);
-
-            if (userType == null)
-            {
-                return false;
-            }
-
-            // Return if physical type or EnumType
-            if (userType is PhysicalUserType || userType is EnumUserType)
-            {
-                return true;
-            }
-
-            // For Template Type Find right specialization
-            if (userType is TemplateUserType)
-            {
-                typeString = type.Name;
-
-                TemplateUserType specializedUserType = ((TemplateUserType)userType).specializedTypes.FirstOrDefault(r => typeString == r.Symbol.Name);
-
-                if (specializedUserType != null)
-                {
-                    //
-                    //  TODO, just copy for now
-                    //  Template type needs to know all other specializations.
-                    //
-                    specializedUserType.specializedTypes = ((TemplateUserType)userType).specializedTypes;
-                    specializedUserType.NamespaceSymbol = userType.NamespaceSymbol;
-                    specializedUserType.DeclaredInType = userType.DeclaredInType;
-
-                    userType = specializedUserType;
-                }
-                else
-                {
-                    // We could not find the specialized template.
-                    // Return null in this case.
-                    // 
-                    userType = null;
-                }
-
+            userType = GlobalCache.GetUserType(type);
+            if (!(userType is TemplateUserType))
                 return userType != null;
+
+            TemplateUserType specializedUserType = (TemplateUserType)userType;
+
+            if (specializedUserType != null)
+                userType = specializedUserType;
+            else
+            {
+                // We could not find the specialized template.
+                // Return null in this case.
+                userType = null;
             }
 
-            return false;
+            return userType != null;
         }
 
-        internal void AddUserType(UserType userType)
+        internal UserType AddSymbol(Symbol symbol, XmlType type, string moduleName, string nameSpace, UserTypeGenerationFlags generationOptions)
         {
-            //#fixme
-            userTypes.Add(userType);
-        }
-
-        internal void InserUserType(UserType userType)
-        {
-            userTypes.Insert(0, userType);
-        }
-
-        internal void AddSymbol(Symbol symbol, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
-        {
-            UserType newUserType;
+            UserType userType;
 
             if (type == null || symbol.Tag == SymTagEnum.SymTagEnum)
             {
-                newUserType = new EnumUserType(symbol, moduleName);
+                userType = new EnumUserType(symbol, moduleName, nameSpace);
+            }
+            else if (symbol.Tag == SymTagEnum.SymTagExe)
+            {
+                userType = new GlobalsUserType(symbol, type, moduleName, nameSpace);
             }
             else if (generationOptions.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
             {
-                newUserType = new PhysicalUserType(symbol, type, moduleName);
+                userType = new PhysicalUserType(symbol, type, moduleName, nameSpace);
             }
             else
             {
-                newUserType = new UserType(symbol, type, moduleName);
+                userType = new UserType(symbol, type, moduleName, nameSpace);
             }
 
-            // Store in global cache
-            string typeName = newUserType.Symbol.Name;
-            if (GlobalCache.UserTypesBySymbolName.TryAdd(typeName, newUserType))
-            {
-                userTypes.Add(newUserType);
-            }
+            symbol.UserType = userType;
+            return userType;
         }
 
-        internal void AddSymbols(IEnumerable<Symbol> symbols, XmlType type, string moduleName, UserTypeGenerationFlags generationOptions)
+        internal IEnumerable<UserType> AddSymbols(IEnumerable<Symbol> symbols, XmlType type, string moduleName, string nameSpace, UserTypeGenerationFlags generationOptions)
         {
             if (!type.IsTemplate && symbols.Any())
                 throw new Exception("Type has more than one symbol for " + type.Name);
 
             if (!type.IsTemplate)
             {
-                AddSymbol(symbols.First(), type, moduleName, generationOptions);
+                yield return AddSymbol(symbols.First(), type, moduleName, nameSpace, generationOptions);
             }
             else
             {
-                var buckets = new Dictionary<int, TemplateUserType>();
+                var buckets = new Dictionary<int, List<TemplateUserType>>();
 
                 foreach (Symbol symbol in symbols)
                 {
+                    UserType userType = null;
+
                     try
                     {
                         // We want to ignore "empty" generic classes (for now)
                         if (symbol.Name == null || symbol.Size == 0)
-                        {
                             continue;
-                        }
 
-                        TemplateUserType templateType = new TemplateUserType(symbol, type, moduleName, this);
+                        TemplateUserType templateType = new TemplateUserType(symbol, type, moduleName, nameSpace, this);
 
                         int templateArgs = templateType.GenericsArguments;
 
+#if false // TODO: Check if we want to use simple user type instead of template user type
                         if (templateArgs == 0)
                         {
                             // Template does not have arguments that can be used by generic 
@@ -279,39 +109,45 @@ namespace GenerateUserTypesFromPdb.UserTypes
                                 Name = symbol.Name
                             };
 
-                            this.AddSymbol(symbol, xmlType, moduleName, generationOptions);
-                            continue;
-                        }
-
-                        TemplateUserType previousTemplateType;
-
-                        if (!buckets.TryGetValue(templateArgs, out previousTemplateType))
-                        {
-                            // Add new template type
-                            buckets.Add(templateArgs, templateType);
-                            templateType.specializedTypes.Add(templateType);
+                            userType = this.AddSymbol(symbol, xmlType, moduleName, generationOptions);
                         }
                         else
+#endif
                         {
-                            previousTemplateType.specializedTypes.Add(templateType);
+                            List<TemplateUserType> templates;
+
+                            symbol.UserType = templateType;
+                            if (!buckets.TryGetValue(templateArgs, out templates))
+                                buckets.Add(templateArgs, templates = new List<TemplateUserType>());
+                            templates.Add(templateType);
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        // TODO: Verify if we need to add this as specialization
+                        if (ex.Message != "Wrongly formed template argument")
+                            throw;
                     }
+
+                    if (userType != null)
+                        yield return userType;
                 }
 
                 // Add newly generated types
-                foreach (var template in buckets.Values)
+                foreach (var templates in buckets.Values)
                 {
-                    userTypes.Add(template);
+                    // TODO: Verify that all templates in the list can be described by the same class (also check for subtypes)
 
-                    string symbolName = NameHelper.GetLookupNameForSymbol(template.Symbol);
+                    // Move all types under the first type
+                    TemplateUserType template = templates.First();
 
-                    if (!GlobalCache.UserTypesBySymbolName.TryAdd(symbolName, template))
+                    foreach (var specializedTemplate in templates)
                     {
-                        throw new Exception();
+                        template.specializedTypes.Add(specializedTemplate);
+                        specializedTemplate.TemplateType = template;
                     }
+
+                    yield return template;
                 }
             }
         }
@@ -320,109 +156,88 @@ namespace GenerateUserTypesFromPdb.UserTypes
         /// Process Types
         ///     Set Namespace or Parent Type
         /// </summary>
-        internal void ProcessTypes()
+        internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, string nameSpace)
         {
+            Dictionary<string, UserType> namespaceTypes = new Dictionary<string, UserType>();
+
             foreach (UserType userType in userTypes)
             {
-                string symbolName = userType.Symbol.Name;
+                Symbol symbol = userType.Symbol;
+
+                if (symbol.Tag != SymTagEnum.SymTagUDT && symbol.Tag != SymTagEnum.SymTagEnum)
+                    continue;
+
+                string symbolName = symbol.Name;
                 List<string> namespaces = NameHelper.GetFullSymbolNamespaces(symbolName);
 
-                if (namespaces.Count() == 1)
+                if (namespaces.Count == 1)
                 {
                     // Class is not defined in namespace nor in type.
                     continue;
                 }
 
-                string symbolNamespace = string.Empty;
-                string searchNamespace = string.Empty;
+                string currentNamespace = "";
+                UserType previousNamespaceUserType = null;
 
-                symbolNamespace += namespaces[0];
-                searchNamespace += NameHelper.GetLookupNameForSymbol(namespaces[0]);
-                int parentSymbolNamespaceIndex = 0;
-
-                UserType parentUserType = null;
-
-                // Scan namespaces looking for parent
-                for (int i = 1; i <= namespaces.Count() - 1; i++)
+                for (int i = 0; i < namespaces.Count - 1; i++)
                 {
-                    UserType parentUserTypeLookup;
+                    currentNamespace += i == 0 ? namespaces[i] : "::" + namespaces[i];
 
-                    //
-                    //  TODO
-                    //  Verify, choose specialized type first
-                    //  Then lookup template parent.
-                    //
-
-                    // First look up parent by name
-                    GlobalCache.UserTypesBySymbolName.TryGetValue(symbolNamespace, out parentUserTypeLookup);
-
-                    if (parentUserTypeLookup == null)
-                    {
-                        // Try to look up generic parent
-                        GlobalCache.UserTypesBySymbolName.TryGetValue(searchNamespace, out parentUserTypeLookup);
-                    }
-
-                    if (parentUserTypeLookup != null)
-                    {
-                        parentUserType = parentUserTypeLookup;
-                        parentSymbolNamespaceIndex = symbolNamespace.Length + ((i != namespaces.Count() - 1) ? 2 : 0);
-                    }
-
-                    if (i != namespaces.Count() - 1)
-                    {
-                        symbolNamespace += "::" + namespaces[i];
-                        searchNamespace += "::" + NameHelper.GetLookupNameForSymbol(namespaces[i]); ;
-                    }
-                }
-
-                string fullSymbolName = symbolNamespace;
-
-                // Remove Parent Namespace
-                if (parentSymbolNamespaceIndex > 0 )
-                {
-                    symbolNamespace = symbolNamespace.Substring(parentSymbolNamespaceIndex);
-                }
-
-                if (parentUserType != null && !string.IsNullOrEmpty(symbolNamespace))
-                {
-                    string parentSymbolNamespace = fullSymbolName.Substring(0, parentSymbolNamespaceIndex - 2);
-
-                    //  UserType is defined in namespace of Parent Class.
-                    //  Create a new static class to emulate namespace.
-                    //
                     UserType namespaceUserType;
 
-                    foreach (var innerNamespace in symbolNamespace.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries))
+                    if (!namespaceTypes.TryGetValue(currentNamespace, out namespaceUserType))
+                        namespaceUserType = GlobalCache.GetUserType(currentNamespace, symbol.Module);
+
+                    // Put type under exported template type (TODO: Remove this when template types start checking subtypes)
+                    var templateType = namespaceUserType as TemplateUserType;
+
+                    if (templateType != null)
+                        namespaceUserType = templateType.TemplateType;
+
+                    if (namespaceUserType == null)
                     {
-                        parentSymbolNamespace += "::" + innerNamespace;
-
-                        if (!GlobalCache.UserTypesBySymbolName.TryGetValue(parentSymbolNamespace, out namespaceUserType))
-                        {
-                            namespaceUserType = new NamespaceUserType(innerNamespace, parentUserType.ModuleName);
-
-                            GlobalCache.UserTypesBySymbolName.TryAdd(parentSymbolNamespace, namespaceUserType);
-                        }
-
-                        namespaceUserType.SetDeclaredInType(parentUserType);
-                        parentUserType = namespaceUserType;
+                        namespaceUserType = new NamespaceUserType(new string[] { namespaces[i] }, symbol.Module.Name, previousNamespaceUserType == null ? nameSpace : null);
+                        if (previousNamespaceUserType != null)
+                            namespaceUserType.SetDeclaredInType(previousNamespaceUserType);
+                        namespaceTypes.Add(currentNamespace, namespaceUserType);
+                        yield return namespaceUserType;
                     }
-                    userType.SetDeclaredInType(parentUserType);
+
+                    previousNamespaceUserType = namespaceUserType;
                 }
-                else
+
+                userType.SetDeclaredInType(previousNamespaceUserType);
+            }
+
+            // Remove duplicate types from exported template types (TODO: Remove this when template types start checking subtypes)
+            foreach (UserType userType in userTypes)
+            {
+                TemplateUserType templateType = userType as TemplateUserType;
+
+                if (templateType == null)
+                    continue;
+
+                HashSet<string> uniqueTypes = new HashSet<string>();
+
+                foreach (var innerType in templateType.InnerTypes.ToArray())
                 {
-                    userType.SetDeclaredInType(parentUserType);
-                    userType.NamespaceSymbol = symbolNamespace;
+                    string className;
+
+                    if (!(innerType is NamespaceUserType))
+                        className = innerType.ClassName;
+                    else
+                        className = innerType.Namespace;
+                    if (uniqueTypes.Contains(className))
+                        templateType.InnerTypes.Remove(innerType);
+                    else
+                        uniqueTypes.Add(className);
                 }
             }
         }
 
         internal bool ContainsSymbol(Symbol type)
         {
-            UserType userType;
-            string typeString = type.Name;
-
-            GlobalCache.UserTypesBySymbolName.TryGetValue(typeString, out userType);
-            return userType != null;
+            return type.Module == module && type.UserType != null;
         }
 
         internal UserTypeTransformation FindTransformation(Symbol type, UserType ownerUserType)

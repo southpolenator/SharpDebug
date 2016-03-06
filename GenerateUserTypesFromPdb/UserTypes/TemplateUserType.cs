@@ -14,35 +14,51 @@ namespace GenerateUserTypesFromPdb.UserTypes
         // #fixme, use diferent type
         public List<TemplateUserType> specializedTypes = new List<TemplateUserType>();
 
-        public TemplateUserType(Symbol symbol, XmlType xmlType, string moduleName, UserTypeFactory factory)
-            : base(symbol, xmlType, moduleName)
+        public TemplateUserType(Symbol symbol, XmlType xmlType, string moduleName, string nameSpace, UserTypeFactory factory)
+            : base(symbol, xmlType, moduleName, nameSpace)
         {
             UpdateArguments(factory);
         }
 
-        public void UpdateArguments(UserTypeFactory factory)
+        public TemplateUserType TemplateType { get; internal set; }
+
+        public bool UpdateArguments(UserTypeFactory factory)
         {
             this.argumentsSymbols.Clear();
             this.argumentsUserType.Clear();
 
             string symbolName = Symbol.Name;
+            symbolName = NameHelper.GetFullSymbolNamespaces(symbolName).Last();
 
             int templateStart = symbolName.IndexOf('<');
             var arguments = new List<string>();
+            bool result = true;
 
-            for (int i = templateStart + 1; i < symbolName.Length; i++)
+            for (int i = templateStart + 1; i < symbolName.Length && symbolName[i] != '>'; i++)
             {
-                var extractedType = XmlTypeTransformation.ExtractType(symbolName, i);
+                var originalyExtractedType = XmlTypeTransformation.ExtractType(symbolName, i);
+                var extractedType = originalyExtractedType.Trim();
 
-                arguments.Add(extractedType.Trim());
-                i += extractedType.Length;
-
-                int constant;
-                extractedType = extractedType.Trim();
-
-                if (!int.TryParse(extractedType, out constant))
+                i += originalyExtractedType.Length;
+                if (string.IsNullOrEmpty(extractedType))
                 {
-                    Symbol symbol = Module.GetTypeSymbol(extractedType);
+                    // This can happen only when list is empty
+                    if (arguments.Count > 0)
+                        throw new NotImplementedException("Unexpected empty template argument in symbol " + symbolName);
+                    break;
+                }
+
+                // Duplicate types should be merged/removed
+                if (arguments.Contains(extractedType))
+                    continue;
+
+                arguments.Add(extractedType);
+
+                double constant;
+
+                if (!double.TryParse(extractedType, out constant))
+                {
+                    Symbol symbol = GlobalCache.GetSymbol(extractedType, Module);
 
                     // Check if type is existing type
                     if (symbol == null)
@@ -52,19 +68,26 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                     this.argumentsSymbols.Add(symbol.Name);
 
-                    UserType specializationUserType;
-                    if (factory.GetUserType(symbol, out specializationUserType) )
+                    UserType specializationUserType = null;
+
+                    if (!factory.GetUserType(symbol, out specializationUserType))
                     {
-                        this.argumentsUserType.Add(specializationUserType);
+                        if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
+                        {
+                            var typeString = GetTypeString(symbol, factory).GetUserTypeString();
+
+                            specializationUserType = new PrimitiveUserType(typeString, symbol);
+                        }
                     }
-                    else
-                    {
-                        this.argumentsUserType.Add(null);
-                    }
+
+                    this.argumentsUserType.Add(specializationUserType);
+                    result = result && specializationUserType != null;
                 }
             }
 
             // TODO: Unused types should be removed
+
+            return result;
         }
 
         public Module Module
@@ -77,6 +100,21 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         protected override bool ExportStaticFields { get { return false; } }
 
+        public override UserType DeclaredInType
+        {
+            get
+            {
+                if (this != TemplateType && TemplateType != null)
+                    return TemplateType.DeclaredInType;
+                return base.DeclaredInType;
+            }
+
+            set
+            {
+                base.DeclaredInType = value;
+            }
+        }
+
         public override string ClassName
         {
             get
@@ -87,11 +125,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     symbolName = NameHelper.GetFullSymbolNamespaces(symbolName).Last();
                 }
-                else
-                if (Namespace != null)
-                {
-                    symbolName = symbolName.Substring(NamespaceSymbol.Length + 2);
-                }
 
                 int templateStart = symbolName.IndexOf('<');
 
@@ -100,12 +133,12 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     symbolName = symbolName.Substring(0, templateStart);
                     if (GenericsArguments == 1)
                     {
-                        symbolName += "<T>";
+                        symbolName += "<" + TemplateArgNameBase + ">";
                     }
                     else if (GenericsArguments > 1)
                     {
                         symbolName += "<";
-                        symbolName += string.Join(", ", Enumerable.Range(1, GenericsArguments).Select(t => "T" + t));
+                        symbolName += string.Join(", ", Enumerable.Range(1, GenericsArguments).Select(t => TemplateArgNameBase + t));
                         symbolName += ">";
                     }
                 }
@@ -130,22 +163,36 @@ namespace GenerateUserTypesFromPdb.UserTypes
             }
         }
 
+        private string TemplateArgNameBase
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append('T');
+                UserType parent = DeclaredInType;
+
+                while (parent != null)
+                {
+                    if (parent is TemplateUserType)
+                        sb.Append('i');
+                    parent = parent.DeclaredInType;
+                }
+
+                return sb.ToString();
+            }
+        }
+
         public string[] ExtractSpecializedTypes()
         {
             List<string> results = new List<string>();
             foreach (string specializedType in argumentsSymbols)
             {
-                UserType userType;
+                UserType userType = GlobalCache.GetUserType(specializedType, Module);
 
-                if (GlobalCache.UserTypesBySymbolName.TryGetValue(NameHelper.GetLookupNameForSymbol(specializedType), out userType))
+                if (userType != null)
                 {
-                    results.Add(userType.ClassName);
-                    continue;
-                }
-
-                if (GlobalCache.UserTypesBySymbolName.TryGetValue(specializedType, out userType))
-                {
-                    results.Add(userType.ClassName);
+                    results.Add(userType.FullClassName);
                     continue;
                 }
 
@@ -161,16 +208,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             List<Symbol> results = new List<Symbol>();
             foreach (string specializedType in argumentsSymbols)
             {
-                UserType userType;
-
-                if (GlobalCache.UserTypesBySymbolName.TryGetValue(specializedType, out userType))
-                {
-                    results.Add(userType.Symbol);
-                }
-                else
-                {
-                    results.Add(Module.GetTypeSymbol(specializedType));
-                }
+                results.Add(GlobalCache.GetSymbol(specializedType, Module));
             }
 
             return results.ToArray();
@@ -181,7 +219,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
             if (types.Count() != GenericsArguments)
                 throw new Exception("Wrong number of generics arguments");
 
-            string symbolName = FullClassName;
+            string className = ClassName;
+            string symbolName = className;
             int templateStart = symbolName.IndexOf('<');
 
             if (templateStart > 0)
@@ -197,7 +236,9 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         public string GetSpecializedTypeDefinedInstance()
         {
-            string symbolName = FullClassName;
+            string fullClassName = FullClassName;
+            string className = ClassName;
+            string symbolName = className;
 
             int templateStart = symbolName.IndexOf('<');
 
@@ -211,7 +252,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 symbolName += ">";
             }
 
-            return symbolName;
+            return fullClassName.Substring(0, fullClassName.Length - className.Length) + symbolName;
         }
 
 
@@ -221,7 +262,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             if (index >= 0)
             {
-                argument = argumentsSymbols.Count == 1 ? "T" : "T" + (index + 1);
+                argument = argumentsSymbols.Count == 1 ? TemplateArgNameBase : TemplateArgNameBase + (index + 1);
                 return true;
             }
 
@@ -239,12 +280,31 @@ namespace GenerateUserTypesFromPdb.UserTypes
             UserTypeTree baseType = base.GetBaseTypeString(error, type, CreateFactory(factory));
 
             // Check if base type is template argument. It if is, export it as if it is multi class inheritance.
-            if (baseType is UserTypeTreeUserType && ((UserTypeTreeUserType)baseType).UserType is PrimitiveUserType)
+            UserTypeTreeUserType userBaseType = baseType as UserTypeTreeUserType;
+            PrimitiveUserType primitiveUserType = userBaseType != null ? userBaseType.UserType as PrimitiveUserType : null;
+            if (userBaseType != null && primitiveUserType != null)
+            {
+                var dict = GetInheritanceTypeConstraintDictionary(factory);
+                string commonBaseClass;
+
+                if (dict.TryGetValue(primitiveUserType.ClassName, out commonBaseClass))
+                    return UserTypeTreeUserType.Create(new PrimitiveUserType(commonBaseClass, null), factory);
                 return new UserTypeTreeMultiClassInheritance();
+            }
+
             return baseType;
         }
 
- 
+        protected override void WriteClassComment(IndentedWriter output, int indentation)
+        {
+            base.WriteClassComment(output, indentation);
+            output.WriteLine(indentation, "// ---------------------------------------------------");
+            output.WriteLine(indentation, "// Specializations of this class");
+            foreach (var type in specializedTypes)
+                output.WriteLine(indentation, "//   {0}", type.Symbol.Name);
+        }
+
+
 
         private UserTypeFactory CreateFactory(UserTypeFactory factory)
         {
@@ -260,77 +320,14 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return new TemplateUserTypeFactory(factory, this);
         }
 
-        /// <summary>
-        /// Checks if given template type can be instantiated.
-        /// </summary>
-        /// <param name="factory"></param>
-        /// <returns></returns>
-        public bool IsInstantiable(UserTypeFactory factory)
+
+        private enum TypeOfSpecializationType
         {
-            string symbolName = Symbol.Name;
-
-            // Check cache for result
-            bool result;
-            if (GlobalCache.InstantiableTemplateUserTypes.TryGetValue(symbolName, out result))
-            {
-                return result;
-            }
-
-            //List<string> specializationArgs = NameHelper.GetTemplateSpecializationArguments(symbolName);
-
-            List<string> specializationArgs = this.argumentsSymbols;
-
-            result = true;
-
-            foreach (string arg in specializationArgs)
-            {
-                bool isTemplateArg = NameHelper.IsTemplateType(arg);
-
-                // Find DiaSymbol for specialization type
-                Symbol argSymbol;
-                if (!GlobalCache.DiaSymbolsByName.TryGetValue(arg, out argSymbol))
-                {
-                    //
-                    // TODO, add base symbols to global cache
-                    //
-                    // Symbol is not cached, use dia to verify is this primitive type
-                    argSymbol = Module.GetTypeSymbol(arg);
-                }
-
-                if (argSymbol != null)
-                {
-                    // Find UserType for specialization
-                    UserType argUserType;
-
-                    if (factory.GetUserType(argSymbol, out argUserType))
-                    {
-                        // Specialization is template, verify the template as well.
-                        TemplateUserType argTemplateUserType = argUserType as TemplateUserType;
-                        if (argTemplateUserType != null)
-                        {
-                            // Inner Template cannot be instantiated
-                            if (!argTemplateUserType.IsInstantiable(factory))
-                            {
-                                result = false;
-                                break;
-                            }
-                        }
-
-                        continue;
-                    }
-                }
-
-                // Can't find symbol, class cannot be instantiated
-                result = false;
-                break;
-            }
-
-            // Cache the result
-            GlobalCache.InstantiableTemplateUserTypes.TryAdd(symbolName, result);
-            
-            return result;
+            Unmatched,
+            Anything,
+            Variable,
+            UserType,
         }
-
 
         public string[] GetCommonBaseTypesForSpecialization(UserTypeFactory factory)
         {
@@ -344,43 +341,108 @@ namespace GenerateUserTypesFromPdb.UserTypes
             for (int i = 0; i < GenericsArguments; i++)
             {
                 string[] specializedTypes = this.specializedTypes.Select(r => r.argumentsSymbols[i]).ToArray();
-
-                //
-                // TODO, for now just use Variable
-                //
-                string userTypeName = "Variable";
+                TypeOfSpecializationType specializationType = TypeOfSpecializationType.Unmatched;
+                UserType commonType = null;
 
                 foreach (string specializedType in specializedTypes)
                 {
-                    //
-                    // TODO again cache base/primitive dia symbols
-                    //
-                    if (specializedType == "bool" ||
-                        specializedType == "char" ||
-                        specializedType == "void" ||
-                        specializedType == "short" ||
-                        specializedType == "int" ||
-                        specializedType == "long long" ||
-                        specializedType == "unsigned long long" ||
-                        specializedType == "unsigned short" ||
-                        specializedType == "unsigned char" || 
-                        specializedType == "unsigned int" ||
-                        specializedType == "double" ||
-                        specializedType == "float")
+                    // Check base type
+                    var type = GlobalCache.GetSymbol(specializedType, Module);
+
+                    if (type.Tag == Dia2Lib.SymTagEnum.SymTagBaseType || type.Tag == Dia2Lib.SymTagEnum.SymTagEnum)
+                        if (type.Name != "void")
+                        {
+                            specializationType = TypeOfSpecializationType.Anything;
+                            break;
+                        }
+                        else
+                        {
+                            specializationType = TypeOfSpecializationType.Variable;
+                            continue;
+                        }
+
+                    // Check pointer, array and function types, they inherit Variable
+                    if (type.Tag == Dia2Lib.SymTagEnum.SymTagPointerType || type.Tag == Dia2Lib.SymTagEnum.SymTagArrayType || type.Tag == Dia2Lib.SymTagEnum.SymTagFunctionType)
                     {
-                        userTypeName = null;
-                        break;
+                        specializationType = TypeOfSpecializationType.Variable;
+                        continue;
                     }
 
-                    // try lookup type 
-                    // TODO
-                    // that might not be enough for the enums nested in template types
-                    UserType userType;
-                    if (factory.TryGetUserType(specializedType, out userType) && userType is EnumUserType)
+                    if (type.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
                     {
+                        throw new NotImplementedException("Unexpected symbol type " + type.Tag + ". Symbol name: " + specializedType);
+                    }
+
+                    // Check if type has user type
+                    UserType userType = type.UserType;
+
+                    if (userType == null)
+                    {
+                        // TODO: This shouldn't happen
+                        //specializationType = TypeOfSpecializationType.Variable;
+                        //continue;
+                        throw new Exception("This should never happen");
+                    }
+
+                    if (specializationType == TypeOfSpecializationType.Variable)
+                        continue;
+
+                    // If user type is template, get parent template type (one that describes all specializations)
+                    var templateType = userType as TemplateUserType;
+
+                    if (templateType != null)
+                        userType = templateType.TemplateType;
+
+                    if (specializationType == TypeOfSpecializationType.Unmatched)
+                    {
+                        specializationType = TypeOfSpecializationType.UserType;
+                        commonType = userType;
+                        continue;
+                    }
+
+                    // Try to find common type for commonType and userType
+                    var commonTypeBases = ExtractBaseClasses(commonType);
+                    var userTypeBases = ExtractBaseClasses(userType);
+                    bool found = false;
+
+                    foreach (var ct in commonTypeBases)
+                    {
+                        foreach (var ut in userTypeBases)
+                            if (ut == ct)
+                            {
+                                found = true;
+                                commonType = ut;
+                                break;
+                            }
+
+                        if (found)
+                            break;
+                    }
+
+                    if (!found)
+                        specializationType = TypeOfSpecializationType.Variable;
+                }
+
+                string userTypeName;
+                var templateCommonType = commonType as TemplateUserType;
+
+                switch (specializationType)
+                {
+                    case TypeOfSpecializationType.Anything:
                         userTypeName = null;
                         break;
-                    }
+                    case TypeOfSpecializationType.Variable:
+                        userTypeName = "Variable";
+                        break;
+                    case TypeOfSpecializationType.UserType:
+                        if (templateCommonType != null)
+                            userTypeName = new UserTypeTreeGenericsType(templateCommonType, factory).GetUserTypeString();
+                        else
+                            userTypeName = commonType.FullClassName;
+                        break;
+                    case TypeOfSpecializationType.Unmatched:
+                    default:
+                        throw new NotImplementedException("Unexpected specialization type " + specializationType + " for template type " + ClassName);
                 }
 
                 results[i] = userTypeName;
@@ -389,37 +451,71 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return results;
         }
 
+        private static List<UserType> ExtractBaseClasses(UserType userType)
+        {
+            var userTypes = new List<UserType>();
+            Symbol symbol = userType.Symbol;
+
+            userTypes.Add(userType);
+            while (symbol != null)
+            {
+                var baseClasses = symbol.BaseClasses;
+
+                if (baseClasses == null || baseClasses.Length == 0)
+                {
+                    // We have finished all
+                    break;
+                }
+
+                if (baseClasses.Length > 1)
+                {
+                    // We cannot match common type with multi-inheritance
+                    break;
+                }
+
+                symbol = baseClasses[0];
+                userType = symbol != null ? symbol.UserType : null;
+                if (userType != null)
+                    userTypes.Add(userType);
+            }
+
+            return userTypes;
+        }
+
+        private Dictionary<string, string> GetInheritanceTypeConstraintDictionary(UserTypeFactory factory)
+        {
+            Dictionary<string, string> result = new Dictionary<string, string>();
+#if false
+            string[] commonBaseSpecializationTypes = GetCommonBaseTypesForSpecialization(factory);
+
+            if (commonBaseSpecializationTypes == null || commonBaseSpecializationTypes.All(r => string.IsNullOrEmpty(r)))
+#endif
+            {
+                // no restrictions
+                return result;
+            }
+
+#if false
+            StringBuilder sb = new StringBuilder();
+            if (commonBaseSpecializationTypes.Count() == 1)
+                result.Add(TemplateArgNameBase, commonBaseSpecializationTypes[0]);
+            else
+                for (int i = 0; i < commonBaseSpecializationTypes.Count(); i++)
+                    if (!string.IsNullOrEmpty(commonBaseSpecializationTypes[i]))
+                        result.Add(string.Format("{0}{1}", TemplateArgNameBase, i + 1), commonBaseSpecializationTypes[i]);
+            return result;
+#endif
+        }
+
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
         protected override string GetInheritanceTypeConstraint(UserTypeFactory factory)
         {
-            string[] commonBaseSpecializationTypes = GetCommonBaseTypesForSpecialization(factory);
+            var dict = GetInheritanceTypeConstraintDictionary(factory);
 
-            if (commonBaseSpecializationTypes == null || commonBaseSpecializationTypes.All(r => string.IsNullOrEmpty(r)))
-            {
-                // no restrictions
-                return string.Empty;
-            }
-
-            StringBuilder sb = new StringBuilder();
-            if (commonBaseSpecializationTypes.Count() == 1)
-            {
-                sb.Append(string.Format("  where T : {0} ", commonBaseSpecializationTypes[0]));
-            }
-            else
-            {
-                for (int i = 0; i < commonBaseSpecializationTypes.Count(); i++)
-                {
-                    if (!string.IsNullOrEmpty(commonBaseSpecializationTypes[i]))
-                    {
-                        sb.Append(string.Format("  where T{0} : {1} ", i + 1, commonBaseSpecializationTypes[i]));
-                    }
-                }
-            }
-
-            return sb.ToString();
+            return string.Join("", dict.Select(t => string.Format("    where {0} : {1}", t.Key, t.Value)));
         }
     }
 }

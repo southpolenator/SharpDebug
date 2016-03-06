@@ -1,35 +1,25 @@
 ﻿using Dia2Lib;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb.UserTypes
 {
     class EnumUserType : UserType
     {
-        public EnumUserType(Symbol symbol, string moduleName)
-            : base(symbol, new XmlType() { Name = symbol.Name }, moduleName)
+        public EnumUserType(Symbol symbol, string moduleName, string nameSpace)
+            : base(symbol, new XmlType() { Name = symbol.Name }, moduleName, nameSpace)
         {
         }
 
         public override void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
-            if (DeclaredInType == null)
+            if (DeclaredInType == null && !string.IsNullOrEmpty(Namespace))
             {
-                // always make module namespace
-                if (Namespace != null)
-                {
-                    output.WriteLine(indentation, "namespace {0}.{1}", ModuleName, Namespace);
-                }
-                else
-                {
-                    output.WriteLine(indentation, "namespace {0}", ModuleName);
-                }
+                output.WriteLine(indentation, "namespace {0}", Namespace);
                 output.WriteLine(indentation++, "{{");
             }
+
+            if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
+                output.WriteLine(indentation, "// {0} (original name: {1})", ClassName, Symbol.Name);
 
             if (Symbol.Size != 0)
                 output.WriteLine(indentation, @"public enum {0} : {1}", ClassName, GetEnumType());
@@ -45,23 +35,13 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // Class end
             output.WriteLine(--indentation, @"}}");
 
-            if (DeclaredInType == null)
+            if (DeclaredInType == null && !string.IsNullOrEmpty(Namespace))
             {
                 output.WriteLine(--indentation, "}}");
             }
         }
 
-        public override string ClassName
-        {
-            get
-            {
-                string className = base.ClassName;
-
-                return className;
-            }
-        }
-
-        public string GetEnumType()
+        private string GetEnumType()
         {
             switch (Symbol.BasicType)
             {

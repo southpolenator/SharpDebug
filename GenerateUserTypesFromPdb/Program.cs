@@ -146,9 +146,13 @@ namespace GenerateUserTypesFromPdb
 
             foreach (var xmlModule in xmlModules)
             {
-                var factory = new UserTypeFactory(config.Transformations);
                 Module module = OpenPdb(xmlModule);
                 string moduleName = xmlModule.Name;
+                string nameSpace = xmlModule.Namespace;
+                var factory = new UserTypeFactory(module, config.Transformations);
+                List<UserType> userTypes = new List<UserType>();
+
+                userTypes.Add(factory.AddSymbol(module.GlobalScope, new XmlType() { Name = "ModuleGlobals" }, moduleName, nameSpace, generationOptions));
 
                 foreach (var type in typeNames)
                 {
@@ -160,7 +164,7 @@ namespace GenerateUserTypesFromPdb
                     }
                     else
                     {
-                        factory.AddSymbols(symbols, type, moduleName, generationOptions);
+                        userTypes.AddRange(factory.AddSymbols(symbols, type, moduleName, nameSpace, generationOptions));
                     }
                 }
 
@@ -171,41 +175,37 @@ namespace GenerateUserTypesFromPdb
                 var globalTypes = module.GetAllTypes();
                 Console.WriteLine(sw.Elapsed);
 
-                GlobalCache.DiaSymbolsByName = new ConcurrentDictionary<string, Symbol>();
-                GlobalCache.InstantiableTemplateUserTypes = new ConcurrentDictionary<string, bool>();
-                GlobalCache.UserTypesBySymbolName = new ConcurrentDictionary<string, UserType>();
+                var diaSymbolsByName = new ConcurrentDictionary<string, Symbol>();
 
                 foreach (Symbol symbol in globalTypes)
                 {
+                    string symbolName = symbol.Name;
+
                     //  TODO add configurable filter
                     //
-                    string symbolName = symbol.Name;
-                    if (symbolName.StartsWith("$") || symbolName.StartsWith("__vc_attributes") || symbolName.StartsWith("`anonymous-namespace'"))
+                    if (symbolName.StartsWith("$") || symbolName.StartsWith("__vc_attributes") || symbolName.Contains("`anonymous-namespace'") || symbolName.Contains("`anonymous namespace'") || symbolName.Contains("::$") || symbolName.Contains("`"))
                     {
                         continue;
                     }
 
                     // Do not handle template referenced arguments 
-                    if (symbolName.Contains("&"))
+                        if (symbolName.Contains("&"))
                     {
+                        // TODO: Convert this to function pointer
                         continue;
                     }
 
-                    // Skip symbols with large names (filepath issue)
+                    // TODO: C# doesn't support lengthy names
                     if (symbolName.Length > 160)
                     {
                         continue;
                     }
 
-                    var namespaces = NameHelper.GetFullSymbolNamespaces(symbolName);
-
+                    // TODO: For now remove all unnamed-type symbols
                     string scopedClassName = NameHelper.GetSymbolScopedClassName(symbolName);
 
-                    if (scopedClassName == "<>")
+                    if (scopedClassName == "<>" || symbolName.Contains("::<"))
                     {
-                        // TODO
-                        // for now remove all unnamed-type symbols
-                        //
                         continue;
                     }
 
@@ -219,32 +219,19 @@ namespace GenerateUserTypesFromPdb
                             // Class needs to be aware of parent context (UserTypeFactory).
                             //
                             // TODO
-                            symbolName = string.Format("{0}:{1}", NameHelper.GetLookupNameForSymbol(symbolName), scopedClassName);
-                            //specializedClassWithParentSymbol.TryAdd(symbolName, symbol);
+                            //symbolName = string.Format("{0}:{1}", NameHelper.GetLookupNameForSymbol(symbolName), scopedClassName);
+                            specializedClassWithParentSymbol.Add(symbolName, symbol);
                             continue;
                         }
                         else
                         {
                             try
                             {
+                                List<string> namespaces = NameHelper.GetFullSymbolNamespaces(symbolName);
                                 string className = namespaces.Last();
-
                                 List<string> templateSpecializationArgs = NameHelper.GetTemplateSpecializationArguments(className);
 
-                                //
-                                // TODO
-                                // Inspect Template
-                                //
-                                TemplateUserType templateType = new TemplateUserType(symbol, new XmlType() { Name = symbolName }, moduleName, factory);
-
-                                int templateArgs = templateType.GenericsArguments;
-                                if (templateSpecializationArgs.Any(r => r == "void" || r == "void const"))
-                                {
-                                    GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol);
-                                }
-
                                 symbolName = NameHelper.GetLookupNameForSymbol(symbol);
-
                                 if (templateSymbols.ContainsKey(symbolName) == false)
                                 {
                                     templateSymbols[symbolName] = new List<Symbol>() { symbol };
@@ -268,7 +255,7 @@ namespace GenerateUserTypesFromPdb
                         }
                     }
 
-                    GlobalCache.DiaSymbolsByName.TryAdd(symbolName, symbol);
+                    diaSymbolsByName.TryAdd(symbolName, symbol);
                 }
 
                 Console.WriteLine("Collecting types: {0}", sw.Elapsed);
@@ -284,7 +271,7 @@ namespace GenerateUserTypesFromPdb
                         Name = symbolName
                     };
 
-                    factory.AddSymbol(symbol, type, moduleName, generationOptions);
+                    userTypes.Add(factory.AddSymbol(symbol, type, moduleName, nameSpace, generationOptions));
                 }
 
                 Console.WriteLine("Populating specializations: {0}", sw.Elapsed);
@@ -300,64 +287,68 @@ namespace GenerateUserTypesFromPdb
                     //  consider adding physical type when dealing with single specialization
                     //  revisit after adding multiple pdb support
                     //
-                    try
-                    {
-
+                    ////try
+                    ////{
                         XmlType type = new XmlType()
                         {
                             Name = symbolName
                         };
 
-                        factory.AddSymbols(symbols, type, moduleName, generationOptions);
-                    }
-                    catch (Exception)
-                    {
-                        //  failed to add template type
-                        //
-                        //  TODO
-                        //  consider adding specialized types
-                        //
-                    }
+                        userTypes.AddRange(factory.AddSymbols(symbols, type, moduleName, nameSpace, generationOptions));
+                    ////}
+                    ////catch (Exception)
+                    ////{
+                    ////    //  failed to add template type
+                    ////    //
+                    ////    //  TODO
+                    ////    //  consider adding specialized types
+                    ////    //
+                    ////    throw;
+                    ////}
                 }
 
                 Console.WriteLine("Populating templates: {0}", sw.Elapsed);
 
-                //   Specialized class
+                // Specialized class
                 //
-                foreach (Symbol symbol in GlobalCache.DiaSymbolsByName.Values)
+                foreach (Symbol symbol in diaSymbolsByName.Values)
                 {
                     string symbolName = symbol.Name;
-
                     XmlType type = new XmlType()
                     {
                         Name = symbolName
                     };
 
-                    factory.AddSymbol(symbol, type, moduleName, generationOptions);
+                    userTypes.Add(factory.AddSymbol(symbol, type, moduleName, nameSpace, generationOptions));
                 }
-
 
                 Console.WriteLine("Populating specialized classes: {0}", sw.Elapsed);
 
                 //  To solve template dependencies.
                 //  Update specialization arguments once all the templates has been populated.
                 //
-                foreach (TemplateUserType templateUserType in GlobalCache.UserTypesBySymbolName.Values.OfType<TemplateUserType>())
+                foreach (TemplateUserType templateUserType in userTypes.OfType<TemplateUserType>())
                 {
-                    templateUserType.UpdateArguments(factory);
+                    foreach (TemplateUserType specializedTemplateUserType in templateUserType.specializedTypes)
+                        if (!specializedTemplateUserType.UpdateArguments(factory))
+                        {
+#if DEBUG
+                            Console.WriteLine("Template user type cannot be updated: {0}", specializedTemplateUserType.Symbol.Name);
+#endif
+                        }
                 }
 
                 Console.WriteLine("Updating template arguments: {0}", sw.Elapsed);
 
-                factory.ProcessTypes();
-                factory.InserUserType(new GlobalsUserType(module, moduleName));
+                var namespaceTypes = factory.ProcessTypes(userTypes, nameSpace).ToArray();
+                userTypes.AddRange(namespaceTypes);
 
                 Console.WriteLine("Post processing user types: {0}", sw.Elapsed);
 
                 if (!config.SingleFileExport)
                 {
                     // Generate Code
-                    Parallel.ForEach(factory.Symbols,
+                    Parallel.ForEach(userTypes,
                         (symbolEntry) =>
                         {
                             Tuple<string, string> result = GenerateUseTypeCode(symbolEntry, factory, outputDirectory, error, generationOptions, generatedFiles);
@@ -375,7 +366,7 @@ namespace GenerateUserTypesFromPdb
                 {
                     string filename = string.Format(@"{0}\{1}_everything.exported.cs", outputDirectory, module.Name);
                     HashSet<string> usings = new HashSet<string>();
-                    foreach (var symbolEntry in factory.Symbols)
+                    foreach (var symbolEntry in userTypes)
                         foreach (var u in symbolEntry.Usings)
                             usings.Add(u);
 
@@ -393,7 +384,7 @@ namespace GenerateUserTypesFromPdb
                         if (config.GenerateAssemblyWithRoslyn)
                             stringOutput.WriteLine();
 
-                        Parallel.ForEach(factory.Symbols,
+                        Parallel.ForEach(userTypes,
                             (symbolEntry) =>
                             {
                                 using (StringWriter output = new StringWriter())
@@ -423,10 +414,10 @@ namespace GenerateUserTypesFromPdb
             {
                 MetadataReference[] references = new MetadataReference[]
                 {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsScriptManaged.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll")),
+                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                    MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
+                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsScriptManaged.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll")),
                 };
 
                 CSharpCompilation compilation = CSharpCompilation.Create(
@@ -507,7 +498,7 @@ namespace GenerateUserTypesFromPdb
                 if (compileResult.Errors.Count > 0)
                 {
                     Console.Error.WriteLine("Compile errors:");
-                    foreach (CompilerError err in compileResult.Errors)
+                    foreach (CompilerError err in compileResult.Errors.Cast<CompilerError>().Take(100))
                         Console.Error.WriteLine(err);
                 }
 
@@ -534,50 +525,43 @@ namespace GenerateUserTypesFromPdb
                 return Tuple.Create("", "");
             }
 
-            try
+            string classOutputDirectory = outputDirectory;
+
+            classOutputDirectory = Path.Combine(classOutputDirectory, userType.ModuleName);
+
+            if (!string.IsNullOrEmpty(userType.Namespace))
+                classOutputDirectory = Path.Combine(classOutputDirectory, UserType.NormalizeSymbolName(UserType.NormalizeSymbolName(userType.Namespace).Replace(".", "\\").Replace(":", ".")));
+
+
+            string ss;
+            if (!createdDirectories.TryGetValue(classOutputDirectory, out ss))
             {
-                string classOutputDirectory = outputDirectory;
-
-                classOutputDirectory = Path.Combine(classOutputDirectory, userType.ModuleName);
-
-                if (!string.IsNullOrEmpty(userType.Namespace))
-                    classOutputDirectory = Path.Combine(classOutputDirectory, UserType.NormalizeSymbolName(UserType.NormalizeSymbolName(userType.Namespace).Replace(".", "\\").Replace(":", ".")));
-
-
-                string ss;
-                if (!createdDirectories.TryGetValue(classOutputDirectory, out ss))
-                {
-                    Directory.CreateDirectory(classOutputDirectory);
-                    createdDirectories.TryAdd(classOutputDirectory, classOutputDirectory);
-                }
-
-                bool isEnum = userType is EnumUserType;
-
-                string filename = string.Format(@"{0}\{1}{2}.exported.cs", classOutputDirectory, userType.ConstructorName, isEnum ? "_enum" : "");
-
-                int index = 1;
-                while (true)
-                {
-                    if (generatedFiles.TryAdd(filename.ToLowerInvariant(), filename))
-                    {
-                        break;
-                    }
-
-                    filename = string.Format(@"{0}\{1}_{2}.exported.cs", classOutputDirectory, userType.ConstructorName, index++);
-                }
-
-                using (TextWriter output = new StreamWriter(filename))
-                using (StringWriter stringOutput = new StringWriter())
-                {
-                    userType.WriteCode(new IndentedWriter(stringOutput), errorOutput, factory, generationOptions);
-                    string text = stringOutput.ToString();
-                    output.WriteLine(text);
-                    return Tuple.Create(text, filename);
-                }
+                Directory.CreateDirectory(classOutputDirectory);
+                createdDirectories.TryAdd(classOutputDirectory, classOutputDirectory);
             }
-            catch (Exception)
+
+            bool isEnum = userType is EnumUserType;
+
+            string filename = string.Format(@"{0}\{1}{2}.exported.cs", classOutputDirectory, userType.ConstructorName, isEnum ? "_enum" : "");
+
+            int index = 1;
+            while (true)
             {
-                return Tuple.Create("", "");
+                if (generatedFiles.TryAdd(filename.ToLowerInvariant(), filename))
+                {
+                    break;
+                }
+
+                filename = string.Format(@"{0}\{1}_{2}.exported.cs", classOutputDirectory, userType.ConstructorName, index++);
+            }
+
+            using (TextWriter output = new StreamWriter(filename))
+            using (StringWriter stringOutput = new StringWriter())
+            {
+                userType.WriteCode(new IndentedWriter(stringOutput), errorOutput, factory, generationOptions);
+                string text = stringOutput.ToString();
+                output.WriteLine(text);
+                return Tuple.Create(text, filename);
             }
         }
 
@@ -585,7 +569,7 @@ namespace GenerateUserTypesFromPdb
         {
             Symbol symbol = userType.Symbol;
 
-            if (symbol.Tag == SymTagEnum.SymTagBaseType)
+            if (symbol != null && symbol.Tag == SymTagEnum.SymTagBaseType)
             {
                 // ignore Base (Primitive) types.
                 return false;
@@ -596,15 +580,7 @@ namespace GenerateUserTypesFromPdb
                 return false;
             }
 
-            try
-            {
-                userType.WriteCode(new IndentedWriter(output), errorOutput, factory, generationOptions);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-
+            userType.WriteCode(new IndentedWriter(output), errorOutput, factory, generationOptions);
             return true;
         }
     }

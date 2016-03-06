@@ -9,8 +9,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class PhysicalUserType : UserType
     {
-        public PhysicalUserType(Symbol symbol, XmlType xmlType, string moduleName)
-            : base(symbol, xmlType, moduleName)
+        public PhysicalUserType(Symbol symbol, XmlType xmlType, string moduleName, string nameSpace)
+            : base(symbol, xmlType, moduleName, nameSpace)
         {
         }
 

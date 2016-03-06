@@ -21,6 +21,7 @@ namespace GenerateUserTypesFromPdb
 
         public static bool IsTemplateType(string symbolName)
         {
+            symbolName = NameHelper.GetFullSymbolNamespaces(symbolName).Last();
             return symbolName.Contains("<") && symbolName.EndsWith(">") && !symbolName.StartsWith("<");
         }
 

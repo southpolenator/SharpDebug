@@ -1,42 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb.UserTypes
 {
     internal class NamespaceUserType : UserType
     {
-        internal NamespaceUserType(string namespaceSymbol, string moduleName)
-            : base(null /*diaSymbol*/, null /* xmlType */, moduleName)
+        private string[] namespaces;
+
+        internal NamespaceUserType(IEnumerable<string> namespaces, string moduleName, string nameSpace)
+            : base(symbol: null, xmlType: null, moduleName: moduleName, nameSpace: null)
         {
-            NamespaceSymbol = namespaceSymbol;
+            this.namespaces = namespaces.Select(s => NormalizeSymbolName(s)).ToArray();
+            NamespaceSymbol = string.Join(".", this.namespaces);
+            if (!string.IsNullOrEmpty(nameSpace))
+                NamespaceSymbol = nameSpace + "." + NamespaceSymbol;
         }
 
-        /// <summary>
-        /// Write Code
-        /// </summary>
-        /// <param name="output"></param>
-        /// <param name="error"></param>
-        /// <param name="factory"></param>
-        /// <param name="options"></param>
-        /// <param name="indentation"></param>
         public override void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
-            Debug.Assert(DeclaredInType != null, "NamespaceUserType must be used inside other type.");
-
-            //
-            //  TODO unnecessary split
-            //
-            string[] innerNamespaces = Namespace.Split('.');
-
             // Declared In Type with namespace
-            foreach (string innerClass in innerNamespaces)
+            if (DeclaredInType != null)
             {
-                output.WriteLine(indentation, "public static class {0}", innerClass);
+                foreach (string innerClass in namespaces)
+                {
+                    output.WriteLine(indentation, "public static class {0}", innerClass);
+                    output.WriteLine(indentation++, @"{{");
+                }
+            }
+            else
+            {
+                output.WriteLine(indentation, "namespace {0}", Namespace);
                 output.WriteLine(indentation++, @"{{");
             }
 
@@ -48,19 +42,23 @@ namespace GenerateUserTypesFromPdb.UserTypes
             }
 
             // Declared In Type with namespace
-            foreach (string innerClass in innerNamespaces)
-            {
+            if (DeclaredInType != null)
+                foreach (string innerClass in namespaces)
+                    output.WriteLine(--indentation, "}}");
+            else
                 output.WriteLine(--indentation, "}}");
-            }
         }
 
         public override string FullClassName
         {
             get
             {
-                Debug.Assert(DeclaredInType != null, "NamespaceUserType must be used inside other type.");
+                if (DeclaredInType != null)
+                {
+                    return string.Format("{0}.{1}", DeclaredInType.FullClassName, Namespace);
+                }
 
-                return string.Format("{0}.{1}", DeclaredInType.FullClassName, Namespace);
+                return string.Format("{0}", Namespace);
             }
         }
     }
