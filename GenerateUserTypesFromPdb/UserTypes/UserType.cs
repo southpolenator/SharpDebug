@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb.UserTypes
 {
@@ -376,6 +374,13 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     CacheResult = true,
                 };
             }
+
+            yield return new UserTypeFunction
+            {
+                FieldName = "PartialInitialize",
+                FieldType = "partial void",
+                CacheResult = true,
+            };
         }
 
         protected virtual void WriteClassComment(IndentedWriter output, int indentation)

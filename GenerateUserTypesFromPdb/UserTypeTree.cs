@@ -300,6 +300,24 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
+    class UserTypeFunction : UserTypeField
+    {
+        public override void WriteConstructorCode(IndentedWriter output, int indentation)
+        {
+            output.WriteLine(indentation, "{0}();", FieldName);
+        }
+
+        public override void WriteFieldCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options)
+        {
+            output.WriteLine(indentation, "{0} {1}();", FieldType, FieldName);
+        }
+
+        public override void WritePropertyCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options, ref bool firstField)
+        {
+            // Do nothing
+        }
+    }
+
     class UserTypeField
     {
         public string SimpleFieldValue { get; set; }
@@ -342,7 +360,7 @@ namespace GenerateUserTypesFromPdb
             return "(" + ConstantValue + ")";
         }
 
-        public void WriteFieldCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options)
+        public virtual void WriteFieldCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options)
         {
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
                 output.WriteLine(indentation, FieldTypeInfoComment);
@@ -356,7 +374,7 @@ namespace GenerateUserTypesFromPdb
                 output.WriteLine();
         }
 
-        public void WriteConstructorCode(IndentedWriter output, int indentation)
+        public virtual void WriteConstructorCode(IndentedWriter output, int indentation)
         {
             if (string.IsNullOrEmpty(ConstantValue))
                 if (UseUserMember && CacheResult)
@@ -365,7 +383,7 @@ namespace GenerateUserTypesFromPdb
                     output.WriteLine(indentation, "{0} = {1};", FieldName, ConstructorText);
         }
 
-        public void WritePropertyCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options, ref bool firstField)
+        public virtual void WritePropertyCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options, ref bool firstField)
         {
 
             if (string.IsNullOrEmpty(ConstantValue))

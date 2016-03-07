@@ -1,9 +1,5 @@
 ﻿using Dia2Lib;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb.UserTypes
 {
@@ -41,6 +37,13 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 PropertyName = null,
                 Static = true,
                 UseUserMember = false,
+                CacheResult = true,
+            };
+
+            yield return new UserTypeFunction
+            {
+                FieldName = "PartialInitialize",
+                FieldType = "partial void",
                 CacheResult = true,
             };
         }
