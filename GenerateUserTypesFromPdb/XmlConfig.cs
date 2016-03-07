@@ -42,6 +42,9 @@ namespace GenerateUserTypesFromPdb
         [XmlArrayItem("Type")]
         public XmlType[] Types { get; set; }
 
+        [XmlArrayItem("IncludedFile")]
+        public XmlIncludedFile[] IncludedFiles { get; set; }
+
         [XmlArrayItem("Transformation")]
         public XmlTypeTransformation[] Transformations { get; set; }
 
@@ -81,6 +84,12 @@ namespace GenerateUserTypesFromPdb
 
         [XmlAttribute]
         public string Namespace { get; set; }
+    }
+
+    public class XmlIncludedFile
+    {
+        [XmlAttribute]
+        public string Path { get; set; }
     }
 
     public class XmlType

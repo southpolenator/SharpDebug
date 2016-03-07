@@ -116,6 +116,7 @@ namespace GenerateUserTypesFromPdb
 
             XmlModule[] xmlModules = config.Modules;
             XmlType[] typeNames = config.Types;
+            XmlIncludedFile[] includedFiles = config.IncludedFiles;
             UserTypeGenerationFlags generationOptions = UserTypeGenerationFlags.None;
 
             if (!config.DontGenerateFieldTypeInfoComment)
@@ -136,6 +137,12 @@ namespace GenerateUserTypesFromPdb
                 generationOptions |= UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes;
             if (config.SingleFileExport)
                 generationOptions |= UserTypeGenerationFlags.SingleFileExport;
+
+            // Verify that included files exist
+            if (!string.IsNullOrEmpty(config.GeneratedAssemblyName))
+                foreach (var file in includedFiles)
+                    if (!File.Exists(file.Path))
+                        throw new FileNotFoundException("", file.Path);
 
             ConcurrentDictionary<string, string> generatedFiles = new ConcurrentDictionary<string, string>();
             var syntaxTrees = new List<SyntaxTree>();
@@ -501,6 +508,10 @@ namespace GenerateUserTypesFromPdb
                     syntaxTrees: syntaxTrees,
                     references: references,
                     options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+                foreach (var includedFile in includedFiles)
+                    syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(includedFile.Path), path: includedFile.Path, encoding: System.Text.UTF8Encoding.Default));
+
                 Console.WriteLine("Syntax trees: {0}", syntaxTrees.Count);
 
                 string dllFilename = Path.Combine(outputDirectory, config.GeneratedAssemblyName);
@@ -555,7 +566,8 @@ namespace GenerateUserTypesFromPdb
                 compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScriptManaged.dll"));
                 compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll"));
 
-                var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, generatedFiles.Values.ToArray());
+                var filesToCompile = generatedFiles.Values.Union(includedFiles.Select(f => f.Path)).ToArray();
+                var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);
 
                 if (compileResult.Errors.Count > 0)
                 {
