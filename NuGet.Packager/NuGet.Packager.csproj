@@ -85,7 +85,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="lib\GenerateUserTypesFromPdb.exe.config" />
+    <None Include="lib\net452\GenerateUserTypesFromPdb.exe.config" />
     <None Include="NuGetPackage.ps1" />
     <None Include="NuGetSetup.ps1" />
     <None Include="NuGet.exe" />
@@ -100,13 +100,12 @@
     <Folder Include="src\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="lib\CommandLine.dll" />
-    <Content Include="lib\CsScriptManaged.dll" />
-    <Content Include="lib\CsScripts.CommonUserTypes.dll" />
-    <Content Include="lib\CsScripts.dll" />
-    <Content Include="lib\DbgEngManaged.dll" />
-    <Content Include="lib\DiaHelpers.dll" />
-    <Content Include="lib\GenerateUserTypesFromPdb.exe" />
+    <Content Include="lib\net452\CsScriptManaged.dll" />
+    <Content Include="lib\net452\CsScripts.CommonUserTypes.dll" />
+    <Content Include="lib\net452\CsScripts.dll" />
+    <Content Include="lib\net452\DbgEngManaged.dll" />
+    <Content Include="lib\net452\DiaHelpers.dll" />
+    <Content Include="lib\net452\GenerateUserTypesFromPdb.exe" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -132,14 +131,12 @@
     <Message Text="SUCCESS: Published package." Condition=" '$(Configuration)|$(ExitCode)' == 'Release|0' " Importance="High" />
   </Target>
   <PropertyGroup>
-    <PreBuildEvent>xcopy /Y $(SolutionDir)..\$(OutDir)CommandLine.dll $(ProjectDir)lib\
-xcopy /Y $(SolutionDir)..\$(OutDir)CsScriptManaged.dll $(ProjectDir)lib\
-xcopy /Y $(SolutionDir)..\$(OutDir)CsScripts.CommonUserTypes.dll $(ProjectDir)lib\
-xcopy /Y $(SolutionDir)..\$(OutDir)CsScripts.dll $(ProjectDir)lib\
-xcopy /Y $(SolutionDir)..\$(OutDir)DbgEngManaged.dll $(ProjectDir)lib\
-xcopy /Y $(SolutionDir)..\$(OutDir)DiaHelpers.dll $(ProjectDir)lib\
-xcopy /Y $(SolutionDir)..\$(OutDir)FSharp.Core.dll $(ProjectDir)lib\
-xcopy /Y $(SolutionDir)..\$(OutDir)GenerateUserTypesFromPdb.exe $(ProjectDir)lib\
-xcopy /Y $(SolutionDir)..\$(OutDir)GenerateUserTypesFromPdb.exe.config $(ProjectDir)lib\</PreBuildEvent>
+    <PreBuildEvent>xcopy /Y $(SolutionDir)..\$(OutDir)CsScriptManaged.dll $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)..\$(OutDir)CsScripts.CommonUserTypes.dll $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)..\$(OutDir)CsScripts.dll $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)..\$(OutDir)DbgEngManaged.dll $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)..\$(OutDir)DiaHelpers.dll $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)..\$(OutDir)GenerateUserTypesFromPdb.exe $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)..\$(OutDir)GenerateUserTypesFromPdb.exe.config $(ProjectDir)lib\net452</PreBuildEvent>
   </PropertyGroup>
 </Project>
