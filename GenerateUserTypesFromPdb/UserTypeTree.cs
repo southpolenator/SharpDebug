@@ -469,7 +469,7 @@ namespace GenerateUserTypesFromPdb
         {
             if (Static)
             {
-                if (fields.Where(f => (f.Static && !exportStaticFields && f.FieldTypeInfoComment != null) || (!f.CacheResult && !f.UseUserMember)).Any())
+                if (fields.Where(f => !((f.Static && !exportStaticFields && f.FieldTypeInfoComment != null) || (!f.CacheResult && !f.UseUserMember))).Any())
                 {
                     output.WriteLine();
                     output.WriteLine(indentation, "static {0}()", constructorName);

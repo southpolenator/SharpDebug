@@ -399,7 +399,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         {
             var symbol = Symbol;
             var moduleName = ModuleName;
-            var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.FieldName).ToArray();
+            var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
             bool hasStatic = fields.Where(f => f.Static).Any(), hasNonStatic = fields.Where(f => !f.Static).Any();
             UserTypeTree baseType = GetBaseTypeString(error, symbol, factory);
             Symbol[] baseClasses = symbol.BaseClasses;
