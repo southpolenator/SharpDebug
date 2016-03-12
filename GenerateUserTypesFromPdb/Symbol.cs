@@ -78,6 +78,11 @@ namespace GenerateUserTypesFromPdb
             });
         }
 
+        internal Symbol GetChild(string name)
+        {
+            return Module.GetSymbol(symbol.GetChild(name));
+        }
+
         public string Name { get; private set; }
 
         public uint Id { get; private set; }

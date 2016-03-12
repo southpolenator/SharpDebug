@@ -40,5 +40,20 @@ namespace GenerateUserTypesFromPdb
         {
             GlobalCache.deduplicatedSymbols = deduplicatedSymbols;
         }
-    };
+
+        internal static IEnumerable<string> GetSymbolModuleNames(Symbol symbol)
+        {
+            Symbol[] symbols;
+
+            if (deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+                foreach (var s in symbols)
+                {
+                    if (symbol.Size > 0 && s.Size == 0)
+                        continue;
+                    yield return s.Module.Name;
+                }
+            else
+                yield return symbol.Module.Name;
+        }
+    }
 }

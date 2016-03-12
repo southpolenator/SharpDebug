@@ -109,7 +109,7 @@ namespace CsScripts
                     return null;
                 }
             });
-            TypeToUserTypeDescription = new DictionaryCache<Type, UserTypeDescription>(GetUserTypeDescription);
+            TypeToUserTypeDescription = new DictionaryCache<Type, UserTypeDescription[]>(GetUserTypeDescription);
             ansiStringCache = new DictionaryCache<ulong, string>(DoReadAnsiString);
             unicodeStringCache = new DictionaryCache<ulong, string>(DoReadUnicodeString);
         }
@@ -164,7 +164,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the type to user type description cache.
         /// </summary>
-        internal DictionaryCache<Type, UserTypeDescription> TypeToUserTypeDescription { get; private set; }
+        internal DictionaryCache<Type, UserTypeDescription[]> TypeToUserTypeDescription { get; private set; }
 
         /// <summary>
         /// Gets the user types.
@@ -422,10 +422,14 @@ namespace CsScripts
         /// Gets the user type description from the specified type.
         /// </summary>
         /// <param name="type">The type.</param>
-        private UserTypeDescription GetUserTypeDescription(Type type)
+        private UserTypeDescription[] GetUserTypeDescription(Type type)
         {
-            UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(type);
-            return metadata.ConvertToDescription(this);
+            UserTypeMetadata[] metadata = UserTypeMetadata.ReadFromType(type);
+            UserTypeDescription[] descriptions = new UserTypeDescription[metadata.Length];
+
+            for (int i = 0; i < metadata.Length; i++)
+                descriptions[i] = metadata[i].ConvertToDescription(this);
+            return descriptions;
         }
 
         /// <summary>

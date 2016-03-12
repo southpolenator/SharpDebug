@@ -181,44 +181,48 @@ namespace CsScripts
                     var process = variable.GetCodeType().Module.Process;
 
                     // Verify that CodeType for this user type is exactly elementType
-                    var description = process.TypeToUserTypeDescription[type];
-                    CodeType newType = description.UserType;
+                    var descriptions = process.TypeToUserTypeDescription[type];
 
-                    if (newType == elementType)
+                    foreach (var description in descriptions)
                     {
-                        // Find constructor that has 4 arguments:
-                        // Variable variable, byte[] buffer, int offset, ulong bufferAddress
-                        var constructors = type.GetConstructors();
+                        CodeType newType = description.UserType;
 
-                        foreach (var constructor in constructors)
+                        if (newType == elementType)
                         {
-                            if (!constructor.IsPublic)
+                            // Find constructor that has 4 arguments:
+                            // Variable variable, byte[] buffer, int offset, ulong bufferAddress
+                            var constructors = type.GetConstructors();
+
+                            foreach (var constructor in constructors)
                             {
-                                continue;
-                            }
+                                if (!constructor.IsPublic)
+                                {
+                                    continue;
+                                }
 
-                            var parameters = constructor.GetParameters();
+                                var parameters = constructor.GetParameters();
 
-                            if (parameters.Length < 4 || parameters.Count(p => !p.HasDefaultValue) > 4)
-                            {
-                                continue;
-                            }
+                                if (parameters.Length < 4 || parameters.Count(p => !p.HasDefaultValue) > 4)
+                                {
+                                    continue;
+                                }
 
-                            if (parameters[0].ParameterType == typeof(Variable)
-                                && parameters[1].ParameterType == typeof(byte[])
-                                && parameters[2].ParameterType == typeof(int)
-                                && parameters[3].ParameterType == typeof(ulong))
-                            {
-                                DynamicMethod method = new DynamicMethod("CreateIntance", type, new Type[] { typeof(Variable), typeof(byte[]), typeof(int), typeof(ulong) });
-                                ILGenerator gen = method.GetILGenerator();
+                                if (parameters[0].ParameterType == typeof(Variable)
+                                    && parameters[1].ParameterType == typeof(byte[])
+                                    && parameters[2].ParameterType == typeof(int)
+                                    && parameters[3].ParameterType == typeof(ulong))
+                                {
+                                    DynamicMethod method = new DynamicMethod("CreateIntance", type, new Type[] { typeof(Variable), typeof(byte[]), typeof(int), typeof(ulong) });
+                                    ILGenerator gen = method.GetILGenerator();
 
-                                gen.Emit(OpCodes.Ldarg_0);
-                                gen.Emit(OpCodes.Ldarg_1);
-                                gen.Emit(OpCodes.Ldarg_2);
-                                gen.Emit(OpCodes.Ldarg_3);
-                                gen.Emit(OpCodes.Newobj, constructor);
-                                gen.Emit(OpCodes.Ret);
-                                return (TypeConstructor)method.CreateDelegate(typeof(TypeConstructor));
+                                    gen.Emit(OpCodes.Ldarg_0);
+                                    gen.Emit(OpCodes.Ldarg_1);
+                                    gen.Emit(OpCodes.Ldarg_2);
+                                    gen.Emit(OpCodes.Ldarg_3);
+                                    gen.Emit(OpCodes.Newobj, constructor);
+                                    gen.Emit(OpCodes.Ret);
+                                    return (TypeConstructor)method.CreateDelegate(typeof(TypeConstructor));
+                                }
                             }
                         }
                     }

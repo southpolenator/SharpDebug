@@ -410,13 +410,9 @@ namespace CsScriptManaged
                     nextTypes = new List<Type>();
                     foreach (var type in types)
                     {
-                        UserTypeMetadata userType = UserTypeMetadata.ReadFromType(type);
+                        UserTypeMetadata[] userTypes = UserTypeMetadata.ReadFromType(type);
 
-                        if (userType != null)
-                        {
-                            metadata.Add(userType);
-                        }
-
+                        metadata.AddRange(userTypes);
                         nextTypes.AddRange(type.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public));
                     }
                 }

@@ -763,7 +763,7 @@ namespace CsScripts
             // Check if we should do CastAs
             if (conversionType.IsSubclassOf(typeof(Variable)))
             {
-                var description = codeType.Module.Process.TypeToUserTypeDescription[conversionType];
+                var description = codeType.Module.Process.TypeToUserTypeDescription[conversionType].FromModuleOrFirst(codeType.Module);
                 CodeType newType = description.UserType;
 
                 // Check if it was non-unique generics type

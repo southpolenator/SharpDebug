@@ -104,7 +104,7 @@ namespace CsScripts
                 throw new Exception("Specified type doesn't inherit Variable class");
 
             // TODO: Make it work with exported template classes
-            UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(baseClassType);
+            UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(baseClassType).First();
 
             return metadata.TypeName;
         }

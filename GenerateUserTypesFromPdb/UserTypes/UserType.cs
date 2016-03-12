@@ -398,7 +398,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
             var symbol = Symbol;
-            var moduleName = ModuleName;
             var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
             bool hasStatic = fields.Where(f => f.Static).Any(), hasNonStatic = fields.Where(f => !f.Static).Any();
             UserTypeTree baseType = GetBaseTypeString(error, symbol, factory);
@@ -423,7 +422,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                 WriteClassComment(output, indentation);
-            output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, XmlType.Name);
+            foreach (var moduleName in GlobalCache.GetSymbolModuleNames(Symbol))
+                output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, XmlType.Name);
             output.WriteLine(indentation, @"public partial class {0} {1} {2}", ClassName, !string.IsNullOrEmpty(baseType.GetUserTypeString()) ? ":" : "", baseType);
 
             var inheritanceTypeConstrains = GetInheritanceTypeConstraint(factory);

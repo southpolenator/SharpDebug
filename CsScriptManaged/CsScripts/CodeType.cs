@@ -609,19 +609,23 @@ namespace CsScripts
         {
             if (type.IsSubclassOf(typeof(Variable)))
             {
-                UserTypeDescription description = Module.Process.TypeToUserTypeDescription[type];
-                CodeType newType = description.UserType;
+                UserTypeDescription[] descriptions = Module.Process.TypeToUserTypeDescription[type];
 
-                // Check if it was non-unique generics type
-                if (newType != null)
+                foreach (var description in descriptions)
                 {
-                    return Inherits(newType);
+                    CodeType newType = description.UserType;
+
+                    // Check if it was non-unique generics type
+                    if (newType != null && Inherits(newType))
+                        return true;
                 }
 
                 // TODO: Do better with generics
-                UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(type);
+                UserTypeMetadata[] metadatas = UserTypeMetadata.ReadFromType(type);
 
-                return Inherits(metadata.TypeName);
+                foreach (var metadata in metadatas)
+                    if (Inherits(metadata.TypeName))
+                        return true;
             }
 
             return false;
