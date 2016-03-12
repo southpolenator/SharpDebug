@@ -84,4 +84,20 @@ namespace CsScriptManaged
             return other.Module == Module && other.UserType == UserType && other.Type == Type;
         }
     }
+
+    static class UserTypeDescriptionExtensions
+    {
+        /// <summary>
+        /// Finds description that comes from the specified module or first if not found.
+        /// </summary>
+        /// <param name="descriptions">The descriptions.</param>
+        /// <param name="module">The module.</param>
+        public static UserTypeDescription FromModuleOrFirst(this UserTypeDescription[] descriptions, Module module)
+        {
+            foreach (var description in descriptions)
+                if (description.Module == module)
+                    return description;
+            return descriptions.First();
+        }
+    }
 }
