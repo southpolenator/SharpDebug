@@ -1,7 +1,10 @@
 ﻿using Dia2Lib;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb.UserTypes
 {
@@ -45,39 +48,39 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return userType != null;
         }
 
-        internal UserType AddSymbol(Symbol symbol, XmlType type, string moduleName, string nameSpace, UserTypeGenerationFlags generationOptions)
+        internal UserType AddSymbol(Symbol symbol, XmlType type, string nameSpace, UserTypeGenerationFlags generationOptions)
         {
             UserType userType;
 
-            if (type == null || symbol.Tag == SymTagEnum.SymTagEnum)
+            if (symbol.Tag == SymTagEnum.SymTagEnum)
             {
-                userType = new EnumUserType(symbol, moduleName, nameSpace);
+                userType = new EnumUserType(symbol, nameSpace);
             }
             else if (symbol.Tag == SymTagEnum.SymTagExe)
             {
-                userType = new GlobalsUserType(symbol, type, moduleName, nameSpace);
+                userType = new GlobalsUserType(symbol, type, nameSpace);
             }
             else if (generationOptions.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
             {
-                userType = new PhysicalUserType(symbol, type, moduleName, nameSpace);
+                userType = new PhysicalUserType(symbol, type, nameSpace);
             }
             else
             {
-                userType = new UserType(symbol, type, moduleName, nameSpace);
+                userType = new UserType(symbol, type, nameSpace);
             }
 
             symbol.UserType = userType;
             return userType;
         }
 
-        internal IEnumerable<UserType> AddSymbols(IEnumerable<Symbol> symbols, XmlType type, string moduleName, string nameSpace, UserTypeGenerationFlags generationOptions)
+        internal IEnumerable<UserType> AddSymbols(IEnumerable<Symbol> symbols, XmlType type, string nameSpace, UserTypeGenerationFlags generationOptions)
         {
             if (!type.IsTemplate && symbols.Any())
                 throw new Exception("Type has more than one symbol for " + type.Name);
 
             if (!type.IsTemplate)
             {
-                yield return AddSymbol(symbols.First(), type, moduleName, nameSpace, generationOptions);
+                yield return AddSymbol(symbols.First(), type, nameSpace, generationOptions);
             }
             else
             {
@@ -93,7 +96,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         if (symbol.Name == null || symbol.Size == 0)
                             continue;
 
-                        TemplateUserType templateType = new TemplateUserType(symbol, type, moduleName, nameSpace, this);
+                        TemplateUserType templateType = new TemplateUserType(symbol, type, nameSpace, this);
 
                         int templateArgs = templateType.GenericsArguments;
 
@@ -102,12 +105,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         {
                             // Template does not have arguments that can be used by generic 
                             // Make it specialized type
-                            XmlType xmlType = new XmlType()
-                            {
-                                Name = symbol.Name
-                            };
-
-                            userType = this.AddSymbol(symbol, xmlType, moduleName, generationOptions);
+                            userType = this.AddSymbol(symbol, null, moduleName, generationOptions);
                         }
                         else
 #endif
@@ -151,11 +149,45 @@ namespace GenerateUserTypesFromPdb.UserTypes
         }
 
         /// <summary>
-        /// Process Types
-        ///     Set Namespace or Parent Type
+        /// Post process the types:
+        ///  - If UserType has static members in more than one module, split it into multiple user types.
+        ///  - Find parent type/namespace.
         /// </summary>
+        /// <param name="userTypes">The user types.</param>
+        /// <param name="symbolNamespaces">The symbol namespaces.</param>
+        /// <returns></returns>
         internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, Dictionary<Symbol, string> symbolNamespaces)
         {
+            ConcurrentBag<UserType> newTypes = new ConcurrentBag<UserType>();
+
+            // Split user types that have static members in more than one module
+            Parallel.ForEach(Partitioner.Create(userTypes), (userType) =>
+            {
+                SymbolField[] staticMembers = GlobalCache.GetSymbolStaticFields(userType.Symbol).ToArray();
+                HashSet<Symbol> symbols = new HashSet<Symbol>();
+
+                foreach (var field in staticMembers)
+                    symbols.Add(field.ParentType);
+
+                if (symbols.Count == 1 || !userType.ExportStaticFields)
+                    return;
+
+                bool foundSameNamespace = false;
+
+                foreach (var symbol in symbols)
+                {
+                    string nameSpace = symbol.Module.Namespace;
+
+                    if (userType.Namespace != nameSpace)
+                        newTypes.Add(new UserType(symbol, null, nameSpace) { ExportDynamicFields = false });
+                    else
+                        foundSameNamespace = true;
+                }
+
+                userType.ExportStaticFields = foundSameNamespace;
+            });
+
+            // Find parent type/namespace
             Dictionary<string, UserType> namespaceTypes = new Dictionary<string, UserType>();
 
             foreach (UserType userType in userTypes)
@@ -166,7 +198,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     continue;
 
                 string symbolName = symbol.Name;
-                List<string> namespaces = NameHelper.GetFullSymbolNamespaces(symbolName);
+                List<string> namespaces = symbol.Namespaces;
 
                 if (namespaces.Count == 1)
                 {
@@ -174,13 +206,16 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     continue;
                 }
 
-                string currentNamespace = "";
+                StringBuilder currentNamespaceSB = new StringBuilder();
                 UserType previousNamespaceUserType = null;
 
                 for (int i = 0; i < namespaces.Count - 1; i++)
                 {
-                    currentNamespace += i == 0 ? namespaces[i] : "::" + namespaces[i];
+                    if (i > 0)
+                        currentNamespaceSB.Append("::");
+                    currentNamespaceSB.Append(namespaces[i]);
 
+                    string currentNamespace = currentNamespaceSB.ToString();
                     UserType namespaceUserType;
 
                     if (!namespaceTypes.TryGetValue(currentNamespace, out namespaceUserType))
@@ -191,14 +226,13 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                     if (templateType != null)
                         namespaceUserType = templateType.TemplateType;
-
                     if (namespaceUserType == null)
                     {
-                        namespaceUserType = new NamespaceUserType(new string[] { namespaces[i] }, symbol.Module.Name, previousNamespaceUserType == null ? symbolNamespaces[symbol] : null);
+                        namespaceUserType = new NamespaceUserType(new string[] { namespaces[i] }, previousNamespaceUserType == null ? symbolNamespaces[symbol] : null);
                         if (previousNamespaceUserType != null)
                             namespaceUserType.SetDeclaredInType(previousNamespaceUserType);
                         namespaceTypes.Add(currentNamespace, namespaceUserType);
-                        yield return namespaceUserType;
+                        newTypes.Add(namespaceUserType);
                     }
 
                     previousNamespaceUserType = namespaceUserType;
@@ -231,6 +265,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         uniqueTypes.Add(className);
                 }
             }
+
+            return newTypes;
         }
 
         internal UserTypeTransformation FindTransformation(Symbol type, UserType ownerUserType)

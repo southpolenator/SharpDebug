@@ -16,6 +16,7 @@ namespace GenerateUserTypesFromPdb
         private SimpleCache<Symbol> pointerType;
         private SimpleCache<UserType> userType;
         private SimpleCache<Tuple<string, string>[]> enumValues;
+        private SimpleCache<List<string>> namespaces;
 
         public Symbol(Module module, IDiaSymbol symbol)
         {
@@ -76,6 +77,7 @@ namespace GenerateUserTypesFromPdb
 
                 return result.ToArray();
             });
+            namespaces = SimpleCache.Create(() => NameHelper.GetFullSymbolNamespaces(Name));
         }
 
         internal Symbol GetChild(string name)
@@ -105,6 +107,14 @@ namespace GenerateUserTypesFromPdb
             set
             {
                 userType.Value = value;
+            }
+        }
+
+        public List<string> Namespaces
+        {
+            get
+            {
+                return namespaces.Value;
             }
         }
 
@@ -195,6 +205,14 @@ namespace GenerateUserTypesFromPdb
             IDiaSymbol type = symbol.type;
             if (type != null)
                 Type = Module.GetSymbol(type);
+        }
+
+        public bool IsValidStatic
+        {
+            get
+            {
+                return LocationType == LocationType.Static; // && symbol.relativeVirtualAddress != 0;
+            }
         }
 
         public Module Module

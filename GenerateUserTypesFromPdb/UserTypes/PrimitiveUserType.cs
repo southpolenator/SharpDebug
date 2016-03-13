@@ -5,7 +5,7 @@
         private string typeName;
 
         public PrimitiveUserType(string typeName, Symbol symbol)
-            : base(symbol, null, null, null)
+            : base(symbol, null, null)
         {
             this.typeName = typeName;
         }

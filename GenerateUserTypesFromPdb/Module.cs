@@ -13,17 +13,20 @@ namespace GenerateUserTypesFromPdb
         private ConcurrentDictionary<uint, Symbol> symbolById = new ConcurrentDictionary<uint, Symbol>();
         private ConcurrentDictionary<string, Symbol> symbolByName = new ConcurrentDictionary<string, Symbol>();
 
-        public Module(string name, IDiaDataSource dia, IDiaSession session)
+        public Module(string name, string nameSpace, IDiaDataSource dia, IDiaSession session)
         {
             this.session = session;
             this.dia = dia;
             Name = name;
+            Namespace = nameSpace;
             GlobalScope = GetSymbol(session.globalScope);
         }
 
         public Symbol GlobalScope { get; private set; }
 
         public string Name { get; private set; }
+
+        public string Namespace { get; private set; }
 
         public Symbol[] FindGlobalTypeWildcard(string nameWildcard)
         {

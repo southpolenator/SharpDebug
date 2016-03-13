@@ -14,10 +14,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
         // #fixme, use diferent type
         public List<TemplateUserType> specializedTypes = new List<TemplateUserType>();
 
-        public TemplateUserType(Symbol symbol, XmlType xmlType, string moduleName, string nameSpace, UserTypeFactory factory)
-            : base(symbol, xmlType, moduleName, nameSpace)
+        public TemplateUserType(Symbol symbol, XmlType xmlType, string nameSpace, UserTypeFactory factory)
+            : base(symbol, xmlType, nameSpace)
         {
             UpdateArguments(factory);
+            ExportStaticFields = false;
         }
 
         public TemplateUserType TemplateType { get; internal set; }
@@ -28,7 +29,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             this.argumentsUserType.Clear();
 
             string symbolName = Symbol.Name;
-            symbolName = NameHelper.GetFullSymbolNamespaces(symbolName).Last();
+            symbolName = Symbol.Namespaces.Last();
 
             int templateStart = symbolName.IndexOf('<');
             var arguments = new List<string>();
@@ -98,8 +99,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
             }
         }
 
-        protected override bool ExportStaticFields { get { return false; } }
-
         public override UserType DeclaredInType
         {
             get
@@ -123,7 +122,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 if (DeclaredInType != null)
                 {
-                    symbolName = NameHelper.GetFullSymbolNamespaces(symbolName).Last();
+                    symbolName = Symbol.Namespaces.Last();
                 }
 
                 int templateStart = symbolName.IndexOf('<');

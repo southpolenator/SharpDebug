@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using GenerateUserTypesFromPdb.UserTypes;
 
 namespace GenerateUserTypesFromPdb
@@ -54,6 +55,19 @@ namespace GenerateUserTypesFromPdb
                 }
             else
                 yield return symbol.Module.Name;
+        }
+
+        internal static IEnumerable<SymbolField> GetSymbolStaticFields(Symbol symbol)
+        {
+            Symbol[] symbols;
+
+            if (!deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+                symbols = new Symbol[] { symbol };
+
+            foreach (var s in symbols)
+                foreach (var field in s.Fields)
+                    if (field.DataKind == Dia2Lib.DataKind.StaticMember && field.IsValidStatic)
+                        yield return field;
         }
     }
 }

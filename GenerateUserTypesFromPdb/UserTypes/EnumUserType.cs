@@ -5,8 +5,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class EnumUserType : UserType
     {
-        public EnumUserType(Symbol symbol, string moduleName, string nameSpace)
-            : base(symbol, new XmlType() { Name = symbol.Name }, moduleName, nameSpace)
+        public EnumUserType(Symbol symbol, string nameSpace)
+            : base(symbol, null, nameSpace)
         {
         }
 

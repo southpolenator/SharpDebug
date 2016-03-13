@@ -9,8 +9,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class GlobalsUserType : UserType
     {
-        public GlobalsUserType(Symbol symbol, XmlType type, string moduleName, string nameSpace)
-            : base(symbol, type, moduleName, nameSpace)
+        public GlobalsUserType(Symbol symbol, XmlType type, string nameSpace)
+            : base(symbol, type, nameSpace)
         {
         }
 
@@ -18,7 +18,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         {
             get
             {
-                return XmlType.Name;
+                return TypeName;
             }
         }
 

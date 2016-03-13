@@ -8,8 +8,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
     {
         private string[] namespaces;
 
-        internal NamespaceUserType(IEnumerable<string> namespaces, string moduleName, string nameSpace)
-            : base(symbol: null, xmlType: null, moduleName: moduleName, nameSpace: null)
+        internal NamespaceUserType(IEnumerable<string> namespaces, string nameSpace)
+            : base(symbol: null, xmlType: null, nameSpace: null)
         {
             this.namespaces = namespaces.Select(s => NormalizeSymbolName(s)).ToArray();
             NamespaceSymbol = string.Join(".", this.namespaces);

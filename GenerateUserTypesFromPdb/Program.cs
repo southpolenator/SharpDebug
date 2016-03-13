@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GenerateUserTypesFromPdb
@@ -57,6 +58,31 @@ namespace GenerateUserTypesFromPdb
         public string XmlConfigPath { get; set; }
     }
 
+    public class ObjectPool<T>
+    {
+        private ConcurrentBag<T> _objects;
+        private Func<T> _objectGenerator;
+
+        public ObjectPool(Func<T> objectGenerator)
+        {
+            if (objectGenerator == null) throw new ArgumentNullException("objectGenerator");
+            _objects = new ConcurrentBag<T>();
+            _objectGenerator = objectGenerator;
+        }
+
+        public T GetObject()
+        {
+            T item;
+            if (_objects.TryTake(out item)) return item;
+            return _objectGenerator();
+        }
+
+        public void PutObject(T item)
+        {
+            _objects.Add(item);
+        }
+    }
+
     class Program
     {
         private static Module OpenPdb(XmlModule module)
@@ -68,7 +94,7 @@ namespace GenerateUserTypesFromPdb
             module.Name = moduleName;
             dia.loadDataFromPdb(module.PdbPath);
             dia.openSession(out session);
-            return new Module(module.Name, dia, session);
+            return new Module(module.Name, module.Namespace, dia, session);
         }
 
         static void Main(string[] args)
@@ -172,23 +198,45 @@ namespace GenerateUserTypesFromPdb
                 Module module = mm.Key;
                 string moduleName = xmlModule.Name;
                 string nameSpace = xmlModule.Namespace;
-                List<Symbol> allSymbols = new List<Symbol>();
+                List<Symbol> symbols = new List<Symbol>();
 
                 foreach (var type in typeNames)
                 {
-                    Symbol[] symbols = module.FindGlobalTypeWildcard(type.NameWildcard);
+                    Symbol[] foundSymbols = module.FindGlobalTypeWildcard(type.NameWildcard);
 
-                    if (symbols.Length == 0)
+                    if (foundSymbols.Length == 0)
                         error.WriteLine("Symbol not found: {0}", type.Name);
                     else
-                        allSymbols.AddRange(symbols);
+                        symbols.AddRange(foundSymbols);
                 }
 
-                allSymbols.AddRange(module.GetAllTypes());
-                globalTypesPerModule.TryAdd(xmlModule, allSymbols.ToArray());
+                symbols.AddRange(module.GetAllTypes());
+                globalTypesPerModule.TryAdd(xmlModule, symbols.ToArray());
+            });
+
+            List<Symbol> allSymbols = new List<Symbol>();
+            Symbol[][] symbolsPerModule = globalTypesPerModule.Select(ss => ss.Value).ToArray();
+            int maxSymbols = symbolsPerModule.Max(ss => ss.Length);
+
+            for (int i = 0; i < maxSymbols; i++)
+                for (int j = 0; j < symbolsPerModule.Length; j++)
+                    if (i < symbolsPerModule[j].Length)
+                        allSymbols.Add(symbolsPerModule[j][i]);
+
+            Console.WriteLine(" {0}", sw.Elapsed);
+
+#if false
+            // Initialize symbol fields and base classes
+            Console.Write("Initializing symbol values...");
+
+            Parallel.ForEach(Partitioner.Create(allSymbols), (symbol) =>
+            {
+                var fields = symbol.Fields;
+                var baseClasses = symbol.BaseClasses;
             });
 
             Console.WriteLine(" {0}", sw.Elapsed);
+#endif
 
             Console.Write("Deduplicating symbols...");
 
@@ -196,7 +244,7 @@ namespace GenerateUserTypesFromPdb
             Dictionary<string, List<Symbol>> symbolsByName = new Dictionary<string, List<Symbol>>();
             Dictionary<Symbol, List<Symbol>> duplicatedSymbols = new Dictionary<Symbol, List<Symbol>>();
 
-            foreach (var symbol in globalTypesPerModule.SelectMany(gt => gt.Value))
+            foreach (var symbol in allSymbols)
             {
                 List<Symbol> symbols;
 
@@ -304,12 +352,12 @@ namespace GenerateUserTypesFromPdb
             List<UserType> userTypes = new List<UserType>();
 
             foreach (var module in modules.Keys)
-                userTypes.Add(factory.AddSymbol(module.GlobalScope, new XmlType() { Name = "ModuleGlobals" }, module.Name, modules[module].Namespace, generationOptions));
+                userTypes.Add(factory.AddSymbol(module.GlobalScope, new XmlType() { Name = "ModuleGlobals" }, modules[module].Namespace, generationOptions));
 
             ConcurrentBag<Symbol> simpleSymbols = new ConcurrentBag<Symbol>();
             Dictionary<Tuple<string, string>, List<Symbol>> templateSymbols = new Dictionary<Tuple<string, string>, List<Symbol>>();
 
-            foreach (Symbol symbol in globalTypes)
+            Parallel.ForEach(Partitioner.Create(globalTypes), (symbol) =>
             {
                 string symbolName = symbol.Name;
 
@@ -317,37 +365,36 @@ namespace GenerateUserTypesFromPdb
                 //
                 if (symbolName.StartsWith("$") || symbolName.StartsWith("__vc_attributes") || symbolName.Contains("`anonymous-namespace'") || symbolName.Contains("`anonymous namespace'") || symbolName.Contains("::$") || symbolName.Contains("`"))
                 {
-                    continue;
+                    return;
                 }
 
                 // Do not handle template referenced arguments 
                 if (symbolName.Contains("&"))
                 {
                     // TODO: Convert this to function pointer
-                    continue;
+                    return;
                 }
 
                 // TODO: C# doesn't support lengthy names
                 if (symbolName.Length > 160)
                 {
-                    continue;
+                    return;
                 }
 
                 // TODO: For now remove all unnamed-type symbols
-                string scopedClassName = NameHelper.GetSymbolScopedClassName(symbolName);
+                string scopedClassName = symbol.Namespaces.Last();
 
-                if (scopedClassName == "<>" || symbolName.Contains("::<"))
+                if (scopedClassName.StartsWith("<") || symbolName.Contains("::<"))
                 {
-                    continue;
+                    return;
                 }
 
                 // Parent Class is Template, Nested is Physical
                 // Check if dealing template type.
-                if (NameHelper.ContainsTemplateType(symbolName) && NameHelper.IsTemplateType(scopedClassName))
+                if (NameHelper.ContainsTemplateType(symbolName) && NameHelper.ContainsTemplateType(scopedClassName))
                 {
-                    List<string> namespaces = NameHelper.GetFullSymbolNamespaces(symbolName);
+                    List<string> namespaces = symbol.Namespaces;
                     string className = namespaces.Last();
-                    List<string> templateSpecializationArgs = NameHelper.GetTemplateSpecializationArguments(className);
                     var symbolId = Tuple.Create(symbolNamespaces[symbol], NameHelper.GetLookupNameForSymbol(symbol));
 
                     lock (templateSymbols)
@@ -363,11 +410,10 @@ namespace GenerateUserTypesFromPdb
                     // Do not add physical types for template specialization (not now)
                     // do if types contains static fields
                     // nested in templates
-                    continue;
                 }
-
-                simpleSymbols.Add(symbol);
-            }
+                else
+                    simpleSymbols.Add(symbol);
+            });
 
             Console.WriteLine(" {0}", sw.Elapsed);
 
@@ -383,7 +429,7 @@ namespace GenerateUserTypesFromPdb
                     Name = symbolName
                 };
 
-                userTypes.AddRange(factory.AddSymbols(symbols, type, symbol.Module.Name, symbolNamespaces[symbol], generationOptions));
+                userTypes.AddRange(factory.AddSymbols(symbols, type, symbolNamespaces[symbol], generationOptions));
             }
 
             Console.WriteLine(" {0}", sw.Elapsed);
@@ -392,13 +438,7 @@ namespace GenerateUserTypesFromPdb
             Console.Write("Populating specialized classes...");
             foreach (Symbol symbol in simpleSymbols)
             {
-                string symbolName = symbol.Name;
-                XmlType type = new XmlType()
-                {
-                    Name = symbolName
-                };
-
-                userTypes.Add(factory.AddSymbol(symbol, type, symbol.Module.Name, symbolNamespaces[symbol], generationOptions));
+                userTypes.Add(factory.AddSymbol(symbol, null, symbolNamespaces[symbol], generationOptions));
             }
 
             Console.WriteLine(" {0}", sw.Elapsed);
@@ -467,20 +507,24 @@ namespace GenerateUserTypesFromPdb
                     if (config.GenerateAssemblyWithRoslyn)
                         stringOutput.WriteLine();
 
+                    ObjectPool<StringWriter> stringWriterPool = new ObjectPool<StringWriter>(() => new StringWriter());
+
                     Parallel.ForEach(userTypes,
                         (symbolEntry) =>
                         {
-                            using (StringWriter output = new StringWriter())
+                            var output = stringWriterPool.GetObject();
+
+                            output.GetStringBuilder().Clear();
+                            GenerateUseTypeCodeInSingleFile(output, symbolEntry, factory, error, generationOptions);
+                            string text = output.ToString();
+                            lock (masterOutput)
                             {
-                                GenerateUseTypeCodeInSingleFile(output, symbolEntry, factory, error, generationOptions);
-                                lock (masterOutput)
-                                {
-                                    string text = output.ToString();
-                                    masterOutput.WriteLine(text);
-                                    if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
-                                        stringOutput.WriteLine(text);
-                                }
+                                masterOutput.WriteLine(text);
+                                if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
+                                    stringOutput.WriteLine(text);
                             }
+
+                            stringWriterPool.PutObject(output);
                         });
 
                     if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
@@ -616,7 +660,7 @@ namespace GenerateUserTypesFromPdb
 
             string classOutputDirectory = outputDirectory;
 
-            classOutputDirectory = Path.Combine(classOutputDirectory, userType.ModuleName);
+            classOutputDirectory = Path.Combine(classOutputDirectory, userType.Symbol.Module.Name);
 
             if (!string.IsNullOrEmpty(userType.Namespace))
                 classOutputDirectory = Path.Combine(classOutputDirectory, UserType.NormalizeSymbolName(UserType.NormalizeSymbolName(userType.Namespace).Replace(".", "\\").Replace(":", ".")));
