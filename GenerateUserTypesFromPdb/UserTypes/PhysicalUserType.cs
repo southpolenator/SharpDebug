@@ -125,7 +125,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 }
                 else if (userType != null)
                 {
-                    if (!(userType.UserType is EnumUserType) && !(userType.UserType is TemplateUserType) && !extractingBaseClass)
+                    if (!(userType.UserType is EnumUserType) && !extractingBaseClass)
                     {
                         string thisClassCodeType = "thisClass.Value.GetCodeType()";
 
