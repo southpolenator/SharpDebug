@@ -171,7 +171,7 @@ namespace GenerateUserTypesFromPdb
                         throw new FileNotFoundException("", file.Path);
 
             ConcurrentDictionary<string, string> generatedFiles = new ConcurrentDictionary<string, string>();
-            var syntaxTrees = new List<SyntaxTree>();
+            var syntaxTrees = new ConcurrentBag<SyntaxTree>();
 
             string currentDirectory = Directory.GetCurrentDirectory();
             string outputDirectory = currentDirectory + "\\output\\";
@@ -547,14 +547,14 @@ namespace GenerateUserTypesFromPdb
                     MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll")),
                 };
 
-                CSharpCompilation compilation = CSharpCompilation.Create(
-                    config.GeneratedAssemblyName,
-                    syntaxTrees: syntaxTrees,
-                    references: references,
-                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
                 foreach (var includedFile in includedFiles)
                     syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(includedFile.Path), path: includedFile.Path, encoding: System.Text.UTF8Encoding.Default));
+
+                CSharpCompilation compilation = CSharpCompilation.Create(
+                    Path.GetFileNameWithoutExtension(config.GeneratedAssemblyName),
+                    syntaxTrees: syntaxTrees,
+                    references: references,
+                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, platform: Platform.X64));
 
                 Console.WriteLine("Syntax trees: {0}", syntaxTrees.Count);
 
