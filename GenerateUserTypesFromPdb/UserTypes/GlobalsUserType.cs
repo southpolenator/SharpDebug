@@ -24,6 +24,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         internal override IEnumerable<UserTypeField> ExtractFields(UserTypeFactory factory, UserTypeGenerationFlags options)
         {
+            ExportStaticFields = true;
+
             var fields = Symbol.Fields.OrderBy(s => s.Name).ToArray();
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
             string previousName = "";
