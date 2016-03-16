@@ -57,6 +57,22 @@ namespace GenerateUserTypesFromPdb
                 yield return symbol.Module.Name;
         }
 
+        internal static IEnumerable<Symbol> GetSymbolStaticFieldsSymbols(Symbol symbol)
+        {
+            Symbol[] symbols;
+
+            if (!deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+                yield return symbol;
+            else
+                foreach (var s in symbols)
+                    foreach (var field in s.Fields)
+                        if (field.DataKind == Dia2Lib.DataKind.StaticMember && field.IsValidStatic)
+                        {
+                            yield return s;
+                            break;
+                        }
+        }
+
         internal static IEnumerable<SymbolField> GetSymbolStaticFields(Symbol symbol)
         {
             Symbol[] symbols;

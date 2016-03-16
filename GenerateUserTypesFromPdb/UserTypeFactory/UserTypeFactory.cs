@@ -166,13 +166,9 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 if (!userType.ExportStaticFields)
                     return;
 
-                SymbolField[] staticMembers = GlobalCache.GetSymbolStaticFields(userType.Symbol).ToArray();
-                HashSet<Symbol> symbols = new HashSet<Symbol>();
+                Symbol[] symbols = GlobalCache.GetSymbolStaticFieldsSymbols(userType.Symbol).ToArray();
 
-                foreach (var field in staticMembers)
-                    symbols.Add(field.ParentType);
-
-                if (symbols.Count == 1)
+                if (symbols.Length == 1)
                     return;
 
                 bool foundSameNamespace = false;
