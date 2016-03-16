@@ -495,7 +495,7 @@ namespace GenerateUserTypesFromPdb
 
                 generatedFiles.TryAdd(filename.ToLowerInvariant(), filename);
                 using (StringWriter stringOutput = new StringWriter())
-                using (TextWriter masterOutput = new StreamWriter(filename, false /* append */, System.Text.Encoding.ASCII, 8192))
+                using (TextWriter masterOutput = !config.DontSaveGeneratedCodeFiles ? new StreamWriter(filename, false /* append */, System.Text.Encoding.ASCII, 8192) : TextWriter.Null)
                 {
                     foreach (var u in usings.OrderBy(s => s))
                     {
