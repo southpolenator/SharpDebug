@@ -104,7 +104,7 @@
         /// </summary>
         /// <param name="count">The count.</param>
         public RegularMarshalArrayReader(int count)
-            : base(count, Marshal.SizeOf<T>())
+            : base(count, Marshal.SizeOf(typeof(T)))
         {
         }
 
@@ -115,7 +115,7 @@
         /// <returns></returns>
         protected override T PtrToStructure(IntPtr pointer)
         {
-            return Marshal.PtrToStructure<T>(pointer);
+            return (T)Marshal.PtrToStructure(pointer, typeof(T));
         }
 
         /// <summary>
@@ -125,7 +125,7 @@
         /// <param name="pointer">The pointer.</param>
         protected override void StructureToPtr(T value, IntPtr pointer)
         {
-            Marshal.StructureToPtr<T>(value, pointer, true);
+            Marshal.StructureToPtr(value, pointer, true);
         }
     }
 

@@ -253,9 +253,9 @@ namespace CsScripts
                 switch (Process.Current.ActualProcessorType)
                 {
                     case ImageFileMachine.I386:
-                        return (uint)Marshal.SizeOf<CONTEXT_X86>();
+                        return (uint)Marshal.SizeOf(typeof(CONTEXT_X86));
                     case ImageFileMachine.AMD64:
-                        return (uint)(Process.Current.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf<WOW64_CONTEXT>() : Marshal.SizeOf<CONTEXT_X64>());
+                        return (uint)(Process.Current.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf(typeof(WOW64_CONTEXT)) : Marshal.SizeOf(typeof(CONTEXT_X64)));
                     default:
                         throw new Exception("Unknown platform " + Process.Current.ActualProcessorType);
                 }
@@ -319,7 +319,7 @@ namespace CsScripts
         /// <param name="pointer">The pointer.</param>
         private static ThreadContext ReadX86Structure(IntPtr pointer)
         {
-            CONTEXT_X86 structure = Marshal.PtrToStructure<CONTEXT_X86>(pointer);
+            CONTEXT_X86 structure = (CONTEXT_X86)Marshal.PtrToStructure(pointer, typeof(CONTEXT_X86));
 
             return new ThreadContext()
             {
@@ -335,7 +335,7 @@ namespace CsScripts
         /// <param name="pointer">The pointer.</param>
         private static ThreadContext ReadWowX64Structure(IntPtr pointer)
         {
-            WOW64_CONTEXT structure = Marshal.PtrToStructure<WOW64_CONTEXT>(pointer);
+            WOW64_CONTEXT structure = (WOW64_CONTEXT)Marshal.PtrToStructure(pointer, typeof(WOW64_CONTEXT));
 
             return new ThreadContext()
             {
@@ -351,7 +351,7 @@ namespace CsScripts
         /// <param name="pointer">The pointer.</param>
         private static ThreadContext ReadX64Structure(IntPtr pointer)
         {
-            CONTEXT_X64 structure = Marshal.PtrToStructure<CONTEXT_X64>(pointer);
+            CONTEXT_X64 structure = (CONTEXT_X64)Marshal.PtrToStructure(pointer, typeof(CONTEXT_X64));
 
             return new ThreadContext()
             {
@@ -370,9 +370,9 @@ namespace CsScripts
             switch (process.ActualProcessorType)
             {
                 case ImageFileMachine.I386:
-                    return Marshal.SizeOf<CONTEXT_X86>();
+                    return Marshal.SizeOf(typeof(CONTEXT_X86));
                 case ImageFileMachine.AMD64:
-                    return Process.Current.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf<WOW64_CONTEXT>() : Marshal.SizeOf<CONTEXT_X64>();
+                    return Process.Current.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf(typeof(WOW64_CONTEXT)) : Marshal.SizeOf(typeof(CONTEXT_X64));
                 default:
                     throw new Exception("Unknown platform " + Process.Current.ActualProcessorType);
             }

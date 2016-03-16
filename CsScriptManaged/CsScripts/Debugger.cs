@@ -548,7 +548,7 @@ namespace CsScripts
         private static byte[] Convert<T>(T structure)
             where T : struct
         {
-            int size = Marshal.SizeOf<T>();
+            int size = Marshal.SizeOf(typeof(T));
             byte[] bytes = new byte[size];
             IntPtr pointer = Marshal.AllocHGlobal(size);
 

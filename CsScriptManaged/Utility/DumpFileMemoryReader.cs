@@ -70,13 +70,13 @@ namespace CsScriptManaged.Utility
                 if (!MiniDumpReadDumpStream((IntPtr)basePointer, MINIDUMP_STREAM_TYPE.Memory64ListStream, ref directory, ref streamPointer, ref streamSize))
                     throw new Exception("Unable to read mini dump stream");
 
-                var data = Marshal.PtrToStructure<MINIDUMP_MEMORY64_LIST>(streamPointer);
+                var data = (MINIDUMP_MEMORY64_LIST)Marshal.PtrToStructure(streamPointer, typeof(MINIDUMP_MEMORY64_LIST));
                 ulong lastEnd = data.BaseRva;
 
                 ranges = new MemoryLocation[data.NumberOfMemoryRanges];
                 for (int i = 0; i < ranges.Length; i++)
                 {
-                    var descriptor = Marshal.PtrToStructure<MINIDUMP_MEMORY_DESCRIPTOR64>(streamPointer + sizeof(MINIDUMP_MEMORY64_LIST) + i * sizeof(MINIDUMP_MEMORY_DESCRIPTOR64));
+                    var descriptor = (MINIDUMP_MEMORY_DESCRIPTOR64)Marshal.PtrToStructure(streamPointer + sizeof(MINIDUMP_MEMORY64_LIST) + i * sizeof(MINIDUMP_MEMORY_DESCRIPTOR64), typeof(MINIDUMP_MEMORY_DESCRIPTOR64));
                     ranges[i] = new MemoryLocation()
                     {
                         MemoryStart = descriptor.StartOfMemoryRange,
