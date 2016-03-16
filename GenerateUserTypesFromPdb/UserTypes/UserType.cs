@@ -170,7 +170,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             if (isStatic)
             {
-                simpleFieldValue = string.Format("Process.Current.GetGlobal(\"{0}!{1}::{2}\")", Symbol.Module.Name, Symbol.Name, fieldName);
+                simpleFieldValue = string.Format("Process.Current.GetGlobal(\"{0}!{1}::{2}\")", field.ParentType.Module.Name, Symbol.Name, fieldName);
             }
             else
             {
@@ -295,16 +295,47 @@ namespace GenerateUserTypesFromPdb.UserTypes
             bool hasNonStatic = false;
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
 
-            // Get non-static fields
-            foreach (var field in Symbol.Fields)
+            if (ExportDynamicFields)
             {
-                if (IsFieldFiltered(field) || (!ExportStaticFields && field.DataKind == DataKind.StaticMember) || (!ExportDynamicFields && field.DataKind != DataKind.StaticMember) || (field.DataKind == DataKind.StaticMember && !field.IsValidStatic))
-                    continue;
+                // Extract non-static fields
+                foreach (var field in Symbol.Fields)
+                {
+                    if (IsFieldFiltered(field) || field.DataKind == DataKind.StaticMember)
+                        continue;
 
-                var userField = ExtractField(field, factory, options);
+                    var userField = ExtractField(field, factory, options);
 
-                yield return userField;
-                hasNonStatic = hasNonStatic || !userField.Static;
+                    yield return userField;
+                    hasNonStatic = hasNonStatic || !userField.Static;
+                }
+
+                // Extract static fields
+                if (ExportStaticFields)
+                    foreach (var field in GlobalCache.GetSymbolStaticFields(Symbol))
+                    {
+                        if (IsFieldFiltered(field))
+                            continue;
+
+                        var userField = ExtractField(field, factory, options);
+
+                        yield return userField;
+                    }
+            }
+            else
+            {
+                if (!ExportStaticFields)
+                    throw new NotImplementedException();
+
+                // Extract static fields
+                foreach (var field in Symbol.Fields)
+                {
+                    if (IsFieldFiltered(field) || field.DataKind != DataKind.StaticMember || !field.IsValidStatic)
+                        continue;
+
+                    var userField = ExtractField(field, factory, options);
+
+                    yield return userField;
+                }
             }
 
             // Get auto generated fields

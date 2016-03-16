@@ -172,8 +172,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 foreach (var field in staticMembers)
                     symbols.Add(field.ParentType);
 
-                // TODO: If we have only one symbol and this is not the one, we can optimize to reuse existing symbol.
-                if (symbols.Count == 1 && symbols.First() == userType.Symbol)
+                if (symbols.Count == 1)
                     return;
 
                 bool foundSameNamespace = false;
