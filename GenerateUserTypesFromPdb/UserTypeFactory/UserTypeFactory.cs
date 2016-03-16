@@ -163,13 +163,17 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // Split user types that have static members in more than one module
             Parallel.ForEach(Partitioner.Create(userTypes), (userType) =>
             {
+                if (!userType.ExportStaticFields)
+                    return;
+
                 SymbolField[] staticMembers = GlobalCache.GetSymbolStaticFields(userType.Symbol).ToArray();
                 HashSet<Symbol> symbols = new HashSet<Symbol>();
 
                 foreach (var field in staticMembers)
                     symbols.Add(field.ParentType);
 
-                if (symbols.Count == 1 || !userType.ExportStaticFields)
+                // TODO: If we have only one symbol and this is not the one, we can optimize to reuse existing symbol.
+                if (symbols.Count == 1 && symbols.First() == userType.Symbol)
                     return;
 
                 bool foundSameNamespace = false;

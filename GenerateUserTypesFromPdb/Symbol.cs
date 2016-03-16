@@ -211,7 +211,7 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                return LocationType == LocationType.Static; // && symbol.relativeVirtualAddress != 0;
+                return LocationType == LocationType.Static && Module.PublicSymbols.Contains(ParentType.Name + "::" + Name);
             }
         }
 
