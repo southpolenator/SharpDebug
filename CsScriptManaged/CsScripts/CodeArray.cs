@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
 using System.Reflection.Emit;
+using CsScriptManaged.Utility;
 
 namespace CsScripts
 {
@@ -167,7 +168,7 @@ namespace CsScripts
             }
         }
 
-        private delegate T TypeConstructor(Variable variable, byte[] buffer, int offset, ulong bufferAddress);
+        private delegate T TypeConstructor(Variable variable, MemoryBuffer buffer, int offset, ulong bufferAddress);
 
         private TypeConstructor GetActivator()
         {
@@ -208,11 +209,11 @@ namespace CsScripts
                                 }
 
                                 if (parameters[0].ParameterType == typeof(Variable)
-                                    && parameters[1].ParameterType == typeof(byte[])
+                                    && parameters[1].ParameterType == typeof(MemoryBuffer)
                                     && parameters[2].ParameterType == typeof(int)
                                     && parameters[3].ParameterType == typeof(ulong))
                                 {
-                                    DynamicMethod method = new DynamicMethod("CreateIntance", type, new Type[] { typeof(Variable), typeof(byte[]), typeof(int), typeof(ulong) });
+                                    DynamicMethod method = new DynamicMethod("CreateIntance", type, new Type[] { typeof(Variable), typeof(MemoryBuffer), typeof(int), typeof(ulong) });
                                     ILGenerator gen = method.GetILGenerator();
 
                                     gen.Emit(OpCodes.Ldarg_0);
@@ -241,11 +242,13 @@ namespace CsScripts
                 var address = variable.GetPointerAddress();
                 var elementType = variable.GetCodeType().ElementType;
 
-#if false
-                var buffer = Debugger.ReadMemory(elementType.Module.Process, address, (uint)(Length * elementType.Size));
+                if (elementType.Module.Process.DumpFileMemoryReader != null)
+                {
+                    var buffer = Debugger.ReadMemory(elementType.Module.Process, address, (uint)(Length * elementType.Size));
 
-                return new BufferedElementCreatorReadOnlyList(activator, elementType, buffer, address, address);
-#endif
+                    return new BufferedElementCreatorReadOnlyList(activator, elementType, buffer, address, address);
+                }
+
                 return new ElementCreatorReadOnlyList(activator, elementType, address);
             }
 
@@ -303,10 +306,10 @@ namespace CsScripts
             private CodeType elementType;
             private ulong arrayStartAddress;
             private uint elementTypeSize;
-            private byte[] buffer;
+            private MemoryBuffer buffer;
             private ulong bufferAddress;
 
-            public BufferedElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, byte[] buffer, ulong bufferAddress, ulong arrayStartAddress)
+            public BufferedElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, MemoryBuffer buffer, ulong bufferAddress, ulong arrayStartAddress)
             {
                 this.activator = activator;
                 this.elementType = elementType;

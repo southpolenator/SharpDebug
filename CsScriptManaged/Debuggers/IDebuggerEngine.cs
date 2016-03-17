@@ -1,5 +1,6 @@
 ﻿using CsScriptManaged.Native;
 using CsScriptManaged.SymbolProviders;
+using CsScriptManaged.Utility;
 using CsScripts;
 using System;
 
@@ -53,7 +54,7 @@ namespace CsScriptManaged.Debuggers
         /// <param name="address">The memory address.</param>
         /// <param name="size">The buffer size.</param>
         /// <returns>Buffer containing read memory</returns>
-        byte[] ReadMemory(Process process, ulong address, uint size);
+        MemoryBuffer ReadMemory(Process process, ulong address, uint size);
 
         /// <summary>
         /// Finds the pattern in memory of the specified process.

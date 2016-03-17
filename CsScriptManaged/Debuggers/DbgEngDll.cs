@@ -2,6 +2,7 @@
 using CsScriptManaged.Marshaling;
 using CsScriptManaged.Native;
 using CsScriptManaged.SymbolProviders;
+using CsScriptManaged.Utility;
 using CsScripts;
 using DbgEngManaged;
 using System;
@@ -312,7 +313,7 @@ namespace CsScriptManaged.Debuggers
         /// <returns>
         /// Buffer containing read memory
         /// </returns>
-        public byte[] ReadMemory(Process process, ulong address, uint size)
+        public MemoryBuffer ReadMemory(Process process, ulong address, uint size)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
@@ -326,7 +327,7 @@ namespace CsScriptManaged.Debuggers
                     byte[] bytes = new byte[size];
 
                     Marshal.Copy(buffer, bytes, 0, (int)size);
-                    return bytes;
+                    return new MemoryBuffer(bytes);
                 }
                 finally
                 {

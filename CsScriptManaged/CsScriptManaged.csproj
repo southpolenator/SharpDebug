@@ -153,6 +153,7 @@
     <Compile Include="ScriptCompiler.cs" />
     <Compile Include="ScriptExecution.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="Utility\MemoryBuffer.cs" />
     <Compile Include="Utility\SimpleCache.cs" />
     <Compile Include="Debuggers\DbgEngDllHelpers\StackFrameSwitcher.cs" />
     <Compile Include="Debuggers\DbgEngDllHelpers\DbgEngSymbolProvider.cs" />
