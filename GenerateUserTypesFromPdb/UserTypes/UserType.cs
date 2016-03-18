@@ -525,7 +525,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 yield return new UserTypeConstructor()
                 {
-                    Arguments = "Variable variable, byte[] buffer, int offset, ulong bufferAddress",
+                    Arguments = "Variable variable, CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
                     BaseClassInitialization = "base(variable, buffer, offset, bufferAddress)",
                     ContainsFieldDefinitions = true,
                     Static = false,

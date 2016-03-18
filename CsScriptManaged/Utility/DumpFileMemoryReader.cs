@@ -23,32 +23,6 @@ namespace CsScriptManaged.Utility
         private int previousRange;
         byte* basePointer = null;
 
-        private delegate void MemCpyFunction(void* des, void* src, uint bytes);
-
-        private static readonly MemCpyFunction MemCpy;
-
-        static DumpFileMemoryReader()
-        {
-            var dynamicMethod = new DynamicMethod
-            (
-                "MemCpy",
-                typeof(void),
-                new[] { typeof(void*), typeof(void*), typeof(uint) },
-                typeof(DumpFileMemoryReader)
-            );
-
-            var ilGenerator = dynamicMethod.GetILGenerator();
-
-            ilGenerator.Emit(OpCodes.Ldarg_0);
-            ilGenerator.Emit(OpCodes.Ldarg_1);
-            ilGenerator.Emit(OpCodes.Ldarg_2);
-
-            ilGenerator.Emit(OpCodes.Cpblk);
-            ilGenerator.Emit(OpCodes.Ret);
-
-            MemCpy = (MemCpyFunction)dynamicMethod.CreateDelegate(typeof(MemCpyFunction));
-        }
-
         public DumpFileMemoryReader(string dumpFilePath)
         {
             bool dispose = true;
@@ -163,7 +137,7 @@ namespace CsScriptManaged.Utility
             {
                 byte* source = basePointer + position;
 
-                MemCpy(destination, source, (uint)buffer.Length * sizeof(char));
+                MemoryBuffer.MemCpy(destination, source, (uint)buffer.Length * sizeof(char));
             }
             return buffer.Length;
         }
@@ -174,14 +148,13 @@ namespace CsScriptManaged.Utility
             {
                 byte* source = basePointer + position;
 
-                MemCpy(destination, source, (uint)buffer.Length);
+                MemoryBuffer.MemCpy(destination, source, (uint)buffer.Length);
             }
             return buffer.Length;
         }
 
-        public byte[] ReadMemory(ulong address, int size)
+        public MemoryBuffer ReadMemory(ulong address, int size)
         {
-            byte[] bytes = new byte[size];
             var position = FindDumpPositionAndSize(address);
 
             if ((ulong)size > position.size)
@@ -189,8 +162,10 @@ namespace CsScriptManaged.Utility
                 throw new Exception("Reading more that it is found");
             }
 
+            byte[] bytes = new byte[size];
+
             ReadMemory(position.position, bytes);
-            return bytes;
+            return new MemoryBuffer(bytes);
         }
 
         public string ReadAnsiString(ulong address, int size = -1)

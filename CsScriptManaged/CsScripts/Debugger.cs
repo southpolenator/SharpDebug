@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged;
+using CsScriptManaged.Utility;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -526,7 +527,7 @@ namespace CsScripts
         /// <param name="address">The memory address.</param>
         /// <param name="size">The buffer size.</param>
         /// <returns>Buffer containing read memory</returns>
-        public static byte[] ReadMemory(Process process, ulong address, uint size)
+        public static MemoryBuffer ReadMemory(Process process, ulong address, uint size)
         {
             var dumpReader = process.DumpFileMemoryReader;
 
