@@ -66,6 +66,7 @@ namespace CsScriptManaged.Utility
                         ranges[newEnd].MemoryEnd = ranges[i].MemoryEnd;
                     else
                         ranges[++newEnd] = ranges[i];
+                newEnd++;
                 Array.Resize(ref ranges, newEnd);
                 var minValue = ranges[0].MemoryStart;
                 var maxValue = ranges[ranges.Length - 1].MemoryEnd;
