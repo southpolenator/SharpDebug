@@ -163,10 +163,7 @@ namespace CsScriptManaged.Utility
                 throw new Exception("Reading more that it is found");
             }
 
-            byte[] bytes = new byte[size];
-
-            ReadMemory(position.position, bytes);
-            return new MemoryBuffer(bytes);
+            return new MemoryBuffer(basePointer + position.position, size);
         }
 
         public string ReadAnsiString(ulong address, int size = -1)
