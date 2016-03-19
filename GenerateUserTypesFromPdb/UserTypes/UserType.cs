@@ -170,7 +170,14 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             if (isStatic)
             {
-                simpleFieldValue = string.Format("Process.Current.GetGlobal(\"{0}!{1}::{2}\")", field.ParentType.Module.Name, Symbol.Name, fieldName);
+                if (string.IsNullOrEmpty(Symbol.Name))
+                {
+                    simpleFieldValue = string.Format("Process.Current.GetGlobal(\"{0}!{1}\")", field.ParentType.Module.Name, fieldName);
+                }
+                else
+                {
+                    simpleFieldValue = string.Format("Process.Current.GetGlobal(\"{0}!{1}::{2}\")", field.ParentType.Module.Name, Symbol.Name, fieldName);
+                }
             }
             else
             {
