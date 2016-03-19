@@ -290,7 +290,7 @@ namespace CsScripts
         /// Converts from native structure to managed object.
         /// </summary>
         /// <param name="pointer">The pointer.</param>
-        private static ThreadContext PtrToStructure(IntPtr pointer)
+        internal static ThreadContext PtrToStructure(IntPtr pointer)
         {
             switch (Process.Current.ActualProcessorType)
             {
