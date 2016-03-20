@@ -8,7 +8,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class UserType
     {
-        private bool usedThisClass = false;
+        protected bool usedThisClass = false;
 
         public UserType(Symbol symbol, XmlType xmlType, string nameSpace)
         {

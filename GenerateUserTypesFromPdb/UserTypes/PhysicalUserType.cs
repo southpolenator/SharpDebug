@@ -1,11 +1,13 @@
 ﻿using Dia2Lib;
 using System.Collections.Generic;
+using System;
 
 namespace GenerateUserTypesFromPdb.UserTypes
 {
     class PhysicalUserType : UserType
     {
         private const string ClassCodeType = "ClassCodeType";
+        private Dictionary<string, string> addedFieldTypes = new Dictionary<string, string>();
 
         public PhysicalUserType(Symbol symbol, XmlType xmlType, string nameSpace)
             : base(symbol, xmlType, nameSpace)
@@ -16,7 +18,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
         {
             if (hasNonStatic && useThisClass)
             {
-                // TODO: Remove this in the future
                 yield return new UserTypeField
                 {
                     ConstructorText = string.Format("variable.GetBaseClass(baseClassString)"),
@@ -30,18 +31,19 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 };
             }
 
-            yield return new UserTypeField
-            {
-                Access = "public",
-                ConstructorText = string.Format("CodeType.Create(\"{0}!{1}\")", Symbol.Module.Name, TypeName),
-                FieldName = ClassCodeType,
-                FieldType = "CodeType",
-                FieldTypeInfoComment = null,
-                PropertyName = null,
-                Static = true,
-                UseUserMember = false,
-                CacheResult = true,
-            };
+            if (IsTypeUsingStaticCodeType(this))
+                yield return new UserTypeField
+                {
+                    Access = "public",
+                    ConstructorText = string.Format("CodeType.Create(\"{0}!{1}\")", Symbol.Module.Name, TypeName),
+                    FieldName = ClassCodeType,
+                    FieldType = "CodeType",
+                    FieldTypeInfoComment = null,
+                    PropertyName = null,
+                    Static = true,
+                    UseUserMember = false,
+                    CacheResult = true,
+                };
 
             yield return new UserTypeField
             {
@@ -61,6 +63,19 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 FieldType = "partial void",
                 CacheResult = true,
             };
+
+            foreach (var addedType in addedFieldTypes)
+                yield return new UserTypeField
+                {
+                    ConstructorText = string.Format("{0}.GetClassFieldType(\"{1}\")", ClassCodeType, addedType.Key),
+                    FieldName = addedType.Value,
+                    FieldType = "CodeType",
+                    FieldTypeInfoComment = null,
+                    PropertyName = null,
+                    Static = true,
+                    UseUserMember = false,
+                    CacheResult = true,
+                };
         }
 
         protected override IEnumerable<UserTypeConstructor> GenerateConstructors()
@@ -142,18 +157,41 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     if (!(userType.UserType is EnumUserType) && !extractingBaseClass)
                     {
-                        string thisClassCodeType = ClassCodeType;
+                        string thisClassCodeType;
+
+                        if (IsTypeUsingStaticCodeType(this))
+                            thisClassCodeType = ClassCodeType;
+                        else
+                        {
+                            thisClassCodeType = "thisClass.Value.GetCodeType()";
+                            usedThisClass = true;
+                        }
 
                         if (!isEmbedded)
                         {
-                            string fieldAddress = string.Format("ReadPointer(memoryBuffer, memoryBufferOffset + {0}, {1})", field.Offset, field.Type.Size);
-
-                            constructorText = string.Format("ReadPointer<{0}>({4}, \"{1}\", memoryBuffer, memoryBufferOffset + {2}, {3})", fieldTypeString, fieldName, field.Offset, field.Type.Size, ClassCodeType);
+                            if (IsTypeUsingStaticCodeType(this))
+                                constructorText = string.Format("ReadPointer<{0}>({4}, \"{1}\", memoryBuffer, memoryBufferOffset + {2}, {3})", fieldTypeString, fieldName, field.Offset, field.Type.Size, ClassCodeType);
+                            else
+                            {
+                                constructorText = string.Format("ReadPointer<{0}>(thisClass, \"{1}\", memoryBuffer, memoryBufferOffset + {2}, {3})", fieldTypeString, fieldName, field.Offset, field.Type.Size);
+                                usedThisClass = true;
+                            }
                         }
                         else
                         {
                             string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.Offset);
-                            string fieldVariable = string.Format("Variable.CreateNoCast({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
+                            string fieldCodeType = string.Format("{0}.GetClassFieldType(\"{1}\")", thisClassCodeType, fieldName);
+
+                            if (IsTypeUsingStaticCodeType(userType.UserType))
+                            {
+                                fieldCodeType = string.Format("{0}.{1}", userType.UserType.FullClassName, ClassCodeType);
+                            }
+                            else if (IsTypeUsingStaticCodeType(this))
+                            {
+                                fieldCodeType = AddFieldCodeType(fieldName);
+                            }
+
+                            string fieldVariable = string.Format("Variable.CreateNoCast({0}, {2}, \"{1}\")", fieldCodeType, fieldName, fieldAddress);
 
                             constructorText = string.Format("new {0}({1}, memoryBuffer, memoryBufferOffset + {2}, memoryBufferAddress)", fieldTypeString, fieldVariable, field.Offset);
                         }
@@ -163,7 +201,16 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     if (!isEmbedded)
                     {
-                        string thisClassCodeType = ClassCodeType;
+                        string thisClassCodeType;
+
+                        if (IsTypeUsingStaticCodeType(this))
+                            thisClassCodeType = ClassCodeType;
+                        else
+                        {
+                            thisClassCodeType = "thisClass.Value.GetCodeType()";
+                            usedThisClass = true;
+                        }
+
                         string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.Offset);
                         string fieldVariable = string.Format("Variable.CreateNoCast({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 
@@ -193,6 +240,29 @@ namespace GenerateUserTypesFromPdb.UserTypes
             }
 
             return base.ExtractField(field, fieldType, factory, simpleFieldValue, gettingField, isStatic, options, extractingBaseClass);
+        }
+
+        private static bool IsTypeUsingStaticCodeType(UserType userType)
+        {
+            if (!(userType is PhysicalUserType))
+                return false;
+
+            while (userType != null)
+            {
+                if (userType is TemplateUserType)
+                    return false;
+                userType = userType.DeclaredInType;
+            }
+
+            return true;
+        }
+
+        private string AddFieldCodeType(string fieldName)
+        {
+            string newType = fieldName + "ↀ";
+
+            addedFieldTypes.Add(fieldName, newType);
+            return newType;
         }
     }
 }
