@@ -590,7 +590,7 @@ namespace CsScripts
                 return default(T);
             }
 
-            return Variable.CreatePointer(thisClass.Value.GetCodeType().GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
+            return Variable.CreatePointerNoCast(thisClass.Value.GetCodeType().GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
         }
 
         /// <summary>
@@ -611,7 +611,7 @@ namespace CsScripts
                 return default(T);
             }
 
-            return Variable.CreatePointer(classCodeType.GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
+            return Variable.CreatePointerNoCast(classCodeType.GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
         }
     }
 }
