@@ -517,12 +517,14 @@ namespace GenerateUserTypesFromPdb
                             output.GetStringBuilder().Clear();
                             GenerateUseTypeCodeInSingleFile(output, symbolEntry, factory, error, generationOptions);
                             string text = output.ToString();
-                            lock (masterOutput)
-                            {
-                                masterOutput.WriteLine(text);
-                                if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
-                                    stringOutput.WriteLine(text);
-                            }
+
+                            if (!string.IsNullOrEmpty(text))
+                                lock (masterOutput)
+                                {
+                                    masterOutput.WriteLine(text);
+                                    if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
+                                        stringOutput.WriteLine(text);
+                                }
 
                             stringWriterPool.PutObject(output);
                         });
