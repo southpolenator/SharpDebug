@@ -132,14 +132,14 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         if (!isEmbedded)
                         {
                             string fieldAddress = string.Format("ReadPointer(memoryBuffer, memoryBufferOffset + {0}, {1})", field.Offset, field.Type.Size);
-                            string fieldVariable = string.Format("Variable.CreatePointer({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
+                            string fieldVariable = string.Format("Variable.CreatePointerNoCast({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 
                             constructorText = string.Format("ReadPointer<{0}>(thisClass, \"{1}\", memoryBuffer, memoryBufferOffset + {2}, {3})", fieldTypeString, fieldName, field.Offset, field.Type.Size);
                         }
                         else
                         {
                             string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.Offset);
-                            string fieldVariable = string.Format("Variable.Create({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
+                            string fieldVariable = string.Format("Variable.CreateNoCast({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 
                             constructorText = string.Format("new {0}({1}, memoryBuffer, memoryBufferOffset + {2}, memoryBufferAddress)", fieldTypeString, fieldVariable, field.Offset);
                         }
@@ -151,7 +151,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     {
                         string thisClassCodeType = "thisClass.Value.GetCodeType()";
                         string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.Offset);
-                        string fieldVariable = string.Format("Variable.Create({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
+                        string fieldVariable = string.Format("Variable.CreateNoCast({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 
                         if (transformationType.Transformation.Transformation.HasPhysicalConstructor)
                         {
