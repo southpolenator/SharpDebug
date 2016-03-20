@@ -366,6 +366,8 @@ namespace GenerateUserTypesFromPdb
                 output.WriteLine(indentation, FieldTypeInfoComment);
             if (!string.IsNullOrEmpty(ConstantValue))
                 output.WriteLine(indentation, "public static {0} {1} = ({0}){2};", FieldType, FieldName, GetConstantValue());
+            else if (Static && !UseUserMember)
+                output.WriteLine(indentation, "private static {0} {1} = {2};", FieldType, FieldName, ConstructorText);
             else if (UseUserMember && CacheResult)
                 output.WriteLine(indentation, "private {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName);
             else if (CacheResult)
@@ -469,20 +471,7 @@ namespace GenerateUserTypesFromPdb
         {
             if (Static)
             {
-                if (fields.Where(f => !((f.Static && !exportStaticFields && f.FieldTypeInfoComment != null) || (!f.CacheResult && !f.UseUserMember))).Any())
-                {
-                    output.WriteLine();
-                    output.WriteLine(indentation, "static {0}()", constructorName);
-                    output.WriteLine(indentation++, "{{");
-                    foreach (var field in fields)
-                    {
-                        if ((field.Static && !exportStaticFields && field.FieldTypeInfoComment != null) || (!field.CacheResult && !field.UseUserMember))
-                            continue;
-                        if (field.Static)
-                            field.WriteConstructorCode(output, indentation);
-                    }
-                    output.WriteLine(--indentation, "}}");
-                }
+                // Do nothing. We are initializing static variables in declaration statement.
             }
             else
             {
