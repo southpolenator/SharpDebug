@@ -5,6 +5,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class PhysicalUserType : UserType
     {
+        private const string ClassCodeType = "ClassCodeType";
+
         public PhysicalUserType(Symbol symbol, XmlType xmlType, string nameSpace)
             : base(symbol, xmlType, nameSpace)
         {
@@ -27,6 +29,19 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     CacheResult = true,
                 };
             }
+
+            yield return new UserTypeField
+            {
+                Access = "public",
+                ConstructorText = string.Format("CodeType.Create(\"{0}!{1}\")", Symbol.Module.Name, TypeName),
+                FieldName = ClassCodeType,
+                FieldType = "CodeType",
+                FieldTypeInfoComment = null,
+                PropertyName = null,
+                Static = true,
+                UseUserMember = false,
+                CacheResult = true,
+            };
 
             yield return new UserTypeField
             {
@@ -127,14 +142,13 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     if (!(userType.UserType is EnumUserType) && !extractingBaseClass)
                     {
-                        string thisClassCodeType = "thisClass.Value.GetCodeType()";
+                        string thisClassCodeType = ClassCodeType;
 
                         if (!isEmbedded)
                         {
                             string fieldAddress = string.Format("ReadPointer(memoryBuffer, memoryBufferOffset + {0}, {1})", field.Offset, field.Type.Size);
-                            string fieldVariable = string.Format("Variable.CreatePointerNoCast({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 
-                            constructorText = string.Format("ReadPointer<{0}>(thisClass, \"{1}\", memoryBuffer, memoryBufferOffset + {2}, {3})", fieldTypeString, fieldName, field.Offset, field.Type.Size);
+                            constructorText = string.Format("ReadPointer<{0}>({4}, \"{1}\", memoryBuffer, memoryBufferOffset + {2}, {3})", fieldTypeString, fieldName, field.Offset, field.Type.Size, ClassCodeType);
                         }
                         else
                         {
@@ -149,7 +163,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     if (!isEmbedded)
                     {
-                        string thisClassCodeType = "thisClass.Value.GetCodeType()";
+                        string thisClassCodeType = ClassCodeType;
                         string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.Offset);
                         string fieldVariable = string.Format("Variable.CreateNoCast({0}.GetClassFieldType(\"{1}\"), {2}, \"{1}\")", thisClassCodeType, fieldName, fieldAddress);
 

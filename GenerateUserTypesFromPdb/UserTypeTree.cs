@@ -340,6 +340,8 @@ namespace GenerateUserTypesFromPdb
 
         public bool CacheResult { get; set; }
 
+        public string Access { get; set; } = "private";
+
         private string GetConstantValue()
         {
             if (ConstantValue.StartsWith("-"))
@@ -367,11 +369,11 @@ namespace GenerateUserTypesFromPdb
             if (!string.IsNullOrEmpty(ConstantValue))
                 output.WriteLine(indentation, "public static {0} {1} = ({0}){2};", FieldType, FieldName, GetConstantValue());
             else if (Static && !UseUserMember)
-                output.WriteLine(indentation, "private static {0} {1} = {2};", FieldType, FieldName, ConstructorText);
+                output.WriteLine(indentation, "{3} static {0} {1} = {2};", FieldType, FieldName, ConstructorText, Access);
             else if (UseUserMember && CacheResult)
-                output.WriteLine(indentation, "private {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName);
+                output.WriteLine(indentation, "{3} {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName, Access);
             else if (CacheResult)
-                output.WriteLine(indentation, "private {0}{1} {2};", Static ? "static " : "", FieldType, FieldName);
+                output.WriteLine(indentation, "{3} {0}{1} {2};", Static ? "static " : "", FieldType, FieldName, Access);
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                 output.WriteLine();
         }
