@@ -292,7 +292,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // do not duplicate after adding '_'
             // ex. class has 'in' and '_in' fields.
             // 
-            fieldName = UserTypeField.GetPropertyName(fieldName, this.Symbol.Name);
+            fieldName = UserTypeField.GetPropertyName(fieldName, this);
 
             return new UserTypeField
             {

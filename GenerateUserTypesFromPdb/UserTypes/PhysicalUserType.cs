@@ -231,7 +231,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         FieldName = "_" + fieldName,
                         FieldType = fieldTypeString,
                         FieldTypeInfoComment = string.Format("// {0} {1};", field.Type.Name, fieldName),
-                        PropertyName = UserTypeField.GetPropertyName(fieldName, Symbol.Name),
+                        PropertyName = UserTypeField.GetPropertyName(fieldName, this),
                         Static = isStatic,
                         UseUserMember = lazyCacheUserTypeFields,
                         CacheResult = cacheUserTypeFields || (isStatic && cacheStaticUserTypeFields),
