@@ -370,7 +370,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     yield return new UserTypeField
                     {
-                        ConstructorText = string.Format("variable.GetBaseClass(baseClassString)"),
+                        ConstructorText = string.Format("GetBaseClass(baseClassString)"),
                         FieldName = "thisClass",
                         FieldType = "Variable",
                         FieldTypeInfoComment = null,
