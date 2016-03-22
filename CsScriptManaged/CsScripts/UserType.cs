@@ -95,6 +95,20 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="UserType"/> class.
+        /// </summary>
+        /// <param name="buffer">The memory buffer.</param>
+        /// <param name="offset">The offset.</param>
+        /// <param name="bufferAddress">The buffer address.</param>
+        public UserType(MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath)
+            : base(codeType, address, name, path)
+        {
+            memoryBuffer = buffer;
+            memoryBufferOffset = offset;
+            memoryBufferAddress = bufferAddress;
+        }
+
+        /// <summary>
         /// Gets the base class string.
         /// </summary>
         /// <param name="baseClassType">Type of the base class.</param>

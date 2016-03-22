@@ -549,6 +549,14 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     ContainsFieldDefinitions = true,
                     Static = false,
                 };
+
+                yield return new UserTypeConstructor()
+                {
+                    Arguments = "CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
+                    BaseClassInitialization = "base(buffer, offset, bufferAddress, codeType, address, name, path)",
+                    ContainsFieldDefinitions = true,
+                    Static = false,
+                };
             }
         }
 

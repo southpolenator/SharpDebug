@@ -20,7 +20,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             {
                 yield return new UserTypeField
                 {
-                    ConstructorText = string.Format("variable.GetBaseClass(baseClassString)"),
+                    ConstructorText = string.Format("GetBaseClass(baseClassString)"),
                     FieldName = "thisClass",
                     FieldType = "Variable",
                     FieldTypeInfoComment = null,
@@ -98,6 +98,14 @@ namespace GenerateUserTypesFromPdb.UserTypes
             {
                 Arguments = "Variable variable, CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
                 BaseClassInitialization = "base(variable, buffer, offset, bufferAddress)",
+                ContainsFieldDefinitions = true,
+                Static = false,
+            };
+
+            yield return new UserTypeConstructor()
+            {
+                Arguments = "CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
+                BaseClassInitialization = "base(buffer, offset, bufferAddress, codeType, address, name, path)",
                 ContainsFieldDefinitions = true,
                 Static = false,
             };
@@ -191,9 +199,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                                 fieldCodeType = AddFieldCodeType(fieldName);
                             }
 
-                            string fieldVariable = string.Format("Variable.CreateNoCast({0}, {2}, \"{1}\")", fieldCodeType, fieldName, fieldAddress);
-
-                            constructorText = string.Format("new {0}({1}, memoryBuffer, memoryBufferOffset + {2}, memoryBufferAddress)", fieldTypeString, fieldVariable, field.Offset);
+                            constructorText = string.Format("new {0}(memoryBuffer, memoryBufferOffset + {1}, memoryBufferAddress, {2}, {3}, \"{4}\")", fieldTypeString, field.Offset, fieldCodeType, fieldAddress, fieldName);
                         }
                     }
                 }

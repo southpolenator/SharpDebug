@@ -168,7 +168,7 @@ namespace CsScripts
             }
         }
 
-        private delegate T TypeConstructor(Variable variable, MemoryBuffer buffer, int offset, ulong bufferAddress);
+        private delegate T TypeConstructor(MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name, string path);
 
         private TypeConstructor GetActivator()
         {
@@ -203,23 +203,32 @@ namespace CsScripts
 
                                 var parameters = constructor.GetParameters();
 
-                                if (parameters.Length < 4 || parameters.Count(p => !p.HasDefaultValue) > 4)
+                                Console.WriteLine("Parameters: {0}", parameters.Length);
+                                if (parameters.Length < 7 || parameters.Count(p => !p.HasDefaultValue) > 7)
                                 {
                                     continue;
                                 }
 
-                                if (parameters[0].ParameterType == typeof(Variable)
-                                    && parameters[1].ParameterType == typeof(MemoryBuffer)
-                                    && parameters[2].ParameterType == typeof(int)
-                                    && parameters[3].ParameterType == typeof(ulong))
+                                Console.WriteLine("Testing types");
+                                if (parameters[0].ParameterType == typeof(MemoryBuffer)
+                                    && parameters[1].ParameterType == typeof(int)
+                                    && parameters[2].ParameterType == typeof(ulong)
+                                    && parameters[3].ParameterType == typeof(CodeType)
+                                    && parameters[4].ParameterType == typeof(ulong)
+                                    && parameters[5].ParameterType == typeof(string)
+                                    && parameters[6].ParameterType == typeof(string))
                                 {
-                                    DynamicMethod method = new DynamicMethod("CreateIntance", type, new Type[] { typeof(Variable), typeof(MemoryBuffer), typeof(int), typeof(ulong) });
+                                    Console.WriteLine("Testing passed");
+                                    DynamicMethod method = new DynamicMethod("CreateIntance", type, new Type[] { typeof(MemoryBuffer), typeof(int), typeof(ulong), typeof(CodeType), typeof(ulong), typeof(string), typeof(string) });
                                     ILGenerator gen = method.GetILGenerator();
 
                                     gen.Emit(OpCodes.Ldarg_0);
                                     gen.Emit(OpCodes.Ldarg_1);
                                     gen.Emit(OpCodes.Ldarg_2);
                                     gen.Emit(OpCodes.Ldarg_3);
+                                    gen.Emit(OpCodes.Ldarg, (short)4);
+                                    gen.Emit(OpCodes.Ldarg, (short)5);
+                                    gen.Emit(OpCodes.Ldarg, (short)6);
                                     gen.Emit(OpCodes.Newobj, constructor);
                                     gen.Emit(OpCodes.Ret);
                                     return (TypeConstructor)method.CreateDelegate(typeof(TypeConstructor));
@@ -277,7 +286,7 @@ namespace CsScripts
                     ulong address = arrayStartAddress + (ulong)index * elementTypeSize;
                     var buffer = Debugger.ReadMemory(elementType.Module.Process, address, elementTypeSize);
 
-                    return activator(Variable.CreateNoCast(elementType, address), buffer, 0, address);
+                    return activator(buffer, 0, address, elementType, address, Variable.ComputedName, Variable.UntrackedPath);
                 }
             }
 
@@ -326,7 +335,7 @@ namespace CsScripts
                     int offset = (int)(index * elementTypeSize);
                     ulong address = arrayStartAddress + (ulong)offset;
 
-                    return activator(Variable.CreateNoCast(elementType, address), buffer, offset, bufferAddress);
+                    return activator(buffer, offset, bufferAddress, elementType, address, Variable.ComputedName, Variable.UntrackedPath);
                 }
             }
 
