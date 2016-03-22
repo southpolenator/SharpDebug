@@ -430,12 +430,21 @@ namespace GenerateUserTypesFromPdb
         /// </summary>
         /// <param name="fieldName"></param>
         /// <returns></returns>
-        public static string GetPropertyName(string fieldName, string className)
+        public static string GetPropertyName(string fieldName, UserType userType)
         {
-            if (fieldName == className)
+            if (fieldName == userType.Symbol.Name)
             {
                 // property name cannot be equal to class name
                 return string.Format("_{0}", fieldName);
+            }
+
+            foreach (string className in userType.InnerTypes.Select(r => r.ClassName))
+            {
+                if (fieldName == className)
+                {
+                    // property name cannot be equal to class name
+                    return string.Format("_{0}", fieldName);
+                }
             }
 
             fieldName = fieldName.Replace("::", "_");
@@ -450,6 +459,9 @@ namespace GenerateUserTypesFromPdb
                 case "object":
                 case "event":
                 case "string":
+                case "fixed":
+                case "internal":
+                case "out":
                     return string.Format("_{0}", fieldName);
                 default:
                     break;

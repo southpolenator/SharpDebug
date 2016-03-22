@@ -49,6 +49,14 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 output.WriteLine(--indentation, "}}");
         }
 
+        public override string ClassName
+        {
+            get
+            {
+                return Namespace;
+            }
+        }
+
         public override string FullClassName
         {
             get
