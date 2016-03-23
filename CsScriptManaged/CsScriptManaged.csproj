@@ -118,6 +118,7 @@
     <Compile Include="CsScripts\UserMember.cs" />
     <Compile Include="CsScripts\UserType.cs" />
     <Compile Include="CsScripts\UserTypeAttribute.cs" />
+    <Compile Include="UserTypeDelegates.cs" />
     <Compile Include="CsScripts\Variable.cs" />
     <Compile Include="CsScripts\VariableCollection.cs" />
     <Compile Include="CsScripts\VoidType.cs" />

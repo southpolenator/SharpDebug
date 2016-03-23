@@ -1,9 +1,6 @@
-﻿using CsScriptManaged.Native;
-using CsScriptManaged.Utility;
+﻿using CsScriptManaged.Utility;
 using CsScripts;
-using DbgEngManaged;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace CsScriptManaged
@@ -37,6 +34,11 @@ namespace CsScriptManaged
         /// The user type casted variables that should be invalidated after metadata is removed so that new metadata can create new caches...
         /// </summary>
         internal static List<DictionaryCache<Variable, Variable>> UserTypeCastedVariables = new List<DictionaryCache<Variable, Variable>>();
+
+        /// <summary>
+        /// The user type delegates, but casting needs to be done
+        /// </summary>
+        internal static DictionaryCache<Type, UserTypeDelegates> UserTypeDelegates = new DictionaryCache<Type, UserTypeDelegates>((userType) => new UserTypeDelegates(userType));
 
         /// <summary>
         /// Creates the process.

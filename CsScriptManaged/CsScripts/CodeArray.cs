@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
-using System.Reflection.Emit;
 using CsScriptManaged.Utility;
+using CsScriptManaged;
 
 namespace CsScripts
 {
@@ -22,6 +21,11 @@ namespace CsScripts
         /// The pre-calculated array (if we were initialized with it, or we know how to read whole array)
         /// </summary>
         private IReadOnlyList<T> preCalculatedArray;
+
+        /// <summary>
+        /// The pre-calculated array that supports reuse
+        /// </summary>
+        private IReuseUserTypeReadOnlyList<T> preCalculatedReuseArray;
 
         /// <summary>
         /// The addresses array (if we don't know how to read the array, but we know that we have array of pointer and we could optimize a bit)
@@ -66,7 +70,7 @@ namespace CsScripts
         {
             this.variable = variable;
             Length = length;
-            preCalculatedArray = ReadArray();
+            InitPreCalculatedArray();
             if (preCalculatedArray == null && variable.GetCodeType().ElementType.IsPointer)
             {
                 var process = variable.GetCodeType().Module.Process;
@@ -142,6 +146,21 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Reuses the specified element for getting the specified index.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="index">The index.</param>
+        public T Reuse(T element, int index)
+        {
+            if (element == null || preCalculatedReuseArray == null)
+            {
+                return this[index];
+            }
+
+            return preCalculatedReuseArray.Reuse(element, index);
+        }
+
+        /// <summary>
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         public IEnumerator<T> GetEnumerator()
@@ -168,9 +187,7 @@ namespace CsScripts
             }
         }
 
-        private delegate T TypeConstructor(Variable variable, MemoryBuffer buffer, int offset, ulong bufferAddress);
-
-        private TypeConstructor GetActivator()
+        private UserTypeDelegates<T> GetDelegates()
         {
             var elementType = variable.GetCodeType().ElementType;
             var type = typeof(T);
@@ -190,41 +207,7 @@ namespace CsScripts
 
                         if (newType == elementType)
                         {
-                            // Find constructor that has 4 arguments:
-                            // Variable variable, byte[] buffer, int offset, ulong bufferAddress
-                            var constructors = type.GetConstructors();
-
-                            foreach (var constructor in constructors)
-                            {
-                                if (!constructor.IsPublic)
-                                {
-                                    continue;
-                                }
-
-                                var parameters = constructor.GetParameters();
-
-                                if (parameters.Length < 4 || parameters.Count(p => !p.HasDefaultValue) > 4)
-                                {
-                                    continue;
-                                }
-
-                                if (parameters[0].ParameterType == typeof(Variable)
-                                    && parameters[1].ParameterType == typeof(MemoryBuffer)
-                                    && parameters[2].ParameterType == typeof(int)
-                                    && parameters[3].ParameterType == typeof(ulong))
-                                {
-                                    DynamicMethod method = new DynamicMethod("CreateIntance", type, new Type[] { typeof(Variable), typeof(MemoryBuffer), typeof(int), typeof(ulong) });
-                                    ILGenerator gen = method.GetILGenerator();
-
-                                    gen.Emit(OpCodes.Ldarg_0);
-                                    gen.Emit(OpCodes.Ldarg_1);
-                                    gen.Emit(OpCodes.Ldarg_2);
-                                    gen.Emit(OpCodes.Ldarg_3);
-                                    gen.Emit(OpCodes.Newobj, constructor);
-                                    gen.Emit(OpCodes.Ret);
-                                    return (TypeConstructor)method.CreateDelegate(typeof(TypeConstructor));
-                                }
-                            }
+                            return UserTypeDelegates<T>.Instance;
                         }
                     }
                 }
@@ -233,11 +216,11 @@ namespace CsScripts
             return null;
         }
 
-        private IReadOnlyList<T> ReadArray()
+        private void InitPreCalculatedArray()
         {
-            var activator = GetActivator();
+            var delegates = GetDelegates();
 
-            if (activator != null)
+            if (delegates != null)
             {
                 var address = variable.GetPointerAddress();
                 var elementType = variable.GetCodeType().ElementType;
@@ -246,25 +229,35 @@ namespace CsScripts
                 {
                     var buffer = Debugger.ReadMemory(elementType.Module.Process, address, (uint)(Length * elementType.Size));
 
-                    return new BufferedElementCreatorReadOnlyList(activator, elementType, buffer, address, address);
+                    preCalculatedArray = new BufferedElementCreatorReadOnlyList(delegates, elementType, buffer, address, address);
+                }
+                else
+                {
+                    preCalculatedArray = new ElementCreatorReadOnlyList(delegates, elementType, address);
                 }
 
-                return new ElementCreatorReadOnlyList(activator, elementType, address);
+                if (delegates.SupportsUserTypeReuse)
+                {
+                    preCalculatedReuseArray = (IReuseUserTypeReadOnlyList<T>)preCalculatedArray;
+                }
             }
-
-            return null;
         }
 
-        private class ElementCreatorReadOnlyList : IReadOnlyList<T>
+        private interface IReuseUserTypeReadOnlyList<T> : IReadOnlyList<T>
         {
-            private TypeConstructor activator;
+            T Reuse(T element, int index);
+        }
+
+        private class ElementCreatorReadOnlyList : IReuseUserTypeReadOnlyList<T>
+        {
+            private UserTypeDelegates<T> delegates;
             private CodeType elementType;
             private ulong arrayStartAddress;
             private uint elementTypeSize;
 
-            public ElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, ulong arrayStartAddress)
+            public ElementCreatorReadOnlyList(UserTypeDelegates<T> delegates, CodeType elementType, ulong arrayStartAddress)
             {
-                this.activator = activator;
+                this.delegates = delegates;
                 this.elementType = elementType;
                 this.arrayStartAddress = arrayStartAddress;
                 elementTypeSize = elementType.Size;
@@ -277,8 +270,16 @@ namespace CsScripts
                     ulong address = arrayStartAddress + (ulong)index * elementTypeSize;
                     var buffer = Debugger.ReadMemory(elementType.Module.Process, address, elementTypeSize);
 
-                    return activator(Variable.CreateNoCast(elementType, address), buffer, 0, address);
+                    return delegates.PhysicalConstructor(buffer, 0, address, elementType, address, Variable.ComputedName, Variable.UntrackedPath);
                 }
+            }
+
+            public T Reuse(T element, int index)
+            {
+                ulong address = arrayStartAddress + (ulong)index * elementTypeSize;
+                var buffer = Debugger.ReadMemory(elementType.Module.Process, address, elementTypeSize);
+
+                return delegates.Reuse(element, buffer, 0, address, elementType, address);
             }
 
             public int Count
@@ -300,18 +301,18 @@ namespace CsScripts
             }
         }
 
-        private class BufferedElementCreatorReadOnlyList : IReadOnlyList<T>
+        private class BufferedElementCreatorReadOnlyList : IReuseUserTypeReadOnlyList<T>
         {
-            private TypeConstructor activator;
+            private UserTypeDelegates<T> delegates;
             private CodeType elementType;
             private ulong arrayStartAddress;
             private uint elementTypeSize;
             private MemoryBuffer buffer;
             private ulong bufferAddress;
 
-            public BufferedElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, MemoryBuffer buffer, ulong bufferAddress, ulong arrayStartAddress)
+            public BufferedElementCreatorReadOnlyList(UserTypeDelegates<T> delegates, CodeType elementType, MemoryBuffer buffer, ulong bufferAddress, ulong arrayStartAddress)
             {
-                this.activator = activator;
+                this.delegates = delegates;
                 this.elementType = elementType;
                 this.arrayStartAddress = arrayStartAddress;
                 this.buffer = buffer;
@@ -326,8 +327,16 @@ namespace CsScripts
                     int offset = (int)(index * elementTypeSize);
                     ulong address = arrayStartAddress + (ulong)offset;
 
-                    return activator(Variable.CreateNoCast(elementType, address), buffer, offset, bufferAddress);
+                    return delegates.PhysicalConstructor(buffer, offset, bufferAddress, elementType, address, Variable.ComputedName, Variable.UntrackedPath);
                 }
+            }
+
+            public T Reuse(T element, int index)
+            {
+                int offset = (int)(index * elementTypeSize);
+                ulong address = arrayStartAddress + (ulong)offset;
+
+                return (T)delegates.Reuse(element, buffer, offset, bufferAddress, elementType, address);
             }
 
             public int Count

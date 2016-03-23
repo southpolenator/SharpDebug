@@ -95,6 +95,24 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="UserType"/> class.
+        /// </summary>
+        /// <param name="buffer">The buffer.</param>
+        /// <param name="offset">The offset.</param>
+        /// <param name="bufferAddress">The buffer address.</param>
+        /// <param name="codeType">The variable code type.</param>
+        /// <param name="address">The variable address.</param>
+        /// <param name="name">The variable name.</param>
+        /// <param name="path">The variable path.</param>
+        public UserType(MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UntrackedPath)
+            : base(codeType, address, name, path)
+        {
+            memoryBuffer = buffer;
+            memoryBufferOffset = offset;
+            memoryBufferAddress = bufferAddress;
+        }
+
+        /// <summary>
         /// Gets the base class string.
         /// </summary>
         /// <param name="baseClassType">Type of the base class.</param>
@@ -168,6 +186,24 @@ namespace CsScripts
             for (int i = 0; i < elements; i++, offset += 8)
                 array[i] = ReadUlong(buffer, offset);
             return array;
+        }
+
+        /// <summary>
+        /// Reuses this object with new values.
+        /// </summary>
+        /// <param name="buffer">The buffer.</param>
+        /// <param name="offset">The offset.</param>
+        /// <param name="bufferAddress">The buffer address.</param>
+        /// <param name="codeType">The variable code type.</param>
+        /// <param name="address">The variable address.</param>
+        /// <param name="name">The variable name.</param>
+        /// <param name="path">The variable path.</param>
+        protected void ReuseUserType(MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UntrackedPath)
+        {
+            base.ReuseUserType(codeType, address, name, path);
+            memoryBuffer = buffer;
+            memoryBufferOffset = offset;
+            memoryBufferAddress = bufferAddress;
         }
 
         /// <summary>

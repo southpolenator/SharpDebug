@@ -87,6 +87,25 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Reuses this object with new values
+        /// </summary>
+        /// <param name="codeType">Type of the code.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        internal protected void ReuseUserType(CodeType codeType, ulong address, string name, string path)
+        {
+            this.codeType = codeType;
+            this.name = name;
+            this.path = path;
+            Address = address;
+
+            // Initialize caches
+            data = SimpleCache.CreateStruct(ReadData);
+            runtimeCodeType = SimpleCache.CreateStruct(FindRuntimeCodeType);
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Variable" /> class.
         /// </summary>
         /// <param name="codeType">The code type.</param>
@@ -784,50 +803,16 @@ namespace CsScripts
                 }
             }
 
-            // Check if type has constructor with one argument and that argument is inherited from Variable
-            UserTypeConstructor activator = typeToConstructor[conversionType];
+            // Use symbolic constructor to convert variable to user type
+            var activator = GlobalCache.UserTypeDelegates[conversionType].SymbolicConstructor;
+
+            if (activator == null)
+            {
+                throw new InvalidCastException("Cannot cast Variable to " + conversionType);
+            }
 
             return activator(activatorParameter);
         }
-
-        private delegate object UserTypeConstructor(Variable variable);
-
-        /// <summary>
-        /// The cache of type to constructor delegate
-        /// </summary>
-        private static DictionaryCache<Type, UserTypeConstructor> typeToConstructor = new DictionaryCache<Type, UserTypeConstructor>((conversionType) =>
-        {
-            var constructors = conversionType.GetConstructors();
-
-            foreach (var constructor in constructors)
-            {
-                if (!constructor.IsPublic)
-                {
-                    continue;
-                }
-
-                var parameters = constructor.GetParameters();
-
-                if (parameters.Length < 1 || parameters.Count(p => !p.HasDefaultValue) > 1)
-                {
-                    continue;
-                }
-
-                if (parameters[0].ParameterType == typeof(Variable))
-                {
-                    DynamicMethod method = new DynamicMethod("CreateIntance", conversionType, new Type[] { typeof(Variable) });
-                    ILGenerator gen = method.GetILGenerator();
-
-                    gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Newobj, constructor);
-                    gen.Emit(OpCodes.Ret);
-                    return (UserTypeConstructor)method.CreateDelegate(typeof(UserTypeConstructor));
-
-                }
-            }
-
-            throw new InvalidCastException("Cannot cast Variable to " + conversionType);
-        });
 
         /// <summary>
         /// Casts variable to new type.
@@ -1003,7 +988,7 @@ namespace CsScripts
             }
 
             // Create new instance of user defined type
-            UserTypeConstructor activator = typeToConstructor[types[0].Type];
+            var activator = GlobalCache.UserTypeDelegates[types[0].Type].SymbolicConstructor;
 
             return (Variable)activator(originalVariable);
         }
