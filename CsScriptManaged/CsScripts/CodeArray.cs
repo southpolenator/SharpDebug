@@ -203,13 +203,11 @@ namespace CsScripts
 
                                 var parameters = constructor.GetParameters();
 
-                                Console.WriteLine("Parameters: {0}", parameters.Length);
                                 if (parameters.Length < 7 || parameters.Count(p => !p.HasDefaultValue) > 7)
                                 {
                                     continue;
                                 }
 
-                                Console.WriteLine("Testing types");
                                 if (parameters[0].ParameterType == typeof(MemoryBuffer)
                                     && parameters[1].ParameterType == typeof(int)
                                     && parameters[2].ParameterType == typeof(ulong)
@@ -218,7 +216,6 @@ namespace CsScripts
                                     && parameters[5].ParameterType == typeof(string)
                                     && parameters[6].ParameterType == typeof(string))
                                 {
-                                    Console.WriteLine("Testing passed");
                                     DynamicMethod method = new DynamicMethod("CreateIntance", type, new Type[] { typeof(MemoryBuffer), typeof(int), typeof(ulong), typeof(CodeType), typeof(ulong), typeof(string), typeof(string) });
                                     ILGenerator gen = method.GetILGenerator();
 
