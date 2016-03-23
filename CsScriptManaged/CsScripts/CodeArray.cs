@@ -7,10 +7,24 @@ using CsScriptManaged;
 namespace CsScripts
 {
     /// <summary>
+    /// Represents read-only list that can reuse element when getting new one.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public interface IReuseUserTypeReadOnlyList<T> : IReadOnlyList<T>
+    {
+        /// <summary>
+        /// Reuses the specified element for getting the specified index.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="index">The index.</param>
+        T Reuse(T element, int index);
+    }
+
+    /// <summary>
     /// Wrapper class that represents a "static" array. For example "int a[4]";
     /// </summary>
     /// <typeparam name="T">The type of elements in the array</typeparam>
-    public class CodeArray<T> : IReadOnlyList<T>
+    public class CodeArray<T> : IReuseUserTypeReadOnlyList<T>
     {
         /// <summary>
         /// The actual variable where we get all the values.
@@ -220,7 +234,7 @@ namespace CsScripts
         {
             var delegates = GetDelegates();
 
-            if (delegates != null)
+            if (delegates != null && delegates.PhysicalConstructor != null)
             {
                 var address = variable.GetPointerAddress();
                 var elementType = variable.GetCodeType().ElementType;
@@ -241,11 +255,6 @@ namespace CsScripts
                     preCalculatedReuseArray = (IReuseUserTypeReadOnlyList<T>)preCalculatedArray;
                 }
             }
-        }
-
-        private interface IReuseUserTypeReadOnlyList<T> : IReadOnlyList<T>
-        {
-            T Reuse(T element, int index);
         }
 
         private class ElementCreatorReadOnlyList : IReuseUserTypeReadOnlyList<T>
@@ -336,7 +345,7 @@ namespace CsScripts
                 int offset = (int)(index * elementTypeSize);
                 ulong address = arrayStartAddress + (ulong)offset;
 
-                return (T)delegates.Reuse(element, buffer, offset, bufferAddress, elementType, address);
+                return delegates.Reuse(element, buffer, offset, bufferAddress, elementType, address);
             }
 
             public int Count

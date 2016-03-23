@@ -370,7 +370,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     yield return new UserTypeField
                     {
-                        ConstructorText = string.Format("variable.GetBaseClass(baseClassString)"),
+                        ConstructorText = string.Format("GetBaseClass(baseClassString)"),
                         FieldName = "thisClass",
                         FieldType = "Variable",
                         FieldTypeInfoComment = null,
@@ -448,7 +448,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             {
                 foreach (var moduleName in GlobalCache.GetSymbolModuleNames(Symbol))
                     output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, TypeName);
-                output.WriteLine(indentation, @"public partial class {0} {1} {2}", ClassName, !string.IsNullOrEmpty(baseType.GetUserTypeString()) ? ":" : "", baseType);
+                output.WriteLine(indentation, @"public partial class {0} : {1}, CsScriptManaged.IReuseUserType", ClassName, baseType);
             }
             else
                 output.WriteLine(indentation, @"public static class {0}", ClassName);
@@ -470,6 +470,16 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             foreach (var constructor in constructors)
                 constructor.WriteCode(output, indentation, fields, ConstructorName, ExportStaticFields);
+
+            if (ExportDynamicFields)
+            {
+                output.WriteLine();
+                output.WriteLine(indentation, "void CsScriptManaged.IReuseUserType.ReuseUserType(CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name, string path)");
+                output.WriteLine(indentation++, @"{{");
+                output.WriteLine(indentation, "base.ReuseUserType(buffer, offset, bufferAddress, codeType, address, name, path);");
+                output.WriteLine(indentation, "PartialInitialize();");
+                output.WriteLine(--indentation, @"}}");
+            }
 
             bool firstField = true;
             foreach (var field in fields)
@@ -546,6 +556,14 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     Arguments = "Variable variable, CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
                     BaseClassInitialization = "base(variable, buffer, offset, bufferAddress)",
+                    ContainsFieldDefinitions = true,
+                    Static = false,
+                };
+
+                yield return new UserTypeConstructor()
+                {
+                    Arguments = "CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
+                    BaseClassInitialization = "base(buffer, offset, bufferAddress, codeType, address, name, path)",
                     ContainsFieldDefinitions = true,
                     Static = false,
                 };

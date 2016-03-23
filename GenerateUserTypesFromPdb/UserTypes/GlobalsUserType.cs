@@ -12,6 +12,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         public GlobalsUserType(Symbol symbol, XmlType type, string nameSpace)
             : base(symbol, type, nameSpace)
         {
+            ExportDynamicFields = false;
         }
 
         public override string ClassName
