@@ -486,10 +486,17 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 innerType.WriteCode(output, error, factory, options, indentation);
             }
 
-            if (baseType is UserTypeTreeMultiClassInheritance)
+            if (baseType is UserTypeTreeMultiClassInheritance || baseType is UserTypeTreeSingleClassInheritanceWithInterfaces)
             {
+                IEnumerable<Symbol> baseClassesForProperties = baseClasses;
+
+                if (baseType is UserTypeTreeSingleClassInheritanceWithInterfaces)
+                {
+                    baseClassesForProperties = baseClasses.Where(b => b.IsEmpty);
+                }
+
                 // Write all properties for getting base classes
-                foreach (var type in baseClasses)
+                foreach (var type in baseClassesForProperties)
                 {
                     var field = ExtractField(type.CastAsSymbolField(), factory, options, true);
 
@@ -594,7 +601,21 @@ namespace GenerateUserTypesFromPdb.UserTypes
             var baseClasses = type.BaseClasses;
 
             if (baseClasses.Length > 1)
+            {
+                int emptyTypes = baseClasses.Count(t => t.IsEmpty);
+
+                if (emptyTypes == baseClasses.Length - 1)
+                {
+                    UserType userType;
+
+                    if (factory.GetUserType(baseClasses.Where(t => !t.IsEmpty).First(), out userType) && !(userType is PrimitiveUserType))
+                    {
+                        return new UserTypeTreeSingleClassInheritanceWithInterfaces(userType, factory);
+                    }
+                }
+
                 return new UserTypeTreeMultiClassInheritance();
+            }
 
             if (baseClasses.Length == 1)
             {

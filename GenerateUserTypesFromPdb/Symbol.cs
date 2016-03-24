@@ -31,6 +31,7 @@ namespace GenerateUserTypesFromPdb
                 Name = "";
 
             Name = Name.Replace("<enum ", "<").Replace(",enum ", ",");
+            Offset = symbol.offset;
 
             var size = symbol.length;
             if (size > int.MaxValue)
@@ -92,6 +93,8 @@ namespace GenerateUserTypesFromPdb
         public Module Module { get; private set; }
 
         public int Size { get; private set; }
+
+        public int Offset { get; private set; }
 
         public SymTagEnum Tag { get; private set; }
 
@@ -155,6 +158,18 @@ namespace GenerateUserTypesFromPdb
             get
             {
                 return pointerType.Value;
+            }
+        }
+
+        public bool IsEmpty
+        {
+            get
+            {
+                if (Size == 0)
+                    return true;
+                if (Fields.Length > 0)
+                    return false;
+                return !BaseClasses.Where(b => !b.IsEmpty).Any();
             }
         }
 

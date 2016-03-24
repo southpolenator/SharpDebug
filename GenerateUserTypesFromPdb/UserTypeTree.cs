@@ -285,6 +285,21 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
+    internal class UserTypeTreeSingleClassInheritanceWithInterfaces : UserTypeTree
+    {
+        public UserTypeTreeSingleClassInheritanceWithInterfaces(UserType userType, UserTypeFactory factory)
+        {
+            UserType = UserTypeTreeUserType.Create(userType, factory);
+        }
+
+        public UserTypeTree UserType { get; private set; }
+
+        public override string GetUserTypeString()
+        {
+            return UserType.GetUserTypeString();
+        }
+    }
+
     internal class UserTypeTreeTransformation : UserTypeTree
     {
         public UserTypeTreeTransformation(UserTypeTransformation transformation)
