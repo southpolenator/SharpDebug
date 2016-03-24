@@ -50,6 +50,12 @@ namespace PowershellDebugSession
         [Parameter(Mandatory = true)]
         public string ProcessPath { get; set; }
 
+        /// <summary>
+        /// Symbol path.
+        /// </summary>
+        [Parameter(Mandatory = false)]
+        public string SymbolPath { get; set; }
+
 
         protected override void ProcessRecord()
         {
@@ -65,11 +71,22 @@ namespace PowershellDebugSession
                 Marshal.ThrowExceptionForHR(hresult);
             }
 
+            if (SymbolPath == null)
+            {
+                SymbolPath = "srv*"
+            }
+
             ((IDebugClient7)client).CreateProcessAndAttach(0, ProcessPath, 0x00000002); 
             ((IDebugControl7)client).WaitForEvent(0, uint.MaxValue);
             ((IDebugSymbols5)client).SetSymbolPathWide(@"srv*;.\");
 
+            // For live debugging disable caching.
+            //
+            Context.EnableUserCastedVariableCaching = false;
+            Context.EnableVariableCaching = false;
+
             Context.Initalize(client);
+
 
             WriteDebug("Connection successfully initialized");
 
