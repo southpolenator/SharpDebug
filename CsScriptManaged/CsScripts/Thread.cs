@@ -131,7 +131,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the stack trace.
         /// </summary>
-        private StackTrace GetStackTrace()
+        public StackTrace GetStackTrace()
         {
             const int MaxCallStack = 1024;
             using (ThreadSwitcher switcher = new ThreadSwitcher(this))
@@ -148,7 +148,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the thread context.
         /// </summary>
-        private ThreadContext GetThreadContext()
+        public ThreadContext GetThreadContext()
         {
             using (ThreadSwitcher switcher = new ThreadSwitcher(this))
             using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(1))

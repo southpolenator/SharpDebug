@@ -220,3 +220,9 @@ ModelManifest.xml
 /NuGet.Packager/lib/CommandLine.dll
 /NuGet.Packager/CsScripts.Package.1.0.0.nupkg.bak
 /CsScriptManagedReference/Help
+
+
+
+# temp gvim files
+*.swp
+*.swo
