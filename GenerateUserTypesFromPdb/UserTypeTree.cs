@@ -357,6 +357,8 @@ namespace GenerateUserTypesFromPdb
 
         public string Access { get; set; } = "private";
 
+        public bool OverrideWithNew { get; set; } = false;
+
         private string GetConstantValue()
         {
             if (ConstantValue.StartsWith("-"))
@@ -386,9 +388,9 @@ namespace GenerateUserTypesFromPdb
             else if (Static && !UseUserMember)
                 output.WriteLine(indentation, "{3} static {0} {1} = {2};", FieldType, FieldName, ConstructorText, Access);
             else if (UseUserMember && CacheResult)
-                output.WriteLine(indentation, "{3} {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName, Access);
+                output.WriteLine(indentation, "{3}{4} {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName, Access, OverrideWithNew ? " new" : "");
             else if (CacheResult)
-                output.WriteLine(indentation, "{3} {0}{1} {2};", Static ? "static " : "", FieldType, FieldName, Access);
+                output.WriteLine(indentation, "{3}{4} {0}{1} {2};", Static ? "static " : "", FieldType, FieldName, Access, OverrideWithNew ? " new" : "");
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                 output.WriteLine();
         }
@@ -399,7 +401,7 @@ namespace GenerateUserTypesFromPdb
                 if (UseUserMember && CacheResult)
                     output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", FieldName, ConstructorText);
                 else if (CacheResult)
-                    output.WriteLine(indentation, "{0} = {1};", FieldName, ConstructorText);
+                    output.WriteLine(indentation, "{2}{0} = {1};", FieldName, ConstructorText, !Static ? "this." : "");
         }
 
         public virtual void WritePropertyCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options, ref bool firstField)

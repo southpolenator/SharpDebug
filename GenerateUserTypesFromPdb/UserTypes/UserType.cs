@@ -419,11 +419,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
-            var symbol = Symbol;
+            int baseClassOffset = 0;
+            UserTypeTree baseType = ExportDynamicFields ? GetBaseTypeString(error, Symbol, factory, out baseClassOffset) : null;
             var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
             bool hasStatic = fields.Where(f => f.Static).Any(), hasNonStatic = fields.Where(f => !f.Static).Any();
-            UserTypeTree baseType = ExportDynamicFields ? GetBaseTypeString(error, symbol, factory) : null;
-            Symbol[] baseClasses = symbol.BaseClasses;
+            Symbol[] baseClasses = Symbol.BaseClasses;
 
             if (DeclaredInType == null)
             {
@@ -596,7 +596,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return typeTree.GetUserTypeString();
         }
 
-        protected virtual UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory)
+        protected virtual UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
             var baseClasses = type.BaseClasses;
 
@@ -607,13 +607,16 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 if (emptyTypes == baseClasses.Length - 1)
                 {
                     UserType userType;
+                    Symbol baseClassSymbol = baseClasses.Where(t => !t.IsEmpty).First();
 
-                    if (factory.GetUserType(baseClasses.Where(t => !t.IsEmpty).First(), out userType) && !(userType is PrimitiveUserType))
+                    if (factory.GetUserType(baseClassSymbol, out userType) && !(userType is PrimitiveUserType))
                     {
+                        baseClassOffset = baseClassSymbol.Offset;
                         return new UserTypeTreeSingleClassInheritanceWithInterfaces(userType, factory);
                     }
                 }
 
+                baseClassOffset = 0;
                 return new UserTypeTreeMultiClassInheritance();
             }
 
@@ -625,7 +628,10 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 var transformation = factory.FindTransformation(baseClassType, this);
 
                 if (transformation != null)
+                {
+                    baseClassOffset = 0;
                     return new UserTypeTreeTransformation(transformation);
+                }
 
                 UserType baseUserType;
 
@@ -635,13 +641,19 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     UserTypeTreeGenericsType genericsTree = tree as UserTypeTreeGenericsType;
 
                     if (genericsTree != null && !genericsTree.CanInstatiate)
+                    {
+                        baseClassOffset = 0;
                         return new UserTypeTreeVariable(false);
+                    }
+
+                    baseClassOffset = baseClassType.Offset;
                     return tree;
                 }
 
-                return GetBaseTypeString(error, baseClassType, factory);
+                return GetBaseTypeString(error, baseClassType, factory, out baseClassOffset);
             }
 
+            baseClassOffset = 0;
             return new UserTypeTreeVariable(false);
         }
 

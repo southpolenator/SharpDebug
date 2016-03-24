@@ -63,8 +63,9 @@ namespace GenerateUserTypesFromPdb.UserTypes
         }
 
 
-        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory)
+        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
+            baseClassOffset = 0;
             return new UserTypeStaticClass();
         }
 
