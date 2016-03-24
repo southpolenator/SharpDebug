@@ -36,7 +36,7 @@ namespace CreateDbgEngIdl
 
         static void Main(string[] args)
         {
-            const string HeaderFile = @"C:\Program Files (x86)\Windows Kits\10\Include\10.0.10586.0\um\dbgeng.h";
+            const string HeaderFile = @"C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\um\dbgeng.h";
             Regex defineDeclarationRegex = new Regex(@"#define\s+([^(]+)\s+((0x|)[0-9a-fA-F]+)$");
             Regex typedefStructOneLineRegex = new Regex(@"typedef struct.*;");
             Regex typedefStructMultiLineRegex = new Regex(@"typedef struct[^;]+");
@@ -425,7 +425,7 @@ library DbgEngManaged
             ProcessStartInfo startInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Windows Kits\10\bin\x64\midl.exe");
             string midlPlatform = IntPtr.Size == 4 ? "/win32 /robust" : "/x64";
 
-            startInfo.Arguments = @"/I""C:\Program Files (x86)\Windows Kits\10\Include\10.0.10586.0\um"" /I""C:\Program Files (x86)\Windows Kits\10\Include\10.0.10586.0\shared"" output.idl /tlb output.tlb " + midlPlatform;
+            startInfo.Arguments = @"/I""C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\um"" /I""C:\Program Files (x86)\Windows Kits\10\Include\10.0.10586.0\shared"" output.idl /tlb output.tlb " + midlPlatform;
             startInfo.UseShellExecute = false;
             startInfo.EnvironmentVariables["Path"] = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin;" + startInfo.EnvironmentVariables["Path"];
             using (Process process = Process.Start(startInfo))
