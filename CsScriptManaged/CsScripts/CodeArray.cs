@@ -80,23 +80,23 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Initializes this instance of the <see cref="CodeArray{T}"/> class.
+        /// Initializes a new instance of the <see cref="CodeArray{T}"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <param name="length">The array length.</param>
-        private void Initialize(Variable variable, int length)
+        public CodeArray(Variable variable, uint length)
         {
-            this.variable = variable;
-            Length = length;
-            preCalculatedArray = ReadArray();
-            if (preCalculatedArray == null && variable.GetCodeType().ElementType.IsPointer)
+            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
             {
-                var process = variable.GetCodeType().Module.Process;
-                var pointerSize = process.GetPointerSize();
-                var buffer = Debugger.ReadMemory(process, variable.GetPointerAddress(), (uint)Length * pointerSize);
-
-                addressesArray = UserType.ReadPointerArray(buffer, 0, Length, pointerSize);
+                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
             }
+
+            if (length > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException("length");
+            }
+
+            Initialize(variable, (int)length);
         }
 
         /// <summary>
@@ -187,6 +187,26 @@ namespace CsScripts
             for (int i = 0; i < Length; i++)
             {
                 yield return this[i];
+            }
+        }
+
+        /// <summary>
+        /// Initializes this instance of the <see cref="CodeArray{T}"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        private void Initialize(Variable variable, int length)
+        {
+            this.variable = variable;
+            Length = length;
+            preCalculatedArray = ReadArray();
+            if (preCalculatedArray == null && variable.GetCodeType().ElementType.IsPointer)
+            {
+                var process = variable.GetCodeType().Module.Process;
+                var pointerSize = process.GetPointerSize();
+                var buffer = Debugger.ReadMemory(process, variable.GetPointerAddress(), (uint)Length * pointerSize);
+
+                addressesArray = UserType.ReadPointerArray(buffer, 0, Length, pointerSize);
             }
         }
 

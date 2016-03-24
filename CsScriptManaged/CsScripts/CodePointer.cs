@@ -129,7 +129,21 @@ namespace CsScripts
         /// Converts pointer to array of specified length.
         /// </summary>
         /// <param name="length">The length.</param>
-        public CodeArray<T> ConvertToArray(int length)
+        public CodeArray<T> ToCodeArray(uint length)
+        {
+            if (length > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException("length");
+            }
+
+            return ToCodeArray((int)length);
+        }
+
+        /// <summary>
+        /// Converts pointer to array of specified length.
+        /// </summary>
+        /// <param name="length">The length.</param>
+        public CodeArray<T> ToCodeArray(int length)
         {
             return new CodeArray<T>(this, length);
         }
@@ -138,9 +152,23 @@ namespace CsScripts
         /// Converts pointer to array of specified length.
         /// </summary>
         /// <param name="length">The length.</param>
+        public T[] ToArray(uint length)
+        {
+            if (length > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException("length");
+            }
+
+            return ToArray((int)length);
+        }
+
+        /// <summary>
+        /// Converts pointer to array of specified length.
+        /// </summary>
+        /// <param name="length">The length.</param>
         public T[] ToArray(int length)
         {
-            return ConvertToArray(length).ToArray();
+            return ToCodeArray(length).ToArray();
         }
     }
 }
