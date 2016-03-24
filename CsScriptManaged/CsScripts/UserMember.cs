@@ -34,7 +34,7 @@ namespace CsScripts
     /// Helper class for caching user members (fields) in auto generated classes
     /// </summary>
     /// <typeparam name="T">Type to be cached</typeparam>
-    public class UserMember<T>
+    public struct UserMember<T>
     {
         /// <summary>
         /// The populate action
@@ -53,6 +53,8 @@ namespace CsScripts
         public UserMember(Func<T> populateAction)
         {
             this.populateAction = populateAction;
+            value = default(T);
+            Cached = false;
         }
 
         /// <summary>
@@ -83,6 +85,17 @@ namespace CsScripts
                 this.value = value;
                 Cached = true;
             }
+        }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return value.ToString();
         }
     }
 }

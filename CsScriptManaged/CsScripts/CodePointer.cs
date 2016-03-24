@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace CsScripts
 {
@@ -6,13 +7,8 @@ namespace CsScripts
     /// Wrapper class that represents a pointer.
     /// </summary>
     /// <typeparam name="T">The type of element this pointer points to.</typeparam>
-    public class CodePointer<T>
+    public class CodePointer<T> : Variable
     {
-        /// <summary>
-        /// The actual variable where we get all the values.
-        /// </summary>
-        private Variable variable;
-
         /// <summary>
         /// The element
         /// </summary>
@@ -23,13 +19,13 @@ namespace CsScripts
         /// </summary>
         /// <param name="variable">The variable.</param>
         public CodePointer(Variable variable)
+            : base(variable)
         {
-            if (!variable.GetCodeType().IsPointer)
+            if (!GetCodeType().IsPointer)
             {
                 throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
             }
 
-            this.variable = variable;
             element = UserMember.Create(() => variable.DereferencePointer().CastAs<T>());
         }
 
@@ -54,8 +50,26 @@ namespace CsScripts
         {
             get
             {
-                return variable.IsNullPointer();
+                return IsNullPointer();
             }
+        }
+
+        /// <summary>
+        /// Converts pointer to array of specified length.
+        /// </summary>
+        /// <param name="length">The length.</param>
+        public CodeArray<T> ConvertToArray(int length)
+        {
+            return new CodeArray<T>(this, length);
+        }
+
+        /// <summary>
+        /// Converts pointer to array of specified length.
+        /// </summary>
+        /// <param name="length">The length.</param>
+        public T[] ToArray(int length)
+        {
+            return ConvertToArray(length).ToArray();
         }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 
 namespace GenerateUserTypesFromPdb
@@ -19,8 +18,32 @@ namespace GenerateUserTypesFromPdb
 
         public string GeneratedAssemblyName { get; set; }
 
+        public bool GenerateAssemblyWithRoslyn { get; set; }
+
+        public bool DisablePdbGeneration { get; set; }
+
+        public string GeneratedPropsFileName { get; set; }
+
+        public string CommonTypesNamespace { get; set; }
+
+        public bool CacheUserTypeFields { get; set; }
+
+        public bool CacheStaticUserTypeFields { get; set; }
+
+        public bool LazyCacheUserTypeFields { get; set; }
+
+        public bool GeneratePhysicalMappingOfUserTypes { get; set; }
+
+        public bool SingleFileExport { get; set; }
+
+        [XmlArrayItem("Module")]
+        public XmlModule[] Modules { get; set; }
+
         [XmlArrayItem("Type")]
         public XmlType[] Types { get; set; }
+
+        [XmlArrayItem("IncludedFile")]
+        public XmlIncludedFile[] IncludedFiles { get; set; }
 
         [XmlArrayItem("Transformation")]
         public XmlTypeTransformation[] Transformations { get; set; }
@@ -51,14 +74,55 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
+    public class XmlModule
+    {
+        [XmlAttribute]
+        public string Name { get; set; }
+
+        [XmlAttribute]
+        public string PdbPath { get; set; }
+
+        [XmlAttribute]
+        public string Namespace { get; set; }
+    }
+
+    public class XmlIncludedFile
+    {
+        [XmlAttribute]
+        public string Path { get; set; }
+    }
+
     public class XmlType
     {
         [XmlAttribute]
         public string Name { get; set; }
 
-        public HashSet<string> ExcludedFields { get; set; }
+        public HashSet<string> ExcludedFields { get; set; } = new HashSet<string>();
 
-        public HashSet<string> IncludedFields { get; set; }
+        public HashSet<string> IncludedFields { get; set; } = new HashSet<string>();
+
+        public bool IsTemplate
+        {
+            get
+            {
+                return Name.EndsWith("<>");
+            }
+        }
+
+        public string NameWildcard
+        {
+            get
+            {
+                if (!IsTemplate)
+                    return Name;
+                return Name.Replace("<>", "<*>");
+            }
+        }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     public class XmlTypeTransformation
@@ -82,6 +146,9 @@ namespace GenerateUserTypesFromPdb
 
         [XmlAttribute]
         public string OriginalType { get; set; }
+
+        [XmlAttribute]
+        public bool HasPhysicalConstructor { get; set; }
 
         public bool Matches(string inputType)
         {
@@ -163,7 +230,7 @@ namespace GenerateUserTypesFromPdb
             return i == originalType.Length && j == inputType.Length;
         }
 
-        private static string ExtractType(string inputType, int j)
+        internal static string ExtractType(string inputType, int j)
         {
             int k = j;
             int openedTypes = 0;
@@ -203,6 +270,11 @@ namespace GenerateUserTypesFromPdb
                 throw new Exception("Incorrect format of OriginalType '" + originalType + "' at char " + i);
 
             return originalType.Substring(i, k - i);
+        }
+
+        public override string ToString()
+        {
+            return OriginalType + " => " + NewType;
         }
     }
 }

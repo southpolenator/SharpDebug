@@ -81,8 +81,24 @@
       <HintPath>..\DiaHelpers\Dia2Lib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
+    <Reference Include="Microsoft.CodeAnalysis, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\CsScripts\packages\Microsoft.CodeAnalysis.Common.1.1.1\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\CsScripts\packages\Microsoft.CodeAnalysis.CSharp.1.1.1\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Collections.Immutable, Version=1.1.37.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\CsScripts\packages\System.Collections.Immutable.1.1.37\lib\dotnet\System.Collections.Immutable.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Core" />
+    <Reference Include="System.Reflection.Metadata, Version=1.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\CsScripts\packages\System.Reflection.Metadata.1.1.0\lib\dotnet5.2\System.Reflection.Metadata.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -91,11 +107,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GlobalCache.cs" />
     <Compile Include="IndentedWriter.cs" />
+    <Compile Include="Module.cs" />
+    <Compile Include="NameHelper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="..\Properties\SharedAssemblyInfo.cs" />
-    <Compile Include="UserType.cs" />
+    <Compile Include="..\CsScriptManaged\Utility\SimpleCache.cs" />
+    <Compile Include="Symbol.cs" />
+    <Compile Include="UserTypeTree.cs" />
+    <Compile Include="UserTypes\EnumUserType.cs" />
+    <Compile Include="UserTypes\GlobalsUserType.cs" />
+    <Compile Include="UserTypes\NamespaceUserType.cs" />
+    <Compile Include="UserTypes\PhysicalUserType.cs" />
+    <Compile Include="UserTypes\PrimitiveUserType.cs" />
+    <Compile Include="UserTypes\TemplateUserType.cs" />
+    <Compile Include="UserTypeFactory\TemplateUserTypeFactory.cs" />
+    <Compile Include="UserTypes\UserType.cs" />
+    <Compile Include="UserTypeFactory\UserTypeFactory.cs" />
     <Compile Include="XmlConfig.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -107,6 +137,10 @@
       <Project>{3ca2d1d6-136f-4032-901e-043fa25b6255}</Project>
       <Name>DiaHelpers</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\CsScripts\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
+    <Analyzer Include="..\CsScripts\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

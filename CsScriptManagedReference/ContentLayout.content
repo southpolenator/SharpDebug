@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Topics>
-  <Topic id="6defcd89-6d94-4be3-acbe-1121013b6664" visible="True" isDefault="true" isSelected="true" title="Using C# scripts">
+  <Topic id="6defcd89-6d94-4be3-acbe-1121013b6664" visible="True" isDefault="true" title="Using C# scripts">
     <HelpKeywords>
       <HelpKeyword index="K" term="Wiki" />
     </HelpKeywords>
@@ -9,9 +9,14 @@
     <HelpKeywords>
       <HelpKeyword index="K" term="version, history" />
     </HelpKeywords>
+    <Topic id="7A7E54BC-F6AB-4D00-8AA8-214208222547" visible="True" isSelected="true" title="Version 1.0.0.3">
+      <HelpKeywords>
+        <HelpKeyword index="K" term="version, 1.0.0.3" />
+      </HelpKeywords>
+    </Topic>
     <Topic id="47ce43b7-a057-4797-bd7c-c2ff8e4c72ab" visible="True" title="Version 1.0.0.2">
       <HelpKeywords>
-        <HelpKeyword index="K" term="version, 1.0.0.1" />
+        <HelpKeyword index="K" term="version, 1.0.0.2" />
       </HelpKeywords>
     </Topic>
     <Topic id="0f414275-632b-4672-abf4-6ff1af646b09" visible="True" title="Version 1.0.0.1">

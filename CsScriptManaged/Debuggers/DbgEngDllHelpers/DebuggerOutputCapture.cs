@@ -2,12 +2,12 @@
 using System.IO;
 using System.Text;
 
-namespace CsScriptManaged.Utility
+namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Helper class for capturing debugger output while executing commands
     /// </summary>
-    public class DebuggerOutputCapture : IDebugOutputCallbacksWide
+    internal class DebuggerOutputCapture : IDebugOutputCallbacksWide
     {
         /// <summary>
         /// The string builder
@@ -56,7 +56,7 @@ namespace CsScriptManaged.Utility
     /// <summary>
     /// Helper class for capturing debugger output while executing commands
     /// </summary>
-    public class DebuggerOutputToTextWriter : IDebugOutputCallbacksWide
+    internal class DebuggerOutputToTextWriter : IDebugOutputCallbacksWide
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DebuggerOutputToTextWriter"/> class.

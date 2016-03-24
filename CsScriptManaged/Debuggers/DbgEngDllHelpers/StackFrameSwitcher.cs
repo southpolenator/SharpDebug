@@ -1,7 +1,7 @@
 ﻿using CsScripts;
 using System;
 
-namespace CsScriptManaged.Utility
+namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Used for scoped stack frame switching.
@@ -14,15 +14,16 @@ namespace CsScriptManaged.Utility
     /// <remarks>Use this class for accessing stack frame information from DbgEng.dll interfaces to insure correct stack frame information access.</remarks>
     /// <remarks>For performance reasons, after using scope, previous stack frame won't be set until it is needed. Always use this class to insure correctness.</remarks>
     /// </summary>
-    public class StackFrameSwitcher : IDisposable
+    internal class StackFrameSwitcher : IDisposable
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="StackFrameSwitcher"/> class.
+        /// Initializes a new instance of the <see cref="StackFrameSwitcher" /> class.
         /// </summary>
+        /// <param name="stateCache">The state cache.</param>
         /// <param name="stackFrame">The stack frame.</param>
-        public StackFrameSwitcher(StackFrame stackFrame)
+        public StackFrameSwitcher(StateCache stateCache, StackFrame stackFrame)
         {
-            Context.StateCache.SwitchStackFrame(stackFrame);
+            stateCache.SwitchStackFrame(stackFrame);
         }
 
         /// <summary>

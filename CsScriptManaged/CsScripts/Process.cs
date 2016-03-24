@@ -17,9 +17,14 @@ namespace CsScripts
         private SimpleCache<string> executableName;
 
         /// <summary>
+        /// The dump file name
+        /// </summary>
+        private SimpleCache<string> dumpFileName;
+
+        /// <summary>
         /// The system identifier
         /// </summary>
-        private SimpleCache<uint> systemId;
+        internal SimpleCache<uint> systemId;
 
         /// <summary>
         /// Up time
@@ -57,26 +62,56 @@ namespace CsScripts
         private SimpleCache<ImageFileMachine> effectiveProcessorType;
 
         /// <summary>
+        /// The dump file memory reader
+        /// </summary>
+        private SimpleCache<DumpFileMemoryReader> dumpFileMemoryReader;
+
+        /// <summary>
+        /// The ANSI string cache
+        /// </summary>
+        private DictionaryCache<ulong, string> ansiStringCache;
+
+        /// <summary>
+        /// The unicode string cache
+        /// </summary>
+        private DictionaryCache<ulong, string> unicodeStringCache;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Process"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
         internal Process(uint id)
         {
             Id = id;
-            systemId = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessSystemId()));
-            upTime = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessUpTime()));
-            pebAddress = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessPeb()));
-            executableName = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => Context.SystemObjects.GetCurrentProcessExecutableName()));
-            actualProcessorType = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => (ImageFileMachine)Context.Control.GetActualProcessorType()));
-            effectiveProcessorType = SimpleCache.Create(ProcessSwitcher.DelegateProtector(this, () => (ImageFileMachine)Context.Control.GetEffectiveProcessorType()));
-            threads = SimpleCache.Create(GetThreads);
-            modules = SimpleCache.Create(GetModules);
+            systemId = SimpleCache.Create(() => Context.Debugger.GetProcessSystemId(this));
+            upTime = SimpleCache.Create(() => Context.Debugger.GetProcessUpTime(this));
+            pebAddress = SimpleCache.Create(() => Context.Debugger.GetProcessEnvironmentBlockAddress(this));
+            executableName = SimpleCache.Create(() => Context.Debugger.GetProcessExecutableName(this));
+            dumpFileName = SimpleCache.Create(() => Context.Debugger.GetProcessDumpFileName(this));
+            actualProcessorType = SimpleCache.Create(() => Context.Debugger.GetProcessActualProcessorType(this));
+            effectiveProcessorType = SimpleCache.Create(() => Context.Debugger.GetProcessEffectiveProcessorType(this));
+            threads = SimpleCache.Create(() => Context.Debugger.GetProcessThreads(this));
+            modules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
             userTypes = SimpleCache.Create(GetUserTypes);
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
-            ModulesById = new DictionaryCache<ulong, Module>(GetModuleById);
-            Variables = new DictionaryCache<Tuple<CodeType, ulong, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3));
+            ModulesById = new DictionaryCache<ulong, Module>(GetModuleByAddress);
+            Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
             UserTypeCastedVariables = new DictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
             GlobalCache.UserTypeCastedVariables.Add(UserTypeCastedVariables);
+            dumpFileMemoryReader = SimpleCache.Create(() =>
+            {
+                try
+                {
+                    return string.IsNullOrEmpty(DumpFileName) ? null : new DumpFileMemoryReader(DumpFileName);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            });
+            TypeToUserTypeDescription = new DictionaryCache<Type, UserTypeDescription[]>(GetUserTypeDescription);
+            ansiStringCache = new DictionaryCache<ulong, string>(DoReadAnsiString);
+            unicodeStringCache = new DictionaryCache<ulong, string>(DoReadUnicodeString);
         }
 
         /// <summary>
@@ -86,12 +121,12 @@ namespace CsScripts
         {
             get
             {
-                return Context.StateCache.CurrentProcess;
+                return Context.Debugger.GetCurrentProcess();
             }
 
             set
             {
-                Context.StateCache.CurrentProcess = value;
+                Context.Debugger.SetCurrentProcess(value);
             }
         }
 
@@ -102,27 +137,7 @@ namespace CsScripts
         {
             get
             {
-                uint processCount = Context.SystemObjects.GetNumberProcesses();
-                Process[] processes = new Process[processCount];
-                uint[] processIds = new uint[processCount];
-                uint[] processSytemIds = new uint[processCount];
-
-                unsafe
-                {
-                    fixed (uint* ids = &processIds[0])
-                    fixed (uint* systemIds = &processSytemIds[0])
-                    {
-                        Context.SystemObjects.GetProcessIdsByIndex(0, processCount, out *ids, out *systemIds);
-                    }
-                }
-
-                for (uint i = 0; i < processCount; i++)
-                {
-                    processes[i] = GlobalCache.Processes[processIds[i]];
-                    processes[i].systemId.Value = processSytemIds[i];
-                }
-
-                return processes;
+                return Context.Debugger.GetAllProcesses();
             }
         }
 
@@ -139,12 +154,17 @@ namespace CsScripts
         /// <summary>
         /// Gets the variables by constructor key.
         /// </summary>
-        internal DictionaryCache<Tuple<CodeType, ulong, string>, Variable> Variables { get; private set; }
+        internal DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable> Variables { get; private set; }
 
         /// <summary>
         /// Gets the user type casted variables.
         /// </summary>
-        internal DictionaryCache<Variable, Variable> UserTypeCastedVariables { get; private set; }
+        private DictionaryCache<Variable, Variable> UserTypeCastedVariables { get; set; }
+
+        /// <summary>
+        /// Gets the type to user type description cache.
+        /// </summary>
+        internal DictionaryCache<Type, UserTypeDescription[]> TypeToUserTypeDescription { get; private set; }
 
         /// <summary>
         /// Gets the user types.
@@ -154,6 +174,17 @@ namespace CsScripts
             get
             {
                 return userTypes.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the dump file memory reader.
+        /// </summary>
+        internal DumpFileMemoryReader DumpFileMemoryReader
+        {
+            get
+            {
+                return dumpFileMemoryReader.Value;
             }
         }
 
@@ -181,6 +212,17 @@ namespace CsScripts
             get
             {
                 return executableName.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the name of the dump file.
+        /// </summary>
+        public string DumpFileName
+        {
+            get
+            {
+                return dumpFileName.Value;
             }
         }
 
@@ -213,7 +255,7 @@ namespace CsScripts
         {
             get
             {
-                return Context.StateCache.CurrentThread[this];
+                return Context.Debugger.GetProcessCurrentThread(this);
             }
 
             set
@@ -223,7 +265,7 @@ namespace CsScripts
                     throw new Exception("Cannot set current thread to be from different process");
                 }
 
-                Context.StateCache.SetCurrentThread(value);
+                Context.Debugger.SetCurrentThread(value);
             }
         }
 
@@ -321,56 +363,17 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the threads.
+        /// Casts the specified variable to a user type.
         /// </summary>
-        private Thread[] GetThreads()
+        /// <param name="variable">The variable.</param>
+        internal Variable CastVariableToUserType(Variable variable)
         {
-            using (ProcessSwitcher process = new ProcessSwitcher(this))
+            if (Context.EnableUserCastedVariableCaching)
             {
-                uint threadCount = Context.SystemObjects.GetNumberThreads();
-                Thread[] threads = new Thread[threadCount];
-                uint[] threadIds = new uint[threadCount];
-                uint[] threadSytemIds = new uint[threadCount];
-
-                unsafe
-                {
-                    fixed (uint* ids = &threadIds[0])
-                    fixed (uint* systemIds = &threadSytemIds[0])
-                    {
-                        Context.SystemObjects.GetThreadIdsByIndex(0, threadCount, out *ids, out *systemIds);
-                    }
-                }
-
-                for (uint i = 0; i < threadCount; i++)
-                {
-                    threads[i] = new Thread(threadIds[i], threadSytemIds[i], this);
-                }
-
-                return threads;
+                return UserTypeCastedVariables[variable];
             }
-        }
 
-        /// <summary>
-        /// Gets the modules.
-        /// </summary>
-        private Module[] GetModules()
-        {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(this))
-            {
-                uint loaded, unloaded;
-
-                Context.Symbols.GetNumberModules(out loaded, out unloaded);
-                Module[] modules = new Module[loaded + unloaded];
-
-                for (int i = 0; i < modules.Length; i++)
-                {
-                    ulong moduleId = Context.Symbols.GetModuleByIndex((uint)i);
-
-                    modules[i] = ModulesById[moduleId];
-                }
-
-                return modules;
-            }
+            return Variable.CastVariableToUserType(variable);
         }
 
         /// <summary>
@@ -379,26 +382,20 @@ namespace CsScripts
         /// <param name="name">The name.</param>
         private Module GetModuleByName(string name)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(this))
-            {
-                uint index;
-                ulong moduleId;
+            ulong moduleAddress = Context.Debugger.GetModuleAddress(this, name);
+            Module module = ModulesById[moduleAddress];
 
-                Context.Symbols.GetModuleByModuleName2Wide(name, 0, 0, out index, out moduleId);
-                Module module = ModulesById[moduleId];
-
-                module.Name = name;
-                return module;
-            }
+            module.Name = name;
+            return module;
         }
 
         /// <summary>
-        /// Gets the module with the specified identifier.
+        /// Gets the module located at the specified module address.
         /// </summary>
-        /// <param name="id">The identifier.</param>
-        private Module GetModuleById(ulong id)
+        /// <param name="moduleAddress">The module address.</param>
+        private Module GetModuleByAddress(ulong moduleAddress)
         {
-            return new Module(this, id);
+            return new Module(this, moduleAddress);
         }
 
         /// <summary>
@@ -406,21 +403,113 @@ namespace CsScripts
         /// </summary>
         private List<UserTypeDescription> GetUserTypes()
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(this))
+            if (Context.UserTypeMetadata != null && Context.UserTypeMetadata.Length > 0)
             {
-                if (Context.UserTypeMetadata != null && Context.UserTypeMetadata.Length > 0)
+                List<UserTypeDescription> userTypes = new List<UserTypeDescription>(Context.UserTypeMetadata.Length);
+
+                for (int i = 0; i < userTypes.Count; i++)
                 {
-                    List<UserTypeDescription> userTypes = new List<UserTypeDescription>(Context.UserTypeMetadata.Length);
-
-                    for (int i = 0; i < userTypes.Count; i++)
-                    {
-                        userTypes.Add(Context.UserTypeMetadata[i].ConvertToDescription());
-                    }
-
-                    return userTypes;
+                    userTypes.Add(Context.UserTypeMetadata[i].ConvertToDescription());
                 }
 
-                return new List<UserTypeDescription>();
+                return userTypes;
+            }
+
+            return new List<UserTypeDescription>();
+        }
+
+        /// <summary>
+        /// Gets the user type description from the specified type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        private UserTypeDescription[] GetUserTypeDescription(Type type)
+        {
+            UserTypeMetadata[] metadata = UserTypeMetadata.ReadFromType(type);
+            UserTypeDescription[] descriptions = new UserTypeDescription[metadata.Length];
+
+            for (int i = 0; i < metadata.Length; i++)
+                descriptions[i] = metadata[i].ConvertToDescription(this);
+            return descriptions;
+        }
+
+        /// <summary>
+        /// Gets the size of the pointer.
+        /// </summary>
+        /// <returns></returns>
+        public uint GetPointerSize()
+        {
+            return ActualProcessorType == ImageFileMachine.I386 || EffectiveProcessorType == ImageFileMachine.I386 ? 4U : 8U;
+        }
+
+        /// <summary>
+        /// Reads the string and caches it inside this object.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="charSize">Size of the character.</param>
+        internal string ReadString(ulong address, int charSize)
+        {
+            if (address == 0)
+            {
+                return null;
+            }
+
+            if (charSize == 1)
+            {
+                return ansiStringCache[address];
+            }
+            else if (charSize == 2)
+            {
+                return unicodeStringCache[address];
+            }
+            else
+            {
+                throw new Exception("Unsupported char size");
+            }
+        }
+
+        /// <summary>
+        /// Does the actual ANSI string read.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        private string DoReadAnsiString(ulong address)
+        {
+            if (address == 0)
+            {
+                return null;
+            }
+
+            var dumpReader = DumpFileMemoryReader;
+
+            if (dumpReader != null)
+            {
+                return dumpReader.ReadAnsiString(address);
+            }
+            else
+            {
+                return Context.Debugger.ReadAnsiString(this, address);
+            }
+        }
+
+        /// <summary>
+        /// Does the actual unicode string read.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        private string DoReadUnicodeString(ulong address)
+        {
+            if (address == 0)
+            {
+                return null;
+            }
+
+            var dumpReader = DumpFileMemoryReader;
+
+            if (dumpReader != null)
+            {
+                return dumpReader.ReadWideString(address);
+            }
+            else
+            {
+                return Context.Debugger.ReadUnicodeString(this, address);
             }
         }
     }

@@ -1,8 +1,10 @@
 ﻿using CsScriptManaged.Native;
 using CsScriptManaged.Utility;
 using CsScripts;
+using Dia2Lib;
 using System;
 using System.IO;
+using System.Collections.Generic;
 
 namespace CsScriptManaged.SymbolProviders
 {
@@ -14,20 +16,23 @@ namespace CsScriptManaged.SymbolProviders
         /// <summary>
         /// The modules cache
         /// </summary>
-        private DictionaryCache<string, ISymbolProviderModule> modules = new DictionaryCache<string, ISymbolProviderModule>(LoadModule);
+        private DictionaryCache<Tuple<string, ulong>, ISymbolProviderModule> modules = new DictionaryCache<Tuple<string, ulong>, ISymbolProviderModule>(LoadModule);
 
         /// <summary>
         /// Loads the module from PDB file.
         /// </summary>
-        /// <param name="pdb">The PDB path.</param>
-        private static ISymbolProviderModule LoadModule(string pdb)
+        /// <param name="pdbAndModuleAddress">The tuple of PDB path and module address.</param>
+        private static ISymbolProviderModule LoadModule(Tuple<string, ulong> pdbAndModuleAddress)
         {
+            string pdb = pdbAndModuleAddress.Item1;
+            ulong moduleAddress = pdbAndModuleAddress.Item2;
+
             if (string.IsNullOrEmpty(pdb) || Path.GetExtension(pdb).ToLower() != ".pdb")
             {
-                return new DbgEngSymbolProvider();
+                return Context.Debugger.CreateDefaultSymbolProviderModule();
             }
 
-            return new DiaModule(pdb);
+            return new DiaModule(pdb, moduleAddress);
         }
 
         /// <summary>
@@ -64,6 +69,18 @@ namespace CsScriptManaged.SymbolProviders
             ISymbolProviderModule diaModule = GetDiaModule(module);
 
             return diaModule.GetTypeElementTypeId(module, typeId);
+        }
+
+        /// <summary>
+        /// Gets the type pointer to type of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public uint GetTypePointerToTypeId(Module module, uint typeId)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetTypePointerToTypeId(module, typeId);
         }
 
         /// <summary>
@@ -228,7 +245,12 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         private ISymbolProviderModule GetDiaModule(Module module)
         {
-            return modules[module.SymbolFileName];
+            if (module.SymbolProvider == null)
+            {
+                module.SymbolProvider = modules[Tuple.Create(module.SymbolFileName, module.Offset)];
+            }
+
+            return module.SymbolProvider;
         }
 
         /// <summary>
@@ -301,6 +323,58 @@ namespace CsScriptManaged.SymbolProviders
             ISymbolProviderModule diaModule = GetDiaModule(module);
 
             return diaModule.GetTypeBaseClass(module, typeId, className);
+        }
+
+        /// <summary>
+        /// Gets the name of the enumeration value.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        /// <param name="enumValue">The enumeration value.</param>
+        public string GetEnumName(Module module, uint enumTypeId, ulong enumValue)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetEnumName(module, enumTypeId, enumValue);
+        }
+
+        /// <summary>
+        /// Gets the type of the basic type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public BasicType GetTypeBasicType(Module module, uint typeId)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetTypeBasicType(module, typeId);
+        }
+
+        /// <summary>
+        /// Gets the type's direct base classes type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId)
+        {
+            ISymbolProviderModule diaModule = GetDiaModule(module);
+
+            return diaModule.GetTypeDirectBaseClasses(module, typeId);
+        }
+
+        /// <summary>
+        /// Gets the symbol name by address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address)
+        {
+            ulong distance;
+            Module module;
+            ISymbolProviderModule diaModule = GetDiaModule(process, address, out distance, out module);
+            var result = diaModule.GetSymbolNameByAddress(process, address, (uint)distance);
+
+            return new Tuple<string, ulong>(module.Name + "!" + result.Item1, result.Item2);
         }
     }
 }

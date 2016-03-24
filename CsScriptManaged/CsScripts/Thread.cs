@@ -2,7 +2,9 @@
 using CsScriptManaged.Marshaling;
 using CsScriptManaged.Utility;
 using DbgEngManaged;
+using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CsScripts
 {
@@ -54,7 +56,7 @@ namespace CsScripts
 
             set
             {
-                Context.StateCache.SetCurrentThread(value);
+                Context.Debugger.SetCurrentThread(value);
             }
         }
 
@@ -133,30 +135,27 @@ namespace CsScripts
         /// </summary>
         public StackTrace GetStackTrace()
         {
-            const int MaxCallStack = 1024;
-            using (ThreadSwitcher switcher = new ThreadSwitcher(this))
-            using (MarshalArrayReader<_DEBUG_STACK_FRAME_EX> frameBuffer = new RegularMarshalArrayReader<_DEBUG_STACK_FRAME_EX>(MaxCallStack))
-            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(MaxCallStack))
-            {
-                uint framesCount;
-
-                Context.Control.GetContextStackTraceEx(System.IntPtr.Zero, 0, frameBuffer.Pointer, (uint)frameBuffer.Count, threadContextBuffer.Pointer, (uint)(threadContextBuffer.Size * threadContextBuffer.Count), (uint)threadContextBuffer.Size, out framesCount);
-                return new StackTrace(this, frameBuffer.Elements.Take((int)framesCount).ToArray(), threadContextBuffer.Elements.Take((int)framesCount).ToArray());
-            }
+            return Context.Debugger.GetThreadStackTrace(this);
         }
+
+        /// <summary>
+        /// Get StackTrace from Thread Context.
+        /// </summary>
+        /// <param name="contextAddress">Thread Context Address.</param>
+        /// <param name="contextSize">Thread Context Size.</param>
+        /// <returns></returns>
+        public static StackTrace GetStackTraceFromContext(ulong contextAddress, uint contextSize)
+        {
+            return Context.Debugger.GetStackTraceFromContext(Process.Current, contextAddress, contextSize);
+        }
+
 
         /// <summary>
         /// Gets the thread context.
         /// </summary>
         public ThreadContext GetThreadContext()
         {
-            using (ThreadSwitcher switcher = new ThreadSwitcher(this))
-            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(1))
-            {
-                Context.Advanced.GetThreadContext(threadContextBuffer.Pointer, (uint)(threadContextBuffer.Count * threadContextBuffer.Size));
-
-                return threadContextBuffer.Elements.FirstOrDefault();
-            }
+            return Context.Debugger.GetThreadContext(this);
         }
 
         /// <summary>
@@ -164,10 +163,7 @@ namespace CsScripts
         /// </summary>
         private ulong GetTEB()
         {
-            using (ThreadSwitcher switcher = new ThreadSwitcher(this))
-            {
-                return Context.SystemObjects.GetCurrentThreadTeb();
-            }
+            return Context.Debugger.GetThreadEnvironmentBlockAddress(this);
         }
     }
 }

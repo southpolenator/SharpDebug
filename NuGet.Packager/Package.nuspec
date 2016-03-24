@@ -1,35 +1,37 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>CsScripts.Package</id>
-    <version>1.0.0</version>
-    <title>CsScripts.Package</title>
+    <id>WinDbgCs</id>
+    <version>1.0.0-beta</version>
+    <title>WinDbgCs</title>
     <authors>Vuk Jovanovic</authors>
-    <owners></owners>
+    <owners>Vuk Jovanovic</owners>
     <description>
-      A long description of the package. This shows up in the right pane of the Add Package Dialog as well as in the Package Manager Console when listing packages using the Get-Package command.
+      WinDbg extension for executing C# scripts. It can be also used for fast dump processing completely in C#.
     </description>
     <releaseNotes>
     </releaseNotes>
     <summary>
-      A short description of the package. If specified, this shows up in the middle pane of the Add Package Dialog. If not specified, a truncated version of the description is used instead.
+      WinDbg extension for executing C# scripts. It can be also used for fast dump processing completely in C#.
     </summary>
     <language>en-US</language>
-    <projectUrl>https://nuget.org/packages/NuGet.Packager</projectUrl>
+    <projectUrl>https://github.com/southpolenator/WinDbgCs</projectUrl>
     <iconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
+    <licenseUrl>https://github.com/southpolenator/WinDbgCs/blob/master/license.txt</licenseUrl>
     <copyright>Copyright  2015</copyright>
     <dependencies>
-        <group targetFramework="net40">
-          <dependency id="log4net" version="1.2.10" />
+        <group targetFramework="net452">
+          <dependency id="CommandLineParser" version="2.0.275-beta" />
+          <dependency id="Microsoft.CodeAnalysis.Analyzers" version="1.1.0" />
+          <dependency id="Microsoft.CodeAnalysis.Common" version="1.1.1" />
+          <dependency id="Microsoft.CodeAnalysis.CSharp" version="1.1.1" />
         </group>
     </dependencies>
-    <references></references>
-    <tags></tags>
+    <tags>WinDbg C# dump processing</tags>
   </metadata>
   <files>
-    <file src="lib\*" target="lib" />
+    <file src="lib\" target="lib" />
     <file src="tools\" target="tools" />
     <file src="content\" target="content" />
   </files>

@@ -1,6 +1,8 @@
 ﻿using CsScriptManaged.Native;
 using CsScripts;
+using Dia2Lib;
 using System;
+using System.Collections.Generic;
 
 namespace CsScriptManaged.SymbolProviders
 {
@@ -31,6 +33,13 @@ namespace CsScriptManaged.SymbolProviders
         SymTag GetTypeTag(Module module, uint typeId);
 
         /// <summary>
+        /// Gets the type of the basic type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        BasicType GetTypeBasicType(Module module, uint typeId);
+
+        /// <summary>
         /// Gets the size of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -57,6 +66,13 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         uint GetTypeElementTypeId(Module module, uint typeId);
+
+        /// <summary>
+        /// Gets the type pointer to type of the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        uint GetTypePointerToTypeId(Module module, uint typeId);
 
         /// <summary>
         /// Gets the names of all fields of the specified type.
@@ -132,5 +148,28 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="codeType">Type of the code.</param>
         /// <param name="address">The address.</param>
         ulong ReadSimpleData(CodeType codeType, ulong address);
+
+        /// <summary>
+        /// Gets the name of the enumeration value.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        /// <param name="enumValue">The enumeration value.</param>
+        string GetEnumName(Module module, uint enumTypeId, ulong enumValue);
+
+        /// <summary>
+        /// Gets the type's direct base classes type and offset.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId);
+
+        /// <summary>
+        /// Gets the symbol name by address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="distance">The distance within the module.</param>
+        Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address, uint distance);
     }
 }

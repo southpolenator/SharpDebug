@@ -1,5 +1,6 @@
 ﻿using CsScripts;
 using System;
+using System.Linq;
 using System.Reflection;
 
 namespace CsScriptManaged
@@ -38,32 +39,67 @@ namespace CsScriptManaged
         /// Reads metadata from the type.
         /// </summary>
         /// <param name="type">The type.</param>
-        public static UserTypeMetadata ReadFromType(Type type)
+        public static UserTypeMetadata[] ReadFromType(Type type)
         {
-            UserTypeAttribute attribute = type.GetCustomAttribute<UserTypeAttribute>();
+            UserTypeAttribute[] attributes = type.GetCustomAttributes<UserTypeAttribute>().ToArray();
             bool derivedFromUserType = IsDerivedFrom(type, typeof(UserType));
 
-            if (attribute != null && !derivedFromUserType)
+            /* #fixme temp workaround for genertic types
+            if (type.IsGenericType)
+            {
+                foreach(Type genericArgument in type.GetGenericArguments())
+                {
+                    UserTypeAttribute genericAttribute = genericArgument.GetCustomAttribute<UserTypeAttribute>();
+                    if (genericAttribute != null)
+                    {
+                        string moduleName = genericAttribute.ModuleName;
+                        // #fixme temp workaround
+                        string typeName = type.Name + "<>";
+
+                        return new UserTypeMetadata(moduleName, typeName, type);
+                    }
+                }
+            }
+            */
+
+            if (attributes.Length > 0 && !derivedFromUserType)
             {
                 throw new Exception(string.Format("Type {0} has defined UserTypeAttribute, but it does not inherit UserType", type.FullName));
             }
             else if (derivedFromUserType)
             {
-                string moduleName = attribute != null ? attribute.ModuleName : null;
-                string typeName = attribute != null ? attribute.TypeName : type.Name;
+                UserTypeMetadata[] metadata = new UserTypeMetadata[attributes.Length];
 
-                return new UserTypeMetadata(moduleName, typeName, type);
+                for (int i = 0; i < metadata.Length; i++)
+                {
+                    UserTypeAttribute attribute = attributes[i];
+                    string moduleName = attribute != null ? attribute.ModuleName : null;
+                    string typeName = attribute != null ? attribute.TypeName : !type.IsGenericType ? type.Name : type.Name.Substring(0, type.Name.IndexOf('`')) + "<>"; // TODO: Form better name for generics type
+
+                    metadata[i] = new UserTypeMetadata(moduleName, typeName, type);
+                }
+
+                return metadata;
             }
 
-            return null;
+            return new UserTypeMetadata[0];
+        }
+
+        /// <summary>
+        /// Converts metadata to description using the current process.
+        /// </summary>
+        public UserTypeDescription ConvertToDescription()
+        {
+            return new UserTypeDescription(ModuleName, TypeName, Type);
         }
 
         /// <summary>
         /// Converts metadata to description.
         /// </summary>
-        public UserTypeDescription ConvertToDescription()
+        /// <param name="process">The process.</param>
+        public UserTypeDescription ConvertToDescription(Process process)
         {
-            return new UserTypeDescription(ModuleName, TypeName, Type);
+            return new UserTypeDescription(process, ModuleName, TypeName, Type);
         }
 
         /// <summary>
@@ -82,6 +118,22 @@ namespace CsScriptManaged
             }
 
             return false;
+        }
+    }
+
+    static class UserTypeMetadataExtensions
+    {
+        /// <summary>
+        /// Finds metadata that comes from the specified module or first if not found.
+        /// </summary>
+        /// <param name="metadatas">The metadatas.</param>
+        /// <param name="module">The module.</param>
+        public static UserTypeMetadata FromModuleOrFirst(this UserTypeMetadata[] metadatas, CsScripts.Module module)
+        {
+            foreach (var metadata in metadatas)
+                if (metadata.ModuleName == module.Name)
+                    return metadata;
+            return metadatas.First();
         }
     }
 }

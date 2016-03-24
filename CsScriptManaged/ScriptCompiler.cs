@@ -120,9 +120,9 @@ namespace CsScriptManaged
             compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies);
 
             // Check if Microsoft.CSharp.dll should be added to the list of referenced assemblies
-            const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
+            const string MicrosoftCSharpDll = "microsoft.csharp.dll";
 
-            if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.Contains(MicrosoftCSharpDll)).Any())
+            if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Any())
             {
                 compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
             }
@@ -410,13 +410,9 @@ namespace CsScriptManaged
                     nextTypes = new List<Type>();
                     foreach (var type in types)
                     {
-                        UserTypeMetadata userType = UserTypeMetadata.ReadFromType(type);
+                        UserTypeMetadata[] userTypes = UserTypeMetadata.ReadFromType(type);
 
-                        if (userType != null)
-                        {
-                            metadata.Add(userType);
-                        }
-
+                        metadata.AddRange(userTypes);
                         nextTypes.AddRange(type.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public));
                     }
                 }

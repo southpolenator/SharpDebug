@@ -1,8 +1,7 @@
 ﻿using CsScriptManaged;
+using CsScriptManaged.SymbolProviders;
 using CsScriptManaged.Utility;
-using DbgEngManaged;
 using System;
-using System.Text;
 
 namespace CsScripts
 {
@@ -37,24 +36,41 @@ namespace CsScripts
         private SimpleCache<string> mappedImageName;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Module"/> class.
+        /// The next fake code type identifier
         /// </summary>
-        /// <param name="id">The identifier.</param>
-        internal Module(Process process, ulong id)
+        private int nextFakeCodeTypeId = -1;
+
+        /// <summary>
+        /// The symbol provider module cache
+        /// </summary>
+        internal ISymbolProviderModule SymbolProvider;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Module" /> class.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The module address.</param>
+        internal Module(Process process, ulong address)
         {
-            Id = id;
+            Address = address;
             Process = process;
-            name = SimpleCache.Create(() => GetName(DebugModname.Module));
-            imageName = SimpleCache.Create(() => GetName(DebugModname.Image));
-            loadedImageName = SimpleCache.Create(() => GetName(DebugModname.LoadedImage));
-            symbolFileName = SimpleCache.Create(() => GetName(DebugModname.SymbolFile));
-            mappedImageName = SimpleCache.Create(() => GetName(DebugModname.MappedImage));
+            name = SimpleCache.Create(() =>
+            {
+                string name = Context.Debugger.GetModuleName(this);
+
+                Process.UpdateModuleByNameCache(this, name);
+                return name;
+            });
+            imageName = SimpleCache.Create(() => Context.Debugger.GetModuleImageName(this));
+            loadedImageName = SimpleCache.Create(() => Context.Debugger.GetModuleLoadedImage(this));
+            symbolFileName = SimpleCache.Create(() => Context.Debugger.GetModuleSymbolFile(this));
+            mappedImageName = SimpleCache.Create(() => Context.Debugger.GetModuleMappedImage(this));
             TypesByName = new DictionaryCache<string, CodeType>(GetTypeByName);
             TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
             GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
             UserTypeCastedGlobalVariables = new DictionaryCache<string, Variable>((name) =>
             {
-                Variable variable = Process.UserTypeCastedVariables[GlobalVariables[name]];
+                Variable variable = Process.CastVariableToUserType(GlobalVariables[name]);
 
                 if (UserTypeCastedGlobalVariables.Count == 0)
                 {
@@ -71,14 +87,11 @@ namespace CsScripts
         /// <param name="name">The name.</param>
         private Variable GetGlobalVariable(string name)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
-            {
-                uint typeId = Context.SymbolProvider.GetGlobalVariableTypeId(this, name);
-                var codeType = TypesById[typeId];
-                ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
+            uint typeId = Context.SymbolProvider.GetGlobalVariableTypeId(this, name);
+            var codeType = TypesById[typeId];
+            ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
 
-                return Variable.CreateNoCast(codeType, address, name);
-            }
+            return Variable.CreateNoCast(codeType, address, name, name);
         }
 
         /// <summary>
@@ -113,9 +126,9 @@ namespace CsScripts
         internal DictionaryCache<string, Variable> UserTypeCastedGlobalVariables { get; private set; }
 
         /// <summary>
-        /// Gets the identifier.
+        /// Gets the address.
         /// </summary>
-        public ulong Id { get; private set; }
+        public ulong Address { get; private set; }
 
         /// <summary>
         /// Gets the owning process.
@@ -129,7 +142,7 @@ namespace CsScripts
         {
             get
             {
-                return Id;
+                return Address;
             }
         }
 
@@ -186,7 +199,7 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the name of the mapped image. In most cases, this is NULL. If the debugger is mapping an image file
+        /// Gets the name of the mapped image. In most cases, this is null. If the debugger is mapping an image file
         /// (for example, during minidump debugging), this is the name of the mapped image.
         /// </summary>
         public string MappedImageName
@@ -205,42 +218,21 @@ namespace CsScripts
         /// <exception cref="System.ArgumentException">Variable name contains wrong module name. Don't add it manually, it will be added automatically.</exception>
         public Variable GetVariable(string name)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
+            int moduleIndex = name.IndexOf('!');
+
+            if (moduleIndex > 0)
             {
-                int moduleIndex = name.IndexOf('!');
-
-                if (moduleIndex > 0)
+                if (string.Compare(name, 0, Name, 0, Math.Max(Name.Length, moduleIndex), true) != 0)
                 {
-                    if (string.Compare(name, 0, Name, 0, Math.Max(Name.Length, moduleIndex), true) != 0)
-                    {
-                        throw new ArgumentException("Variable name contains wrong module name. Don't add it manually, it will be added automatically.");
-                    }
-
-                    name = name.Substring(moduleIndex + 1);
+                    throw new ArgumentException("Variable name contains wrong module name. Don't add it manually, it will be added automatically.");
                 }
 
-                return UserTypeCastedGlobalVariables[name];
+                name = name.Substring(moduleIndex + 1);
             }
-        }
 
+            return UserTypeCastedGlobalVariables[name];
+        }
         #region Cache filling functions
-        /// <summary>
-        /// Gets the name of the module.
-        /// </summary>
-        /// <param name="modname">The type of module name.</param>
-        /// <returns>Read name</returns>
-        private string GetName(DebugModname modname)
-        {
-            uint nameSize;
-            StringBuilder sb = new StringBuilder(Constants.MaxFileName);
-
-            Context.Symbols.GetModuleNameStringWide((uint)modname, 0xffffffff, Id, sb, (uint)sb.Capacity, out nameSize);
-
-            string name = sb.ToString();
-
-            Process.Current.UpdateModuleByNameCache(this, name);
-            return name;
-        }
 
         /// <summary>
         /// Gets the type with the specified name.
@@ -248,24 +240,21 @@ namespace CsScripts
         /// <param name="name">The name.</param>
         private CodeType GetTypeByName(string name)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(Process))
+            int moduleIndex = name.IndexOf('!');
+
+            if (moduleIndex > 0)
             {
-                int moduleIndex = name.IndexOf('!');
-
-                if (moduleIndex > 0)
+                if (string.Compare(name.Substring(0, moduleIndex), Name, true) != 0)
                 {
-                    if (string.Compare(name.Substring(0, moduleIndex), Name, true) != 0)
-                    {
-                        throw new ArgumentException("Type name contains wrong module name. Don't add it manually, it will be added automatically.");
-                    }
-
-                    name = name.Substring(moduleIndex + 1);
+                    throw new ArgumentException("Type name contains wrong module name. Don't add it manually, it will be added automatically.");
                 }
 
-                uint typeId = Context.SymbolProvider.GetTypeId(this, name);
-
-                return TypesById[typeId];
+                name = name.Substring(moduleIndex + 1);
             }
+
+            uint typeId = Context.SymbolProvider.GetTypeId(this, name);
+
+            return TypesById[typeId];
         }
 
         /// <summary>
@@ -274,7 +263,24 @@ namespace CsScripts
         /// <param name="typeId">The type identifier.</param>
         private CodeType GetTypeById(uint typeId)
         {
-            return new CodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId));
+            return new CodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId), Context.SymbolProvider.GetTypeBasicType(this, typeId));
+        }
+
+        /// <summary>
+        /// Gets the next fake code type identifier.
+        /// </summary>
+        internal uint GetNextFakeCodeTypeId()
+        {
+            return (uint)System.Threading.Interlocked.Decrement(ref nextFakeCodeTypeId);
+        }
+
+        /// <summary>
+        /// Determines whether the specified code type identifier is fake.
+        /// </summary>
+        /// <param name="codeTypeId">The code type identifier.</param>
+        internal bool IsFakeCodeTypeId(uint codeTypeId)
+        {
+            return codeTypeId >= (uint)nextFakeCodeTypeId;
         }
         #endregion
     }

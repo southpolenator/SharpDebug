@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace CsScriptManaged.Utility
@@ -18,7 +19,8 @@ namespace CsScriptManaged.Utility
         /// <summary>
         /// The cached values
         /// </summary>
-        private Dictionary<TKey, TValue> values = new Dictionary<TKey, TValue>();
+        //private Dictionary<TKey, TValue> values = new Dictionary<TKey, TValue>();
+        private ConcurrentDictionary<TKey, TValue> values = new ConcurrentDictionary<TKey, TValue>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DictionaryCache{TKey, TValue}"/> class.
@@ -71,8 +73,14 @@ namespace CsScriptManaged.Utility
 
                 if (!values.TryGetValue(key, out value))
                 {
-                    value = populateAction(key);
-                    values.Add(key, value);
+                    lock (values)
+                    {
+                        if (!values.TryGetValue(key, out value))
+                        {
+                            value = populateAction(key);
+                            values.TryAdd(key, value);
+                        }
+                    }
                 }
 
                 return value;
@@ -102,8 +110,8 @@ namespace CsScriptManaged.Utility
         /// <summary>
         /// Gets the value in the cache associated with the specified key. Value will be populated if it is not in cache.
         /// </summary>
-        /// <param name="key">The key of the value to get.</param>
-        /// <param name="value">When this method returns, contains the value associated with the specified key,
+        /// <param name="typeName">The key of the value to get.</param>
+        /// <param name="userType">When this method returns, contains the value associated with the specified key,
         /// if the key is found; otherwise, the default value for the type of the value parameter. This parameter
         /// is passed uninitialized.</param>
         /// <returns>

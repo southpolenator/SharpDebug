@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
-using System.Text;
+using System.Reflection.Emit;
 
 namespace CsScripts
 {
@@ -19,9 +19,24 @@ namespace CsScripts
         public const string ComputedName = "<computed>";
 
         /// <summary>
+        /// The unknown path
+        /// </summary>
+        public const string UnknownPath = "<unknown>";
+
+        /// <summary>
+        /// The untracked path
+        /// </summary>
+        public const string UntrackedPath = "<untracked>";
+
+        /// <summary>
         /// The name
         /// </summary>
         private string name;
+
+        /// <summary>
+        /// The path
+        /// </summary>
+        private string path;
 
         /// <summary>
         /// The code type
@@ -29,34 +44,14 @@ namespace CsScripts
         private CodeType codeType;
 
         /// <summary>
+        /// Runtime code type.
+        /// </summary>
+        private SimpleCacheStruct<CodeType> runtimeCodeType;
+
+        /// <summary>
         /// The data
         /// </summary>
-        private SimpleCache<ulong> data;
-
-        /// <summary>
-        /// The runtime type
-        /// </summary>
-        private SimpleCache<CodeType> runtimeType;
-
-        /// <summary>
-        /// The fields
-        /// </summary>
-        private SimpleCache<Variable[]> fields;
-
-        /// <summary>
-        /// The fields that are casted to user type if metadata is provided
-        /// </summary>
-        private SimpleCache<Variable[]> userTypeCastedFields;
-
-        /// <summary>
-        /// The fields indexed by name
-        /// </summary>
-        private DictionaryCache<string, Variable> fieldsByName;
-
-        /// <summary>
-        /// The fields that are casted to user type if metadata is provided, indexed by name
-        /// </summary>
-        private DictionaryCache<string, Variable> userTypeCastedFieldsByName;
+        private SimpleCacheStruct<ulong> data;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Variable"/> class.
@@ -65,45 +60,42 @@ namespace CsScripts
         public Variable(Variable variable)
         {
             name = variable.name;
+            path = variable.path;
             Address = variable.Address;
             codeType = variable.codeType;
-            runtimeType = variable.runtimeType;
-            fields = variable.fields;
-            userTypeCastedFields = variable.userTypeCastedFields;
-            fieldsByName = variable.fieldsByName;
-            userTypeCastedFieldsByName = variable.userTypeCastedFieldsByName;
+            data = variable.data;
+            runtimeCodeType = variable.runtimeCodeType;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Variable"/> class.
+        /// Initializes a new instance of the <see cref="Variable" /> class.
         /// </summary>
-        /// <param name="name">The name.</param>
         /// <param name="codeType">The code type.</param>
         /// <param name="address">The address.</param>
-        internal Variable(CodeType codeType, ulong address, string name)
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        internal Variable(CodeType codeType, ulong address, string name, string path)
         {
             this.codeType = codeType;
             this.name = name;
+            this.path = path;
             Address = address;
 
             // Initialize caches
-            data = SimpleCache.Create(ReadData);
-            runtimeType = SimpleCache.Create(FindRuntimeType);
-            fields = SimpleCache.Create(FindFields);
-            userTypeCastedFields = SimpleCache.Create(FindUserTypeCastedFields);
-            fieldsByName = new DictionaryCache<string, Variable>(GetOriginalField);
-            userTypeCastedFieldsByName = new DictionaryCache<string, Variable>(GetUserTypeCastedFieldByName);
+            data = SimpleCache.CreateStruct(ReadData);
+            runtimeCodeType = SimpleCache.CreateStruct(FindRuntimeCodeType);
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Variable"/> class.
+        /// Initializes a new instance of the <see cref="Variable" /> class.
         /// </summary>
         /// <param name="codeType">The code type.</param>
         /// <param name="address">The address.</param>
         /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
         /// <param name="data">The loaded data value (this can be used only with pointers).</param>
-        private Variable(CodeType codeType, ulong address, string name, ulong data)
-            : this(codeType, address, name)
+        private Variable(CodeType codeType, ulong address, string name, string path, ulong data)
+            : this(codeType, address, name, path)
         {
             if (!codeType.IsPointer)
             {
@@ -114,27 +106,60 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="Variable"/> class.
+        /// Creates a new instance of the <see cref="Variable" /> class.
         /// </summary>
         /// <param name="codeType">The code type.</param>
         /// <param name="address">The address.</param>
         /// <param name="name">The name.</param>
-        public static Variable Create(CodeType codeType, ulong address, string name = ComputedName)
+        /// <param name="path">The path.</param>
+        public static Variable Create(CodeType codeType, ulong address, string name = ComputedName, string path = UnknownPath)
         {
-            Variable variable = CreateNoCast(codeType, address, name);
+            Variable variable = CreateNoCast(codeType, address, name, path);
 
-            return codeType.Module.Process.UserTypeCastedVariables[variable];
+            return codeType.Module.Process.CastVariableToUserType(variable);
         }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="Variable"/> class and doesn't cast it to user code type.
+        /// Creates a new instance of the <see cref="Variable" /> class and doesn't cast it to user code type.
         /// </summary>
         /// <param name="codeType">The code type.</param>
         /// <param name="address">The address.</param>
         /// <param name="name">The name.</param>
-        internal static Variable CreateNoCast(CodeType codeType, ulong address, string name)
+        /// <param name="path">The path.</param>
+        internal static Variable CreateNoCast(CodeType codeType, ulong address, string name = ComputedName, string path = UnknownPath)
         {
-            return codeType.Module.Process.Variables[Tuple.Create(codeType, address, name)];
+            if (Context.EnableVariableCaching)
+            {
+                return codeType.Module.Process.Variables[Tuple.Create(codeType, address, name, path)];
+            }
+
+            return new Variable(codeType, address, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class of pointer type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        public static Variable CreatePointer(CodeType codeType, ulong address, string name = ComputedName, string path = UnknownPath)
+        {
+            Variable variable = CreatePointerNoCast(codeType, address, name, path);
+
+            return codeType.Module.Process.CastVariableToUserType(variable);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class of pointer type and doesn't cast it to user code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        internal static Variable CreatePointerNoCast(CodeType codeType, ulong address, string name = ComputedName, string path = UnknownPath)
+        {
+            return new Variable(codeType, 0, name, path, address);
         }
 
         /// <summary>
@@ -163,7 +188,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator bool (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsPointer)
+            if (!v.codeType.IsSimple && !v.codeType.IsPointer && !v.codeType.IsEnum)
             {
                 return bool.Parse(v.ToString());
             }
@@ -180,7 +205,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator byte (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return byte.Parse(v.ToString());
             }
@@ -197,7 +222,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator sbyte (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return sbyte.Parse(v.ToString());
             }
@@ -214,7 +239,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator char (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return char.Parse(v.ToString());
             }
@@ -231,7 +256,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator short (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return short.Parse(v.ToString());
             }
@@ -248,7 +273,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator ushort (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return ushort.Parse(v.ToString());
             }
@@ -265,7 +290,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator int (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return int.Parse(v.ToString());
             }
@@ -282,7 +307,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator uint (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return uint.Parse(v.ToString());
             }
@@ -299,7 +324,7 @@ namespace CsScripts
         /// </returns>
         public static explicit operator long (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return long.Parse(v.ToString());
             }
@@ -316,12 +341,56 @@ namespace CsScripts
         /// </returns>
         public static explicit operator ulong (Variable v)
         {
-            if (!v.codeType.IsSimple)
+            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
             {
                 return ulong.Parse(v.ToString());
             }
 
             return v.Data;
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Variable"/> to <see cref="System.Single"/>.
+        /// </summary>
+        /// <param name="v">The v.</param>
+        /// <returns>
+        /// The result of the conversion.
+        /// </returns>
+        public static explicit operator float (Variable v)
+        {
+            if (v.codeType.IsDouble)
+            {
+                return (float)(double)v;
+            }
+
+            if (v.codeType.IsFloat)
+            {
+                return BitConverter.ToSingle(BitConverter.GetBytes((uint)v.Data), 0);
+            }
+
+            return float.Parse(v.ToString());
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Variable"/> to <see cref="System.Double"/>.
+        /// </summary>
+        /// <param name="v">The v.</param>
+        /// <returns>
+        /// The result of the conversion.
+        /// </returns>
+        public static explicit operator double (Variable v)
+        {
+            if (v.codeType.IsDouble)
+            {
+                return BitConverter.Int64BitsToDouble((long)v.Data);
+            }
+
+            if (v.codeType.IsFloat)
+            {
+                return (float)v;
+            }
+
+            return double.Parse(v.ToString());
         }
         #endregion
 
@@ -343,23 +412,24 @@ namespace CsScripts
             // ANSI string
             if (codeType.IsAnsiString)
             {
-                uint stringLength;
-                ulong address = codeType.IsPointer ? Data : Address;
-                StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
-
-                Context.DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
-                return sb.ToString();
+                return UserType.ReadString(codeType.Module.Process, GetPointerAddress(), 1);
             }
 
             // Unicode string
             if (codeType.IsWideString)
             {
-                uint stringLength;
-                ulong address = codeType.IsPointer ? Data : Address;
-                StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+                return UserType.ReadString(codeType.Module.Process, GetPointerAddress(), 2);
+            }
 
-                Context.DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
-                return sb.ToString();
+            // Check float/double
+            if (codeType.IsFloat)
+            {
+                return ((float)this).ToString();
+            }
+
+            if (codeType.IsDouble)
+            {
+                return ((double)this).ToString();
             }
 
             // Simple type
@@ -383,6 +453,12 @@ namespace CsScripts
                     default:
                         throw new ArgumentException("Incorrect data size " + codeType.Size);
                 }
+            }
+
+            // Enumeration
+            if (codeType.IsEnum)
+            {
+                return Context.SymbolProvider.GetEnumName(codeType.Module, codeType.TypeId, Data);
             }
 
             // TODO: Call custom caster (e.g. std::string, std::wstring)
@@ -438,6 +514,14 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the path of variable.
+        /// </summary>
+        public string GetPath()
+        {
+            return path;
+        }
+
+        /// <summary>
         /// Gets the code type.
         /// </summary>
         public CodeType GetCodeType()
@@ -450,7 +534,41 @@ namespace CsScripts
         /// </summary>
         public CodeType GetRuntimeType()
         {
-            return runtimeType.Value;
+            return runtimeCodeType.Value;
+        }
+
+        /// <summary>
+        /// Finds the runtime code type by looking at the v-table.
+        /// </summary>
+        private CodeType FindRuntimeCodeType()
+        {
+            // TODO: See if it is complex type and try to get VTable
+            try
+            {
+                if (!codeType.IsSimple || codeType.IsPointer)
+                {
+                    CodeType ulongType = CodeType.Create("unsigned long long", codeType.Module);
+                    ulong vtableAddress = Context.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
+                    string vtableName = Context.SymbolProvider.GetSymbolNameByAddress(codeType.Module.Process, vtableAddress).Item1;
+
+                    if (vtableName.EndsWith("::`vftable'"))
+                    {
+                        vtableName = vtableName.Substring(0, vtableName.Length - 11);
+                        if (vtableName.StartsWith("const "))
+                        {
+                            vtableName = vtableName.Substring(6);
+                        }
+
+                        return vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Fall back to original code type
+            }
+
+            return codeType;
         }
 
         /// <summary>
@@ -474,7 +592,7 @@ namespace CsScripts
         /// </summary>
         public Variable[] GetFields()
         {
-            return userTypeCastedFields.Value;
+            return FindUserTypeCastedFields();
         }
 
         /// <summary>
@@ -482,7 +600,7 @@ namespace CsScripts
         /// </summary>
         internal Variable[] GetOriginalFields()
         {
-            return fields.Value;
+            return FindFields();
         }
 
         /// <summary>
@@ -497,10 +615,10 @@ namespace CsScripts
             }
 
             CodeType elementType = codeType.ElementType;
-            ulong baseAddress = codeType.IsPointer ? Data : Address;
+            ulong baseAddress = GetPointerAddress();
             ulong address = baseAddress + (ulong)(index * elementType.Size);
 
-            return Create(elementType, address, ComputedName);
+            return Create(elementType, address, ComputedName, GenerateNewName("[{0}]", index));
         }
 
         /// <summary>
@@ -528,11 +646,11 @@ namespace CsScripts
         {
             if (codeType.IsPointer)
             {
-                return new Variable(codeType, Address, name, Data + (ulong)offset);
+                return CreatePointerNoCast(codeType, GetPointerAddress() + (ulong)offset, name, path);
             }
             else if (Address != 0)
             {
-                return CreateNoCast(codeType, Address + (ulong)offset, name);
+                return CreateNoCast(codeType, Address + (ulong)offset, name, path);
             }
 
             throw new ArgumentException("Variable is not a pointer type, but " + codeType + " and its address is 0");
@@ -553,32 +671,46 @@ namespace CsScripts
             }
             else if (codeType.IsPointer && newType.IsPointer)
             {
-                variable = new Variable(newType, Address, name, Data);
+                variable = new Variable(newType, Address, name, path, Data);
             }
             else if (newType.IsPointer)
             {
-                variable = new Variable(newType, 0, name, Address);
+                variable = CreatePointerNoCast(newType, Address, name, path);
             }
             else if (codeType.IsPointer)
             {
-                variable = new Variable(newType, Data, name);
+                variable = CreateNoCast(newType, Data, name, path);
             }
             else if (Address != 0)
             {
-                return Create(newType, Address, name);
+                return Create(newType, Address, name, path);
             }
             else
             {
                 throw new ArgumentException("Variable is not a pointer type, but " + codeType + " and its address is 0");
             }
 
-            return newType.Module.Process.UserTypeCastedVariables[variable];
+            return newType.Module.Process.CastVariableToUserType(variable);
+        }
+
+        /// <summary>
+        /// Casts the specified variable to the new type.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <returns>Computed variable that is of new type.</returns>
+        public static T CastAs<T>(Variable variable)
+        {
+            if (variable == null)
+            {
+                return default(T);
+            }
+
+            return variable.CastAs<T>();
         }
 
         /// <summary>
         /// Casts variable to the new type.
         /// </summary>
-        /// <param name="newType">The new type.</param>
         /// <returns>Computed variable that is of new type.</returns>
         public T CastAs<T>()
         {
@@ -596,46 +728,75 @@ namespace CsScripts
                 return this;
 
             // Check if it is basic type
-            else if (conversionType == typeof(bool))
-                return (bool)this;
-            else if (conversionType == typeof(char))
-                return (char)this;
-            else if (conversionType == typeof(byte))
-                return (byte)this;
-            else if (conversionType == typeof(sbyte))
-                return (sbyte)this;
-            else if (conversionType == typeof(short))
-                return (short)this;
-            else if (conversionType == typeof(ushort))
-                return (ushort)this;
-            else if (conversionType == typeof(int))
-                return (int)this;
-            else if (conversionType == typeof(uint))
-                return (uint)this;
-            else if (conversionType == typeof(long))
-                return (long)this;
-            else if (conversionType == typeof(ulong))
-                return (ulong)this;
+            else if (conversionType.IsPrimitive)
+            {
+                if (conversionType == typeof(bool))
+                    return (bool)this;
+                else if (conversionType == typeof(char))
+                    return (char)this;
+                else if (conversionType == typeof(byte))
+                    return (byte)this;
+                else if (conversionType == typeof(sbyte))
+                    return (sbyte)this;
+                else if (conversionType == typeof(short))
+                    return (short)this;
+                else if (conversionType == typeof(ushort))
+                    return (ushort)this;
+                else if (conversionType == typeof(int))
+                    return (int)this;
+                else if (conversionType == typeof(uint))
+                    return (uint)this;
+                else if (conversionType == typeof(long))
+                    return (long)this;
+                else if (conversionType == typeof(ulong))
+                    return (ulong)this;
+            }
+
+            // Check if it is null
+            if (GetPointerAddress() == 0)
+            {
+                return null;
+            }
+
+            Variable activatorParameter = this;
 
             // Check if we should do CastAs
             if (conversionType.IsSubclassOf(typeof(Variable)))
             {
-                ulong address = GetPointerAddress();
-                UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(conversionType);
-                UserTypeDescription description = metadata.ConvertToDescription();
+                var description = codeType.Module.Process.TypeToUserTypeDescription[conversionType].FromModuleOrFirst(codeType.Module);
                 CodeType newType = description.UserType;
 
-                // TODO: Fix this in the future
-                // We are lazy loading user types if they haven't been loaded (for example in non-scripting mode)
-                if (!newType.Module.Process.UserTypes.Contains(description))
+                // Check if it was non-unique generics type
+                if (newType != null)
                 {
-                    newType.Module.Process.UserTypes.Add(description);
-                }
+                    // If type is already in the metadata cache, use it
+                    if (newType.Module.Process.UserTypes.Contains(description))
+                    {
+                        return CastAs(newType);
+                    }
 
-                return CastAs(newType);
+                    if (codeType.IsPointer && !newType.IsPointer)
+                    {
+                        newType = newType.PointerToType;
+                    }
+
+                    activatorParameter = CastAs(newType);
+                }
             }
 
             // Check if type has constructor with one argument and that argument is inherited from Variable
+            UserTypeConstructor activator = typeToConstructor[conversionType];
+
+            return activator(activatorParameter);
+        }
+
+        private delegate object UserTypeConstructor(Variable variable);
+
+        /// <summary>
+        /// The cache of type to constructor delegate
+        /// </summary>
+        private static DictionaryCache<Type, UserTypeConstructor> typeToConstructor = new DictionaryCache<Type, UserTypeConstructor>((conversionType) =>
+        {
             var constructors = conversionType.GetConstructors();
 
             foreach (var constructor in constructors)
@@ -654,12 +815,19 @@ namespace CsScripts
 
                 if (parameters[0].ParameterType == typeof(Variable))
                 {
-                    return Activator.CreateInstance(conversionType, this);
+                    DynamicMethod method = new DynamicMethod("CreateIntance", conversionType, new Type[] { typeof(Variable) });
+                    ILGenerator gen = method.GetILGenerator();
+
+                    gen.Emit(OpCodes.Ldarg_0);
+                    gen.Emit(OpCodes.Newobj, constructor);
+                    gen.Emit(OpCodes.Ret);
+                    return (UserTypeConstructor)method.CreateDelegate(typeof(UserTypeConstructor));
+
                 }
             }
 
             throw new InvalidCastException("Cannot cast Variable to " + conversionType);
-        }
+        });
 
         /// <summary>
         /// Casts variable to new type.
@@ -668,18 +836,16 @@ namespace CsScripts
         /// <returns>Computed variable that is of new type.</returns>
         public Variable CastAs(string newType)
         {
-            Module module = codeType.Module;
-            int moduleIndex = newType.IndexOf('!');
+            CodeType newCodeType;
 
-            if (moduleIndex > 0)
+            if (newType.IndexOf('!') > 0)
             {
-                string moduleName = newType.Substring(moduleIndex);
-
-                module = module.Process.ModulesByName[moduleName];
-                newType = newType.Substring(moduleIndex + 1);
+                newCodeType = CodeType.Create(newType);
             }
-
-            CodeType newCodeType = module.TypesByName[newType];
+            else
+            {
+                newCodeType = CodeType.Create(newType, codeType.Module);
+            }
 
             return CastAs(newCodeType);
         }
@@ -692,9 +858,48 @@ namespace CsScripts
         /// <param name="className">The class name.</param>
         public Variable GetBaseClass(string className)
         {
-            var tuple = codeType.BaseClasses[className];
+            if (codeType.Name == className)
+            {
+                return this;
+            }
 
-            return CreateNoCast(tuple.Item1, GetPointerAddress() + (uint)tuple.Item2, className);
+            var tuple = codeType.BaseClasses[className];
+            var newCodeType = tuple.Item1;
+
+            if (newCodeType == codeType)
+            {
+                return this;
+            }
+
+            if (!newCodeType.IsPointer && codeType.IsPointer)
+            {
+                newCodeType = newCodeType.PointerToType;
+            }
+
+            if (newCodeType == codeType)
+            {
+                return this;
+            }
+
+            if (newCodeType.IsPointer)
+            {
+                return CreatePointerNoCast(newCodeType, GetPointerAddress() + (uint)tuple.Item2, name, path);
+            }
+            else
+            {
+                return CreateNoCast(newCodeType, GetPointerAddress() + (uint)tuple.Item2, name, path);
+            }
+        }
+
+        /// <summary>
+        /// GetBaseClass with cast.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="className"></param>
+        /// <returns></returns>
+        public T GetBaseClass<T>(string className)
+        {
+            return GetBaseClass(className).CastAs<T>();
         }
 
         /// <summary>
@@ -707,7 +912,25 @@ namespace CsScripts
             CodeType fieldType = tuple.Item1;
             ulong fieldAddress = GetPointerAddress() + (ulong)tuple.Item2;
 
-            return Create(fieldType, fieldAddress, fieldName);
+            return Create(fieldType, fieldAddress, fieldName, GenerateNewName(".{0}", fieldName));
+        }
+
+        /// <summary>
+        /// Gets the class field as T.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="fieldName"></param>
+        /// <returns></returns>
+        public T GetClassField<T>(string fieldName)
+        {
+            Variable field = GetClassField(fieldName);
+
+            if (field == null)
+            {
+                return default(T);
+            }
+
+            return field.CastAs<T>();
         }
 
         /// <summary>
@@ -717,7 +940,7 @@ namespace CsScripts
         /// <returns>Field variable if the specified field exists.</returns>
         public Variable GetField(string name)
         {
-            return userTypeCastedFieldsByName[name];
+            return GetUserTypeCastedFieldByName(name);
         }
 
         /// <summary>
@@ -730,7 +953,7 @@ namespace CsScripts
             CodeType fieldType = codeType.GetFieldType(name);
             ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
 
-            return CreateNoCast(fieldType, fieldAddress, name);
+            return CreateNoCast(fieldType, fieldAddress, name, GenerateNewName(".{0}", name));
         }
 
         /// <summary>
@@ -740,14 +963,7 @@ namespace CsScripts
         /// <returns>Field variable casted to user type if the specified field exists.</returns>
         private Variable GetUserTypeCastedFieldByName(string name)
         {
-            Variable field = codeType.Module.Process.UserTypeCastedVariables[fieldsByName[name]];
-
-            if (userTypeCastedFieldsByName.Count == 0)
-            {
-                GlobalCache.VariablesUserTypeCastedFieldsByName.Add(userTypeCastedFieldsByName);
-            }
-
-            return field;
+            return codeType.Module.Process.CastVariableToUserType(GetOriginalField(name));
         }
 
         /// <summary>
@@ -756,13 +972,13 @@ namespace CsScripts
         /// <param name="originalVariable">The original variable.</param>
         internal static Variable CastVariableToUserType(Variable originalVariable)
         {
-            // Get user type descriptions to be used by this process
-            var userTypes = originalVariable.codeType.Module.Process.UserTypes;
-
-            if (userTypes.Count == 0)
+            if (Context.UserTypeMetadata == null || Context.UserTypeMetadata.Length == 0)
             {
                 return originalVariable;
             }
+
+            // Get user type descriptions to be used by this process
+            var userTypes = originalVariable.codeType.Module.Process.UserTypes;
 
             // Look at the type and see if it should be converted to user type
             var typesBasedOnModule = userTypes.Where(t => t.Module == originalVariable.codeType.Module);
@@ -781,13 +997,15 @@ namespace CsScripts
             }
 
             // Check if it is null
-            if (originalVariable.IsNullPointer())
+            if (originalVariable.GetPointerAddress() == 0)
             {
                 return null;
             }
 
             // Create new instance of user defined type
-            return (Variable)Activator.CreateInstance(types[0].Type, originalVariable);
+            UserTypeConstructor activator = typeToConstructor[types[0].Type];
+
+            return (Variable)activator(originalVariable);
         }
 
         /// <summary>
@@ -801,11 +1019,19 @@ namespace CsScripts
 
             for (int i = 0; i < variables.Length; i++)
             {
-                variables[i] = originalCollection[i].codeType.Module.Process.UserTypeCastedVariables[originalCollection[i]];
+                variables[i] = originalCollection[i].codeType.Module.Process.CastVariableToUserType(originalCollection[i]);
                 variablesByName.Add(originalCollection[i].name, variables[i]);
             }
 
             return new VariableCollection(variables, variablesByName);
+        }
+
+        /// <summary>
+        /// Gets the pointer to this variable.
+        /// </summary>
+        public Variable GetPointer()
+        {
+            return CreatePointerNoCast(codeType.PointerToType, GetPointerAddress(), name, path);
         }
 
         /// <summary>
@@ -877,7 +1103,7 @@ namespace CsScripts
         {
             try
             {
-                result = userTypeCastedFieldsByName[name];
+                result = GetUserTypeCastedFieldByName(name);
                 return true;
             }
             catch (Exception)
@@ -931,7 +1157,7 @@ namespace CsScripts
             return TryGetMember(indexes[0].ToString(), out result);
         }
 
-        #region Forbidden setters/deleters
+#region Forbidden setters/deleters
         /// <summary>
         /// Tries to delete the member - it is forbidden.
         /// </summary>
@@ -975,16 +1201,7 @@ namespace CsScripts
         {
             throw new UnauthorizedAccessException();
         }
-        #endregion
-
-        /// <summary>
-        /// Finds the runtime type.
-        /// </summary>
-        private CodeType FindRuntimeType()
-        {
-            // TODO: See if it is complex type and try to get VTable
-            return null;
-        }
+#endregion
 
         /// <summary>
         /// Gets field offset.
@@ -1009,7 +1226,7 @@ namespace CsScripts
 
             for (int i = 0; i < fieldNames.Length; i++)
             {
-                fields[i] = fieldsByName[fieldNames[i]];
+                fields[i] = GetOriginalField(fieldNames[i]);
             }
 
             return fields;
@@ -1025,20 +1242,9 @@ namespace CsScripts
 
             for (int i = 0; i < originalFields.Length; i++)
             {
-                string name = originalFields[i].name;
-                Variable field;
-
-                if (userTypeCastedFieldsByName.TryGetExistingValue(name, out field))
-                {
-                    fields[i] = field;
-                }
-                else
-                {
-                    fields[i] = userTypeCastedFieldsByName[name] = codeType.Module.Process.UserTypeCastedVariables[originalFields[i]];
-                }
+                fields[i] = codeType.Module.Process.CastVariableToUserType(originalFields[i]);
             }
 
-            GlobalCache.VariablesUserTypeCastedFields.Add(userTypeCastedFields);
             return fields;
         }
 
@@ -1050,7 +1256,29 @@ namespace CsScripts
             return Context.SymbolProvider.ReadSimpleData(codeType, Address);
         }
 
-        #region IConvertible
+        /// <summary>
+        /// Generates the new variable name.
+        /// If existing name is computed, it will remain like that. If not, new format will be appended to existing name.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns></returns>
+        private string GenerateNewName(string format, params object[] args)
+        {
+            if (!Context.EnableVariablePathTracking)
+            {
+                return UntrackedPath;
+            }
+
+            if (name == ComputedName)
+            {
+                return name;
+            }
+
+            return name + string.Format(format, args);
+        }
+
+#region IConvertible
         public TypeCode GetTypeCode()
         {
             throw new NotImplementedException();
@@ -1108,12 +1336,12 @@ namespace CsScripts
 
         public float ToSingle(IFormatProvider provider)
         {
-            throw new NotImplementedException();
+            return (float)this;
         }
 
         public double ToDouble(IFormatProvider provider)
         {
-            throw new NotImplementedException();
+            return (double)this;
         }
 
         public decimal ToDecimal(IFormatProvider provider)
@@ -1135,6 +1363,6 @@ namespace CsScripts
         {
             return CastAs(conversionType);
         }
-        #endregion
+#endregion
     }
 }

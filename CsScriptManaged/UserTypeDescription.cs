@@ -13,30 +13,47 @@ namespace CsScriptManaged
         /// <param name="typeName">Name of the type.</param>
         /// <param name="type">The type.</param>
         public UserTypeDescription(string moduleName, string typeName, Type type)
+            : this(Process.Current, moduleName, typeName, type)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserTypeDescription" /> class.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="moduleName">Name of the module.</param>
+        /// <param name="typeName">Name of the type.</param>
+        /// <param name="type">The type.</param>
+        public UserTypeDescription(Process process, string moduleName, string typeName, Type type)
         {
             if (moduleName != null)
             {
-                Module = Process.Current.ModulesByName[moduleName];
+                Module = process.ModulesByName[moduleName];
             }
             else
             {
-                CodeType userType;
-                var modules = Process.Current.Modules.Where(m => m.TypesByName.TryGetValue(typeName, out userType)).ToArray();
+                // TODO: Check if this is needed for some scenario...
+                //CodeType userType;
+                //var modules = process.Modules.Where(m => m.TypesByName.TryGetValue(typeName, out userType)).ToArray();
 
-                if (modules.Length > 1)
-                {
-                    throw new Exception(string.Format("Type {0} exists in multiple modules: {1}", typeName, string.Join(", ", modules.Select(m => m.Name))));
-                }
+                //if (modules.Length > 1)
+                //{
+                //    throw new Exception(string.Format("Type {0} exists in multiple modules: {1}", typeName, string.Join(", ", modules.Select(m => m.Name))));
+                //}
 
-                if (modules.Length <= 0)
-                {
-                    throw new Exception(string.Format("Type {0} wasn't found in any module", typeName));
-                }
+                //if (modules.Length <= 0)
+                //{
+                //    throw new Exception(string.Format("Type {0} wasn't found in any module", typeName));
+                //}
 
-                Module = modules[0];
+                //Module = modules[0];
             }
 
-            UserType = Module.TypesByName[typeName];
+            if (!typeName.EndsWith("<>"))
+            {
+                UserType = Module.TypesByName[typeName];
+            }
+
             Type = type;
         }
 
@@ -65,6 +82,22 @@ namespace CsScriptManaged
         public bool Equals(UserTypeDescription other)
         {
             return other.Module == Module && other.UserType == UserType && other.Type == Type;
+        }
+    }
+
+    static class UserTypeDescriptionExtensions
+    {
+        /// <summary>
+        /// Finds description that comes from the specified module or first if not found.
+        /// </summary>
+        /// <param name="descriptions">The descriptions.</param>
+        /// <param name="module">The module.</param>
+        public static UserTypeDescription FromModuleOrFirst(this UserTypeDescription[] descriptions, Module module)
+        {
+            foreach (var description in descriptions)
+                if (description.Module == module)
+                    return description;
+            return descriptions.First();
         }
     }
 }

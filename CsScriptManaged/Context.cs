@@ -1,4 +1,5 @@
-﻿using CsScriptManaged.SymbolProviders;
+﻿using CsScriptManaged.Debuggers;
+using CsScriptManaged.SymbolProviders;
 using CsScriptManaged.Utility;
 using DbgEngManaged;
 using System;
@@ -13,49 +14,14 @@ namespace CsScriptManaged
     public static class Context
     {
         /// <summary>
-        /// The DbgEng.dll Advanced interface
+        /// The debugger engine interface
         /// </summary>
-        public static IDebugAdvanced3 Advanced;
-
-        /// <summary>
-        /// The DbgEng.dll Client interface
-        /// </summary>
-        public static IDebugClient7 Client;
-
-        /// <summary>
-        /// The DbgEng.dll Control interface
-        /// </summary>
-        public static IDebugControl7 Control;
-
-        /// <summary>
-        /// The DbgEng.dll Data spaces interface
-        /// </summary>
-        public static IDebugDataSpaces4 DataSpaces;
-
-        /// <summary>
-        /// The DbgEng.dll Registers interface
-        /// </summary>
-        public static IDebugRegisters2 Registers;
-
-        /// <summary>
-        /// The DbgEng.dll Symbols interface
-        /// </summary>
-        public static IDebugSymbols5 Symbols;
-
-        /// <summary>
-        /// The DbgEng.dll System objects interface
-        /// </summary>
-        public static IDebugSystemObjects4 SystemObjects;
+        public static IDebuggerEngine Debugger;
 
         /// <summary>
         /// The symbol provider interface
         /// </summary>
         public static ISymbolProvider SymbolProvider;
-
-        /// <summary>
-        /// The DbgEng.dll symbol provider
-        /// </summary>
-        private static DbgEngSymbolProvider DbgEngSymbolProvider = new DbgEngSymbolProvider();
 
         /// <summary>
         /// The DIA symbol provider
@@ -78,9 +44,28 @@ namespace CsScriptManaged
         private static InteractiveExecution interactiveExecution = new InteractiveExecution();
 
         /// <summary>
-        /// The state cache
+        /// Gets or sets a value indicating whether variable caching is enabled.
         /// </summary>
-        internal static StateCache StateCache = new StateCache();
+        /// <value>
+        /// <c>true</c> if variable caching is enabled; otherwise, <c>false</c>.
+        /// </value>
+        public static bool EnableVariableCaching { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether user casted variable caching is enabled.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if user casted variable caching is enabled; otherwise, <c>false</c>.
+        /// </value>
+        public static bool EnableUserCastedVariableCaching { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether variable path tracking is enabled.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if variable path tracking is enabled; otherwise, <c>false</c>.
+        /// </value>
+        public static bool EnableVariablePathTracking { get; set; } = true;
 
         /// <summary>
         /// Gets a value indicating whether debugger is currently in live debugging.
@@ -92,33 +77,19 @@ namespace CsScriptManaged
         {
             get
             {
-                try
-                {
-                    return Client.GetNumberDumpFiles() == 0;
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
+                return Debugger.IsLiveDebugging;
             }
         }
 
         /// <summary>
-        /// Initalizes the Context with the specified DbgEng.dll Client interface.
+        /// Initializes the Context with the specified DbgEng.dll Client interface.
         /// </summary>
         /// <param name="client">The DbgEng.dll Client interface.</param>
         public static void Initalize(IDebugClient client)
         {
-            Advanced = client as IDebugAdvanced3;
-            Client = client as IDebugClient7;
-            Control = client as IDebugControl7;
-            DataSpaces = client as IDebugDataSpaces4;
-            Registers = client as IDebugRegisters2;
-            Symbols = client as IDebugSymbols5;
-            SystemObjects = client as IDebugSystemObjects4;
-            SymbolProvider = DbgEngSymbolProvider;
+            Debugger = new DbgEngDll(client);
+            SymbolProvider = Debugger.CreateDefaultSymbolProvider();
             SymbolProvider = DiaSymbolProvider;
-            StateCache = new StateCache();
         }
 
         /// <summary>
@@ -128,7 +99,7 @@ namespace CsScriptManaged
         /// <param name="args">The arguments.</param>
         public static void Execute(string path, params string[] args)
         {
-            ExecuteAction(() =>
+            Debugger.ExecuteAction(() =>
             {
                 using (ScriptExecution execution = new ScriptExecution())
                 {
@@ -142,7 +113,7 @@ namespace CsScriptManaged
         /// </summary>
         public static void EnterInteractiveMode()
         {
-            ExecuteAction(() => interactiveExecution.Run());
+            Debugger.ExecuteAction(() => interactiveExecution.Run());
         }
 
         /// <summary>
@@ -151,7 +122,7 @@ namespace CsScriptManaged
         /// <param name="code">The C# code.</param>
         public static void Interpret(string code)
         {
-            ExecuteAction(() => interactiveExecution.Interpret(code));
+            Debugger.ExecuteAction(() => interactiveExecution.Interpret(code));
         }
 
         /// <summary>
@@ -190,33 +161,6 @@ namespace CsScriptManaged
             GlobalCache.VariablesUserTypeCastedFields.Clear();
             GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
             GlobalCache.UserTypeCastedVariableCollections.Clear();
-        }
-
-        /// <summary>
-        /// Executes the action in redirected console output and error stream.
-        /// </summary>
-        /// <param name="action">The action.</param>
-        private static void ExecuteAction(Action action)
-        {
-            TextWriter originalConsoleOut = Console.Out;
-            TextWriter originalConsoleError = Console.Error;
-
-            Console.SetOut(new DebuggerTextWriter(DebugOutput.Normal));
-            Console.SetError(new DebuggerTextWriter(DebugOutput.Error));
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine(ex);
-            }
-            finally
-            {
-                Console.SetOut(originalConsoleOut);
-                Console.SetError(originalConsoleError);
-                StateCache.SyncState();
-            }
         }
 
         /// <summary>

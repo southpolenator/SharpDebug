@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace Dia2Lib
 {
@@ -32,6 +33,7 @@ namespace Dia2Lib
                                 return "wchar_t";
                             case BasicType.BSTR:
                                 return "string";
+                            case BasicType.NoType:
                             case BasicType.Void:
                                 return "void";
                             case BasicType.Float:
@@ -74,6 +76,7 @@ namespace Dia2Lib
 
                             case BasicType.Hresult:
                                 return "HRESULT";
+
                             default:
                                 throw new Exception("Unexpected basic type " + (BasicType)type.baseType);
                         }
@@ -85,13 +88,33 @@ namespace Dia2Lib
                             return GetTypeString(pointerType) + "*";
                         }
 
+                    case SymTagEnum.SymTagBaseClass:
                     case SymTagEnum.SymTagUDT:
                     case SymTagEnum.SymTagEnum:
-                        {
-                            return type.name;
-                        }
+                    case SymTagEnum.SymTagVTable:
+                    case SymTagEnum.SymTagVTableShape:
+                        return type.name ?? "";
 
                     case SymTagEnum.SymTagFunctionType:
+                        {
+                            StringBuilder sb = new StringBuilder();
+                            var arguments = type.GetChildren(SymTagEnum.SymTagFunctionArgType);
+                            bool first = true;
+
+                            sb.Append(GetTypeString(type.type));
+                            sb.Append("(");
+                            foreach (var argument in arguments)
+                            {
+                                if (first)
+                                    first = false;
+                                else
+                                    sb.Append(",");
+                                sb.Append(GetTypeString(argument.type));
+                            }
+                            sb.Append(")");
+                            return sb.ToString();
+                        }
+
                     case SymTagEnum.SymTagArrayType:
                         return GetTypeString(type.type) + "[]";
 

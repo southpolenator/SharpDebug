@@ -137,10 +137,7 @@ namespace CsScriptManaged
             Console.Write(prompt);
 
             // Read string
-            uint inputSize;
-            StringBuilder sb = new StringBuilder(10240);
-            Context.Control.InputWide(sb, (uint)sb.Capacity, out inputSize);
-            return sb.ToString();
+            return Context.Debugger.ReadInput();
         }
 
         /// <summary>

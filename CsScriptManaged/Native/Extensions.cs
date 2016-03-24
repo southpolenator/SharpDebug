@@ -23,7 +23,7 @@ namespace CsScriptManaged.Native
                 uint outSize;
 
                 requestNative.Structure = request;
-                Context.Advanced.Request((uint)requestType, requestNative.Pointer, requestNative.USize, requestNative.Pointer, requestNative.USize, out outSize);
+                client.Request((uint)requestType, requestNative.Pointer, requestNative.USize, requestNative.Pointer, requestNative.USize, out outSize);
                 return requestNative.Structure;
             }
         }
@@ -43,7 +43,7 @@ namespace CsScriptManaged.Native
 
                 requestNative.Extended = extended;
                 requestNative.Structure = request;
-                Context.Advanced.Request((uint)requestType, requestNative.Pointer, requestNative.USize, requestNative.Pointer, requestNative.USize, out outSize);
+                client.Request((uint)requestType, requestNative.Pointer, requestNative.USize, requestNative.Pointer, requestNative.USize, out outSize);
                 return requestNative.Structure;
             }
         }
