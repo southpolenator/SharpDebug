@@ -891,12 +891,16 @@ namespace CsScriptManaged.Debuggers
         /// </summary>
         /// <param name="process">The process.</param>
         /// <param name="address">The address.</param>
-        public string ReadAnsiString(Process process, ulong address)
+        /// <param name="length">The length. If length is -1, string is null terminated</param>
+        public string ReadAnsiString(Process process, ulong address, int length = -1)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
+                if (length < 0)
+                    length = (int)Constants.MaxStringReadLength;
+
                 uint stringLength;
-                StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+                StringBuilder sb = new StringBuilder(length);
 
                 DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
                 return sb.ToString();
@@ -908,12 +912,16 @@ namespace CsScriptManaged.Debuggers
         /// </summary>
         /// <param name="process">The process.</param>
         /// <param name="address">The address.</param>
-        public string ReadUnicodeString(Process process, ulong address)
+        /// <param name="length">The length. If length is -1, string is null terminated</param>
+        public string ReadUnicodeString(Process process, ulong address, int length = -1)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
+                if (length < 0)
+                    length = (int)Constants.MaxStringReadLength;
+
                 uint stringLength;
-                StringBuilder sb = new StringBuilder((int)Constants.MaxStringReadLength);
+                StringBuilder sb = new StringBuilder(length);
 
                 DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
                 return sb.ToString();

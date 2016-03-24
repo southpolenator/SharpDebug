@@ -712,8 +712,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                                     if (innerType == "void")
                                         return new UserTypeTreeBaseType("NakedPointer");
-                                    if (innerType == "char")
-                                        return new UserTypeTreeBaseType("string");
                                     return new UserTypeTreeCodePointer(GetTypeString(pointerType, factory));
                                 }
 

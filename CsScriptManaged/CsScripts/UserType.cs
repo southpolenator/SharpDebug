@@ -578,12 +578,13 @@ namespace CsScripts
         /// <param name="process">The process.</param>
         /// <param name="address">The memory address.</param>
         /// <param name="charSize">Size of the character.</param>
-        public static string ReadString(Process process, ulong address, int charSize)
+        /// <param name="length">The length. If length is -1, string is null terminated.</param>
+        public static string ReadString(Process process, ulong address, int charSize, int length = -1)
         {
             if (address == 0)
                 return null;
 
-            return process.ReadString(address, charSize);
+            return process.ReadString(address, charSize, length);
         }
 
         /// <summary>

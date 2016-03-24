@@ -236,13 +236,15 @@ namespace CsScriptManaged.Debuggers
         /// </summary>
         /// <param name="process">The process.</param>
         /// <param name="address">The address.</param>
-        string ReadAnsiString(Process process, ulong address);
+        /// <param name="length">The length. If length is -1, string is null terminated</param>
+        string ReadAnsiString(Process process, ulong address, int length = -1);
 
         /// <summary>
         /// Reads the unicode string.
         /// </summary>
         /// <param name="process">The process.</param>
         /// <param name="address">The address.</param>
-        string ReadUnicodeString(Process process, ulong address);
+        /// <param name="length">The length. If length is -1, string is null terminated</param>
+        string ReadUnicodeString(Process process, ulong address, int length = -1);
     }
 }

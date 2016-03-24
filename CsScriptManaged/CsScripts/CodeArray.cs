@@ -8,6 +8,28 @@ using CsScriptManaged.Utility;
 namespace CsScripts
 {
     /// <summary>
+    /// Extension specialization functions for CodeArray.
+    /// </summary>
+    public static class CodeArrayExtensions
+    {
+        /// <summary>
+        /// Reads the string from CodeArray.
+        /// </summary>
+        /// <param name="codeArray">The code array.</param>
+        public static string ReadString(this CodeArray<char> codeArray)
+        {
+            if (codeArray.variable != null)
+            {
+                return UserType.ReadString(codeArray.variable.GetCodeType().Module.Process, codeArray.variable.GetAddress(), (int)codeArray.variable.GetCodeType().ElementType.Size, codeArray.Length);
+            }
+            else
+            {
+                return new string(codeArray.ToArray());
+            }
+        }
+    }
+
+    /// <summary>
     /// Wrapper class that represents a "static" array. For example "int a[4]";
     /// </summary>
     /// <typeparam name="T">The type of elements in the array</typeparam>
@@ -16,7 +38,7 @@ namespace CsScripts
         /// <summary>
         /// The actual variable where we get all the values.
         /// </summary>
-        private Variable variable;
+        internal Variable variable;
 
         /// <summary>
         /// The pre-calculated array (if we were initialized with it, or we know how to read whole array)
