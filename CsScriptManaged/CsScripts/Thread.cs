@@ -122,7 +122,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the thread context.
         /// </summary>
-        private ThreadContext ThreadContext
+        public ThreadContext ThreadContext
         {
             get
             {
@@ -153,7 +153,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the thread context.
         /// </summary>
-        public ThreadContext GetThreadContext()
+        private ThreadContext GetThreadContext()
         {
             return Context.Debugger.GetThreadContext(this);
         }
