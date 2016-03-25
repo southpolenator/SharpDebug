@@ -1,12 +1,11 @@
-﻿using System.Management.Automation;
-using CsScriptManaged;
-using CsScriptManaged.Utility;
+﻿using CsScriptManaged;
 using CsScripts;
 using DbgEngManaged;
 using System;
+using System.Management.Automation;
 using System.Runtime.InteropServices;
 
-namespace PowershellDebugSession 
+namespace PowershellDebugSession
 {
     /// <summary>
     /// Singleton class for interacting with currently opened debug session.
@@ -104,7 +103,7 @@ namespace PowershellDebugSession
         {
             Console.WriteLine("Threads: {0}", Thread.All.Length);
             Console.WriteLine("Current thread: {0}", Thread.Current.Id);
-            var frames = Thread.Current.GetStackTrace().Frames;
+            StackFrame[] frames = Thread.Current.StackTrace.Frames;
 
             Console.WriteLine("Call stack:");
             foreach (var frame in frames)
@@ -119,7 +118,7 @@ namespace PowershellDebugSession
                 }
             }
 
-            WriteObject(Thread.Current.GetStackTrace());
+            WriteObject(Thread.Current.StackTrace);
         }
     }
 }

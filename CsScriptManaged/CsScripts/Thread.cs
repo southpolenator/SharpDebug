@@ -122,7 +122,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the thread context.
         /// </summary>
-        public ThreadContext ThreadContext
+        private ThreadContext ThreadContext
         {
             get
             {
@@ -133,7 +133,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the stack trace.
         /// </summary>
-        public StackTrace GetStackTrace()
+        private StackTrace GetStackTrace()
         {
             return Context.Debugger.GetThreadStackTrace(this);
         }
