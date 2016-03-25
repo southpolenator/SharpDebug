@@ -2,8 +2,8 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
-using System.Reflection.Emit;
 using CsScriptManaged.Utility;
+using CsScriptManaged;
 
 namespace CsScripts
 {
@@ -250,9 +250,7 @@ namespace CsScripts
             }
         }
 
-        private delegate T TypeConstructor(MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name, string path);
-
-        private TypeConstructor GetActivator()
+        private IUserTypeDelegates<T> GetDelegates()
         {
             var elementType = variable.GetCodeType().ElementType;
             var type = typeof(T);
@@ -272,47 +270,7 @@ namespace CsScripts
 
                         if (newType == elementType)
                         {
-                            // Find constructor that has 4 arguments:
-                            // Variable variable, byte[] buffer, int offset, ulong bufferAddress
-                            var constructors = type.GetConstructors();
-
-                            foreach (var constructor in constructors)
-                            {
-                                if (!constructor.IsPublic)
-                                {
-                                    continue;
-                                }
-
-                                var parameters = constructor.GetParameters();
-
-                                if (parameters.Length < 7 || parameters.Count(p => !p.HasDefaultValue) > 7)
-                                {
-                                    continue;
-                                }
-
-                                if (parameters[0].ParameterType == typeof(MemoryBuffer)
-                                    && parameters[1].ParameterType == typeof(int)
-                                    && parameters[2].ParameterType == typeof(ulong)
-                                    && parameters[3].ParameterType == typeof(CodeType)
-                                    && parameters[4].ParameterType == typeof(ulong)
-                                    && parameters[5].ParameterType == typeof(string)
-                                    && parameters[6].ParameterType == typeof(string))
-                                {
-                                    DynamicMethod method = new DynamicMethod("CreateIntance", type, new Type[] { typeof(MemoryBuffer), typeof(int), typeof(ulong), typeof(CodeType), typeof(ulong), typeof(string), typeof(string) });
-                                    ILGenerator gen = method.GetILGenerator();
-
-                                    gen.Emit(OpCodes.Ldarg_0);
-                                    gen.Emit(OpCodes.Ldarg_1);
-                                    gen.Emit(OpCodes.Ldarg_2);
-                                    gen.Emit(OpCodes.Ldarg_3);
-                                    gen.Emit(OpCodes.Ldarg, (short)4);
-                                    gen.Emit(OpCodes.Ldarg, (short)5);
-                                    gen.Emit(OpCodes.Ldarg, (short)6);
-                                    gen.Emit(OpCodes.Newobj, constructor);
-                                    gen.Emit(OpCodes.Ret);
-                                    return (TypeConstructor)method.CreateDelegate(typeof(TypeConstructor));
-                                }
-                            }
+                            return UserTypeDelegates<T>.Instance;
                         }
                     }
                 }
@@ -323,9 +281,9 @@ namespace CsScripts
 
         private IReadOnlyList<T> ReadArray()
         {
-            var activator = GetActivator();
+            var delegates = GetDelegates();
 
-            if (activator != null)
+            if (delegates != null && delegates.PhysicalConstructor != null)
             {
                 var address = variable.GetPointerAddress();
                 var elementType = variable.GetCodeType().ElementType;
@@ -334,10 +292,10 @@ namespace CsScripts
                 {
                     var buffer = Debugger.ReadMemory(elementType.Module.Process, address, (uint)(Length * elementType.Size));
 
-                    return new BufferedElementCreatorReadOnlyList(activator, elementType, buffer, address, address);
+                    return new BufferedElementCreatorReadOnlyList(delegates, elementType, buffer, address, address);
                 }
 
-                return new ElementCreatorReadOnlyList(activator, elementType, address);
+                return new ElementCreatorReadOnlyList(delegates, elementType, address);
             }
 
             return null;
@@ -345,14 +303,14 @@ namespace CsScripts
 
         private class ElementCreatorReadOnlyList : IReadOnlyList<T>
         {
-            private TypeConstructor activator;
+            private IUserTypeDelegates<T> delegates;
             private CodeType elementType;
             private ulong arrayStartAddress;
             private uint elementTypeSize;
 
-            public ElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, ulong arrayStartAddress)
+            public ElementCreatorReadOnlyList(IUserTypeDelegates<T> delegates, CodeType elementType, ulong arrayStartAddress)
             {
-                this.activator = activator;
+                this.delegates = delegates;
                 this.elementType = elementType;
                 this.arrayStartAddress = arrayStartAddress;
                 elementTypeSize = elementType.Size;
@@ -365,7 +323,7 @@ namespace CsScripts
                     ulong address = arrayStartAddress + (ulong)index * elementTypeSize;
                     var buffer = Debugger.ReadMemory(elementType.Module.Process, address, elementTypeSize);
 
-                    return activator(buffer, 0, address, elementType, address, Variable.ComputedName, Variable.UntrackedPath);
+                    return delegates.PhysicalConstructor(buffer, 0, address, elementType, address, Variable.ComputedName, Variable.UntrackedPath);
                 }
             }
 
@@ -390,16 +348,16 @@ namespace CsScripts
 
         private class BufferedElementCreatorReadOnlyList : IReadOnlyList<T>
         {
-            private TypeConstructor activator;
+            private IUserTypeDelegates<T> delegates;
             private CodeType elementType;
             private ulong arrayStartAddress;
             private uint elementTypeSize;
             private MemoryBuffer buffer;
             private ulong bufferAddress;
 
-            public BufferedElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, MemoryBuffer buffer, ulong bufferAddress, ulong arrayStartAddress)
+            public BufferedElementCreatorReadOnlyList(IUserTypeDelegates<T> delegates, CodeType elementType, MemoryBuffer buffer, ulong bufferAddress, ulong arrayStartAddress)
             {
-                this.activator = activator;
+                this.delegates = delegates;
                 this.elementType = elementType;
                 this.arrayStartAddress = arrayStartAddress;
                 this.buffer = buffer;
@@ -414,7 +372,7 @@ namespace CsScripts
                     int offset = (int)(index * elementTypeSize);
                     ulong address = arrayStartAddress + (ulong)offset;
 
-                    return activator(buffer, offset, bufferAddress, elementType, address, Variable.ComputedName, Variable.UntrackedPath);
+                    return delegates.PhysicalConstructor(buffer, offset, bufferAddress, elementType, address, Variable.ComputedName, Variable.UntrackedPath);
                 }
             }
 

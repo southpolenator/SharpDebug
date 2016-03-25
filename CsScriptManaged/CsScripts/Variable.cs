@@ -785,49 +785,15 @@ namespace CsScripts
             }
 
             // Check if type has constructor with one argument and that argument is inherited from Variable
-            UserTypeConstructor activator = typeToConstructor[conversionType];
+            IUserTypeDelegates delegates = UserTypeDelegates.Delegates[conversionType];
 
-            return activator(activatorParameter);
-        }
-
-        private delegate object UserTypeConstructor(Variable variable);
-
-        /// <summary>
-        /// The cache of type to constructor delegate
-        /// </summary>
-        private static DictionaryCache<Type, UserTypeConstructor> typeToConstructor = new DictionaryCache<Type, UserTypeConstructor>((conversionType) =>
-        {
-            var constructors = conversionType.GetConstructors();
-
-            foreach (var constructor in constructors)
+            if (delegates.SymbolicConstructor == null)
             {
-                if (!constructor.IsPublic)
-                {
-                    continue;
-                }
-
-                var parameters = constructor.GetParameters();
-
-                if (parameters.Length < 1 || parameters.Count(p => !p.HasDefaultValue) > 1)
-                {
-                    continue;
-                }
-
-                if (parameters[0].ParameterType == typeof(Variable))
-                {
-                    DynamicMethod method = new DynamicMethod("CreateIntance", conversionType, new Type[] { typeof(Variable) });
-                    ILGenerator gen = method.GetILGenerator();
-
-                    gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Newobj, constructor);
-                    gen.Emit(OpCodes.Ret);
-                    return (UserTypeConstructor)method.CreateDelegate(typeof(UserTypeConstructor));
-
-                }
+                throw new InvalidCastException("Cannot cast Variable to " + conversionType);
             }
 
-            throw new InvalidCastException("Cannot cast Variable to " + conversionType);
-        });
+            return delegates.SymbolicConstructor(activatorParameter);
+        }
 
         /// <summary>
         /// Casts variable to new type.
@@ -1003,9 +969,15 @@ namespace CsScripts
             }
 
             // Create new instance of user defined type
-            UserTypeConstructor activator = typeToConstructor[types[0].Type];
+            var conversionType = types[0].Type;
+            IUserTypeDelegates delegates = UserTypeDelegates.Delegates[conversionType];
 
-            return (Variable)activator(originalVariable);
+            if (delegates.SymbolicConstructor == null)
+            {
+                throw new InvalidCastException("Cannot cast Variable to " + conversionType);
+            }
+
+            return (Variable)delegates.SymbolicConstructor(originalVariable);
         }
 
         /// <summary>
