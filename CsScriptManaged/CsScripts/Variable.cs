@@ -618,7 +618,7 @@ namespace CsScripts
             ulong baseAddress = GetPointerAddress();
             ulong address = baseAddress + (ulong)(index * elementType.Size);
 
-            return Create(elementType, address, ComputedName, GenerateNewName("[{0}]", index));
+            return Create(elementType, address, ComputedName, GenerateNewPath("[{0}]", index));
         }
 
         /// <summary>
@@ -878,7 +878,7 @@ namespace CsScripts
             CodeType fieldType = tuple.Item1;
             ulong fieldAddress = GetPointerAddress() + (ulong)tuple.Item2;
 
-            return Create(fieldType, fieldAddress, fieldName, GenerateNewName(".{0}", fieldName));
+            return Create(fieldType, fieldAddress, fieldName, GenerateNewPath(".{0}", fieldName));
         }
 
         /// <summary>
@@ -919,7 +919,7 @@ namespace CsScripts
             CodeType fieldType = codeType.GetFieldType(name);
             ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
 
-            return CreateNoCast(fieldType, fieldAddress, name, GenerateNewName(".{0}", name));
+            return CreateNoCast(fieldType, fieldAddress, name, GenerateNewPath(".{0}", name));
         }
 
         /// <summary>
@@ -1229,13 +1229,12 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Generates the new variable name.
+        /// Generates the new variable path.
         /// If existing name is computed, it will remain like that. If not, new format will be appended to existing name.
         /// </summary>
         /// <param name="format">The format.</param>
         /// <param name="args">The arguments.</param>
-        /// <returns></returns>
-        private string GenerateNewName(string format, params object[] args)
+        private string GenerateNewPath(string format, params object[] args)
         {
             if (!Context.EnableVariablePathTracking)
             {
@@ -1250,87 +1249,174 @@ namespace CsScripts
             return name + string.Format(format, args);
         }
 
-#region IConvertible
+        #region IConvertible
+        /// <summary>
+        /// Returns the <see cref="T:System.TypeCode" /> for this instance.
+        /// </summary>
+        /// <returns>
+        /// The enumerated constant that is the <see cref="T:System.TypeCode" /> of the class or value type that implements this interface.
+        /// </returns>
         public TypeCode GetTypeCode()
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent Boolean value using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>A Boolean value equivalent to the value of this instance.</returns>
         public bool ToBoolean(IFormatProvider provider)
         {
             return (bool)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent Unicode character using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>A Unicode character equivalent to the value of this instance.</returns>
         public char ToChar(IFormatProvider provider)
         {
             return (char)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent 8-bit signed integer using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>An 8-bit signed integer equivalent to the value of this instance.</returns>
         public sbyte ToSByte(IFormatProvider provider)
         {
             return (sbyte)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent 8-bit unsigned integer using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>An 8-bit unsigned integer equivalent to the value of this instance.</returns>
         public byte ToByte(IFormatProvider provider)
         {
             return (byte)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent 16-bit signed integer using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>An 16-bit signed integer equivalent to the value of this instance.</returns>
         public short ToInt16(IFormatProvider provider)
         {
             return (short)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent 16-bit unsigned integer using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>An 16-bit unsigned integer equivalent to the value of this instance.</returns>
         public ushort ToUInt16(IFormatProvider provider)
         {
             return (ushort)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent 32-bit signed integer using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>An 32-bit signed integer equivalent to the value of this instance.</returns>
         public int ToInt32(IFormatProvider provider)
         {
             return (int)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent 32-bit unsigned integer using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>An 32-bit unsigned integer equivalent to the value of this instance.</returns>
         public uint ToUInt32(IFormatProvider provider)
         {
             return (uint)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent 64-bit signed integer using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>An 64-bit signed integer equivalent to the value of this instance.</returns>
         public long ToInt64(IFormatProvider provider)
         {
             return (long)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent 64-bit unsigned integer using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>An 64-bit unsigned integer equivalent to the value of this instance.</returns>
         public ulong ToUInt64(IFormatProvider provider)
         {
             return (ulong)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent single-precision floating-point number using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>A single-precision floating-point number equivalent to the value of this instance.</returns>
         public float ToSingle(IFormatProvider provider)
         {
             return (float)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent double-precision floating-point number using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>A double-precision floating-point number equivalent to the value of this instance.</returns>
         public double ToDouble(IFormatProvider provider)
         {
             return (double)this;
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent <see cref="T:System.Decimal" /> number using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>A <see cref="T:System.Decimal" /> number equivalent to the value of this instance.</returns>
         public decimal ToDecimal(IFormatProvider provider)
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent <see cref="T:System.DateTime" /> using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>A <see cref="T:System.DateTime" /> instance equivalent to the value of this instance.</returns>
         public DateTime ToDateTime(IFormatProvider provider)
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an equivalent <see cref="T:System.String" /> using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>A <see cref="T:System.String" /> instance equivalent to the value of this instance.</returns>
         public string ToString(IFormatProvider provider)
         {
             return ToString();
         }
 
+        /// <summary>
+        /// Converts the value of this instance to an <see cref="T:System.Object" /> of the specified <see cref="T:System.Type" /> that has an equivalent value, using the specified culture-specific formatting information.
+        /// </summary>
+        /// <param name="conversionType">The <see cref="T:System.Type" /> to which the value of this instance is converted.</param>
+        /// <param name="provider">An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting information.</param>
+        /// <returns>An <see cref="T:System.Object" /> instance of type conversionType whose value is equivalent to the value of this instance.</returns>
         public object ToType(Type conversionType, IFormatProvider provider)
         {
             return CastAs(conversionType);
