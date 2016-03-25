@@ -170,5 +170,17 @@ namespace CsScripts
         {
             return ToCodeArray(length).ToArray();
         }
+
+        /// <summary>
+        /// Gets the &lt;T&gt; at the specified index.
+        /// </summary>
+        /// <param name="index">The array index.</param>
+        public T this[int index]
+        {
+            get
+            {
+                return GetArrayElement(index).CastAs<T>();
+            }
+        }
     }
 }

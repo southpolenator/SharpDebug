@@ -163,6 +163,8 @@ namespace GenerateUserTypesFromPdb
                 generationOptions |= UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes;
             if (config.SingleFileExport)
                 generationOptions |= UserTypeGenerationFlags.SingleFileExport;
+            if (config.UseHungarianNotation)
+                generationOptions |= UserTypeGenerationFlags.UseHungarianNotation;
 
             // Verify that included files exist
             if (!string.IsNullOrEmpty(config.GeneratedAssemblyName))

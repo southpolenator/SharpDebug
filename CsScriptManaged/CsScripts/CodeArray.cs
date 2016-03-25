@@ -102,6 +102,46 @@ namespace CsScripts
         /// <summary>
         /// Initializes a new instance of the <see cref="CodeArray{T}"/> class.
         /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, ulong length)
+        {
+            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
+            {
+                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+            }
+
+            if (length > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException("length");
+            }
+
+            Initialize(variable, (int)length);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray{T}"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, long length)
+        {
+            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
+            {
+                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+            }
+
+            if (length > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException("length");
+            }
+
+            Initialize(variable, (int)length);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray{T}"/> class.
+        /// </summary>
         /// <param name="preCalculatedArray">The pre-calculated array.</param>
         public CodeArray(T[] preCalculatedArray)
         {

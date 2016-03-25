@@ -38,6 +38,8 @@ namespace GenerateUserTypesFromPdb
 
         public bool SingleFileExport { get; set; }
 
+        public bool UseHungarianNotation { get; set; }
+
         [XmlArrayItem("Module")]
         public XmlModule[] Modules { get; set; }
 

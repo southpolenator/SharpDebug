@@ -21,6 +21,7 @@ namespace GenerateUserTypesFromPdb
         LazyCacheUserTypeFields = 64,
         GeneratePhysicalMappingOfUserTypes = 128,
         SingleFileExport = 256,
+        UseHungarianNotation = 512,
     }
 
     static class StringExtensions
