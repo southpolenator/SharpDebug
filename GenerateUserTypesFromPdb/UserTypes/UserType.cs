@@ -417,6 +417,36 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 output.WriteLine(indentation, "//   {0}", type.Name);
         }
 
+        private bool IsTypeSupportedForCodeArray(string typeName)
+        {
+            //  Revisit this later, ingore template types
+            //
+            if (typeName == "T" ||
+                typeName == "T1" ||
+                typeName == "T2" ||
+                typeName == "T3" ||
+                typeName == "T4" ||
+                typeName == "T5")
+            {
+                return false;
+            }
+
+            if (typeName.StartsWith("char") ||
+                typeName.StartsWith("byte") ||
+                typeName.StartsWith("sbyte") ||
+                typeName.StartsWith("ushort") ||
+                typeName.StartsWith("short") ||
+                typeName.StartsWith("uint") ||
+                typeName.StartsWith("int") ||
+                typeName.StartsWith("ulong") ||
+                typeName.StartsWith("long"))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
             int baseClassOffset = 0;
@@ -459,6 +489,106 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             output.WriteLine(indentation++, @"{{");
 
+            bool firstField = true;
+
+            // 
+
+            if (options.HasFlag(UserTypeGenerationFlags.UseHungarianNotation))
+            {
+                Dictionary<UserTypeField, UserTypeField> userTypesArrays = new Dictionary<UserTypeField, UserTypeField>();
+
+                const string CounterPrefix = "_m_c";
+                const string PointerPrefix = "_m_p";
+                const string ArrayPrefix = "_m_rg";
+                UserTypeField[] counterFields = fields.Where(r => r.FieldName.StartsWith(CounterPrefix)).ToArray();
+
+                foreach (UserTypeField counterField in counterFields)
+                {
+                    if (counterField.FieldType != "uint" &&
+                        counterField.FieldType != "int" &&
+                        counterField.FieldType != "long" &&
+                        counterField.FieldType != "ulong")
+                    {
+                        continue;
+                    }
+
+                    string counterNameSurfix = counterField.FieldName.Substring(CounterPrefix.Length);
+
+                    if (string.IsNullOrEmpty(counterNameSurfix))
+                    {
+                        continue;
+                    }
+
+                    foreach (UserTypeField pointerField in fields.Where(r => (r.FieldName.StartsWith(PointerPrefix) || r.FieldName.StartsWith(ArrayPrefix)) && r.FieldName.EndsWith(counterNameSurfix)))
+                    {
+                        if (pointerField.FieldType.Contains('<') && pointerField.FieldType.Contains('>') &&
+                            !pointerField.FieldType.StartsWith("CodePointer"))
+                        {
+                            // Ignore when pointer type is generic
+                            // This is an issue for AutoPointers.
+                            // AutoPointers hold the pointer, which is array.
+                            //
+                            continue;
+                        }
+
+                        if (!IsTypeSupportedForCodeArray(pointerField.FieldType))
+                        {
+                            continue;
+                        }
+
+                        if (userTypesArrays.ContainsKey(pointerField))
+                        {
+                            if (userTypesArrays[pointerField].FieldName.Length > counterField.FieldName.Length)
+                            {
+                                continue;
+                            }
+                        }
+
+                        userTypesArrays[pointerField] = counterField;
+                    }
+                }
+
+                foreach (var userTypeArray in userTypesArrays)
+                {
+                    var pointerField = userTypeArray.Key;
+                    var counterField = userTypeArray.Value;
+
+                    string fieldType = pointerField.FieldType;
+
+                    const string CodePointerString = "CodePointer";
+
+                    if (fieldType.StartsWith(CodePointerString))
+                    {
+                        fieldType = fieldType.Substring(CodePointerString.Length + 1, fieldType.Length - CodePointerString.Length - 2);
+
+                        if (!IsTypeSupportedForCodeArray(fieldType) ||
+                            fieldType.Contains('<') && fieldType.Contains('>'))
+                        {
+                            continue;
+                        }
+                    }
+
+                    UserTypeField arrayAccessField = new UserTypeField
+                    {
+                        ConstructorText = string.Format("new CodeArray<{0}>({1}, (int){2})", fieldType, pointerField.PropertyName, counterField.PropertyName),
+                        FieldName = pointerField.FieldName + "Array",
+                        FieldType = string.Format("CodeArray<{0}>", fieldType),
+                        FieldTypeInfoComment = string.Format("// CodeArray<{0}>;", fieldType),
+                        PropertyName = pointerField.PropertyName + "Array",
+                        Static = pointerField.Static,
+                        UseUserMember = pointerField.UseUserMember,
+                        CacheResult = pointerField.CacheResult,
+                        SimpleFieldValue = string.Empty,
+                        ConstantValue = string.Empty,
+                    };
+
+                    if (arrayAccessField.Static && !ExportStaticFields)
+                        continue;
+
+                    arrayAccessField.WritePropertyCode(output, indentation, options, ref firstField);
+                }
+            }
+
             foreach (var field in fields)
             {
                 if (((field.Static && !ExportStaticFields && field.FieldTypeInfoComment != null) || (!field.CacheResult && !field.UseUserMember)) && string.IsNullOrEmpty(field.ConstantValue))
@@ -471,7 +601,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
             foreach (var constructor in constructors)
                 constructor.WriteCode(output, indentation, fields, ConstructorName, ExportStaticFields);
 
-            bool firstField = true;
             foreach (var field in fields)
             {
                 if (string.IsNullOrEmpty(field.PropertyName) || (field.Static && !ExportStaticFields && field.FieldTypeInfoComment != null))

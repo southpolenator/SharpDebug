@@ -170,5 +170,18 @@ namespace CsScripts
         {
             return ToCodeArray(length).ToArray();
         }
+
+        /// <summary>
+        /// Indexer.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public T this[int index]
+        {
+            get
+            {
+                return this.AdjustPointer((int)(index * GetCodeType().Size)).CastAs<T>();
+            }
+        }
     }
 }
