@@ -489,9 +489,8 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the pointer address.
+        /// Gets the pointer address. If this variable is pointer, it will return its value, otherwise it will return variable memory address.
         /// </summary>
-        /// <exception cref="System.ArgumentException">Variable is not a pointer type, but ...</exception>
         public ulong GetPointerAddress()
         {
             return codeType.IsPointer ? Data : Address;
@@ -500,7 +499,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the memory address where value of this Variable is stored.
         /// </summary>
-        public ulong GetAddress()
+        public ulong GetMemoryAddress()
         {
             return Address;
         }
