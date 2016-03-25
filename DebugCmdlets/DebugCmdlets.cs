@@ -75,9 +75,9 @@ namespace PowershellDebugSession
                 SymbolPath = "srv*";
             }
 
+            ((IDebugSymbols5)client).SetSymbolPathWide(SymbolPath);
             ((IDebugClient7)client).CreateProcessAndAttach(0, ProcessPath, 0x00000002); 
             ((IDebugControl7)client).WaitForEvent(0, uint.MaxValue);
-            ((IDebugSymbols5)client).SetSymbolPathWide(SymbolPath);
 
             // For live debugging disable caching.
             //
