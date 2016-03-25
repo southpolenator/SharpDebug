@@ -85,7 +85,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     Access = "protected",
                     ConstructorText = "buffer",
-                    FieldName = "buffer",
+                    FieldName = "memoryBuffer",
                     FieldType = "CsScriptManaged.Utility.MemoryBuffer",
                     FieldTypeInfoComment = null,
                     OverrideWithNew = true,
@@ -99,7 +99,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     Access = "protected",
                     ConstructorText = "offset",
-                    FieldName = "offset",
+                    FieldName = "memoryBufferOffset",
                     FieldType = "int",
                     FieldTypeInfoComment = null,
                     OverrideWithNew = true,
@@ -113,7 +113,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     Access = "protected",
                     ConstructorText = "bufferAddress",
-                    FieldName = "bufferAddress",
+                    FieldName = "memoryBufferAddress",
                     FieldType = "ulong",
                     FieldTypeInfoComment = null,
                     OverrideWithNew = true,
