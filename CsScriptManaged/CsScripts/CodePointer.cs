@@ -172,10 +172,9 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Indexer.
+        /// Gets the &lt;T&gt; at the specified index.
         /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
+        /// <param name="index">The array index.</param>
         public T this[int index]
         {
             get
