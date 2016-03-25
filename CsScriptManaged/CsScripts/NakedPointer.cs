@@ -42,15 +42,5 @@ namespace CsScripts
         {
             return new CodePointer<T>(this);
         }
-
-        /// <summary>
-        /// Reads the string.
-        /// </summary>
-        /// <param name="charSize">Size of the character.</param>
-        /// <param name="length">The length. If length is -1, string is null terminated</param>
-        public string ReadString(int charSize, int length = -1)
-        {
-            return UserType.ReadString(GetCodeType().Module.Process, GetPointerAddress(), charSize, length);
-        }
     }
 }

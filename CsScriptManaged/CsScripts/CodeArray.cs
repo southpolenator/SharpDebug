@@ -93,7 +93,7 @@ namespace CsScripts
 
             if (length > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
 
             Initialize(variable, (int)length);
@@ -113,7 +113,7 @@ namespace CsScripts
 
             if (length > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
 
             Initialize(variable, (int)length);
@@ -133,7 +133,7 @@ namespace CsScripts
 
             if (length > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
 
             Initialize(variable, (int)length);
