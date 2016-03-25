@@ -180,7 +180,7 @@ namespace CsScripts
         {
             get
             {
-                return this.AdjustPointer((int)(index * GetCodeType().Size)).CastAs<T>();
+                return GetArrayElement(index).CastAs<T>();
             }
         }
     }
