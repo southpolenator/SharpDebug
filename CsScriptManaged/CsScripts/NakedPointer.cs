@@ -50,7 +50,7 @@ namespace CsScripts
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public string ReadString(int charSize, int length = -1)
         {
-            return UserType.ReadString(GetCodeType().Module.Process, GetAddress(), charSize, length);
+            return UserType.ReadString(GetCodeType().Module.Process, GetPointerAddress(), charSize, length);
         }
     }
 }
