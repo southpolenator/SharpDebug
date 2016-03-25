@@ -15,7 +15,7 @@ namespace CsScripts
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public static string ReadString(this CodePointer<char> codePointer, int length = -1)
         {
-            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetAddress(), (int)codePointer.GetCodeType().ElementType.Size, length);
+            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetPointerAddress(), (int)codePointer.GetCodeType().ElementType.Size, length);
         }
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace CsScripts
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public static string ReadString(this CodePointer<short> codePointer, int charSize, int length = -1)
         {
-            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetAddress(), charSize, length);
+            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetPointerAddress(), charSize, length);
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace CsScripts
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public static string ReadString(this CodePointer<ushort> codePointer, int charSize, int length = -1)
         {
-            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetAddress(), charSize, length);
+            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetPointerAddress(), charSize, length);
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace CsScripts
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public static string ReadString(this CodePointer<byte> codePointer, int charSize, int length = -1)
         {
-            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetAddress(), charSize, length);
+            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetPointerAddress(), charSize, length);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace CsScripts
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public static string ReadString(this CodePointer<sbyte> codePointer, int charSize, int length = -1)
         {
-            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetAddress(), charSize, length);
+            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetPointerAddress(), charSize, length);
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace CsScripts
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public static string ReadString(this CodePointer<VoidType> codePointer, int charSize, int length = -1)
         {
-            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetAddress(), charSize, length);
+            return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetPointerAddress(), charSize, length);
         }
     }
 

@@ -20,7 +20,7 @@ namespace CsScripts
         {
             if (codeArray.variable != null)
             {
-                return UserType.ReadString(codeArray.variable.GetCodeType().Module.Process, codeArray.variable.GetAddress(), (int)codeArray.variable.GetCodeType().ElementType.Size, codeArray.Length);
+                return UserType.ReadString(codeArray.variable.GetCodeType().Module.Process, codeArray.variable.GetPointerAddress(), (int)codeArray.variable.GetCodeType().ElementType.Size, codeArray.Length);
             }
             else
             {
