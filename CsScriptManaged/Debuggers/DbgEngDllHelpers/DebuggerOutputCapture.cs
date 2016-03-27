@@ -1,4 +1,5 @@
-﻿using DbgEngManaged;
+﻿using CsScriptManaged.Utility;
+using DbgEngManaged;
 using System.IO;
 using System.Text;
 
@@ -56,14 +57,14 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
     /// <summary>
     /// Helper class for capturing debugger output while executing commands
     /// </summary>
-    internal class DebuggerOutputToTextWriter : IDebugOutputCallbacksWide
+    internal class DbgEngDebuggerOutputToTextWriter : DebuggerOutputToTextWriter, IDebugOutputCallbacksWide
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="DebuggerOutputToTextWriter"/> class.
+        /// Initializes a new instance of the <see cref="DbgEngDebuggerOutputToTextWriter"/> class.
         /// </summary>
         /// <param name="textWriter">The text writer.</param>
         /// <param name="captureFlags">The capture flags.</param>
-        public DebuggerOutputToTextWriter(TextWriter textWriter, DebugOutput captureFlags)
+        public DbgEngDebuggerOutputToTextWriter(TextWriter textWriter, DebugOutput captureFlags)
         {
             CaptureFlags = captureFlags;
             TextWriter = textWriter;

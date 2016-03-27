@@ -129,6 +129,7 @@
     <Compile Include="Debuggers\DbgEngDllHelpers\DebuggerOutputCapture.cs" />
     <Compile Include="Debuggers\DbgEngDllHelpers\DebuggerTextWriter.cs" />
     <Compile Include="UserTypeDelegates.cs" />
+    <Compile Include="Utility\DebuggerOutputToTextWriter.cs" />
     <Compile Include="Utility\DictionaryCache.cs" />
     <Compile Include="Executor.cs" />
     <Compile Include="GlobalCache.cs" />
@@ -155,6 +156,7 @@
     <Compile Include="ScriptExecution.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Utility\MemoryBuffer.cs" />
+    <Compile Include="Utility\OutputCallbacksSwitcher.cs" />
     <Compile Include="Utility\SimpleCache.cs" />
     <Compile Include="Debuggers\DbgEngDllHelpers\StackFrameSwitcher.cs" />
     <Compile Include="Debuggers\DbgEngDllHelpers\DbgEngSymbolProvider.cs" />

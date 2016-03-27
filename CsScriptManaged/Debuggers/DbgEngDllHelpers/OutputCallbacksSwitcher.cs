@@ -1,4 +1,5 @@
-﻿using DbgEngManaged;
+﻿using CsScriptManaged.Utility;
+using DbgEngManaged;
 using System;
 
 namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
@@ -7,7 +8,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
     /// Helper class for replacing debugger output callbacks - used when capturing command output. Example usage:
     /// <para>using (var switcher = new OutputCallbacksSwitcher(outputCallbacks) { }</para>
     /// </summary>
-    internal class OutputCallbacksSwitcher : IDisposable
+    internal class DbgEngOutputCallbacksSwitcher : OutputCallbacksSwitcher
     {
         /// <summary>
         /// The previous callbacks interface
@@ -20,11 +21,11 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         private DbgEngDll dbgEngDll;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="OutputCallbacksSwitcher" /> class.
+        /// Initializes a new instance of the <see cref="DbgEngOutputCallbacksSwitcher" /> class.
         /// </summary>
         /// <param name="dbgEngDll">The DbgEngDll debugger engine.</param>
         /// <param name="newCallbacks">The new callbacks interface.</param>
-        public OutputCallbacksSwitcher(DbgEngDll dbgEngDll, IDebugOutputCallbacksWide newCallbacks)
+        public DbgEngOutputCallbacksSwitcher(DbgEngDll dbgEngDll, IDebugOutputCallbacksWide newCallbacks)
         {
             previousCallbacks = dbgEngDll.Client.GetOutputCallbacksWide();
             dbgEngDll.Client.SetOutputCallbacksWide(newCallbacks);
@@ -34,7 +35,7 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             dbgEngDll.Client.SetOutputCallbacksWide(previousCallbacks);
         }
