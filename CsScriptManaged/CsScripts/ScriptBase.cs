@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Dynamic;
 using System.Collections.Generic;
+using CsScriptManaged;
 
 namespace CsScripts
 {
@@ -284,6 +285,15 @@ namespace CsScripts
         public static void WriteLine()
         {
             Console.WriteLine();
+        }
+
+        /// <summary>
+        /// Outputs the specified object using Context.ObjectWriter.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        public void Output(object obj)
+        {
+            Context.ObjectWriter.Output(obj);
         }
     }
 }

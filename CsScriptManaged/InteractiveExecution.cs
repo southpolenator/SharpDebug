@@ -31,6 +31,8 @@ namespace CsScriptManaged
         /// </summary>
         private const string InteractiveScriptVariables = "_Interactive_Script_Variables_";
 
+        private const string InteractiveScriptOutputFunction = "Output";
+
         /// <summary>
         /// The dynamic variables used in interactive script.
         /// </summary>
@@ -202,6 +204,7 @@ namespace CsScriptManaged
             var compileResult = CompileByReplacingVariables(ref code, newUsings, newImportedCode.ToString(), referencedAssemblies.ToArray());
 
             // Report compile error
+            // TODO: Remove injected code from error position
             List<CompilerError> errors = new List<CompilerError>();
             string[] codeLines = null;
             string varName = InteractiveScriptVariables + ".";
@@ -260,38 +263,28 @@ namespace CsScriptManaged
                 var compileResult = Compile(generatedCode, referencedAssemblies);
 
                 bool fixedError = false;
+                Dictionary<string, string> errorFixesByInsertion = new Dictionary<string, string>()
+                {
+                    // Fix for undeclared variable errors
+                    { "CS0103", InteractiveScriptVariables + "." },
+                    // Fix for expression as statement errors
+                    { "CS0201", InteractiveScriptOutputFunction + "(" },
+                    // Fix for missing closing bracket errors (we created them by inserting function call to Output function)
+                    { "CS1026", ")" },
+                };
 
                 foreach (CompilerError error in compileResult.Errors)
                 {
-                    // Try to fix undeclared variable errors
-                    if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS0103")
+                    string errorFix;
+
+                    // Try to fix errors by inserting "missing" code
+                    if (error.FileName.EndsWith(InteractiveScriptName) && errorFixesByInsertion.TryGetValue(error.ErrorNumber, out errorFix))
                     {
-                        StringBuilder sb = new StringBuilder();
-
-                        using (StringReader reader = new StringReader(code))
-                        using (StringWriter writer = new StringWriter(sb))
-                        {
-                            for (int lineNumber = 1; ; lineNumber++)
-                            {
-                                string line = reader.ReadLine();
-
-                                if (line == null)
-                                    break;
-
-                                if (lineNumber == error.Line)
-                                {
-                                    line = line.Substring(0, error.Column - 1) + InteractiveScriptVariables + "." + line.Substring(error.Column - 1);
-                                }
-
-                                writer.WriteLine(line);
-                            }
-                        }
-
-                        // Save the code and remove \r\n from the end
-                        code = sb.ToString().Substring(0, sb.Length - 2);
+                        code = FixErrorByInsertingString(code, error.Line, error.Column, errorFix);
                         fixedError = true;
                         break;
                     }
+                    // Try to fix missing ; at the end of the code
                     else if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS1002")
                     {
                         bool incorrect = false;
@@ -333,6 +326,41 @@ namespace CsScriptManaged
                     return compileResult;
                 }
             }
+        }
+
+        /// <summary>
+        /// Fixes the error by inserting string and error position.
+        /// </summary>
+        /// <param name="code">The code.</param>
+        /// <param name="errorLineNumber">The error line number.</param>
+        /// <param name="errorColumn">The error column.</param>
+        /// <param name="fix">The fixing string.</param>
+        /// <returns>Fixed code</returns>
+        private static string FixErrorByInsertingString(string code, int errorLineNumber, int errorColumn, string fix)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            using (StringReader reader = new StringReader(code))
+            using (StringWriter writer = new StringWriter(sb))
+            {
+                for (int lineNumber = 1; ; lineNumber++)
+                {
+                    string line = reader.ReadLine();
+
+                    if (line == null)
+                        break;
+
+                    if (lineNumber == errorLineNumber)
+                    {
+                        line = line.Substring(0, errorColumn - 1) + fix + line.Substring(errorColumn - 1);
+                    }
+
+                    writer.WriteLine(line);
+                }
+            }
+
+            // Save the code and remove \r\n from the end
+            return sb.ToString().Substring(0, sb.Length - 2);
         }
     }
 }
