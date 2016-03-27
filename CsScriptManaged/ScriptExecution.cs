@@ -22,10 +22,12 @@ namespace CsScriptManaged
             string code = LoadCode(path, referencedAssemblies);
 
             // Compile the script
-            CompilerResults results = Compile(code, referencedAssemblies.ToArray());
+            var results = Compile(code, referencedAssemblies.ToArray());
 
-            if (results.Errors.Count > 0)
-                throw new Exception(string.Join("\n", results.Errors.Cast<CompilerError>()));
+            if (results.Errors.Length > 0)
+            {
+                throw new Exception(string.Join("\n", results.Errors.Select(e => e.FullMessage)));
+            }
 
             // Extract metadata
             var metadataAssemblies = new List<Assembly>();

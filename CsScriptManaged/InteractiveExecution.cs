@@ -109,13 +109,13 @@ namespace CsScriptManaged
             }
             catch (CompileException ex)
             {
-                CompilerError[] errors = ex.Errors;
+                CompileError[] errors = ex.Errors;
 
                 if (!string.IsNullOrEmpty(prompt) && (errors[0].FileName.EndsWith(InteractiveScriptName) || errors.Count(e => !e.FileName.EndsWith(InteractiveScriptName)) == 0))
                 {
-                    CompilerError e = errors[0];
+                    CompileError e = errors[0];
 
-                    Console.Error.WriteLine("{0}^ {1}", new string(' ', prompt.Length + e.Column - 1), e.ErrorText);
+                    Console.Error.WriteLine("{0}^ {1}", new string(' ', prompt.Length + e.Column - 1), e.FullMessage);
                 }
                 else
                 {
@@ -205,11 +205,11 @@ namespace CsScriptManaged
 
             // Report compile error
             // TODO: Remove injected code from error position
-            List<CompilerError> errors = new List<CompilerError>();
+            List<CompileError> errors = new List<CompileError>();
             string[] codeLines = null;
             string varName = InteractiveScriptVariables + ".";
 
-            foreach (CompilerError error in compileResult.Errors)
+            foreach (var error in compileResult.Errors)
             {
                 if (!error.IsWarning)
                 {
@@ -253,7 +253,7 @@ namespace CsScriptManaged
         /// <param name="usings">The usings.</param>
         /// <param name="importedCode">The imported code.</param>
         /// <param name="referencedAssemblies">The referenced assemblies.</param>
-        private CompilerResults CompileByReplacingVariables(ref string code, IEnumerable<string> usings, string importedCode, params string[] referencedAssemblies)
+        private CompileResult CompileByReplacingVariables(ref string code, IEnumerable<string> usings, string importedCode, params string[] referencedAssemblies)
         {
             while (true)
             {
@@ -273,7 +273,7 @@ namespace CsScriptManaged
                     { "CS1026", ")" },
                 };
 
-                foreach (CompilerError error in compileResult.Errors)
+                foreach (var error in compileResult.Errors)
                 {
                     string errorFix;
 
