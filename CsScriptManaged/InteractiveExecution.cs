@@ -59,6 +59,11 @@ namespace CsScriptManaged
         private string importedCode = "";
 
         /// <summary>
+        /// The used references loaded from the imported code
+        /// </summary>
+        private string[] usedReferences = new string[0];
+
+        /// <summary>
         /// The usings
         /// </summary>
         private List<string> usings = new List<string>(new string[] { "System", "System.Linq", "CsScripts" });
@@ -110,6 +115,7 @@ namespace CsScriptManaged
                 {
                     importedCode = "";
                     loadedScripts = new List<string>();
+                    usedReferences = new string[0];
                 }
                 else
                 {
@@ -184,7 +190,7 @@ namespace CsScriptManaged
             HashSet<string> newLoadedScripts = new HashSet<string>(loadedScripts);
             HashSet<string> newUsings = new HashSet<string>(usings);
             HashSet<string> imports = new HashSet<string>();
-            HashSet<string> referencedAssemblies = new HashSet<string>();
+            HashSet<string> referencedAssemblies = new HashSet<string>(usedReferences);
             StringBuilder newImportedCode = new StringBuilder(importedCode);
 
             code = ImportCode(code, newUsings, imports);
@@ -253,9 +259,10 @@ namespace CsScriptManaged
             obj._Interactive_Script_Variables_ = dynamicVariables;
             method.Invoke(obj, new object[] { new string[] { } });
 
-            // Save imports and usings
+            // Save imports, usings and references
             importedCode = newImportedCode.ToString();
             loadedScripts = newLoadedScripts.ToList();
+            usedReferences = referencedAssemblies.ToArray();
             usings = newUsings.ToList();
         }
 

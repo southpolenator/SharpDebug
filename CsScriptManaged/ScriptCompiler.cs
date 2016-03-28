@@ -142,11 +142,36 @@ namespace CsScriptManaged
         private CSharpCodeProvider codeProvider = new CSharpCodeProvider();
 
         /// <summary>
+        /// The loaded assemblies
+        /// </summary>
+        private Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ScriptCompiler"/> class.
         /// </summary>
         public ScriptCompiler()
         {
             SearchFolders = Context.Settings.SearchFolders;
+
+            AppDomain.CurrentDomain.AssemblyResolve += AssemblyLoader;
+        }
+
+        /// <summary>
+        /// Event handler for resolving (loading) assemblies.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="args">The <see cref="ResolveEventArgs"/> instance containing the event data.</param>
+        /// <returns>Resolved assembly based on assembly full name.</returns>
+        private Assembly AssemblyLoader(object sender, ResolveEventArgs args)
+        {
+            Assembly result;
+
+            if (loadedAssemblies.TryGetValue(args.Name, out result))
+            {
+                return result;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -258,6 +283,12 @@ namespace CsScriptManaged
                     pdbStream.Write(array, 0, array.Length);
                 }
 
+                foreach (var referencedAssembly in referencedAssemblies)
+                {
+                    var assembly = Assembly.LoadFrom(referencedAssembly);
+                    loadedAssemblies[assembly.FullName] = assembly;
+                }
+
                 return new CompileResult()
                 {
                     CompiledAssembly = Assembly.LoadFile(dllFilename),
@@ -271,7 +302,9 @@ namespace CsScriptManaged
                 TempFiles = new TempFileCollection(tempDir, true),
             };
 
-            compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
+            compilerParameters.ReferencedAssemblies.Add(typeof(System.Object).Assembly.Location);
+            compilerParameters.ReferencedAssemblies.Add(typeof(System.Linq.Enumerable).Assembly.Location);
+            compilerParameters.ReferencedAssemblies.Add(typeof(CsScripts.Variable).Assembly.Location);
             compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies);
 
             // Check if Microsoft.CSharp.dll should be added to the list of referenced assemblies
@@ -279,11 +312,24 @@ namespace CsScriptManaged
 
             if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Any())
             {
-                compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
+                compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic && a.Location.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Select(a => a.Location).ToArray());
+                if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Any())
+                {
+                    compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
+                }
             }
 
             // Compile the script
             CompilerResults results = codeProvider.CompileAssemblyFromSource(compilerParameters, code);
+
+            if (results.Errors.Count == 0)
+            {
+                foreach (var referencedAssembly in referencedAssemblies)
+                {
+                    var assembly = Assembly.LoadFrom(referencedAssembly);
+                    loadedAssemblies[assembly.FullName] = assembly;
+                }
+            }
 
             return new CompileResult()
             {
