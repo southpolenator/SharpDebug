@@ -314,6 +314,82 @@ namespace CsScriptManaged
                         fixedError = true;
                         break;
                     }
+                    // Fix for not supplying string for field name in erase function (Roslyn compiler)
+                    else if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS0411" && error.FullMessage.Contains("'InteractiveScriptBase.erase<T1, T2>(T2)'"))
+                    {
+                        StringBuilder sb = new StringBuilder();
+
+                        using (StringReader reader = new StringReader(code))
+                        using (StringWriter writer = new StringWriter(sb))
+                        {
+                            for (int lineNumber = 1; ; lineNumber++)
+                            {
+                                string line = reader.ReadLine();
+
+                                if (line == null)
+                                    break;
+
+                                if (lineNumber == error.Line)
+                                {
+                                    string before = line.Substring(0, error.Column - 1);
+                                    string after = line.Substring(error.Column - 1);
+
+                                    int eraseIndex = after.IndexOf("erase");
+                                    int eraseEnd = eraseIndex + 5;
+                                    int bracketIndex = after.IndexOf('(', eraseIndex) + 1;
+
+                                    line = before + after.Substring(0, eraseIndex) + "erase_field" + after.Substring(eraseEnd, bracketIndex - eraseEnd) + "nameof(" + after.Substring(bracketIndex);
+                                }
+
+                                writer.WriteLine(line);
+                            }
+                        }
+
+                        // Save the code and remove \r\n from the end
+                        code = sb.ToString().Substring(0, sb.Length - 2);
+                        fixedError = true;
+                        break;
+                    }
+                    // Fix for not supplying string for field name in erase function (default compiler)
+                    else if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS0411" && error.FullMessage.Contains("'CsScriptManaged.InteractiveScriptBase.erase<T1,T2>(T2)'"))
+                    {
+                        StringBuilder sb = new StringBuilder();
+
+                        using (StringReader reader = new StringReader(code))
+                        using (StringWriter writer = new StringWriter(sb))
+                        {
+                            for (int lineNumber = 1; ; lineNumber++)
+                            {
+                                string line = reader.ReadLine();
+
+                                if (line == null)
+                                    break;
+
+                                if (lineNumber == error.Line)
+                                {
+                                    string before = line.Substring(0, error.Column - 1);
+                                    string after = line.Substring(error.Column - 1);
+
+                                    int eraseIndex = after.IndexOf("erase");
+                                    int eraseEnd = eraseIndex + 5;
+                                    int bracketIndex = after.IndexOf('(', eraseIndex) + 1;
+                                    int closingBrackedIndex = after.IndexOf(')', bracketIndex);
+
+                                    if (closingBrackedIndex > 0)
+                                    {
+                                        line = before + after.Substring(0, eraseIndex) + "erase_field" + after.Substring(eraseEnd, bracketIndex - eraseEnd) + "\"" + after.Substring(bracketIndex, closingBrackedIndex - bracketIndex) + "\"" + after.Substring(closingBrackedIndex);
+                                        fixedError = true;
+                                    }
+                                }
+
+                                writer.WriteLine(line);
+                            }
+                        }
+
+                        // Save the code and remove \r\n from the end
+                        code = sb.ToString().Substring(0, sb.Length - 2);
+                        break;
+                    }
                     // Try to fix missing ; at the end of the code
                     else if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS1002")
                     {

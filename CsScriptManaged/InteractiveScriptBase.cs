@@ -124,5 +124,26 @@ namespace CsScriptManaged
                 }
             }
         }
+
+        /// <summary>
+        /// Erases the specified field by name.
+        /// </summary>
+        /// <param name="name">The field name.</param>
+        public void erase_field(string name)
+        {
+            ((IDictionary<string, object>)_Interactive_Script_Variables_).Remove(name);
+        }
+
+        /// <summary>
+        /// Helper function for fixing interactive script errors. It's usage is to produce error that will be fixed by internal compiler.
+        /// </summary>
+        /// <typeparam name="T1">The type of the 1.</typeparam>
+        /// <typeparam name="T2">The type of the 2.</typeparam>
+        /// <param name="whatEver">The what ever.</param>
+        /// <exception cref="System.NotImplementedException">This is not intended for usage</exception>
+        public void erase<T1, T2>(T2 whatEver)
+        {
+            throw new NotImplementedException("This is not intended for usage");
+        }
     }
 }
