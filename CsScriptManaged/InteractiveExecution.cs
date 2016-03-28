@@ -5,10 +5,18 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace CsScriptManaged
 {
+    /// <summary>
+    /// Internal exception used for stopping interactive scripting
+    /// </summary>
+    internal class ExitRequestedException : Exception
+    {
+    }
+
     internal class InteractiveExecution : ScriptCompiler
     {
         /// <summary>
@@ -31,6 +39,9 @@ namespace CsScriptManaged
         /// </summary>
         private const string InteractiveScriptVariables = "_Interactive_Script_Variables_";
 
+        /// <summary>
+        /// The interactive script output function called to write result if it is just a variable or expression
+        /// </summary>
         private const string InteractiveScriptOutputFunction = "Output";
 
         /// <summary>
@@ -64,23 +75,22 @@ namespace CsScriptManaged
             {
                 // Read command
                 string command = ReadCommand(prompt);
-                string trimmedCommand = command;
-
-                // Check if we should exit main loop
-                if (trimmedCommand == "q" || trimmedCommand == "Q")
-                    break;
 
                 // Check if we should execute C# command
                 try
                 {
-                    if (trimmedCommand.EndsWith(";"))
+                    if (!command.StartsWith("#dbg "))
                     {
-                        Interpret(trimmedCommand, prompt);
+                        Interpret(command, prompt);
                     }
                     else
                     {
-                        Debugger.Execute(command);
+                        Debugger.Execute(command.Substring(5));
                     }
+                }
+                catch (ExitRequestedException)
+                {
+                    break;
                 }
                 catch (Exception ex)
                 {
@@ -125,6 +135,10 @@ namespace CsScriptManaged
                         Console.Error.WriteLine(error.FullMessage);
                     }
                 }
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw ex.InnerException;
             }
         }
 

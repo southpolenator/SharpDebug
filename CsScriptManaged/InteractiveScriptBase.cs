@@ -11,6 +11,39 @@ namespace CsScriptManaged
     public class InteractiveScriptBase : ScriptBase
     {
         /// <summary>
+        /// Stops interactive scripting execution. You can use this simply by entering it as command in interactive scripting mode.
+        /// </summary>
+        public object quit
+        {
+            get
+            {
+                throw new ExitRequestedException();
+            }
+        }
+
+        /// <summary>
+        /// Stops interactive scripting execution. You can use this simply by entering it as command in interactive scripting mode.
+        /// </summary>
+        public object q
+        {
+            get
+            {
+                return quit;
+            }
+        }
+
+        /// <summary>
+        /// Stops interactive scripting execution. You can use this simply by entering it as command in interactive scripting mode.
+        /// </summary>
+        public object exit
+        {
+            get
+            {
+                return quit;
+            }
+        }
+
+        /// <summary>
         /// The interactive script collection of saved variables.
         /// Don't use this directly, all undeclared variables are being redirected to this one.
         /// </summary>
