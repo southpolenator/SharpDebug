@@ -122,7 +122,7 @@ namespace CsScriptManaged
                     Console.Error.WriteLine("Compile errors:");
                     foreach (var error in errors)
                     {
-                        Console.Error.WriteLine(error);
+                        Console.Error.WriteLine(error.FullMessage);
                     }
                 }
             }
@@ -255,6 +255,36 @@ namespace CsScriptManaged
         /// <param name="referencedAssemblies">The referenced assemblies.</param>
         private CompileResult CompileByReplacingVariables(ref string code, IEnumerable<string> usings, string importedCode, params string[] referencedAssemblies)
         {
+            // Add dynamic object fields as properties with types so one can use extensions
+            StringBuilder newImportedCode = new StringBuilder();
+
+            newImportedCode.AppendLine(importedCode);
+            foreach (var kvp in dynamicVariables)
+            {
+                string typeString = kvp.Value.GetType().FullName;
+                string name = kvp.Key;
+
+                newImportedCode.Append(typeString);
+                newImportedCode.Append(" ");
+                newImportedCode.AppendLine(name);
+                newImportedCode.AppendLine("{");
+                newImportedCode.Append("get { return (");
+                newImportedCode.Append(typeString);
+                newImportedCode.Append(")(");
+                newImportedCode.Append(InteractiveScriptVariables);
+                newImportedCode.Append(".");
+                newImportedCode.Append(name);
+                newImportedCode.AppendLine("); }");
+                newImportedCode.Append("set { ");
+                newImportedCode.Append(InteractiveScriptVariables);
+                newImportedCode.Append(".");
+                newImportedCode.Append(name);
+                newImportedCode.AppendLine(" = value; }");
+                newImportedCode.AppendLine("}");
+            }
+
+            importedCode = newImportedCode.ToString();
+
             while (true)
             {
                 string generatedCode = "#line 1 \"" + InteractiveScriptName + "\"\n" + code + "\n#line default\n";
