@@ -427,7 +427,9 @@ namespace CsScriptManaged
                 {
                     if (!loadedScripts.Contains(import))
                     {
-                        if (Path.GetExtension(import).ToLower() == ".dll")
+                        string extension = Path.GetExtension(import).ToLower();
+
+                        if (extension == ".dll" || extension == ".exe")
                         {
                             if (referencedAssemblies != null)
                             {

@@ -49,6 +49,11 @@ namespace CsScriptManaged
         private ExpandoObject dynamicVariables = new ExpandoObject();
 
         /// <summary>
+        /// The interactive script base type
+        /// </summary>
+        private Type interactiveScriptBaseType = typeof(InteractiveScriptBase);
+
+        /// <summary>
         /// The loaded scripts
         /// </summary>
         private List<string> loadedScripts = new List<string>();
@@ -202,7 +207,9 @@ namespace CsScriptManaged
                 {
                     if (!newLoadedScripts.Contains(import))
                     {
-                        if (Path.GetExtension(import).ToLower() == ".dll")
+                        string extension = Path.GetExtension(import).ToLower();
+
+                        if (extension == ".dll" || extension == ".exe")
                         {
                             referencedAssemblies.Add(import);
                         }
@@ -257,7 +264,9 @@ namespace CsScriptManaged
             dynamic obj = Activator.CreateInstance(myClass);
 
             obj._Interactive_Script_Variables_ = dynamicVariables;
+            obj._InteractiveScriptBaseType_ = interactiveScriptBaseType;
             method.Invoke(obj, new object[] { new string[] { } });
+            interactiveScriptBaseType = obj._InteractiveScriptBaseType_;
 
             // Save imports, usings and references
             importedCode = newImportedCode.ToString();
@@ -328,7 +337,7 @@ namespace CsScriptManaged
             while (true)
             {
                 string generatedCode = "#line 1 \"" + InteractiveScriptName + "\"\n" + code + "\n#line default\n";
-                generatedCode = GenerateCode(usings, importedCode, generatedCode, "CsScriptManaged.InteractiveScriptBase");
+                generatedCode = GenerateCode(usings, importedCode, generatedCode, interactiveScriptBaseType.FullName);
 
                 var compileResult = Compile(generatedCode, referencedAssemblies);
 

@@ -49,6 +49,11 @@ namespace CsScriptManaged
         /// </summary>
         public dynamic _Interactive_Script_Variables_;
 
+        /// <summary>
+        /// The interactive script base type for next compile iteration
+        /// </summary>
+        internal Type _InteractiveScriptBaseType_;
+
         private IEnumerable<string> GetCommands(Type type, System.Reflection.BindingFlags additionalBinding, string nameFilter = "")
         {
             var methods = type.GetMethods(System.Reflection.BindingFlags.Public | additionalBinding | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static);
@@ -188,6 +193,22 @@ namespace CsScriptManaged
         public void erase<T1, T2>(T2 whatEver)
         {
             throw new NotImplementedException("This is not intended for usage");
+        }
+
+        /// <summary>
+        /// Changes the base class for interactive scripting.
+        /// </summary>
+        /// <param name="newBaseClassType">Type of the new base class.</param>
+        public void ChangeBaseClass(Type newBaseClassType)
+        {
+            if (typeof(InteractiveScriptBase).IsAssignableFrom(newBaseClassType))
+            {
+                _InteractiveScriptBaseType_ = newBaseClassType;
+            }
+            else
+            {
+                throw new ArgumentException(nameof(newBaseClassType));
+            }
         }
     }
 }
