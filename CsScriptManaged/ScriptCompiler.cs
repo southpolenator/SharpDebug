@@ -173,7 +173,9 @@ namespace CsScriptManaged
             // Create references
             List<string> stringReferences = new List<string>();
 
-            stringReferences.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location));
+            stringReferences.Add(typeof(System.Object).Assembly.Location);
+            stringReferences.Add(typeof(System.Linq.Enumerable).Assembly.Location);
+            stringReferences.Add(typeof(CsScripts.Variable).Assembly.Location);
             stringReferences.AddRange(referencedAssemblies);
 
             // Check if Microsoft.CSharp.dll should be added to the list of referenced assemblies
@@ -181,10 +183,10 @@ namespace CsScriptManaged
 
             if (!stringReferences.Where(a => a.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Any())
             {
-                stringReferences.Add(MicrosoftCSharpDll);
+                stringReferences.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic && a.Location.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Select(a => a.Location));
             }
 
-            IEnumerable<MetadataReference> references = stringReferences.Select(sr => MetadataReference.CreateFromFile(sr));
+            IEnumerable<MetadataReference> references = stringReferences.Distinct().Select(sr => MetadataReference.CreateFromFile(sr));
 
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
 
