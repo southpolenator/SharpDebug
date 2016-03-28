@@ -215,3 +215,7 @@ ModelManifest.xml
 *.VC.opendb
 /CsScriptManagedReference/Help
 /NuGet.Packager/lib
+
+# temp gvim files
+*.swp
+*.swo
