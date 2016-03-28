@@ -49,6 +49,22 @@ namespace CsScriptManaged
         /// </summary>
         public dynamic _Interactive_Script_Variables_;
 
+        private IEnumerable<string> GetCommands(Type type, System.Reflection.BindingFlags additionalBinding, string nameFilter = "")
+        {
+            var methods = type.GetMethods(System.Reflection.BindingFlags.Public | additionalBinding | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static);
+
+            nameFilter = nameFilter.ToLower();
+            foreach (var method in methods)
+            {
+                if (method.DeclaringType != type || method.IsSpecialName)
+                    continue;
+                if (string.IsNullOrEmpty(nameFilter) || method.Name.ToLower().Contains(nameFilter))
+                {
+                    yield return method.ToString();
+                }
+            }
+        }
+
         /// <summary>
         /// Gets the available commands.
         /// </summary>
@@ -58,17 +74,12 @@ namespace CsScriptManaged
         {
             Type type = GetType();
 
-            var methods = type.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static);
-
-            nameFilter = nameFilter.ToLower();
-            foreach (var method in methods)
+            while (type != null)
             {
-                if (method.DeclaringType != type)
-                    continue;
-                if (string.IsNullOrEmpty(nameFilter) || method.Name.ToLower().Contains(nameFilter))
-                {
-                    yield return method.ToString();
-                }
+                foreach (var command in GetCommands(type, type == GetType() ? System.Reflection.BindingFlags.NonPublic : System.Reflection.BindingFlags.Default, nameFilter))
+                    yield return command;
+
+                type = type.BaseType;
             }
         }
 

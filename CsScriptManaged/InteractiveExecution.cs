@@ -1,6 +1,5 @@
 ﻿using CsScripts;
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
@@ -37,12 +36,12 @@ namespace CsScriptManaged
         /// <summary>
         /// The interactive script variables name. This must match variable name in InteractiveScriptBase class.
         /// </summary>
-        private const string InteractiveScriptVariables = "_Interactive_Script_Variables_";
+        private const string InteractiveScriptVariables = nameof(InteractiveScriptBase._Interactive_Script_Variables_);
 
         /// <summary>
         /// The interactive script output function called to write result if it is just a variable or expression
         /// </summary>
-        private const string InteractiveScriptOutputFunction = "Output";
+        private const string InteractiveScriptOutputFunction = nameof(ScriptBaseExtensions) + "." + nameof(ScriptBaseExtensions.Dump);
 
         /// <summary>
         /// The dynamic variables used in interactive script.
@@ -260,6 +259,26 @@ namespace CsScriptManaged
             usings = newUsings.ToList();
         }
 
+        private static string GetCodeName(Type type)
+        {
+            string typeString = type.FullName;
+
+            if (typeString.Contains(".<") || typeString.Contains("+<"))
+            {
+                // TODO: Probably not the best one, but good enough for now
+                return GetCodeName(type.GetInterfaces()[0]);
+            }
+
+            if (type.IsGenericType)
+            {
+                return string.Format("{0}<{1}>", typeString.Split('`')[0], string.Join(", ", type.GetGenericArguments().Select(x => GetCodeName(x))));
+            }
+            else
+            {
+                return typeString;
+            }
+        }
+
         /// <summary>
         /// Compiles the code, but replaces any undeclared variable with dynamic one in InteractiveScriptBase.
         /// </summary>
@@ -275,7 +294,7 @@ namespace CsScriptManaged
             newImportedCode.AppendLine(importedCode);
             foreach (var kvp in dynamicVariables)
             {
-                string typeString = kvp.Value.GetType().FullName;
+                string typeString = GetCodeName(kvp.Value.GetType());
                 string name = kvp.Key;
 
                 newImportedCode.Append(typeString);
