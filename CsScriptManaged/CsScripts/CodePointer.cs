@@ -236,6 +236,15 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Dereferences the pointer.
+        /// </summary>
+        /// <exception cref="System.ArgumentException">Variable is not a pointer type, but ...</exception>
+        public new T DereferencePointer()
+        {
+            return base.DereferencePointer().CastAs<T>();
+        }
+
+        /// <summary>
         /// Reads the ANSI string from CodePointer.
         /// </summary>
         /// <param name="length">The length in characters. If length is -1, string is null terminated</param>
