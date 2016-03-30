@@ -29,7 +29,15 @@ namespace GenerateUserTypesFromPdb
             if (symbol != null)
             {
                 if (symbol.UserType == null)
+                {
                     symbol = GetSymbol(symbol.Name, symbol.Module);
+                }
+
+                if (symbol.UserType == null && symbol.Name.EndsWith("*"))
+                {
+                    // Try to use Pointer
+                    symbol = GetSymbol(symbol.Name.Substring(0, symbol.Name.Length - 1), symbol.Module);
+                }
 
                 return symbol.UserType;
             }
