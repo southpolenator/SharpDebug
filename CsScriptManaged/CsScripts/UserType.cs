@@ -26,6 +26,20 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Safe Cast, cast with null check.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="variable"></param>
+        /// <returns></returns>
+        public static T SafeCastAs<T>(this Variable variable) where T : UserType
+        {
+            if (variable == null)
+                return null;
+
+            return variable.CastAs<T>();
+        }
+
+        /// <summary>
         /// Downcast Interface, looks up the type based on virtual table.
         /// </summary>
         /// <param name="userType"></param>
