@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace CsScriptManaged.UI
 {
@@ -89,6 +88,13 @@ namespace CsScriptManaged.UI
             {
                 // TODO:
                 MessageBox.Show(text + error);
+            };
+            textEditor.Executing += (executing) =>
+            {
+                if (!executing)
+                {
+                    textEditor.TextArea.Focus();
+                }
             };
             window.Content = textEditor;
             return window;
