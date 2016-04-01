@@ -1,5 +1,6 @@
 ﻿using CsScriptManaged.Debuggers;
 using CsScriptManaged.SymbolProviders;
+using CsScriptManaged.UI;
 using DbgEngManaged;
 using System;
 using System.IO;
@@ -40,7 +41,7 @@ namespace CsScriptManaged
         /// <summary>
         /// The interactive execution
         /// </summary>
-        private static InteractiveExecution interactiveExecution = new InteractiveExecution();
+        internal static InteractiveExecution InteractiveExecution = new InteractiveExecution();
 
         /// <summary>
         /// Gets or sets the object writer using during interactive scripting. Default value is ConsoleObjectWriter.
@@ -117,7 +118,23 @@ namespace CsScriptManaged
         /// </summary>
         public static void EnterInteractiveMode()
         {
-            Debugger.ExecuteAction(() => interactiveExecution.Run());
+            Debugger.ExecuteAction(() => InteractiveExecution.Run());
+        }
+
+        /// <summary>
+        /// Shows the interactive window.
+        /// </summary>
+        /// <param name="modal">if set to <c>true</c> window will be shown as modal dialog.</param>
+        public static void ShowInteractiveWindow(bool modal)
+        {
+            if (modal)
+            {
+                InteractiveWindow.ShowModalWindow();
+            }
+            else
+            {
+                InteractiveWindow.ShowWindow();
+            }
         }
 
         /// <summary>
@@ -126,7 +143,7 @@ namespace CsScriptManaged
         /// <param name="code">The C# code.</param>
         public static void Interpret(string code)
         {
-            Debugger.ExecuteAction(() => interactiveExecution.Interpret(code));
+            Debugger.ExecuteAction(() => InteractiveExecution.Interpret(code));
         }
 
         /// <summary>

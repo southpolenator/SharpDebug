@@ -31,7 +31,7 @@ namespace CsScriptManaged
         /// <summary>
         /// The interactive script name. It is being used as file name during interactive commands compile time.
         /// </summary>
-        private const string InteractiveScriptName = "_interactive_script_.cs";
+        internal const string InteractiveScriptName = "_interactive_script_.cs";
 
         /// <summary>
         /// The interactive script variables name. This must match variable name in InteractiveScriptBase class.
@@ -116,16 +116,7 @@ namespace CsScriptManaged
         {
             try
             {
-                if (code == ClearImportsStatement)
-                {
-                    importedCode = "";
-                    loadedScripts = new List<string>();
-                    usedReferences = new string[0];
-                }
-                else
-                {
-                    Execute(code);
-                }
+                UnsafeInterpret(code);
             }
             catch (CompileException ex)
             {
@@ -149,6 +140,24 @@ namespace CsScriptManaged
             catch (TargetInvocationException ex)
             {
                 throw ex.InnerException;
+            }
+        }
+
+        /// <summary>
+        /// Interprets C# code, but without error handling.
+        /// </summary>
+        /// <param name="code">The C# code.</param>
+        internal void UnsafeInterpret(string code)
+        {
+            if (code == ClearImportsStatement)
+            {
+                importedCode = "";
+                loadedScripts = new List<string>();
+                usedReferences = new string[0];
+            }
+            else
+            {
+                Execute(code);
             }
         }
 
@@ -291,20 +300,28 @@ namespace CsScriptManaged
             }
             else
             {
-                return typeString;
+                return typeString.Replace("+", ".");
             }
         }
 
-        /// <summary>
-        /// Compiles the code, but replaces any undeclared variable with dynamic one in InteractiveScriptBase.
-        /// </summary>
-        /// <param name="code">The code.</param>
-        /// <param name="usings">The usings.</param>
-        /// <param name="importedCode">The imported code.</param>
-        /// <param name="referencedAssemblies">The referenced assemblies.</param>
-        private CompileResult CompileByReplacingVariables(ref string code, IEnumerable<string> usings, string importedCode, params string[] referencedAssemblies)
+        internal IEnumerable<string> GetScriptHelperCode(out string scriptStart, out string scriptEnd)
         {
-            // Add dynamic object fields as properties with types so one can use extensions
+            const string code = "<This is my unique code string>";
+            string importedCode = FixImportedCode("");
+            string generatedCode = GenerateCode(code, usings, importedCode);
+            int codeStart = generatedCode.IndexOf(code), codeEnd = codeStart + code.Length;
+
+            scriptStart = generatedCode.Substring(0, codeStart);
+            scriptEnd = generatedCode.Substring(codeEnd);
+            List<string> result = new List<string>();
+
+            result.AddRange(DefaultAssemblyReferences);
+            result.AddRange(usedReferences);
+            return result;
+        }
+
+        private string FixImportedCode(string importedCode)
+        {
             StringBuilder newImportedCode = new StringBuilder();
 
             newImportedCode.AppendLine(importedCode);
@@ -332,15 +349,32 @@ namespace CsScriptManaged
                 newImportedCode.AppendLine("}");
             }
 
-            importedCode = newImportedCode.ToString();
+            return newImportedCode.ToString();
+        }
+
+        private string GenerateCode(string code, IEnumerable<string> usings, string importedCode)
+        {
+            string generatedCode = "#line 1 \"" + InteractiveScriptName + "\"\n" + code + "\n#line default\n";
+
+            return GenerateCode(usings, importedCode, generatedCode, interactiveScriptBaseType.FullName);
+        }
+
+        /// <summary>
+        /// Compiles the code, but replaces any undeclared variable with dynamic one in InteractiveScriptBase.
+        /// </summary>
+        /// <param name="code">The code.</param>
+        /// <param name="usings">The usings.</param>
+        /// <param name="importedCode">The imported code.</param>
+        /// <param name="referencedAssemblies">The referenced assemblies.</param>
+        private CompileResult CompileByReplacingVariables(ref string code, IEnumerable<string> usings, string importedCode, params string[] referencedAssemblies)
+        {
+            // Add dynamic object fields as properties with types so one can use extensions
+            importedCode = FixImportedCode(importedCode);
 
             while (true)
             {
-                string generatedCode = "#line 1 \"" + InteractiveScriptName + "\"\n" + code + "\n#line default\n";
-                generatedCode = GenerateCode(usings, importedCode, generatedCode, interactiveScriptBaseType.FullName);
-
+                string generatedCode = GenerateCode(code, usings, importedCode);
                 var compileResult = Compile(generatedCode, referencedAssemblies);
-
                 bool fixedError = false;
                 Dictionary<string, string> errorFixesByInsertion = new Dictionary<string, string>()
                 {

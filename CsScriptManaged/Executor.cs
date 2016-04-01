@@ -58,5 +58,22 @@ namespace CsScriptManaged
         {
             Context.Interpret(arguments);
         }
+
+        /// <summary>
+        /// Opens the UI.
+        /// </summary>
+        /// <param name="arguments">The arguments.</param>
+        public void OpenUI(string arguments)
+        {
+            string[] args = arguments.Split(" ".ToCharArray());
+            bool showModal = false;
+
+            if (args.Length > 0 && !bool.TryParse(args[0], out showModal))
+            {
+                showModal = false;
+            }
+
+            Context.ShowInteractiveWindow(showModal);
+        }
     }
 }
