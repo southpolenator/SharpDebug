@@ -1,42 +1,72 @@
 ﻿using System;
 using System.Threading;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace CsScriptManaged.UI
 {
     internal class InteractiveWindow : Window
     {
+        private const string DefaultStatusText = "Type 'help' to get started :)";
+        private const string ExecutingStatusText = "Executing...";
+        private InteractiveCodeEditor textEditor;
+        private StatusBarItem statusBarStatusText;
+
         public InteractiveWindow()
         {
             // Set window look
-            WindowStyle = WindowStyle.ToolWindow;
             ShowInTaskbar = false;
             Title = "C# Interactive Window";
 
             // Add text editor
-            InteractiveCodeEditor textEditor = new InteractiveCodeEditor();
+            textEditor = new InteractiveCodeEditor();
+            textEditor.CommandExecuted += TextEditor_CommandExecuted;
+            textEditor.CommandFailed += TextEditor_CommandFailed;
+            textEditor.Executing += TextEditor_Executing;
+            textEditor.CloseRequested += TextEditor_CloseRequested;
+            textEditor.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            textEditor.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
 
-            textEditor.CommandExecuted += (text, result) =>
-            {
-                // TODO:
-                if (!string.IsNullOrEmpty(text))
-                    MessageBox.Show(text);
-            };
-            textEditor.CommandFailed += (text, error) =>
-            {
-                // TODO:
-                MessageBox.Show(text + error);
-            };
-            textEditor.Executing += (executing) =>
-            {
-                if (!executing)
-                {
-                    textEditor.TextArea.Focus();
-                }
-            };
-            textEditor.CloseRequested += () => Close();
+            // Add dock panel and status bar
+            DockPanel dockPanel = new DockPanel();
+            StatusBar statusBar = new StatusBar();
+            statusBarStatusText = new StatusBarItem();
+            statusBarStatusText.Content = DefaultStatusText;
+            statusBar.Items.Add(statusBarStatusText);
+            DockPanel.SetDock(statusBar, Dock.Bottom);
+            dockPanel.Children.Add(statusBar);
+            dockPanel.Children.Add(textEditor);
+            Content = dockPanel;
+        }
 
-            Content = textEditor;
+        private void TextEditor_CommandExecuted(string textOutput, object objectOutput)
+        {
+            // TODO:
+            if (!string.IsNullOrEmpty(textOutput))
+                MessageBox.Show(textOutput);
+        }
+
+        private void TextEditor_CommandFailed(string textOutput, string errorOutput)
+        {
+            // TODO:
+            MessageBox.Show(textOutput + errorOutput);
+        }
+
+        private void TextEditor_Executing(bool started)
+        {
+            if (!started)
+            {
+                textEditor.TextArea.Focus();
+                statusBarStatusText.Content = DefaultStatusText;
+            }
+            else
+                statusBarStatusText.Content = ExecutingStatusText;
+        }
+
+        private void TextEditor_CloseRequested()
+        {
+            Close();
         }
 
         /// <summary>
@@ -50,7 +80,7 @@ namespace CsScriptManaged.UI
 
                 try
                 {
-                    window = CreateWindow();
+                    window = new InteractiveWindow();
                     window.ShowDialog();
                 }
                 catch (ExitRequestedException)
@@ -76,7 +106,7 @@ namespace CsScriptManaged.UI
 
                 try
                 {
-                    window = CreateWindow();
+                    window = new InteractiveWindow();
                     window.Show();
 
                     var _dispatcherFrame = new System.Windows.Threading.DispatcherFrame();
@@ -104,11 +134,6 @@ namespace CsScriptManaged.UI
             {
                 thread.Join();
             }
-        }
-
-        private static Window CreateWindow()
-        {
-            return new InteractiveWindow();
         }
     }
 }
