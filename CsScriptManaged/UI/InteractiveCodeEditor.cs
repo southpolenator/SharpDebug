@@ -14,8 +14,16 @@ using System.Windows;
 
 namespace CsScriptManaged.UI
 {
+    internal delegate void CommandExecutedHandler(string textOutput, object objectOutput);
+
+    internal delegate void CommandFailedHandler(string textOutput, string errorOutput);
+
+    internal delegate void ExecutingHandler(bool started);
+
     internal class InteractiveCodeEditor : CsTextEditor
     {
+        private delegate void BackgroundExecuteDelegate(string documentText, out string textOutput, out string errorOutput, out object result);
+
         private InteractiveExecution interactiveExecution;
         private Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
 
@@ -25,99 +33,151 @@ namespace CsScriptManaged.UI
             UpdateScriptCode();
         }
 
+        public event CommandExecutedHandler CommandExecuted;
+
+        public event CommandFailedHandler CommandFailed;
+
+        public event ExecutingHandler Executing;
+
         protected override void OnExecuteCSharpScript()
         {
-            string code = Document.Text;
-            var oldOut = Console.Out;
-            var oldError = Console.Error;
-
-            try
+            BackgroundExecute((string documentText, out string textOutput, out string errorOutput, out object result) =>
             {
-                string result = "";
+                // Setting results
+                textOutput = "";
+                errorOutput = "";
+                result = null;
 
-                using (StringWriter writer = new StringWriter())
+                // Execution code
+                var oldOut = Console.Out;
+                var oldError = Console.Error;
+
+                try
                 {
-                    Console.SetOut(writer);
-                    Console.SetError(writer);
-
-                    DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
-                        | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
-                        | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
-                    var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
-
-                    using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
+                    using (StringWriter writer = new StringWriter())
                     {
-                        interactiveExecution.UnsafeInterpret(code);
-                        writer.Flush();
-                        result = writer.GetStringBuilder().ToString();
-                    }
-                }
+                        Console.SetOut(writer);
+                        Console.SetError(writer);
 
-                UpdateScriptCode();
-                if (!string.IsNullOrEmpty(result))
-                    MessageBox.Show(result);
-                Document.Text = "";
-            }
-            catch (CompileException ex)
-            {
-                CompileError[] errors = ex.Errors;
+                        DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
+                            | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
+                            | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
+                        var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
 
-                if (errors[0].FileName.EndsWith(InteractiveExecution.InteractiveScriptName) || errors.Count(e => !e.FileName.EndsWith(InteractiveExecution.InteractiveScriptName)) == 0)
-                {
-                    CompileError e = errors[0];
-
-                    MessageBox.Show(e.FullMessage);
-                }
-                else
-                {
-                    StringBuilder sb = new StringBuilder();
-
-                    sb.AppendLine("Compile errors:");
-                    foreach (var error in errors)
-                    {
-                        sb.AppendLine(error.FullMessage);
+                        using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
+                        {
+                            interactiveExecution.UnsafeInterpret(documentText);
+                            writer.Flush();
+                            textOutput = writer.GetStringBuilder().ToString();
+                        }
                     }
 
-                    MessageBox.Show(sb.ToString());
+                    UpdateScriptCode();
                 }
-            }
-            catch (ExitRequestedException)
-            {
-                throw;
-            }
-            catch (TargetInvocationException ex)
-            {
-                if (ex.InnerException is ExitRequestedException)
-                    throw ex.InnerException;
-                MessageBox.Show(ex.InnerException.ToString());
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-            finally
-            {
-                Console.SetError(oldError);
-                Console.SetOut(oldOut);
-            }
+                catch (CompileException ex)
+                {
+                    CompileError[] errors = ex.Errors;
+
+                    if (errors[0].FileName.EndsWith(InteractiveExecution.InteractiveScriptName) || errors.Count(e => !e.FileName.EndsWith(InteractiveExecution.InteractiveScriptName)) == 0)
+                    {
+                        CompileError e = errors[0];
+
+                        errorOutput = e.FullMessage;
+                    }
+                    else
+                    {
+                        StringBuilder sb = new StringBuilder();
+
+                        sb.AppendLine("Compile errors:");
+                        foreach (var error in errors)
+                        {
+                            sb.AppendLine(error.FullMessage);
+                        }
+
+                        errorOutput = sb.ToString();
+                    }
+                }
+                catch (ExitRequestedException)
+                {
+                    throw;
+                }
+                catch (TargetInvocationException ex)
+                {
+                    if (ex.InnerException is ExitRequestedException)
+                        throw ex.InnerException;
+                    errorOutput = ex.InnerException.ToString();
+                }
+                catch (Exception ex)
+                {
+                    errorOutput = ex.ToString();
+                }
+                finally
+                {
+                    Console.SetError(oldError);
+                    Console.SetOut(oldOut);
+                }
+            });
         }
 
         protected override void OnExecuteWinDbgCommand()
         {
-            string command = Document.Text;
-
-            try
+            BackgroundExecute((string documentText, out string textOutput, out string errorOutput, out object result) =>
             {
-                string result = CsScripts.Debugger.ExecuteAndCapture(command);
+                // Setting results
+                textOutput = "";
+                errorOutput = "";
+                result = null;
 
-                if (!string.IsNullOrEmpty(result))
-                    MessageBox.Show(result);
-                Document.Text = "";
-            }
-            catch (Exception ex)
+                try
+                {
+                    textOutput = CsScripts.Debugger.ExecuteAndCapture(documentText);
+                }
+                catch (Exception ex)
+                {
+                    errorOutput = ex.ToString();
+                }
+            });
+        }
+
+        private void BackgroundExecute(BackgroundExecuteDelegate action)
+        {
+            string documentText = Document.Text;
+
+            IsEnabled = false;
+            if (Executing != null)
+                Executing(true);
+            Task.Run(() =>
             {
-                MessageBox.Show(ex.ToString());
-            }
+                try
+                {
+                    string textOutput, errorOutput;
+                    object objectOutput;
+
+                    action(documentText, out textOutput, out errorOutput, out objectOutput);
+                    Dispatcher.InvokeAsync(() =>
+                    {
+                        if (!string.IsNullOrEmpty(errorOutput))
+                        {
+                            if (CommandFailed != null)
+                                CommandFailed(textOutput, errorOutput);
+                        }
+                        else
+                        {
+                            if (CommandExecuted != null)
+                                CommandExecuted(textOutput, objectOutput);
+                            Document.Text = "";
+                        }
+
+                        IsEnabled = true;
+                        if (Executing != null)
+                            Executing(false);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                }
+            });
         }
 
         private void UpdateScriptCode()

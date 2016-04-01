@@ -77,8 +77,19 @@ namespace CsScriptManaged.UI
         private static Window CreateWindow()
         {
             Window window = new Window();
-            Control textEditor = new InteractiveCodeEditor();
+            InteractiveCodeEditor textEditor = new InteractiveCodeEditor();
 
+            textEditor.CommandExecuted += (text, result) =>
+            {
+                // TODO:
+                if (!string.IsNullOrEmpty(text))
+                    MessageBox.Show(text);
+            };
+            textEditor.CommandFailed += (text, error) =>
+            {
+                // TODO:
+                MessageBox.Show(text + error);
+            };
             window.Content = textEditor;
             return window;
         }
