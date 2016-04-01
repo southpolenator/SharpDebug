@@ -39,6 +39,8 @@ namespace CsScriptManaged.UI
 
         public event ExecutingHandler Executing;
 
+        public event Action CloseRequested;
+
         protected override void OnExecuteCSharpScript()
         {
             BackgroundExecute((string documentText, out string textOutput, out string errorOutput, out object result) =>
@@ -171,6 +173,14 @@ namespace CsScriptManaged.UI
                         IsEnabled = true;
                         if (Executing != null)
                             Executing(false);
+                    });
+                }
+                catch (ExitRequestedException)
+                {
+                    Dispatcher.InvokeAsync(() =>
+                    {
+                        if (CloseRequested != null)
+                            CloseRequested();
                     });
                 }
                 catch (Exception ex)

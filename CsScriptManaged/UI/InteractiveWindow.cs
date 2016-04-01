@@ -4,8 +4,41 @@ using System.Windows;
 
 namespace CsScriptManaged.UI
 {
-    internal class InteractiveWindow
+    internal class InteractiveWindow : Window
     {
+        public InteractiveWindow()
+        {
+            // Set window look
+            WindowStyle = WindowStyle.ToolWindow;
+            ShowInTaskbar = false;
+            Title = "C# Interactive Window";
+
+            // Add text editor
+            InteractiveCodeEditor textEditor = new InteractiveCodeEditor();
+
+            textEditor.CommandExecuted += (text, result) =>
+            {
+                // TODO:
+                if (!string.IsNullOrEmpty(text))
+                    MessageBox.Show(text);
+            };
+            textEditor.CommandFailed += (text, error) =>
+            {
+                // TODO:
+                MessageBox.Show(text + error);
+            };
+            textEditor.Executing += (executing) =>
+            {
+                if (!executing)
+                {
+                    textEditor.TextArea.Focus();
+                }
+            };
+            textEditor.CloseRequested += () => Close();
+
+            Content = textEditor;
+        }
+
         /// <summary>
         /// Shows the window as modal dialog.
         /// </summary>
@@ -75,29 +108,7 @@ namespace CsScriptManaged.UI
 
         private static Window CreateWindow()
         {
-            Window window = new Window();
-            InteractiveCodeEditor textEditor = new InteractiveCodeEditor();
-
-            textEditor.CommandExecuted += (text, result) =>
-            {
-                // TODO:
-                if (!string.IsNullOrEmpty(text))
-                    MessageBox.Show(text);
-            };
-            textEditor.CommandFailed += (text, error) =>
-            {
-                // TODO:
-                MessageBox.Show(text + error);
-            };
-            textEditor.Executing += (executing) =>
-            {
-                if (!executing)
-                {
-                    textEditor.TextArea.Focus();
-                }
-            };
-            window.Content = textEditor;
-            return window;
+            return new InteractiveWindow();
         }
     }
 }
