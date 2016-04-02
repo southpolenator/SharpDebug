@@ -88,9 +88,20 @@ namespace CsScriptManaged.UI
             textBox.Text = textOutput;
             textBox.IsReadOnly = true;
             textBox.Background = Brushes.Transparent;
+            textBox.BorderBrush = Brushes.Transparent;
             if (error)
                 textBox.Foreground = Brushes.Red;
             return textBox;
+        }
+
+        private UIElement CreateDbgCode(string text)
+        {
+            var textBlock = new TextBlock();
+            textBlock.FontFamily = new FontFamily("Consolas");
+            textBlock.FontSize = 14;
+            textBlock.Text = "#dbg> " + text;
+            textBlock.Background = Brushes.Transparent;
+            return textBlock;
         }
 
         private UIElement CreateCSharpCode(string code)
@@ -125,7 +136,7 @@ namespace CsScriptManaged.UI
             element.Margin = new Thickness(0, 0, 0, 10);
         }
 
-        private void TextEditor_CommandExecuted(string textOutput, object objectOutput)
+        private void TextEditor_CommandExecuted(bool csharpCode, string textOutput, object objectOutput)
         {
             int initialLength = resultsPanel.Children.Count;
             int textEditorIndex = initialLength - 1;
@@ -141,13 +152,13 @@ namespace CsScriptManaged.UI
             }
             if (!string.IsNullOrEmpty(textOutput))
                 resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
-            resultsPanel.Children.Insert(textEditorIndex, CreateCSharpCode(textEditor.Text));
+            resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(textEditor.Text) : CreateDbgCode(textEditor.Text));
             AddSpacing(resultsPanel.Children[textEditorIndex]);
             if (resultsPanel.Children.Count - initialLength > 1)
                 AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
         }
 
-        private void TextEditor_CommandFailed(string textOutput, string errorOutput)
+        private void TextEditor_CommandFailed(bool csharpCode, string textOutput, string errorOutput)
         {
             int initialLength = resultsPanel.Children.Count;
             int textEditorIndex = initialLength - 1;
@@ -155,7 +166,7 @@ namespace CsScriptManaged.UI
             resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(errorOutput, error: true));
             if (!string.IsNullOrEmpty(textOutput))
                 resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
-            resultsPanel.Children.Insert(textEditorIndex, CreateCSharpCode(textEditor.Text));
+            resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(textEditor.Text) : CreateDbgCode(textEditor.Text));
             AddSpacing(resultsPanel.Children[textEditorIndex]);
             AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
         }

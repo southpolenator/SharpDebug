@@ -14,9 +14,9 @@ using System.Windows;
 
 namespace CsScriptManaged.UI
 {
-    internal delegate void CommandExecutedHandler(string textOutput, object objectOutput);
+    internal delegate void CommandExecutedHandler(bool csharpCode, string textOutput, object objectOutput);
 
-    internal delegate void CommandFailedHandler(string textOutput, string errorOutput);
+    internal delegate void CommandFailedHandler(bool csharpCode, string textOutput, string errorOutput);
 
     internal delegate void ExecutingHandler(bool started);
 
@@ -152,7 +152,7 @@ namespace CsScriptManaged.UI
                     Console.SetError(oldError);
                     Console.SetOut(oldOut);
                 }
-            });
+            }, true);
         }
 
         protected override void OnExecuteWinDbgCommand()
@@ -172,10 +172,10 @@ namespace CsScriptManaged.UI
                 {
                     errorOutput = ex.ToString();
                 }
-            });
+            }, false);
         }
 
-        private void BackgroundExecute(BackgroundExecuteDelegate action)
+        private void BackgroundExecute(BackgroundExecuteDelegate action, bool csharpCode)
         {
             string documentText = Document.Text;
 
@@ -195,12 +195,12 @@ namespace CsScriptManaged.UI
                         if (!string.IsNullOrEmpty(errorOutput))
                         {
                             if (CommandFailed != null)
-                                CommandFailed(textOutput, errorOutput);
+                                CommandFailed(csharpCode, textOutput, errorOutput);
                         }
                         else
                         {
                             if (CommandExecuted != null)
-                                CommandExecuted(textOutput, objectOutput);
+                                CommandExecuted(csharpCode, textOutput, objectOutput);
                             Document.Text = "";
                         }
 
