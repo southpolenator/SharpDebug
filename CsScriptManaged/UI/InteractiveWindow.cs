@@ -76,7 +76,7 @@ namespace CsScriptManaged.UI
             panel.Children.Add(textEditor);
         }
 
-        private UIElement CreateTextOutput(string textOutput)
+        private UIElement CreateTextOutput(string textOutput, bool error = false)
         {
             textOutput = textOutput.Replace("\r\n", "\n");
             if (textOutput.EndsWith("\n"))
@@ -88,6 +88,8 @@ namespace CsScriptManaged.UI
             textBox.Text = textOutput;
             textBox.IsReadOnly = true;
             textBox.Background = Brushes.Transparent;
+            if (error)
+                textBox.Foreground = Brushes.Red;
             return textBox;
         }
 
@@ -113,6 +115,16 @@ namespace CsScriptManaged.UI
             return panel;
         }
 
+        private void AddSpacing(UIElement uiElement)
+        {
+            AddSpacing((FrameworkElement)uiElement);
+        }
+
+        private void AddSpacing(FrameworkElement element)
+        {
+            element.Margin = new Thickness(0, 0, 0, 10);
+        }
+
         private void TextEditor_CommandExecuted(string textOutput, object objectOutput)
         {
             int initialLength = resultsPanel.Children.Count;
@@ -135,20 +147,17 @@ namespace CsScriptManaged.UI
                 AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
         }
 
-        private void AddSpacing(UIElement uiElement)
-        {
-            AddSpacing((FrameworkElement)uiElement);
-        }
-
-        private void AddSpacing(FrameworkElement element)
-        {
-            element.Margin = new Thickness(0, 0, 0, 10);
-        }
-
         private void TextEditor_CommandFailed(string textOutput, string errorOutput)
         {
-            // TODO:
-            MessageBox.Show(textOutput + errorOutput);
+            int initialLength = resultsPanel.Children.Count;
+            int textEditorIndex = initialLength - 1;
+
+            resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(errorOutput, error: true));
+            if (!string.IsNullOrEmpty(textOutput))
+                resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
+            resultsPanel.Children.Insert(textEditorIndex, CreateCSharpCode(textEditor.Text));
+            AddSpacing(resultsPanel.Children[textEditorIndex]);
+            AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
         }
 
         private void TextEditor_Executing(bool started)
