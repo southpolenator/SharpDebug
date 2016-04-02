@@ -45,6 +45,7 @@ namespace CsScriptManaged.UI
             ScrollViewer scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
             scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+            scrollViewer.Margin = new Thickness(5);
             dockPanel.Children.Add(scrollViewer);
             resultsPanel = new StackPanel();
             resultsPanel.Orientation = Orientation.Vertical;
@@ -53,14 +54,14 @@ namespace CsScriptManaged.UI
             scrollViewer.Content = resultsPanel;
 
             // Add prompt for text editor
-            var panel = new StackPanel();
-            panel.Orientation = Orientation.Horizontal;
+            var panel = new DockPanel();
             resultsPanel.Children.Add(panel);
 
             promptBlock = new TextBlock();
             promptBlock.FontFamily = new FontFamily("Consolas");
             promptBlock.FontSize = 14;
             promptBlock.Text = ExecutingPrompt;
+            DockPanel.SetDock(promptBlock, Dock.Left);
             panel.Children.Add(promptBlock);
 
             // Add text editor
@@ -81,11 +82,13 @@ namespace CsScriptManaged.UI
             if (textOutput.EndsWith("\n"))
                 textOutput = textOutput.Substring(0, textOutput.Length - 1);
 
-            var textBlock = new TextBlock();
-            textBlock.FontFamily = new FontFamily("Consolas");
-            textBlock.FontSize = 14;
-            textBlock.Text = textOutput;
-            return textBlock;
+            var textBox = new TextBox();
+            textBox.FontFamily = new FontFamily("Consolas");
+            textBox.FontSize = 14;
+            textBox.Text = textOutput;
+            textBox.IsReadOnly = true;
+            textBox.Background = Brushes.Transparent;
+            return textBox;
         }
 
         private UIElement CreateCSharpCode(string code)
@@ -104,6 +107,7 @@ namespace CsScriptManaged.UI
             codeControl.Text = code;
             codeControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
             codeControl.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            codeControl.Background = Brushes.Transparent;
             panel.Children.Add(codeControl);
 
             return panel;
@@ -111,7 +115,8 @@ namespace CsScriptManaged.UI
 
         private void TextEditor_CommandExecuted(string textOutput, object objectOutput)
         {
-            int textEditorIndex = resultsPanel.Children.Count - 1;
+            int initialLength = resultsPanel.Children.Count;
+            int textEditorIndex = initialLength - 1;
 
             if (objectOutput != null)
             {
@@ -125,6 +130,19 @@ namespace CsScriptManaged.UI
             if (!string.IsNullOrEmpty(textOutput))
                 resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
             resultsPanel.Children.Insert(textEditorIndex, CreateCSharpCode(textEditor.Text));
+            AddSpacing(resultsPanel.Children[textEditorIndex]);
+            if (resultsPanel.Children.Count - initialLength > 1)
+                AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
+        }
+
+        private void AddSpacing(UIElement uiElement)
+        {
+            AddSpacing((FrameworkElement)uiElement);
+        }
+
+        private void AddSpacing(FrameworkElement element)
+        {
+            element.Margin = new Thickness(0, 0, 0, 10);
         }
 
         private void TextEditor_CommandFailed(string textOutput, string errorOutput)
