@@ -21,7 +21,7 @@ namespace CsScriptManaged
         /// <summary>
         /// The default prompt
         /// </summary>
-        private const string DefaultPrompt = "C#> ";
+        internal const string DefaultPrompt = "C#> ";
 
         /// <summary>
         /// The clear imports statement
