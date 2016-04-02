@@ -14,7 +14,7 @@ using System.Windows;
 
 namespace CsScriptManaged.UI
 {
-    internal delegate void CommandExecutedHandler(bool csharpCode, string textOutput, object objectOutput);
+    internal delegate void CommandExecutedHandler(bool csharpCode, string textOutput, IEnumerable<object> objectOutput);
 
     internal delegate void CommandFailedHandler(bool csharpCode, string textOutput, string errorOutput);
 
@@ -22,14 +22,39 @@ namespace CsScriptManaged.UI
 
     internal class InteractiveCodeEditor : CsTextEditor
     {
-        private delegate void BackgroundExecuteDelegate(string documentText, out string textOutput, out string errorOutput, out object result);
+        private class ObjectWriter : IObjectWriter
+        {
+            public InteractiveCodeEditor InteractiveCodeEditor { get; set; }
+
+            public object Output(object obj)
+            {
+                if (obj != null)
+                {
+                    InteractiveCodeEditor.AddResult(obj);
+                }
+
+                return null;
+            }
+        }
+
+        private delegate void BackgroundExecuteDelegate(string documentText, out string textOutput, out string errorOutput, out IEnumerable<object> result);
 
         private InteractiveExecution interactiveExecution;
         private Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
+        private List<object> results = new List<object>();
+
+        private void AddResult(object obj)
+        {
+            results.Add(obj);
+        }
 
         public InteractiveCodeEditor()
         {
-            interactiveExecution = Context.InteractiveExecution;
+            interactiveExecution = new InteractiveExecution();
+            interactiveExecution.InternalObjectWriter = new ObjectWriter()
+            {
+                InteractiveCodeEditor = this,
+            };
 
             // Run initialization of the window in background task
             IsEnabled = false;
@@ -77,12 +102,11 @@ namespace CsScriptManaged.UI
 
         protected override void OnExecuteCSharpScript()
         {
-            BackgroundExecute((string documentText, out string textOutput, out string errorOutput, out object result) =>
+            BackgroundExecute((string documentText, out string textOutput, out string errorOutput, out IEnumerable<object> result) =>
             {
                 // Setting results
                 textOutput = "";
                 errorOutput = "";
-                result = null;
 
                 // Execution code
                 var oldOut = Console.Out;
@@ -151,18 +175,19 @@ namespace CsScriptManaged.UI
                 {
                     Console.SetError(oldError);
                     Console.SetOut(oldOut);
+                    result = results;
+                    results = new List<object>();
                 }
             }, true);
         }
 
         protected override void OnExecuteWinDbgCommand()
         {
-            BackgroundExecute((string documentText, out string textOutput, out string errorOutput, out object result) =>
+            BackgroundExecute((string documentText, out string textOutput, out string errorOutput, out IEnumerable<object> result) =>
             {
                 // Setting results
                 textOutput = "";
                 errorOutput = "";
-                result = null;
 
                 try
                 {
@@ -172,6 +197,8 @@ namespace CsScriptManaged.UI
                 {
                     errorOutput = ex.ToString();
                 }
+                result = results;
+                results = new List<object>();
             }, false);
         }
 
@@ -187,7 +214,7 @@ namespace CsScriptManaged.UI
                 try
                 {
                     string textOutput, errorOutput;
-                    object objectOutput;
+                    IEnumerable<object> objectOutput;
 
                     action(documentText, out textOutput, out errorOutput, out objectOutput);
                     Dispatcher.InvokeAsync(() =>

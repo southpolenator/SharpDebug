@@ -44,11 +44,6 @@ namespace CsScriptManaged
         internal static InteractiveExecution InteractiveExecution = new InteractiveExecution();
 
         /// <summary>
-        /// Gets or sets the object writer using during interactive scripting. Default value is ConsoleObjectWriter.
-        /// </summary>
-        public static IObjectWriter ObjectWriter { get; set; } = new ConsoleObjectWriter();
-
-        /// <summary>
         /// Gets or sets a value indicating whether variable caching is enabled.
         /// </summary>
         /// <value>

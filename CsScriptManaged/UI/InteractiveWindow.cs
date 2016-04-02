@@ -1,5 +1,7 @@
 ﻿using CsScriptManaged.UI.CodeWindow;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -136,20 +138,22 @@ namespace CsScriptManaged.UI
             element.Margin = new Thickness(0, 0, 0, 10);
         }
 
-        private void TextEditor_CommandExecuted(bool csharpCode, string textOutput, object objectOutput)
+        private void TextEditor_CommandExecuted(bool csharpCode, string textOutput, IEnumerable<object> objectsOutput)
         {
             int initialLength = resultsPanel.Children.Count;
             int textEditorIndex = initialLength - 1;
 
-            if (objectOutput != null)
-            {
-                UIElement elementOutput = objectOutput as UIElement;
+            foreach (var objectOutput in objectsOutput.Reverse())
+                if (objectOutput != null)
+                {
+                    UIElement elementOutput = objectOutput as UIElement;
 
-                if (elementOutput != null)
-                    resultsPanel.Children.Insert(textEditorIndex, elementOutput);
-                else
-                    resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(objectOutput.ToString()));
-            }
+                    if (elementOutput != null)
+                        resultsPanel.Children.Insert(textEditorIndex, elementOutput);
+                    else
+                        resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(objectOutput.ToString()));
+                }
+
             if (!string.IsNullOrEmpty(textOutput))
                 resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
             resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(textEditor.Text) : CreateDbgCode(textEditor.Text));
