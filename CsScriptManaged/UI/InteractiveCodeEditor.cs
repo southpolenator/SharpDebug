@@ -30,7 +30,34 @@ namespace CsScriptManaged.UI
         public InteractiveCodeEditor()
         {
             interactiveExecution = Context.InteractiveExecution;
-            UpdateScriptCode();
+
+            // Run initialization of the window in background task
+            IsEnabled = false;
+            Task.Run(() =>
+            {
+                try
+                {
+                    Initialize();
+                    Dispatcher.InvokeAsync(() =>
+                    {
+                        IsEnabled = true;
+                        if (Executing != null)
+                            Executing(false);
+                    });
+                }
+                catch (ExitRequestedException)
+                {
+                    Dispatcher.InvokeAsync(() =>
+                    {
+                        if (CloseRequested != null)
+                            CloseRequested();
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                }
+            });
         }
 
         public event CommandExecutedHandler CommandExecuted;
@@ -40,6 +67,13 @@ namespace CsScriptManaged.UI
         public event ExecutingHandler Executing;
 
         public event Action CloseRequested;
+
+        protected new void Initialize()
+        {
+            UpdateScriptCode();
+            base.Initialize();
+            interactiveExecution.UnsafeInterpret("");
+        }
 
         protected override void OnExecuteCSharpScript()
         {

@@ -224,7 +224,7 @@ namespace CsScriptManaged
 
             Directory.CreateDirectory(tempDir);
 
-#if false
+#if USE_ROSLYN_COMPILER
             // Create references
             List<string> stringReferences = new List<string>();
 

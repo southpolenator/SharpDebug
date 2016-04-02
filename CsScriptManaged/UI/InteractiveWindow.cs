@@ -10,6 +10,7 @@ namespace CsScriptManaged.UI
     {
         private const string DefaultStatusText = "Type 'help' to get started :)";
         private const string ExecutingStatusText = "Executing...";
+        private const string InitializingStatusText = "Initializing...";
         private InteractiveCodeEditor textEditor;
         private StatusBarItem statusBarStatusText;
 
@@ -19,6 +20,16 @@ namespace CsScriptManaged.UI
             ShowInTaskbar = false;
             Title = "C# Interactive Window";
 
+            // Add dock panel and status bar
+            DockPanel dockPanel = new DockPanel();
+            StatusBar statusBar = new StatusBar();
+            statusBarStatusText = new StatusBarItem();
+            statusBarStatusText.Content = InitializingStatusText;
+            statusBar.Items.Add(statusBarStatusText);
+            DockPanel.SetDock(statusBar, Dock.Bottom);
+            dockPanel.Children.Add(statusBar);
+            Content = dockPanel;
+
             // Add text editor
             textEditor = new InteractiveCodeEditor();
             textEditor.CommandExecuted += TextEditor_CommandExecuted;
@@ -27,17 +38,7 @@ namespace CsScriptManaged.UI
             textEditor.CloseRequested += TextEditor_CloseRequested;
             textEditor.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
             textEditor.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
-
-            // Add dock panel and status bar
-            DockPanel dockPanel = new DockPanel();
-            StatusBar statusBar = new StatusBar();
-            statusBarStatusText = new StatusBarItem();
-            statusBarStatusText.Content = DefaultStatusText;
-            statusBar.Items.Add(statusBarStatusText);
-            DockPanel.SetDock(statusBar, Dock.Bottom);
-            dockPanel.Children.Add(statusBar);
             dockPanel.Children.Add(textEditor);
-            Content = dockPanel;
         }
 
         private void TextEditor_CommandExecuted(string textOutput, object objectOutput)
@@ -83,9 +84,6 @@ namespace CsScriptManaged.UI
                     window = new InteractiveWindow();
                     window.ShowDialog();
                 }
-                catch (ExitRequestedException)
-                {
-                }
                 catch (Exception ex)
                 {
                     MessageBox.Show(ex.ToString());
@@ -112,9 +110,6 @@ namespace CsScriptManaged.UI
                     var _dispatcherFrame = new System.Windows.Threading.DispatcherFrame();
                     window.Closed += (obj, e) => { _dispatcherFrame.Continue = false; };
                     System.Windows.Threading.Dispatcher.PushFrame(_dispatcherFrame);
-                }
-                catch (ExitRequestedException)
-                {
                 }
                 catch (Exception ex)
                 {

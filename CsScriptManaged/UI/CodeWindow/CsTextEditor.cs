@@ -61,6 +61,55 @@ namespace CsScriptManaged.UI.CodeWindow
 
             // Initialize project content
             projectContent = new ICSharpCode.NRefactory.CSharp.CSharpProjectContent();
+
+            // Initialize images
+            CompletionData testData = new CompletionData(CompletionDataType.Unknown, "");
+        }
+
+        protected void Initialize()
+        {
+            // TODO: Unify getting auto complete data
+            IEnumerable<CompletionData> completionData = null;
+            int startPosition, wordLength = 0;
+            string word = string.Empty;
+            string filename = InteractiveExecution.InteractiveScriptName;
+            int offset = ScriptStart.Length;
+            string newSourceCode = CorrectSource("");
+            var document = new ICSharpCode.NRefactory.Editor.ReadOnlyDocument(new ICSharpCode.NRefactory.Editor.StringTextSource(newSourceCode), filename);
+            var syntaxTree = new ICSharpCode.NRefactory.CSharp.CSharpParser().Parse(document, document.FileName);
+            syntaxTree.Freeze();
+            var unresolvedFile = syntaxTree.ToTypeSystem();
+            var projectContent = this.projectContent.AddOrUpdateFiles(unresolvedFile);
+            var compilation = projectContent.CreateCompilation();
+            var location = document.GetLocation(offset);
+            var resolver = unresolvedFile.GetResolver(compilation, location);
+            var typeResolveContextAtCaret = unresolvedFile.GetTypeResolveContext(compilation, location);
+            var completionContextProvider = new ICSharpCode.NRefactory.CSharp.Completion.DefaultCompletionContextProvider(document, unresolvedFile);
+            var completionDataFactory = new CompletionDataFactory();
+            var cce = new ICSharpCode.NRefactory.CSharp.Completion.CSharpCompletionEngine(document, completionContextProvider, completionDataFactory, projectContent, typeResolveContextAtCaret);
+            cce.EolMarker = Environment.NewLine;
+            cce.FormattingPolicy = ICSharpCode.NRefactory.CSharp.FormattingOptionsFactory.CreateSharpDevelop();
+            var completionChar = document.GetCharAt(offset - 1);
+
+            if (!cce.TryGetCompletionWord(offset, out startPosition, out wordLength))
+            {
+                startPosition = offset;
+                wordLength = 0;
+            }
+
+            completionData = cce.GetCompletionData(startPosition, true).Cast<CompletionData>();
+            if (wordLength > 0)
+                word = document.GetText(offset - wordLength, wordLength);
+
+            var parameterCompletionDataFactory = new ParameterCompletionDataFactory();
+            var pce = new ICSharpCode.NRefactory.CSharp.Completion.CSharpParameterCompletionEngine(
+                document,
+                completionContextProvider,
+                parameterCompletionDataFactory,
+                projectContent,
+                typeResolveContextAtCaret
+            );
+            var parameterDataProvider = pce.GetParameterDataProvider(offset, completionChar);
         }
 
         protected virtual void OnExecuteCSharpScript()
