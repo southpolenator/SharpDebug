@@ -265,7 +265,7 @@ namespace CsScriptManaged.UI.CodeWindow
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                 }
 

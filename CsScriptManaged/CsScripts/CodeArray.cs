@@ -347,7 +347,7 @@ namespace CsScripts
             }
 
             /// <summary>
-            /// Gets the <see cref="T"/> at the specified index.
+            /// Gets the &lt;T&gt; at the specified index.
             /// </summary>
             /// <param name="index">The index.</param>
             public T this[int index]
@@ -436,7 +436,7 @@ namespace CsScripts
             }
 
             /// <summary>
-            /// Gets the <see cref="T"/> at the specified index.
+            /// Gets the &lt;T&gt; at the specified index.
             /// </summary>
             /// <param name="index">The index.</param>
             public T this[int index]

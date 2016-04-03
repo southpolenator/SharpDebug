@@ -190,10 +190,29 @@
         /// </summary>
         HLSLType,
 
+        /// <summary>
+        /// TODO: Not found on MSDN
+        /// </summary>
         Caller,
+
+        /// <summary>
+        /// TODO: Not found on MSDN
+        /// </summary>
         Callee,
+
+        /// <summary>
+        /// TODO: Not found on MSDN
+        /// </summary>
         Export,
+
+        /// <summary>
+        /// TODO: Not found on MSDN
+        /// </summary>
         HeapAllocationSite,
+
+        /// <summary>
+        /// TODO: Not found on MSDN
+        /// </summary>
         CoffGroup,
 
         /// <summary>

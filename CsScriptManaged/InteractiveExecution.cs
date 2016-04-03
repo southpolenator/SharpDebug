@@ -122,6 +122,7 @@ namespace CsScriptManaged
         /// Interprets C# code.
         /// </summary>
         /// <param name="code">The C# code.</param>
+        /// <param name="prompt">The prompt.</param>
         public void Interpret(string code, string prompt = "")
         {
             try
