@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -281,8 +282,10 @@ namespace CsScriptManaged.UI
                 }
             }
 
-            ScriptStart = scriptStart;
-            ScriptEnd = scriptEnd;
+            Regex lineRegex = new Regex("#line[^\n]*", RegexOptions.Compiled);
+
+            ScriptStart = lineRegex.Replace(scriptStart, "");
+            ScriptEnd = lineRegex.Replace(scriptEnd, "");
         }
 
         private static XmlDocumentationProvider GetXmlDocumentation(string dllPath)

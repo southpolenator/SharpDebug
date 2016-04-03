@@ -223,7 +223,6 @@ namespace CsScriptManaged.UI.CodeWindow
                     }
                     else
                     {
-
                         startPosition = offset;
                         if (char.IsLetterOrDigit(completionChar) || completionChar == '_')
                         {
