@@ -149,7 +149,14 @@ namespace GenerateUserTypesFromPdb
                     }
                     else
                     {
-                        CanInstatiate = false;
+                        Symbol symbol = originalUserType.Symbol.Module.GetTypeSymbol(arguments[i].Name);
+
+                        if (symbol.Tag != SymTagEnum.SymTagBaseType)
+                        {
+                            // Base Types (Primitive Types) can be used for specialization
+                            CanInstatiate = false;
+                        }
+                        
                         // #fixme can't deal with it
                         specializedArguments[i] = templateType.GetTypeString(arguments[i], factory);
                     }

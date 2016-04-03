@@ -97,7 +97,7 @@ namespace CsScriptManaged
             foreach (var description in descriptions)
                 if (description.Module == module)
                     return description;
-            return descriptions.First();
+            return descriptions.FirstOrDefault();
         }
     }
 }

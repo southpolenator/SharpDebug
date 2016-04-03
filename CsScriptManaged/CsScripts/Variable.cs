@@ -763,23 +763,26 @@ namespace CsScripts
             if (conversionType.IsSubclassOf(typeof(Variable)))
             {
                 var description = codeType.Module.Process.TypeToUserTypeDescription[conversionType].FromModuleOrFirst(codeType.Module);
-                CodeType newType = description.UserType;
-
-                // Check if it was non-unique generics type
-                if (newType != null)
+                if (description != null)
                 {
-                    // If type is already in the metadata cache, use it
-                    if (newType.Module.Process.UserTypes.Contains(description))
-                    {
-                        return CastAs(newType);
-                    }
+                    CodeType newType = description.UserType;
 
-                    if (codeType.IsPointer && !newType.IsPointer)
+                    // Check if it was non-unique generics type
+                    if (newType != null)
                     {
-                        newType = newType.PointerToType;
-                    }
+                        // If type is already in the metadata cache, use it
+                        if (newType.Module.Process.UserTypes.Contains(description))
+                        {
+                            return CastAs(newType);
+                        }
 
-                    activatorParameter = CastAs(newType);
+                        if (codeType.IsPointer && !newType.IsPointer)
+                        {
+                            newType = newType.PointerToType;
+                        }
+
+                        activatorParameter = CastAs(newType);
+                    }
                 }
             }
 

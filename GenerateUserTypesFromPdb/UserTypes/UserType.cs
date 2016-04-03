@@ -752,13 +752,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         public virtual UserTypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
-            UserType fakeUserType;
-
-            if (factory.GetUserType(type, out fakeUserType) && !(fakeUserType is PrimitiveUserType))
-            {
-                //return UserTypeTreeUserType.Create(fakeUserType, factory);
-            }
-
             switch (type.Tag)
             {
                 case SymTagEnum.SymTagBaseType:
@@ -823,6 +816,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 case SymTagEnum.SymTagPointerType:
                     {
                         Symbol pointerType = type.ElementType;
+
+                        UserType fakeUserType;
 
                         if (factory.GetUserType(pointerType, out fakeUserType) && (fakeUserType is PrimitiveUserType))
                         {

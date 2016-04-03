@@ -134,9 +134,57 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     // TODO: Verify that all templates in the list can be described by the same class (also check for subtypes)
 
-                    // Move all types under the first type
+                    // Select best suited type for template
                     TemplateUserType template = templates.First();
 
+                    foreach (var specializedTemplate in templates)
+                    {
+                        var arguments = specializedTemplate.Arguments;
+
+                        // Check if all arguments are simple user type
+                        bool simpleUserType = true;
+
+                        foreach (var argument in arguments)
+                        {
+                            var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
+
+                            if (argumentSymbol.Tag != SymTagEnum.SymTagUDT || argumentSymbol.Name.Contains("<"))
+                            {
+                                simpleUserType = false;
+                                break;
+                            }
+                        }
+
+                        if (simpleUserType)
+                        {
+                            template = specializedTemplate;
+                            break;
+                        }
+
+                        // Check if none of the arguments is template user type
+                        bool noneIsTemplate = true;
+
+                        foreach (var argument in arguments)
+                        {
+                            var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
+
+                            if (argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
+                            {
+                                noneIsTemplate = false;
+                                break;
+                            }
+                        }
+
+                        if (noneIsTemplate)
+                        {
+                            template = specializedTemplate;
+                            break;
+                        }
+
+                        // This one is good as any...
+                    }
+
+                    // Move all types under the selected type
                     foreach (var specializedTemplate in templates)
                     {
                         template.specializedTypes.Add(specializedTemplate);
