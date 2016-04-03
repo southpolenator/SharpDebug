@@ -178,7 +178,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         if (noneIsTemplate)
                         {
                             template = specializedTemplate;
-                            break;
+                            continue;
                         }
 
                         // This one is good as any...
