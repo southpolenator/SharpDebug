@@ -114,7 +114,7 @@ namespace CsScriptManaged.UI
                 {
                     Type type = obj.GetType();
 
-                    if (!type.IsPrimitive)
+                    if (!type.IsPrimitive && !type.IsEnum)
                     {
                         // Non-static properties
                         var properties = type.GetProperties(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
