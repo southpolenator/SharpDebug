@@ -197,19 +197,126 @@ namespace CsScriptManaged.UI
 
         private UIElement Visualize(object obj)
         {
+            // Create top level table grid
+            Grid tableGrid = new Grid();
+
+            Grid.SetIsSharedSizeScope(tableGrid, true);
+            tableGrid.RowDefinitions.Add(new RowDefinition()
+            {
+                Height = new GridLength(1, GridUnitType.Auto),
+            });
+
+            // Create table header
+            TreeViewItem header = new TreeViewItem();
+            Grid headerGrid = CreateTreeItemGrid(0);
+            TextBlock name = new TextBlock();
+            name.Text = "Name";
+            name.FontWeight = FontWeights.Bold;
+            Grid.SetColumn(name, NameColumnIndex);
+            headerGrid.Children.Add(name);
+            TextBlock value = new TextBlock();
+            value.Text = "Value";
+            value.FontWeight = FontWeights.Bold;
+            Grid.SetColumn(value, ValueColumnIndex);
+            headerGrid.Children.Add(value);
+            TextBlock type = new TextBlock();
+            type.Text = "Type";
+            type.FontWeight = FontWeights.Bold;
+            Grid.SetColumn(type, TypeColumnIndex);
+            headerGrid.Children.Add(type);
+            TreeViewItem emptyListItem = new TreeViewItem();
+            Grid.SetColumn(emptyListItem, 1);
+            headerGrid.Children.Add(emptyListItem);
+            header.Header = headerGrid;
+
+            // Create table tree
             TreeView tree = new TreeView();
             IResultTreeItem resultTreeItem = ResultTreeItem.Create(obj, "result", null);
 
-            tree.Items.Add(CreateTreeItem(resultTreeItem));
-            return tree;
+            tree.Items.Add(header);
+            tree.Items.Add(CreateTreeItem(resultTreeItem, 0));
+            tableGrid.Children.Add(tree);
+            return tableGrid;
         }
 
-        private TreeViewItem CreateTreeItem(IResultTreeItem resultTreeItem)
+        const int NameColumnIndex = 0;
+        const int SpacingColumns = 10;
+        const int ValueColumnIndex = SpacingColumns + 1;
+        const int TypeColumnIndex = SpacingColumns + 2;
+
+        private static Grid CreateTreeItemGrid(int level)
+        {
+            Grid grid = new Grid();
+
+            grid.ColumnDefinitions.Add(new ColumnDefinition()
+            {
+                Name = "Name",
+                Width = new GridLength(0, GridUnitType.Auto),
+                MinWidth = 100,
+                SharedSizeGroup = "Name",
+            });
+            for (int i = 0; i < level; i++)
+                grid.ColumnDefinitions.Add(new ColumnDefinition());
+            for (int i = level; i < SpacingColumns; i++)
+                grid.ColumnDefinitions.Add(new ColumnDefinition()
+                {
+                    Name = "Spacing",
+                    Width = new GridLength(0, GridUnitType.Auto),
+                    SharedSizeGroup = "Spacing",
+                });
+            grid.ColumnDefinitions.Add(new ColumnDefinition()
+            {
+                Name = "Value",
+                Width = new GridLength(0, GridUnitType.Auto),
+                MinWidth = 100,
+                SharedSizeGroup = "Value",
+            });
+            grid.ColumnDefinitions.Add(new ColumnDefinition()
+            {
+                Name = "Type",
+                Width = new GridLength(0, GridUnitType.Auto),
+                MinWidth = 100,
+                SharedSizeGroup = "Type",
+            });
+            return grid;
+        }
+
+        private class TreeViewItemTag
+        {
+            public IResultTreeItem ResultTreeItem { get; set; }
+            public int Level { get; set; }
+        }
+
+        private TreeViewItem CreateTreeItem(IResultTreeItem resultTreeItem, int level)
         {
             TreeViewItem item = new TreeViewItem();
+            Grid grid = CreateTreeItemGrid(level);
 
-            item.Header = string.Format("{0}\t{1}\t{2}", resultTreeItem.Name, resultTreeItem.Value, resultTreeItem.Type);
-            item.Tag = resultTreeItem;
+            StackPanel nameStackPanel = new StackPanel();
+            nameStackPanel.Orientation = Orientation.Horizontal;
+            Grid.SetColumn(nameStackPanel, NameColumnIndex);
+            TextBlock name = new TextBlock();
+            name.Text = resultTreeItem.Name;
+            Image image = new Image();
+            image.Width = image.Height = 16;
+            image.Source = resultTreeItem.Image;
+            nameStackPanel.Children.Add(image);
+            nameStackPanel.Children.Add(name);
+            grid.Children.Add(nameStackPanel);
+            TextBlock value = new TextBlock();
+            value.Text = resultTreeItem.Value;
+            Grid.SetColumn(value, ValueColumnIndex);
+            grid.Children.Add(value);
+            TextBlock type = new TextBlock();
+            type.Text = resultTreeItem.Type;
+            Grid.SetColumn(type, TypeColumnIndex);
+            grid.Children.Add(type);
+            item.Header = grid;
+            item.Tag = new TreeViewItemTag()
+            {
+                ResultTreeItem = resultTreeItem,
+                Level = level,
+            };
             if (resultTreeItem.Children.Any())
                 item.Items.Add(0);
             item.Expanded += TreeViewItem_Expanded;
@@ -221,13 +328,16 @@ namespace CsScriptManaged.UI
             try
             {
                 TreeViewItem item = e.Source as TreeViewItem;
-                IResultTreeItem resultTreeItem = (IResultTreeItem)item.Tag;
 
                 if ((item.Items.Count == 1) && (item.Items[0] is int))
                 {
+                    TreeViewItemTag tag = (TreeViewItemTag)item.Tag;
+                    IResultTreeItem resultTreeItem = tag.ResultTreeItem;
+                    int level = tag.Level;
+
                     item.Items.Clear();
                     foreach (var child in resultTreeItem.Children.OrderBy(s => s.Name.StartsWith("[")).ThenBy(s => s.Name))
-                        item.Items.Add(CreateTreeItem(child));
+                        item.Items.Add(CreateTreeItem(child, level + 1));
                 }
             }
             catch (Exception ex)
