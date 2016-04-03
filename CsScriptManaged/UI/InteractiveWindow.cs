@@ -147,9 +147,12 @@ namespace CsScriptManaged.UI
                 if (objectOutput != null)
                 {
                     UIElement elementOutput = objectOutput as UIElement;
+                    LazyUIResult lazyUI = objectOutput as LazyUIResult;
 
                     if (elementOutput != null)
                         resultsPanel.Children.Insert(textEditorIndex, elementOutput);
+                    else if (lazyUI != null)
+                        resultsPanel.Children.Insert(textEditorIndex, lazyUI.UIElement);
                     else
                         resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(objectOutput.ToString()));
                 }

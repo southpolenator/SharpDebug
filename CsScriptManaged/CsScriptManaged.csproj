@@ -192,6 +192,7 @@
     <Compile Include="UI\CodeWindow\ParameterCompletionDataFactory.cs" />
     <Compile Include="UI\InteractiveCodeEditor.cs" />
     <Compile Include="UI\CodeWindow\ParameterDataProvider.cs" />
+    <Compile Include="UI\InteractiveResultVisualizer.cs" />
     <Compile Include="UI\InteractiveWindow.cs" />
     <Compile Include="UserTypeDelegates.cs" />
     <Compile Include="Utility\DebuggerOutputToTextWriter.cs" />

@@ -62,23 +62,28 @@ namespace CsScriptManaged.UI.CodeWindow
             textArea.Document.Replace(completionSegment, Text);
         }
 
-        private ImageSource GetImage()
+        internal static ImageSource GetImage(CompletionDataType completionDataType)
         {
             ImageSource image;
 
-            Images.TryGetValue(CompletionDataType, out image);
+            Images.TryGetValue(completionDataType, out image);
             return image;
+        }
+
+        private ImageSource GetImage()
+        {
+            return GetImage(CompletionDataType);
         }
 
         private static Dictionary<CompletionDataType, ImageSource> CreateImages()
         {
             var images = new Dictionary<CompletionDataType, ImageSource>();
             foreach (CompletionDataType completionDataType in Enum.GetValues(typeof(CompletionDataType)))
-                images[completionDataType] = GetImage(completionDataType);
+                images[completionDataType] = CreateImage(completionDataType);
             return images;
         }
 
-        private static ImageSource GetImage(CompletionDataType completionDataType)
+        private static ImageSource CreateImage(CompletionDataType completionDataType)
         {
             string text;
             Brush textColor;

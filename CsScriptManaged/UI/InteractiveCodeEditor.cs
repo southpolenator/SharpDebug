@@ -55,6 +55,7 @@ namespace CsScriptManaged.UI
             {
                 InteractiveCodeEditor = this,
             };
+            interactiveExecution.ScriptObjectWriter = new InteractiveResultVisualizer();
 
             // Run initialization of the window in background task
             IsEnabled = false;

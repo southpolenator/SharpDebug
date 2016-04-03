@@ -81,7 +81,7 @@ namespace CsScriptManaged
         /// <summary>
         /// The script object writer used inside the interactive script.
         /// </summary>
-        private IObjectWriter ScriptObjectWriter = new DefaultObjectWriter();
+        internal IObjectWriter ScriptObjectWriter = new DefaultObjectWriter();
 
         /// <summary>
         /// Runs interactive scripting mode.
