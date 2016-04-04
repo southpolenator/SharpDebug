@@ -228,6 +228,7 @@ namespace CsScriptManaged.UI
             emptyListItem.Padding = new Thickness(0);
             Grid.SetColumn(emptyListItem, 1);
             headerGrid.Children.Add(emptyListItem);
+            header.Focusable = false;
             header.Header = headerGrid;
 
             // Create table tree
