@@ -225,6 +225,7 @@ namespace CsScriptManaged.UI
             Grid.SetColumn(type, TypeColumnIndex);
             headerGrid.Children.Add(type);
             TreeViewItem emptyListItem = new TreeViewItem();
+            emptyListItem.Padding = new Thickness(0);
             Grid.SetColumn(emptyListItem, 1);
             headerGrid.Children.Add(emptyListItem);
             header.Header = headerGrid;
