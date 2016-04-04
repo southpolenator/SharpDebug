@@ -504,7 +504,7 @@ namespace CsScriptManaged.SymbolProviders
         {
             lock (this)
             {
-                byte[] buffer = Debugger.ReadMemory(codeType.Module.Process, address, codeType.Size);
+                byte[] buffer = Debugger.ReadMemory(codeType.Module.Process, address, codeType.Size).Bytes;
 
                 // TODO: This doesn't work with bit fields
                 switch (codeType.Size)

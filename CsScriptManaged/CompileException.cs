@@ -1,5 +1,4 @@
 ﻿using System;
-using System.CodeDom.Compiler;
 
 namespace CsScriptManaged
 {
@@ -12,7 +11,7 @@ namespace CsScriptManaged
         /// Initializes a new instance of the <see cref="CompileException"/> class.
         /// </summary>
         /// <param name="errors">The errors.</param>
-        public CompileException(CompilerError[] errors)
+        public CompileException(CompileError[] errors)
         {
             Errors = errors;
         }
@@ -20,6 +19,6 @@ namespace CsScriptManaged
         /// <summary>
         /// Gets the array of errors.
         /// </summary>
-        public CompilerError[] Errors { get; private set; }
+        public CompileError[] Errors { get; private set; }
     }
 }

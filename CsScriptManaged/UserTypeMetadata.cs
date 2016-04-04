@@ -41,7 +41,7 @@ namespace CsScriptManaged
         /// <param name="type">The type.</param>
         public static UserTypeMetadata[] ReadFromType(Type type)
         {
-            UserTypeAttribute[] attributes = type.GetCustomAttributes<UserTypeAttribute>().ToArray();
+            UserTypeAttribute[] attributes = type.GetCustomAttributes<UserTypeAttribute>(false).ToArray();
             bool derivedFromUserType = IsDerivedFrom(type, typeof(UserType));
 
             /* #fixme temp workaround for genertic types

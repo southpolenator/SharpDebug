@@ -8,6 +8,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     class UserType
     {
+        protected bool usedThisClass = false;
+
         public UserType(Symbol symbol, XmlType xmlType, string nameSpace)
         {
             Symbol = symbol;
@@ -167,16 +169,25 @@ namespace GenerateUserTypesFromPdb.UserTypes
             string fieldName = field.Name;
             string gettingField = "variable.GetField";
             string simpleFieldValue;
+            bool usesThisClass = false;
 
             if (isStatic)
             {
-                simpleFieldValue = string.Format("Process.Current.GetGlobal(\"{0}!{1}::{2}\")", Symbol.Module.Name, Symbol.Name, fieldName);
+                if (string.IsNullOrEmpty(Symbol.Name))
+                {
+                    simpleFieldValue = string.Format("Process.Current.GetGlobal(\"{0}!{1}\")", field.ParentType.Module.Name, fieldName);
+                }
+                else
+                {
+                    simpleFieldValue = string.Format("Process.Current.GetGlobal(\"{0}!{1}::{2}\")", field.ParentType.Module.Name, Symbol.Name, fieldName);
+                }
             }
             else
             {
                 if (useThisClass)
                 {
                     gettingField = "thisClass.Value.GetClassField";
+                    usesThisClass = true;
                 }
 
                 simpleFieldValue = string.Format("{0}(\"{1}\")", gettingField, fieldName);
@@ -190,6 +201,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 string newFieldTypeString = transformation.TransformType();
                 string fieldOffset = string.Format("{0}.GetFieldOffset(\"{1}\")", useThisClass ? "variable" : "thisClass.Value", field.Name);
 
+                usedThisClass = true;
                 if (isStatic)
                 {
                     fieldOffset = "<Field offset was used on a static member>";
@@ -198,13 +210,20 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 userTypeField.ConstructorText = transformation.TransformConstructor(userTypeField.SimpleFieldValue, fieldOffset);
                 userTypeField.FieldType = newFieldTypeString;
             }
+            else if (usesThisClass && userTypeField.ConstructorText.Contains(gettingField))
+            {
+                usedThisClass = true;
+            }
 
             if (extractingBaseClass)
             {
                 if (fieldType is UserTypeTreeUserType && ((UserTypeTreeUserType)fieldType).UserType is PrimitiveUserType)
                     userTypeField.ConstructorText = string.Format("CastAs<{0}>()", fieldType.GetUserTypeString());
                 else if (useThisClass)
+                {
                     userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("thisClass.Value.GetClassField", "GetBaseClass");
+                    usedThisClass = true;
+                }
                 else
                     userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("variable.GetField", "GetBaseClass");
             }
@@ -273,7 +292,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // do not duplicate after adding '_'
             // ex. class has 'in' and '_in' fields.
             // 
-            fieldName = UserTypeField.GetPropertyName(fieldName, this.Symbol.Name);
+            fieldName = UserTypeField.GetPropertyName(fieldName, this);
 
             return new UserTypeField
             {
@@ -295,21 +314,145 @@ namespace GenerateUserTypesFromPdb.UserTypes
             bool hasNonStatic = false;
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
 
-            // Get non-static fields
-            foreach (var field in Symbol.Fields)
+            if (ExportDynamicFields)
             {
-                if (IsFieldFiltered(field) || (!ExportStaticFields && field.DataKind == DataKind.StaticMember) || (!ExportDynamicFields && field.DataKind != DataKind.StaticMember) || (field.DataKind == DataKind.StaticMember && !field.IsValidStatic))
-                    continue;
+                // Extract non-static fields
+                foreach (var field in Symbol.Fields)
+                {
+                    if (IsFieldFiltered(field) || field.DataKind == DataKind.StaticMember)
+                        continue;
 
-                var userField = ExtractField(field, factory, options);
+                    var userField = ExtractField(field, factory, options);
 
-                yield return userField;
-                hasNonStatic = hasNonStatic || !userField.Static;
+                    yield return userField;
+                    hasNonStatic = hasNonStatic || !userField.Static;
+                }
+
+                // Extract static fields
+                if (ExportStaticFields)
+                    foreach (var field in GlobalCache.GetSymbolStaticFields(Symbol))
+                    {
+                        if (IsFieldFiltered(field))
+                            continue;
+
+                        var userField = ExtractField(field, factory, options);
+
+                        yield return userField;
+                    }
+
+                // Should we try to incorporate Hungarian notation into field decomposition
+                if (options.HasFlag(UserTypeGenerationFlags.UseHungarianNotation))
+                    foreach (var field in GenerateHungarianNotationFields(factory, options))
+                        yield return field;
+            }
+            else
+            {
+                if (!ExportStaticFields)
+                    throw new NotImplementedException();
+
+                // Extract static fields
+                foreach (var field in Symbol.Fields)
+                {
+                    if (IsFieldFiltered(field) || field.DataKind != DataKind.StaticMember || !field.IsValidStatic)
+                        continue;
+
+                    var userField = ExtractField(field, factory, options);
+
+                    yield return userField;
+                }
             }
 
             // Get auto generated fields
-            foreach (var field in GetAutoGeneratedFields(hasNonStatic, useThisClass))
+            foreach (var field in GetAutoGeneratedFields(hasNonStatic, useThisClass && usedThisClass))
                 yield return field;
+        }
+
+        protected virtual IEnumerable<UserTypeField> GenerateHungarianNotationFields(UserTypeFactory factory, UserTypeGenerationFlags options)
+        {
+            const string CounterPrefix = "m_c";
+            const string PointerPrefix = "m_p";
+            const string ArrayPrefix = "m_rg";
+            SymbolField[] fields = Symbol.Fields;
+            IEnumerable<SymbolField> counterFields = fields.Where(r => r.Name.StartsWith(CounterPrefix));
+            Dictionary<SymbolField, SymbolField> userTypesArrays = new Dictionary<SymbolField, SymbolField>();
+
+            foreach (SymbolField counterField in counterFields)
+            {
+                if (counterField.Type.BasicType != BasicType.UInt &&
+                    counterField.Type.BasicType != BasicType.Int &&
+                    counterField.Type.BasicType != BasicType.Long &&
+                    counterField.Type.BasicType != BasicType.ULong)
+                {
+                    continue;
+                }
+
+                if (counterField.Type.Tag == SymTagEnum.SymTagEnum)
+                    continue;
+
+                string counterNameSurfix = counterField.Name.Substring(CounterPrefix.Length);
+
+                if (string.IsNullOrEmpty(counterNameSurfix))
+                    continue;
+
+                foreach (SymbolField pointerField in fields.Where(r => (r.Name.StartsWith(PointerPrefix) || r.Name.StartsWith(ArrayPrefix)) && r.Name.EndsWith(counterNameSurfix)))
+                {
+                    if ((counterField.LocationType == LocationType.Static) != (pointerField.LocationType == LocationType.Static))
+                        continue;
+
+                    if (pointerField.Type.Tag != SymTagEnum.SymTagPointerType)
+                        continue;
+
+                    if (userTypesArrays.ContainsKey(pointerField))
+                    {
+                        if (userTypesArrays[pointerField].Name.Length > counterField.Name.Length)
+                        {
+                            continue;
+                        }
+                    }
+
+                    userTypesArrays[pointerField] = counterField;
+                }
+            }
+
+            foreach (var userTypeArray in userTypesArrays)
+            {
+                var pointerField = userTypeArray.Key;
+                var counterField = userTypeArray.Value;
+
+                UserTypeTree fieldType = GetTypeString(pointerField.Type, factory, pointerField.Size);
+
+                if (fieldType is UserTypeTreeCodeArray)
+                    continue;
+
+                UserTypeTreeCodePointer fieldTypeCodePointer = fieldType as UserTypeTreeCodePointer;
+
+                if (fieldTypeCodePointer != null)
+                {
+                    fieldType = fieldTypeCodePointer.InnerType;
+                }
+
+                fieldType = new UserTypeTreeCodeArray(fieldType);
+                string fieldName = pointerField.Name + "Array";
+                string constructorText = string.Format("new {0}({1}, {2})", fieldType, pointerField.Name, counterField.Name);
+                string fieldTypeString = fieldType.GetUserTypeString();
+                bool isStatic = pointerField.LocationType == LocationType.Static;
+                bool cacheUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheUserTypeFields);
+                bool cacheStaticUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheStaticUserTypeFields);
+                bool lazyCacheUserTypeFields = options.HasFlag(UserTypeGenerationFlags.LazyCacheUserTypeFields);
+
+                yield return new UserTypeField
+                {
+                    ConstructorText = constructorText,
+                    FieldName = "_" + fieldName,
+                    FieldType = fieldTypeString,
+                    FieldTypeInfoComment = string.Format("// From Hungarian notation: {0} {1};", fieldTypeString, fieldName),
+                    PropertyName = fieldName,
+                    Static = isStatic,
+                    CacheResult = cacheUserTypeFields || (isStatic && cacheStaticUserTypeFields),
+                    SimpleFieldValue = string.Empty,
+                    ConstantValue = string.Empty,
+                };
+            }
         }
 
         protected virtual IEnumerable<UserTypeField> GetAutoGeneratedFields(bool hasNonStatic, bool useThisClass)
@@ -320,7 +463,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     yield return new UserTypeField
                     {
-                        ConstructorText = string.Format("variable.GetBaseClass(baseClassString)"),
+                        ConstructorText = string.Format("GetBaseClass(baseClassString)"),
                         FieldName = "thisClass",
                         FieldType = "Variable",
                         FieldTypeInfoComment = null,
@@ -369,11 +512,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
-            var symbol = Symbol;
+            int baseClassOffset = 0;
+            UserTypeTree baseType = ExportDynamicFields ? GetBaseTypeString(error, Symbol, factory, out baseClassOffset) : null;
             var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
             bool hasStatic = fields.Where(f => f.Static).Any(), hasNonStatic = fields.Where(f => !f.Static).Any();
-            UserTypeTree baseType = ExportDynamicFields ? GetBaseTypeString(error, symbol, factory) : null;
-            Symbol[] baseClasses = symbol.BaseClasses;
+            Symbol[] baseClasses = Symbol.BaseClasses;
 
             if (DeclaredInType == null)
             {
@@ -409,6 +552,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             output.WriteLine(indentation++, @"{{");
 
+            bool firstField = true;
             foreach (var field in fields)
             {
                 if (((field.Static && !ExportStaticFields && field.FieldTypeInfoComment != null) || (!field.CacheResult && !field.UseUserMember)) && string.IsNullOrEmpty(field.ConstantValue))
@@ -421,7 +565,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
             foreach (var constructor in constructors)
                 constructor.WriteCode(output, indentation, fields, ConstructorName, ExportStaticFields);
 
-            bool firstField = true;
             foreach (var field in fields)
             {
                 if (string.IsNullOrEmpty(field.PropertyName) || (field.Static && !ExportStaticFields && field.FieldTypeInfoComment != null))
@@ -436,10 +579,17 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 innerType.WriteCode(output, error, factory, options, indentation);
             }
 
-            if (baseType is UserTypeTreeMultiClassInheritance)
+            if (baseType is UserTypeTreeMultiClassInheritance || baseType is UserTypeTreeSingleClassInheritanceWithInterfaces)
             {
+                IEnumerable<Symbol> baseClassesForProperties = baseClasses;
+
+                if (baseType is UserTypeTreeSingleClassInheritanceWithInterfaces)
+                {
+                    baseClassesForProperties = baseClasses.Where(b => b.IsEmpty);
+                }
+
                 // Write all properties for getting base classes
-                foreach (var type in baseClasses)
+                foreach (var type in baseClassesForProperties)
                 {
                     var field = ExtractField(type.CastAsSymbolField(), factory, options, true);
 
@@ -494,8 +644,16 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 yield return new UserTypeConstructor()
                 {
-                    Arguments = "Variable variable, byte[] buffer, int offset, ulong bufferAddress",
+                    Arguments = "Variable variable, CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
                     BaseClassInitialization = "base(variable, buffer, offset, bufferAddress)",
+                    ContainsFieldDefinitions = true,
+                    Static = false,
+                };
+
+                yield return new UserTypeConstructor()
+                {
+                    Arguments = "CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
+                    BaseClassInitialization = "base(buffer, offset, bufferAddress, codeType, address, name, path)",
                     ContainsFieldDefinitions = true,
                     Static = false,
                 };
@@ -531,12 +689,29 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return typeTree.GetUserTypeString();
         }
 
-        protected virtual UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory)
+        protected virtual UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
             var baseClasses = type.BaseClasses;
 
             if (baseClasses.Length > 1)
+            {
+                int emptyTypes = baseClasses.Count(t => t.IsEmpty);
+
+                if (emptyTypes == baseClasses.Length - 1)
+                {
+                    UserType userType;
+                    Symbol baseClassSymbol = baseClasses.Where(t => !t.IsEmpty).First();
+
+                    if (factory.GetUserType(baseClassSymbol, out userType) && !(userType is PrimitiveUserType))
+                    {
+                        baseClassOffset = baseClassSymbol.Offset;
+                        return new UserTypeTreeSingleClassInheritanceWithInterfaces(userType, factory);
+                    }
+                }
+
+                baseClassOffset = 0;
                 return new UserTypeTreeMultiClassInheritance();
+            }
 
             if (baseClasses.Length == 1)
             {
@@ -546,7 +721,10 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 var transformation = factory.FindTransformation(baseClassType, this);
 
                 if (transformation != null)
+                {
+                    baseClassOffset = 0;
                     return new UserTypeTreeTransformation(transformation);
+                }
 
                 UserType baseUserType;
 
@@ -556,25 +734,24 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     UserTypeTreeGenericsType genericsTree = tree as UserTypeTreeGenericsType;
 
                     if (genericsTree != null && !genericsTree.CanInstatiate)
+                    {
+                        baseClassOffset = 0;
                         return new UserTypeTreeVariable(false);
+                    }
+
+                    baseClassOffset = baseClassType.Offset;
                     return tree;
                 }
 
-                return GetBaseTypeString(error, baseClassType, factory);
+                return GetBaseTypeString(error, baseClassType, factory, out baseClassOffset);
             }
 
+            baseClassOffset = 0;
             return new UserTypeTreeVariable(false);
         }
 
         public virtual UserTypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
-            UserType fakeUserType;
-
-            if (factory.GetUserType(type, out fakeUserType) && !(fakeUserType is PrimitiveUserType))
-            {
-                //return UserTypeTreeUserType.Create(fakeUserType, factory);
-            }
-
             switch (type.Tag)
             {
                 case SymTagEnum.SymTagBaseType:
@@ -640,9 +817,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     {
                         Symbol pointerType = type.ElementType;
 
+                        UserType fakeUserType;
+
                         if (factory.GetUserType(pointerType, out fakeUserType) && (fakeUserType is PrimitiveUserType))
                         {
-                            //return new UserTypeTreeCodePointer(UserTypeTreeUserType.Create(fakeUserType, factory));
+                            return new UserTypeTreeCodePointer(UserTypeTreeUserType.Create(fakeUserType, factory));
                         }
 
                         switch (pointerType.Tag)
@@ -654,8 +833,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                                     if (innerType == "void")
                                         return new UserTypeTreeBaseType("NakedPointer");
-                                    if (innerType == "char")
-                                        return new UserTypeTreeBaseType("string");
                                     return new UserTypeTreeCodePointer(GetTypeString(pointerType, factory));
                                 }
 

@@ -21,6 +21,7 @@ namespace GenerateUserTypesFromPdb
         LazyCacheUserTypeFields = 64,
         GeneratePhysicalMappingOfUserTypes = 128,
         SingleFileExport = 256,
+        UseHungarianNotation = 512,
     }
 
     static class StringExtensions
@@ -148,7 +149,14 @@ namespace GenerateUserTypesFromPdb
                     }
                     else
                     {
-                        CanInstatiate = false;
+                        Symbol symbol = originalUserType.Symbol.Module.GetTypeSymbol(arguments[i].Name);
+
+                        if (symbol.Tag != SymTagEnum.SymTagBaseType)
+                        {
+                            // Base Types (Primitive Types) can be used for specialization
+                            CanInstatiate = false;
+                        }
+                        
                         // #fixme can't deal with it
                         specializedArguments[i] = templateType.GetTypeString(arguments[i], factory);
                     }
@@ -285,6 +293,21 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
+    internal class UserTypeTreeSingleClassInheritanceWithInterfaces : UserTypeTree
+    {
+        public UserTypeTreeSingleClassInheritanceWithInterfaces(UserType userType, UserTypeFactory factory)
+        {
+            UserType = UserTypeTreeUserType.Create(userType, factory);
+        }
+
+        public UserTypeTree UserType { get; private set; }
+
+        public override string GetUserTypeString()
+        {
+            return UserType.GetUserTypeString();
+        }
+    }
+
     internal class UserTypeTreeTransformation : UserTypeTree
     {
         public UserTypeTreeTransformation(UserTypeTransformation transformation)
@@ -340,6 +363,10 @@ namespace GenerateUserTypesFromPdb
 
         public bool CacheResult { get; set; }
 
+        public string Access { get; set; } = "private";
+
+        public bool OverrideWithNew { get; set; } = false;
+
         private string GetConstantValue()
         {
             if (ConstantValue.StartsWith("-"))
@@ -366,10 +393,12 @@ namespace GenerateUserTypesFromPdb
                 output.WriteLine(indentation, FieldTypeInfoComment);
             if (!string.IsNullOrEmpty(ConstantValue))
                 output.WriteLine(indentation, "public static {0} {1} = ({0}){2};", FieldType, FieldName, GetConstantValue());
+            else if (Static && !UseUserMember)
+                output.WriteLine(indentation, "{3} static {0} {1} = {2};", FieldType, FieldName, ConstructorText, Access);
             else if (UseUserMember && CacheResult)
-                output.WriteLine(indentation, "private {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName);
+                output.WriteLine(indentation, "{3}{4} {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName, Access, OverrideWithNew ? " new" : "");
             else if (CacheResult)
-                output.WriteLine(indentation, "private {0}{1} {2};", Static ? "static " : "", FieldType, FieldName);
+                output.WriteLine(indentation, "{3}{4} {0}{1} {2};", Static ? "static " : "", FieldType, FieldName, Access, OverrideWithNew ? " new" : "");
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                 output.WriteLine();
         }
@@ -380,7 +409,7 @@ namespace GenerateUserTypesFromPdb
                 if (UseUserMember && CacheResult)
                     output.WriteLine(indentation, "{0} = UserMember.Create(() => {1});", FieldName, ConstructorText);
                 else if (CacheResult)
-                    output.WriteLine(indentation, "{0} = {1};", FieldName, ConstructorText);
+                    output.WriteLine(indentation, "{2}{0} = {1};", FieldName, ConstructorText, !Static ? "this." : "");
         }
 
         public virtual void WritePropertyCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options, ref bool firstField)
@@ -426,12 +455,21 @@ namespace GenerateUserTypesFromPdb
         /// </summary>
         /// <param name="fieldName"></param>
         /// <returns></returns>
-        public static string GetPropertyName(string fieldName, string className)
+        public static string GetPropertyName(string fieldName, UserType userType)
         {
-            if (fieldName == className)
+            if (fieldName == userType.Symbol.Name)
             {
                 // property name cannot be equal to class name
                 return string.Format("_{0}", fieldName);
+            }
+
+            foreach (string className in userType.InnerTypes.Select(r => r.ClassName))
+            {
+                if (fieldName == className)
+                {
+                    // property name cannot be equal to class name
+                    return string.Format("_{0}", fieldName);
+                }
             }
 
             fieldName = fieldName.Replace("::", "_");
@@ -446,6 +484,9 @@ namespace GenerateUserTypesFromPdb
                 case "object":
                 case "event":
                 case "string":
+                case "fixed":
+                case "internal":
+                case "out":
                     return string.Format("_{0}", fieldName);
                 default:
                     break;
@@ -469,20 +510,7 @@ namespace GenerateUserTypesFromPdb
         {
             if (Static)
             {
-                if (fields.Where(f => !((f.Static && !exportStaticFields && f.FieldTypeInfoComment != null) || (!f.CacheResult && !f.UseUserMember))).Any())
-                {
-                    output.WriteLine();
-                    output.WriteLine(indentation, "static {0}()", constructorName);
-                    output.WriteLine(indentation++, "{{");
-                    foreach (var field in fields)
-                    {
-                        if ((field.Static && !exportStaticFields && field.FieldTypeInfoComment != null) || (!field.CacheResult && !field.UseUserMember))
-                            continue;
-                        if (field.Static)
-                            field.WriteConstructorCode(output, indentation);
-                    }
-                    output.WriteLine(--indentation, "}}");
-                }
+                // Do nothing. We are initializing static variables in declaration statement.
             }
             else
             {

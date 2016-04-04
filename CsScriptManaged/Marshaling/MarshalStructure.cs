@@ -14,7 +14,7 @@ namespace CsScriptManaged.Marshaling
         /// <summary>
         /// The base size of the structure
         /// </summary>
-        public static readonly int BaseSize = Marshal.SizeOf<T>();
+        public static readonly int BaseSize = Marshal.SizeOf(typeof(T));
 
         /// <summary>
         /// The extended size - more bytes to be allocated after structure
@@ -83,7 +83,7 @@ namespace CsScriptManaged.Marshaling
         {
             get
             {
-                return Marshal.PtrToStructure<T>(Pointer);
+                return (T)Marshal.PtrToStructure(Pointer, typeof(T));
             }
 
             set
@@ -118,7 +118,7 @@ namespace CsScriptManaged.Marshaling
         /// </summary>
         public void Dispose()
         {
-            Marshal.DestroyStructure<T>(Pointer);
+            Marshal.DestroyStructure(Pointer, typeof(T));
         }
     }
 

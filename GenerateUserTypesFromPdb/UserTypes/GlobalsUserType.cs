@@ -51,6 +51,12 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 var userField = ExtractField(field, factory, options, forceIsStatic: true);
 
+                if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagPointerType)
+                {
+                    // Don't export pointers
+                    continue;
+                }
+
                 userField.FieldName = userField.FieldName.Replace("?", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
                 userField.PropertyName = userField.PropertyName.Replace("?", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
 
@@ -63,8 +69,9 @@ namespace GenerateUserTypesFromPdb.UserTypes
         }
 
 
-        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory)
+        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
+            baseClassOffset = 0;
             return new UserTypeStaticClass();
         }
 

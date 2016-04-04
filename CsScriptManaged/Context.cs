@@ -1,6 +1,5 @@
 ﻿using CsScriptManaged.Debuggers;
 using CsScriptManaged.SymbolProviders;
-using CsScriptManaged.Utility;
 using DbgEngManaged;
 using System;
 using System.IO;
@@ -42,6 +41,11 @@ namespace CsScriptManaged
         /// The interactive execution
         /// </summary>
         private static InteractiveExecution interactiveExecution = new InteractiveExecution();
+
+        /// <summary>
+        /// Gets or sets the object writer using during interactive scripting. Default value is ConsoleObjectWriter.
+        /// </summary>
+        public static IObjectWriter ObjectWriter { get; set; } = new ConsoleObjectWriter();
 
         /// <summary>
         /// Gets or sets a value indicating whether variable caching is enabled.

@@ -1,14 +1,21 @@
 ﻿using CsScripts;
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace CsScriptManaged
 {
+    /// <summary>
+    /// Internal exception used for stopping interactive scripting
+    /// </summary>
+    internal class ExitRequestedException : Exception
+    {
+    }
+
     internal class InteractiveExecution : ScriptCompiler
     {
         /// <summary>
@@ -29,12 +36,22 @@ namespace CsScriptManaged
         /// <summary>
         /// The interactive script variables name. This must match variable name in InteractiveScriptBase class.
         /// </summary>
-        private const string InteractiveScriptVariables = "_Interactive_Script_Variables_";
+        private const string InteractiveScriptVariables = nameof(InteractiveScriptBase._Interactive_Script_Variables_);
+
+        /// <summary>
+        /// The interactive script output function called to write result if it is just a variable or expression
+        /// </summary>
+        private const string InteractiveScriptOutputFunction = nameof(ScriptBaseExtensions) + "." + nameof(ScriptBaseExtensions.Dump);
 
         /// <summary>
         /// The dynamic variables used in interactive script.
         /// </summary>
         private ExpandoObject dynamicVariables = new ExpandoObject();
+
+        /// <summary>
+        /// The interactive script base type
+        /// </summary>
+        private Type interactiveScriptBaseType = typeof(InteractiveScriptBase);
 
         /// <summary>
         /// The loaded scripts
@@ -45,6 +62,11 @@ namespace CsScriptManaged
         /// The imported code from the loaded scripts
         /// </summary>
         private string importedCode = "";
+
+        /// <summary>
+        /// The used references loaded from the imported code
+        /// </summary>
+        private string[] usedReferences = new string[0];
 
         /// <summary>
         /// The usings
@@ -62,23 +84,22 @@ namespace CsScriptManaged
             {
                 // Read command
                 string command = ReadCommand(prompt);
-                string trimmedCommand = command;
-
-                // Check if we should exit main loop
-                if (trimmedCommand == "q" || trimmedCommand == "Q")
-                    break;
 
                 // Check if we should execute C# command
                 try
                 {
-                    if (trimmedCommand.EndsWith(";"))
+                    if (!command.StartsWith("#dbg "))
                     {
-                        Interpret(trimmedCommand, prompt);
+                        Interpret(command, prompt);
                     }
                     else
                     {
-                        Debugger.Execute(command);
+                        Debugger.Execute(command.Substring(5));
                     }
+                }
+                catch (ExitRequestedException)
+                {
+                    break;
                 }
                 catch (Exception ex)
                 {
@@ -99,6 +120,7 @@ namespace CsScriptManaged
                 {
                     importedCode = "";
                     loadedScripts = new List<string>();
+                    usedReferences = new string[0];
                 }
                 else
                 {
@@ -107,22 +129,26 @@ namespace CsScriptManaged
             }
             catch (CompileException ex)
             {
-                CompilerError[] errors = ex.Errors;
+                CompileError[] errors = ex.Errors;
 
                 if (!string.IsNullOrEmpty(prompt) && (errors[0].FileName.EndsWith(InteractiveScriptName) || errors.Count(e => !e.FileName.EndsWith(InteractiveScriptName)) == 0))
                 {
-                    CompilerError e = errors[0];
+                    CompileError e = errors[0];
 
-                    Console.Error.WriteLine("{0}^ {1}", new string(' ', prompt.Length + e.Column - 1), e.ErrorText);
+                    Console.Error.WriteLine("{0}^ {1}", new string(' ', prompt.Length + e.Column - 1), e.FullMessage);
                 }
                 else
                 {
                     Console.Error.WriteLine("Compile errors:");
                     foreach (var error in errors)
                     {
-                        Console.Error.WriteLine(error);
+                        Console.Error.WriteLine(error.FullMessage);
                     }
                 }
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw ex.InnerException;
             }
         }
 
@@ -169,7 +195,7 @@ namespace CsScriptManaged
             HashSet<string> newLoadedScripts = new HashSet<string>(loadedScripts);
             HashSet<string> newUsings = new HashSet<string>(usings);
             HashSet<string> imports = new HashSet<string>();
-            HashSet<string> referencedAssemblies = new HashSet<string>();
+            HashSet<string> referencedAssemblies = new HashSet<string>(usedReferences);
             StringBuilder newImportedCode = new StringBuilder(importedCode);
 
             code = ImportCode(code, newUsings, imports);
@@ -181,7 +207,9 @@ namespace CsScriptManaged
                 {
                     if (!newLoadedScripts.Contains(import))
                     {
-                        if (Path.GetExtension(import).ToLower() == ".dll")
+                        string extension = Path.GetExtension(import).ToLower();
+
+                        if (extension == ".dll" || extension == ".exe")
                         {
                             referencedAssemblies.Add(import);
                         }
@@ -202,11 +230,12 @@ namespace CsScriptManaged
             var compileResult = CompileByReplacingVariables(ref code, newUsings, newImportedCode.ToString(), referencedAssemblies.ToArray());
 
             // Report compile error
-            List<CompilerError> errors = new List<CompilerError>();
+            // TODO: Remove injected code from error position
+            List<CompileError> errors = new List<CompileError>();
             string[] codeLines = null;
             string varName = InteractiveScriptVariables + ".";
 
-            foreach (CompilerError error in compileResult.Errors)
+            foreach (var error in compileResult.Errors)
             {
                 if (!error.IsWarning)
                 {
@@ -235,12 +264,35 @@ namespace CsScriptManaged
             dynamic obj = Activator.CreateInstance(myClass);
 
             obj._Interactive_Script_Variables_ = dynamicVariables;
+            obj._InteractiveScriptBaseType_ = interactiveScriptBaseType;
             method.Invoke(obj, new object[] { new string[] { } });
+            interactiveScriptBaseType = obj._InteractiveScriptBaseType_;
 
-            // Save imports and usings
+            // Save imports, usings and references
             importedCode = newImportedCode.ToString();
             loadedScripts = newLoadedScripts.ToList();
+            usedReferences = referencedAssemblies.ToArray();
             usings = newUsings.ToList();
+        }
+
+        private static string GetCodeName(Type type)
+        {
+            string typeString = type.FullName;
+
+            if (typeString.Contains(".<") || typeString.Contains("+<"))
+            {
+                // TODO: Probably not the best one, but good enough for now
+                return GetCodeName(type.GetInterfaces()[0]);
+            }
+
+            if (type.IsGenericType)
+            {
+                return string.Format("{0}<{1}>", typeString.Split('`')[0], string.Join(", ", type.GetGenericArguments().Select(x => GetCodeName(x))));
+            }
+            else
+            {
+                return typeString;
+            }
         }
 
         /// <summary>
@@ -250,21 +302,69 @@ namespace CsScriptManaged
         /// <param name="usings">The usings.</param>
         /// <param name="importedCode">The imported code.</param>
         /// <param name="referencedAssemblies">The referenced assemblies.</param>
-        private CompilerResults CompileByReplacingVariables(ref string code, IEnumerable<string> usings, string importedCode, params string[] referencedAssemblies)
+        private CompileResult CompileByReplacingVariables(ref string code, IEnumerable<string> usings, string importedCode, params string[] referencedAssemblies)
         {
+            // Add dynamic object fields as properties with types so one can use extensions
+            StringBuilder newImportedCode = new StringBuilder();
+
+            newImportedCode.AppendLine(importedCode);
+            foreach (var kvp in dynamicVariables)
+            {
+                string typeString = GetCodeName(kvp.Value.GetType());
+                string name = kvp.Key;
+
+                newImportedCode.Append(typeString);
+                newImportedCode.Append(" ");
+                newImportedCode.AppendLine(name);
+                newImportedCode.AppendLine("{");
+                newImportedCode.Append("get { return (");
+                newImportedCode.Append(typeString);
+                newImportedCode.Append(")(");
+                newImportedCode.Append(InteractiveScriptVariables);
+                newImportedCode.Append(".");
+                newImportedCode.Append(name);
+                newImportedCode.AppendLine("); }");
+                newImportedCode.Append("set { ");
+                newImportedCode.Append(InteractiveScriptVariables);
+                newImportedCode.Append(".");
+                newImportedCode.Append(name);
+                newImportedCode.AppendLine(" = value; }");
+                newImportedCode.AppendLine("}");
+            }
+
+            importedCode = newImportedCode.ToString();
+
             while (true)
             {
                 string generatedCode = "#line 1 \"" + InteractiveScriptName + "\"\n" + code + "\n#line default\n";
-                generatedCode = GenerateCode(usings, importedCode, generatedCode, "CsScriptManaged.InteractiveScriptBase");
+                generatedCode = GenerateCode(usings, importedCode, generatedCode, interactiveScriptBaseType.FullName);
 
                 var compileResult = Compile(generatedCode, referencedAssemblies);
 
                 bool fixedError = false;
-
-                foreach (CompilerError error in compileResult.Errors)
+                Dictionary<string, string> errorFixesByInsertion = new Dictionary<string, string>()
                 {
-                    // Try to fix undeclared variable errors
-                    if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS0103")
+                    // Fix for undeclared variable errors
+                    { "CS0103", InteractiveScriptVariables + "." },
+                    // Fix for expression as statement errors
+                    { "CS0201", InteractiveScriptOutputFunction + "(" },
+                    // Fix for missing closing bracket errors (we created them by inserting function call to Output function)
+                    { "CS1026", ")" },
+                };
+
+                foreach (var error in compileResult.Errors)
+                {
+                    string errorFix;
+
+                    // Try to fix errors by inserting "missing" code
+                    if (error.FileName.EndsWith(InteractiveScriptName) && errorFixesByInsertion.TryGetValue(error.ErrorNumber, out errorFix))
+                    {
+                        code = FixErrorByInsertingString(code, error.Line, error.Column, errorFix);
+                        fixedError = true;
+                        break;
+                    }
+                    // Fix for not supplying string for field name in erase function (Roslyn compiler)
+                    else if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS0411" && error.FullMessage.Contains("'InteractiveScriptBase.erase<T1, T2>(T2)'"))
                     {
                         StringBuilder sb = new StringBuilder();
 
@@ -280,7 +380,14 @@ namespace CsScriptManaged
 
                                 if (lineNumber == error.Line)
                                 {
-                                    line = line.Substring(0, error.Column - 1) + InteractiveScriptVariables + "." + line.Substring(error.Column - 1);
+                                    string before = line.Substring(0, error.Column - 1);
+                                    string after = line.Substring(error.Column - 1);
+
+                                    int eraseIndex = after.IndexOf("erase");
+                                    int eraseEnd = eraseIndex + 5;
+                                    int bracketIndex = after.IndexOf('(', eraseIndex) + 1;
+
+                                    line = before + after.Substring(0, eraseIndex) + "erase_field" + after.Substring(eraseEnd, bracketIndex - eraseEnd) + "nameof(" + after.Substring(bracketIndex);
                                 }
 
                                 writer.WriteLine(line);
@@ -292,6 +399,47 @@ namespace CsScriptManaged
                         fixedError = true;
                         break;
                     }
+                    // Fix for not supplying string for field name in erase function (default compiler)
+                    else if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS0411" && error.FullMessage.Contains("'CsScriptManaged.InteractiveScriptBase.erase<T1,T2>(T2)'"))
+                    {
+                        StringBuilder sb = new StringBuilder();
+
+                        using (StringReader reader = new StringReader(code))
+                        using (StringWriter writer = new StringWriter(sb))
+                        {
+                            for (int lineNumber = 1; ; lineNumber++)
+                            {
+                                string line = reader.ReadLine();
+
+                                if (line == null)
+                                    break;
+
+                                if (lineNumber == error.Line)
+                                {
+                                    string before = line.Substring(0, error.Column - 1);
+                                    string after = line.Substring(error.Column - 1);
+
+                                    int eraseIndex = after.IndexOf("erase");
+                                    int eraseEnd = eraseIndex + 5;
+                                    int bracketIndex = after.IndexOf('(', eraseIndex) + 1;
+                                    int closingBrackedIndex = after.IndexOf(')', bracketIndex);
+
+                                    if (closingBrackedIndex > 0)
+                                    {
+                                        line = before + after.Substring(0, eraseIndex) + "erase_field" + after.Substring(eraseEnd, bracketIndex - eraseEnd) + "\"" + after.Substring(bracketIndex, closingBrackedIndex - bracketIndex) + "\"" + after.Substring(closingBrackedIndex);
+                                        fixedError = true;
+                                    }
+                                }
+
+                                writer.WriteLine(line);
+                            }
+                        }
+
+                        // Save the code and remove \r\n from the end
+                        code = sb.ToString().Substring(0, sb.Length - 2);
+                        break;
+                    }
+                    // Try to fix missing ; at the end of the code
                     else if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS1002")
                     {
                         bool incorrect = false;
@@ -333,6 +481,41 @@ namespace CsScriptManaged
                     return compileResult;
                 }
             }
+        }
+
+        /// <summary>
+        /// Fixes the error by inserting string and error position.
+        /// </summary>
+        /// <param name="code">The code.</param>
+        /// <param name="errorLineNumber">The error line number.</param>
+        /// <param name="errorColumn">The error column.</param>
+        /// <param name="fix">The fixing string.</param>
+        /// <returns>Fixed code</returns>
+        private static string FixErrorByInsertingString(string code, int errorLineNumber, int errorColumn, string fix)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            using (StringReader reader = new StringReader(code))
+            using (StringWriter writer = new StringWriter(sb))
+            {
+                for (int lineNumber = 1; ; lineNumber++)
+                {
+                    string line = reader.ReadLine();
+
+                    if (line == null)
+                        break;
+
+                    if (lineNumber == errorLineNumber)
+                    {
+                        line = line.Substring(0, errorColumn - 1) + fix + line.Substring(errorColumn - 1);
+                    }
+
+                    writer.WriteLine(line);
+                }
+            }
+
+            // Save the code and remove \r\n from the end
+            return sb.ToString().Substring(0, sb.Length - 2);
         }
     }
 }

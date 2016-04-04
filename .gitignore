@@ -212,6 +212,7 @@ _Pvt_Extensions/
 ModelManifest.xml
 
 # Custom project files
+*.VC.opendb
 /CsScriptManagedReference/Help
 /NuGet.Packager/lib
 

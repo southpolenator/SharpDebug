@@ -2,10 +2,33 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
-using System.Reflection.Emit;
+using CsScriptManaged.Utility;
+using CsScriptManaged;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Extension specialization functions for CodeArray.
+    /// </summary>
+    public static class CodeArrayExtensions
+    {
+        /// <summary>
+        /// Reads the string from CodeArray.
+        /// </summary>
+        /// <param name="codeArray">The code array.</param>
+        public static string ReadString(this CodeArray<char> codeArray)
+        {
+            if (codeArray.variable != null)
+            {
+                return UserType.ReadString(codeArray.variable.GetCodeType().Module.Process, codeArray.variable.GetPointerAddress(), (int)codeArray.variable.GetCodeType().ElementType.Size, codeArray.Length);
+            }
+            else
+            {
+                return new string(codeArray.ToArray());
+            }
+        }
+    }
+
     /// <summary>
     /// Wrapper class that represents a "static" array. For example "int a[4]";
     /// </summary>
@@ -15,7 +38,7 @@ namespace CsScripts
         /// <summary>
         /// The actual variable where we get all the values.
         /// </summary>
-        private Variable variable;
+        internal Variable variable;
 
         /// <summary>
         /// The pre-calculated array (if we were initialized with it, or we know how to read whole array)
@@ -57,23 +80,63 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Initializes this instance of the <see cref="CodeArray{T}"/> class.
+        /// Initializes a new instance of the <see cref="CodeArray{T}"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <param name="length">The array length.</param>
-        private void Initialize(Variable variable, int length)
+        public CodeArray(Variable variable, uint length)
         {
-            this.variable = variable;
-            Length = length;
-            preCalculatedArray = ReadArray();
-            if (preCalculatedArray == null && variable.GetCodeType().ElementType.IsPointer)
+            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
             {
-                var process = variable.GetCodeType().Module.Process;
-                var pointerSize = process.GetPointerSize();
-                var buffer = Debugger.ReadMemory(process, variable.GetPointerAddress(), (uint)Length * pointerSize);
-
-                addressesArray = UserType.ReadPointerArray(buffer, 0, Length, pointerSize);
+                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
             }
+
+            if (length > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            Initialize(variable, (int)length);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray{T}"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, ulong length)
+        {
+            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
+            {
+                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+            }
+
+            if (length > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            Initialize(variable, (int)length);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray{T}"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, long length)
+        {
+            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
+            {
+                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+            }
+
+            if (length > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            Initialize(variable, (int)length);
         }
 
         /// <summary>
@@ -167,9 +230,27 @@ namespace CsScripts
             }
         }
 
-        private delegate T TypeConstructor(Variable variable, byte[] buffer, int offset, ulong bufferAddress);
+        /// <summary>
+        /// Initializes this instance of the <see cref="CodeArray{T}"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        private void Initialize(Variable variable, int length)
+        {
+            this.variable = variable;
+            Length = length;
+            preCalculatedArray = ReadArray();
+            if (preCalculatedArray == null && variable.GetCodeType().ElementType.IsPointer)
+            {
+                var process = variable.GetCodeType().Module.Process;
+                var pointerSize = process.GetPointerSize();
+                var buffer = Debugger.ReadMemory(process, variable.GetPointerAddress(), (uint)Length * pointerSize);
 
-        private TypeConstructor GetActivator()
+                addressesArray = UserType.ReadPointerArray(buffer, 0, Length, pointerSize);
+            }
+        }
+
+        private IUserTypeDelegates<T> GetDelegates()
         {
             var elementType = variable.GetCodeType().ElementType;
             var type = typeof(T);
@@ -189,41 +270,7 @@ namespace CsScripts
 
                         if (newType == elementType)
                         {
-                            // Find constructor that has 4 arguments:
-                            // Variable variable, byte[] buffer, int offset, ulong bufferAddress
-                            var constructors = type.GetConstructors();
-
-                            foreach (var constructor in constructors)
-                            {
-                                if (!constructor.IsPublic)
-                                {
-                                    continue;
-                                }
-
-                                var parameters = constructor.GetParameters();
-
-                                if (parameters.Length < 4 || parameters.Count(p => !p.HasDefaultValue) > 4)
-                                {
-                                    continue;
-                                }
-
-                                if (parameters[0].ParameterType == typeof(Variable)
-                                    && parameters[1].ParameterType == typeof(byte[])
-                                    && parameters[2].ParameterType == typeof(int)
-                                    && parameters[3].ParameterType == typeof(ulong))
-                                {
-                                    DynamicMethod method = new DynamicMethod("CreateIntance", type, new Type[] { typeof(Variable), typeof(byte[]), typeof(int), typeof(ulong) });
-                                    ILGenerator gen = method.GetILGenerator();
-
-                                    gen.Emit(OpCodes.Ldarg_0);
-                                    gen.Emit(OpCodes.Ldarg_1);
-                                    gen.Emit(OpCodes.Ldarg_2);
-                                    gen.Emit(OpCodes.Ldarg_3);
-                                    gen.Emit(OpCodes.Newobj, constructor);
-                                    gen.Emit(OpCodes.Ret);
-                                    return (TypeConstructor)method.CreateDelegate(typeof(TypeConstructor));
-                                }
-                            }
+                            return UserTypeDelegates<T>.Instance;
                         }
                     }
                 }
@@ -234,19 +281,21 @@ namespace CsScripts
 
         private IReadOnlyList<T> ReadArray()
         {
-            var activator = GetActivator();
+            var delegates = GetDelegates();
 
-            if (activator != null)
+            if (delegates != null && delegates.PhysicalConstructor != null)
             {
                 var address = variable.GetPointerAddress();
                 var elementType = variable.GetCodeType().ElementType;
 
-#if false
-                var buffer = Debugger.ReadMemory(elementType.Module.Process, address, (uint)(Length * elementType.Size));
+                if (elementType.Module.Process.DumpFileMemoryReader != null)
+                {
+                    var buffer = Debugger.ReadMemory(elementType.Module.Process, address, (uint)(Length * elementType.Size));
 
-                return new BufferedElementCreatorReadOnlyList(activator, elementType, buffer, address, address);
-#endif
-                return new ElementCreatorReadOnlyList(activator, elementType, address);
+                    return new BufferedElementCreatorReadOnlyList(delegates, elementType, buffer, address, address);
+                }
+
+                return new ElementCreatorReadOnlyList(delegates, elementType, address);
             }
 
             return null;
@@ -254,14 +303,14 @@ namespace CsScripts
 
         private class ElementCreatorReadOnlyList : IReadOnlyList<T>
         {
-            private TypeConstructor activator;
+            private IUserTypeDelegates<T> delegates;
             private CodeType elementType;
             private ulong arrayStartAddress;
             private uint elementTypeSize;
 
-            public ElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, ulong arrayStartAddress)
+            public ElementCreatorReadOnlyList(IUserTypeDelegates<T> delegates, CodeType elementType, ulong arrayStartAddress)
             {
-                this.activator = activator;
+                this.delegates = delegates;
                 this.elementType = elementType;
                 this.arrayStartAddress = arrayStartAddress;
                 elementTypeSize = elementType.Size;
@@ -274,7 +323,7 @@ namespace CsScripts
                     ulong address = arrayStartAddress + (ulong)index * elementTypeSize;
                     var buffer = Debugger.ReadMemory(elementType.Module.Process, address, elementTypeSize);
 
-                    return activator(Variable.CreateNoCast(elementType, address), buffer, 0, address);
+                    return delegates.PhysicalConstructor(buffer, 0, address, elementType, address, Variable.ComputedName, Variable.UntrackedPath);
                 }
             }
 
@@ -299,16 +348,16 @@ namespace CsScripts
 
         private class BufferedElementCreatorReadOnlyList : IReadOnlyList<T>
         {
-            private TypeConstructor activator;
+            private IUserTypeDelegates<T> delegates;
             private CodeType elementType;
             private ulong arrayStartAddress;
             private uint elementTypeSize;
-            private byte[] buffer;
+            private MemoryBuffer buffer;
             private ulong bufferAddress;
 
-            public BufferedElementCreatorReadOnlyList(TypeConstructor activator, CodeType elementType, byte[] buffer, ulong bufferAddress, ulong arrayStartAddress)
+            public BufferedElementCreatorReadOnlyList(IUserTypeDelegates<T> delegates, CodeType elementType, MemoryBuffer buffer, ulong bufferAddress, ulong arrayStartAddress)
             {
-                this.activator = activator;
+                this.delegates = delegates;
                 this.elementType = elementType;
                 this.arrayStartAddress = arrayStartAddress;
                 this.buffer = buffer;
@@ -323,7 +372,7 @@ namespace CsScripts
                     int offset = (int)(index * elementTypeSize);
                     ulong address = arrayStartAddress + (ulong)offset;
 
-                    return activator(Variable.CreateNoCast(elementType, address), buffer, offset, bufferAddress);
+                    return delegates.PhysicalConstructor(buffer, offset, bufferAddress, elementType, address, Variable.ComputedName, Variable.UntrackedPath);
                 }
             }
 

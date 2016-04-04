@@ -22,6 +22,8 @@ namespace GenerateUserTypesFromPdb
 
         public bool DisablePdbGeneration { get; set; }
 
+        public bool DontSaveGeneratedCodeFiles { get; set; }
+
         public string GeneratedPropsFileName { get; set; }
 
         public string CommonTypesNamespace { get; set; }
@@ -35,6 +37,8 @@ namespace GenerateUserTypesFromPdb
         public bool GeneratePhysicalMappingOfUserTypes { get; set; }
 
         public bool SingleFileExport { get; set; }
+
+        public bool UseHungarianNotation { get; set; }
 
         [XmlArrayItem("Module")]
         public XmlModule[] Modules { get; set; }

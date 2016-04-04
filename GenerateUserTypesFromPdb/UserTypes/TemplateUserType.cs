@@ -274,9 +274,9 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return base.GetTypeString(type, CreateFactory(factory), bitLength);
         }
 
-        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory)
+        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
-            UserTypeTree baseType = base.GetBaseTypeString(error, type, CreateFactory(factory));
+            UserTypeTree baseType = base.GetBaseTypeString(error, type, CreateFactory(factory), out baseClassOffset);
 
             // Check if base type is template argument. It if is, export it as if it is multi class inheritance.
             UserTypeTreeUserType userBaseType = baseType as UserTypeTreeUserType;
@@ -288,6 +288,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 if (dict.TryGetValue(primitiveUserType.ClassName, out commonBaseClass))
                     return UserTypeTreeUserType.Create(new PrimitiveUserType(commonBaseClass, null), factory);
+
+                baseClassOffset = 0;
                 return new UserTypeTreeMultiClassInheritance();
             }
 

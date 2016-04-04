@@ -69,12 +69,12 @@ namespace CsScripts
         /// <summary>
         /// The ANSI string cache
         /// </summary>
-        private DictionaryCache<ulong, string> ansiStringCache;
+        private DictionaryCache<Tuple<ulong, int>, string> ansiStringCache;
 
         /// <summary>
         /// The unicode string cache
         /// </summary>
-        private DictionaryCache<ulong, string> unicodeStringCache;
+        private DictionaryCache<Tuple<ulong, int>, string> unicodeStringCache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Process"/> class.
@@ -110,8 +110,8 @@ namespace CsScripts
                 }
             });
             TypeToUserTypeDescription = new DictionaryCache<Type, UserTypeDescription[]>(GetUserTypeDescription);
-            ansiStringCache = new DictionaryCache<ulong, string>(DoReadAnsiString);
-            unicodeStringCache = new DictionaryCache<ulong, string>(DoReadUnicodeString);
+            ansiStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadAnsiString);
+            unicodeStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadUnicodeString);
         }
 
         /// <summary>
@@ -446,7 +446,8 @@ namespace CsScripts
         /// </summary>
         /// <param name="address">The address.</param>
         /// <param name="charSize">Size of the character.</param>
-        internal string ReadString(ulong address, int charSize)
+        /// <param name="length">The length. If length is -1, string is null terminated</param>
+        internal string ReadString(ulong address, int charSize, int length = -1)
         {
             if (address == 0)
             {
@@ -455,11 +456,11 @@ namespace CsScripts
 
             if (charSize == 1)
             {
-                return ansiStringCache[address];
+                return ansiStringCache[Tuple.Create(address, length)];
             }
             else if (charSize == 2)
             {
-                return unicodeStringCache[address];
+                return unicodeStringCache[Tuple.Create(address, length)];
             }
             else
             {
@@ -470,9 +471,12 @@ namespace CsScripts
         /// <summary>
         /// Does the actual ANSI string read.
         /// </summary>
-        /// <param name="address">The address.</param>
-        private string DoReadAnsiString(ulong address)
+        /// <param name="tuple">Address and length tuple.</param>
+        private string DoReadAnsiString(Tuple<ulong, int> tuple)
         {
+            ulong address = tuple.Item1;
+            int length = tuple.Item2;
+
             if (address == 0)
             {
                 return null;
@@ -482,20 +486,23 @@ namespace CsScripts
 
             if (dumpReader != null)
             {
-                return dumpReader.ReadAnsiString(address);
+                return dumpReader.ReadAnsiString(address, length);
             }
             else
             {
-                return Context.Debugger.ReadAnsiString(this, address);
+                return Context.Debugger.ReadAnsiString(this, address, length);
             }
         }
 
         /// <summary>
         /// Does the actual unicode string read.
         /// </summary>
-        /// <param name="address">The address.</param>
-        private string DoReadUnicodeString(ulong address)
+        /// <param name="tuple">Address and length tuple.</param>
+        private string DoReadUnicodeString(Tuple<ulong, int> tuple)
         {
+            ulong address = tuple.Item1;
+            int length = tuple.Item2;
+
             if (address == 0)
             {
                 return null;
@@ -505,11 +512,11 @@ namespace CsScripts
 
             if (dumpReader != null)
             {
-                return dumpReader.ReadWideString(address);
+                return dumpReader.ReadWideString(address, length);
             }
             else
             {
-                return Context.Debugger.ReadUnicodeString(this, address);
+                return Context.Debugger.ReadUnicodeString(this, address, length);
             }
         }
     }

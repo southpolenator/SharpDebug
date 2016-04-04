@@ -23,32 +23,6 @@ namespace CsScriptManaged.Utility
         private int previousRange;
         byte* basePointer = null;
 
-        private delegate void MemCpyFunction(void* des, void* src, uint bytes);
-
-        private static readonly MemCpyFunction MemCpy;
-
-        static DumpFileMemoryReader()
-        {
-            var dynamicMethod = new DynamicMethod
-            (
-                "MemCpy",
-                typeof(void),
-                new[] { typeof(void*), typeof(void*), typeof(uint) },
-                typeof(DumpFileMemoryReader)
-            );
-
-            var ilGenerator = dynamicMethod.GetILGenerator();
-
-            ilGenerator.Emit(OpCodes.Ldarg_0);
-            ilGenerator.Emit(OpCodes.Ldarg_1);
-            ilGenerator.Emit(OpCodes.Ldarg_2);
-
-            ilGenerator.Emit(OpCodes.Cpblk);
-            ilGenerator.Emit(OpCodes.Ret);
-
-            MemCpy = (MemCpyFunction)dynamicMethod.CreateDelegate(typeof(MemCpyFunction));
-        }
-
         public DumpFileMemoryReader(string dumpFilePath)
         {
             bool dispose = true;
@@ -70,13 +44,13 @@ namespace CsScriptManaged.Utility
                 if (!MiniDumpReadDumpStream((IntPtr)basePointer, MINIDUMP_STREAM_TYPE.Memory64ListStream, ref directory, ref streamPointer, ref streamSize))
                     throw new Exception("Unable to read mini dump stream");
 
-                var data = Marshal.PtrToStructure<MINIDUMP_MEMORY64_LIST>(streamPointer);
+                var data = (MINIDUMP_MEMORY64_LIST)Marshal.PtrToStructure(streamPointer, typeof(MINIDUMP_MEMORY64_LIST));
                 ulong lastEnd = data.BaseRva;
 
                 ranges = new MemoryLocation[data.NumberOfMemoryRanges];
                 for (int i = 0; i < ranges.Length; i++)
                 {
-                    var descriptor = Marshal.PtrToStructure<MINIDUMP_MEMORY_DESCRIPTOR64>(streamPointer + sizeof(MINIDUMP_MEMORY64_LIST) + i * sizeof(MINIDUMP_MEMORY_DESCRIPTOR64));
+                    var descriptor = (MINIDUMP_MEMORY_DESCRIPTOR64)Marshal.PtrToStructure(streamPointer + sizeof(MINIDUMP_MEMORY64_LIST) + i * sizeof(MINIDUMP_MEMORY_DESCRIPTOR64), typeof(MINIDUMP_MEMORY_DESCRIPTOR64));
                     ranges[i] = new MemoryLocation()
                     {
                         MemoryStart = descriptor.StartOfMemoryRange,
@@ -92,6 +66,7 @@ namespace CsScriptManaged.Utility
                         ranges[newEnd].MemoryEnd = ranges[i].MemoryEnd;
                     else
                         ranges[++newEnd] = ranges[i];
+                newEnd++;
                 Array.Resize(ref ranges, newEnd);
                 var minValue = ranges[0].MemoryStart;
                 var maxValue = ranges[ranges.Length - 1].MemoryEnd;
@@ -163,7 +138,7 @@ namespace CsScriptManaged.Utility
             {
                 byte* source = basePointer + position;
 
-                MemCpy(destination, source, (uint)buffer.Length * sizeof(char));
+                MemoryBuffer.MemCpy(destination, source, (uint)buffer.Length * sizeof(char));
             }
             return buffer.Length;
         }
@@ -174,14 +149,13 @@ namespace CsScriptManaged.Utility
             {
                 byte* source = basePointer + position;
 
-                MemCpy(destination, source, (uint)buffer.Length);
+                MemoryBuffer.MemCpy(destination, source, (uint)buffer.Length);
             }
             return buffer.Length;
         }
 
-        public byte[] ReadMemory(ulong address, int size)
+        public MemoryBuffer ReadMemory(ulong address, int size)
         {
-            byte[] bytes = new byte[size];
             var position = FindDumpPositionAndSize(address);
 
             if ((ulong)size > position.size)
@@ -189,8 +163,7 @@ namespace CsScriptManaged.Utility
                 throw new Exception("Reading more that it is found");
             }
 
-            ReadMemory(position.position, bytes);
-            return bytes;
+            return new MemoryBuffer(basePointer + position.position, size);
         }
 
         public string ReadAnsiString(ulong address, int size = -1)

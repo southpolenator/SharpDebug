@@ -163,6 +163,8 @@ namespace GenerateUserTypesFromPdb
                 generationOptions |= UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes;
             if (config.SingleFileExport)
                 generationOptions |= UserTypeGenerationFlags.SingleFileExport;
+            if (config.UseHungarianNotation)
+                generationOptions |= UserTypeGenerationFlags.UseHungarianNotation;
 
             // Verify that included files exist
             if (!string.IsNullOrEmpty(config.GeneratedAssemblyName))
@@ -495,7 +497,7 @@ namespace GenerateUserTypesFromPdb
 
                 generatedFiles.TryAdd(filename.ToLowerInvariant(), filename);
                 using (StringWriter stringOutput = new StringWriter())
-                using (TextWriter masterOutput = new StreamWriter(filename, false /* append */, System.Text.Encoding.ASCII, 8192))
+                using (TextWriter masterOutput = !config.DontSaveGeneratedCodeFiles ? new StreamWriter(filename, false /* append */, System.Text.Encoding.UTF8, 16 * 1024 * 1024) : TextWriter.Null)
                 {
                     foreach (var u in usings.OrderBy(s => s))
                     {
@@ -517,12 +519,14 @@ namespace GenerateUserTypesFromPdb
                             output.GetStringBuilder().Clear();
                             GenerateUseTypeCodeInSingleFile(output, symbolEntry, factory, error, generationOptions);
                             string text = output.ToString();
-                            lock (masterOutput)
-                            {
-                                masterOutput.WriteLine(text);
-                                if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
-                                    stringOutput.WriteLine(text);
-                            }
+
+                            if (!string.IsNullOrEmpty(text))
+                                lock (masterOutput)
+                                {
+                                    masterOutput.WriteLine(text);
+                                    if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
+                                        stringOutput.WriteLine(text);
+                                }
 
                             stringWriterPool.PutObject(output);
                         });
@@ -626,7 +630,7 @@ namespace GenerateUserTypesFromPdb
             // Generating props file
             if (!string.IsNullOrEmpty(config.GeneratedPropsFileName))
             {
-                using (TextWriter output = new StreamWriter(outputDirectory + config.GeneratedPropsFileName))
+                using (TextWriter output = new StreamWriter(outputDirectory + config.GeneratedPropsFileName, false /* append */, System.Text.Encoding.UTF8, 16 * 1024 * 1024))
                 {
                     output.WriteLine(@"<?xml version=""1.0"" encoding=""utf-8""?>");
                     output.WriteLine(@"<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">");
@@ -688,7 +692,7 @@ namespace GenerateUserTypesFromPdb
                 filename = string.Format(@"{0}\{1}_{2}.exported.cs", classOutputDirectory, userType.ConstructorName, index++);
             }
 
-            using (TextWriter output = new StreamWriter(filename))
+            using (TextWriter output = new StreamWriter(filename, false /* append */, System.Text.Encoding.UTF8, 1 * 1024 * 1024))
             using (StringWriter stringOutput = new StringWriter())
             {
                 userType.WriteCode(new IndentedWriter(stringOutput), errorOutput, factory, generationOptions);

@@ -20,6 +20,17 @@ namespace GenerateUserTypesFromPdb
             Name = name;
             Namespace = nameSpace;
             GlobalScope = GetSymbol(session.globalScope);
+
+            PublicSymbols = new HashSet<string>(session.globalScope.GetChildren(SymTagEnum.SymTagPublicSymbol).Select((type) =>
+            {
+                if (type.code != 0 || type.function != 0 || (LocationType)type.locationType != LocationType.Static)
+                    return string.Empty;
+
+                string undecoratedName;
+
+                type.get_undecoratedNameEx(0x1000, out undecoratedName);
+                return undecoratedName ?? type.name;
+            }));
         }
 
         public Symbol GlobalScope { get; private set; }
@@ -28,6 +39,8 @@ namespace GenerateUserTypesFromPdb
 
         public string Namespace { get; private set; }
 
+        public HashSet<string> PublicSymbols { get; private set; }
+
         public Symbol[] FindGlobalTypeWildcard(string nameWildcard)
         {
             return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).ToArray();
@@ -35,6 +48,7 @@ namespace GenerateUserTypesFromPdb
 
         public IEnumerable<Symbol> GetAllTypes()
         {
+            // Get all types and cache symbols
             var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagEnum));
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType));

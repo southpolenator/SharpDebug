@@ -29,7 +29,15 @@ namespace GenerateUserTypesFromPdb
             if (symbol != null)
             {
                 if (symbol.UserType == null)
+                {
                     symbol = GetSymbol(symbol.Name, symbol.Module);
+                }
+
+                if (symbol.UserType == null && symbol.Name.EndsWith("*"))
+                {
+                    // Try to use Pointer
+                    symbol = GetSymbol(symbol.Name.Substring(0, symbol.Name.Length - 1), symbol.Module);
+                }
 
                 return symbol.UserType;
             }
@@ -55,6 +63,22 @@ namespace GenerateUserTypesFromPdb
                 }
             else
                 yield return symbol.Module.Name;
+        }
+
+        internal static IEnumerable<Symbol> GetSymbolStaticFieldsSymbols(Symbol symbol)
+        {
+            Symbol[] symbols;
+
+            if (!deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+                yield return symbol;
+            else
+                foreach (var s in symbols)
+                    foreach (var field in s.Fields)
+                        if (field.DataKind == Dia2Lib.DataKind.StaticMember && field.IsValidStatic)
+                        {
+                            yield return s;
+                            break;
+                        }
         }
 
         internal static IEnumerable<SymbolField> GetSymbolStaticFields(Symbol symbol)

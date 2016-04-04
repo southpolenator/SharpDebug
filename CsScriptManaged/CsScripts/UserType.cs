@@ -2,7 +2,6 @@
 using CsScriptManaged.Utility;
 using System;
 using System.Linq;
-using System.Text;
 
 namespace CsScripts
 {
@@ -20,6 +19,20 @@ namespace CsScripts
         public static T DynamicCastAs<T>(this Variable variable) where T : UserType
         {
             if (variable == null || !variable.GetRuntimeType().Inherits<T>())
+                return null;
+
+            return variable.CastAs<T>();
+        }
+
+        /// <summary>
+        /// Safe Cast, cast with null check.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="variable"></param>
+        /// <returns></returns>
+        public static T SafeCastAs<T>(this Variable variable) where T : UserType
+        {
+            if (variable == null)
                 return null;
 
             return variable.CastAs<T>();
@@ -51,6 +64,68 @@ namespace CsScripts
     }
 
     /// <summary>
+    /// Helper class to be used in Generics User Type classes as partial class extension.
+    /// It is needed when Generics User Type casts variable to new user type (that is template and possible generics). When user type is generics, engine cannot
+    /// deduce CodeType that needs to be used, while generated user type code expects correct one. This class provides the bridge between two worlds.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class GenericsElementCaster<T>
+    {
+        /// <summary>
+        /// The element code type
+        /// </summary>
+        private CodeType elementCodeType;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GenericsElementCaster{T}"/> class.
+        /// </summary>
+        /// <param name="thisClass">The thisClass variable in generated UserType.</param>
+        /// <param name="argumentNumber">The argument number.</param>
+        public GenericsElementCaster(UserMember<Variable> thisClass, int argumentNumber)
+            : this(thisClass.Value, argumentNumber)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GenericsElementCaster{T}"/> class.
+        /// </summary>
+        /// <param name="thisClass">The thisClass variable in generated UserType.</param>
+        /// <param name="argumentNumber">The argument number.</param>
+        public GenericsElementCaster(Variable thisClass, int argumentNumber)
+            : this(thisClass.GetCodeType(), argumentNumber)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GenericsElementCaster{T}"/> class.
+        /// </summary>
+        /// <param name="parentCodeType">CodeType of the generics class that will be using this helper class.</param>
+        /// <param name="argumentNumber">The argument number.</param>
+        public GenericsElementCaster(CodeType parentCodeType, int argumentNumber)
+        {
+            try
+            {
+                elementCodeType = CodeType.Create(parentCodeType.TemplateArgumentsStrings[argumentNumber], parentCodeType.Module);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Casts variable to the new type.
+        /// </summary>
+        /// <param name="variable">The variable to be casted.</param>
+        /// <returns>Computed variable that is of new type.</returns>
+        public T CastAs(Variable variable)
+        {
+            if (elementCodeType != null)
+                variable = variable.CastAs(elementCodeType);
+            return variable.CastAs<T>();
+        }
+    }
+
+    /// <summary>
     /// Base class for user defined types in C# scripts
     /// </summary>
     public class UserType : Variable
@@ -58,7 +133,7 @@ namespace CsScripts
         /// <summary>
         /// The memory buffer using which user type was initialized
         /// </summary>
-        protected byte[] memoryBuffer;
+        protected MemoryBuffer memoryBuffer;
 
         /// <summary>
         /// The offset inside the memory buffer using which user type was initialized
@@ -83,11 +158,25 @@ namespace CsScripts
         /// Initializes a new instance of the <see cref="UserType"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
-        /// <param name="buffer">The buffer.</param>
+        /// <param name="buffer">The memory buffer.</param>
         /// <param name="offset">The offset.</param>
         /// <param name="bufferAddress">The buffer address.</param>
-        public UserType(Variable variable, byte[] buffer, int offset, ulong bufferAddress)
+        public UserType(Variable variable, MemoryBuffer buffer, int offset, ulong bufferAddress)
             : base(variable)
+        {
+            memoryBuffer = buffer;
+            memoryBufferOffset = offset;
+            memoryBufferAddress = bufferAddress;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserType"/> class.
+        /// </summary>
+        /// <param name="buffer">The memory buffer.</param>
+        /// <param name="offset">The offset.</param>
+        /// <param name="bufferAddress">The buffer address.</param>
+        public UserType(MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath)
+            : base(codeType, address, name, path)
         {
             memoryBuffer = buffer;
             memoryBufferOffset = offset;
@@ -115,7 +204,7 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
-        public static ushort[] ReadUshortArray(byte[] buffer, int offset, int elements)
+        public static ushort[] ReadUshortArray(MemoryBuffer buffer, int offset, int elements)
         {
             ushort[] array = new ushort[elements];
 
@@ -131,7 +220,7 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
-        public static bool[] ReadBoolArray(byte[] buffer, int offset, int elements)
+        public static bool[] ReadBoolArray(MemoryBuffer buffer, int offset, int elements)
         {
             bool[] array = new bool[elements];
 
@@ -146,7 +235,7 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
-        public static uint[] ReadUintArray(byte[] buffer, int offset, int elements)
+        public static uint[] ReadUintArray(MemoryBuffer buffer, int offset, int elements)
         {
             uint[] array = new uint[elements];
 
@@ -161,7 +250,7 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
-        public static ulong[] ReadUlongArray(byte[] buffer, int offset, int elements)
+        public static ulong[] ReadUlongArray(MemoryBuffer buffer, int offset, int elements)
         {
             ulong[] array = new ulong[elements];
 
@@ -176,7 +265,7 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
-        public static short[] ReadShortArray(byte[] buffer, int offset, int elements)
+        public static short[] ReadShortArray(MemoryBuffer buffer, int offset, int elements)
         {
             short[] array = new short[elements];
 
@@ -191,7 +280,7 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
-        public static int[] ReadIntArray(byte[] buffer, int offset, int elements)
+        public static int[] ReadIntArray(MemoryBuffer buffer, int offset, int elements)
         {
             int[] array = new int[elements];
 
@@ -206,7 +295,7 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
-        public static long[] ReadLongArray(byte[] buffer, int offset, int elements)
+        public static long[] ReadLongArray(MemoryBuffer buffer, int offset, int elements)
         {
             long[] array = new long[elements];
 
@@ -221,11 +310,20 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
-        public static byte[] ReadByteArray(byte[] buffer, int offset, int elements)
+        public static unsafe byte[] ReadByteArray(MemoryBuffer buffer, int offset, int elements)
         {
             byte[] array = new byte[elements];
 
-            Array.Copy(buffer, offset, array, 0, elements);
+            if (buffer.BytePointer != null)
+            {
+                fixed (byte* destination = array)
+                {
+                    byte* source = buffer.BytePointer + offset;
+                    MemoryBuffer.MemCpy(destination, source, (uint)array.Length);
+                }
+            }
+            else
+                Array.Copy(buffer.Bytes, offset, array, 0, elements);
             return array;
         }
 
@@ -235,13 +333,13 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
-        public static float[] ReadFloatArray(byte[] buffer, int offset, int elements)
+        public static float[] ReadFloatArray(MemoryBuffer buffer, int offset, int elements)
         {
             float[] array = new float[elements];
 
             for (int i = 0; i < elements; i++)
             {
-                array[i] = BitConverter.ToSingle(buffer, offset);
+                array[i] = ReadFloat(buffer, offset);
                 offset += sizeof(float);
             }
 
@@ -254,13 +352,13 @@ namespace CsScripts
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
-        public static double[] ReadDoubleArray(byte[] buffer, int offset, int elements)
+        public static double[] ReadDoubleArray(MemoryBuffer buffer, int offset, int elements)
         {
             double[] array = new double[elements];
 
             for (int i = 0; i < elements; i++)
             {
-                array[i] = BitConverter.ToDouble(buffer, offset);
+                array[i] = ReadDouble(buffer, offset);
                 offset += sizeof(float);
             }
 
@@ -274,7 +372,7 @@ namespace CsScripts
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
         /// <param name="charSize">Size of the character.</param>
-        public static char[] ReadCharArray(byte[] buffer, int offset, int elements, int charSize)
+        public static char[] ReadCharArray(MemoryBuffer buffer, int offset, int elements, int charSize)
         {
             char[] array = new char[elements];
 
@@ -294,12 +392,12 @@ namespace CsScripts
         /// <summary>
         /// Returns array of 64-bit unsigned integers converted from four/eight bytes at a specified position in a byte array.
         /// </summary>
-        /// <param name="buffer">The array of bytes.</param>
+        /// <param name="buffer">The memory buffer.</param>
         /// <param name="offset">The starting position within value.</param>
         /// <param name="elements">The number of elements to be read.</param>
         /// <param name="pointerSize">Size of the pointer.</param>
         /// <exception cref="System.Exception">Unsupported pointer size</exception>
-        public static ulong[] ReadPointerArray(byte[] buffer, int offset, int elements, uint pointerSize)
+        public static ulong[] ReadPointerArray(MemoryBuffer buffer, int offset, int elements, uint pointerSize)
         {
             ulong[] array = new ulong[elements];
 
@@ -321,9 +419,14 @@ namespace CsScripts
         /// <param name="offset">The starting position within value.</param>
         /// <param name="bits">The number of bits to interpret.</param>
         /// <param name="bitsOffset">The offset in bits.</param>
-        public static ushort ReadUshort(byte[] buffer, int offset, int bits = 16, int bitsOffset = 0)
+        public static unsafe ushort ReadUshort(MemoryBuffer buffer, int offset, int bits = 16, int bitsOffset = 0)
         {
-            var value = BitConverter.ToUInt16(buffer, offset);
+            ushort value;
+
+            if (buffer.BytePointer != null)
+                value = *((ushort*)(buffer.BytePointer + offset));
+            else
+                value = BitConverter.ToUInt16(buffer.Bytes, offset);
 
             if (bits != 16 || bitsOffset != 0)
                 value = (ushort)((value >> bitsOffset) & ((1 << bits) - 1));
@@ -337,9 +440,14 @@ namespace CsScripts
         /// <param name="offset">The starting position within value.</param>
         /// <param name="bits">The number of bits to interpret.</param>
         /// <param name="bitsOffset">The offset in bits.</param>
-        public static uint ReadUint(byte[] buffer, int offset, int bits = 32, int bitsOffset = 0)
+        public static unsafe uint ReadUint(MemoryBuffer buffer, int offset, int bits = 32, int bitsOffset = 0)
         {
-            var value = BitConverter.ToUInt32(buffer, offset);
+            uint value;
+
+            if (buffer.BytePointer != null)
+                value = *((uint*)(buffer.BytePointer + offset));
+            else
+                value = BitConverter.ToUInt32(buffer.Bytes, offset);
 
             if (bits != 32 || bitsOffset != 0)
                 value = (uint)((value >> bitsOffset) & ((1 << bits) - 1));
@@ -353,9 +461,14 @@ namespace CsScripts
         /// <param name="offset">The starting position within value.</param>
         /// <param name="bits">The number of bits to interpret.</param>
         /// <param name="bitsOffset">The offset in bits.</param>
-        public static ulong ReadUlong(byte[] buffer, int offset, int bits = 64, int bitsOffset = 0)
+        public static unsafe ulong ReadUlong(MemoryBuffer buffer, int offset, int bits = 64, int bitsOffset = 0)
         {
-            var value = BitConverter.ToUInt64(buffer, offset);
+            ulong value;
+
+            if (buffer.BytePointer != null)
+                value = *((ulong*)(buffer.BytePointer + offset));
+            else
+                value = BitConverter.ToUInt64(buffer.Bytes, offset);
 
             if (bits != 64 || bitsOffset != 0)
                 value = (ulong)((value >> bitsOffset) & ((1UL << bits) - 1));
@@ -369,9 +482,14 @@ namespace CsScripts
         /// <param name="offset">The starting position within value.</param>
         /// <param name="bits">The number of bits to interpret.</param>
         /// <param name="bitsOffset">The offset in bits.</param>
-        public static short ReadShort(byte[] buffer, int offset, int bits = 16, int bitsOffset = 0)
+        public static unsafe short ReadShort(MemoryBuffer buffer, int offset, int bits = 16, int bitsOffset = 0)
         {
-            var value = BitConverter.ToInt16(buffer, offset);
+            short value;
+
+            if (buffer.BytePointer != null)
+                value = *((short*)(buffer.BytePointer + offset));
+            else
+                value = BitConverter.ToInt16(buffer.Bytes, offset);
 
             if (bits != 16 || bitsOffset != 0)
                 value = (short)((value >> bitsOffset) & ((1 << bits) - 1));
@@ -385,9 +503,14 @@ namespace CsScripts
         /// <param name="offset">The starting position within value.</param>
         /// <param name="bits">The number of bits to interpret.</param>
         /// <param name="bitsOffset">The offset in bits.</param>
-        public static int ReadInt(byte[] buffer, int offset, int bits = 32, int bitsOffset = 0)
+        public static unsafe int ReadInt(MemoryBuffer buffer, int offset, int bits = 32, int bitsOffset = 0)
         {
-            var value = BitConverter.ToInt32(buffer, offset);
+            int value;
+
+            if (buffer.BytePointer != null)
+                value = *((int*)(buffer.BytePointer + offset));
+            else
+                value = BitConverter.ToInt32(buffer.Bytes, offset);
 
             if (bits != 32 || bitsOffset != 0)
                 value = (int)((value >> bitsOffset) & ((1 << bits) - 1));
@@ -401,9 +524,14 @@ namespace CsScripts
         /// <param name="offset">The starting position within value.</param>
         /// <param name="bits">The number of bits to interpret.</param>
         /// <param name="bitsOffset">The offset in bits.</param>
-        public static long ReadLong(byte[] buffer, int offset, int bits = 64, int bitsOffset = 0)
+        public static unsafe long ReadLong(MemoryBuffer buffer, int offset, int bits = 64, int bitsOffset = 0)
         {
-            var value = BitConverter.ToInt64(buffer, offset);
+            long value;
+
+            if (buffer.BytePointer != null)
+                value = *((long*)(buffer.BytePointer + offset));
+            else
+                value = BitConverter.ToInt64(buffer.Bytes, offset);
 
             if (bits != 64 || bitsOffset != 0)
                 value = (long)((value >> bitsOffset) & ((1L << bits) - 1));
@@ -415,9 +543,12 @@ namespace CsScripts
         /// </summary>
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
-        public static float ReadFloat(byte[] buffer, int offset)
+        public static unsafe float ReadFloat(MemoryBuffer buffer, int offset)
         {
-            return BitConverter.ToSingle(buffer, offset);
+            if (buffer.BytePointer != null)
+                return *((float*)(buffer.BytePointer + offset));
+            else
+                return BitConverter.ToSingle(buffer.Bytes, offset);
         }
 
         /// <summary>
@@ -425,9 +556,12 @@ namespace CsScripts
         /// </summary>
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
-        public static double ReadDouble(byte[] buffer, int offset)
+        public static unsafe double ReadDouble(MemoryBuffer buffer, int offset)
         {
-            return BitConverter.ToDouble(buffer, offset);
+            if (buffer.BytePointer != null)
+                return *((double*)(buffer.BytePointer + offset));
+            else
+                return BitConverter.ToDouble(buffer.Bytes, offset);
         }
 
         /// <summary>
@@ -437,9 +571,14 @@ namespace CsScripts
         /// <param name="offset">The starting position within value.</param>
         /// <param name="bits">The number of bits to interpret.</param>
         /// <param name="bitsOffset">The offset in bits.</param>
-        public static bool ReadBool(byte[] buffer, int offset, int bits = 8, int bitsOffset = 0)
+        public static unsafe bool ReadBool(MemoryBuffer buffer, int offset, int bits = 8, int bitsOffset = 0)
         {
-            var value = buffer[offset];
+            byte value;
+
+            if (buffer.BytePointer != null)
+                value = *(buffer.BytePointer + offset);
+            else
+                value = buffer.Bytes[offset];
 
             if (bits != 8 || bitsOffset != 0)
                 value = (byte)((value >> bitsOffset) & ((1 << bits) - 1));
@@ -453,9 +592,14 @@ namespace CsScripts
         /// <param name="offset">The starting position within value.</param>
         /// <param name="bits">The number of bits to interpret.</param>
         /// <param name="bitsOffset">The offset in bits.</param>
-        public static byte ReadByte(byte[] buffer, int offset, int bits = 8, int bitsOffset = 0)
+        public static unsafe byte ReadByte(MemoryBuffer buffer, int offset, int bits = 8, int bitsOffset = 0)
         {
-            var value = buffer[offset];
+            byte value;
+
+            if (buffer.BytePointer != null)
+                value = *(buffer.BytePointer + offset);
+            else
+                value = buffer.Bytes[offset];
 
             if (bits != 8 || bitsOffset != 0)
                 value = (byte)((value >> bitsOffset) & ((1 << bits) - 1));
@@ -467,9 +611,12 @@ namespace CsScripts
         /// </summary>
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
-        public static sbyte ReadSbyte(byte[] buffer, int offset)
+        public static unsafe sbyte ReadSbyte(MemoryBuffer buffer, int offset)
         {
-            return (sbyte)buffer[offset];
+            if (buffer.BytePointer != null)
+                return *((sbyte*)(buffer.BytePointer + offset));
+            else
+                return (sbyte)buffer.Bytes[offset];
         }
 
         /// <summary>
@@ -477,9 +624,9 @@ namespace CsScripts
         /// </summary>
         /// <param name="buffer">The array of bytes.</param>
         /// <param name="offset">The starting position within value.</param>
-        public static char ReadChar(byte[] buffer, int offset)
+        public static char ReadChar(MemoryBuffer buffer, int offset)
         {
-            return (char)buffer[offset];
+            return (char)ReadByte(buffer, offset);
         }
 
 
@@ -490,7 +637,7 @@ namespace CsScripts
         /// <param name="offset">The starting position within value.</param>
         /// <param name="pointerSize">Size of the pointer.</param>
         /// <exception cref="System.Exception">Unsupported pointer size</exception>
-        public static ulong ReadPointer(byte[] buffer, int offset, int pointerSize)
+        public static ulong ReadPointer(MemoryBuffer buffer, int offset, int pointerSize)
         {
             if (pointerSize == 4)
                 return ReadUint(buffer, offset);
@@ -506,12 +653,13 @@ namespace CsScripts
         /// <param name="process">The process.</param>
         /// <param name="address">The memory address.</param>
         /// <param name="charSize">Size of the character.</param>
-        public static string ReadString(Process process, ulong address, int charSize)
+        /// <param name="length">The length. If length is -1, string is null terminated.</param>
+        public static string ReadString(Process process, ulong address, int charSize, int length = -1)
         {
             if (address == 0)
                 return null;
 
-            return process.ReadString(address, charSize);
+            return process.ReadString(address, charSize, length);
         }
 
         /// <summary>
@@ -520,10 +668,10 @@ namespace CsScripts
         /// <typeparam name="T">Type to be casted to</typeparam>
         /// <param name="thisClass">Variable that contains UserMember of the this class.</param>
         /// <param name="classFieldName">Name of the class field.</param>
-        /// <param name="buffer">The buffer.</param>
+        /// <param name="buffer">The memory buffer.</param>
         /// <param name="offset">The offset.</param>
         /// <param name="pointerSize">Size of the pointer.</param>
-        public static T ReadPointer<T>(UserMember<Variable> thisClass, string classFieldName, byte[] buffer, int offset, int pointerSize)
+        public static T ReadPointer<T>(UserMember<Variable> thisClass, string classFieldName, MemoryBuffer buffer, int offset, int pointerSize)
         {
             ulong pointer = ReadPointer(buffer, offset, pointerSize);
 
@@ -532,19 +680,19 @@ namespace CsScripts
                 return default(T);
             }
 
-            return Variable.CreatePointer(thisClass.Value.GetCodeType().GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
+            return Variable.CreatePointerNoCast(thisClass.Value.GetCodeType().GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
         }
 
         /// <summary>
         /// Reads the pointer and casts it to the type.
         /// </summary>
         /// <typeparam name="T">Type to be casted to</typeparam>
-        /// <param name="thisClass">Variable that contains UserMember of the this class.</param>
+        /// <param name="classCodeType">The class code type.</param>
         /// <param name="classFieldName">Name of the class field.</param>
-        /// <param name="buffer">The buffer.</param>
+        /// <param name="buffer">The memory buffer.</param>
         /// <param name="offset">The offset.</param>
         /// <param name="pointerSize">Size of the pointer.</param>
-        public static T ReadPointer<T>(CodeType classCodeType, string classFieldName, byte[] buffer, int offset, int pointerSize)
+        public static T ReadPointer<T>(CodeType classCodeType, string classFieldName, MemoryBuffer buffer, int offset, int pointerSize)
         {
             ulong pointer = ReadPointer(buffer, offset, pointerSize);
 
@@ -553,7 +701,7 @@ namespace CsScripts
                 return default(T);
             }
 
-            return Variable.CreatePointer(classCodeType.GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
+            return Variable.CreatePointerNoCast(classCodeType.GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
         }
     }
 }
