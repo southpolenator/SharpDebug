@@ -195,6 +195,8 @@ namespace CsScriptManaged.UI
             return new LazyUIResult(() => Visualize(obj));
         }
 
+        TreeViewItem emptyListItem;
+
         private UIElement Visualize(object obj)
         {
             // Create top level table grid
@@ -224,8 +226,9 @@ namespace CsScriptManaged.UI
             type.FontWeight = FontWeights.Bold;
             Grid.SetColumn(type, TypeColumnIndex);
             headerGrid.Children.Add(type);
-            TreeViewItem emptyListItem = new TreeViewItem();
+            emptyListItem = new TreeViewItem();
             emptyListItem.Padding = new Thickness(0);
+            emptyListItem.Focusable = false;
             Grid.SetColumn(emptyListItem, 1);
             headerGrid.Children.Add(emptyListItem);
             header.Focusable = false;
@@ -336,10 +339,20 @@ namespace CsScriptManaged.UI
                     TreeViewItemTag tag = (TreeViewItemTag)item.Tag;
                     IResultTreeItem resultTreeItem = tag.ResultTreeItem;
                     int level = tag.Level;
+                    TreeViewItem lastItem = null;
 
                     item.Items.Clear();
                     foreach (var child in resultTreeItem.Children.OrderBy(s => s.Name.StartsWith("[")).ThenBy(s => s.Name))
-                        item.Items.Add(CreateTreeItem(child, level + 1));
+                        item.Items.Add(lastItem = CreateTreeItem(child, level + 1));
+
+                    // Check if we need to fix empty list item width
+                    if (lastItem != null && double.IsNaN(emptyListItem.Width))
+                    {
+                        item.Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            emptyListItem.Width = item.ActualWidth - lastItem.ActualWidth;
+                        }), System.Windows.Threading.DispatcherPriority.Background);
+                    }
                 }
             }
             catch (Exception ex)
