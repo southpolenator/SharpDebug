@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace CsScriptManaged.UI
@@ -227,6 +228,7 @@ namespace CsScriptManaged.UI
             TreeViewItem emptyListItem = new TreeViewItem();
             emptyListItem.Padding = new Thickness(0);
             Grid.SetColumn(emptyListItem, 1);
+            emptyListItem.Focusable = false;
             headerGrid.Children.Add(emptyListItem);
             header.Focusable = false;
             header.Header = headerGrid;
@@ -235,10 +237,60 @@ namespace CsScriptManaged.UI
             TreeView tree = new TreeView();
             IResultTreeItem resultTreeItem = ResultTreeItem.Create(obj, "result", null);
 
+            tree.PreviewKeyDown += Tree_PreviewKeyDown;
             tree.Items.Add(header);
             tree.Items.Add(CreateTreeItem(resultTreeItem, 0));
             tableGrid.Children.Add(tree);
             return tableGrid;
+        }
+
+        private void Tree_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+            {
+                TreeView tree = (TreeView)sender;
+                TreeViewItem item = e.OriginalSource as TreeViewItem;
+
+                // if item is expanded and has items, then this item is not the last one :)
+                if (item.HasItems && item.IsExpanded)
+                    return;
+
+                // Check inside the parent
+                TreeViewItem parent = item.Parent as TreeViewItem;
+
+                while (parent != null)
+                {
+                    if (parent.Items.IndexOf(item) == parent.Items.Count - 1)
+                    {
+                        parent = parent.Parent as TreeViewItem;
+                    }
+                    else
+                    {
+                        // We are not at the last item
+                        return;
+                    }
+                }
+
+                e.Handled = true;
+                tree.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+            }
+            else if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+            {
+                TreeView tree = (TreeView)sender;
+                TreeViewItem item = e.OriginalSource as TreeViewItem;
+
+                // Check inside the parent
+                TreeViewItem parent = item.Parent as TreeViewItem;
+
+                if (parent != null || tree.Items.IndexOf(item) > 1) // 1 is because of the header
+                {
+                    // We are not at the first item
+                    return;
+                }
+
+                e.Handled = true;
+                tree.MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
+            }
         }
 
         const int NameColumnIndex = 0;
