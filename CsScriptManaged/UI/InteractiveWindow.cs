@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace CsScriptManaged.UI
@@ -75,7 +76,29 @@ namespace CsScriptManaged.UI
             textEditor.CloseRequested += TextEditor_CloseRequested;
             textEditor.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
             textEditor.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            textEditor.TextArea.PreviewKeyDown += TextEditor_PreviewKeyDown;
             panel.Children.Add(textEditor);
+        }
+
+        private void TextEditor_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+            {
+                if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == 1)
+                {
+                    e.Handled = true;
+                    MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
+                    textEditor.MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
+                }
+            }
+            else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+            {
+                if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == textEditor.LineCount)
+                {
+                    e.Handled = true;
+                    MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                }
+            }
         }
 
         private UIElement CreateTextOutput(string textOutput, bool error = false)

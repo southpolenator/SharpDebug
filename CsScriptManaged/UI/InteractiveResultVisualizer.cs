@@ -240,6 +240,7 @@ namespace CsScriptManaged.UI
             tree.PreviewKeyDown += Tree_PreviewKeyDown;
             tree.Items.Add(header);
             tree.Items.Add(CreateTreeItem(resultTreeItem, 0));
+            ((TreeViewItem)tree.Items[1]).IsSelected = true;
             tableGrid.Children.Add(tree);
             return tableGrid;
         }
