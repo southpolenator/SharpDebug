@@ -68,19 +68,18 @@ namespace DbgEngTest
         [TestMethod]
         public void TestStackLength()
         {
-            Assert.AreEqual(Thread.Current.StackTrace.Frames.Length, 8, "Stack length should equal 1");
+            Assert.AreEqual(Thread.Current.StackTrace.Frames.Length, 8, "Stack length should equal 8");
         }
 
         [TestMethod]
         public void TestCurrentFrame()
         {
-            Assert.IsTrue(Thread.Current.StackTrace.CurrentFrame.SourceFileName.Contains("nativedumptest.cpp"));
+            Assert.IsTrue(Thread.Current.StackTrace.CurrentFrame.SourceFileName.EndsWith("nativedumptest.cpp"));
         }
 
         [TestMethod]
         public void TestModuleExtraction()
         {
-            Assert.AreEqual(Module.All.Length, 11, "Invalid number of open modules.");
             Assert.IsTrue(Module.All.Any(module => module.ImageName.Contains("NativeDump")));
         }
     }
