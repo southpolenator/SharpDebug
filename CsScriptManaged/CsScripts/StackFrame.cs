@@ -2,6 +2,7 @@
 using CsScriptManaged.Utility;
 using DbgEngManaged;
 using System;
+using System.Linq;
 
 namespace CsScripts
 {
@@ -46,6 +47,11 @@ namespace CsScripts
         private SimpleCache<VariableCollection> userTypeConvertedArguments;
 
         /// <summary>
+        /// The CLR stack frame
+        /// </summary>
+        private SimpleCache<Microsoft.Diagnostics.Runtime.ClrStackFrame> clrStackFrame;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="StackFrame" /> class.
         /// </summary>
         /// <param name="stackTrace">The stack trace.</param>
@@ -60,6 +66,7 @@ namespace CsScripts
             functionNameAndDisplacement = SimpleCache.Create(ReadFunctionNameAndDisplacement);
             locals = SimpleCache.Create(() => Context.SymbolProvider.GetFrameLocals(this, false));
             arguments = SimpleCache.Create(() => Context.SymbolProvider.GetFrameLocals(this, true));
+            clrStackFrame = SimpleCache.Create(() => Thread.ClrThread?.StackTrace.Where(f => f.InstructionPointer == InstructionOffset).FirstOrDefault());
             userTypeConvertedLocals = SimpleCache.Create(() =>
             {
                 VariableCollection collection = Variable.CastVariableCollectionToUserType(locals.Value);
@@ -288,6 +295,17 @@ namespace CsScripts
             get
             {
                 return userTypeConvertedArguments.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the CLR stack frame.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.ClrStackFrame ClrStackFrame
+        {
+            get
+            {
+                return clrStackFrame.Value;
             }
         }
 
