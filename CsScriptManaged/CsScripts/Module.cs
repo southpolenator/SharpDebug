@@ -6,6 +6,43 @@ using System;
 namespace CsScripts
 {
     /// <summary>
+    /// Represents the version of a Module.
+    /// </summary>
+    public struct ModuleVersion
+    {
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'A'.
+        /// </summary>
+        public int Major;
+
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'B'.
+        /// </summary>
+        public int Minor;
+
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'C'.
+        /// </summary>
+        public int Revision;
+
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'D'.
+        /// </summary>
+        public int Patch;
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return string.Format("{0}.{1}.{2}.{3}", Major, Minor, Revision, Patch);
+        }
+    }
+
+    /// <summary>
     /// Module of the debugging process.
     /// </summary>
     public class Module
@@ -34,6 +71,11 @@ namespace CsScripts
         /// The mapped image name
         /// </summary>
         private SimpleCache<string> mappedImageName;
+
+        /// <summary>
+        /// The module version
+        /// </summary>
+        private SimpleCache<ModuleVersion> moduleVersion;
 
         /// <summary>
         /// The next fake code type identifier
@@ -65,6 +107,13 @@ namespace CsScripts
             loadedImageName = SimpleCache.Create(() => Context.Debugger.GetModuleLoadedImage(this));
             symbolFileName = SimpleCache.Create(() => Context.Debugger.GetModuleSymbolFile(this));
             mappedImageName = SimpleCache.Create(() => Context.Debugger.GetModuleMappedImage(this));
+            moduleVersion = SimpleCache.Create(() =>
+            {
+                ModuleVersion version = new ModuleVersion();
+
+                Context.Debugger.GetModuleVersion(this, out version.Major, out version.Minor, out version.Revision, out version.Patch);
+                return version;
+            });
             TypesByName = new DictionaryCache<string, CodeType>(GetTypeByName);
             TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
             GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
@@ -195,6 +244,17 @@ namespace CsScripts
             get
             {
                 return symbolFileName.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the module version.
+        /// </summary>
+        public ModuleVersion ModuleVersion
+        {
+            get
+            {
+                return moduleVersion.Value;
             }
         }
 

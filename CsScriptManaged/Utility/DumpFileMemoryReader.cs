@@ -234,17 +234,21 @@ namespace CsScriptManaged.Utility
             return sb.ToString();
         }
 
-        private DumpPosition FindDumpPositionAndSize(ulong address)
+        public void GetMemoryRange(ulong address, out ulong baseAddress, out ulong rangeSize)
+        {
+            var location = FindMemoryLocation(address);
+
+            baseAddress = location.MemoryStart;
+            rangeSize = location.MemoryEnd - location.MemoryStart;
+        }
+
+        private MemoryLocation FindMemoryLocation(ulong address)
         {
             var location = ranges[previousRange];
 
             if (location.MemoryStart <= address && location.MemoryEnd > address)
             {
-                return new DumpPosition
-                {
-                    position = location.FilePosition + address - location.MemoryStart,
-                    size = (uint)(location.MemoryEnd - address),
-                };
+                return location;
             }
 
             var mask = triesStartMask;
@@ -267,15 +271,22 @@ namespace CsScriptManaged.Utility
                 if (location.MemoryStart <= address && location.MemoryEnd > address)
                 {
                     previousRange = bucket.location;
-                    return new DumpPosition
-                    {
-                        position = location.FilePosition + address - location.MemoryStart,
-                        size = (uint)(location.MemoryEnd - address),
-                    };
+                    return location;
                 }
             }
 
-            return new DumpPosition();
+            throw new ArgumentOutOfRangeException(nameof(address));
+        }
+
+        private DumpPosition FindDumpPositionAndSize(ulong address)
+        {
+            var location = FindMemoryLocation(address);
+
+            return new DumpPosition
+            {
+                position = location.FilePosition + address - location.MemoryStart,
+                size = (uint)(location.MemoryEnd - address),
+            };
         }
 
         private struct DumpPosition
