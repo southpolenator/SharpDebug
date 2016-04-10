@@ -1020,6 +1020,28 @@ namespace CsScriptManaged.Debuggers
             }
         }
 
+        /// <summary>
+        /// Determines whether the specified process is being debugged as minidump without heap.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        public bool IsMinidump(Process process)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
+            {
+                uint cls, qual;
+
+                Control.GetDebuggeeType(out cls, out qual);
+                if (qual == (uint)Defines.DebugDumpSmall)
+                {
+                    uint flags = Control.GetDumpFormatFlags();
+
+                    return (flags & (uint)Defines.DebugFormatUserSmallFullMemory) == 0;
+                }
+            }
+
+            return false;
+        }
+
         #region Native methods
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.

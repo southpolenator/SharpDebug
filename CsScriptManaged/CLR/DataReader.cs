@@ -350,8 +350,7 @@ namespace CsScriptManaged.CLR
         /// </summary>
         private bool GetIsMinidump()
         {
-            // TODO: Find if it is Minidump
-            return true;
+            return Context.Debugger.IsMinidump(Process);
         }
     }
 }
