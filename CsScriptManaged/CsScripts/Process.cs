@@ -3,6 +3,7 @@ using CsScriptManaged.Native;
 using CsScriptManaged.Utility;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CsScripts
 {
@@ -67,6 +68,16 @@ namespace CsScripts
         private SimpleCache<DumpFileMemoryReader> dumpFileMemoryReader;
 
         /// <summary>
+        /// The CLR data target
+        /// </summary>
+        private SimpleCache<Microsoft.Diagnostics.Runtime.DataTarget> clrDataTarget;
+
+        /// <summary>
+        /// The CLR runtimes running in the process
+        /// </summary>
+        private SimpleCache<Microsoft.Diagnostics.Runtime.ClrRuntime[]> clrRuntimes;
+
+        /// <summary>
         /// The ANSI string cache
         /// </summary>
         private DictionaryCache<Tuple<ulong, int>, string> ansiStringCache;
@@ -93,6 +104,8 @@ namespace CsScripts
             threads = SimpleCache.Create(() => Context.Debugger.GetProcessThreads(this));
             modules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
             userTypes = SimpleCache.Create(GetUserTypes);
+            clrDataTarget = SimpleCache.Create(() => Microsoft.Diagnostics.Runtime.DataTarget.CreateFromDataReader(new CsScriptManaged.CLR.DataReader(this)));
+            clrRuntimes = SimpleCache.Create(() => ClrDataTarget.ClrVersions.Select(clrInfo => clrInfo.CreateRuntime()).ToArray());
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
             ModulesById = new DictionaryCache<ulong, Module>(GetModuleByAddress);
             Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
@@ -310,6 +323,28 @@ namespace CsScripts
             get
             {
                 return effectiveProcessorType.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the CLR data target.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.DataTarget ClrDataTarget
+        {
+            get
+            {
+                return clrDataTarget.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the CLR runtimes running in the process.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.ClrRuntime[] ClrRuntimes
+        {
+            get
+            {
+                return clrRuntimes.Value;
             }
         }
 

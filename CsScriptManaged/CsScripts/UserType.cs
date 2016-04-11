@@ -57,7 +57,8 @@ namespace CsScripts
         /// <typeparam name="T"></typeparam>
         /// <param name="userType"></param>
         /// <returns></returns>
-        public static bool Inherits<T>(this Variable userType) where T : UserType
+        public static bool Inherits<T>(this Variable userType)
+            where T : UserType
         {
             return userType.GetRuntimeType().Inherits<T>();
         }

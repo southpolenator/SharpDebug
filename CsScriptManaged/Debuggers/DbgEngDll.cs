@@ -971,8 +971,78 @@ namespace CsScriptManaged.Debuggers
             }
         }
 
-#region Native methods
+        /// <summary>
+        /// Finds memory range where the specified address belongs to.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="baseAddress">The base address.</param>
+        /// <param name="regionSize">Size of the region.</param>
+        public void QueryVirtual(ulong address, out ulong baseAddress, out ulong regionSize)
+        {
+            var memoryInfo = DataSpaces.QueryVirtual(address);
 
+            baseAddress = memoryInfo.BaseAddress;
+            regionSize = memoryInfo.RegionSize;
+        }
+
+        /// <summary>
+        /// Gets the module version.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="major">The version major number.</param>
+        /// <param name="minor">The version minor number.</param>
+        /// <param name="revision">The version revision number.</param>
+        /// <param name="patch">The version patch number.</param>
+        public void GetModuleVersion(Module module, out int major, out int minor, out int revision, out int patch)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, module.Process))
+            {
+                uint index, bufferSize;
+                ulong baseAddress;
+
+                Symbols.GetModuleByOffset(module.Address, 0, out index, out baseAddress);
+                Symbols.GetModuleVersionInformation(index, module.Address, "\\", IntPtr.Zero, 0, out bufferSize);
+
+                IntPtr buffer = Marshal.AllocHGlobal((int)bufferSize);
+
+                try
+                {
+                    Symbols.GetModuleVersionInformation(index, module.Address, "\\", buffer, bufferSize, out bufferSize);
+                    minor = (ushort)Marshal.ReadInt16(buffer, 8);
+                    major = (ushort)Marshal.ReadInt16(buffer, 10);
+                    patch = (ushort)Marshal.ReadInt16(buffer, 12);
+                    revision = (ushort)Marshal.ReadInt16(buffer, 14);
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(buffer);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified process is being debugged as minidump without heap.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        public bool IsMinidump(Process process)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
+            {
+                uint cls, qual;
+
+                Control.GetDebuggeeType(out cls, out qual);
+                if (qual == (uint)Defines.DebugDumpSmall)
+                {
+                    uint flags = Control.GetDumpFormatFlags();
+
+                    return (flags & (uint)Defines.DebugFormatUserSmallFullMemory) == 0;
+                }
+            }
+
+            return false;
+        }
+
+        #region Native methods
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.
         /// </summary>
@@ -1276,6 +1346,6 @@ namespace CsScriptManaged.Debuggers
             ulong AddrBase,
             ReadProcessMemoryProc64 ReadMemoryRoutine,
             GetModuleBaseProc64 GetModuleBaseRoutine);
-#endregion
+        #endregion
     }
 }

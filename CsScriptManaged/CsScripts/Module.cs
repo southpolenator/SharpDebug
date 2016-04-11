@@ -2,9 +2,47 @@
 using CsScriptManaged.SymbolProviders;
 using CsScriptManaged.Utility;
 using System;
+using System.Linq;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Represents the version of a Module.
+    /// </summary>
+    public struct ModuleVersion
+    {
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'A'.
+        /// </summary>
+        public int Major;
+
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'B'.
+        /// </summary>
+        public int Minor;
+
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'C'.
+        /// </summary>
+        public int Revision;
+
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'D'.
+        /// </summary>
+        public int Patch;
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return string.Format("{0}.{1}.{2}.{3}", Major, Minor, Revision, Patch);
+        }
+    }
+
     /// <summary>
     /// Module of the debugging process.
     /// </summary>
@@ -36,6 +74,16 @@ namespace CsScripts
         private SimpleCache<string> mappedImageName;
 
         /// <summary>
+        /// The module version
+        /// </summary>
+        private SimpleCache<ModuleVersion> moduleVersion;
+
+        /// <summary>
+        /// The CLR module
+        /// </summary>
+        private SimpleCache<Microsoft.Diagnostics.Runtime.ClrModule> clrModule;
+
+        /// <summary>
         /// The next fake code type identifier
         /// </summary>
         private int nextFakeCodeTypeId = -1;
@@ -65,6 +113,14 @@ namespace CsScripts
             loadedImageName = SimpleCache.Create(() => Context.Debugger.GetModuleLoadedImage(this));
             symbolFileName = SimpleCache.Create(() => Context.Debugger.GetModuleSymbolFile(this));
             mappedImageName = SimpleCache.Create(() => Context.Debugger.GetModuleMappedImage(this));
+            moduleVersion = SimpleCache.Create(() =>
+            {
+                ModuleVersion version = new ModuleVersion();
+
+                Context.Debugger.GetModuleVersion(this, out version.Major, out version.Minor, out version.Revision, out version.Patch);
+                return version;
+            });
+            clrModule = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.Modules).Where(m => m.ImageBase == Address).First());
             TypesByName = new DictionaryCache<string, CodeType>(GetTypeByName);
             TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
             GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
@@ -199,6 +255,17 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the module version.
+        /// </summary>
+        public ModuleVersion ModuleVersion
+        {
+            get
+            {
+                return moduleVersion.Value;
+            }
+        }
+
+        /// <summary>
         /// Gets the name of the mapped image. In most cases, this is null. If the debugger is mapping an image file
         /// (for example, during minidump debugging), this is the name of the mapped image.
         /// </summary>
@@ -207,6 +274,17 @@ namespace CsScripts
             get
             {
                 return mappedImageName.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the CLR module.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.ClrModule ClrModule
+        {
+            get
+            {
+                return clrModule.Value;
             }
         }
 
@@ -237,7 +315,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the type with the specified name.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="name">The type name.</param>
         private CodeType GetTypeByName(string name)
         {
             int moduleIndex = name.IndexOf('!');
@@ -252,9 +330,59 @@ namespace CsScripts
                 name = name.Substring(moduleIndex + 1);
             }
 
-            uint typeId = Context.SymbolProvider.GetTypeId(this, name);
+            CodeType codeType = null;
 
-            return TypesById[typeId];
+            if (clrModule.Cached && ClrModule != null)
+            {
+                codeType = GetClrTypeByName(name);
+            }
+
+            try
+            {
+                if (codeType == null)
+                {
+                    uint typeId = Context.SymbolProvider.GetTypeId(this, name);
+
+                    codeType = TypesById[typeId];
+                }
+            }
+            catch (Exception)
+            {
+                if (ClrModule != null)
+                {
+                    codeType = GetClrTypeByName(name);
+                }
+            }
+
+            if (codeType == null)
+            {
+                throw new Exception(string.Format("Type '{0}' wasn't found", name));
+            }
+
+            return codeType;
+        }
+
+        /// <summary>
+        /// Gets the type with the specified name.
+        /// </summary>
+        /// <param name="name">The CLR type name.</param>
+        private CodeType GetClrTypeByName(string name)
+        {
+            try
+            {
+                // Try to find code type inside CLR module
+                var clrType = ClrModule.GetTypeByName(name);
+
+                if (clrType != null)
+                {
+                    // TODO: Create a code type
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -263,7 +391,7 @@ namespace CsScripts
         /// <param name="typeId">The type identifier.</param>
         private CodeType GetTypeById(uint typeId)
         {
-            return new CodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId), Context.SymbolProvider.GetTypeBasicType(this, typeId));
+            return new NativeCodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId), Context.SymbolProvider.GetTypeBasicType(this, typeId));
         }
 
         /// <summary>

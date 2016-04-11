@@ -131,7 +131,7 @@ namespace CsScripts
         /// <param name="codeType">The code type.</param>
         private static bool VerifyCodeType(CodeType codeType)
         {
-            return codeType.Tag == SymTag.FunctionType;
+            return codeType.IsFunction;
         }
 
         /// <summary>

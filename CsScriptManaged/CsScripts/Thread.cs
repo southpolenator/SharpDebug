@@ -1,10 +1,6 @@
 ﻿using CsScriptManaged;
-using CsScriptManaged.Marshaling;
 using CsScriptManaged.Utility;
-using DbgEngManaged;
-using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace CsScripts
 {
@@ -29,6 +25,11 @@ namespace CsScripts
         private SimpleCache<ThreadContext> threadContext;
 
         /// <summary>
+        /// The CLR thread
+        /// </summary>
+        private SimpleCache<Microsoft.Diagnostics.Runtime.ClrThread> clrThread;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Thread" /> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -42,6 +43,7 @@ namespace CsScripts
             tebAddress = SimpleCache.Create(GetTEB);
             stackTrace = SimpleCache.Create(GetStackTrace);
             threadContext = SimpleCache.Create(GetThreadContext);
+            clrThread = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.Threads).Where(t => t.OSThreadId == SystemId).FirstOrDefault());
         }
 
         /// <summary>
@@ -127,6 +129,17 @@ namespace CsScripts
             get
             {
                 return threadContext.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the CLR thread.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.ClrThread ClrThread
+        {
+            get
+            {
+                return clrThread.Value;
             }
         }
 

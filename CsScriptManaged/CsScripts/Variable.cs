@@ -458,7 +458,12 @@ namespace CsScripts
             // Enumeration
             if (codeType.IsEnum)
             {
-                return Context.SymbolProvider.GetEnumName(codeType.Module, codeType.TypeId, Data);
+                NativeCodeType nativeCodeType = codeType as NativeCodeType;
+
+                if (nativeCodeType != null)
+                {
+                    return Context.SymbolProvider.GetEnumName(codeType.Module, nativeCodeType.TypeId, Data);
+                }
             }
 
             // TODO: Call custom caster (e.g. std::string, std::wstring)
@@ -950,7 +955,7 @@ namespace CsScripts
 
             // Look at the type and see if it should be converted to user type
             var typesBasedOnModule = userTypes.Where(t => t.Module == originalVariable.codeType.Module);
-            var typesBasedOnName = typesBasedOnModule.Where(t => t.UserType.TypeId == (originalVariable.codeType.IsPointer ? originalVariable.codeType.ElementType.TypeId : originalVariable.codeType.TypeId));
+            var typesBasedOnName = typesBasedOnModule.Where(t => t.UserType == (originalVariable.codeType.IsPointer ? originalVariable.codeType.ElementType : originalVariable.codeType));
 
             var types = typesBasedOnName.ToArray();
 

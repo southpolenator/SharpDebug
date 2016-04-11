@@ -278,6 +278,11 @@ namespace CsScripts
         public ulong FramePointer { get; private set; }
 
         /// <summary>
+        /// Gets the structure bytes.
+        /// </summary>
+        public byte[] Bytes { get; private set; }
+
+        /// <summary>
         /// Creates the array marshaler.
         /// </summary>
         /// <param name="elementsCount">The number of elements.</param>
@@ -326,6 +331,7 @@ namespace CsScripts
                 InstructionPointer = structure.Eip,
                 StackPointer = structure.Esp,
                 FramePointer = structure.Ebp,
+                Bytes = ReadBytes(pointer, typeof(CONTEXT_X86)),
             };
         }
 
@@ -342,6 +348,7 @@ namespace CsScripts
                 InstructionPointer = structure.Eip,
                 StackPointer = structure.Esp,
                 FramePointer = structure.Ebp,
+                Bytes = ReadBytes(pointer, typeof(WOW64_CONTEXT)),
             };
         }
 
@@ -358,7 +365,21 @@ namespace CsScripts
                 InstructionPointer = structure.Rip,
                 StackPointer = structure.Rsp,
                 FramePointer = structure.Rbp,
+                Bytes = ReadBytes(pointer, typeof(CONTEXT_X64)),
             };
+        }
+
+        /// <summary>
+        /// Reads the structure bytes.
+        /// </summary>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="type">The structure type.</param>
+        private static byte[] ReadBytes(IntPtr pointer, Type type)
+        {
+            byte[] buffer = new byte[Marshal.SizeOf(type)];
+
+            Marshal.Copy(pointer, buffer, 0, buffer.Length);
+            return buffer;
         }
 
         /// <summary>
