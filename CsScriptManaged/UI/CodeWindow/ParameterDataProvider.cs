@@ -13,6 +13,11 @@ namespace CsScriptManaged.UI.CodeWindow
         private int selectedIndex;
 
         /// <summary>
+        /// The currently selected parameter
+        /// </summary>
+        private int currentParameter = 0;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ParameterDataProvider"/> class.
         /// </summary>
         /// <param name="startOffset">The start offset.</param>
@@ -20,13 +25,24 @@ namespace CsScriptManaged.UI.CodeWindow
         public ParameterDataProvider(int startOffset, IEnumerable<ICSharpCode.NRefactory.TypeSystem.IMethod> methods)
         {
             StartOffset = startOffset;
-            Methods = methods.ToArray();
+            Methods = methods.Select(m => new EntityWrapper<ICSharpCode.NRefactory.TypeSystem.IMethod>(m)).OrderBy(m => m.Entity.Parameters.Count).ThenBy(m => m.AmbienceDescription).ToArray();
         }
 
         /// <summary>
         /// Gets the methods.
         /// </summary>
-        public ICSharpCode.NRefactory.TypeSystem.IMethod[] Methods { get; private set; }
+        public EntityWrapper<ICSharpCode.NRefactory.TypeSystem.IMethod>[] Methods { get; private set; }
+
+        /// <summary>
+        /// Gets the currently selected method.
+        /// </summary>
+        private EntityWrapper<ICSharpCode.NRefactory.TypeSystem.IMethod> CurrentMethod
+        {
+            get
+            {
+                return Methods[SelectedIndex];
+            }
+        }
 
         /// <summary>
         /// Gets the overload count.
@@ -51,7 +67,7 @@ namespace CsScriptManaged.UI.CodeWindow
         {
             get
             {
-                return "-Missing Documentation-";
+                return CurrentMethod.GetDocumentationWithParameter(currentParameter);
             }
         }
 
@@ -62,9 +78,7 @@ namespace CsScriptManaged.UI.CodeWindow
         {
             get
             {
-                var ambience = new ICSharpCode.NRefactory.CSharp.CSharpAmbience();
-                ambience.ConversionFlags = ICSharpCode.NRefactory.TypeSystem.ConversionFlags.StandardConversionFlags;
-                return ambience.ConvertSymbol(Methods[SelectedIndex]);
+                return CurrentMethod.GetSyntaxWithParameterHighlighted(currentParameter);
             }
         }
 
@@ -100,6 +114,30 @@ namespace CsScriptManaged.UI.CodeWindow
                 CallPropertyChanged(nameof(CurrentIndexText));
                 CallPropertyChanged(nameof(CurrentHeader));
                 CallPropertyChanged(nameof(CurrentContent));
+            }
+        }
+
+        public int CurrentParameter
+        {
+            get
+            {
+                return currentParameter;
+            }
+
+            set
+            {
+                currentParameter = value;
+                CallPropertyChanged(nameof(SelectedIndex));
+                CallPropertyChanged(nameof(CurrentIndexText));
+                CallPropertyChanged(nameof(CurrentHeader));
+                CallPropertyChanged(nameof(CurrentContent));
+                if (currentParameter >= CurrentMethod.Entity.Parameters.Count)
+                    for (int i = selectedIndex; i < Count; i++)
+                        if (currentParameter < Methods[i].Entity.Parameters.Count)
+                        {
+                            SelectedIndex = i;
+                            break;
+                        }
             }
         }
 

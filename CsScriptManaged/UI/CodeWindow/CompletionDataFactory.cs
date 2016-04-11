@@ -19,47 +19,11 @@ namespace CsScriptManaged.UI.CodeWindow
 
         public ICompletionData CreateEntityCompletionData(IEntity entity)
         {
-            CompletionDataType completionDataType;
-            var ambience = new CSharpAmbience();
-            ambience.ConversionFlags = entity is ITypeDefinition ? ConversionFlags.ShowTypeParameterList : ConversionFlags.None;
+            EntityWrapper<IEntity> entityWrapper = new EntityWrapper<IEntity>(entity);
 
-            switch (entity.SymbolKind)
+            return new CompletionData(entityWrapper.CompletionDataType, entity.Name, priority: 2, description: entityWrapper.EntityDescription)
             {
-                default:
-                case SymbolKind.None:
-                    completionDataType = CompletionDataType.Unknown;
-                    break;
-                case SymbolKind.Property:
-                case SymbolKind.Accessor:
-                    completionDataType = entity.IsStatic ? CompletionDataType.StaticProperty : CompletionDataType.Property;
-                    break;
-                case SymbolKind.Constructor:
-                case SymbolKind.Destructor:
-                case SymbolKind.Method:
-                case SymbolKind.Indexer:
-                case SymbolKind.Operator:
-                    completionDataType = entity.IsStatic ? CompletionDataType.StaticMethod : CompletionDataType.Method;
-                    break;
-                case SymbolKind.Namespace:
-                    completionDataType = CompletionDataType.Namespace;
-                    break;
-                case SymbolKind.Parameter:
-                case SymbolKind.Variable:
-                case SymbolKind.Field:
-                    completionDataType = entity.IsStatic ? CompletionDataType.StaticVariable : CompletionDataType.Variable;
-                    break;
-                case SymbolKind.TypeDefinition:
-                case SymbolKind.TypeParameter:
-                    completionDataType = entity.IsStatic ? CompletionDataType.StaticClass : CompletionDataType.Class;
-                    break;
-                case SymbolKind.Event:
-                    completionDataType = CompletionDataType.Event;
-                    break;
-            }
-
-            return new CompletionData(completionDataType, entity.Name, priority: 2, description: ambience.ConvertSymbol(entity))
-            {
-                CompletionText = ambience.ConvertSymbol(entity),
+                CompletionText = entityWrapper.AmbienceDescription,
                 DisplayText = entity.Name,
             };
         }
@@ -86,7 +50,7 @@ namespace CsScriptManaged.UI.CodeWindow
 
         public ICompletionData CreateLiteralCompletionData(string title, string description = null, string insertText = null)
         {
-            return new CompletionData(CompletionDataType.Keyword, insertText ?? title, priority: 2, description: description ?? (insertText ?? title) + " Keyword");
+            return new CompletionData(CompletionDataType.Keyword, insertText ?? title, priority: 2, description: EntityWrapper<IEntity>.CreateEntityDescription(title, "<summary>" + (description ?? (insertText ?? title) + " Keyword") + "</summary>"));
         }
 
         public ICompletionData CreateMemberCompletionData(IType type, IEntity member)
@@ -96,7 +60,7 @@ namespace CsScriptManaged.UI.CodeWindow
 
         public ICompletionData CreateNamespaceCompletionData(INamespace name)
         {
-            return new CompletionData(CompletionDataType.Namespace, name.Name, description: "namespace " + name.Name);
+            return new CompletionData(CompletionDataType.Namespace, name.Name, description: EntityWrapper<IEntity>.CreateEntityDescription("namespace " + name.Name));
         }
 
         public ICompletionData CreateNewOverrideCompletionData(int declarationBegin, IUnresolvedTypeDefinition type, IMember m)
@@ -132,12 +96,12 @@ namespace CsScriptManaged.UI.CodeWindow
 
         public ICompletionData CreateVariableCompletionData(ITypeParameter parameter)
         {
-            return new CompletionData(CompletionDataType.Variable, parameter.Name, description: ambience.ConvertSymbol(parameter));
+            return new CompletionData(CompletionDataType.Variable, parameter.Name, description: EntityWrapper<IEntity>.CreateEntityDescription(parameter));
         }
 
         public ICompletionData CreateVariableCompletionData(IVariable variable)
         {
-            return new CompletionData(CompletionDataType.Variable, variable.Name, description: ambience.ConvertVariable(variable));
+            return new CompletionData(CompletionDataType.Variable, variable.Name, description: EntityWrapper<IEntity>.CreateEntityDescription(variable));
         }
 
         public ICompletionData CreateXmlDocCompletionData(string tag, string description = null, string tagInsertionText = null)

@@ -21,7 +21,7 @@ namespace CsScriptManaged.UI.CodeWindow
             Priority = priority;
             Description = description ?? content;
             Text = text ?? content.ToString();
-            CompletionText = Content.ToString();
+            CompletionText = content.ToString();
             DisplayText = Text;
             Image = GetImage();
         }

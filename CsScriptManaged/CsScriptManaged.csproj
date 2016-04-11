@@ -189,6 +189,7 @@
     <Compile Include="UI\CodeWindow\CompletionDataFactory.cs" />
     <Compile Include="UI\CodeWindow\CompletionDataType.cs" />
     <Compile Include="UI\CodeWindow\CsTextEditor.cs" />
+    <Compile Include="UI\CodeWindow\EntityWrapper.cs" />
     <Compile Include="UI\CodeWindow\ParameterCompletionDataFactory.cs" />
     <Compile Include="UI\InteractiveCodeEditor.cs" />
     <Compile Include="UI\CodeWindow\ParameterDataProvider.cs" />

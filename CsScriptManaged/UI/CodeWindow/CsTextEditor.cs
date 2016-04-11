@@ -274,19 +274,17 @@ namespace CsScriptManaged.UI.CodeWindow
                     autoCompletePopup = new CompletionWindow(TextArea);
                     autoCompletePopup.CloseWhenCaretAtBeginning = true;
                     autoCompletePopup.StartOffset -= wordLength;
-                    //completionWindow.EndOffset -= results.TriggerWordLength;
                     var data = autoCompletePopup.CompletionList.CompletionData;
 
                     if (completionData != null)
                     {
-                        foreach (var cd in completionData.GroupBy(c => c.Content).Select(g => g.OrderBy(c => c.Description).First()).OrderBy(c => c.Content))
+                        foreach (var cd in completionData.GroupBy(c => c.Content).Select(g => g.OrderBy(c => c.CompletionText).First()).OrderBy(c => c.Content))
                         {
                             data.Add(cd);
                         }
 
                         if (wordLength > 0)
                         {
-                            //completionWindow.CompletionList.IsFiltering = false;
                             autoCompletePopup.CompletionList.SelectItem(word);
                         }
                     }
@@ -295,10 +293,8 @@ namespace CsScriptManaged.UI.CodeWindow
                 }
             }
 
-            //update the insight window
             if (!string.IsNullOrEmpty(text) && functionCallPopup != null)
             {
-                //whenver text is entered update the provider
                 var provider = functionCallPopup.Provider as ParameterDataProvider;
                 if (provider != null)
                 {
@@ -331,7 +327,7 @@ namespace CsScriptManaged.UI.CodeWindow
                     }
                     else
                     {
-                        // TODO: highlight parameter and update documentation
+                        provider.CurrentParameter = parameterIndex - 1;
                     }
                 }
             }
