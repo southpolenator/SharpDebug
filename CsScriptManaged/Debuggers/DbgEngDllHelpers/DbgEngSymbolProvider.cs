@@ -375,11 +375,18 @@ namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
         /// <param name="address">The address.</param>
         public ulong ReadSimpleData(CodeType codeType, ulong address)
         {
+            NativeCodeType nativeCodeType = codeType as NativeCodeType;
+
+            if (nativeCodeType == null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(codeType), "This is only supported for NativeCodeType");
+            }
+
             Module module = codeType.Module;
 
             using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                return typedData[Tuple.Create(module.Address, codeType.TypeId, address)].Data;
+                return typedData[Tuple.Create(module.Address, nativeCodeType.TypeId, address)].Data;
             }
         }
 
