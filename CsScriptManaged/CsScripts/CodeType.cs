@@ -1069,7 +1069,7 @@ namespace CsScripts
         {
             get
             {
-                return Name == "System.Double";
+                return ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Double;
             }
         }
 
@@ -1097,7 +1097,7 @@ namespace CsScripts
         {
             get
             {
-                return Name == "System.Float";
+                return ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Float;
             }
         }
 
@@ -1111,7 +1111,7 @@ namespace CsScripts
         {
             get
             {
-                throw new NotImplementedException();
+                return ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.FunctionPointer;
             }
         }
 
@@ -1197,7 +1197,7 @@ namespace CsScripts
 
                 if (field != null && field.Type != null)
                 {
-                    return Tuple.Create(FromClrType(field.Type), field.Offset);
+                    return GetFieldTypeAndOffset(field);
                 }
             }
 
@@ -1214,10 +1214,19 @@ namespace CsScripts
 
             if (field != null && field.Type != null)
             {
-                return Tuple.Create(FromClrType(field.Type), field.Offset);
+                return GetFieldTypeAndOffset(field);
             }
 
             throw new EntryPointNotFoundException(fieldName);
+        }
+
+        /// <summary>
+        /// Gets the field type and offset.
+        /// </summary>
+        /// <param name="field">The CLR field.</param>
+        private Tuple<CodeType, int> GetFieldTypeAndOffset(Microsoft.Diagnostics.Runtime.ClrInstanceField field)
+        {
+            return Tuple.Create(FromClrType(field.Type), (int)field.GetAddress(0));
         }
 
         /// <summary>
