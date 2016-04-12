@@ -1009,4 +1009,321 @@ namespace CsScripts
             return inputType.Substring(indexStart, i - indexStart);
         }
     }
+
+    /// <summary>
+    /// Debugging type of CLR variables
+    /// </summary>
+    internal class ClrCodeType : CodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClrCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="clrType">The CLR type.</param>
+        public ClrCodeType(Module module, Microsoft.Diagnostics.Runtime.ClrType clrType)
+            : base(module)
+        {
+            ClrType = clrType;
+        }
+
+        /// <summary>
+        /// Gets the CLR type.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.ClrType ClrType { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is ANSI string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsAnsiString
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is array.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is array; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsArray
+        {
+            get
+            {
+                return ClrType.IsArray;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is double.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is double; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsDouble
+        {
+            get
+            {
+                return Name == "System.Double";
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is enum.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is enum; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsEnum
+        {
+            get
+            {
+                return ClrType.IsEnum;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is float.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is float; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFloat
+        {
+            get
+            {
+                return Name == "System.Float";
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is function type.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is function type; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFunction
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is pointer.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is pointer; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsPointer
+        {
+            get
+            {
+                return ClrType.IsPointer;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is floating point number (float or double).
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is floating point number; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsReal
+        {
+            get
+            {
+                return IsDouble || IsFloat;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is simple type.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is simple type; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsSimple
+        {
+            get
+            {
+                return ClrType.IsPrimitive;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI or wide string.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsString
+        {
+            get
+            {
+                return IsWideString || IsAnsiString;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is wide string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is wide string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsWideString
+        {
+            get
+            {
+                return ClrType.IsString;
+            }
+        }
+
+        /// <summary>
+        /// Gets field type and offset from all fields (including all base classes).
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        protected override Tuple<CodeType, int> GetAllFieldTypeAndOffset(string fieldName)
+        {
+            for (var clrType = ClrType; clrType != null; clrType = clrType.BaseType)
+            {
+                var field = clrType.Fields.Where(f => f.Name == fieldName).FirstOrDefault();
+
+                if (field != null && field.Type != null)
+                {
+                    return Tuple.Create(FromClrType(field.Type), field.Offset);
+                }
+            }
+
+            throw new EntryPointNotFoundException(fieldName);
+        }
+
+        /// <summary>
+        /// Gets the field type and offset.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        protected override Tuple<CodeType, int> GetFieldTypeAndOffset(string fieldName)
+        {
+            var field = ClrType.Fields.Where(f => f.Name == fieldName).FirstOrDefault();
+
+            if (field != null && field.Type != null)
+            {
+                return Tuple.Create(FromClrType(field.Type), field.Offset);
+            }
+
+            throw new EntryPointNotFoundException(fieldName);
+        }
+
+        /// <summary>
+        /// Gets the base class and offset.
+        /// </summary>
+        /// <param name="className">Name of the class.</param>
+        protected override Tuple<CodeType, int> GetBaseClassAndOffset(string className)
+        {
+            if (Name == className)
+                return new Tuple<CodeType, int>(this, 0);
+            for (var clrType = ClrType; clrType != null; clrType = clrType.BaseType)
+                if (clrType.Name == className)
+                    return Tuple.Create(FromClrType(clrType), 0);
+            throw new EntryPointNotFoundException(className);
+        }
+
+        /// <summary>
+        /// Gets the direct base classes and offsets.
+        /// </summary>
+        protected override Dictionary<string, Tuple<CodeType, int>> GetDirectBaseClassesAndOffsets()
+        {
+            Dictionary<string, Tuple<CodeType, int>> baseClassesAndOffsets = new Dictionary<string, Tuple<CodeType, int>>();
+            var baseType = ClrType.BaseType;
+
+            if (baseType != null)
+                baseClassesAndOffsets.Add(baseType.Name, Tuple.Create(FromClrType(baseType), 0));
+            return baseClassesAndOffsets;
+        }
+
+        /// <summary>
+        /// Gets the element type.
+        /// </summary>
+        protected override CodeType GetElementType()
+        {
+            if (ClrType.ComponentType != null)
+                return FromClrType(ClrType.ComponentType);
+            return this;
+        }
+
+        /// <summary>
+        /// Gets the pointer to type.
+        /// </summary>
+        protected override CodeType GetPointerToType()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the template arguments.
+        /// </summary>
+        protected override object[] GetTemplateArguments()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the template arguments strings.
+        /// </summary>
+        protected override string[] GetTemplateArgumentsStrings()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the type all field names (including all base classes).
+        /// </summary>
+        protected override string[] GetTypeAllFieldNames()
+        {
+            IEnumerable<Microsoft.Diagnostics.Runtime.ClrInstanceField> fields = ClrType.Fields;
+
+            for (var baseType = ClrType.BaseType; baseType != null; baseType = baseType.BaseType)
+                fields = fields.Union(baseType.Fields);
+            return fields.Select(f => f.Name).ToArray();
+        }
+
+        /// <summary>
+        /// Gets the type field names.
+        /// </summary>
+        protected override string[] GetTypeFieldNames()
+        {
+            return ClrType.Fields.Select(f => f.Name).ToArray();
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return ClrType.Name;
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return (uint)ClrType.BaseSize;
+        }
+
+        /// <summary>
+        /// Creates CodeType from the CLR type.
+        /// </summary>
+        /// <param name="clrType">The CLR type.</param>
+        private CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
+        {
+            return Module.Process.ModulesById[clrType.Module.ImageBase].TypesByName[clrType.Name];
+        }
+    }
 }

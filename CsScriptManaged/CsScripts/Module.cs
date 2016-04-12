@@ -375,7 +375,8 @@ namespace CsScripts
 
                 if (clrType != null)
                 {
-                    // TODO: Create a code type
+                    // Create a code type
+                    return new ClrCodeType(this, clrType);
                 }
             }
             catch (Exception)
