@@ -280,21 +280,6 @@ namespace CsScriptManaged.CLR
         }
 
         /// <summary>
-        /// Reads memory from the target process asynchronously.  Only called if CanReadAsync returns true.
-        /// </summary>
-        /// <param name="address">The address of memory to read.</param>
-        /// <param name="bytesRequested">The number of bytes to read.</param>
-        /// <returns>
-        /// A data structure containing an event to wait for as well as a new byte array to read from.
-        /// </returns>
-        /// <exception cref="System.NotImplementedException"></exception>
-        public AsyncMemoryReadResult ReadMemoryAsync(ulong address, int bytesRequested)
-        {
-            // Deprecated
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// Read a pointer out of the target process.
         /// </summary>
         /// <param name="addr"></param>
