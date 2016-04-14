@@ -134,6 +134,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     // TODO: Verify that all templates in the list can be described by the same class (also check for subtypes)
 
+                    // Sort Templates by symbol Id
+                    // This removes ambiguity caused by parallel type processing.
+                    //
+                    templates.Sort((a, b) => a.Symbol.Id.CompareTo(b.Symbol.Id));
+
                     // Select best suited type for template
                     TemplateUserType template = templates.First();
 
@@ -319,7 +324,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         internal UserTypeTransformation FindTransformation(Symbol type, UserType ownerUserType)
         {
             string originalFieldTypeString = type.Name;
-            var transformation = typeTransformations.Where(t => t.Matches(originalFieldTypeString)).FirstOrDefault();
+            var transformation = typeTransformations.FirstOrDefault(t => t.Matches(originalFieldTypeString));
 
             if (transformation == null)
                 return null;
@@ -335,7 +340,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     return userType.FullClassName;
                 }
 
-                var tr = typeTransformations.Where(t => t.Matches(inputType)).FirstOrDefault();
+                var tr = typeTransformations.FirstOrDefault(t => t.Matches(inputType));
 
                 if (tr != null)
                 {

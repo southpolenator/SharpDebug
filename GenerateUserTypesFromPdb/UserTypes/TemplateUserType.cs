@@ -11,7 +11,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
         private List<string> argumentsSymbols = new List<string>();
         private List<UserType> argumentsUserType = new List<UserType>();
 
-        // #fixme, use diferent type
+        //  TODO consider new type holding specialized template usertypes.
+        //
         public List<TemplateUserType> specializedTypes = new List<TemplateUserType>();
 
         public TemplateUserType(Symbol symbol, XmlType xmlType, string nameSpace, UserTypeFactory factory)
