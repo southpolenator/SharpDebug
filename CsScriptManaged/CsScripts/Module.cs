@@ -472,6 +472,15 @@ namespace CsScripts
         {
             return codeTypeId >= (uint)nextFakeCodeTypeId;
         }
+
+        /// <summary>
+        /// Creates CodeType from the CLR type.
+        /// </summary>
+        /// <param name="clrType">The CLR type.</param>
+        internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
+        {
+            return Process.ModulesById[clrType.Module.ImageBase].TypesByName[clrType.Name];
+        }
         #endregion
     }
 }

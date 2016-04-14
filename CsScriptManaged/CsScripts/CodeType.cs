@@ -1226,7 +1226,7 @@ namespace CsScripts
         /// <param name="field">The CLR field.</param>
         private Tuple<CodeType, int> GetFieldTypeAndOffset(Microsoft.Diagnostics.Runtime.ClrInstanceField field)
         {
-            return Tuple.Create(FromClrType(field.Type), (int)field.GetAddress(0));
+            return Tuple.Create(Module.FromClrType(field.Type), (int)field.GetAddress(0));
         }
 
         /// <summary>
@@ -1239,7 +1239,7 @@ namespace CsScripts
                 return new Tuple<CodeType, int>(this, 0);
             for (var clrType = ClrType; clrType != null; clrType = clrType.BaseType)
                 if (clrType.Name == className)
-                    return Tuple.Create(FromClrType(clrType), 0);
+                    return Tuple.Create(Module.FromClrType(clrType), 0);
             throw new EntryPointNotFoundException(className);
         }
 
@@ -1252,7 +1252,7 @@ namespace CsScripts
             var baseType = ClrType.BaseType;
 
             if (baseType != null)
-                baseClassesAndOffsets.Add(baseType.Name, Tuple.Create(FromClrType(baseType), 0));
+                baseClassesAndOffsets.Add(baseType.Name, Tuple.Create(Module.FromClrType(baseType), 0));
             return baseClassesAndOffsets;
         }
 
@@ -1262,7 +1262,7 @@ namespace CsScripts
         protected override CodeType GetElementType()
         {
             if (ClrType.ComponentType != null)
-                return FromClrType(ClrType.ComponentType);
+                return Module.FromClrType(ClrType.ComponentType);
             return this;
         }
 
@@ -1324,15 +1324,6 @@ namespace CsScripts
         protected override uint GetTypeSize()
         {
             return (uint)ClrType.BaseSize;
-        }
-
-        /// <summary>
-        /// Creates CodeType from the CLR type.
-        /// </summary>
-        /// <param name="clrType">The CLR type.</param>
-        private CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
-        {
-            return Module.Process.ModulesById[clrType.Module.ImageBase].TypesByName[clrType.Name];
         }
     }
 }

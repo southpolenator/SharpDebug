@@ -484,18 +484,26 @@ namespace CsScripts
         /// </summary>
         /// <param name="values">The values.</param>
         /// <param name="names">The names.</param>
-        private static VariableCollection ConvertClrToVariableCollection(IList<Microsoft.Diagnostics.Runtime.ClrValue> values, string[] names)
+        private VariableCollection ConvertClrToVariableCollection(IList<Microsoft.Diagnostics.Runtime.ClrValue> values, string[] names)
         {
-            // TODO: write this function
-            Variable[] variables = new Variable[values.Count];
+            if (values.Count != names.Length)
+                throw new ArgumentOutOfRangeException(nameof(names));
 
-            if (variables.Length > 0)
-            {
-                variables = variables;
-            }
+            List<Variable> variables = new List<Variable>(values.Count);
 
-            //return new VariableCollection(variables);
-            return new VariableCollection(new Variable[0]);
+            for (int i = 0; i < names.Length; i++)
+                if (values[i] != null)
+                    try
+                    {
+                        var value = values[i];
+
+                        variables.Add(Variable.Create(Module.FromClrType(value.Type), value.Address, names[i]));
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+            return new VariableCollection(variables.ToArray());
         }
 
         /// <summary>
