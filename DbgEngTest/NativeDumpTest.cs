@@ -10,7 +10,7 @@ using System.Diagnostics;
 namespace DbgEngTest
 {
     /// <summary>
-    /// E2E tests for verifying varios functionalities of CsScript against NativeDumpTest.exe.
+    /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.exe.
     /// </summary>
     [TestClass]
     public class NativeDumpTest
@@ -26,7 +26,7 @@ namespace DbgEngTest
             IDebugClient client;
             int hresult = DebugCreate(Marshal.GenerateGuidForType(typeof(IDebugClient)), out client);
 
-            if (hresult > 0)
+            if (hresult < 0)
             {
                 Marshal.ThrowExceptionForHR(hresult);
             }

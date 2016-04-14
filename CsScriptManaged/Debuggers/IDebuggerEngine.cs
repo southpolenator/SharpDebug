@@ -232,6 +232,12 @@ namespace CsScriptManaged.Debuggers
         ulong GetModuleAddress(Process process, string moduleName);
 
         /// <summary>
+        /// Gets the timestamp and size of the module.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        Tuple<DateTime, ulong> GetModuleTimestampAndSize(Module module);
+
+        /// <summary>
         /// Reads the ANSI string.
         /// </summary>
         /// <param name="process">The process.</param>

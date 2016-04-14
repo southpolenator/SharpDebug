@@ -81,8 +81,8 @@ namespace CsScriptManaged.CLR
         {
             return Process.Modules.Select(m => new ModuleInfo(this)
             {
-                TimeStamp = 0, // TODO:
-                FileSize = 0, // TODO:
+                TimeStamp = (uint)Math.Round((m.Timestamp - new DateTime(1970, 1, 1)).TotalSeconds),
+                FileSize = (uint)m.Size,
                 ImageBase = m.Address,
                 FileName = m.ImageName,
             }).ToList();
@@ -180,17 +180,7 @@ namespace CsScriptManaged.CLR
         /// <param name="version">The version.</param>
         public void GetVersionInfo(ulong address, out VersionInfo version)
         {
-            Module module = null;
-            ulong distance = ulong.MaxValue;
-            foreach (var m in Process.Modules)
-            {
-                if (address > m.Offset && distance > address - m.Offset)
-                {
-                    module = m;
-                    distance = address - m.Offset;
-                }
-            }
-
+            Module module = Process.GetModuleByInnerAddress(address);
             var moduleVersion = module.ModuleVersion;
 
             version = new VersionInfo()

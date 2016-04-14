@@ -84,6 +84,16 @@ namespace CsScripts
         private SimpleCache<Microsoft.Diagnostics.Runtime.ClrModule> clrModule;
 
         /// <summary>
+        /// The CLR PDB reader
+        /// </summary>
+        private SimpleCache<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader> clrPdbReader;
+
+        /// <summary>
+        /// The timestamp and size
+        /// </summary>
+        private SimpleCache<Tuple<DateTime, ulong>> timestampAndSize;
+
+        /// <summary>
         /// The next fake code type identifier
         /// </summary>
         private int nextFakeCodeTypeId = -1;
@@ -120,7 +130,25 @@ namespace CsScripts
                 Context.Debugger.GetModuleVersion(this, out version.Major, out version.Minor, out version.Revision, out version.Patch);
                 return version;
             });
-            clrModule = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.Modules).Where(m => m.ImageBase == Address).First());
+            timestampAndSize = SimpleCache.Create(() => Context.Debugger.GetModuleTimestampAndSize(this));
+            clrModule = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.Modules).Where(m => m.ImageBase == Address).FirstOrDefault());
+            clrPdbReader = SimpleCache.Create(() =>
+            {
+                try
+                {
+                    string pdbPath = ClrModule.Runtime.DataTarget.SymbolLocator.FindPdb(ClrModule.Pdb);
+
+                    if (!string.IsNullOrEmpty(pdbPath))
+                    {
+                        return new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath);
+                    }
+                }
+                catch (Exception)
+                {
+                }
+
+                return null;
+            });
             TypesByName = new DictionaryCache<string, CodeType>(GetTypeByName);
             TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
             GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
@@ -278,6 +306,28 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the DateTime of module creation.
+        /// </summary>
+        public DateTime Timestamp
+        {
+            get
+            {
+                return timestampAndSize.Value.Item1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the size in bytes.
+        /// </summary>
+        public ulong Size
+        {
+            get
+            {
+                return timestampAndSize.Value.Item2;
+            }
+        }
+
+        /// <summary>
         /// Gets the CLR module.
         /// </summary>
         internal Microsoft.Diagnostics.Runtime.ClrModule ClrModule
@@ -285,6 +335,17 @@ namespace CsScripts
             get
             {
                 return clrModule.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the CLR PDB reader.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader ClrPdbReader
+        {
+            get
+            {
+                return clrPdbReader.Value;
             }
         }
 

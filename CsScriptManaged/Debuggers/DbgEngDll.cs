@@ -1042,6 +1042,27 @@ namespace CsScriptManaged.Debuggers
             return false;
         }
 
+        /// <summary>
+        /// Gets the timestamp and size of the module.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public Tuple<DateTime, ulong> GetModuleTimestampAndSize(Module module)
+        {
+            ulong baseAddress = module.Address;
+
+            using (var moduleParameters = new RegularMarshalArrayReader<DEBUG_MODULE_PARAMETERS>(1))
+            {
+                DateTime timestamp;
+                ulong size;
+
+                Symbols.GetModuleParameters(1, ref baseAddress, 0, moduleParameters.Pointer);
+                var mp = moduleParameters.Elements.First();
+                size = mp.Size;
+                timestamp = new DateTime(1970, 1, 1) + TimeSpan.FromSeconds(mp.TimeDateStamp);
+                return Tuple.Create(timestamp, size);
+            }
+        }
+
         #region Native methods
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.

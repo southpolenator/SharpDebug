@@ -185,6 +185,7 @@
     <Compile Include="Debuggers\DbgEngDll.cs" />
     <Compile Include="Debuggers\IDebuggerEngine.cs" />
     <Compile Include="Marshaling\NamespaceDoc.cs" />
+    <Compile Include="Native\DEBUG_MODULE_PARAMETERS.cs" />
     <Compile Include="ObjectWriter.cs" />
     <Compile Include="StateCache.cs" />
     <Compile Include="SymbolProviders\NamespaceDoc.cs" />

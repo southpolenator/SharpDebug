@@ -104,7 +104,13 @@ namespace CsScripts
             threads = SimpleCache.Create(() => Context.Debugger.GetProcessThreads(this));
             modules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
             userTypes = SimpleCache.Create(GetUserTypes);
-            clrDataTarget = SimpleCache.Create(() => Microsoft.Diagnostics.Runtime.DataTarget.CreateFromDataReader(new CsScriptManaged.CLR.DataReader(this)));
+            clrDataTarget = SimpleCache.Create(() =>
+            {
+                var dataTarget = Microsoft.Diagnostics.Runtime.DataTarget.CreateFromDataReader(new CsScriptManaged.CLR.DataReader(this));
+
+                dataTarget.SymbolLocator.SymbolPath += ";http://symweb";
+                return dataTarget;
+            });
             clrRuntimes = SimpleCache.Create(() => ClrDataTarget.ClrVersions.Select(clrInfo => clrInfo.CreateRuntime()).ToArray());
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
             ModulesById = new DictionaryCache<ulong, Module>(GetModuleByAddress);
@@ -422,6 +428,23 @@ namespace CsScripts
 
             module.Name = name;
             return module;
+        }
+
+        /// <summary>
+        /// Gets the module that contains specified address in its address space.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        internal Module GetModuleByInnerAddress(ulong address)
+        {
+            foreach (var module in Modules)
+            {
+                if (module.Address <= address && module.Address + module.Size > address)
+                {
+                    return module;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
