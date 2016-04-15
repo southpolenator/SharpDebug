@@ -498,7 +498,7 @@ namespace CsScripts
                     {
                         var value = values[i];
 
-                        variables.Add(Variable.Create(Module.FromClrType(value.Type), value.Address, names[i]));
+                        variables.Add(Variable.CreateNoCast(Module.FromClrType(value.Type), value.Address, names[i]));
                     }
                     catch (Exception)
                     {

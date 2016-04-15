@@ -166,19 +166,6 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the global variable by the name.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        private Variable GetGlobalVariable(string name)
-        {
-            uint typeId = Context.SymbolProvider.GetGlobalVariableTypeId(this, name);
-            var codeType = TypesById[typeId];
-            ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
-
-            return Variable.CreateNoCast(codeType, address, name, name);
-        }
-
-        /// <summary>
         /// Gets the array of all modules for the current process.
         /// </summary>
         public static Module[] All
@@ -371,7 +358,58 @@ namespace CsScripts
 
             return UserTypeCastedGlobalVariables[name];
         }
+
+        /// <summary>
+        /// Gets the CLR static variable.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="appDomain">The application domain.</param>
+        /// <returns>Static variable if found</returns>
+        public Variable GetClrVariable(string name, CsScriptManaged.CLR.AppDomain appDomain)
+        {
+            int variableNameIndex = name.LastIndexOf('.');
+            string typeName = name.Substring(0, variableNameIndex);
+            var clrType = ClrModule.GetTypeByName(typeName);
+
+            if (clrType == null)
+            {
+                throw new Exception("CLR type not found " + typeName);
+            }
+
+            string variableName = name.Substring(variableNameIndex + 1);
+            var staticField = clrType.GetStaticFieldByName(variableName);
+
+            if (staticField == null)
+            {
+                throw new Exception("Field " + staticField + " wasn't found in CLR type " + typeName);
+            }
+
+            var address = staticField.GetAddress(appDomain.ClrAppDomain);
+
+            return Variable.CreateNoCast(FromClrType(clrType), address, variableName);
+        }
+
         #region Cache filling functions
+        /// <summary>
+        /// Gets the global variable by the name.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        private Variable GetGlobalVariable(string name)
+        {
+            // Check if it is CLR variable
+            if (name.Contains("."))
+            {
+                return GetClrVariable(name, Process.CurrentCLRAppDomain);
+            }
+            else
+            {
+                uint typeId = Context.SymbolProvider.GetGlobalVariableTypeId(this, name);
+                var codeType = TypesById[typeId];
+                ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
+
+                return Variable.CreateNoCast(codeType, address, name, name);
+            }
+        }
 
         /// <summary>
         /// Gets the type with the specified name.

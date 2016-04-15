@@ -79,6 +79,11 @@ namespace CsScripts
         private SimpleCache<Runtime[]> clrRuntimes;
 
         /// <summary>
+        /// The current application domain
+        /// </summary>
+        private SimpleCache<CsScriptManaged.CLR.AppDomain> currentAppDomain;
+
+        /// <summary>
         /// The ANSI string cache
         /// </summary>
         private DictionaryCache<Tuple<ulong, int>, string> ansiStringCache;
@@ -113,6 +118,7 @@ namespace CsScripts
                 return dataTarget;
             });
             clrRuntimes = SimpleCache.Create(() => ClrDataTarget.ClrVersions.Select(clrInfo => new Runtime(this, clrInfo.CreateRuntime())).ToArray());
+            currentAppDomain = SimpleCache.Create(() => ClrRuntimes.SelectMany(r => r.AppDomains).FirstOrDefault());
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
             ModulesById = new DictionaryCache<ulong, Module>(GetModuleByAddress);
             Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
@@ -334,13 +340,29 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Gets the CLR runtimes running in the process.
+        /// Gets the array of CLR runtimes running in the process.
         /// </summary>
         public Runtime[] ClrRuntimes
         {
             get
             {
                 return clrRuntimes.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the current CLR application domain. If not set, if will be first AppDomain from first Runtime.
+        /// </summary>
+        public CsScriptManaged.CLR.AppDomain CurrentCLRAppDomain
+        {
+            get
+            {
+                return currentAppDomain.Value;
+            }
+
+            set
+            {
+                currentAppDomain.Value = value;
             }
         }
 
