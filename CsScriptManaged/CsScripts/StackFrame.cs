@@ -400,6 +400,7 @@ namespace CsScripts
             return arguments;
         }
 
+        #region CLR specific methods
         /// <summary>
         /// Gets the local variables.
         /// </summary>
@@ -547,5 +548,6 @@ namespace CsScripts
 
             return last;
         }
+        #endregion
     }
 }

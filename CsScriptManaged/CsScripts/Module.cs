@@ -131,7 +131,7 @@ namespace CsScripts
                 return version;
             });
             timestampAndSize = SimpleCache.Create(() => Context.Debugger.GetModuleTimestampAndSize(this));
-            clrModule = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.Modules).Where(m => m.ImageBase == Address).FirstOrDefault());
+            clrModule = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.ClrRuntime.Modules).Where(m => m.ImageBase == Address).FirstOrDefault());
             clrPdbReader = SimpleCache.Create(() =>
             {
                 try

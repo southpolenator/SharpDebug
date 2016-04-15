@@ -157,7 +157,9 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CLR\AppDomain.cs" />
     <Compile Include="CLR\DataReader.cs" />
+    <Compile Include="CLR\Runtime.cs" />
     <Compile Include="CompileException.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Context.cs" />

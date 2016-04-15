@@ -43,7 +43,7 @@ namespace CsScripts
             tebAddress = SimpleCache.Create(GetTEB);
             stackTrace = SimpleCache.Create(GetStackTrace);
             threadContext = SimpleCache.Create(GetThreadContext);
-            clrThread = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.Threads).Where(t => t.OSThreadId == SystemId).FirstOrDefault());
+            clrThread = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.ClrRuntime.Threads).Where(t => t.OSThreadId == SystemId).FirstOrDefault());
         }
 
         /// <summary>

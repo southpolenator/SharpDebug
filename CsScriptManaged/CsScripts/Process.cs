@@ -1,4 +1,5 @@
 ﻿using CsScriptManaged;
+using CsScriptManaged.CLR;
 using CsScriptManaged.Native;
 using CsScriptManaged.Utility;
 using System;
@@ -75,7 +76,7 @@ namespace CsScripts
         /// <summary>
         /// The CLR runtimes running in the process
         /// </summary>
-        private SimpleCache<Microsoft.Diagnostics.Runtime.ClrRuntime[]> clrRuntimes;
+        private SimpleCache<Runtime[]> clrRuntimes;
 
         /// <summary>
         /// The ANSI string cache
@@ -111,7 +112,7 @@ namespace CsScripts
                 dataTarget.SymbolLocator.SymbolPath += ";http://symweb";
                 return dataTarget;
             });
-            clrRuntimes = SimpleCache.Create(() => ClrDataTarget.ClrVersions.Select(clrInfo => clrInfo.CreateRuntime()).ToArray());
+            clrRuntimes = SimpleCache.Create(() => ClrDataTarget.ClrVersions.Select(clrInfo => new Runtime(this, clrInfo.CreateRuntime())).ToArray());
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
             ModulesById = new DictionaryCache<ulong, Module>(GetModuleByAddress);
             Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
@@ -333,6 +334,17 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the CLR runtimes running in the process.
+        /// </summary>
+        public Runtime[] ClrRuntimes
+        {
+            get
+            {
+                return clrRuntimes.Value;
+            }
+        }
+
+        /// <summary>
         /// Gets the CLR data target.
         /// </summary>
         internal Microsoft.Diagnostics.Runtime.DataTarget ClrDataTarget
@@ -340,17 +352,6 @@ namespace CsScripts
             get
             {
                 return clrDataTarget.Value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the CLR runtimes running in the process.
-        /// </summary>
-        internal Microsoft.Diagnostics.Runtime.ClrRuntime[] ClrRuntimes
-        {
-            get
-            {
-                return clrRuntimes.Value;
             }
         }
 
