@@ -441,6 +441,15 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Creates CodeType from the CLR type.
+        /// </summary>
+        /// <param name="clrType">The CLR type.</param>
+        internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
+        {
+            return ModulesById[clrType.Module.ImageBase].TypesByName[clrType.Name];
+        }
+
+        /// <summary>
         /// Gets the module with the specified name.
         /// </summary>
         /// <param name="name">The name.</param>

@@ -517,7 +517,7 @@ namespace CsScripts
         /// <param name="clrType">The CLR type.</param>
         internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
         {
-            return Process.ModulesById[clrType.Module.ImageBase].TypesByName[clrType.Name];
+            return Process.FromClrType(clrType);
         }
         #endregion
     }

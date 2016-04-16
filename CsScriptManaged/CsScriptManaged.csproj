@@ -159,6 +159,7 @@
   <ItemGroup>
     <Compile Include="CLR\AppDomain.cs" />
     <Compile Include="CLR\DataReader.cs" />
+    <Compile Include="CLR\Heap.cs" />
     <Compile Include="CLR\Runtime.cs" />
     <Compile Include="CompileException.cs" />
     <Compile Include="Constants.cs" />
