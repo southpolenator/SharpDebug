@@ -27,8 +27,8 @@
       <Argument Key="maxVersionParts" Value="" xmlns="" />
     </TransformComponentArguments>
     <DocumentationSources>
-      <DocumentationSource sourceFile="..\CommonUserTypes\CommonUserTypes.csproj" />
-      <DocumentationSource sourceFile="..\CsScriptManaged\CsScriptManaged.csproj" />
+      <DocumentationSource sourceFile="$(SolutionDir)\Source\CommonUserTypes\CommonUserTypes.csproj" />
+      <DocumentationSource sourceFile="$(SolutionDir)\Source\CsScriptManaged\CsScriptManaged.csproj" />
     </DocumentationSources>
     <BuildAssemblerVerbosity>OnlyWarningsAndErrors</BuildAssemblerVerbosity>
     <HelpFileFormat>HtmlHelp1, MSHelpViewer, Website</HelpFileFormat>
