@@ -38,7 +38,7 @@ Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "CsScriptManagedReference", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Packager", "Utility\NuGet.Packager\NuGet.Packager.csproj", "{0451BAEF-DF2E-4B98-8644-94EE9415E389}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugCmdlets", "DebugCmdlets\DebugCmdlets.csproj", "{1E791857-FBC2-4AC2-ABD7-5CC2AA7D4D59}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugCmdlets", "Source\DebugCmdlets\DebugCmdlets.csproj", "{1E791857-FBC2-4AC2-ABD7-5CC2AA7D4D59}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbgEngTest", "DbgEngTest\DbgEngTest.csproj", "{855FB0C3-CC35-458A-B709-975E6DA44C0D}"
 EndProject
