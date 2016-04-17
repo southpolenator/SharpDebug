@@ -131,12 +131,12 @@
     <Message Text="SUCCESS: Published package." Condition=" '$(Configuration)|$(ExitCode)' == 'Release|0' " Importance="High" />
   </Target>
   <PropertyGroup>
-    <PreBuildEvent>xcopy /Y $(SolutionDir)..\$(OutDir)CsScriptManaged.dll $(ProjectDir)lib\net452
-xcopy /Y $(SolutionDir)..\$(OutDir)CsScripts.CommonUserTypes.dll $(ProjectDir)lib\net452
-xcopy /Y $(SolutionDir)..\$(OutDir)CsScripts.dll $(ProjectDir)lib\net452
-xcopy /Y $(SolutionDir)..\$(OutDir)DbgEngManaged.dll $(ProjectDir)lib\net452
-xcopy /Y $(SolutionDir)..\$(OutDir)DiaHelpers.dll $(ProjectDir)lib\net452
-xcopy /Y $(SolutionDir)..\$(OutDir)GenerateUserTypesFromPdb.exe $(ProjectDir)lib\net452
-xcopy /Y $(SolutionDir)..\$(OutDir)GenerateUserTypesFromPdb.exe.config $(ProjectDir)lib\net452</PreBuildEvent>
+    <PreBuildEvent>xcopy /Y $(SolutionDir)$(OutDir)CsScriptManaged.dll $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)$(OutDir)CsScripts.CommonUserTypes.dll $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)$(OutDir)CsScripts.dll $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)$(OutDir)DbgEngManaged.dll $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)$(OutDir)DiaHelpers.dll $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)$(OutDir)GenerateUserTypesFromPdb.exe $(ProjectDir)lib\net452
+xcopy /Y $(SolutionDir)$(OutDir)GenerateUserTypesFromPdb.exe.config $(ProjectDir)lib\net452</PreBuildEvent>
   </PropertyGroup>
 </Project>
