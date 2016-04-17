@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsScriptManaged", "Source\C
 		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A} = {BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsScriptManagedTest", "CsScriptManagedTest\CsScriptManagedTest.csproj", "{B683D8DD-6759-4301-A54A-FAEFE1105416}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsScriptManagedTest", "Tests\CsScriptManagedTest\CsScriptManagedTest.csproj", "{B683D8DD-6759-4301-A54A-FAEFE1105416}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CsScriptsTest", "Tests\CsScriptsTest\CsScriptsTest.vcxproj", "{DCB9C02D-1615-4287-A413-210F6C08F9C9}"
 EndProject
@@ -30,7 +30,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiaHelpers", "Source\DiaHel
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonUserTypes", "Source\CommonUserTypes\CommonUserTypes.csproj", "{21A929EA-B96B-4523-9D0F-853EA771058D}"
 EndProject
-Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "CsScriptManagedReference", "CsScriptManagedReference\CsScriptManagedReference.shfbproj", "{7A19DBB3-DA7D-48E8-BCBA-48A727176063}"
+Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "CsScriptManagedReference", "Utility\CsScriptManagedReference\CsScriptManagedReference.shfbproj", "{7A19DBB3-DA7D-48E8-BCBA-48A727176063}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2A7F1646-9B5A-433C-8A84-2215194F59B9} = {2A7F1646-9B5A-433C-8A84-2215194F59B9}
 		{21A929EA-B96B-4523-9D0F-853EA771058D} = {21A929EA-B96B-4523-9D0F-853EA771058D}
