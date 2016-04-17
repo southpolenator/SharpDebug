@@ -134,10 +134,10 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 {
                     // TODO: Verify that all templates in the list can be described by the same class (also check for subtypes)
 
-                    // Sort Templates by Class Name.
+                    // Sort Templates by symbol Id
                     // This removes ambiguity caused by parallel type processing.
                     //
-                    templates.Sort((a, b) => string.Compare(a.Symbol.Name, b.Symbol.Name, StringComparison.InvariantCulture));
+                    templates.Sort((a, b) => a.Symbol.Id.CompareTo(b.Symbol.Id));
 
                     // Select best suited type for template
                     TemplateUserType template = templates.First();
