@@ -17,7 +17,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsScriptManagedTest", "CsSc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CsScriptsTest", "CsScriptsTest\CsScriptsTest.vcxproj", "{DCB9C02D-1615-4287-A413-210F6C08F9C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateDbgEngIdl", "CreateDbgEngIdl\CreateDbgEngIdl.csproj", "{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateDbgEngIdl", "Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj", "{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenerateUserTypesFromPdb", "GenerateUserTypesFromPdb\GenerateUserTypesFromPdb.csproj", "{283A0331-2EAD-4DD2-A3FE-20D229E2D277}"
 EndProject
