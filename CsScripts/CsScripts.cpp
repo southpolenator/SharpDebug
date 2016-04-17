@@ -230,6 +230,14 @@ public:
 		return S_OK;
 	}
 
+	HRESULT OpenUI(const wchar_t*arguments)
+	{
+		bstr_t bstrArguments = arguments;
+
+		CHECKCOM(instance->OpenUI(bstrArguments));
+		return S_OK;
+	}
+
 	HRESULT Interpret(const wchar_t* arguments)
 	{
 		bstr_t bstrArguments = arguments;
@@ -351,6 +359,19 @@ CSSCRIPTS_API HRESULT interactive(
 	ss << Args;
 	clr.InitializeContext(Client);
 	HRESULT result = clr.EnterInteractiveMode(ss.str().c_str());
+	clr.InitializeContext(nullptr);
+	return result;
+}
+
+CSSCRIPTS_API HRESULT openui(
+	_In_     IDebugClient* Client,
+	_In_opt_ PCSTR         Args)
+{
+	wstringstream ss;
+
+	ss << Args;
+	clr.InitializeContext(Client);
+	HRESULT result = clr.OpenUI(ss.str().c_str());
 	clr.InitializeContext(nullptr);
 	return result;
 }

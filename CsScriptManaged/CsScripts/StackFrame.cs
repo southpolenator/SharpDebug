@@ -2,6 +2,9 @@
 using CsScriptManaged.Utility;
 using DbgEngManaged;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace CsScripts
 {
@@ -46,6 +49,16 @@ namespace CsScripts
         private SimpleCache<VariableCollection> userTypeConvertedArguments;
 
         /// <summary>
+        /// The CLR stack frame
+        /// </summary>
+        private SimpleCache<Microsoft.Diagnostics.Runtime.ClrStackFrame> clrStackFrame;
+
+        /// <summary>
+        /// The module where instruction pointer is located.
+        /// </summary>
+        private SimpleCache<Module> module;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="StackFrame" /> class.
         /// </summary>
         /// <param name="stackTrace">The stack trace.</param>
@@ -58,8 +71,9 @@ namespace CsScripts
             this.frame = frame;
             sourceFileNameAndLine = SimpleCache.Create(ReadSourceFileNameAndLine);
             functionNameAndDisplacement = SimpleCache.Create(ReadFunctionNameAndDisplacement);
-            locals = SimpleCache.Create(() => Context.SymbolProvider.GetFrameLocals(this, false));
-            arguments = SimpleCache.Create(() => Context.SymbolProvider.GetFrameLocals(this, true));
+            locals = SimpleCache.Create(GetLocals);
+            arguments = SimpleCache.Create(GetArguments);
+            clrStackFrame = SimpleCache.Create(() => Thread.ClrThread?.StackTrace.Where(f => f.InstructionPointer == InstructionOffset).FirstOrDefault());
             userTypeConvertedLocals = SimpleCache.Create(() =>
             {
                 VariableCollection collection = Variable.CastVariableCollectionToUserType(locals.Value);
@@ -73,6 +87,14 @@ namespace CsScripts
 
                 GlobalCache.UserTypeCastedVariableCollections.Add(userTypeConvertedArguments);
                 return collection;
+            });
+            module = SimpleCache.Create(() =>
+            {
+                var m = Process.GetModuleByInnerAddress(InstructionOffset);
+
+                if (m == null && ClrStackFrame != null)
+                    m = Process.Modules.Where(mm => mm.ClrModule == ClrStackFrame.Module).FirstOrDefault();
+                return m;
             });
         }
 
@@ -121,6 +143,17 @@ namespace CsScripts
             get
             {
                 return Thread.Process;
+            }
+        }
+
+        /// <summary>
+        /// Gets the module where instruction pointer is located.
+        /// </summary>
+        public Module Module
+        {
+            get
+            {
+                return module.Value;
             }
         }
 
@@ -292,6 +325,17 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the CLR stack frame.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.ClrStackFrame ClrStackFrame
+        {
+            get
+            {
+                return clrStackFrame.Value;
+            }
+        }
+
+        /// <summary>
         /// Reads the name of the source file, line and displacement.
         /// </summary>
         /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
@@ -332,5 +376,178 @@ namespace CsScripts
                 throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
             }
         }
+
+        /// <summary>
+        /// Gets the function arguments.
+        /// </summary>
+        private VariableCollection GetArguments()
+        {
+            VariableCollection arguments = null;
+
+            try
+            {
+                arguments = Context.SymbolProvider.GetFrameLocals(this, true);
+            }
+            catch (Exception)
+            {
+            }
+
+            if ((arguments == null || arguments.Count == 0) && ClrStackFrame != null && ClrStackFrame.Arguments.Count > 0)
+            {
+                arguments = ConvertClrToVariableCollection(ClrStackFrame.Arguments, GetClrArgumentsNames());
+            }
+
+            return arguments;
+        }
+
+        #region CLR specific methods
+        /// <summary>
+        /// Gets the local variables.
+        /// </summary>
+        private VariableCollection GetLocals()
+        {
+            VariableCollection locals = null;
+
+            try
+            {
+                locals = Context.SymbolProvider.GetFrameLocals(this, false);
+            }
+            catch (Exception)
+            {
+            }
+
+            if ((locals == null || locals.Count == 0) && ClrStackFrame != null && ClrStackFrame.Locals.Count > 0)
+            {
+                locals = ConvertClrToVariableCollection(ClrStackFrame.Locals, GetClrLocalsNames());
+            }
+
+            return locals;
+        }
+
+        /// <summary>
+        /// Gets the CLR local variable names.
+        /// </summary>
+        private string[] GetClrLocalsNames()
+        {
+            var pdb = Module.ClrPdbReader;
+
+            if (pdb == null)
+            {
+                return Enumerable.Range(0, ClrStackFrame.Locals.Count).Select(id => string.Format("local_{0}", id)).ToArray();
+            }
+            else
+            {
+                var function = pdb.GetFunctionFromToken(ClrStackFrame.Method.MetadataToken);
+                uint ilOffset = FindIlOffset(ClrStackFrame);
+                var scope = function.FindScopeByILOffset(ilOffset);
+
+                return GetRecursiveSlots(scope).Select(s => s.Name).ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Gets the CLR function argument names.
+        /// </summary>
+        private string[] GetClrArgumentsNames()
+        {
+            var frame = ClrStackFrame;
+            var imd = frame.Module.MetadataImport;
+            var sb = new StringBuilder(64);
+            List<string> arguments = new List<string>(frame.Arguments.Count);
+            IntPtr paramEnum = IntPtr.Zero;
+            uint fetched = 0;
+            int paramDef;
+
+            imd.EnumParams(ref paramEnum, (int)frame.Method.MetadataToken, out paramDef, 1, out fetched);
+            while (fetched == 1)
+            {
+                int pmd;
+                uint pulSequence, pchName, pdwAttr, pdwCPlusTypeFlag, pcchValue;
+                IntPtr ppValue;
+
+                imd.GetParamProps(paramDef, out pmd, out pulSequence, sb, (uint)sb.Capacity, out pchName, out pdwAttr, out pdwCPlusTypeFlag, out ppValue, out pcchValue);
+                arguments.Add(sb.ToString());
+                sb.Clear();
+                imd.EnumParams(ref paramEnum, (int)frame.Method.MetadataToken, out paramDef, 1, out fetched);
+            }
+
+            imd.CloseEnum(paramEnum);
+            if (arguments.Count == frame.Arguments.Count - 1)
+            {
+                arguments.Insert(0, "this");
+            }
+
+            return arguments.ToArray();
+        }
+
+        /// <summary>
+        /// Converts the CLR values to variable collection.
+        /// </summary>
+        /// <param name="values">The values.</param>
+        /// <param name="names">The names.</param>
+        private VariableCollection ConvertClrToVariableCollection(IList<Microsoft.Diagnostics.Runtime.ClrValue> values, string[] names)
+        {
+            if (values.Count != names.Length)
+                throw new ArgumentOutOfRangeException(nameof(names));
+
+            List<Variable> variables = new List<Variable>(values.Count);
+
+            for (int i = 0; i < names.Length; i++)
+                if (values[i] != null)
+                    try
+                    {
+                        var value = values[i];
+
+                        variables.Add(Variable.CreateNoCast(Module.FromClrType(value.Type), value.Address, names[i]));
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+            return new VariableCollection(variables.ToArray());
+        }
+
+        /// <summary>
+        /// Gets the recursive slots.
+        /// </summary>
+        /// <param name="scope">The scope.</param>
+        /// <param name="results">The results.</param>
+        public static IEnumerable<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> GetRecursiveSlots(Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbScope scope, List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> results = null)
+        {
+            if (results == null)
+                results = new List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot>();
+            foreach (var slot in scope.Slots)
+            {
+                while (results.Count <= slot.Slot)
+                    results.Add(null);
+                results[(int)slot.Slot] = slot;
+            }
+
+            foreach (var innerScope in scope.Scopes)
+                GetRecursiveSlots(innerScope, results);
+            return results;
+        }
+
+        /// <summary>
+        /// Finds the IL offset for the specified frame.
+        /// </summary>
+        /// <param name="frame">The frame.</param>
+        private static uint FindIlOffset(Microsoft.Diagnostics.Runtime.ClrStackFrame frame)
+        {
+            ulong ip = frame.InstructionPointer;
+            uint last = uint.MaxValue;
+
+            foreach (var item in frame.Method.ILOffsetMap)
+            {
+                if (item.StartAddress > ip)
+                    return last;
+                if (ip <= item.EndAddress)
+                    return (uint)item.ILOffset;
+                last = (uint)item.ILOffset;
+            }
+
+            return last;
+        }
+        #endregion
     }
 }

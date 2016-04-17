@@ -40,5 +40,11 @@ namespace CsScriptManaged
         /// </summary>
         /// <param name="arguments">The arguments.</param>
         void Interpret(string arguments);
+
+        /// <summary>
+        /// Opens the UI.
+        /// </summary>
+        /// <param name="arguments">The arguments.</param>
+        void OpenUI(string arguments);
     }
 }

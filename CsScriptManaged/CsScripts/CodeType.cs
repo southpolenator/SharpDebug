@@ -10,237 +10,94 @@ namespace CsScripts
     /// <summary>
     /// Debugging type of variables
     /// </summary>
-    public class CodeType
+    public abstract class CodeType
     {
         /// <summary>
         /// The element type
         /// </summary>
-        private SimpleCache<CodeType> elementType;
+        protected internal SimpleCache<CodeType> elementType;
 
         /// <summary>
         /// The pointer to type
         /// </summary>
-        private SimpleCache<CodeType> pointerToType;
+        protected internal SimpleCache<CodeType> pointerToType;
 
         /// <summary>
         /// The name
         /// </summary>
-        private SimpleCache<string> name;
+        protected internal SimpleCache<string> name;
 
         /// <summary>
         /// The size
         /// </summary>
-        private SimpleCache<uint> size;
+        protected internal SimpleCache<uint> size;
 
         /// <summary>
         /// The all field names (including all base classes)
         /// </summary>
-        private SimpleCache<string[]> allFieldNames;
-
-        /// <summary>
-        /// All field types and offsets
-        /// </summary>
-        private DictionaryCache<string, Tuple<CodeType, int>> allFieldTypesAndOffsets;
+        protected internal SimpleCache<string[]> allFieldNames;
 
         /// <summary>
         /// The field names
         /// </summary>
-        private SimpleCache<string[]> fieldNames;
-
-        /// <summary>
-        /// The field type and offsets
-        /// </summary>
-        private DictionaryCache<string, Tuple<CodeType, int>> fieldTypeAndOffsets;
-
-        /// <summary>
-        /// The base classes and offsets
-        /// </summary>
-        private DictionaryCache<string, Tuple<CodeType, int>> baseClassesAndOffsets;
+        protected internal SimpleCache<string[]> fieldNames;
 
         /// <summary>
         /// The direct base classes and offsets
         /// </summary>
-        private SimpleCache<Dictionary<string, Tuple<CodeType, int>>> directBaseClassesAndOffsets;
+        protected internal SimpleCache<Dictionary<string, Tuple<CodeType, int>>> directBaseClassesAndOffsets;
+
+        /// <summary>
+        /// All field types and offsets
+        /// </summary>
+        protected internal DictionaryCache<string, Tuple<CodeType, int>> allFieldTypesAndOffsets;
+
+        /// <summary>
+        /// The field type and offsets
+        /// </summary>
+        protected internal DictionaryCache<string, Tuple<CodeType, int>> fieldTypeAndOffsets;
+
+        /// <summary>
+        /// The base classes and offsets
+        /// </summary>
+        protected internal DictionaryCache<string, Tuple<CodeType, int>> baseClassesAndOffsets;
 
         /// <summary>
         /// The template arguments
         /// </summary>
-        private SimpleCache<object[]> templateArguments;
+        protected internal SimpleCache<object[]> templateArguments;
 
         /// <summary>
         /// The template arguments
         /// </summary>
-        private SimpleCache<string[]> templateArgumentsStrings;
+        protected internal SimpleCache<string[]> templateArgumentsStrings;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CodeType"/> class.
+        /// Initializes a new instance of the <see cref="CodeType" /> class.
         /// </summary>
-        /// <remarks>This should not be used directly, but through Module.TypesById[typeId]</remarks>
         /// <param name="module">The module.</param>
-        /// <param name="typeId">The type identifier.</param>
-        /// <param name="tag">The symbol tag.</param>
-        /// <param name="basicType">Type of the basic type.</param>
-        internal CodeType(Module module, uint typeId, SymTag tag, Dia2Lib.BasicType basicType)
+        protected CodeType(Module module)
         {
             Module = module;
-            TypeId = typeId;
-            Tag = tag;
-            BasicType = basicType;
-            InitializeCache();
 
-            if (IsPointer && module.IsFakeCodeTypeId(typeId))
-            {
-                if (!ElementType.pointerToType.Cached)
-                {
-                    ElementType.pointerToType.Value = this;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Creates the code type from specified name and module. If name contains module!, module can be omitted.
-        /// </summary>
-        /// <param name="codeTypeName">The code type name.</param>
-        /// <param name="module">The module.</param>
-        public static CodeType Create(string codeTypeName, Module module = null)
-        {
-            int moduleIndex = codeTypeName.IndexOf('!');
-
-            if (moduleIndex > 0)
-            {
-                string moduleName = codeTypeName.Substring(0, moduleIndex);
-
-                if (module != null && moduleName.ToLowerInvariant() != module.Name.ToLowerInvariant())
-                {
-                    throw new Exception(string.Format("Module specified inside codeTypeName doesn't match specified module parameter.\ncodeTypeName: {0}\nmodule.Name = {1}", codeTypeName, module.Name));
-                }
-
-                if (module == null && string.IsNullOrEmpty(moduleName) == false)
-                {
-                    module = Process.Current.ModulesByName[moduleName];
-                }
-                else
-                {
-                    module = module.Process.ModulesByName[moduleName];
-                }
-                codeTypeName = codeTypeName.Substring(moduleIndex + 1);
-            }
-            else if (module == null)
-            {
-                throw new Exception("Module must be specified either using module parameter or using codeTypeName with 'module!'");
-            }
-
-            return module.TypesByName[codeTypeName];
-        }
-
-        /// <summary>
-        /// Initializes the cache.
-        /// </summary>
-        private void InitializeCache()
-        {
             elementType = SimpleCache.Create(GetElementType);
             pointerToType = SimpleCache.Create(GetPointerToType);
-            name = SimpleCache.Create(() => Context.SymbolProvider.GetTypeName(Module, TypeId));
-            size = SimpleCache.Create(() => Context.SymbolProvider.GetTypeSize(Module, TypeId));
-            allFieldNames = SimpleCache.Create(() => Context.SymbolProvider.GetTypeAllFieldNames(Module, TypeId));
-            allFieldTypesAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>((fieldName) =>
-            {
-                var field = Context.SymbolProvider.GetTypeAllFieldTypeAndOffset(Module, TypeId, fieldName);
-
-                return Tuple.Create(Module.TypesById[field.Item1], field.Item2);
-            });
-            fieldNames = SimpleCache.Create(() => Context.SymbolProvider.GetTypeFieldNames(Module, TypeId));
-            fieldTypeAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>((fieldName) =>
-            {
-                var field = Context.SymbolProvider.GetTypeFieldTypeAndOffset(Module, TypeId, fieldName);
-
-                return Tuple.Create(Module.TypesById[field.Item1], field.Item2);
-            });
-            baseClassesAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>((className) =>
-            {
-                var baseClass = Context.SymbolProvider.GetTypeBaseClass(Module, TypeId, className);
-
-                return Tuple.Create(Module.TypesById[baseClass.Item1], baseClass.Item2);
-            });
-            directBaseClassesAndOffsets = SimpleCache.Create(() =>
-            {
-                var baseClasses = Context.SymbolProvider.GetTypeDirectBaseClasses(Module, TypeId);
-                var result = new Dictionary<string, Tuple<CodeType, int>>();
-
-                foreach (var baseClass in baseClasses)
-                {
-                    result.Add(baseClass.Key, Tuple.Create(Module.TypesById[baseClass.Value.Item1], baseClass.Value.Item2));
-                }
-
-                return result;
-            });
-            templateArgumentsStrings = SimpleCache.Create(() => GetTemplateArgumentsStrings(Name));
+            name = SimpleCache.Create(GetTypeName);
+            size = SimpleCache.Create(GetTypeSize);
+            directBaseClassesAndOffsets = SimpleCache.Create(GetDirectBaseClassesAndOffsets);
+            allFieldNames = SimpleCache.Create(GetTypeAllFieldNames);
+            fieldNames = SimpleCache.Create(GetTypeFieldNames);
+            allFieldTypesAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>(GetAllFieldTypeAndOffset);
+            fieldTypeAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>(GetFieldTypeAndOffset);
+            baseClassesAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>(GetBaseClassAndOffset);
+            templateArgumentsStrings = SimpleCache.Create(GetTemplateArgumentsStrings);
             templateArguments = SimpleCache.Create(GetTemplateArguments);
-        }
-
-        /// <summary>
-        /// Gets the type field names (including base classes).
-        /// </summary>
-        public string[] FieldNames
-        {
-            get
-            {
-                return allFieldNames.Value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the class field names (it doesn't include base classes).
-        /// </summary>
-        public string[] ClassFieldNames
-        {
-            get
-            {
-                return fieldNames.Value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the base classes - classes that this class inherits from.
-        /// </summary>
-        public Dictionary<string, Tuple<CodeType, int>> InheritedClasses
-        {
-            get
-            {
-                return directBaseClassesAndOffsets.Value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the inherited class.
-        /// </summary>
-        public CodeType InheritedClass
-        {
-            get
-            {
-                if (InheritedClasses.Count > 1)
-                {
-                    throw new Exception("Multiple inheritance is not supported");
-                }
-
-                if (InheritedClasses.Count == 0)
-                {
-                    throw new Exception("This type doesn't inherit any class");
-                }
-
-                return InheritedClasses.Values.First().Item1;
-            }
         }
 
         /// <summary>
         /// Gets the module.
         /// </summary>
         public Module Module { get; private set; }
-
-        /// <summary>
-        /// Gets the type identifier.
-        /// </summary>
-        public uint TypeId { get; private set; }
 
         /// <summary>
         /// Gets the type of the element if type is array or pointer.
@@ -287,6 +144,28 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the type field names (including base classes).
+        /// </summary>
+        public string[] FieldNames
+        {
+            get
+            {
+                return allFieldNames.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the class field names (it doesn't include base classes).
+        /// </summary>
+        public string[] ClassFieldNames
+        {
+            get
+            {
+                return fieldNames.Value;
+            }
+        }
+
+        /// <summary>
         /// Gets the template arguments strings.
         /// <para>For given type: MyType&lt;Arg1, 2, Arg3&lt;5&gt;&gt;</para>
         /// <para>It will return: <code>new string[] { "Arg1", "2", "Arg3&lt;5&gt;" }</code></para>
@@ -313,18 +192,44 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the base classes - classes that this class inherits from.
+        /// </summary>
+        public Dictionary<string, Tuple<CodeType, int>> InheritedClasses
+        {
+            get
+            {
+                return directBaseClassesAndOffsets.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the inherited class.
+        /// </summary>
+        public CodeType InheritedClass
+        {
+            get
+            {
+                if (InheritedClasses.Count > 1)
+                {
+                    throw new Exception("Multiple inheritance is not supported");
+                }
+
+                if (InheritedClasses.Count == 0)
+                {
+                    throw new Exception("This type doesn't inherit any class");
+                }
+
+                return InheritedClasses.Values.First().Item1;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this type is enum.
         /// </summary>
         /// <value>
         ///   <c>true</c> if this type is enum; otherwise, <c>false</c>.
         /// </value>
-        public bool IsEnum
-        {
-            get
-            {
-                return Tag == SymTag.Enum;
-            }
-        }
+        public abstract bool IsEnum { get; }
 
         /// <summary>
         /// Gets a value indicating whether this type is array.
@@ -332,13 +237,7 @@ namespace CsScripts
         /// <value>
         ///   <c>true</c> if this type is array; otherwise, <c>false</c>.
         /// </value>
-        public bool IsArray
-        {
-            get
-            {
-                return Tag == SymTag.ArrayType;
-            }
-        }
+        public abstract bool IsArray { get; }
 
         /// <summary>
         /// Gets a value indicating whether this type is pointer.
@@ -346,13 +245,7 @@ namespace CsScripts
         /// <value>
         /// <c>true</c> if this type is pointer; otherwise, <c>false</c>.
         /// </value>
-        public bool IsPointer
-        {
-            get
-            {
-                return Tag == SymTag.PointerType;
-            }
-        }
+        public abstract bool IsPointer { get; }
 
         /// <summary>
         /// Gets a value indicating whether this type is ANSI or wide string.
@@ -360,13 +253,7 @@ namespace CsScripts
         /// <value>
         /// <c>true</c> if this type is string; otherwise, <c>false</c>.
         /// </value>
-        public bool IsString
-        {
-            get
-            {
-                return IsAnsiString || IsWideString;
-            }
-        }
+        public abstract bool IsString { get; }
 
         /// <summary>
         /// Gets a value indicating whether this type is ANSI string.
@@ -374,13 +261,7 @@ namespace CsScripts
         /// <value>
         /// <c>true</c> if this type is ANSI string; otherwise, <c>false</c>.
         /// </value>
-        public bool IsAnsiString
-        {
-            get
-            {
-                return (IsArray || IsPointer) && ElementType.Size == 1 && ElementType.IsSimple;
-            }
-        }
+        public abstract bool IsAnsiString { get; }
 
         /// <summary>
         /// Gets a value indicating whether this type is wide string.
@@ -388,13 +269,7 @@ namespace CsScripts
         /// <value>
         /// <c>true</c> if this type is wide string; otherwise, <c>false</c>.
         /// </value>
-        public bool IsWideString
-        {
-            get
-            {
-                return (IsArray || IsPointer) && ElementType.Size == 2 && ElementType.IsSimple;
-            }
-        }
+        public abstract bool IsWideString { get; }
 
         /// <summary>
         /// Gets a value indicating whether this instance is floating point number (float or double).
@@ -402,13 +277,7 @@ namespace CsScripts
         /// <value>
         ///   <c>true</c> if this instance is floating point number; otherwise, <c>false</c>.
         /// </value>
-        public bool IsReal
-        {
-            get
-            {
-                return BasicType == Dia2Lib.BasicType.Float;
-            }
-        }
+        public abstract bool IsReal { get; }
 
         /// <summary>
         /// Gets a value indicating whether this instance is float.
@@ -416,13 +285,7 @@ namespace CsScripts
         /// <value>
         ///   <c>true</c> if this instance is float; otherwise, <c>false</c>.
         /// </value>
-        public bool IsFloat
-        {
-            get
-            {
-                return IsReal && Size == 4;
-            }
-        }
+        public abstract bool IsFloat { get; }
 
         /// <summary>
         /// Gets a value indicating whether this instance is double.
@@ -430,13 +293,7 @@ namespace CsScripts
         /// <value>
         ///   <c>true</c> if this instance is double; otherwise, <c>false</c>.
         /// </value>
-        public bool IsDouble
-        {
-            get
-            {
-                return IsReal && Size == 8;
-            }
-        }
+        public abstract bool IsDouble { get; }
 
         /// <summary>
         /// Gets a value indicating whether this type is simple type.
@@ -444,24 +301,19 @@ namespace CsScripts
         /// <value>
         ///   <c>true</c> if this type is simple type; otherwise, <c>false</c>.
         /// </value>
-        public bool IsSimple
-        {
-            get
-            {
-                return Tag == SymTag.BaseType;
-            }
-        }
+        public abstract bool IsSimple { get; }
 
         /// <summary>
-        /// Gets the symbol tag.
+        /// Gets a value indicating whether this type is function type.
         /// </summary>
-        internal SymTag Tag { get; private set; }
+        /// <value>
+        ///   <c>true</c> if this type is function type; otherwise, <c>false</c>.
+        /// </value>
+        public abstract bool IsFunction { get; }
 
         /// <summary>
-        /// Gets the type of the basic type.
+        /// Gets the class fields.
         /// </summary>
-        internal Dia2Lib.BasicType BasicType { get; private set; }
-
         internal DictionaryCache<string, Tuple<CodeType, int>> ClassFields
         {
             get
@@ -537,14 +389,39 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// Creates the code type from specified name and module. If name contains module!, module can be omitted.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
-        public override string ToString()
+        /// <param name="codeTypeName">The code type name.</param>
+        /// <param name="module">The module.</param>
+        public static CodeType Create(string codeTypeName, Module module = null)
         {
-            return Name;
+            int moduleIndex = codeTypeName.IndexOf('!');
+
+            if (moduleIndex > 0)
+            {
+                string moduleName = codeTypeName.Substring(0, moduleIndex);
+
+                if (module != null && moduleName.ToLowerInvariant() != module.Name.ToLowerInvariant())
+                {
+                    throw new Exception(string.Format("Module specified inside codeTypeName doesn't match specified module parameter.\ncodeTypeName: {0}\nmodule.Name = {1}", codeTypeName, module.Name));
+                }
+
+                if (module == null && string.IsNullOrEmpty(moduleName) == false)
+                {
+                    module = Process.Current.ModulesByName[moduleName];
+                }
+                else
+                {
+                    module = module.Process.ModulesByName[moduleName];
+                }
+                codeTypeName = codeTypeName.Substring(moduleIndex + 1);
+            }
+            else if (module == null)
+            {
+                throw new Exception("Module must be specified either using module parameter or using codeTypeName with 'module!'");
+            }
+
+            return module.TypesByName[codeTypeName];
         }
 
         /// <summary>
@@ -634,7 +511,296 @@ namespace CsScripts
         /// <summary>
         /// Gets the element type.
         /// </summary>
-        private CodeType GetElementType()
+        protected abstract CodeType GetElementType();
+
+        /// <summary>
+        /// Gets the pointer to type.
+        /// </summary>
+        protected abstract CodeType GetPointerToType();
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected abstract string GetTypeName();
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected abstract uint GetTypeSize();
+
+        /// <summary>
+        /// Gets the direct base classes and offsets.
+        /// </summary>
+        protected abstract Dictionary<string, Tuple<CodeType, int>> GetDirectBaseClassesAndOffsets();
+
+        /// <summary>
+        /// Gets the type all field names (including all base classes).
+        /// </summary>
+        protected abstract string[] GetTypeAllFieldNames();
+
+        /// <summary>
+        /// Gets the type field names.
+        /// </summary>
+        protected abstract string[] GetTypeFieldNames();
+
+        /// <summary>
+        /// Gets field type and offset from all fields (including all base classes).
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        protected abstract Tuple<CodeType, int> GetAllFieldTypeAndOffset(string fieldName);
+
+        /// <summary>
+        /// Gets the field type and offset.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        protected abstract Tuple<CodeType, int> GetFieldTypeAndOffset(string fieldName);
+
+        /// <summary>
+        /// Gets the base class and offset.
+        /// </summary>
+        /// <param name="className">Name of the class.</param>
+        protected abstract Tuple<CodeType, int> GetBaseClassAndOffset(string className);
+
+        /// <summary>
+        /// Gets the template arguments.
+        /// </summary>
+        protected abstract object[] GetTemplateArguments();
+
+        /// <summary>
+        /// Gets the template arguments strings.
+        /// </summary>
+        protected abstract string[] GetTemplateArgumentsStrings();
+    }
+
+    /// <summary>
+    /// Debugging type of native variables
+    /// </summary>
+    internal class NativeCodeType : CodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeType"/> class.
+        /// </summary>
+        /// <remarks>This should not be used directly, but through Module.TypesById[typeId]</remarks>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="tag">The symbol tag.</param>
+        /// <param name="basicType">Type of the basic type.</param>
+        internal NativeCodeType(Module module, uint typeId, SymTag tag, Dia2Lib.BasicType basicType)
+            : base(module)
+        {
+            TypeId = typeId;
+            Tag = tag;
+            BasicType = basicType;
+
+            if (IsPointer && module.IsFakeCodeTypeId(typeId))
+            {
+                if (!ElementType.pointerToType.Cached)
+                {
+                    ElementType.pointerToType.Value = this;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
+        public uint TypeId { get; private set; }
+
+        /// <summary>
+        /// Gets the symbol tag.
+        /// </summary>
+        internal SymTag Tag { get; private set; }
+
+        /// <summary>
+        /// Gets the type of the basic type.
+        /// </summary>
+        internal Dia2Lib.BasicType BasicType { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is enum.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is enum; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsEnum
+        {
+            get
+            {
+                return Tag == SymTag.Enum;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is array.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is array; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsArray
+        {
+            get
+            {
+                return Tag == SymTag.ArrayType;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is pointer.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is pointer; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsPointer
+        {
+            get
+            {
+                return Tag == SymTag.PointerType;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI or wide string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsString
+        {
+            get
+            {
+                return IsAnsiString || IsWideString;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is ANSI string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsAnsiString
+        {
+            get
+            {
+                return (IsArray || IsPointer) && ElementType.Size == 1 && ElementType.IsSimple;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is wide string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is wide string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsWideString
+        {
+            get
+            {
+                return (IsArray || IsPointer) && ElementType.Size == 2 && ElementType.IsSimple;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is floating point number (float or double).
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is floating point number; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsReal
+        {
+            get
+            {
+                return BasicType == Dia2Lib.BasicType.Float;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is float.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is float; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFloat
+        {
+            get
+            {
+                return IsReal && Size == 4;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is double.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is double; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsDouble
+        {
+            get
+            {
+                return IsReal && Size == 8;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is simple type.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is simple type; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsSimple
+        {
+            get
+            {
+                return Tag == SymTag.BaseType;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is function type.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is function type; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFunction
+        {
+            get
+            {
+                return Tag == SymTag.FunctionType;
+            }
+        }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return Name;
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return Context.SymbolProvider.GetTypeName(Module, TypeId);
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return Context.SymbolProvider.GetTypeSize(Module, TypeId);
+        }
+
+        /// <summary>
+        /// Gets the element type.
+        /// </summary>
+        protected override CodeType GetElementType()
         {
             if (IsPointer || IsArray)
             {
@@ -657,7 +823,7 @@ namespace CsScripts
         /// <summary>
         /// Gets the pointer to type.
         /// </summary>
-        private CodeType GetPointerToType()
+        protected override CodeType GetPointerToType()
         {
             try
             {
@@ -666,7 +832,7 @@ namespace CsScripts
             }
             catch (Exception)
             {
-                CodeType codeType = new CodeType(Module, Module.GetNextFakeCodeTypeId(), SymTag.PointerType, Dia2Lib.BasicType.NoType);
+                NativeCodeType codeType = new NativeCodeType(Module, Module.GetNextFakeCodeTypeId(), SymTag.PointerType, Dia2Lib.BasicType.NoType);
 
                 codeType.elementType.Value = this;
                 codeType.name.Value = name.Value + "*";
@@ -696,9 +862,74 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the direct base classes and offsets.
+        /// </summary>
+        protected override Dictionary<string, Tuple<CodeType, int>> GetDirectBaseClassesAndOffsets()
+        {
+            var baseClasses = Context.SymbolProvider.GetTypeDirectBaseClasses(Module, TypeId);
+            var result = new Dictionary<string, Tuple<CodeType, int>>();
+
+            foreach (var baseClass in baseClasses)
+            {
+                result.Add(baseClass.Key, Tuple.Create(Module.TypesById[baseClass.Value.Item1], baseClass.Value.Item2));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the type all field names (including all base classes).
+        /// </summary>
+        protected override string[] GetTypeAllFieldNames()
+        {
+            return Context.SymbolProvider.GetTypeAllFieldNames(Module, TypeId);
+        }
+
+        /// <summary>
+        /// Gets the type field names.
+        /// </summary>
+        protected override string[] GetTypeFieldNames()
+        {
+            return Context.SymbolProvider.GetTypeFieldNames(Module, TypeId);
+        }
+
+        /// <summary>
+        /// Gets field type and offset from all fields (including all base classes).
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        protected override Tuple<CodeType, int> GetAllFieldTypeAndOffset(string fieldName)
+        {
+            var field = Context.SymbolProvider.GetTypeAllFieldTypeAndOffset(Module, TypeId, fieldName);
+
+            return Tuple.Create(Module.TypesById[field.Item1], field.Item2);
+        }
+
+        /// <summary>
+        /// Gets the field type and offset.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        protected override Tuple<CodeType, int> GetFieldTypeAndOffset(string fieldName)
+        {
+            var field = Context.SymbolProvider.GetTypeFieldTypeAndOffset(Module, TypeId, fieldName);
+
+            return Tuple.Create(Module.TypesById[field.Item1], field.Item2);
+        }
+
+        /// <summary>
+        /// Gets the base class and offset.
+        /// </summary>
+        /// <param name="className">Name of the class.</param>
+        protected override Tuple<CodeType, int> GetBaseClassAndOffset(string className)
+        {
+            var baseClass = Context.SymbolProvider.GetTypeBaseClass(Module, TypeId, className);
+
+            return Tuple.Create(Module.TypesById[baseClass.Item1], baseClass.Item2);
+        }
+
+        /// <summary>
         /// Gets the template arguments.
         /// </summary>
-        private object[] GetTemplateArguments()
+        protected override object[] GetTemplateArguments()
         {
             string[] arguments = TemplateArgumentsStrings;
             object[] result = new object[arguments.Length];
@@ -718,6 +949,14 @@ namespace CsScripts
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Gets the template arguments strings.
+        /// </summary>
+        protected override string[] GetTemplateArgumentsStrings()
+        {
+            return GetTemplateArgumentsStrings(Name);
         }
 
         /// <summary>
@@ -768,6 +1007,323 @@ namespace CsScripts
             }
 
             return inputType.Substring(indexStart, i - indexStart);
+        }
+    }
+
+    /// <summary>
+    /// Debugging type of CLR variables
+    /// </summary>
+    internal class ClrCodeType : CodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClrCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="clrType">The CLR type.</param>
+        public ClrCodeType(Module module, Microsoft.Diagnostics.Runtime.ClrType clrType)
+            : base(module)
+        {
+            ClrType = clrType;
+        }
+
+        /// <summary>
+        /// Gets the CLR type.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.ClrType ClrType { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is ANSI string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsAnsiString
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is array.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is array; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsArray
+        {
+            get
+            {
+                return ClrType.IsArray;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is double.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is double; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsDouble
+        {
+            get
+            {
+                return ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Double;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is enum.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is enum; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsEnum
+        {
+            get
+            {
+                return ClrType.IsEnum;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is float.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is float; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFloat
+        {
+            get
+            {
+                return ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Float;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is function type.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is function type; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFunction
+        {
+            get
+            {
+                return ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.FunctionPointer;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is pointer.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is pointer; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsPointer
+        {
+            get
+            {
+                return ClrType.IsPointer;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is floating point number (float or double).
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is floating point number; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsReal
+        {
+            get
+            {
+                return IsDouble || IsFloat;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is simple type.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is simple type; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsSimple
+        {
+            get
+            {
+                return ClrType.IsPrimitive;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI or wide string.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsString
+        {
+            get
+            {
+                return IsWideString || IsAnsiString;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is wide string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is wide string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsWideString
+        {
+            get
+            {
+                return ClrType.IsString;
+            }
+        }
+
+        /// <summary>
+        /// Gets field type and offset from all fields (including all base classes).
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        protected override Tuple<CodeType, int> GetAllFieldTypeAndOffset(string fieldName)
+        {
+            for (var clrType = ClrType; clrType != null; clrType = clrType.BaseType)
+            {
+                var field = clrType.Fields.Where(f => f.Name == fieldName).FirstOrDefault();
+
+                if (field != null && field.Type != null)
+                {
+                    return GetFieldTypeAndOffset(field);
+                }
+            }
+
+            throw new EntryPointNotFoundException(fieldName);
+        }
+
+        /// <summary>
+        /// Gets the field type and offset.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        protected override Tuple<CodeType, int> GetFieldTypeAndOffset(string fieldName)
+        {
+            var field = ClrType.Fields.Where(f => f.Name == fieldName).FirstOrDefault();
+
+            if (field != null && field.Type != null)
+            {
+                return GetFieldTypeAndOffset(field);
+            }
+
+            throw new EntryPointNotFoundException(fieldName);
+        }
+
+        /// <summary>
+        /// Gets the field type and offset.
+        /// </summary>
+        /// <param name="field">The CLR field.</param>
+        private Tuple<CodeType, int> GetFieldTypeAndOffset(Microsoft.Diagnostics.Runtime.ClrInstanceField field)
+        {
+            return Tuple.Create(Module.FromClrType(field.Type), (int)field.GetAddress(0));
+        }
+
+        /// <summary>
+        /// Gets the base class and offset.
+        /// </summary>
+        /// <param name="className">Name of the class.</param>
+        protected override Tuple<CodeType, int> GetBaseClassAndOffset(string className)
+        {
+            if (Name == className)
+                return new Tuple<CodeType, int>(this, 0);
+            for (var clrType = ClrType; clrType != null; clrType = clrType.BaseType)
+                if (clrType.Name == className)
+                    return Tuple.Create(Module.FromClrType(clrType), 0);
+            throw new EntryPointNotFoundException(className);
+        }
+
+        /// <summary>
+        /// Gets the direct base classes and offsets.
+        /// </summary>
+        protected override Dictionary<string, Tuple<CodeType, int>> GetDirectBaseClassesAndOffsets()
+        {
+            Dictionary<string, Tuple<CodeType, int>> baseClassesAndOffsets = new Dictionary<string, Tuple<CodeType, int>>();
+            var baseType = ClrType.BaseType;
+
+            if (baseType != null)
+                baseClassesAndOffsets.Add(baseType.Name, Tuple.Create(Module.FromClrType(baseType), 0));
+            return baseClassesAndOffsets;
+        }
+
+        /// <summary>
+        /// Gets the element type.
+        /// </summary>
+        protected override CodeType GetElementType()
+        {
+            if (ClrType.ComponentType != null)
+                return Module.FromClrType(ClrType.ComponentType);
+            return this;
+        }
+
+        /// <summary>
+        /// Gets the pointer to type.
+        /// </summary>
+        protected override CodeType GetPointerToType()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the template arguments.
+        /// </summary>
+        protected override object[] GetTemplateArguments()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the template arguments strings.
+        /// </summary>
+        protected override string[] GetTemplateArgumentsStrings()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the type all field names (including all base classes).
+        /// </summary>
+        protected override string[] GetTypeAllFieldNames()
+        {
+            IEnumerable<Microsoft.Diagnostics.Runtime.ClrInstanceField> fields = ClrType.Fields;
+
+            for (var baseType = ClrType.BaseType; baseType != null; baseType = baseType.BaseType)
+                fields = fields.Union(baseType.Fields);
+            return fields.Select(f => f.Name).ToArray();
+        }
+
+        /// <summary>
+        /// Gets the type field names.
+        /// </summary>
+        protected override string[] GetTypeFieldNames()
+        {
+            return ClrType.Fields.Select(f => f.Name).ToArray();
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return ClrType.Name;
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return (uint)ClrType.BaseSize;
         }
     }
 }

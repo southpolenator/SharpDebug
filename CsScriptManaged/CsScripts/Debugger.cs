@@ -1,7 +1,9 @@
 ﻿using CsScriptManaged;
 using CsScriptManaged.Utility;
+using DbgEngManaged;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -12,8 +14,7 @@ namespace CsScripts
     /// </summary>
     public static class Debugger
     {
-        #region Executing native commands
-#if false
+#region Executing native commands
         /// <summary>
         /// Executes the specified command and captures its output.
         /// </summary>
@@ -37,14 +38,17 @@ namespace CsScripts
         /// <returns>Captured text</returns>
         public static string ExecuteAndCapture(DebugOutput captureFlags, string command, params object[] parameters)
         {
-            var callbacks = new DebuggerOutputCapture(captureFlags);
-            using (OutputCallbacksSwitcher switcher = new OutputCallbacksSwitcher(callbacks))
+            using (StringWriter writer = new StringWriter())
             {
-                Execute(command, parameters);
-                return callbacks.Text;
+                var callbacks = DebuggerOutputToTextWriter.Create(writer, captureFlags);
+                using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
+                {
+                    Execute(command, parameters);
+                    writer.Flush();
+                    return writer.GetStringBuilder().ToString();
+                }
             }
         }
-#endif
 
         /// <summary>
         /// Executes the specified command, but leaves its output visible to the user.

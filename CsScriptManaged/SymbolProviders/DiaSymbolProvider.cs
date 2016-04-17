@@ -259,6 +259,7 @@ namespace CsScriptManaged.SymbolProviders
         /// <param name="process">The process.</param>
         /// <param name="instructionOffset">The instruction offset.</param>
         /// <param name="distance">The distance.</param>
+        /// <param name="module">The module.</param>
         private ISymbolProviderModule GetDiaModule(Process process, ulong instructionOffset, out ulong distance, out Module module)
         {
             module = null;

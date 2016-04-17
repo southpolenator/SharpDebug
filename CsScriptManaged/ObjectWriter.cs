@@ -3,7 +3,7 @@
 namespace CsScriptManaged
 {
     /// <summary>
-    /// Helper interface for writing objects during interactive scripting. Set Context.ObjectWriter to change the effects of interactive scripting.
+    /// Helper interface for writing objects during interactive scripting. Set InteractiveScriptBase.ObjectWriter to change the effects of interactive scripting.
     /// </summary>
     public interface IObjectWriter
     {
@@ -11,11 +11,26 @@ namespace CsScriptManaged
         /// Outputs the specified object.
         /// </summary>
         /// <param name="obj">The object.</param>
-        void Output(object obj);
+        object Output(object obj);
     }
 
     /// <summary>
-    /// Helper class for writing objects on console during interactive scripting. Set Context.ObjectWriter to change the effects of interactive scripting.
+    /// Helper class for writing objects during interactive scripting. Set InteractiveScriptBase.ObjectWriter to change the effects of interactive scripting.
+    /// </summary>
+    public class DefaultObjectWriter : IObjectWriter
+    {
+        /// <summary>
+        /// Outputs the specified object.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        public object Output(object obj)
+        {
+            return obj;
+        }
+    }
+
+    /// <summary>
+    /// Helper class for writing objects to console during interactive scripting.
     /// </summary>
     public class ConsoleObjectWriter : IObjectWriter
     {
@@ -23,12 +38,14 @@ namespace CsScriptManaged
         /// Outputs the specified object.
         /// </summary>
         /// <param name="obj">The object.</param>
-        public void Output(object obj)
+        public object Output(object obj)
         {
             if (obj != null)
             {
-                Console.WriteLine(obj);
+                Console.WriteLine(obj.ToString());
             }
+
+            return null;
         }
     }
 }

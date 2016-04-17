@@ -114,7 +114,9 @@ namespace CsScriptManaged.Native
         /// </summary>
         public int Status; // HRESULT
 
-        // Set to zero.
+        /// <summary>
+        /// Set to zero.
+        /// </summary>
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
         public ulong[] Reserved;
     }

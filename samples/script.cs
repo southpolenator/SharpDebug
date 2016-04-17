@@ -15,8 +15,8 @@ writeln("{0}:{1} {2}+[{3:X}]", frame.SourceFileName, frame.SourceFileLine, frame
 var locals = frame.Locals;
 var p = locals["p"];
 var q = locals["q"];
-writeln("&p = 0x{0:X}", p.GetAddress());
-writeln("&q = 0x{0:X}", q.GetAddress());
+writeln("&p = 0x{0:X}", p.GetPointerAddress());
+writeln("&q = 0x{0:X}", q.GetPointerAddress());
 var codeType = p.DereferencePointer().GetCodeType();
 var a = p.DereferencePointer();
 var b = a.CastAs("int");

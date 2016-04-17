@@ -2,9 +2,47 @@
 using CsScriptManaged.SymbolProviders;
 using CsScriptManaged.Utility;
 using System;
+using System.Linq;
 
 namespace CsScripts
 {
+    /// <summary>
+    /// Represents the version of a Module.
+    /// </summary>
+    public struct ModuleVersion
+    {
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'A'.
+        /// </summary>
+        public int Major;
+
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'B'.
+        /// </summary>
+        public int Minor;
+
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'C'.
+        /// </summary>
+        public int Revision;
+
+        /// <summary>
+        /// In a version 'A.B.C.D', this field represents 'D'.
+        /// </summary>
+        public int Patch;
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return string.Format("{0}.{1}.{2}.{3}", Major, Minor, Revision, Patch);
+        }
+    }
+
     /// <summary>
     /// Module of the debugging process.
     /// </summary>
@@ -36,6 +74,26 @@ namespace CsScripts
         private SimpleCache<string> mappedImageName;
 
         /// <summary>
+        /// The module version
+        /// </summary>
+        private SimpleCache<ModuleVersion> moduleVersion;
+
+        /// <summary>
+        /// The CLR module
+        /// </summary>
+        private SimpleCache<Microsoft.Diagnostics.Runtime.ClrModule> clrModule;
+
+        /// <summary>
+        /// The CLR PDB reader
+        /// </summary>
+        private SimpleCache<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader> clrPdbReader;
+
+        /// <summary>
+        /// The timestamp and size
+        /// </summary>
+        private SimpleCache<Tuple<DateTime, ulong>> timestampAndSize;
+
+        /// <summary>
         /// The next fake code type identifier
         /// </summary>
         private int nextFakeCodeTypeId = -1;
@@ -65,6 +123,32 @@ namespace CsScripts
             loadedImageName = SimpleCache.Create(() => Context.Debugger.GetModuleLoadedImage(this));
             symbolFileName = SimpleCache.Create(() => Context.Debugger.GetModuleSymbolFile(this));
             mappedImageName = SimpleCache.Create(() => Context.Debugger.GetModuleMappedImage(this));
+            moduleVersion = SimpleCache.Create(() =>
+            {
+                ModuleVersion version = new ModuleVersion();
+
+                Context.Debugger.GetModuleVersion(this, out version.Major, out version.Minor, out version.Revision, out version.Patch);
+                return version;
+            });
+            timestampAndSize = SimpleCache.Create(() => Context.Debugger.GetModuleTimestampAndSize(this));
+            clrModule = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.ClrRuntime.Modules).Where(m => m.ImageBase == Address).FirstOrDefault());
+            clrPdbReader = SimpleCache.Create(() =>
+            {
+                try
+                {
+                    string pdbPath = ClrModule.Runtime.DataTarget.SymbolLocator.FindPdb(ClrModule.Pdb);
+
+                    if (!string.IsNullOrEmpty(pdbPath))
+                    {
+                        return new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath);
+                    }
+                }
+                catch (Exception)
+                {
+                }
+
+                return null;
+            });
             TypesByName = new DictionaryCache<string, CodeType>(GetTypeByName);
             TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
             GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
@@ -79,19 +163,6 @@ namespace CsScripts
 
                 return variable;
             });
-        }
-
-        /// <summary>
-        /// Gets the global variable by the name.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        private Variable GetGlobalVariable(string name)
-        {
-            uint typeId = Context.SymbolProvider.GetGlobalVariableTypeId(this, name);
-            var codeType = TypesById[typeId];
-            ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
-
-            return Variable.CreateNoCast(codeType, address, name, name);
         }
 
         /// <summary>
@@ -199,6 +270,17 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the module version.
+        /// </summary>
+        public ModuleVersion ModuleVersion
+        {
+            get
+            {
+                return moduleVersion.Value;
+            }
+        }
+
+        /// <summary>
         /// Gets the name of the mapped image. In most cases, this is null. If the debugger is mapping an image file
         /// (for example, during minidump debugging), this is the name of the mapped image.
         /// </summary>
@@ -207,6 +289,50 @@ namespace CsScripts
             get
             {
                 return mappedImageName.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the DateTime of module creation.
+        /// </summary>
+        public DateTime Timestamp
+        {
+            get
+            {
+                return timestampAndSize.Value.Item1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the size in bytes.
+        /// </summary>
+        public ulong Size
+        {
+            get
+            {
+                return timestampAndSize.Value.Item2;
+            }
+        }
+
+        /// <summary>
+        /// Gets the CLR module.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.ClrModule ClrModule
+        {
+            get
+            {
+                return clrModule.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the CLR PDB reader.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader ClrPdbReader
+        {
+            get
+            {
+                return clrPdbReader.Value;
             }
         }
 
@@ -232,12 +358,63 @@ namespace CsScripts
 
             return UserTypeCastedGlobalVariables[name];
         }
+
+        /// <summary>
+        /// Gets the CLR static variable.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="appDomain">The application domain.</param>
+        /// <returns>Static variable if found</returns>
+        public Variable GetClrVariable(string name, CsScriptManaged.CLR.AppDomain appDomain)
+        {
+            int variableNameIndex = name.LastIndexOf('.');
+            string typeName = name.Substring(0, variableNameIndex);
+            var clrType = ClrModule.GetTypeByName(typeName);
+
+            if (clrType == null)
+            {
+                throw new Exception("CLR type not found " + typeName);
+            }
+
+            string variableName = name.Substring(variableNameIndex + 1);
+            var staticField = clrType.GetStaticFieldByName(variableName);
+
+            if (staticField == null)
+            {
+                throw new Exception("Field " + staticField + " wasn't found in CLR type " + typeName);
+            }
+
+            var address = staticField.GetAddress(appDomain.ClrAppDomain);
+
+            return Variable.CreateNoCast(FromClrType(clrType), address, variableName);
+        }
+
         #region Cache filling functions
+        /// <summary>
+        /// Gets the global variable by the name.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        private Variable GetGlobalVariable(string name)
+        {
+            // Check if it is CLR variable
+            if (name.Contains("."))
+            {
+                return GetClrVariable(name, Process.CurrentCLRAppDomain);
+            }
+            else
+            {
+                uint typeId = Context.SymbolProvider.GetGlobalVariableTypeId(this, name);
+                var codeType = TypesById[typeId];
+                ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
+
+                return Variable.CreateNoCast(codeType, address, name, name);
+            }
+        }
 
         /// <summary>
         /// Gets the type with the specified name.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="name">The type name.</param>
         private CodeType GetTypeByName(string name)
         {
             int moduleIndex = name.IndexOf('!');
@@ -252,9 +429,60 @@ namespace CsScripts
                 name = name.Substring(moduleIndex + 1);
             }
 
-            uint typeId = Context.SymbolProvider.GetTypeId(this, name);
+            CodeType codeType = null;
 
-            return TypesById[typeId];
+            if (clrModule.Cached && ClrModule != null)
+            {
+                codeType = GetClrTypeByName(name);
+            }
+
+            try
+            {
+                if (codeType == null)
+                {
+                    uint typeId = Context.SymbolProvider.GetTypeId(this, name);
+
+                    codeType = TypesById[typeId];
+                }
+            }
+            catch (Exception)
+            {
+                if (ClrModule != null)
+                {
+                    codeType = GetClrTypeByName(name);
+                }
+            }
+
+            if (codeType == null)
+            {
+                throw new Exception(string.Format("Type '{0}' wasn't found", name));
+            }
+
+            return codeType;
+        }
+
+        /// <summary>
+        /// Gets the type with the specified name.
+        /// </summary>
+        /// <param name="name">The CLR type name.</param>
+        private CodeType GetClrTypeByName(string name)
+        {
+            try
+            {
+                // Try to find code type inside CLR module
+                var clrType = ClrModule.GetTypeByName(name);
+
+                if (clrType != null)
+                {
+                    // Create a code type
+                    return new ClrCodeType(this, clrType);
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -263,7 +491,7 @@ namespace CsScripts
         /// <param name="typeId">The type identifier.</param>
         private CodeType GetTypeById(uint typeId)
         {
-            return new CodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId), Context.SymbolProvider.GetTypeBasicType(this, typeId));
+            return new NativeCodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId), Context.SymbolProvider.GetTypeBasicType(this, typeId));
         }
 
         /// <summary>
@@ -281,6 +509,15 @@ namespace CsScripts
         internal bool IsFakeCodeTypeId(uint codeTypeId)
         {
             return codeTypeId >= (uint)nextFakeCodeTypeId;
+        }
+
+        /// <summary>
+        /// Creates CodeType from the CLR type.
+        /// </summary>
+        /// <param name="clrType">The CLR type.</param>
+        internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
+        {
+            return Process.FromClrType(clrType);
         }
         #endregion
     }

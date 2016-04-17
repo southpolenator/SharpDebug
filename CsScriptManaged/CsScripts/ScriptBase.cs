@@ -7,21 +7,6 @@ using CsScriptManaged;
 namespace CsScripts
 {
     /// <summary>
-    /// Helper for dumping objects using Context.ObjectWriter.
-    /// </summary>
-    public static class ScriptBaseExtensions
-    {
-        /// <summary>
-        /// Outputs the specified object using Context.ObjectWriter.
-        /// </summary>
-        /// <param name="obj">The object.</param>
-        public static void Dump(this object obj)
-        {
-            Context.ObjectWriter.Output(obj);
-        }
-    }
-
-    /// <summary>
     /// Base class for all C# scripts.
     /// </summary>
     public class ScriptBase

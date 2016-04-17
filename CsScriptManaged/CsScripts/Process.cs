@@ -1,8 +1,10 @@
 ﻿using CsScriptManaged;
+using CsScriptManaged.CLR;
 using CsScriptManaged.Native;
 using CsScriptManaged.Utility;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CsScripts
 {
@@ -67,6 +69,21 @@ namespace CsScripts
         private SimpleCache<DumpFileMemoryReader> dumpFileMemoryReader;
 
         /// <summary>
+        /// The CLR data target
+        /// </summary>
+        private SimpleCache<Microsoft.Diagnostics.Runtime.DataTarget> clrDataTarget;
+
+        /// <summary>
+        /// The CLR runtimes running in the process
+        /// </summary>
+        private SimpleCache<Runtime[]> clrRuntimes;
+
+        /// <summary>
+        /// The current application domain
+        /// </summary>
+        private SimpleCache<CsScriptManaged.CLR.AppDomain> currentAppDomain;
+
+        /// <summary>
         /// The ANSI string cache
         /// </summary>
         private DictionaryCache<Tuple<ulong, int>, string> ansiStringCache;
@@ -93,6 +110,15 @@ namespace CsScripts
             threads = SimpleCache.Create(() => Context.Debugger.GetProcessThreads(this));
             modules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
             userTypes = SimpleCache.Create(GetUserTypes);
+            clrDataTarget = SimpleCache.Create(() =>
+            {
+                var dataTarget = Microsoft.Diagnostics.Runtime.DataTarget.CreateFromDataReader(new CsScriptManaged.CLR.DataReader(this));
+
+                dataTarget.SymbolLocator.SymbolPath += ";http://symweb";
+                return dataTarget;
+            });
+            clrRuntimes = SimpleCache.Create(() => ClrDataTarget.ClrVersions.Select(clrInfo => new Runtime(this, clrInfo.CreateRuntime())).ToArray());
+            currentAppDomain = SimpleCache.Create(() => ClrRuntimes.SelectMany(r => r.AppDomains).FirstOrDefault());
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
             ModulesById = new DictionaryCache<ulong, Module>(GetModuleByAddress);
             Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
@@ -314,6 +340,44 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Gets the array of CLR runtimes running in the process.
+        /// </summary>
+        public Runtime[] ClrRuntimes
+        {
+            get
+            {
+                return clrRuntimes.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the current CLR application domain. If not set, if will be first AppDomain from first Runtime.
+        /// </summary>
+        public CsScriptManaged.CLR.AppDomain CurrentCLRAppDomain
+        {
+            get
+            {
+                return currentAppDomain.Value;
+            }
+
+            set
+            {
+                currentAppDomain.Value = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the CLR data target.
+        /// </summary>
+        internal Microsoft.Diagnostics.Runtime.DataTarget ClrDataTarget
+        {
+            get
+            {
+                return clrDataTarget.Value;
+            }
+        }
+
+        /// <summary>
         /// Gets the global variable.
         /// </summary>
         /// <param name="name">The name.</param>
@@ -377,6 +441,15 @@ namespace CsScripts
         }
 
         /// <summary>
+        /// Creates CodeType from the CLR type.
+        /// </summary>
+        /// <param name="clrType">The CLR type.</param>
+        internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
+        {
+            return ModulesById[clrType.Module.ImageBase].TypesByName[clrType.Name];
+        }
+
+        /// <summary>
         /// Gets the module with the specified name.
         /// </summary>
         /// <param name="name">The name.</param>
@@ -387,6 +460,23 @@ namespace CsScripts
 
             module.Name = name;
             return module;
+        }
+
+        /// <summary>
+        /// Gets the module that contains specified address in its address space.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        internal Module GetModuleByInnerAddress(ulong address)
+        {
+            foreach (var module in Modules)
+            {
+                if (module.Address <= address && module.Address + module.Size > address)
+                {
+                    return module;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

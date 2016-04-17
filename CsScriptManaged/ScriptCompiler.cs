@@ -147,6 +147,11 @@ namespace CsScriptManaged
         private Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
 
         /// <summary>
+        /// The default assembly references used by the compiler
+        /// </summary>
+        internal static readonly string[] DefaultAssemblyReferences = GetDefaultAssemblyReferences();
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ScriptCompiler"/> class.
         /// </summary>
         public ScriptCompiler()
@@ -183,6 +188,31 @@ namespace CsScriptManaged
         }
 
         /// <summary>
+        /// Gets the default assembly references used by the compiler.
+        /// </summary>
+        private static string[] GetDefaultAssemblyReferences()
+        {
+            dynamic justInitializationOfDynamics = new List<string>();
+            List<string> assemblyReferences = new List<string>();
+
+            assemblyReferences.Add(typeof(System.Object).Assembly.Location);
+            assemblyReferences.Add(typeof(System.Linq.Enumerable).Assembly.Location);
+            assemblyReferences.Add(typeof(CsScripts.Variable).Assembly.Location);
+
+            // Check if Microsoft.CSharp.dll should be added to the list of referenced assemblies
+            const string MicrosoftCSharpDll = "microsoft.csharp.dll";
+
+            if (!assemblyReferences.Where(a => a.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Any())
+            {
+                // TODO:
+                var assembly = Assembly.LoadFile(@"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5\Microsoft.CSharp.dll");
+                assemblyReferences.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic && a.Location.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Select(a => a.Location));
+            }
+
+            return assemblyReferences.ToArray();
+        }
+
+        /// <summary>
         /// Compiles the specified code.
         /// </summary>
         /// <param name="code">The code.</param>
@@ -194,22 +224,12 @@ namespace CsScriptManaged
 
             Directory.CreateDirectory(tempDir);
 
-#if false
+#if USE_ROSLYN_COMPILER
             // Create references
             List<string> stringReferences = new List<string>();
 
-            stringReferences.Add(typeof(System.Object).Assembly.Location);
-            stringReferences.Add(typeof(System.Linq.Enumerable).Assembly.Location);
-            stringReferences.Add(typeof(CsScripts.Variable).Assembly.Location);
+            stringReferences.AddRange(DefaultAssemblyReferences);
             stringReferences.AddRange(referencedAssemblies);
-
-            // Check if Microsoft.CSharp.dll should be added to the list of referenced assemblies
-            const string MicrosoftCSharpDll = "microsoft.csharp.dll";
-
-            if (!stringReferences.Where(a => a.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Any())
-            {
-                stringReferences.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic && a.Location.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Select(a => a.Location));
-            }
 
             IEnumerable<MetadataReference> references = stringReferences.Distinct().Select(sr => MetadataReference.CreateFromFile(sr));
 
@@ -302,22 +322,8 @@ namespace CsScriptManaged
                 TempFiles = new TempFileCollection(tempDir, true),
             };
 
-            compilerParameters.ReferencedAssemblies.Add(typeof(System.Object).Assembly.Location);
-            compilerParameters.ReferencedAssemblies.Add(typeof(System.Linq.Enumerable).Assembly.Location);
-            compilerParameters.ReferencedAssemblies.Add(typeof(CsScripts.Variable).Assembly.Location);
+            compilerParameters.ReferencedAssemblies.AddRange(DefaultAssemblyReferences);
             compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies);
-
-            // Check if Microsoft.CSharp.dll should be added to the list of referenced assemblies
-            const string MicrosoftCSharpDll = "microsoft.csharp.dll";
-
-            if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Any())
-            {
-                compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic && a.Location.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Select(a => a.Location).ToArray());
-                if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Any())
-                {
-                    compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
-                }
-            }
 
             // Compile the script
             CompilerResults results = codeProvider.CompileAssemblyFromSource(compilerParameters, code);

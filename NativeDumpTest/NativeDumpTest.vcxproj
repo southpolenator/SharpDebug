@@ -71,19 +71,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)..\bin\x86\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)..\bin\x86\$(Configuration)\Tests\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)..\bin\$(Platform)\$(Configuration)\Tests\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)..\bin\x86\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)..\bin\x86\$(Configuration)\Tests\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)..\bin\$(Platform)\$(Configuration)\Tests\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -97,7 +97,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
+      <Command>pushd "$(OutDir)"&amp;ExceptionDumper.exe -a "$(TargetPath)" -d "$(OutDir)$(ProjectName).dmp"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>IF EXIST "$(OutDir)\NativeDump1.dmp" del /F /Q "$(OutDir)\NativeDump1.dmp"</Command>
@@ -116,7 +116,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
+      <Command>pushd "$(OutDir)"&amp;ExceptionDumper.exe -a "$(TargetPath)" -d "$(OutDir)$(ProjectName).dmp"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>IF EXIST "$(OutDir)\NativeDump1.dmp" del /F /Q "$(OutDir)\NativeDump1.dmp"</Command>
@@ -141,7 +141,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
+      <Command>pushd "$(OutDir)"&amp;ExceptionDumper.exe -a "$(TargetPath)" -d "$(OutDir)$(ProjectName).dmp"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>IF EXIST "$(OutDir)\NativeDump1.dmp" del /F /Q "$(OutDir)\NativeDump1.dmp"</Command>
@@ -163,7 +163,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>pushd "$(OutDir)"&amp;C:\debuggers\cdb.exe -cf "$(ProjectDir)CdbDumpCommands.txt" -y .\ NativeDumpTest.exe &gt;NUL</Command>
+      <Command>pushd "$(OutDir)"&amp;ExceptionDumper.exe -a "$(TargetPath)" -d "$(OutDir)$(ProjectName).dmp"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>IF EXIST "$(OutDir)\NativeDump1.dmp" del /F /Q "$(OutDir)\NativeDump1.dmp"</Command>

@@ -250,6 +250,9 @@ namespace CsScripts
             }
         }
 
+        /// <summary>
+        /// Gets the user type delegates for the type T.
+        /// </summary>
         private IUserTypeDelegates<T> GetDelegates()
         {
             var elementType = variable.GetCodeType().ElementType;
@@ -279,6 +282,9 @@ namespace CsScripts
             return null;
         }
 
+        /// <summary>
+        /// Reads the precalculated array.
+        /// </summary>
         private IReadOnlyList<T> ReadArray()
         {
             var delegates = GetDelegates();
@@ -301,13 +307,37 @@ namespace CsScripts
             return null;
         }
 
+        /// <summary>
+        /// Partially buffered element creator helper class. It reads one element at the time.
+        /// </summary>
         private class ElementCreatorReadOnlyList : IReadOnlyList<T>
         {
+            /// <summary>
+            /// The user type delegates
+            /// </summary>
             private IUserTypeDelegates<T> delegates;
+
+            /// <summary>
+            /// The element type
+            /// </summary>
             private CodeType elementType;
+
+            /// <summary>
+            /// The array start address
+            /// </summary>
             private ulong arrayStartAddress;
+
+            /// <summary>
+            /// The element type size
+            /// </summary>
             private uint elementTypeSize;
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ElementCreatorReadOnlyList"/> class.
+            /// </summary>
+            /// <param name="delegates">The user type delegates.</param>
+            /// <param name="elementType">The element type.</param>
+            /// <param name="arrayStartAddress">The array start address.</param>
             public ElementCreatorReadOnlyList(IUserTypeDelegates<T> delegates, CodeType elementType, ulong arrayStartAddress)
             {
                 this.delegates = delegates;
@@ -316,6 +346,10 @@ namespace CsScripts
                 elementTypeSize = elementType.Size;
             }
 
+            /// <summary>
+            /// Gets the &lt;T&gt; at the specified index.
+            /// </summary>
+            /// <param name="index">The index.</param>
             public T this[int index]
             {
                 get
@@ -327,6 +361,7 @@ namespace CsScripts
                 }
             }
 
+            #region Intentionally not implementing
             public int Count
             {
                 get
@@ -344,17 +379,52 @@ namespace CsScripts
             {
                 throw new NotImplementedException();
             }
+            #endregion
         }
 
+        /// <summary>
+        /// Fully buffered element creator helper class. It reads the whole array into memory buffer and returns elements from within that buffer.
+        /// </summary>
         private class BufferedElementCreatorReadOnlyList : IReadOnlyList<T>
         {
+            /// <summary>
+            /// The user type delegates
+            /// </summary>
             private IUserTypeDelegates<T> delegates;
+
+            /// <summary>
+            /// The element type
+            /// </summary>
             private CodeType elementType;
+
+            /// <summary>
+            /// The array start address
+            /// </summary>
             private ulong arrayStartAddress;
+
+            /// <summary>
+            /// The element type size
+            /// </summary>
             private uint elementTypeSize;
+
+            /// <summary>
+            /// The memory buffer
+            /// </summary>
             private MemoryBuffer buffer;
+
+            /// <summary>
+            /// The memory buffer address
+            /// </summary>
             private ulong bufferAddress;
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="BufferedElementCreatorReadOnlyList"/> class.
+            /// </summary>
+            /// <param name="delegates">The user type delegates.</param>
+            /// <param name="elementType">The element type.</param>
+            /// <param name="buffer">The memory buffer.</param>
+            /// <param name="bufferAddress">The memory buffer address.</param>
+            /// <param name="arrayStartAddress">The array start address.</param>
             public BufferedElementCreatorReadOnlyList(IUserTypeDelegates<T> delegates, CodeType elementType, MemoryBuffer buffer, ulong bufferAddress, ulong arrayStartAddress)
             {
                 this.delegates = delegates;
@@ -365,6 +435,10 @@ namespace CsScripts
                 elementTypeSize = elementType.Size;
             }
 
+            /// <summary>
+            /// Gets the &lt;T&gt; at the specified index.
+            /// </summary>
+            /// <param name="index">The index.</param>
             public T this[int index]
             {
                 get
@@ -376,6 +450,7 @@ namespace CsScripts
                 }
             }
 
+            #region Intentionally not implementing
             public int Count
             {
                 get
@@ -393,6 +468,7 @@ namespace CsScripts
             {
                 throw new NotImplementedException();
             }
+            #endregion
         }
     }
 }

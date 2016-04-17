@@ -51,12 +51,12 @@ namespace CsScriptManagedTest
             DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
                 | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
                 | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
-            //var callbacks = new DebuggerOutputToTextWriter(Console.Out, captureFlags);
+            var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
 
-            //using (OutputCallbacksSwitcher switcher = new OutputCallbacksSwitcher(callbacks))
-            //{
-            //    Context.Execute(@"..\..\..\samples\script.cs", new string[] { });
-            //}
+            using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
+            {
+                Context.Execute(@"..\..\..\samples\script.cs", new string[] { });
+            }
         }
 
         public static IDebugClient OpenDumpFile(string dumpFile, string symbolPath)

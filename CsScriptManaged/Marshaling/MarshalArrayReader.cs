@@ -11,9 +11,10 @@
     internal abstract class MarshalArrayReader<T> : IDisposable
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="MarshalArrayReader{T}"/> class.
+        /// Initializes a new instance of the <see cref="MarshalArrayReader{T}" /> class.
         /// </summary>
         /// <param name="count">The number of elements in buffer.</param>
+        /// <param name="size">The size of single element.</param>
         protected MarshalArrayReader(int count, int size)
         {
             Size = size;
@@ -51,7 +52,7 @@
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="T"/> at the specified index.
+        /// Gets or sets the &lt;T&gt; at the specified index.
         /// </summary>
         /// <param name="index">The index.</param>
         public T this[int index]

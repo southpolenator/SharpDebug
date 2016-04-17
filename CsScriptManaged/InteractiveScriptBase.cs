@@ -1,7 +1,32 @@
-﻿using CsScripts;
+﻿using CsScriptManaged;
+using CsScripts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
+namespace CsScripts
+{
+    /// <summary>
+    /// Helper for dumping objects using InteractiveScriptBase.ObjectWriter.
+    /// </summary>
+    public static class InteractiveScriptBaseExtensions
+    {
+        /// <summary>
+        /// Outputs the specified object using InteractiveScriptBase.ObjectWriter.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        public static void Dump(this object obj)
+        {
+            InteractiveScriptBase interactiveScript = InteractiveScriptBase.Current;
+
+            if (interactiveScript == null)
+                throw new NotImplementedException("Calling Dump() is only supported while using interactive scripting");
+
+            obj = interactiveScript.ObjectWriter.Output(obj);
+            interactiveScript._InternalObjectWriter_.Output(obj);
+        }
+    }
+}
 
 namespace CsScriptManaged
 {
@@ -10,6 +35,19 @@ namespace CsScriptManaged
     /// </summary>
     public class InteractiveScriptBase : ScriptBase
     {
+        /// <summary>
+        /// Gets the interactive script base of the script that is currently executing.
+        /// </summary>
+        public static InteractiveScriptBase Current { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets the object writer using in interactive scripting mode.
+        /// </summary>
+        public IObjectWriter ObjectWriter { get; set; }
+
+        /// Gets or sets the internal object writer. It is used for writing objects to host window.
+        internal IObjectWriter _InternalObjectWriter_ { get; set; }
+
         /// <summary>
         /// Stops interactive scripting execution. You can use this simply by entering it as command in interactive scripting mode.
         /// </summary>

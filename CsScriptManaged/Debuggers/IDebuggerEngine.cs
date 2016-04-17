@@ -232,6 +232,12 @@ namespace CsScriptManaged.Debuggers
         ulong GetModuleAddress(Process process, string moduleName);
 
         /// <summary>
+        /// Gets the timestamp and size of the module.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        Tuple<DateTime, ulong> GetModuleTimestampAndSize(Module module);
+
+        /// <summary>
         /// Reads the ANSI string.
         /// </summary>
         /// <param name="process">The process.</param>
@@ -246,5 +252,29 @@ namespace CsScriptManaged.Debuggers
         /// <param name="address">The address.</param>
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         string ReadUnicodeString(Process process, ulong address, int length = -1);
+
+        /// <summary>
+        /// Finds memory range where the specified address belongs to.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="baseAddress">The base address.</param>
+        /// <param name="regionSize">Size of the region.</param>
+        void QueryVirtual(ulong address, out ulong baseAddress, out ulong regionSize);
+
+        /// <summary>
+        /// Gets the module version.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="major">The version major number.</param>
+        /// <param name="minor">The version minor number.</param>
+        /// <param name="revision">The version revision number.</param>
+        /// <param name="patch">The version patch number.</param>
+        void GetModuleVersion(Module module, out int major, out int minor, out int revision, out int patch);
+
+        /// <summary>
+        /// Determines whether the specified process is being debugged as minidump without heap.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        bool IsMinidump(Process process);
     }
 }
