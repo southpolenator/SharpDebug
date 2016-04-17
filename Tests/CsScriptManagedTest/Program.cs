@@ -10,7 +10,7 @@ namespace CsScriptManagedTest
 {
     class Options
     {
-        [Option('d', "dump", Default = "NativeDump1.dmp", HelpText = "Path to memory dump file that will be debugged")]
+        [Option('d', "dump", Default = "NativeDumpTest.dmp", HelpText = "Path to memory dump file that will be debugged")]
         public string DumpPath { get; set; }
 
         [Option('p', "symbol-path", Default = @"srv*;.\", HelpText = "Symbol path to be set in debugger")]
@@ -55,7 +55,7 @@ namespace CsScriptManagedTest
 
             using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
             {
-                Context.Execute(@"..\..\..\samples\script.cs", new string[] { });
+                Context.Execute(@"..\..\..\..\samples\script.cs", new string[] { });
             }
         }
 
