@@ -42,7 +42,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugCmdlets", "DebugCmdlet
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbgEngTest", "DbgEngTest\DbgEngTest.csproj", "{855FB0C3-CC35-458A-B709-975E6DA44C0D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExceptionDumper", "ExceptionDumper\ExceptionDumper.csproj", "{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExceptionDumper", "Utility\ExceptionDumper\ExceptionDumper.csproj", "{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A} = {BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}
 	EndProjectSection
