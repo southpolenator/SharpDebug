@@ -17,36 +17,36 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\bin\Debug\</OutputPath>
+    <OutputPath>$(SolutionDir)\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>..\bin\Debug\CsScriptManaged.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\Debug\CsScriptManaged.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\bin\Release\</OutputPath>
+    <OutputPath>$(SolutionDir)\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>..\bin\Release\CsScriptManaged.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\Release\CsScriptManaged.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\bin\x64\Debug\</OutputPath>
+    <OutputPath>$(SolutionDir)\bin\x64\Debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG;X64,USE_ROSLYN_COMPILER</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>..\bin\x64\Debug\CsScriptManaged.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\x64\Debug\CsScriptManaged.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>..\bin\x64\Release\</OutputPath>
+    <OutputPath>$(SolutionDir)\bin\x64\Release\</OutputPath>
     <DefineConstants>TRACE;X64,USE_ROSLYN_COMPILER</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -54,21 +54,21 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>..\bin\x64\Release\CsScriptManaged.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\x64\Release\CsScriptManaged.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\bin\x86\Debug\</OutputPath>
+    <OutputPath>$(SolutionDir)\bin\x86\Debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG;X86,USE_ROSLYN_COMPILER</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>..\bin\x86\Debug\CsScriptManaged.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\x86\Debug\CsScriptManaged.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>..\bin\x86\Release\</OutputPath>
+    <OutputPath>$(SolutionDir)\bin\x86\Release\</OutputPath>
     <DefineConstants>TRACE;X86,USE_ROSLYN_COMPILER</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -76,7 +76,7 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>..\bin\x86\Release\CsScriptManaged.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\x86\Release\CsScriptManaged.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DbgEngManaged">
@@ -88,31 +88,31 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="ICSharpCode.AvalonEdit, Version=5.0.1.0, Culture=neutral, PublicKeyToken=9cc39be672370310, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\AvalonEdit.5.0.2\lib\Net40\ICSharpCode.AvalonEdit.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\AvalonEdit.5.0.2\lib\Net40\ICSharpCode.AvalonEdit.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="ICSharpCode.NRefactory, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="ICSharpCode.NRefactory.Cecil, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.Cecil.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.Cecil.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="ICSharpCode.NRefactory.CSharp, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.CSharp.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.CSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="ICSharpCode.NRefactory.Xml, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.Xml.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.Xml.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\Microsoft.CodeAnalysis.Common.1.1.1\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\Microsoft.CodeAnalysis.Common.1.1.1\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis.CSharp, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\Microsoft.CodeAnalysis.CSharp.1.1.1\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\Microsoft.CodeAnalysis.CSharp.1.1.1\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -120,31 +120,31 @@
       <HintPath>..\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil, Version=0.9.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Mono.Cecil.Mdb, Version=0.9.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Mdb.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Mdb.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Mono.Cecil.Pdb, Version=0.9.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Pdb.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Pdb.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Mono.Cecil.Rocks, Version=0.9.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Rocks.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Rocks.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable, Version=1.1.37.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\System.Collections.Immutable.1.1.37\lib\dotnet\System.Collections.Immutable.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\System.Collections.Immutable.1.1.37\lib\dotnet\System.Collections.Immutable.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Reflection.Metadata, Version=1.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\CsScripts\packages\System.Reflection.Metadata.1.1.0\lib\dotnet5.2\System.Reflection.Metadata.dll</HintPath>
+      <HintPath>$(SolutionDir)\packages\System.Reflection.Metadata.1.1.0\lib\dotnet5.2\System.Reflection.Metadata.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Xaml" />
@@ -257,8 +257,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="..\CsScripts\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
-    <Analyzer Include="..\CsScripts\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
+    <Analyzer Include="$(SolutionDir)\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
+    <Analyzer Include="$(SolutionDir)\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
