@@ -5,7 +5,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
 
 namespace DbgEngTest
 {
@@ -46,7 +45,7 @@ namespace DbgEngTest
         [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false)]
         private static extern int DebugCreate(Guid iid, out IDebugClient client);
 
-        private const string DefaultDumpFile = "NativeDump1.dmp";
+        private const string DefaultDumpFile = "NativeDumpTest.dmp";
 
         private const string DefaultSymbolPath = @"srv*;.\";
 
@@ -60,21 +59,41 @@ namespace DbgEngTest
         }
 
         [TestMethod]
-        public void TestThreadCount()
+        public void CurrentThreadContainsNativeDumpTestCpp()
         {
-            Assert.AreEqual(Thread.All.Length, 1, "Thread count should equal 1");
+            foreach (var frame in Thread.Current.StackTrace.Frames)
+            {
+                try
+                {
+                    if (frame.SourceFileName.EndsWith("nativedumptest.cpp"))
+                        return;
+                }
+                catch (Exception)
+                {
+                    // Ignore exception for getting source file name for frames where we don't have PDBs
+                }
+            }
+
+            Assert.Fail("nativedumptest.cpp not found on the current thread stack trace");
         }
 
         [TestMethod]
-        public void TestStackLength()
+        public void CurrentThreadContainsNativeDumpTestMainFunction()
         {
-            Assert.AreEqual(Thread.Current.StackTrace.Frames.Length, 8, "Stack length should equal 8");
-        }
+            foreach (var frame in Thread.Current.StackTrace.Frames)
+            {
+                try
+                {
+                    if (frame.FunctionName == "NativeDumpTest!main")
+                        return;
+                }
+                catch (Exception)
+                {
+                    // Ignore exception for getting source file name for frames where we don't have PDBs
+                }
+            }
 
-        [TestMethod]
-        public void TestCurrentFrame()
-        {
-            Assert.IsTrue(Thread.Current.StackTrace.CurrentFrame.SourceFileName.EndsWith("nativedumptest.cpp"));
+            Assert.Fail("nativedumptest.cpp not found on the current thread stack trace");
         }
 
         [TestMethod]

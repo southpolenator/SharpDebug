@@ -43,10 +43,6 @@ public:
 
 int MyTestClass::staticVariable = 1212121212;
 
-void BreakPointFunction()
-{
-}
-
 int main(int argc, char** argv)
 {
 	MyTestClass * p = &globalVariable;
@@ -59,7 +55,7 @@ int main(int argc, char** argv)
 	p->ansiStrings.push_back("AnsiFoo");
 	p->ansiStrings.push_back("AnsiBar");
 
-	BreakPointFunction();
+	throw std::bad_exception();
 
     return 0;
 }
