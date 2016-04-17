@@ -84,7 +84,7 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Dia2Lib">
-      <HintPath>..\DiaHelpers\Dia2Lib.dll</HintPath>
+      <HintPath>$(SolutionDir)\Source\DiaHelpers\Dia2Lib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="ICSharpCode.AvalonEdit, Version=5.0.1.0, Culture=neutral, PublicKeyToken=9cc39be672370310, processorArchitecture=MSIL">
@@ -117,7 +117,7 @@
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
+      <HintPath>$(SolutionDir)\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil, Version=0.9.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <HintPath>$(SolutionDir)\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.dll</HintPath>
@@ -227,7 +227,7 @@
     <Compile Include="Debuggers\DbgEngDllHelpers\OutputCallbacksSwitcher.cs" />
     <Compile Include="Debuggers\DbgEngDllHelpers\ProcessSwitcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="..\Properties\SharedAssemblyInfo.cs" />
+    <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
     <Compile Include="ScriptCompiler.cs" />
     <Compile Include="ScriptExecution.cs" />
     <Compile Include="Settings.cs" />
@@ -246,7 +246,7 @@
     <Compile Include="Utility\NamespaceDoc.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DiaHelpers\DiaHelpers.csproj">
+    <ProjectReference Include="$(SolutionDir)\Source\DiaHelpers\DiaHelpers.csproj">
       <Project>{3ca2d1d6-136f-4032-901e-043fa25b6255}</Project>
       <Name>DiaHelpers</Name>
     </ProjectReference>

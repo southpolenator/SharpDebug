@@ -26,7 +26,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeDumpTest", "Tests\Dum
 		{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C} = {21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiaHelpers", "DiaHelpers\DiaHelpers.csproj", "{3CA2D1D6-136F-4032-901E-043FA25B6255}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiaHelpers", "Source\DiaHelpers\DiaHelpers.csproj", "{3CA2D1D6-136F-4032-901E-043FA25B6255}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonUserTypes", "Source\CommonUserTypes\CommonUserTypes.csproj", "{21A929EA-B96B-4523-9D0F-853EA771058D}"
 EndProject
