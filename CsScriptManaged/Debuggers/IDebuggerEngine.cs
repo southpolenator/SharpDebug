@@ -246,5 +246,12 @@ namespace CsScriptManaged.Debuggers
         /// <param name="address">The address.</param>
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         string ReadUnicodeString(Process process, ulong address, int length = -1);
+
+
+        /// <summary>
+        /// Gets last event info.
+        /// </summary>
+        /// <returns></returns>
+        DebugEventInfo GetLastEventInfo();
     }
 }
