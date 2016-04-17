@@ -40,7 +40,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Packager", "Utility\N
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugCmdlets", "Source\DebugCmdlets\DebugCmdlets.csproj", "{1E791857-FBC2-4AC2-ABD7-5CC2AA7D4D59}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbgEngTest", "DbgEngTest\DbgEngTest.csproj", "{855FB0C3-CC35-458A-B709-975E6DA44C0D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbgEngTest", "Tests\DbgEngTest\DbgEngTest.csproj", "{855FB0C3-CC35-458A-B709-975E6DA44C0D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExceptionDumper", "Utility\ExceptionDumper\ExceptionDumper.csproj", "{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}"
 	ProjectSection(ProjectDependencies) = postProject
