@@ -93,7 +93,7 @@
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)\CsScriptManaged\CsScriptManaged.csproj">
+    <ProjectReference Include="$(SolutionDir)\Source\CsScriptManaged\CsScriptManaged.csproj">
       <Project>{2a7f1646-9b5a-433c-8a84-2215194f59b9}</Project>
       <Name>CsScriptManaged</Name>
     </ProjectReference>
