@@ -220,12 +220,26 @@ namespace CsScriptManaged.CLR
 
                 unsafe
                 {
-                    byte* destination = (byte*)buffer.ToPointer();
+                    if (memoryBuffer.BytePointer != null)
+                    {
+                        byte* destination = (byte*)buffer.ToPointer();
 
-                    MemoryBuffer.MemCpy(destination, memoryBuffer.BytePointer, (uint)bytesRequested);
+                        MemoryBuffer.MemCpy(destination, memoryBuffer.BytePointer, (uint)bytesRequested);
+                        bytesRead = memoryBuffer.BytePointerLength;
+                    }
+                    else
+                    {
+                        byte* destination = (byte*)buffer.ToPointer();
+
+                        fixed (byte* bytePointer = memoryBuffer.Bytes)
+                        {
+                            MemoryBuffer.MemCpy(destination, bytePointer, (uint)bytesRequested);
+                        }
+
+                        bytesRead = memoryBuffer.Bytes.Length;
+                    }
                 }
 
-                bytesRead = memoryBuffer.BytePointerLength;
                 return true;
             }
             catch (Exception)
@@ -253,13 +267,27 @@ namespace CsScriptManaged.CLR
 
                 unsafe
                 {
-                    fixed (byte* destination = buffer)
+                    if (memoryBuffer.BytePointer != null)
                     {
-                        MemoryBuffer.MemCpy(destination, memoryBuffer.BytePointer, (uint)bytesRequested);
+                        fixed (byte* destination = buffer)
+                        {
+                            MemoryBuffer.MemCpy(destination, memoryBuffer.BytePointer, (uint)bytesRequested);
+                        }
+
+                        bytesRead = memoryBuffer.BytePointerLength;
+                    }
+                    else
+                    {
+                        fixed (byte* destination = buffer)
+                        fixed (byte* bytePointer = memoryBuffer.Bytes)
+                        {
+                            MemoryBuffer.MemCpy(destination, bytePointer, (uint)bytesRequested);
+                        }
+
+                        bytesRead = memoryBuffer.Bytes.Length;
                     }
                 }
 
-                bytesRead = memoryBuffer.BytePointerLength;
                 return true;
             }
             catch (Exception)
