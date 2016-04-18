@@ -373,6 +373,13 @@ namespace CsScripts
             }
             catch (Exception ex)
             {
+                if (ClrStackFrame != null)
+                {
+                    string functionName = Module.Name + "!" + ClrStackFrame.Method;
+
+                    return Tuple.Create(functionName, ulong.MaxValue);
+                }
+
                 throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
             }
         }
