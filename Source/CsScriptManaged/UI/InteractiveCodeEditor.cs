@@ -298,6 +298,33 @@ namespace CsScriptManaged.UI
                 {
                     return new XmlDocumentationProvider(documentationFile);
                 }
+
+                string[] paths = new string[]
+                    {
+                        @"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\",
+                        @"C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\",
+                    };
+                string[] versions = new string[]
+                    {
+                        @"v4.6",
+                        @"v4.5.2",
+                        @"v4.5.1",
+                        @"v4.5",
+                        @"v4.0",
+                        @"v3.5",
+                    };
+
+                foreach (var path in paths)
+                {
+                    foreach (var version in versions)
+                    {
+                        documentationFile = Path.Combine(path, version, Path.GetFileNameWithoutExtension(dllPath) + ".xml");
+                        if (File.Exists(documentationFile))
+                        {
+                            return new XmlDocumentationProvider(documentationFile);
+                        }
+                    }
+                }
             }
 
             return null;
