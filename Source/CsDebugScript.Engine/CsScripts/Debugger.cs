@@ -57,7 +57,7 @@ namespace CsScripts
         /// <param name="parameters">The parameters.</param>
         public static void Execute(string command, params object[] parameters)
         {
-            Context.Debugger.Execute(command, parameters);
+            EngineContext.Debugger.Execute(command, parameters);
         }
 #endregion
 
@@ -430,7 +430,7 @@ namespace CsScripts
                 throw new ArgumentOutOfRangeException("patternEnd", "less than patternStart");
             }
 
-            return Context.Debugger.FindPatternInMemory(process, memoryStart, memoryEnd, pattern, patternStart, patternEnd, searchAlignment, searchWritableMemoryOnly);
+            return EngineContext.Debugger.FindPatternInMemory(process, memoryStart, memoryEnd, pattern, patternStart, patternEnd, searchAlignment, searchWritableMemoryOnly);
         }
 
         /// <summary>
@@ -541,7 +541,7 @@ namespace CsScripts
             }
             else
             {
-                return Context.Debugger.ReadMemory(process, address, size);
+                return EngineContext.Debugger.ReadMemory(process, address, size);
             }
         }
 

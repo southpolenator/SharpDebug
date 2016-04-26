@@ -58,7 +58,7 @@ namespace CsScripts
 
             set
             {
-                Context.Debugger.SetCurrentThread(value);
+                EngineContext.Debugger.SetCurrentThread(value);
             }
         }
 
@@ -148,7 +148,7 @@ namespace CsScripts
         /// </summary>
         private StackTrace GetStackTrace()
         {
-            return Context.Debugger.GetThreadStackTrace(this);
+            return EngineContext.Debugger.GetThreadStackTrace(this);
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace CsScripts
         /// <returns></returns>
         public static StackTrace GetStackTraceFromContext(ulong contextAddress, uint contextSize)
         {
-            return Context.Debugger.GetStackTraceFromContext(Process.Current, contextAddress, contextSize);
+            return EngineContext.Debugger.GetStackTraceFromContext(Process.Current, contextAddress, contextSize);
         }
 
 
@@ -168,7 +168,7 @@ namespace CsScripts
         /// </summary>
         private ThreadContext GetThreadContext()
         {
-            return Context.Debugger.GetThreadContext(this);
+            return EngineContext.Debugger.GetThreadContext(this);
         }
 
         /// <summary>
@@ -176,7 +176,7 @@ namespace CsScripts
         /// </summary>
         private ulong GetTEB()
         {
-            return Context.Debugger.GetThreadEnvironmentBlockAddress(this);
+            return EngineContext.Debugger.GetThreadEnvironmentBlockAddress(this);
         }
     }
 }

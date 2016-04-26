@@ -105,12 +105,12 @@ namespace CsScripts
         {
             get
             {
-                return Context.Debugger.GetThreadCurrentStackFrame(Thread.Current);
+                return EngineContext.Debugger.GetThreadCurrentStackFrame(Thread.Current);
             }
 
             set
             {
-                Context.Debugger.SetCurrentStackFrame(value);
+                EngineContext.Debugger.SetCurrentStackFrame(value);
             }
         }
 
@@ -347,7 +347,7 @@ namespace CsScripts
                 uint sourceFileLine;
                 ulong displacement;
 
-                Context.SymbolProvider.GetStackFrameSourceFileNameAndLine(this, out sourceFileName, out sourceFileLine, out displacement);
+                EngineContext.SymbolProvider.GetStackFrameSourceFileNameAndLine(this, out sourceFileName, out sourceFileLine, out displacement);
                 return Tuple.Create(sourceFileName, sourceFileLine, displacement);
             }
             catch (Exception ex)
@@ -368,7 +368,7 @@ namespace CsScripts
                 ulong displacement;
                 string functionName;
 
-                Context.SymbolProvider.GetStackFrameFunctionName(this, out functionName, out displacement);
+                EngineContext.SymbolProvider.GetStackFrameFunctionName(this, out functionName, out displacement);
                 return Tuple.Create(functionName, displacement);
             }
             catch (Exception ex)
@@ -393,7 +393,7 @@ namespace CsScripts
 
             try
             {
-                arguments = Context.SymbolProvider.GetFrameLocals(this, true);
+                arguments = EngineContext.SymbolProvider.GetFrameLocals(this, true);
             }
             catch (Exception)
             {
@@ -417,7 +417,7 @@ namespace CsScripts
 
             try
             {
-                locals = Context.SymbolProvider.GetFrameLocals(this, false);
+                locals = EngineContext.SymbolProvider.GetFrameLocals(this, false);
             }
             catch (Exception)
             {

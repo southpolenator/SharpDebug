@@ -786,7 +786,7 @@ namespace CsScripts
         /// </summary>
         protected override string GetTypeName()
         {
-            return Context.SymbolProvider.GetTypeName(Module, TypeId);
+            return EngineContext.SymbolProvider.GetTypeName(Module, TypeId);
         }
 
         /// <summary>
@@ -794,7 +794,7 @@ namespace CsScripts
         /// </summary>
         protected override uint GetTypeSize()
         {
-            return Context.SymbolProvider.GetTypeSize(Module, TypeId);
+            return EngineContext.SymbolProvider.GetTypeSize(Module, TypeId);
         }
 
         /// <summary>
@@ -806,7 +806,7 @@ namespace CsScripts
             {
                 try
                 {
-                    uint elementTypeId = Context.SymbolProvider.GetTypeElementTypeId(Module, TypeId);
+                    uint elementTypeId = EngineContext.SymbolProvider.GetTypeElementTypeId(Module, TypeId);
                     CodeType elementType = Module.TypesById[elementTypeId];
 
                     elementType.pointerToType.Value = this;
@@ -827,7 +827,7 @@ namespace CsScripts
         {
             try
             {
-                uint elementTypeId = Context.SymbolProvider.GetTypePointerToTypeId(Module, TypeId);
+                uint elementTypeId = EngineContext.SymbolProvider.GetTypePointerToTypeId(Module, TypeId);
                 return Module.TypesById[elementTypeId];
             }
             catch (Exception)
@@ -866,7 +866,7 @@ namespace CsScripts
         /// </summary>
         protected override Dictionary<string, Tuple<CodeType, int>> GetDirectBaseClassesAndOffsets()
         {
-            var baseClasses = Context.SymbolProvider.GetTypeDirectBaseClasses(Module, TypeId);
+            var baseClasses = EngineContext.SymbolProvider.GetTypeDirectBaseClasses(Module, TypeId);
             var result = new Dictionary<string, Tuple<CodeType, int>>();
 
             foreach (var baseClass in baseClasses)
@@ -882,7 +882,7 @@ namespace CsScripts
         /// </summary>
         protected override string[] GetTypeAllFieldNames()
         {
-            return Context.SymbolProvider.GetTypeAllFieldNames(Module, TypeId);
+            return EngineContext.SymbolProvider.GetTypeAllFieldNames(Module, TypeId);
         }
 
         /// <summary>
@@ -890,7 +890,7 @@ namespace CsScripts
         /// </summary>
         protected override string[] GetTypeFieldNames()
         {
-            return Context.SymbolProvider.GetTypeFieldNames(Module, TypeId);
+            return EngineContext.SymbolProvider.GetTypeFieldNames(Module, TypeId);
         }
 
         /// <summary>
@@ -899,7 +899,7 @@ namespace CsScripts
         /// <param name="fieldName">Name of the field.</param>
         protected override Tuple<CodeType, int> GetAllFieldTypeAndOffset(string fieldName)
         {
-            var field = Context.SymbolProvider.GetTypeAllFieldTypeAndOffset(Module, TypeId, fieldName);
+            var field = EngineContext.SymbolProvider.GetTypeAllFieldTypeAndOffset(Module, TypeId, fieldName);
 
             return Tuple.Create(Module.TypesById[field.Item1], field.Item2);
         }
@@ -910,7 +910,7 @@ namespace CsScripts
         /// <param name="fieldName">Name of the field.</param>
         protected override Tuple<CodeType, int> GetFieldTypeAndOffset(string fieldName)
         {
-            var field = Context.SymbolProvider.GetTypeFieldTypeAndOffset(Module, TypeId, fieldName);
+            var field = EngineContext.SymbolProvider.GetTypeFieldTypeAndOffset(Module, TypeId, fieldName);
 
             return Tuple.Create(Module.TypesById[field.Item1], field.Item2);
         }
@@ -921,7 +921,7 @@ namespace CsScripts
         /// <param name="className">Name of the class.</param>
         protected override Tuple<CodeType, int> GetBaseClassAndOffset(string className)
         {
-            var baseClass = Context.SymbolProvider.GetTypeBaseClass(Module, TypeId, className);
+            var baseClass = EngineContext.SymbolProvider.GetTypeBaseClass(Module, TypeId, className);
 
             return Tuple.Create(Module.TypesById[baseClass.Item1], baseClass.Item2);
         }

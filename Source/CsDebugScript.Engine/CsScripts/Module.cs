@@ -114,23 +114,23 @@ namespace CsScripts
             Process = process;
             name = SimpleCache.Create(() =>
             {
-                string name = Context.Debugger.GetModuleName(this);
+                string name = EngineContext.Debugger.GetModuleName(this);
 
                 Process.UpdateModuleByNameCache(this, name);
                 return name;
             });
-            imageName = SimpleCache.Create(() => Context.Debugger.GetModuleImageName(this));
-            loadedImageName = SimpleCache.Create(() => Context.Debugger.GetModuleLoadedImage(this));
-            symbolFileName = SimpleCache.Create(() => Context.Debugger.GetModuleSymbolFile(this));
-            mappedImageName = SimpleCache.Create(() => Context.Debugger.GetModuleMappedImage(this));
+            imageName = SimpleCache.Create(() => EngineContext.Debugger.GetModuleImageName(this));
+            loadedImageName = SimpleCache.Create(() => EngineContext.Debugger.GetModuleLoadedImage(this));
+            symbolFileName = SimpleCache.Create(() => EngineContext.Debugger.GetModuleSymbolFile(this));
+            mappedImageName = SimpleCache.Create(() => EngineContext.Debugger.GetModuleMappedImage(this));
             moduleVersion = SimpleCache.Create(() =>
             {
                 ModuleVersion version = new ModuleVersion();
 
-                Context.Debugger.GetModuleVersion(this, out version.Major, out version.Minor, out version.Revision, out version.Patch);
+                EngineContext.Debugger.GetModuleVersion(this, out version.Major, out version.Minor, out version.Revision, out version.Patch);
                 return version;
             });
-            timestampAndSize = SimpleCache.Create(() => Context.Debugger.GetModuleTimestampAndSize(this));
+            timestampAndSize = SimpleCache.Create(() => EngineContext.Debugger.GetModuleTimestampAndSize(this));
             clrModule = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.ClrRuntime.Modules).Where(m => m.ImageBase == Address).FirstOrDefault());
             clrPdbReader = SimpleCache.Create(() =>
             {
@@ -403,9 +403,9 @@ namespace CsScripts
             }
             else
             {
-                uint typeId = Context.SymbolProvider.GetGlobalVariableTypeId(this, name);
+                uint typeId = EngineContext.SymbolProvider.GetGlobalVariableTypeId(this, name);
                 var codeType = TypesById[typeId];
-                ulong address = Context.SymbolProvider.GetGlobalVariableAddress(this, name);
+                ulong address = EngineContext.SymbolProvider.GetGlobalVariableAddress(this, name);
 
                 return Variable.CreateNoCast(codeType, address, name, name);
             }
@@ -440,7 +440,7 @@ namespace CsScripts
             {
                 if (codeType == null)
                 {
-                    uint typeId = Context.SymbolProvider.GetTypeId(this, name);
+                    uint typeId = EngineContext.SymbolProvider.GetTypeId(this, name);
 
                     codeType = TypesById[typeId];
                 }
@@ -491,7 +491,7 @@ namespace CsScripts
         /// <param name="typeId">The type identifier.</param>
         private CodeType GetTypeById(uint typeId)
         {
-            return new NativeCodeType(this, typeId, Context.SymbolProvider.GetTypeTag(this, typeId), Context.SymbolProvider.GetTypeBasicType(this, typeId));
+            return new NativeCodeType(this, typeId, EngineContext.SymbolProvider.GetTypeTag(this, typeId), EngineContext.SymbolProvider.GetTypeBasicType(this, typeId));
         }
 
         /// <summary>

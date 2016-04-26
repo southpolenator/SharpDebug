@@ -128,7 +128,7 @@ namespace CsScripts
         /// <param name="path">The path.</param>
         public static Variable CreateNoCast(CodeType codeType, ulong address, string name = ComputedName, string path = UnknownPath)
         {
-            if (Context.EnableVariableCaching)
+            if (EngineContext.EnableVariableCaching)
             {
                 return codeType.Module.Process.Variables[Tuple.Create(codeType, address, name, path)];
             }
@@ -462,7 +462,7 @@ namespace CsScripts
 
                 if (nativeCodeType != null)
                 {
-                    return Context.SymbolProvider.GetEnumName(codeType.Module, nativeCodeType.TypeId, Data);
+                    return EngineContext.SymbolProvider.GetEnumName(codeType.Module, nativeCodeType.TypeId, Data);
                 }
             }
 
@@ -552,8 +552,8 @@ namespace CsScripts
                 if (!codeType.IsSimple || codeType.IsPointer)
                 {
                     CodeType ulongType = CodeType.Create("unsigned long long", codeType.Module);
-                    ulong vtableAddress = Context.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
-                    string vtableName = Context.SymbolProvider.GetSymbolNameByAddress(codeType.Module.Process, vtableAddress).Item1;
+                    ulong vtableAddress = EngineContext.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
+                    string vtableName = EngineContext.SymbolProvider.GetSymbolNameByAddress(codeType.Module.Process, vtableAddress).Item1;
 
                     if (vtableName.EndsWith("::`vftable'"))
                     {
@@ -945,7 +945,7 @@ namespace CsScripts
         /// <param name="originalVariable">The original variable.</param>
         internal static Variable CastVariableToUserType(Variable originalVariable)
         {
-            if (Context.UserTypeMetadata == null || Context.UserTypeMetadata.Length == 0)
+            if (EngineContext.UserTypeMetadata == null || EngineContext.UserTypeMetadata.Length == 0)
             {
                 return originalVariable;
             }
@@ -1232,7 +1232,7 @@ namespace CsScripts
         /// </summary>
         private ulong ReadData()
         {
-            return Context.SymbolProvider.ReadSimpleData(codeType, Address);
+            return EngineContext.SymbolProvider.ReadSimpleData(codeType, Address);
         }
 
         /// <summary>
@@ -1243,7 +1243,7 @@ namespace CsScripts
         /// <param name="args">The arguments.</param>
         private string GenerateNewPath(string format, params object[] args)
         {
-            if (!Context.EnableVariablePathTracking)
+            if (!EngineContext.EnableVariablePathTracking)
             {
                 return UntrackedPath;
             }

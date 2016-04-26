@@ -496,7 +496,7 @@ namespace CsDebugScript.Debuggers.DbgEngDllHelpers
         /// <param name="typedDataId">The typed data identifier.</param>
         private static DEBUG_TYPED_DATA GetTypedData(Tuple<ulong, uint, ulong> typedDataId)
         {
-            var dbgEngDll = (DbgEngDll)Context.Debugger;
+            var dbgEngDll = (DbgEngDll)EngineContext.Debugger;
 
             return dbgEngDll.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
             {

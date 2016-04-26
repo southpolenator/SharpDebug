@@ -31,7 +31,7 @@ namespace CsScriptManagedTest
 
             var client = OpenDumpFile(options.DumpPath, options.SymbolPath);
 
-            Context.Initalize(client);
+            EngineContext.Initalize(client);
 
             Console.WriteLine("Threads: {0}", Thread.All.Length);
             Console.WriteLine("Current thread: {0}", Thread.Current.Id);
@@ -55,7 +55,7 @@ namespace CsScriptManagedTest
 
             using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
             {
-                Context.Execute(@"..\..\..\..\samples\script.cs", new string[] { });
+                Executor.Execute(@"..\..\..\..\samples\script.cs", new string[] { });
             }
         }
 

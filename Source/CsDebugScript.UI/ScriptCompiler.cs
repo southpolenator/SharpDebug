@@ -156,7 +156,7 @@ namespace CsDebugScript
         /// </summary>
         public ScriptCompiler()
         {
-            SearchFolders = Context.Settings.SearchFolders;
+            SearchFolders = EngineContext.Settings.SearchFolders;
 
             AppDomain.CurrentDomain.AssemblyResolve += AssemblyLoader;
         }
@@ -397,7 +397,7 @@ namespace CsDebugScript
 
             if (Path.GetExtension(path).ToLower() == ".dll")
             {
-                string newPath = Path.Combine(Context.GetAssemblyDirectory(), path);
+                string newPath = Path.Combine(EngineContext.GetAssemblyDirectory(), path);
 
                 if (File.Exists(newPath))
                 {

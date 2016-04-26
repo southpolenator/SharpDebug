@@ -87,66 +87,14 @@
       <HintPath>$(SolutionDir)\Source\DiaHelpers\Dia2Lib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
-    <Reference Include="ICSharpCode.AvalonEdit, Version=5.0.1.0, Culture=neutral, PublicKeyToken=9cc39be672370310, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\AvalonEdit.5.0.2\lib\Net40\ICSharpCode.AvalonEdit.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="ICSharpCode.NRefactory, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="ICSharpCode.NRefactory.Cecil, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.Cecil.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="ICSharpCode.NRefactory.CSharp, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.CSharp.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="ICSharpCode.NRefactory.Xml, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.Xml.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\Microsoft.CodeAnalysis.Common.1.1.1\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.CSharp, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\Microsoft.CodeAnalysis.CSharp.1.1.1\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SolutionDir)\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Cecil, Version=0.9.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil.Mdb, Version=0.9.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Mdb.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil.Pdb, Version=0.9.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Pdb.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil.Rocks, Version=0.9.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Rocks.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.1.37.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\System.Collections.Immutable.1.1.37\lib\dotnet\System.Collections.Immutable.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System.Core" />
-    <Reference Include="System.Reflection.Metadata, Version=1.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\System.Reflection.Metadata.1.1.0\lib\dotnet5.2\System.Reflection.Metadata.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -161,9 +109,8 @@
     <Compile Include="CLR\DataReader.cs" />
     <Compile Include="CLR\Heap.cs" />
     <Compile Include="CLR\Runtime.cs" />
-    <Compile Include="CompileException.cs" />
     <Compile Include="Constants.cs" />
-    <Compile Include="Context.cs" />
+    <Compile Include="EngineContext.cs" />
     <Compile Include="CsScripts\BasicType.cs" />
     <Compile Include="CsScripts\CodeArray.cs" />
     <Compile Include="CsScripts\CodeFunction.cs" />
@@ -189,29 +136,14 @@
     <Compile Include="Debuggers\IDebuggerEngine.cs" />
     <Compile Include="Marshaling\NamespaceDoc.cs" />
     <Compile Include="Native\DEBUG_MODULE_PARAMETERS.cs" />
-    <Compile Include="ObjectWriter.cs" />
     <Compile Include="Debuggers\DbgEngDllHelpers\StateCache.cs" />
     <Compile Include="SymbolProviders\NamespaceDoc.cs" />
     <Compile Include="Debuggers\DbgEngDllHelpers\DebuggerOutputCapture.cs" />
     <Compile Include="Debuggers\DbgEngDllHelpers\DebuggerTextWriter.cs" />
-    <Compile Include="UI\CodeWindow\CompletionData.cs" />
-    <Compile Include="UI\CodeWindow\CompletionDataFactory.cs" />
-    <Compile Include="UI\CodeWindow\CompletionDataType.cs" />
-    <Compile Include="UI\CodeWindow\CsTextEditor.cs" />
-    <Compile Include="UI\CodeWindow\EntityWrapper.cs" />
-    <Compile Include="UI\CodeWindow\ParameterCompletionDataFactory.cs" />
-    <Compile Include="UI\InteractiveCodeEditor.cs" />
-    <Compile Include="UI\CodeWindow\ParameterDataProvider.cs" />
-    <Compile Include="UI\InteractiveResultVisualizer.cs" />
-    <Compile Include="UI\InteractiveWindow.cs" />
     <Compile Include="UserTypeDelegates.cs" />
     <Compile Include="Utility\DebuggerOutputToTextWriter.cs" />
     <Compile Include="Utility\DictionaryCache.cs" />
-    <Compile Include="Executor.cs" />
     <Compile Include="GlobalCache.cs" />
-    <Compile Include="IExecutor.cs" />
-    <Compile Include="InteractiveExecution.cs" />
-    <Compile Include="InteractiveScriptBase.cs" />
     <Compile Include="Marshaling\MarshalArrayReader.cs" />
     <Compile Include="Marshaling\MarshalStructure.cs" />
     <Compile Include="NamespaceDoc.cs" />
@@ -228,8 +160,6 @@
     <Compile Include="Debuggers\DbgEngDllHelpers\ProcessSwitcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
-    <Compile Include="ScriptCompiler.cs" />
-    <Compile Include="ScriptExecution.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Utility\MemoryBuffer.cs" />
     <Compile Include="Utility\OutputCallbacksSwitcher.cs" />
@@ -251,18 +181,10 @@
       <Name>DiaHelpers</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Analyzer Include="$(SolutionDir)\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
-    <Analyzer Include="$(SolutionDir)\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"$(TargetFrameworkSDKToolsDirectory)tlbexp" "$(TargetPath)"</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

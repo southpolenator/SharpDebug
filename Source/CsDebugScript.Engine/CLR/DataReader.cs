@@ -337,7 +337,7 @@ namespace CsDebugScript.CLR
                 if (dumpReader != null)
                     dumpReader.GetMemoryRange(addr, out baseAddress, out regionSize);
                 else
-                    Context.Debugger.QueryVirtual(addr, out baseAddress, out regionSize);
+                    EngineContext.Debugger.QueryVirtual(addr, out baseAddress, out regionSize);
                 vq = new VirtualQueryData(baseAddress, regionSize);
                 return true;
             }
@@ -353,7 +353,7 @@ namespace CsDebugScript.CLR
         /// </summary>
         private bool GetIsMinidump()
         {
-            return Context.Debugger.IsMinidump(Process);
+            return EngineContext.Debugger.IsMinidump(Process);
         }
     }
 }

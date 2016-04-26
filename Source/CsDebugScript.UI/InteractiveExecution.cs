@@ -183,7 +183,7 @@ namespace CsDebugScript
             Console.Write(prompt);
 
             // Read string
-            return Context.Debugger.ReadInput();
+            return EngineContext.Debugger.ReadInput();
         }
 
         /// <summary>

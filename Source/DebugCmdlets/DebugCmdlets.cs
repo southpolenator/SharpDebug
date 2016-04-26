@@ -81,10 +81,10 @@ namespace PowershellDebugSession
 
             // For live debugging disable caching.
             //
-            Context.EnableUserCastedVariableCaching = false;
-            Context.EnableVariableCaching = false;
+            EngineContext.EnableUserCastedVariableCaching = false;
+            EngineContext.EnableVariableCaching = false;
 
-            Context.Initalize(client);
+            EngineContext.Initalize(client);
 
 
             WriteDebug("Connection successfully initialized");

@@ -40,7 +40,7 @@ namespace CsDebugScript
 
             var metadata = ExtractMetadata(metadataAssemblies);
 
-            Context.UserTypeMetadata = metadata;
+            EngineContext.UserTypeMetadata = metadata;
 
             try
             {
@@ -54,7 +54,7 @@ namespace CsDebugScript
             finally
             {
                 // Clear metadata cache
-                Context.ClearMetadataCache();
+                EngineContext.ClearMetadataCache();
             }
         }
     }

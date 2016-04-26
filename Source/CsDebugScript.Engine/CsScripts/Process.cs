@@ -100,15 +100,15 @@ namespace CsScripts
         internal Process(uint id)
         {
             Id = id;
-            systemId = SimpleCache.Create(() => Context.Debugger.GetProcessSystemId(this));
-            upTime = SimpleCache.Create(() => Context.Debugger.GetProcessUpTime(this));
-            pebAddress = SimpleCache.Create(() => Context.Debugger.GetProcessEnvironmentBlockAddress(this));
-            executableName = SimpleCache.Create(() => Context.Debugger.GetProcessExecutableName(this));
-            dumpFileName = SimpleCache.Create(() => Context.Debugger.GetProcessDumpFileName(this));
-            actualProcessorType = SimpleCache.Create(() => Context.Debugger.GetProcessActualProcessorType(this));
-            effectiveProcessorType = SimpleCache.Create(() => Context.Debugger.GetProcessEffectiveProcessorType(this));
-            threads = SimpleCache.Create(() => Context.Debugger.GetProcessThreads(this));
-            modules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
+            systemId = SimpleCache.Create(() => EngineContext.Debugger.GetProcessSystemId(this));
+            upTime = SimpleCache.Create(() => EngineContext.Debugger.GetProcessUpTime(this));
+            pebAddress = SimpleCache.Create(() => EngineContext.Debugger.GetProcessEnvironmentBlockAddress(this));
+            executableName = SimpleCache.Create(() => EngineContext.Debugger.GetProcessExecutableName(this));
+            dumpFileName = SimpleCache.Create(() => EngineContext.Debugger.GetProcessDumpFileName(this));
+            actualProcessorType = SimpleCache.Create(() => EngineContext.Debugger.GetProcessActualProcessorType(this));
+            effectiveProcessorType = SimpleCache.Create(() => EngineContext.Debugger.GetProcessEffectiveProcessorType(this));
+            threads = SimpleCache.Create(() => EngineContext.Debugger.GetProcessThreads(this));
+            modules = SimpleCache.Create(() => EngineContext.Debugger.GetProcessModules(this));
             userTypes = SimpleCache.Create(GetUserTypes);
             clrDataTarget = SimpleCache.Create(() =>
             {
@@ -147,12 +147,12 @@ namespace CsScripts
         {
             get
             {
-                return Context.Debugger.GetCurrentProcess();
+                return EngineContext.Debugger.GetCurrentProcess();
             }
 
             set
             {
-                Context.Debugger.SetCurrentProcess(value);
+                EngineContext.Debugger.SetCurrentProcess(value);
             }
         }
 
@@ -163,7 +163,7 @@ namespace CsScripts
         {
             get
             {
-                return Context.Debugger.GetAllProcesses();
+                return EngineContext.Debugger.GetAllProcesses();
             }
         }
 
@@ -281,7 +281,7 @@ namespace CsScripts
         {
             get
             {
-                return Context.Debugger.GetProcessCurrentThread(this);
+                return EngineContext.Debugger.GetProcessCurrentThread(this);
             }
 
             set
@@ -291,7 +291,7 @@ namespace CsScripts
                     throw new Exception("Cannot set current thread to be from different process");
                 }
 
-                Context.Debugger.SetCurrentThread(value);
+                EngineContext.Debugger.SetCurrentThread(value);
             }
         }
 
@@ -432,7 +432,7 @@ namespace CsScripts
         /// <param name="variable">The variable.</param>
         internal Variable CastVariableToUserType(Variable variable)
         {
-            if (Context.EnableUserCastedVariableCaching)
+            if (EngineContext.EnableUserCastedVariableCaching)
             {
                 return UserTypeCastedVariables[variable];
             }
@@ -455,7 +455,7 @@ namespace CsScripts
         /// <param name="name">The name.</param>
         private Module GetModuleByName(string name)
         {
-            ulong moduleAddress = Context.Debugger.GetModuleAddress(this, name);
+            ulong moduleAddress = EngineContext.Debugger.GetModuleAddress(this, name);
             Module module = ModulesById[moduleAddress];
 
             module.Name = name;
@@ -493,13 +493,13 @@ namespace CsScripts
         /// </summary>
         private List<UserTypeDescription> GetUserTypes()
         {
-            if (Context.UserTypeMetadata != null && Context.UserTypeMetadata.Length > 0)
+            if (EngineContext.UserTypeMetadata != null && EngineContext.UserTypeMetadata.Length > 0)
             {
-                List<UserTypeDescription> userTypes = new List<UserTypeDescription>(Context.UserTypeMetadata.Length);
+                List<UserTypeDescription> userTypes = new List<UserTypeDescription>(EngineContext.UserTypeMetadata.Length);
 
                 for (int i = 0; i < userTypes.Count; i++)
                 {
-                    userTypes.Add(Context.UserTypeMetadata[i].ConvertToDescription());
+                    userTypes.Add(EngineContext.UserTypeMetadata[i].ConvertToDescription());
                 }
 
                 return userTypes;
@@ -580,7 +580,7 @@ namespace CsScripts
             }
             else
             {
-                return Context.Debugger.ReadAnsiString(this, address, length);
+                return EngineContext.Debugger.ReadAnsiString(this, address, length);
             }
         }
 
@@ -606,7 +606,7 @@ namespace CsScripts
             }
             else
             {
-                return Context.Debugger.ReadUnicodeString(this, address, length);
+                return EngineContext.Debugger.ReadUnicodeString(this, address, length);
             }
         }
     }

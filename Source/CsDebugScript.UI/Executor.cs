@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Runtime.InteropServices;
 using DbgEngManaged;
+using CsScripts;
+using CsDebugScript.UI;
 
 namespace CsDebugScript
 {
@@ -9,15 +11,21 @@ namespace CsDebugScript
     /// Exported class for transferring execution from native to managed code
     /// </summary>
     [Guid("E2C73928-FEA4-4DF6-AD34-82BAAFC024B8"), ComVisible(true)]
-    internal sealed class Executor : IExecutor
+    public sealed class Executor : IExecutor
     {
+        /// <summary>
+        /// The interactive execution
+        /// </summary>
+        internal static InteractiveExecution InteractiveExecution = new InteractiveExecution();
+
+        #region IExecutor implementation
         /// <summary>
         /// Initializes the context.
         /// </summary>
         /// <param name="client">The client.</param>
         public void InitializeContext(IDebugClient client)
         {
-            Context.Initalize(client);
+            EngineContext.Initalize(client);
         }
 
         /// <summary>
@@ -27,7 +35,7 @@ namespace CsDebugScript
         /// <param name="args">The arguments.</param>
         public void ExecuteScript(string scriptPath, string[] args)
         {
-            Context.Execute(scriptPath, args);
+            Execute(scriptPath, args);
         }
 
         /// <summary>
@@ -47,7 +55,7 @@ namespace CsDebugScript
         /// <param name="arguments">The arguments</param>
         public void EnterInteractiveMode(string arguments)
         {
-            Context.EnterInteractiveMode();
+            EngineContext.Debugger.ExecuteAction(() => InteractiveExecution.Run());
         }
 
         /// <summary>
@@ -56,7 +64,7 @@ namespace CsDebugScript
         /// <param name="arguments">The arguments.</param>
         public void Interpret(string arguments)
         {
-            Context.Interpret(arguments);
+            InterpretInteractive(arguments);
         }
 
         /// <summary>
@@ -73,7 +81,49 @@ namespace CsDebugScript
                 showModal = false;
             }
 
-            Context.ShowInteractiveWindow(showModal);
+            ShowInteractiveWindow(showModal);
+        }
+        #endregion
+
+        /// <summary>
+        /// Executes the specified script.
+        /// </summary>
+        /// <param name="path">The script path.</param>
+        /// <param name="args">The arguments.</param>
+        public static void Execute(string path, params string[] args)
+        {
+            EngineContext.Debugger.ExecuteAction(() =>
+            {
+                using (ScriptExecution execution = new ScriptExecution())
+                {
+                    execution.Execute(path, args);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Shows the interactive window.
+        /// </summary>
+        /// <param name="modal">if set to <c>true</c> window will be shown as modal dialog.</param>
+        public static void ShowInteractiveWindow(bool modal)
+        {
+            if (modal)
+            {
+                InteractiveWindow.ShowModalWindow();
+            }
+            else
+            {
+                InteractiveWindow.ShowWindow();
+            }
+        }
+
+        /// <summary>
+        /// Interprets the C# code as in interactive mode.
+        /// </summary>
+        /// <param name="code">The C# code.</param>
+        public static void InterpretInteractive(string code)
+        {
+            EngineContext.Debugger.ExecuteAction(() => InteractiveExecution.Interpret(code));
         }
     }
 }

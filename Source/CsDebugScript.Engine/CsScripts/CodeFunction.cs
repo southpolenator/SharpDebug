@@ -146,7 +146,7 @@ namespace CsScripts
                 uint sourceFileLine;
                 ulong displacement;
 
-                Context.SymbolProvider.GetProcessAddressSourceFileNameAndLine(Process, Address, out sourceFileName, out sourceFileLine, out displacement);
+                EngineContext.SymbolProvider.GetProcessAddressSourceFileNameAndLine(Process, Address, out sourceFileName, out sourceFileLine, out displacement);
                 return Tuple.Create(sourceFileName, sourceFileLine, displacement);
             }
             catch (Exception ex)
@@ -167,7 +167,7 @@ namespace CsScripts
                 ulong displacement;
                 string functionName;
 
-                Context.SymbolProvider.GetProcessAddressFunctionName(Process, Address, out functionName, out displacement);
+                EngineContext.SymbolProvider.GetProcessAddressFunctionName(Process, Address, out functionName, out displacement);
                 return Tuple.Create(functionName, displacement);
             }
             catch (Exception ex)

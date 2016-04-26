@@ -113,7 +113,7 @@ namespace CsDebugScript.Debuggers
             {
                 if (stateCache == null)
                 {
-                    stateCache = new StateCache((DbgEngDll)Context.Debugger);
+                    stateCache = new StateCache((DbgEngDll)EngineContext.Debugger);
                 }
 
                 return stateCache;

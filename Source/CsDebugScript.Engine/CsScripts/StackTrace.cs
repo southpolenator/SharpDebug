@@ -52,7 +52,7 @@ namespace CsScripts
         {
             get
             {
-                return Context.Debugger.GetThreadCurrentStackFrame(Thread);
+                return EngineContext.Debugger.GetThreadCurrentStackFrame(Thread);
             }
         }
     }

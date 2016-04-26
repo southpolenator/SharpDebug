@@ -49,7 +49,7 @@ namespace DbgEngTest
         protected static void Initialize(string dumpFile, string symbolPath)
         {
             client = OpenDumpFile(dumpFile, symbolPath);
-            Context.Initalize(client);
+            EngineContext.Initalize(client);
         }
 
         protected StackFrame GetFrame(string functionName)

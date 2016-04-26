@@ -1,6 +1,5 @@
 ﻿using CsDebugScript.Debuggers;
 using CsDebugScript.SymbolProviders;
-using CsDebugScript.UI;
 using DbgEngManaged;
 using System;
 using System.IO;
@@ -9,9 +8,9 @@ using System.Reflection;
 namespace CsDebugScript
 {
     /// <summary>
-    /// Static class that has the whole debugging context
+    /// Static class that has the whole debugging engine context
     /// </summary>
-    public static class Context
+    public static class EngineContext
     {
         /// <summary>
         /// The debugger engine interface
@@ -37,11 +36,6 @@ namespace CsDebugScript
         /// The settings for script execution
         /// </summary>
         internal static Settings Settings = new Settings();
-
-        /// <summary>
-        /// The interactive execution
-        /// </summary>
-        internal static InteractiveExecution InteractiveExecution = new InteractiveExecution();
 
         /// <summary>
         /// Gets or sets a value indicating whether variable caching is enabled.
@@ -90,55 +84,6 @@ namespace CsDebugScript
             Debugger = new DbgEngDll(client);
             SymbolProvider = Debugger.CreateDefaultSymbolProvider();
             SymbolProvider = DiaSymbolProvider;
-        }
-
-        /// <summary>
-        /// Executes the specified script.
-        /// </summary>
-        /// <param name="path">The script path.</param>
-        /// <param name="args">The arguments.</param>
-        public static void Execute(string path, params string[] args)
-        {
-            Debugger.ExecuteAction(() =>
-            {
-                using (ScriptExecution execution = new ScriptExecution())
-                {
-                    execution.Execute(path, args);
-                }
-            });
-        }
-
-        /// <summary>
-        /// Enters the interactive mode.
-        /// </summary>
-        public static void EnterInteractiveMode()
-        {
-            Debugger.ExecuteAction(() => InteractiveExecution.Run());
-        }
-
-        /// <summary>
-        /// Shows the interactive window.
-        /// </summary>
-        /// <param name="modal">if set to <c>true</c> window will be shown as modal dialog.</param>
-        public static void ShowInteractiveWindow(bool modal)
-        {
-            if (modal)
-            {
-                InteractiveWindow.ShowModalWindow();
-            }
-            else
-            {
-                InteractiveWindow.ShowWindow();
-            }
-        }
-
-        /// <summary>
-        /// Interprets the C# code.
-        /// </summary>
-        /// <param name="code">The C# code.</param>
-        public static void Interpret(string code)
-        {
-            Debugger.ExecuteAction(() => InteractiveExecution.Interpret(code));
         }
 
         /// <summary>
