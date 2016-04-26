@@ -101,7 +101,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)\Source\CsScriptManaged\CsScriptManaged.csproj">
+    <ProjectReference Include="..\..\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj">
       <Project>{2a7f1646-9b5a-433c-8a84-2215194f59b9}</Project>
       <Name>CsScriptManaged</Name>
     </ProjectReference>
