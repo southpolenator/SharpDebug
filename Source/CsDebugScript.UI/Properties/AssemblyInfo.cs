@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("CsScriptManaged")]
+[assembly: AssemblyTitle("CsDebugScript.UI")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("CsScriptManaged")]
+[assembly: AssemblyProduct("CsDebugScript.UI")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("2a7f1646-9b5a-433c-8a84-2215194f59b9")]
+[assembly: Guid("b63c2b4e-eb2e-45fc-93fd-5d6f2077064d")]
 
 // Allow internals visibility to other projects
-[assembly: InternalsVisibleTo("CsDebugScript.UI")]
+[assembly: InternalsVisibleTo("AssemblyB")]
