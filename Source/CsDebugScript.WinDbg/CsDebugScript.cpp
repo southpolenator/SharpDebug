@@ -1,8 +1,8 @@
-// CsScripts.cpp : Defines the exported functions for the DLL application.
+// CsDebugScript.cpp : Defines the exported functions for the DLL application.
 //
 
 #include "stdafx.h"
-#include "CsScripts.h"
+#include "CsDebugScript.h"
 #include "SafeArray.h"
 #include <iostream>
 #include <sstream>
@@ -116,7 +116,7 @@ wstring GetWorkingDirectory()
 class ClrInitializator
 {
 public:
-	HRESULT Initialize(const wchar_t* csScriptsManaged)
+	HRESULT Initialize(const wchar_t* csDebugScriptUI)
 	{
 		// We should figure out needed runtime version
 		//
@@ -132,7 +132,7 @@ public:
 
 		CHECKCOM(pClrHostPolicy->GetRequestedRuntime(
 			METAHOST_POLICY_HIGHCOMPAT,
-			csScriptsManaged,
+			csDebugScriptUI,
 			nullptr,
 			queriedRuntimeVersion,
 			&length,
@@ -166,7 +166,7 @@ public:
 		CAutoComPtr<_Type> reflectionAssemblyType;
 		SafeArray loadFromArguments;
 		variant_t loadFromResult;
-		variant_t arg1(csScriptsManaged);
+		variant_t arg1(csDebugScriptUI);
 
 		loadFromArguments.CreateVector(VT_VARIANT, 0, 1);
 		loadFromArguments.PutElement(0, &arg1);
@@ -295,12 +295,12 @@ private:
 	CAutoComPtr<_AppDomain> appDomain;
 } clr;
 
-CSSCRIPTS_API HRESULT DebugExtensionInitialize(
+CSDEBUGSCRIPT_API HRESULT DebugExtensionInitialize(
     _Out_ PULONG Version,
     _Out_ PULONG Flags)
 {
     wstring currentDirectory = GetCurrentDllDirectory();
-    wstring csScriptsManaged = currentDirectory + L"CsScriptManaged.dll";
+    wstring csDebugScriptUI = currentDirectory + L"CsDebugScript.UI.dll";
 
     // Return parameters
     if (Version != nullptr)
@@ -308,8 +308,8 @@ CSSCRIPTS_API HRESULT DebugExtensionInitialize(
     if (Flags != nullptr)
         *Flags = 0;
 
-	// Initialize CRL and CsScriptManaged library
-	HRESULT hr = clr.Initialize(csScriptsManaged.c_str());
+	// Initialize CRL and CsDebugScript.UI library
+	HRESULT hr = clr.Initialize(csDebugScriptUI.c_str());
 
 	return hr;
 }
@@ -322,12 +322,12 @@ DWORD WINAPI UninitializeThread(void*)
 
 HANDLE g_thread = nullptr;
 
-CSSCRIPTS_API void DebugExtensionUninitialize()
+CSDEBUGSCRIPT_API void DebugExtensionUninitialize()
 {
 	clr.Uninitialize(false);
 }
 
-CSSCRIPTS_API HRESULT uninitialize(
+CSDEBUGSCRIPT_API HRESULT uninitialize(
 	_In_     IDebugClient* Client,
 	_In_opt_ PCSTR         Args)
 {
@@ -335,7 +335,7 @@ CSSCRIPTS_API HRESULT uninitialize(
 	return S_OK;
 }
 
-CSSCRIPTS_API HRESULT execute(
+CSDEBUGSCRIPT_API HRESULT execute(
 	_In_     IDebugClient* Client,
 	_In_opt_ PCSTR         Args)
 {
@@ -350,7 +350,7 @@ CSSCRIPTS_API HRESULT execute(
 	return result;
 }
 
-CSSCRIPTS_API HRESULT interactive(
+CSDEBUGSCRIPT_API HRESULT interactive(
 	_In_     IDebugClient* Client,
 	_In_opt_ PCSTR         Args)
 {
@@ -363,7 +363,7 @@ CSSCRIPTS_API HRESULT interactive(
 	return result;
 }
 
-CSSCRIPTS_API HRESULT openui(
+CSDEBUGSCRIPT_API HRESULT openui(
 	_In_     IDebugClient* Client,
 	_In_opt_ PCSTR         Args)
 {
@@ -376,7 +376,7 @@ CSSCRIPTS_API HRESULT openui(
 	return result;
 }
 
-CSSCRIPTS_API HRESULT interpret(
+CSDEBUGSCRIPT_API HRESULT interpret(
 	_In_     IDebugClient* Client,
 	_In_opt_ PCSTR         Args)
 {
