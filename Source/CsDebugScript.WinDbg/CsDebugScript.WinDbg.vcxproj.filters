@@ -18,7 +18,7 @@
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CsScripts.h">
+    <ClInclude Include="CsDebugScript.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SafeArray.h">
@@ -29,7 +29,7 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CsScripts.cpp">
+    <ClCompile Include="CsDebugScript.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp">

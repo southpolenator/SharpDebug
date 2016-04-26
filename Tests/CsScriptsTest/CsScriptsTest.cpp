@@ -1,8 +1,8 @@
-// CsScriptsTest.cpp : Defines the entry point for the console application.
+// CsDebugScriptTest.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
-#include "CsScripts.h"
+#include "CsDebugScript.h"
 
 int main()
 {
