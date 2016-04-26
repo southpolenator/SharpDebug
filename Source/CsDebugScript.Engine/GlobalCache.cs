@@ -1,12 +1,12 @@
-﻿using CsScriptManaged.Native;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript.Native;
+using CsDebugScript.Utility;
 using CsScripts;
 using DbgEngManaged;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// Helper class for caching global objects.

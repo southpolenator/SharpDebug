@@ -1,8 +1,8 @@
-﻿using CsScriptManaged.Debuggers.DbgEngDllHelpers;
-using CsScriptManaged.Marshaling;
-using CsScriptManaged.Native;
-using CsScriptManaged.SymbolProviders;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript.Debuggers.DbgEngDllHelpers;
+using CsDebugScript.Marshaling;
+using CsDebugScript.Native;
+using CsDebugScript.SymbolProviders;
+using CsDebugScript.Utility;
 using CsScripts;
 using DbgEngManaged;
 using System;
@@ -12,7 +12,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CsScriptManaged.Debuggers
+namespace CsDebugScript.Debuggers
 {
     internal class DbgEngDll : IDebuggerEngine
     {

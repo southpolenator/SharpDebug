@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text;
 
-namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
+namespace CsDebugScript.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Helper class for redirecting console out/error to debuggers output

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// The settings for script execution

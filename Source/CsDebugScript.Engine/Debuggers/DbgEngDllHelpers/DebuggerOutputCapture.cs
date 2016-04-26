@@ -1,9 +1,9 @@
-﻿using CsScriptManaged.Utility;
+﻿using CsDebugScript.Utility;
 using DbgEngManaged;
 using System.IO;
 using System.Text;
 
-namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
+namespace CsDebugScript.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Helper class for capturing debugger output while executing commands

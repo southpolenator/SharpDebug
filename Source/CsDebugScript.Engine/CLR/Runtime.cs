@@ -1,8 +1,8 @@
-﻿using CsScriptManaged.Utility;
+﻿using CsDebugScript.Utility;
 using CsScripts;
 using System.Linq;
 
-namespace CsScriptManaged.CLR
+namespace CsDebugScript.CLR
 {
     /// <summary>
     /// CLR code Runtime. This is valid only if there is CLR loaded into debugging process.

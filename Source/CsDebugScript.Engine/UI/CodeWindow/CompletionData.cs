@@ -8,7 +8,7 @@ using System.Windows.Media.Imaging;
 using System.Windows;
 using System.Globalization;
 
-namespace CsScriptManaged.UI.CodeWindow
+namespace CsDebugScript.UI.CodeWindow
 {
     internal class CompletionData : ICSharpCode.AvalonEdit.CodeCompletion.ICompletionData, ICSharpCode.NRefactory.Completion.ICompletionData
     {

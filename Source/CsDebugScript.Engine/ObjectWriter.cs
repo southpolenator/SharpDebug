@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// Helper interface for writing objects during interactive scripting. Set InteractiveScriptBase.ObjectWriter to change the effects of interactive scripting.

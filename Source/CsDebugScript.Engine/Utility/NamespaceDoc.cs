@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged.Utility
+﻿namespace CsDebugScript.Utility
 {
     /// <summary>
     /// Collection of utility classes.

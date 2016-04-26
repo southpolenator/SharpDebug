@@ -1,10 +1,10 @@
-﻿using CsScriptManaged.Debuggers;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript.Debuggers;
+using CsDebugScript.Utility;
 using CsScripts;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// Cache for current process, thread and stack frame. Also introduces lazy state sync.

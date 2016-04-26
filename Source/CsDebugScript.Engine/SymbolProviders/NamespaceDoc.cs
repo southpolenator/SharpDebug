@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged.SymbolProviders
+﻿namespace CsDebugScript.SymbolProviders
 {
     /// <summary>
     /// Debugging symbol providers.

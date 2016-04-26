@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged.CLR
+﻿namespace CsDebugScript.CLR
 {
     /// <summary>
     /// CLR code AppDomain. This is valid only if there is CLR loaded into debugging process.

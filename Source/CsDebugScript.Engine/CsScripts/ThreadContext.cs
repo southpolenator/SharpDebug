@@ -1,5 +1,5 @@
-﻿using CsScriptManaged.Marshaling;
-using CsScriptManaged.Native;
+﻿using CsDebugScript.Marshaling;
+using CsDebugScript.Native;
 using System;
 using System.Runtime.InteropServices;
 

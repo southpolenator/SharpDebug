@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged.Native
+﻿namespace CsDebugScript.Native
 {
     /// <summary>
     /// Specifies the type of symbol.

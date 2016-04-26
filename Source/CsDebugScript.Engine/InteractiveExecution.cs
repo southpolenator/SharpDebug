@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// Internal exception used for stopping interactive scripting
@@ -450,7 +450,7 @@ namespace CsScriptManaged
                         break;
                     }
                     // Fix for not supplying string for field name in erase function (default compiler)
-                    else if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS0411" && error.FullMessage.Contains("'CsScriptManaged.InteractiveScriptBase.erase<T1,T2>(T2)'"))
+                    else if (error.FileName.EndsWith(InteractiveScriptName) && error.ErrorNumber == "CS0411" && error.FullMessage.Contains("'CsDebugScript.InteractiveScriptBase.erase<T1,T2>(T2)'"))
                     {
                         StringBuilder sb = new StringBuilder();
 

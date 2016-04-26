@@ -1,12 +1,12 @@
-﻿using CsScriptManaged.Native;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript.Native;
+using CsDebugScript.Utility;
 using CsScripts;
 using Dia2Lib;
 using System;
 using System.IO;
 using System.Collections.Generic;
 
-namespace CsScriptManaged.SymbolProviders
+namespace CsDebugScript.SymbolProviders
 {
     /// <summary>
     /// Symbol provider that is being implemented over DIA library.

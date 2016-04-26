@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace CsScriptManaged.Utility
+namespace CsDebugScript.Utility
 {
     /// <summary>
     /// Helper class for caching objects inside the dictionary. New object will be cached on the request.

@@ -1,10 +1,10 @@
-﻿using CsScriptManaged.Native;
+﻿using CsDebugScript.Native;
 using CsScripts;
 using Dia2Lib;
 using System;
 using System.Collections.Generic;
 
-namespace CsScriptManaged.SymbolProviders
+namespace CsDebugScript.SymbolProviders
 {
     /// <summary>
     /// Debugging symbol provider for a module.

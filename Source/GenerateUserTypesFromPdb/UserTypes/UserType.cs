@@ -644,7 +644,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 yield return new UserTypeConstructor()
                 {
-                    Arguments = "Variable variable, CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
+                    Arguments = "Variable variable, CsDebugScript.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
                     BaseClassInitialization = "base(variable, buffer, offset, bufferAddress)",
                     ContainsFieldDefinitions = true,
                     Static = false,
@@ -652,7 +652,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
                 yield return new UserTypeConstructor()
                 {
-                    Arguments = "CsScriptManaged.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
+                    Arguments = "CsDebugScript.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
                     BaseClassInitialization = "base(buffer, offset, bufferAddress, codeType, address, name, path)",
                     ContainsFieldDefinitions = true,
                     Static = false,

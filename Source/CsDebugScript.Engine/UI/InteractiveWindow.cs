@@ -1,4 +1,4 @@
-﻿using CsScriptManaged.UI.CodeWindow;
+﻿using CsDebugScript.UI.CodeWindow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace CsScriptManaged.UI
+namespace CsDebugScript.UI
 {
     internal class InteractiveWindow : Window
     {

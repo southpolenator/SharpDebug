@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Input;
 
-namespace CsScriptManaged.UI.CodeWindow
+namespace CsDebugScript.UI.CodeWindow
 {
     internal class CsTextEditor : TextEditor
     {

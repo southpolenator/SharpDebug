@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged.Marshaling
+﻿namespace CsDebugScript.Marshaling
 {
     using System;
     using System.Collections.Generic;

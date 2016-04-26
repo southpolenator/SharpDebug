@@ -1,7 +1,7 @@
 ﻿using CsScripts;
 using System.Collections.Generic;
 
-namespace CsScriptManaged.CLR
+namespace CsDebugScript.CLR
 {
     /// <summary>
     /// CLR code Heap is a abstraction for the whole GC Heap. This is valid only if there is CLR loaded into debugging process.

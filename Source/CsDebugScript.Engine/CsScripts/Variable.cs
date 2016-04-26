@@ -1,5 +1,5 @@
-﻿using CsScriptManaged;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript;
+using CsDebugScript.Utility;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;

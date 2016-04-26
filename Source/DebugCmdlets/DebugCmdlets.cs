@@ -1,4 +1,4 @@
-﻿using CsScriptManaged;
+﻿using CsDebugScript;
 using CsScripts;
 using DbgEngManaged;
 using System;

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using CsScriptManaged.Native;
+using CsDebugScript.Native;
 
-namespace CsScriptManaged.Marshaling
+namespace CsDebugScript.Marshaling
 {
     /// <summary>
     /// Marshaled structure that can have extended part of the structure.

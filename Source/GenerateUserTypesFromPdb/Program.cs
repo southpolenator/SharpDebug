@@ -547,7 +547,7 @@ namespace GenerateUserTypesFromPdb
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                     MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsScriptManaged.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.dll")),
                     MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll")),
                 };
 
@@ -611,7 +611,7 @@ namespace GenerateUserTypesFromPdb
                     compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
                 }
 
-                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScriptManaged.dll"));
+                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsDebugScript.dll"));
                 compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll"));
 
                 var filesToCompile = generatedFiles.Values.Union(includedFiles.Select(f => f.Path)).ToArray();

@@ -10,7 +10,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// The result of script compilation

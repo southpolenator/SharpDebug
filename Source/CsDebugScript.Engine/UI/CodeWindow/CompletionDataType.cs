@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged.UI.CodeWindow
+﻿namespace CsDebugScript.UI.CodeWindow
 {
     internal enum CompletionDataType
     {

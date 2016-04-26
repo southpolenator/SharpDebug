@@ -7,7 +7,7 @@ using System.Text;
 using System.Reflection.Emit;
 using System.Collections.Generic;
 
-namespace CsScriptManaged.Utility
+namespace CsDebugScript.Utility
 {
     internal unsafe class DumpFileMemoryReader : IDisposable
     {

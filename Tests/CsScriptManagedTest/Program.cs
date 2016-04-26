@@ -1,6 +1,6 @@
 ﻿using CommandLine;
-using CsScriptManaged;
-using CsScriptManaged.Utility;
+using CsDebugScript;
+using CsDebugScript.Utility;
 using CsScripts;
 using DbgEngManaged;
 using System;

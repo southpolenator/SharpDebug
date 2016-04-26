@@ -1,11 +1,11 @@
-﻿using CsScriptManaged.Utility;
+﻿using CsDebugScript.Utility;
 using CsScripts;
 using System;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// The symbolic constructor delegate. Creates a new user type by calling constructor with signature of this delegate.

@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged
+﻿namespace CsDebugScript
 {
     /// <summary>
     /// Collection of base classes needed for C# scripting.

@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using DbgEngManaged;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// Exported interface for transferring execution from native to managed code

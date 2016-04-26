@@ -1,4 +1,4 @@
-﻿using CsScriptManaged;
+﻿using CsDebugScript;
 using DbgEngManaged;
 
 namespace CsScripts

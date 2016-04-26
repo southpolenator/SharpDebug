@@ -1,12 +1,12 @@
-﻿using CsScriptManaged.Native;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript.Native;
+using CsDebugScript.Utility;
 using CsScripts;
 using Dia2Lib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsScriptManaged.SymbolProviders
+namespace CsDebugScript.SymbolProviders
 {
     /// <summary>
     /// DIA library module representation

@@ -1,8 +1,8 @@
-﻿using CsScriptManaged.Utility;
+﻿using CsDebugScript.Utility;
 using DbgEngManaged;
 using System;
 
-namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
+namespace CsDebugScript.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Helper class for replacing debugger output callbacks - used when capturing command output. Example usage:

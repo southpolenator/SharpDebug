@@ -1,4 +1,4 @@
-﻿using CsScriptManaged;
+﻿using CsDebugScript;
 using CsScripts;
 using System;
 using System.Collections.Generic;
@@ -28,7 +28,7 @@ namespace CsScripts
     }
 }
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// Base class for interactive script commands

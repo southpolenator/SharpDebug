@@ -1,12 +1,12 @@
-﻿using CsScriptManaged.Debuggers;
-using CsScriptManaged.SymbolProviders;
-using CsScriptManaged.UI;
+﻿using CsDebugScript.Debuggers;
+using CsDebugScript.SymbolProviders;
+using CsDebugScript.UI;
 using DbgEngManaged;
 using System;
 using System.IO;
 using System.Reflection;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// Static class that has the whole debugging context

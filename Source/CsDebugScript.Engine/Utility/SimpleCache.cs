@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsScriptManaged.Utility
+namespace CsDebugScript.Utility
 {
     /// <summary>
     /// Helper class for caching results - it is being used as lazy evaluation

@@ -1,8 +1,8 @@
-﻿using CsScriptManaged.Marshaling;
+﻿using CsDebugScript.Marshaling;
 using DbgEngManaged;
 using System.Text;
 
-namespace CsScriptManaged.Native
+namespace CsDebugScript.Native
 {
     /// <summary>
     /// Extensions for DbgEng.dll interfaces for easier manipulation

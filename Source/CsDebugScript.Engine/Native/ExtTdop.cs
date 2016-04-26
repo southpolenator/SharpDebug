@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged.Native
+﻿namespace CsDebugScript.Native
 {
     /// <summary>
     /// The EXT_TDOP enumeration is used in the Operation member of the EXT_TYPED_DATA structure to

@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged.Native
+﻿namespace CsDebugScript.Native
 {
     /// <summary>
     /// The architecture type of the computer. An image file can only be run on the specified computer

@@ -1,7 +1,7 @@
-﻿using CsScriptManaged;
-using CsScriptManaged.CLR;
-using CsScriptManaged.Native;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript;
+using CsDebugScript.CLR;
+using CsDebugScript.Native;
+using CsDebugScript.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,7 +81,7 @@ namespace CsScripts
         /// <summary>
         /// The current application domain
         /// </summary>
-        private SimpleCache<CsScriptManaged.CLR.AppDomain> currentAppDomain;
+        private SimpleCache<CsDebugScript.CLR.AppDomain> currentAppDomain;
 
         /// <summary>
         /// The ANSI string cache
@@ -112,7 +112,7 @@ namespace CsScripts
             userTypes = SimpleCache.Create(GetUserTypes);
             clrDataTarget = SimpleCache.Create(() =>
             {
-                var dataTarget = Microsoft.Diagnostics.Runtime.DataTarget.CreateFromDataReader(new CsScriptManaged.CLR.DataReader(this));
+                var dataTarget = Microsoft.Diagnostics.Runtime.DataTarget.CreateFromDataReader(new CsDebugScript.CLR.DataReader(this));
 
                 dataTarget.SymbolLocator.SymbolPath += ";http://symweb";
                 return dataTarget;
@@ -353,7 +353,7 @@ namespace CsScripts
         /// <summary>
         /// Gets or sets the current CLR application domain. If not set, if will be first AppDomain from first Runtime.
         /// </summary>
-        public CsScriptManaged.CLR.AppDomain CurrentCLRAppDomain
+        public CsDebugScript.CLR.AppDomain CurrentCLRAppDomain
         {
             get
             {

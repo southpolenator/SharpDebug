@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace CsScriptManaged.Native
+namespace CsDebugScript.Native
 {
     /// <summary>
     /// Exported native methods

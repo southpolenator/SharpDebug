@@ -1,5 +1,5 @@
-﻿using CsScriptManaged.UI.CodeWindow;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript.UI.CodeWindow;
+using CsDebugScript.Utility;
 using DbgEngManaged;
 using ICSharpCode.NRefactory.Documentation;
 using ICSharpCode.NRefactory.TypeSystem;
@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace CsScriptManaged.UI
+namespace CsDebugScript.UI
 {
     internal delegate void CommandExecutedHandler(bool csharpCode, string textOutput, IEnumerable<object> objectOutput);
 

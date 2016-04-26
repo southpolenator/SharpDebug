@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection.Emit;
 
-namespace CsScriptManaged.Utility
+namespace CsDebugScript.Utility
 {
     /// <summary>
     /// Helper structure that holds pointer to memory buffer or byte array

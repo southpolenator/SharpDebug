@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged
+﻿namespace CsDebugScript
 {
     /// <summary>
     /// All constants used in the project

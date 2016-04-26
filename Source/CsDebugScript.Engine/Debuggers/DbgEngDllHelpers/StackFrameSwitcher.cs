@@ -1,7 +1,7 @@
 ﻿using CsScripts;
 using System;
 
-namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
+namespace CsDebugScript.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Used for scoped stack frame switching.

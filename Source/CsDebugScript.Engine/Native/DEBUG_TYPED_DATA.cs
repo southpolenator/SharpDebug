@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace CsScriptManaged.Native
+namespace CsDebugScript.Native
 {
     /// <summary>
     /// The DEBUG_TYPED_DATA structure describes typed data in the memory of the target.

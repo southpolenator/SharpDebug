@@ -1,6 +1,6 @@
-﻿using CsScriptManaged.Native;
-using CsScriptManaged.SymbolProviders;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript.Native;
+using CsDebugScript.SymbolProviders;
+using CsDebugScript.Utility;
 using CsScripts;
 using DbgEngManaged;
 using Dia2Lib;
@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CsScriptManaged.Debuggers.DbgEngDllHelpers
+namespace CsDebugScript.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Symbol provider that is being implemented over DbgEng.dll.

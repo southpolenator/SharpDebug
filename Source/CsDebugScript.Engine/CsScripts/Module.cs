@@ -1,6 +1,6 @@
-﻿using CsScriptManaged;
-using CsScriptManaged.SymbolProviders;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript;
+using CsDebugScript.SymbolProviders;
+using CsDebugScript.Utility;
 using System;
 using System.Linq;
 
@@ -365,7 +365,7 @@ namespace CsScripts
         /// <param name="name">The name.</param>
         /// <param name="appDomain">The application domain.</param>
         /// <returns>Static variable if found</returns>
-        public Variable GetClrVariable(string name, CsScriptManaged.CLR.AppDomain appDomain)
+        public Variable GetClrVariable(string name, CsDebugScript.CLR.AppDomain appDomain)
         {
             int variableNameIndex = name.LastIndexOf('.');
             string typeName = name.Substring(0, variableNameIndex);

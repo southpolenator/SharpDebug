@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// Exception that contains all compiler errors that happened

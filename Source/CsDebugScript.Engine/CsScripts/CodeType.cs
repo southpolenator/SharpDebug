@@ -1,6 +1,6 @@
-﻿using CsScriptManaged;
-using CsScriptManaged.Native;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript;
+using CsDebugScript.Native;
+using CsDebugScript.Utility;
 using System;
 using System.Linq;
 using System.Collections.Generic;

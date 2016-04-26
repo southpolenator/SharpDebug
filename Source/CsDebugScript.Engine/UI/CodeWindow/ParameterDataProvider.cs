@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
-namespace CsScriptManaged.UI.CodeWindow
+namespace CsDebugScript.UI.CodeWindow
 {
     internal class ParameterDataProvider : ICSharpCode.NRefactory.Completion.IParameterDataProvider, ICSharpCode.AvalonEdit.CodeCompletion.IOverloadProvider
     {

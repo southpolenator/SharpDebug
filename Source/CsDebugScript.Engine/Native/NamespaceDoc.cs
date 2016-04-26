@@ -1,4 +1,4 @@
-﻿namespace CsScriptManaged.Native
+﻿namespace CsDebugScript.Native
 {
     /// <summary>
     /// Collection of Structures, Enumerations and extensions that helps working with DbgEng.dll interfaces.

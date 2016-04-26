@@ -1,10 +1,10 @@
-﻿using CsScriptManaged.Native;
-using CsScriptManaged.SymbolProviders;
-using CsScriptManaged.Utility;
+﻿using CsDebugScript.Native;
+using CsDebugScript.SymbolProviders;
+using CsDebugScript.Utility;
 using CsScripts;
 using System;
 
-namespace CsScriptManaged.Debuggers
+namespace CsDebugScript.Debuggers
 {
     /// <summary>
     /// Debugger engine interface that provides functionality for controlling debugger engine

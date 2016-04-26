@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Dynamic;
 using System.Collections.Generic;
-using CsScriptManaged;
+using CsDebugScript;
 
 namespace CsScripts
 {

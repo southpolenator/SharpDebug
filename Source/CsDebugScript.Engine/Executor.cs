@@ -3,7 +3,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using DbgEngManaged;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     /// <summary>
     /// Exported class for transferring execution from native to managed code

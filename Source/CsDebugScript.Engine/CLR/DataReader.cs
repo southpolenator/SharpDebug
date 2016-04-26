@@ -1,4 +1,4 @@
-﻿using CsScriptManaged.Utility;
+﻿using CsDebugScript.Utility;
 using CsScripts;
 using Microsoft.Diagnostics.Runtime;
 using System;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace CsScriptManaged.CLR
+namespace CsDebugScript.CLR
 {
     /// <summary>
     /// Data reader necessary for Microsoft.Diagnostics.Runtime library initialization

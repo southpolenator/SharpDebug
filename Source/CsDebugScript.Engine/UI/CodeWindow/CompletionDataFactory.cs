@@ -5,7 +5,7 @@ using ICSharpCode.NRefactory.CSharp;
 using ICSharpCode.NRefactory.TypeSystem;
 using ICSharpCode.NRefactory.CSharp.Completion;
 
-namespace CsScriptManaged.UI.CodeWindow
+namespace CsDebugScript.UI.CodeWindow
 {
     internal class CompletionDataFactory : ICompletionDataFactory
     {

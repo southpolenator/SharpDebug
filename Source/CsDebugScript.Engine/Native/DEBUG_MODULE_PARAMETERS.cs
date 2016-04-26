@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace CsScriptManaged.Native
+namespace CsDebugScript.Native
 {
     /// <summary>
     /// The DEBUG_MODULE_PARAMETERS structure contains most of the parameters for describing a module.

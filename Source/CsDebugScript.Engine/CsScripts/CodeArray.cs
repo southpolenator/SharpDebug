@@ -2,8 +2,8 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
-using CsScriptManaged.Utility;
-using CsScriptManaged;
+using CsDebugScript.Utility;
+using CsDebugScript;
 
 namespace CsScripts
 {

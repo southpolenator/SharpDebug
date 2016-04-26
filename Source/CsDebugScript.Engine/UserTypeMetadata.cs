@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 
-namespace CsScriptManaged
+namespace CsDebugScript
 {
     class UserTypeMetadata
     {
