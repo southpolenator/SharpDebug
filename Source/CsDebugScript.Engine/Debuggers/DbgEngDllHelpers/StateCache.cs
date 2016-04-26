@@ -1,10 +1,9 @@
-﻿using CsDebugScript.Debuggers;
-using CsDebugScript.Utility;
+﻿using CsDebugScript.Utility;
 using CsScripts;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript
+namespace CsDebugScript.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Cache for current process, thread and stack frame. Also introduces lazy state sync.
