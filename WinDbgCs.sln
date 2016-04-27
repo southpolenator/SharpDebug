@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.Engine", "Sou
 		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A} = {BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsScriptManagedTest", "Tests\CsScriptManagedTest\CsScriptManagedTest.csproj", "{B683D8DD-6759-4301-A54A-FAEFE1105416}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.Engine.Test", "Tests\CsDebugScript.Engine.Test\CsDebugScript.Engine.Test.csproj", "{B683D8DD-6759-4301-A54A-FAEFE1105416}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B63C2B4E-EB2E-45FC-93FD-5D6F2077064D} = {B63C2B4E-EB2E-45FC-93FD-5D6F2077064D}
 	EndProjectSection

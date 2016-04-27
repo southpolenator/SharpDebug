@@ -6,7 +6,7 @@ using DbgEngManaged;
 using System;
 using System.Runtime.InteropServices;
 
-namespace CsScriptManagedTest
+namespace CsDebugScript.Engine.Test
 {
     class Options
     {
