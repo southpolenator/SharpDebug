@@ -1,7 +1,5 @@
 ﻿using CommandLine;
-using CsDebugScript;
-using CsDebugScript.Utility;
-using CsScripts;
+using CsDebugScript.Engine.Utility;
 using DbgEngManaged;
 using System;
 using System.Runtime.InteropServices;
@@ -31,7 +29,7 @@ namespace CsDebugScript.Engine.Test
 
             var client = OpenDumpFile(options.DumpPath, options.SymbolPath);
 
-            EngineContext.Initalize(client);
+            Context.Initalize(client);
 
             Console.WriteLine("Threads: {0}", Thread.All.Length);
             Console.WriteLine("Current thread: {0}", Thread.Current.Id);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.Engine;
+using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,7 +41,7 @@ namespace CsDebugScript
 
             var metadata = ExtractMetadata(metadataAssemblies);
 
-            EngineContext.UserTypeMetadata = metadata;
+            Context.UserTypeMetadata = metadata;
 
             try
             {
@@ -54,7 +55,7 @@ namespace CsDebugScript
             finally
             {
                 // Clear metadata cache
-                EngineContext.ClearMetadataCache();
+                Context.ClearMetadataCache();
             }
         }
     }

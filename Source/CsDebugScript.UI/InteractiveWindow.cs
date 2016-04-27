@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -275,8 +274,8 @@ namespace CsDebugScript.UI
 
         private static void ExecuteInSTA(Action action, bool waitForExecution = true)
         {
-            Thread thread = new Thread(() => { action(); });
-            thread.SetApartmentState(ApartmentState.STA);
+            System.Threading.Thread thread = new System.Threading.Thread(() => { action(); });
+            thread.SetApartmentState(System.Threading.ApartmentState.STA);
             thread.Start();
             if (waitForExecution)
             {

@@ -1,5 +1,5 @@
 ﻿using CsDebugScript;
-using CsScripts;
+using CsDebugScript.Engine;
 using DbgEngManaged;
 using System;
 using System.Management.Automation;
@@ -81,10 +81,10 @@ namespace PowershellDebugSession
 
             // For live debugging disable caching.
             //
-            EngineContext.EnableUserCastedVariableCaching = false;
-            EngineContext.EnableVariableCaching = false;
+            Context.EnableUserCastedVariableCaching = false;
+            Context.EnableVariableCaching = false;
 
-            EngineContext.Initalize(client);
+            Context.Initalize(client);
 
 
             WriteDebug("Connection successfully initialized");

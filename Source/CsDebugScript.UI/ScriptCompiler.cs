@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using CsDebugScript.Engine;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CSharp;
 using System;
@@ -156,7 +157,7 @@ namespace CsDebugScript
         /// </summary>
         public ScriptCompiler()
         {
-            SearchFolders = EngineContext.Settings.SearchFolders;
+            SearchFolders = Context.Settings.SearchFolders;
 
             AppDomain.CurrentDomain.AssemblyResolve += AssemblyLoader;
         }
@@ -197,7 +198,7 @@ namespace CsDebugScript
 
             assemblyReferences.Add(typeof(System.Object).Assembly.Location);
             assemblyReferences.Add(typeof(System.Linq.Enumerable).Assembly.Location);
-            assemblyReferences.Add(typeof(CsScripts.Variable).Assembly.Location);
+            assemblyReferences.Add(typeof(CsDebugScript.Variable).Assembly.Location);
 
             // Check if Microsoft.CSharp.dll should be added to the list of referenced assemblies
             const string MicrosoftCSharpDll = "microsoft.csharp.dll";
@@ -220,7 +221,7 @@ namespace CsDebugScript
         protected CompileResult Compile(string code, params string[] referencedAssemblies)
         {
             // Temp folder for script debugging experience
-            string tempDir = Path.GetTempPath() + @"\CsScripts\";
+            string tempDir = Path.GetTempPath() + @"\CsDebugScript\";
 
             Directory.CreateDirectory(tempDir);
 
@@ -397,7 +398,7 @@ namespace CsDebugScript
 
             if (Path.GetExtension(path).ToLower() == ".dll")
             {
-                string newPath = Path.Combine(EngineContext.GetAssemblyDirectory(), path);
+                string newPath = Path.Combine(Context.GetAssemblyDirectory(), path);
 
                 if (File.Exists(newPath))
                 {
@@ -413,12 +414,12 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="referencedAssemblies">The referenced assemblies.</param>
-        /// <param name="defaultUsings">The array of default using namespaces. If null is supplied, it will be { System, System.Linq, CsScripts }</param>
+        /// <param name="defaultUsings">The array of default using namespaces. If null is supplied, it will be { System, System.Linq, CsDebygScript }</param>
         /// <returns>Merged code of all imported script files</returns>
         protected string LoadCode(string path, ISet<string> referencedAssemblies = null, string[] defaultUsings = null)
         {
             HashSet<string> loadedScripts = new HashSet<string>();
-            HashSet<string> usings = new HashSet<string>(defaultUsings ?? new string[] { "System", "System.Linq", "CsScripts" });
+            HashSet<string> usings = new HashSet<string>(defaultUsings ?? new string[] { "System", "System.Linq", "CsDebugScript" });
             HashSet<string> imports = new HashSet<string>();
             StringBuilder importedCode = new StringBuilder();
             string fullPath = GetFullPath(path, Directory.GetCurrentDirectory());
@@ -465,7 +466,7 @@ namespace CsDebugScript
         /// <param name="importedCode">The imported code.</param>
         /// <param name="scriptCode">The script code.</param>
         /// <param name="scriptBaseClassName">Name of the script base class.</param>
-        protected static string GenerateCode(IEnumerable<string> usings, string importedCode, string scriptCode, string scriptBaseClassName = "CsScripts.ScriptBase")
+        protected static string GenerateCode(IEnumerable<string> usings, string importedCode, string scriptCode, string scriptBaseClassName = "CsDebugScript.ScriptBase")
         {
             StringBuilder codeBuilder = new StringBuilder();
 

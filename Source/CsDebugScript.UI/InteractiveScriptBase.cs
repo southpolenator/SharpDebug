@@ -1,10 +1,8 @@
-﻿using CsDebugScript;
-using CsScripts;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsScripts
+namespace CsDebugScript
 {
     /// <summary>
     /// Helper for dumping objects using InteractiveScriptBase.ObjectWriter.

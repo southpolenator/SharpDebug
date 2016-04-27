@@ -1,4 +1,4 @@
-﻿using CsDebugScript.Utility;
+﻿using CsDebugScript.Engine.Utility;
 using Dia2Lib;
 using GenerateUserTypesFromPdb.UserTypes;
 using System;

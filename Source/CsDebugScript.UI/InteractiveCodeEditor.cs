@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.UI.CodeWindow;
-using CsDebugScript.Utility;
+using CsDebugScript.Engine.Utility;
 using DbgEngManaged;
 using ICSharpCode.NRefactory.Documentation;
 using ICSharpCode.NRefactory.TypeSystem;
@@ -193,7 +193,7 @@ namespace CsDebugScript.UI
 
                 try
                 {
-                    textOutput = CsScripts.Debugger.ExecuteAndCapture(documentText);
+                    textOutput = Debugger.ExecuteAndCapture(documentText);
                 }
                 catch (Exception ex)
                 {

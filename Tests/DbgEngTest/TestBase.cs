@@ -1,5 +1,5 @@
 ﻿using CsDebugScript;
-using CsScripts;
+using CsDebugScript.Engine;
 using DbgEngManaged;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -49,7 +49,7 @@ namespace DbgEngTest
         protected static void Initialize(string dumpFile, string symbolPath)
         {
             client = OpenDumpFile(dumpFile, symbolPath);
-            EngineContext.Initalize(client);
+            Context.Initalize(client);
         }
 
         protected StackFrame GetFrame(string functionName)

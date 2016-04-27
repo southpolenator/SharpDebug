@@ -1,4 +1,4 @@
-﻿using CsScripts;
+﻿using CsDebugScript.Engine;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -71,7 +71,7 @@ namespace CsDebugScript
         /// <summary>
         /// The usings
         /// </summary>
-        private List<string> usings = new List<string>(new string[] { "System", "System.Linq", "CsScripts" });
+        private List<string> usings = new List<string>(new string[] { "System", "System.Linq", "CsDebugScript" });
 
         /// <summary>
         /// Gets or sets the internal object writer. It is used for writing objects to host window.
@@ -183,7 +183,7 @@ namespace CsDebugScript
             Console.Write(prompt);
 
             // Read string
-            return EngineContext.Debugger.ReadInput();
+            return Context.Debugger.ReadInput();
         }
 
         /// <summary>
