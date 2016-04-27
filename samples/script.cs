@@ -2,21 +2,21 @@ using System;
 using System.Linq;
 using CsScripts;
 using std = CsScripts.CommonUserTypes.NativeTypes.std;
-import CsScripts.CommonUserTypes.dll;
+import ..\CsScripts.CommonUserTypes.dll;
 import helper.cs;
 
 Console.Error.WriteLine("This is sample error");
 HelpMe("It works!");
 
-var frame = Thread.Current.StackTrace.Frames[1];
+var frame = Thread.Current.StackTrace.Frames[2];
 writeln("0x{0:X}", frame.StackOffset);
 writeln("0x{0:X}", frame.FrameOffset);
 writeln("{0}:{1} {2}+[{3:X}]", frame.SourceFileName, frame.SourceFileLine, frame.FunctionName, frame.FunctionDisplacement);
 var locals = frame.Locals;
 var p = locals["p"];
 var q = locals["q"];
-writeln("&p = 0x{0:X}", p.GetAddress());
-writeln("&q = 0x{0:X}", q.GetAddress());
+writeln("&p = 0x{0:X}", p.GetPointerAddress());
+writeln("&q = 0x{0:X}", q.GetPointerAddress());
 var codeType = p.DereferencePointer().GetCodeType();
 var a = p.DereferencePointer();
 var b = a.CastAs("int");

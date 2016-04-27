@@ -213,6 +213,7 @@ ModelManifest.xml
 
 # Custom project files
 *.VC.opendb
+*.VC.db
 /CsScriptManagedReference/Help
 /NuGet.Packager/lib
 
