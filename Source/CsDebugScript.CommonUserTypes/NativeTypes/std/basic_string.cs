@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsScripts.CommonUserTypes.NativeTypes.std
+namespace CsDebugScript.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
     /// Microsoft implementation of std::basic_string
