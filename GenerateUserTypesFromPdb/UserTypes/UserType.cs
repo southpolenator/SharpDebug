@@ -514,8 +514,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
         {
             int baseClassOffset = 0;
             UserTypeTree baseType = ExportDynamicFields ? GetBaseTypeString(error, Symbol, factory, out baseClassOffset) : null;
-            var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
-            bool hasStatic = fields.Where(f => f.Static).Any(), hasNonStatic = fields.Where(f => !f.Static).Any();
+            var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.FieldName != "ClassCodeType").ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
+            bool hasStatic = fields.Any(f => f.Static), hasNonStatic = fields.Any(f => !f.Static);
             Symbol[] baseClasses = Symbol.BaseClasses;
 
             if (DeclaredInType == null)
@@ -527,7 +527,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     output.WriteLine();
                 }
 
-                //#fixme always put in namespace
                 if (!string.IsNullOrEmpty(Namespace))
                 {
                     output.WriteLine(indentation, "namespace {0}", Namespace);
@@ -700,7 +699,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 if (emptyTypes == baseClasses.Length - 1)
                 {
                     UserType userType;
-                    Symbol baseClassSymbol = baseClasses.Where(t => !t.IsEmpty).First();
+                    Symbol baseClassSymbol = baseClasses.First(t => !t.IsEmpty);
 
                     if (factory.GetUserType(baseClassSymbol, out userType) && !(userType is PrimitiveUserType))
                     {
