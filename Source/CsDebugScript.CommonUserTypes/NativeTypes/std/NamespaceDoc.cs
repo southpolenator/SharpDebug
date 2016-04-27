@@ -1,4 +1,4 @@
-﻿namespace CsScripts.CommonUserTypes.NativeTypes.std
+﻿namespace CsDebugScript.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
     /// Collection of wrapper classes for STL containers.

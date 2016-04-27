@@ -7,8 +7,8 @@
     <ProjectGuid>{21A929EA-B96B-4523-9D0F-853EA771058D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CsScripts.CommonUserTypes</RootNamespace>
-    <AssemblyName>CsScripts.CommonUserTypes</AssemblyName>
+    <RootNamespace>CsDebugScript.CommonUserTypes</RootNamespace>
+    <AssemblyName>CsDebugScript.CommonUserTypes</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -21,7 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>$(SolutionDir)\bin\Debug\CsScripts.CommonUserTypes.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\Debug\CsDebugScript.CommonUserTypes.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -30,7 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>$(SolutionDir)\bin\Release\CsScripts.CommonUserTypes.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\Release\CsDebugScript.CommonUserTypes.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -40,7 +40,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>$(SolutionDir)\bin\x64\Debug\CsScripts.CommonUserTypes.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\x64\Debug\CsDebugScript.CommonUserTypes.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>$(SolutionDir)\bin\x64\Release\</OutputPath>
@@ -50,7 +50,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>$(SolutionDir)\bin\x64\Release\CsScripts.CommonUserTypes.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\x64\Release\CsDebugScript.CommonUserTypes.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -60,7 +60,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>$(SolutionDir)\bin\x86\Debug\CsScripts.CommonUserTypes.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\x86\Debug\CsDebugScript.CommonUserTypes.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>$(SolutionDir)\bin\x86\Release\</OutputPath>
@@ -70,7 +70,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>$(SolutionDir)\bin\x86\Release\CsScripts.CommonUserTypes.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\x86\Release\CsDebugScript.CommonUserTypes.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />

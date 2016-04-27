@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace CsScripts.CommonUserTypes.NativeTypes.std
+namespace CsDebugScript.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
     /// Microsoft implementation of std::vector
