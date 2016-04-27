@@ -240,7 +240,7 @@ namespace CsScripts
             this.variable = variable;
             Length = length;
             preCalculatedArray = ReadArray();
-            if (preCalculatedArray == null && variable.GetCodeType().ElementType.IsPointer)
+            if (preCalculatedArray == null && variable.GetCodeType().ElementType.IsPointer && length > 0)
             {
                 var process = variable.GetCodeType().Module.Process;
                 var pointerSize = process.GetPointerSize();

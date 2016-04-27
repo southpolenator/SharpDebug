@@ -547,7 +547,7 @@ namespace GenerateUserTypesFromPdb
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                     MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.Engine.dll")),
                     MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll")),
                 };
 

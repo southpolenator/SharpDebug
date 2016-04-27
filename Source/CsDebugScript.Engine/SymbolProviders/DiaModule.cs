@@ -449,7 +449,12 @@ namespace CsDebugScript.SymbolProviders
                     ulong address = ResolveAddress(symbol, frame.FrameContext);
                     var variableName = symbol.name;
 
-                    variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
+                    // Ignore local variables without name.
+                    //
+                    if (!string.IsNullOrEmpty(variableName))
+                    {
+                        variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
+                    }
                 }
 
                 return new VariableCollection(variables.ToArray());

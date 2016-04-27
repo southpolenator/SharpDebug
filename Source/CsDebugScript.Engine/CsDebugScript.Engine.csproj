@@ -110,6 +110,7 @@
     <Compile Include="CLR\Heap.cs" />
     <Compile Include="CLR\Runtime.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="CsScripts\DebugEventInfo.cs" />
     <Compile Include="EngineContext.cs" />
     <Compile Include="CsScripts\BasicType.cs" />
     <Compile Include="CsScripts\CodeArray.cs" />
@@ -135,6 +136,7 @@
     <Compile Include="Debuggers\DbgEngDll.cs" />
     <Compile Include="Debuggers\IDebuggerEngine.cs" />
     <Compile Include="Marshaling\NamespaceDoc.cs" />
+    <Compile Include="Native\DEBUG_LAST_EVENT_INFO.cs" />
     <Compile Include="Native\DEBUG_MODULE_PARAMETERS.cs" />
     <Compile Include="Debuggers\DbgEngDllHelpers\StateCache.cs" />
     <Compile Include="SymbolProviders\NamespaceDoc.cs" />

@@ -32,10 +32,7 @@ namespace CsScripts
         /// <returns></returns>
         public static T SafeCastAs<T>(this Variable variable) where T : UserType
         {
-            if (variable == null)
-                return null;
-
-            return variable.CastAs<T>();
+            return variable?.CastAs<T>();
         }
 
         /// <summary>
@@ -45,10 +42,7 @@ namespace CsScripts
         /// <returns></returns>
         public static Variable DowncastInterface(this Variable userType)
         {
-            if (userType == null)
-                return null;
-
-            return userType.CastAs(userType.GetRuntimeType());
+            return userType?.CastAs(userType.GetRuntimeType());
         }
 
         /// <summary>
@@ -57,10 +51,63 @@ namespace CsScripts
         /// <typeparam name="T"></typeparam>
         /// <param name="userType"></param>
         /// <returns></returns>
-        public static bool Inherits<T>(this Variable userType)
-            where T : UserType
+        public static bool Inherits<T>(this Variable userType) where T : UserType
         {
             return userType.GetRuntimeType().Inherits<T>();
+        }
+
+        /// <summary>
+        /// Reinterpret Cast, chanches underlaying code type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="userType"></param>
+        /// <returns></returns>
+        public static CodePointer<T> ReinterpretPointerCast<T>(this Variable userType) where T : struct
+        {
+            // Get CodeType from the generic argument.
+            //
+            string codeTypeName;
+
+            if (typeof(T) == typeof(int))
+            {
+                codeTypeName = "int";
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                codeTypeName = "short";
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                codeTypeName = "unsigned int";
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                codeTypeName = "unsigned short";
+            }
+            else
+            {
+                throw new NotSupportedException("Requested type is not supported.");
+            }
+
+            // Return CodePointer<T>
+            //
+            return new CodePointer<T>(
+                Variable.CreatePointer(
+                    CodeType.Create(codeTypeName, userType.GetCodeType().Module).PointerToType,
+                    userType.GetPointerAddress()));
+        }
+
+
+        /// <summary>
+        /// Adjust Pointer and Cast To Type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="userType"></param>
+        /// <param name="offset"></param>
+        /// <returns></returns>
+        public static T AdjustPointer<T>(this Variable userType, int offset) where T : UserType
+        {
+            return userType.AdjustPointer(offset).CastAs<T>();
         }
     }
 
@@ -75,7 +122,7 @@ namespace CsScripts
         /// <summary>
         /// The element code type
         /// </summary>
-        private CodeType elementCodeType;
+        private readonly CodeType elementCodeType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GenericsElementCaster{T}"/> class.
@@ -171,15 +218,11 @@ namespace CsScripts
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="UserType" /> class.
+        /// Initializes a new instance of the <see cref="UserType"/> class.
         /// </summary>
         /// <param name="buffer">The memory buffer.</param>
         /// <param name="offset">The offset.</param>
         /// <param name="bufferAddress">The buffer address.</param>
-        /// <param name="codeType">The variable code type.</param>
-        /// <param name="address">The variable address.</param>
-        /// <param name="name">The variable name.</param>
-        /// <param name="path">The variable path.</param>
         public UserType(MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath)
             : base(codeType, address, name, path)
         {
