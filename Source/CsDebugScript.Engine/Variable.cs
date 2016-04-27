@@ -550,8 +550,9 @@ namespace CsDebugScript
             {
                 if (!codeType.IsSimple || codeType.IsPointer)
                 {
-                    CodeType ulongType = CodeType.Create("unsigned long long", codeType.Module);
-                    ulong vtableAddress = Context.SymbolProvider.ReadSimpleData(ulongType, GetPointerAddress());
+                    Process process = codeType.Module.Process;
+                    MemoryBuffer memoryBuffer = Debugger.ReadMemory(process, GetPointerAddress(), process.GetPointerSize());
+                    ulong vtableAddress = UserType.ReadPointer(memoryBuffer, 0, (int)process.GetPointerSize());
                     string vtableName = Context.SymbolProvider.GetSymbolNameByAddress(codeType.Module.Process, vtableAddress).Item1;
 
                     if (vtableName.EndsWith("::`vftable'"))
