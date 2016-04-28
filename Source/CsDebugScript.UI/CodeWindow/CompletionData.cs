@@ -83,6 +83,27 @@ namespace CsDebugScript.UI.CodeWindow
             return images;
         }
 
+        internal static ImageSource CreateTextImage(string text, Brush textColor)
+        {
+            const int ImageWidth = 256;
+            const int ImageHeight = 256;
+            const int FontHeight = 200;
+
+            var pixels = new byte[ImageWidth * ImageHeight * 4];
+            BitmapSource bitmapSource = BitmapSource.Create(ImageWidth, ImageHeight, 96, 96, PixelFormats.Pbgra32, null, pixels, ImageWidth * 4);
+            var visual = new DrawingVisual();
+            using (DrawingContext drawingContext = visual.RenderOpen())
+            {
+                drawingContext.DrawImage(bitmapSource, new Rect(0, 0, ImageWidth, ImageHeight));
+                drawingContext.DrawText(
+                    new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                        new Typeface(new FontFamily("Segoe UI Symbol"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+                        FontHeight, textColor), new Point(0, 0));
+            }
+
+            return new DrawingImage(visual.Drawing);
+        }
+
         private static ImageSource CreateImage(CompletionDataType completionDataType)
         {
             string text;
@@ -154,23 +175,7 @@ namespace CsDebugScript.UI.CodeWindow
                     break;
             }
 
-            const int ImageWidth = 256;
-            const int ImageHeight = 256;
-            const int FontHeight = 200;
-
-            var pixels = new byte[ImageWidth * ImageHeight * 4];
-            BitmapSource bitmapSource = BitmapSource.Create(ImageWidth, ImageHeight, 96, 96, PixelFormats.Pbgra32, null, pixels, ImageWidth * 4);
-            var visual = new DrawingVisual();
-            using (DrawingContext drawingContext = visual.RenderOpen())
-            {
-                drawingContext.DrawImage(bitmapSource, new Rect(0, 0, ImageWidth, ImageHeight));
-                drawingContext.DrawText(
-                    new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-                        new Typeface(new FontFamily("Segoe UI Symbol"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
-                        FontHeight, textColor), new Point(0, 0));
-            }
-
-            return new DrawingImage(visual.Drawing);
+            return CreateTextImage(text, textColor);
         }
     }
 }

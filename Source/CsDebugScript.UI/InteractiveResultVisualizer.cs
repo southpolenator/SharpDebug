@@ -47,7 +47,7 @@ namespace CsDebugScript.UI
         {
             string Name { get; }
 
-            string Value { get; }
+            object Value { get; }
 
             string Type { get; }
 
@@ -58,13 +58,11 @@ namespace CsDebugScript.UI
 
         private class ResultTreeItem
         {
-            public static IResultTreeItem Create(object obj, string name, ImageSource image)
+            public static IResultTreeItem Create(object obj, Type objType, string name, ImageSource image)
             {
-                Type type = obj.GetType();
-
-                if (type.IsArray)
-                    return new ArrayResultTreeItem((Array)obj, name, image);
-                return new ObjectResultTreeItem(obj, name, image);
+                if (obj != null && objType.IsArray)
+                    return new ArrayResultTreeItem((Array)obj, objType, name, image);
+                return new ObjectResultTreeItem(obj, objType, name, image);
             }
         }
 
@@ -72,8 +70,8 @@ namespace CsDebugScript.UI
         {
             private Array array;
 
-            public ArrayResultTreeItem(Array array, string name, ImageSource image)
-                : base(array, name, image)
+            public ArrayResultTreeItem(Array array, Type objType, string name, ImageSource image)
+                : base(array, objType, name, image)
             {
                 this.array = array;
             }
@@ -85,11 +83,11 @@ namespace CsDebugScript.UI
                     foreach (var child in base.Children)
                         yield return child;
                     for (int i = 0; i < array.Length; i++)
-                        yield return ResultTreeItem.Create(GetValue(() => array.GetValue(i)), string.Format("[{0}]", i), CompletionData.GetImage(CompletionDataType.Variable));
+                        yield return ResultTreeItem.Create(GetValue(() => array.GetValue(i)), objType.GetElementType(), string.Format("[{0}]", i), CompletionData.GetImage(CompletionDataType.Variable));
                 }
             }
 
-            public override string Value
+            public override object Value
             {
                 get
                 {
@@ -101,10 +99,12 @@ namespace CsDebugScript.UI
         private class ObjectResultTreeItem : IResultTreeItem
         {
             private object obj;
+            protected Type objType;
 
-            public ObjectResultTreeItem(object obj, string name, ImageSource image)
+            public ObjectResultTreeItem(object obj, Type objType, string name, ImageSource image)
             {
                 this.obj = obj;
+                this.objType = objType;
                 Name = name;
                 Image = image;
             }
@@ -113,40 +113,45 @@ namespace CsDebugScript.UI
             {
                 get
                 {
-                    Type type = obj.GetType();
-
-                    if (!type.IsPrimitive && !type.IsEnum)
+                    if (obj != null)
                     {
-                        // Non-static properties
-                        var properties = type.GetProperties(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                        Type type = obj.GetType();
 
-                        foreach (var property in properties)
-                            if (property.CanRead)
-                                yield return ResultTreeItem.Create(GetValue(() => property.GetValue(obj)), property.Name, CompletionData.GetImage(CompletionDataType.Property));
+                        if (!type.IsPrimitive && !type.IsEnum)
+                        {
+                            // Non-static properties
+                            var properties = type.GetProperties(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 
-                        // Static properties
-                        var staticProperties = type.GetProperties(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                            foreach (var property in properties)
+                                if (property.CanRead)
+                                    yield return ResultTreeItem.Create(GetValue(() => property.GetValue(obj)), property.PropertyType, property.Name, CompletionData.GetImage(CompletionDataType.Property));
 
-                        foreach (var property in staticProperties)
-                            if (property.CanRead)
-                                yield return ResultTreeItem.Create(GetValue(() => property.GetValue(obj)), property.Name, CompletionData.GetImage(CompletionDataType.StaticProperty));
+                            // Static properties
+                            var staticProperties = type.GetProperties(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
 
-                        // Non-static fields
-                        var fields = type.GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                            foreach (var property in staticProperties)
+                                if (property.CanRead)
+                                    yield return ResultTreeItem.Create(GetValue(() => property.GetValue(obj)), property.PropertyType, property.Name, CompletionData.GetImage(CompletionDataType.StaticProperty));
 
-                        foreach (var field in fields)
-                            if (!field.IsStatic)
-                                yield return ResultTreeItem.Create(GetValue(() => field.GetValue(obj)), field.Name, CompletionData.GetImage(CompletionDataType.Variable));
+                            // Non-static fields
+                            var fields = type.GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 
-                        // Static fields
-                        var staticFields = type.GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                            foreach (var field in fields)
+                                if (!field.IsStatic)
+                                    yield return ResultTreeItem.Create(GetValue(() => field.GetValue(obj)), field.FieldType, field.Name, CompletionData.GetImage(CompletionDataType.Variable));
 
-                        foreach (var field in staticFields)
-                            if (field.IsStatic)
-                                yield return ResultTreeItem.Create(GetValue(() => field.GetValue(obj)), field.Name, CompletionData.GetImage(CompletionDataType.StaticVariable));
+                            // Static fields
+                            var staticFields = type.GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+                            foreach (var field in staticFields)
+                                if (field.IsStatic)
+                                    yield return ResultTreeItem.Create(GetValue(() => field.GetValue(obj)), field.FieldType, field.Name, CompletionData.GetImage(CompletionDataType.StaticVariable));
+                        }
                     }
                 }
             }
+
+            private static ImageSource ExceptionImage = CompletionData.CreateTextImage("", Brushes.Red);
 
             protected static object GetValue(Func<object> getValueFunction)
             {
@@ -156,7 +161,7 @@ namespace CsDebugScript.UI
                 }
                 catch (Exception ex)
                 {
-                    return ex;
+                    return CreateTextWithIcon("Exception", ExceptionImage, ex.ToString());
                 }
             }
 
@@ -168,15 +173,15 @@ namespace CsDebugScript.UI
             {
                 get
                 {
-                    return obj.GetType().FullName;
+                    return InteractiveExecution.GetCodeName(objType);
                 }
             }
 
-            public virtual string Value
+            public virtual object Value
             {
                 get
                 {
-                    return obj.ToString();
+                    return obj != null ? obj : "null";
                 }
             }
         }
@@ -238,7 +243,7 @@ namespace CsDebugScript.UI
 
             // Create table tree
             TreeView tree = new TreeView();
-            IResultTreeItem resultTreeItem = ResultTreeItem.Create(obj, "result", null);
+            IResultTreeItem resultTreeItem = ResultTreeItem.Create(obj, obj.GetType(), "result", null);
 
             tree.PreviewKeyDown += Tree_PreviewKeyDown;
             tree.Items.Add(header);
@@ -345,26 +350,43 @@ namespace CsDebugScript.UI
             public int Level { get; set; }
         }
 
+        private static UIElement CreateTextWithIcon(string text, ImageSource icon, object tooltip = null)
+        {
+            StackPanel stackPanel = new StackPanel();
+            stackPanel.Orientation = Orientation.Horizontal;
+            Grid.SetColumn(stackPanel, NameColumnIndex);
+            TextBlock textBlock = new TextBlock();
+            textBlock.Text = text;
+            Image image = new Image();
+            image.Width = image.Height = 16;
+            image.Source = icon;
+            image.ToolTip = tooltip;
+            stackPanel.Children.Add(image);
+            stackPanel.Children.Add(textBlock);
+            return stackPanel;
+        }
+
         private TreeViewItem CreateTreeItem(IResultTreeItem resultTreeItem, int level)
         {
             TreeViewItem item = new TreeViewItem();
             Grid grid = CreateTreeItemGrid(level);
 
-            StackPanel nameStackPanel = new StackPanel();
-            nameStackPanel.Orientation = Orientation.Horizontal;
-            Grid.SetColumn(nameStackPanel, NameColumnIndex);
-            TextBlock name = new TextBlock();
-            name.Text = resultTreeItem.Name;
-            Image image = new Image();
-            image.Width = image.Height = 16;
-            image.Source = resultTreeItem.Image;
-            nameStackPanel.Children.Add(image);
-            nameStackPanel.Children.Add(name);
-            grid.Children.Add(nameStackPanel);
-            TextBlock value = new TextBlock();
-            value.Text = resultTreeItem.Value;
-            Grid.SetColumn(value, ValueColumnIndex);
-            grid.Children.Add(value);
+            UIElement name = CreateTextWithIcon(resultTreeItem.Name, resultTreeItem.Image);
+            grid.Children.Add(name);
+            object itemValue = resultTreeItem.Value;
+            if (itemValue is UIElement)
+            {
+                Grid.SetColumn((UIElement)itemValue, ValueColumnIndex);
+                grid.Children.Add((UIElement)itemValue);
+            }
+            else
+            {
+                TextBlock value = new TextBlock();
+                value.Text = itemValue.ToString();
+                Grid.SetColumn(value, ValueColumnIndex);
+                grid.Children.Add(value);
+            }
+
             TextBlock type = new TextBlock();
             type.Text = resultTreeItem.Type;
             Grid.SetColumn(type, TypeColumnIndex);

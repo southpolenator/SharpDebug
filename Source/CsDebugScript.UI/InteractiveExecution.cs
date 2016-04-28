@@ -189,6 +189,26 @@ namespace CsDebugScript
             return result;
         }
 
+        internal static string GetCodeName(Type type)
+        {
+            string typeString = type.FullName;
+
+            if (typeString.Contains(".<") || typeString.Contains("+<"))
+            {
+                // TODO: Probably not the best one, but good enough for now
+                return GetCodeName(type.GetInterfaces()[0]);
+            }
+
+            if (type.IsGenericType)
+            {
+                return string.Format("{0}<{1}>", typeString.Split('`')[0], string.Join(", ", type.GetGenericArguments().Select(x => GetCodeName(x))));
+            }
+            else
+            {
+                return typeString.Replace("+", ".");
+            }
+        }
+
         private string FixImportedCode(string importedCode)
         {
             StringBuilder newImportedCode = new StringBuilder();
@@ -198,7 +218,7 @@ namespace CsDebugScript
             foreach (var variableName in variableNames)
             {
                 var variable = scriptState.GetVariable(variableName);
-                string typeString = variable.Type.FullName;
+                string typeString = GetCodeName(variable.Type);
 
                 newImportedCode.Append(typeString);
                 newImportedCode.Append(" ");
