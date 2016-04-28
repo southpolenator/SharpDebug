@@ -52,11 +52,11 @@ namespace CsDebugScript.UI
         public InteractiveCodeEditor()
         {
             interactiveExecution = new InteractiveExecution();
-            interactiveExecution.InternalObjectWriter = new ObjectWriter()
+            interactiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
             {
                 InteractiveCodeEditor = this,
             };
-            interactiveExecution.ScriptObjectWriter = new InteractiveResultVisualizer();
+            interactiveExecution.scriptBase.ObjectWriter = new InteractiveResultVisualizer();
 
             // Run initialization of the window in background task
             IsEnabled = false;
@@ -136,28 +136,17 @@ namespace CsDebugScript.UI
 
                     UpdateScriptCode();
                 }
-                catch (CompileException ex)
+                catch (Microsoft.CodeAnalysis.Scripting.CompilationErrorException ex)
                 {
-                    CompileError[] errors = ex.Errors;
+                    StringBuilder sb = new StringBuilder();
 
-                    if (errors[0].FileName.EndsWith(InteractiveExecution.InteractiveScriptName) || errors.Count(e => !e.FileName.EndsWith(InteractiveExecution.InteractiveScriptName)) == 0)
+                    sb.AppendLine("Compile errors:");
+                    foreach (var error in ex.Diagnostics)
                     {
-                        CompileError e = errors[0];
-
-                        errorOutput = e.FullMessage;
+                        sb.AppendLine(error.ToString());
                     }
-                    else
-                    {
-                        StringBuilder sb = new StringBuilder();
 
-                        sb.AppendLine("Compile errors:");
-                        foreach (var error in errors)
-                        {
-                            sb.AppendLine(error.FullMessage);
-                        }
-
-                        errorOutput = sb.ToString();
-                    }
+                    errorOutput = sb.ToString();
                 }
                 catch (ExitRequestedException)
                 {

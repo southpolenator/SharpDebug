@@ -72,7 +72,7 @@ namespace CsDebugScript.UI.CodeWindow
             IEnumerable<CompletionData> completionData = null;
             int startPosition, wordLength = 0;
             string word = string.Empty;
-            string filename = InteractiveExecution.InteractiveScriptName;
+            string filename = "filename.csx";
             int offset = ScriptStart.Length;
             string newSourceCode = CorrectSource("");
             var document = new ICSharpCode.NRefactory.Editor.ReadOnlyDocument(new ICSharpCode.NRefactory.Editor.StringTextSource(newSourceCode), filename);
@@ -192,7 +192,7 @@ namespace CsDebugScript.UI.CodeWindow
 
                 try
                 {
-                    string filename = InteractiveExecution.InteractiveScriptName;
+                    string filename = "filename.csx";
                     int offset = CaretOffset + ScriptStart.Length;
                     string newSourceCode = CorrectSource(Text);
                     var document = new ICSharpCode.NRefactory.Editor.ReadOnlyDocument(new ICSharpCode.NRefactory.Editor.StringTextSource(newSourceCode), filename);
@@ -298,7 +298,7 @@ namespace CsDebugScript.UI.CodeWindow
                 var provider = functionCallPopup.Provider as ParameterDataProvider;
                 if (provider != null)
                 {
-                    string filename = InteractiveExecution.InteractiveScriptName;
+                    string filename = "filename.csx";
                     int offset = CaretOffset + ScriptStart.Length;
                     string newSourceCode = CorrectSource(Text);
                     var document = new ICSharpCode.NRefactory.Editor.ReadOnlyDocument(new ICSharpCode.NRefactory.Editor.StringTextSource(newSourceCode), filename);
