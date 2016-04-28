@@ -21,8 +21,7 @@ namespace CsDebugScript
             if (interactiveScript == null)
                 throw new NotImplementedException("Calling Dump() is only supported while using interactive scripting");
 
-            obj = interactiveScript.ObjectWriter.Output(obj);
-            interactiveScript._InternalObjectWriter_.Output(obj);
+            interactiveScript.Dump(obj);
         }
     }
 
@@ -86,6 +85,16 @@ namespace CsDebugScript
         /// The Roslyn script state
         /// </summary>
         internal ScriptState<object> _ScriptState_;
+
+        /// <summary>
+        /// Outputs the specified object using ObjectWriter.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        public void Dump(object obj)
+        {
+            obj = ObjectWriter.Output(obj);
+            _InternalObjectWriter_.Output(obj);
+        }
 
         private IEnumerable<string> GetCommands(Type type, System.Reflection.BindingFlags additionalBinding, string nameFilter = "")
         {

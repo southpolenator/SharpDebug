@@ -99,7 +99,7 @@ namespace CsDebugScript.UI
         {
             UpdateScriptCode();
             base.Initialize();
-            interactiveExecution.UnsafeInterpret("");
+            interactiveExecution.UnsafeInterpret("null");
         }
 
         protected override void OnExecuteCSharpScript()
@@ -151,6 +151,12 @@ namespace CsDebugScript.UI
                 catch (ExitRequestedException)
                 {
                     throw;
+                }
+                catch (AggregateException ex)
+                {
+                    if (ex.InnerException is ExitRequestedException)
+                        throw ex.InnerException;
+                    errorOutput = ex.ToString();
                 }
                 catch (TargetInvocationException ex)
                 {

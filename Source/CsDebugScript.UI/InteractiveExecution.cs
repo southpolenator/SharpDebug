@@ -153,7 +153,7 @@ namespace CsDebugScript
                 InteractiveScriptBase.Current = scriptBase;
                 scriptBase._ScriptState_ = scriptState;
                 scriptState = scriptState.ContinueWithAsync(code).Result;
-                InteractiveScriptBaseExtensions.Dump(scriptState.ReturnValue);
+                scriptBase.Dump(scriptState.ReturnValue);
 
                 if (scriptBase._InteractiveScriptBaseType_ != null && scriptBase._InteractiveScriptBaseType_ != scriptBase.GetType())
                 {
