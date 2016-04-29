@@ -7,7 +7,7 @@
     <ProjectGuid>{B63C2B4E-EB2E-45FC-93FD-5D6F2077064D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CsDebugScript.UI</RootNamespace>
+    <RootNamespace>CsDebugScript</RootNamespace>
     <AssemblyName>CsDebugScript.UI</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -168,21 +168,21 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CodeWindow\CompletionData.cs" />
-    <Compile Include="CodeWindow\CompletionDataFactory.cs" />
-    <Compile Include="CodeWindow\CompletionDataType.cs" />
-    <Compile Include="CodeWindow\CsTextEditor.cs" />
-    <Compile Include="CodeWindow\EntityWrapper.cs" />
-    <Compile Include="CodeWindow\ParameterCompletionDataFactory.cs" />
-    <Compile Include="CodeWindow\ParameterDataProvider.cs" />
+    <Compile Include="UI\CodeWindow\CompletionData.cs" />
+    <Compile Include="UI\CodeWindow\CompletionDataFactory.cs" />
+    <Compile Include="UI\CodeWindow\CompletionDataType.cs" />
+    <Compile Include="UI\CodeWindow\CsTextEditor.cs" />
+    <Compile Include="UI\CodeWindow\EntityWrapper.cs" />
+    <Compile Include="UI\CodeWindow\ParameterCompletionDataFactory.cs" />
+    <Compile Include="UI\CodeWindow\ParameterDataProvider.cs" />
     <Compile Include="CompileException.cs" />
     <Compile Include="Executor.cs" />
     <Compile Include="IExecutor.cs" />
-    <Compile Include="InteractiveCodeEditor.cs" />
+    <Compile Include="UI\InteractiveCodeEditor.cs" />
     <Compile Include="InteractiveExecution.cs" />
-    <Compile Include="InteractiveResultVisualizer.cs" />
+    <Compile Include="UI\InteractiveResultVisualizer.cs" />
     <Compile Include="InteractiveScriptBase.cs" />
-    <Compile Include="InteractiveWindow.cs" />
+    <Compile Include="UI\InteractiveWindow.cs" />
     <Compile Include="ObjectWriter.cs" />
     <Compile Include="ScriptCompiler.cs" />
     <Compile Include="ScriptExecution.cs" />

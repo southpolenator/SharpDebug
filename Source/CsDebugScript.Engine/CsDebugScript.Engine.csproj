@@ -7,7 +7,7 @@
     <ProjectGuid>{2A7F1646-9B5A-433C-8A84-2215194F59B9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CsDebugScript.Engine</RootNamespace>
+    <RootNamespace>CsDebugScript</RootNamespace>
     <AssemblyName>CsDebugScript.Engine</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
