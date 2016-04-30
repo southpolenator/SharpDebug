@@ -37,11 +37,11 @@ namespace PowershellDebugSession
     [Cmdlet(VerbsCommunications.Connect, "StartDebugSession")]
     public class StartDbgSession: Cmdlet
     {
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false)]
-        public static extern int DebugCreate(Guid iid, out IDebugClient client);
+        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
+        public static extern int DebugCreate([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, out IDebugClient client);
 
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreateEx", SetLastError = false)]
-        public static extern int DebugCreateEx(Guid iid, UInt32 flags, out IDebugClient client);
+        [DllImport("dbgeng.dll", EntryPoint = "DebugCreateEx", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
+        public static extern int DebugCreateEx([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, UInt32 flags, out IDebugClient client);
 
         /// <summary>
         /// Path of the process to start under debugger.

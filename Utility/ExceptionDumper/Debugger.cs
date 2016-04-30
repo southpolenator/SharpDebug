@@ -46,11 +46,11 @@ namespace ExceptionDumper
             }
         }
 
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false)]
-        private static extern int DebugCreate(Guid iid, out IDebugClient client);
+        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
+        private static extern int DebugCreate([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, out IDebugClient client);
 
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreateEx", SetLastError = false)]
-        private static extern int DebugCreateEx(Guid iid, uint flags, out IDebugClient client);
+        [DllImport("dbgeng.dll", EntryPoint = "DebugCreateEx", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
+        private static extern int DebugCreateEx([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, uint flags, out IDebugClient client);
 
         #region IDebugEventCallbacks
         public uint GetInterestMask()

@@ -21,7 +21,7 @@
     rename("ReportEvent", "InteropServices_ReportEvent")
 
 
-#import "CsScriptManaged.tlb" raw_interfaces_only
+#import "CsDebugScript.UI.tlb" raw_interfaces_only
 
 // Debugging engine headers
 #define KDEXT_64BIT 
@@ -180,7 +180,7 @@ public:
 		CAutoComPtr<_Assembly> assembly = (_Assembly*)(IDispatch*)loadFromResult;
 		variant_t variant;
 
-		CHECKCOM(assembly->CreateInstance_2(bstr_t(L"CsScriptManaged.Executor"), true, &variant));
+		CHECKCOM(assembly->CreateInstance_2(bstr_t(L"CsDebugScript.Executor"), true, &variant));
 		CHECKCOM(variant.punkVal->QueryInterface(&instance));
 		return S_OK;
 	}
@@ -291,7 +291,7 @@ private:
 	CAutoComPtr<ICLRRuntimeInfo> runtimeInfo;
 	CAutoComPtr<ICLRRuntimeHost> clrRuntimeHost;
 	CAutoComPtr<ICorRuntimeHost> corRuntimeHost;
-	CAutoComPtr<CsScriptManaged::IExecutor> instance;
+	CAutoComPtr<CsDebugScript_UI::IExecutor> instance;
 	CAutoComPtr<_AppDomain> appDomain;
 } clr;
 

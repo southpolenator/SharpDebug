@@ -36,8 +36,8 @@ namespace DbgEngTest
         /// <param name="iid"></param>
         /// <param name="client"></param>
         /// <returns></returns>
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false)]
-        private static extern int DebugCreate(Guid iid, out IDebugClient client);
+        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
+        private static extern int DebugCreate([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, out IDebugClient client);
 
         private static IDebugClient client;
 

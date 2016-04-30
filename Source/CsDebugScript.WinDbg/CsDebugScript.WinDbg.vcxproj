@@ -203,7 +203,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CsScriptManaged\CsScriptManaged.csproj">
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.UI\CsDebugScript.UI.csproj">
       <Project>{2a7f1646-9b5a-433c-8a84-2215194f59b9}</Project>
     </ProjectReference>
   </ItemGroup>
