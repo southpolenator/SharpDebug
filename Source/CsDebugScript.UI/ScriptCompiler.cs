@@ -1,6 +1,5 @@
 ﻿using CsDebugScript.Engine;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;

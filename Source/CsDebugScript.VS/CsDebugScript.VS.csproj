@@ -13,7 +13,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>Key.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)\Key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -89,6 +89,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VSContext.cs" />
+    <Compile Include="VSDebugger.cs" />
     <Compile Include="VSInteractiveWindow.cs" />
     <Compile Include="VSInteractiveWindowCommand.cs" />
     <Compile Include="VSInteractiveWindowControl.xaml.cs">
@@ -97,7 +99,7 @@
     <Compile Include="VSInteractiveWindowPackage.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Key.snk" />
+    <None Include="$(SolutionDir)\Key.snk" />
     <None Include="packages.config" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
