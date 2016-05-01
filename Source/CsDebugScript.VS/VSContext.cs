@@ -98,7 +98,7 @@ namespace CsDebugScript.VS
         private static void DebuggerEvents_OnEnterBreakMode(dbgEventReason reason, ref dbgExecutionAction executionAction)
         {
             DebuggerEnteredBreakMode?.Invoke();
-            // TODO: VSDebugger?.UpdateCache();
+            VSDebugger?.UpdateCache();
         }
     }
 }
