@@ -116,7 +116,7 @@
     <Compile Include="CLR\Heap.cs" />
     <Compile Include="CLR\Runtime.cs" />
     <Compile Include="Engine\Constants.cs" />
-    <Compile Include="Engine\EngineContext.cs" />
+    <Compile Include="Engine\Context.cs" />
     <Compile Include="BasicType.cs" />
     <Compile Include="CodeArray.cs" />
     <Compile Include="CodeFunction.cs" />
