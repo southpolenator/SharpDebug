@@ -49,8 +49,21 @@ namespace GenerateUserTypesFromPdb
         [XmlArrayItem("IncludedFile")]
         public XmlIncludedFile[] IncludedFiles { get; set; }
 
+        [XmlArrayItem("ReferencedAssembly")]
+        public XmlReferencedAssembly[] ReferencedAssemblies { get; set; }
+
         [XmlArrayItem("Transformation")]
         public XmlTypeTransformation[] Transformations { get; set; }
+
+        public static XmlConfig Read(Stream stream)
+        {
+            var serializer = CreateSerializer();
+
+            using (var reader = new StreamReader(stream))
+            {
+                return (XmlConfig)serializer.Deserialize(reader);
+            }
+        }
 
         internal static XmlConfig Read(string xmlConfigPath)
         {
@@ -91,6 +104,12 @@ namespace GenerateUserTypesFromPdb
     }
 
     public class XmlIncludedFile
+    {
+        [XmlAttribute]
+        public string Path { get; set; }
+    }
+
+    public class XmlReferencedAssembly
     {
         [XmlAttribute]
         public string Path { get; set; }
