@@ -800,7 +800,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             symbol.get_undecoratedNameEx(0 | 0x8000 | 0x1000, out fullyUndecoratedName);
             symbol.get_undecoratedNameEx(0 | 0x8000, out partiallyUndecoratedName);
 
-            // Fully undecorated name should be in form: "CDerived1::`vftable'"
+            // Fully undecorated name should be in form: "DerivedClass::`vftable'"
             const string vftableString = "::`vftable'";
 
             if (!fullyUndecoratedName.EndsWith(vftableString))
@@ -811,7 +811,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             string codeTypeName = fullyUndecoratedName.Substring(0, fullyUndecoratedName.Length - vftableString.Length);
             CodeType codeType = CodeType.Create(codeTypeName, Module);
 
-            // Partially undecorated name should be in form: "const CDerived1::`vftable'{for `CBase'}"
+            // Partially undecorated name should be in form: "const DerivedClass::`vftable'{for `BaseClass'}"
             string partiallyUndecoratedNameStart = string.Format("const {0}{1}{{for `", codeTypeName, vftableString);
 
             if (!partiallyUndecoratedName.StartsWith(partiallyUndecoratedNameStart))
