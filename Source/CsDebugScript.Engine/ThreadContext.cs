@@ -250,15 +250,25 @@ namespace CsDebugScript
         {
             get
             {
-                switch (Process.Current.ActualProcessorType)
-                {
-                    case ImageFileMachine.I386:
-                        return (uint)Marshal.SizeOf(typeof(CONTEXT_X86));
-                    case ImageFileMachine.AMD64:
-                        return (uint)(Process.Current.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf(typeof(WOW64_CONTEXT)) : Marshal.SizeOf(typeof(CONTEXT_X64)));
-                    default:
-                        throw new Exception("Unknown platform " + Process.Current.ActualProcessorType);
-                }
+                return GetNativeStructureSize(Process.Current);
+            }
+        }
+
+        /// <summary>
+        /// Gets the size of the native structure.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <returns></returns>
+        private static uint GetNativeStructureSize(Process process)
+        {
+            switch (process.ActualProcessorType)
+            {
+                case ImageFileMachine.I386:
+                    return (uint)Marshal.SizeOf(typeof(CONTEXT_X86));
+                case ImageFileMachine.AMD64:
+                    return (uint)(process.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf(typeof(WOW64_CONTEXT)) : Marshal.SizeOf(typeof(CONTEXT_X64)));
+                default:
+                    throw new Exception("Unknown platform " + process.ActualProcessorType);
             }
         }
 
@@ -286,25 +296,26 @@ namespace CsDebugScript
         /// Creates the array marshaler.
         /// </summary>
         /// <param name="elementsCount">The number of elements.</param>
-        internal static MarshalArrayReader<ThreadContext> CreateArrayMarshaler(int elementsCount)
+        internal static MarshalArrayReader<ThreadContext> CreateArrayMarshaler(Process process, int elementsCount)
         {
-            return new CustomMarshalArrayReader<ThreadContext>(elementsCount, (int)NativeStructureSize, PtrToStructure, StructureToPtr);
+            return new CustomMarshalArrayReader<ThreadContext>(elementsCount, (int)GetNativeStructureSize(process), (p) => PtrToStructure(process, p), StructureToPtr);
         }
 
         /// <summary>
         /// Converts from native structure to managed object.
         /// </summary>
+        /// <param name="process">The process.</param>
         /// <param name="pointer">The pointer.</param>
-        internal static ThreadContext PtrToStructure(IntPtr pointer)
+        internal static ThreadContext PtrToStructure(Process process, IntPtr pointer)
         {
-            switch (Process.Current.ActualProcessorType)
+            switch (process.ActualProcessorType)
             {
                 case ImageFileMachine.I386:
                     return ReadX86Structure(pointer);
                 case ImageFileMachine.AMD64:
-                    return Process.Current.EffectiveProcessorType == ImageFileMachine.I386 ? ReadWowX64Structure(pointer) : ReadX64Structure(pointer);
+                    return process.EffectiveProcessorType == ImageFileMachine.I386 ? ReadWowX64Structure(pointer) : ReadX64Structure(pointer);
                 default:
-                    throw new Exception("Unknown platform " + Process.Current.ActualProcessorType);
+                    throw new Exception("Unknown platform " + process.ActualProcessorType);
             }
         }
 
@@ -393,9 +404,9 @@ namespace CsDebugScript
                 case ImageFileMachine.I386:
                     return Marshal.SizeOf(typeof(CONTEXT_X86));
                 case ImageFileMachine.AMD64:
-                    return Process.Current.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf(typeof(WOW64_CONTEXT)) : Marshal.SizeOf(typeof(CONTEXT_X64));
+                    return process.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf(typeof(WOW64_CONTEXT)) : Marshal.SizeOf(typeof(CONTEXT_X64));
                 default:
-                    throw new Exception("Unknown platform " + Process.Current.ActualProcessorType);
+                    throw new Exception("Unknown platform " + process.ActualProcessorType);
             }
         }
     }

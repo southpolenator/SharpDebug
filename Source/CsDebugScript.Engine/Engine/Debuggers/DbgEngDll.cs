@@ -461,7 +461,7 @@ namespace CsDebugScript.Engine.Debuggers
         public ThreadContext GetThreadContext(Thread thread)
         {
             using (ThreadSwitcher switcher = new ThreadSwitcher(StateCache, thread))
-            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(1))
+            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(thread.Process, 1))
             {
                 Advanced.GetThreadContext(threadContextBuffer.Pointer, (uint)(threadContextBuffer.Count * threadContextBuffer.Size));
 
@@ -613,7 +613,7 @@ namespace CsDebugScript.Engine.Debuggers
                     StackOffset = stackFrame.AddrStack.Offset,
                     Virtual = stackFrame.Virtual,
                 });
-                contexts.Add(ThreadContext.PtrToStructure(contextAddress));
+                contexts.Add(ThreadContext.PtrToStructure(thread.Process, contextAddress));
             }
             return new StackTrace(thread, frames.ToArray(), contexts.ToArray());
         }
@@ -649,7 +649,7 @@ namespace CsDebugScript.Engine.Debuggers
             const int MaxCallStack = 10240;
             using (ThreadSwitcher switcher = new ThreadSwitcher(StateCache, thread))
             using (MarshalArrayReader<_DEBUG_STACK_FRAME_EX> frameBuffer = new RegularMarshalArrayReader<_DEBUG_STACK_FRAME_EX>(MaxCallStack))
-            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(MaxCallStack))
+            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(thread.Process, MaxCallStack))
             {
                 uint framesCount;
 
