@@ -429,6 +429,11 @@ namespace CsDebugScript
                 name = name.Substring(moduleIndex + 1);
             }
 
+            if (name == CodeType.NakedPointerCodeTypeName)
+            {
+                return new NakedPointerCodeType(this);
+            }
+
             CodeType codeType = null;
 
             if (clrModule.Cached && ClrModule != null)

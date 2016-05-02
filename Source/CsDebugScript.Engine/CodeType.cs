@@ -13,6 +13,11 @@ namespace CsDebugScript
     public abstract class CodeType
     {
         /// <summary>
+        /// The naked pointer code type name
+        /// </summary>
+        internal const string NakedPointerCodeTypeName = "~NakedPointerCodeTypeName~";
+
+        /// <summary>
         /// The element type
         /// </summary>
         protected internal SimpleCache<CodeType> elementType;
@@ -1007,6 +1012,219 @@ namespace CsDebugScript
             }
 
             return inputType.Substring(indexStart, i - indexStart);
+        }
+    }
+
+    /// <summary>
+    /// Helper type to aid NakedPointer class.
+    /// </summary>
+    /// <seealso cref="CsDebugScript.CodeType" />
+    internal class NakedPointerCodeType : CodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NakedPointerCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public NakedPointerCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is ANSI string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsAnsiString { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is array.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is array; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsArray { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is double.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is double; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsDouble { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is enum.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is enum; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsEnum { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is float.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is float; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFloat { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is function type.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is function type; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFunction { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is pointer.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is pointer; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsPointer { get { return true; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is floating point number (float or double).
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is floating point number; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsReal { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is simple type.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is simple type; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsSimple { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI or wide string.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsString { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is wide string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is wide string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsWideString { get { return false; } }
+
+        /// <summary>
+        /// Gets field type and offset from all fields (including all base classes).
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override Tuple<CodeType, int> GetAllFieldTypeAndOffset(string fieldName)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the base class and offset.
+        /// </summary>
+        /// <param name="className">Name of the class.</param>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override Tuple<CodeType, int> GetBaseClassAndOffset(string className)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the direct base classes and offsets.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override Dictionary<string, Tuple<CodeType, int>> GetDirectBaseClassesAndOffsets()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the element type.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override CodeType GetElementType()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the field type and offset.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override Tuple<CodeType, int> GetFieldTypeAndOffset(string fieldName)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the pointer to type.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override CodeType GetPointerToType()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the template arguments.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override object[] GetTemplateArguments()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the template arguments strings.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override string[] GetTemplateArgumentsStrings()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the type all field names (including all base classes).
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override string[] GetTypeAllFieldNames()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the type field names.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override string[] GetTypeFieldNames()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "void*";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return Module.Process.GetPointerSize();
         }
     }
 

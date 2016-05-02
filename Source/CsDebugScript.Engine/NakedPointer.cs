@@ -8,7 +8,7 @@ namespace CsDebugScript
     public class NakedPointer : Variable
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CodePointer{T}"/> class.
+        /// Initializes a new instance of the <see cref="NakedPointer"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
         public NakedPointer(Variable variable)
@@ -18,6 +18,35 @@ namespace CsDebugScript
             {
                 throw new Exception("Wrong code type of passed variable " + GetCodeType().Name);
             }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NakedPointer"/> class.
+        /// </summary>
+        /// <param name="pointerType">Type of the pointer.</param>
+        /// <param name="address">The address.</param>
+        public NakedPointer(CodeType pointerType, ulong address)
+            : this(Variable.CreatePointerNoCast(pointerType, address))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NakedPointer"/> class.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        public NakedPointer(Process process, ulong address)
+            : this(GetPointerCodeType(process), address)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NakedPointer"/> class.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        public NakedPointer(ulong address)
+            : this(Process.Current, address)
+        {
         }
 
         /// <summary>
@@ -41,6 +70,15 @@ namespace CsDebugScript
         public new CodePointer<T> CastAs<T>()
         {
             return new CodePointer<T>(this);
+        }
+
+        /// <summary>
+        /// Gets the pointer code type for the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        private static CodeType GetPointerCodeType(Process process)
+        {
+            return CodeType.Create(CodeType.NakedPointerCodeTypeName, process.Modules[0]);
         }
     }
 }
