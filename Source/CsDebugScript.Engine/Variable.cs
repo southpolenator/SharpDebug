@@ -43,9 +43,9 @@ namespace CsDebugScript
         private CodeType codeType;
 
         /// <summary>
-        /// Runtime code type.
+        /// Runtime code type and offset to original type start.
         /// </summary>
-        private SimpleCacheStruct<CodeType> runtimeCodeType;
+        internal SimpleCacheStruct<Tuple<CodeType, int>> runtimeCodeTypeAndOffset;
 
         /// <summary>
         /// The data
@@ -63,7 +63,7 @@ namespace CsDebugScript
             Address = variable.Address;
             codeType = variable.codeType;
             data = variable.data;
-            runtimeCodeType = variable.runtimeCodeType;
+            runtimeCodeTypeAndOffset = variable.runtimeCodeTypeAndOffset;
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace CsDebugScript
 
             // Initialize caches
             data = SimpleCache.CreateStruct(ReadData);
-            runtimeCodeType = SimpleCache.CreateStruct(FindRuntimeCodeType);
+            runtimeCodeTypeAndOffset = SimpleCache.CreateStruct(FindRuntimeCodeTypeAndOffset);
         }
 
         /// <summary>
@@ -537,34 +537,23 @@ namespace CsDebugScript
         /// </summary>
         public CodeType GetRuntimeType()
         {
-            return runtimeCodeType.Value;
+            return runtimeCodeTypeAndOffset.Value.Item1;
         }
 
         /// <summary>
-        /// Finds the runtime code type by looking at the v-table.
+        /// Finds the runtime code type (and offset to original code type) by looking at the v-table.
         /// </summary>
-        private CodeType FindRuntimeCodeType()
+        private Tuple<CodeType, int> FindRuntimeCodeTypeAndOffset()
         {
-            // TODO: See if it is complex type and try to get VTable
             try
             {
-                if (!codeType.IsSimple || codeType.IsPointer)
+                if (!codeType.IsSimple)
                 {
                     Process process = codeType.Module.Process;
                     MemoryBuffer memoryBuffer = Debugger.ReadMemory(process, GetPointerAddress(), process.GetPointerSize());
                     ulong vtableAddress = UserType.ReadPointer(memoryBuffer, 0, (int)process.GetPointerSize());
-                    string vtableName = Context.SymbolProvider.GetSymbolNameByAddress(codeType.Module.Process, vtableAddress).Item1;
 
-                    if (vtableName.EndsWith("::`vftable'"))
-                    {
-                        vtableName = vtableName.Substring(0, vtableName.Length - 11);
-                        if (vtableName.StartsWith("const "))
-                        {
-                            vtableName = vtableName.Substring(6);
-                        }
-
-                        return vtableName.IndexOf('!') > 0 ? CodeType.Create(vtableName) : CodeType.Create(vtableName, codeType.Module);
-                    }
+                    return Context.SymbolProvider.GetRuntimeCodeTypeAndOffset(codeType.Module.Process, vtableAddress);
                 }
             }
             catch (Exception)
@@ -572,7 +561,7 @@ namespace CsDebugScript
                 // Fall back to original code type
             }
 
-            return codeType;
+            return Tuple.Create(codeType, 0);
         }
 
         /// <summary>

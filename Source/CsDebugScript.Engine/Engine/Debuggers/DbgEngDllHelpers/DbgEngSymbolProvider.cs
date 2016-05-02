@@ -508,5 +508,26 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
                 },
             }).OutData;
         }
+
+        /// <summary>
+        /// Gets the runtime code type and offset to original code type.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="vtableAddress">The vtable address.</param>
+        public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress)
+        {
+            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+        }
+
+        /// <summary>
+        /// Gets the runtime code type and offset to original code type.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="vtableAddress">The vtable address.</param>
+        /// <param name="distance">The distance within the module.</param>
+        public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance)
+        {
+            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+        }
     }
 }

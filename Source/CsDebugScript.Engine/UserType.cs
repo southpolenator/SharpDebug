@@ -11,56 +11,65 @@ namespace CsDebugScript
     public static class VariableCastExtender
     {
         /// <summary>
-        /// Dynamic Cast, cast with type check.
+        /// Does the dynamic cast, cast with type check.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="variable"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">New type to cast variable to.</typeparam>
+        /// <param name="variable">The variable.</param>
         public static T DynamicCastAs<T>(this Variable variable) where T : UserType
         {
             if (variable == null || !variable.GetRuntimeType().Inherits<T>())
+            {
                 return null;
+            }
 
             return variable.CastAs<T>();
         }
 
         /// <summary>
-        /// Safe Cast, cast with null check.
+        /// Does the safe cast, cast with null check.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="variable"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">New type to cast variable to.</typeparam>
+        /// <param name="variable">The variable.</param>
         public static T SafeCastAs<T>(this Variable variable) where T : UserType
         {
             if (variable == null)
+            {
                 return null;
+            }
 
             return variable.CastAs<T>();
         }
 
         /// <summary>
-        /// Downcast Interface, looks up the type based on virtual table.
+        /// Does the full downcast, looks up the type based on virtual table and shifts variable address if multi-inheritance was involved.
         /// </summary>
-        /// <param name="userType"></param>
-        /// <returns></returns>
-        public static Variable DowncastInterface(this Variable userType)
+        /// <param name="variable">The variable.</param>
+        public static Variable DowncastInterface(this Variable variable)
         {
-            if (userType == null)
+            if (variable == null)
+            {
                 return null;
+            }
 
-            return userType.CastAs(userType.GetRuntimeType());
+            var runtimeTypeAndOffset = variable.runtimeCodeTypeAndOffset.Value;
+
+            if (runtimeTypeAndOffset.Item2 != 0 || variable.GetCodeType() != runtimeTypeAndOffset.Item1)
+            {
+                return Variable.CreatePointer(runtimeTypeAndOffset.Item1.PointerToType, variable.GetPointerAddress() - (uint)runtimeTypeAndOffset.Item2);
+            }
+
+            return variable;
         }
 
         /// <summary>
-        /// Check if inherits from given type.
+        /// Check if variable runtime type inherits from the specified type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="userType"></param>
-        /// <returns></returns>
-        public static bool Inherits<T>(this Variable userType)
+        /// <typeparam name="T">Type to verify inheritance of.</typeparam>
+        /// <param name="variable">The variable.</param>
+        public static bool Inherits<T>(this Variable variable)
             where T : UserType
         {
-            return userType.GetRuntimeType().Inherits<T>();
+            return variable.GetRuntimeType().Inherits<T>();
         }
     }
 

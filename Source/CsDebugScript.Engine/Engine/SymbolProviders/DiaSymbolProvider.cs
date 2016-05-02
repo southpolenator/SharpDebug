@@ -15,23 +15,22 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// The modules cache
         /// </summary>
-        private DictionaryCache<Tuple<string, ulong>, ISymbolProviderModule> modules = new DictionaryCache<Tuple<string, ulong>, ISymbolProviderModule>(LoadModule);
+        private DictionaryCache<Module, ISymbolProviderModule> modules = new DictionaryCache<Module, ISymbolProviderModule>(LoadModule);
 
         /// <summary>
         /// Loads the module from PDB file.
         /// </summary>
-        /// <param name="pdbAndModuleAddress">The tuple of PDB path and module address.</param>
-        private static ISymbolProviderModule LoadModule(Tuple<string, ulong> pdbAndModuleAddress)
+        /// <param name="module">The module.</param>
+        private static ISymbolProviderModule LoadModule(Module module)
         {
-            string pdb = pdbAndModuleAddress.Item1;
-            ulong moduleAddress = pdbAndModuleAddress.Item2;
+            string pdb = module.SymbolFileName;
 
             if (string.IsNullOrEmpty(pdb) || Path.GetExtension(pdb).ToLower() != ".pdb")
             {
                 return Context.Debugger.CreateDefaultSymbolProviderModule();
             }
 
-            return new DiaModule(pdb, moduleAddress);
+            return new DiaModule(pdb, module);
         }
 
         /// <summary>
@@ -246,7 +245,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             if (module.SymbolProvider == null)
             {
-                module.SymbolProvider = modules[Tuple.Create(module.SymbolFileName, module.Offset)];
+                module.SymbolProvider = modules[module];
             }
 
             return module.SymbolProvider;
@@ -375,6 +374,20 @@ namespace CsDebugScript.Engine.SymbolProviders
             var result = diaModule.GetSymbolNameByAddress(process, address, (uint)distance);
 
             return new Tuple<string, ulong>(module.Name + "!" + result.Item1, result.Item2);
+        }
+
+        /// <summary>
+        /// Gets the runtime code type and offset to original code type.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="vtableAddress">The vtable address.</param>
+        public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress)
+        {
+            ulong distance;
+            Module module;
+            ISymbolProviderModule diaModule = GetDiaModule(process, vtableAddress, out distance, out module);
+
+            return diaModule.GetRuntimeCodeTypeAndOffset(process, vtableAddress, (uint)distance);
         }
     }
 }

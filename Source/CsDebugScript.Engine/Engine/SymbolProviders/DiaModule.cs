@@ -51,9 +51,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// Initializes a new instance of the <see cref="DiaModule"/> class.
         /// </summary>
         /// <param name="pdbPath">The PDB path.</param>
-        /// <param name="moduleAddress">The module address.</param>
-        public DiaModule(string pdbPath, ulong moduleAddress)
+        /// <param name="module">The module.</param>
+        public DiaModule(string pdbPath, Module module)
         {
+            Module = module;
             dia = new DiaSource();
             dia.loadDataFromPdb(pdbPath);
             dia.openSession(out session);
@@ -99,9 +100,14 @@ namespace CsDebugScript.Engine.SymbolProviders
                 }
             });
 
-            session.loadAddress = moduleAddress;
+            session.loadAddress = module.Address;
             enumTypeNames = new DictionaryCache<uint, Dictionary<ulong, string>>(GetEnumName);
         }
+
+        /// <summary>
+        /// Gets the module.
+        /// </summary>
+        internal Module Module { get; private set; }
 
         /// <summary>
         /// Gets the basic types.
@@ -776,6 +782,47 @@ namespace CsDebugScript.Engine.SymbolProviders
         public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address, uint distance)
         {
             return symbolNamesByAddress[distance];
+        }
+
+        /// <summary>
+        /// Gets the runtime code type and offset to original code type.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="vtableAddress">The vtable address.</param>
+        /// <param name="distance">The distance within the module.</param>
+        public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance)
+        {
+            IDiaSymbol symbol;
+            int displacement;
+            string fullyUndecoratedName, partiallyUndecoratedName;
+
+            session.findSymbolByRVAEx(distance, SymTagEnum.SymTagNull, out symbol, out displacement);
+            symbol.get_undecoratedNameEx(0 | 0x8000 | 0x1000, out fullyUndecoratedName);
+            symbol.get_undecoratedNameEx(0 | 0x8000, out partiallyUndecoratedName);
+
+            // Fully undecorated name should be in form: "CDerived1::`vftable'"
+            const string vftableString = "::`vftable'";
+
+            if (!fullyUndecoratedName.EndsWith(vftableString))
+            {
+                throw new Exception("Fully undecorated name is not ending with \"" + vftableString + "\"");
+            }
+
+            string codeTypeName = fullyUndecoratedName.Substring(0, fullyUndecoratedName.Length - vftableString.Length);
+            CodeType codeType = CodeType.Create(codeTypeName, Module);
+
+            // Partially undecorated name should be in form: "const CDerived1::`vftable'{for `CBase'}"
+            string partiallyUndecoratedNameStart = string.Format("const {0}{1}{{for `", codeTypeName, vftableString);
+
+            if (!partiallyUndecoratedName.StartsWith(partiallyUndecoratedNameStart))
+            {
+                throw new Exception("Partially undecorated name is not starting with \"" + partiallyUndecoratedNameStart + "\"");
+            }
+
+            string innerCodeTypeName = partiallyUndecoratedName.Substring(partiallyUndecoratedNameStart.Length, partiallyUndecoratedName.Length - 2 - partiallyUndecoratedNameStart.Length);
+            var baseClassWithVTable = codeType.BaseClasses[innerCodeTypeName];
+
+            return Tuple.Create(codeType, baseClassWithVTable.Item2);
         }
     }
 }

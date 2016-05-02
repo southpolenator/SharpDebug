@@ -170,5 +170,13 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="address">The address.</param>
         /// <param name="distance">The distance within the module.</param>
         Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address, uint distance);
+
+        /// <summary>
+        /// Gets the runtime code type and offset to original code type.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="vtableAddress">The vtable address.</param>
+        /// <param name="distance">The distance within the module.</param>
+        Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance);
     }
 }

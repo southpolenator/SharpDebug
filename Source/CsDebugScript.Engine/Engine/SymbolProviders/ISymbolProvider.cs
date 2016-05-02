@@ -182,5 +182,12 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="process">The process.</param>
         /// <param name="address">The address.</param>
         Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address);
+
+        /// <summary>
+        /// Gets the runtime code type and offset to original code type.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="vtableAddress">The vtable address.</param>
+        Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress);
     }
 }
