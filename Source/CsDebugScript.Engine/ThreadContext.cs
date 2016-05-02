@@ -295,6 +295,7 @@ namespace CsDebugScript
         /// <summary>
         /// Creates the array marshaler.
         /// </summary>
+        /// <param name="process">The process.</param>
         /// <param name="elementsCount">The number of elements.</param>
         internal static MarshalArrayReader<ThreadContext> CreateArrayMarshaler(Process process, int elementsCount)
         {
