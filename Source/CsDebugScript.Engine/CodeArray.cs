@@ -71,7 +71,7 @@ namespace CsDebugScript
         /// <param name="length">The array length.</param>
         public CodeArray(Variable variable, int length)
         {
-            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer && length > 0)
+            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
             {
                 throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
             }
@@ -240,7 +240,7 @@ namespace CsDebugScript
             this.variable = variable;
             Length = length;
             preCalculatedArray = ReadArray();
-            if (preCalculatedArray == null && variable.GetCodeType().ElementType.IsPointer)
+            if (preCalculatedArray == null && variable.GetCodeType().ElementType.IsPointer && length > 0)
             {
                 var process = variable.GetCodeType().Module.Process;
                 var pointerSize = process.GetPointerSize();
