@@ -2,7 +2,6 @@
 using CsDebugScript.Engine.Utility;
 using DbgEngManaged;
 using System;
-using System.Runtime.InteropServices;
 
 namespace CsDebugScript.Engine.Test
 {
@@ -27,7 +26,7 @@ namespace CsDebugScript.Engine.Test
             if (options == null)
                 return;
 
-            var client = OpenDumpFile(options.DumpPath, options.SymbolPath);
+            var client = DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath);
 
             Context.Initalize(client);
 
@@ -56,24 +55,5 @@ namespace CsDebugScript.Engine.Test
                 Executor.Execute(@"..\..\..\..\samples\script.cs", new string[] { });
             }
         }
-
-        public static IDebugClient OpenDumpFile(string dumpFile, string symbolPath)
-        {
-            IDebugClient client;
-            int hresult = DebugCreate(Marshal.GenerateGuidForType(typeof(IDebugClient)), out client);
-
-            if (hresult > 0)
-            {
-                Marshal.ThrowExceptionForHR(hresult);
-            }
-
-            client.OpenDumpFile(dumpFile);
-            ((IDebugControl7)client).WaitForEvent(0, uint.MaxValue);
-            ((IDebugSymbols5)client).SetSymbolPathWide(symbolPath);
-            return client;
-        }
-
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
-        public static extern int DebugCreate([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, out IDebugClient client);
     }
 }
