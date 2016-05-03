@@ -982,7 +982,7 @@ namespace CsDebugScript
         /// <param name="originalCollection">The original variable collection.</param>
         internal static VariableCollection CastVariableCollectionToUserType(VariableCollection originalCollection)
         {
-            Variable[] variables = new Variable[originalCollection.Count];
+            Variable[] variables = new Variable[originalCollection?.Count ?? 0];
             Dictionary<string, Variable> variablesByName = new Dictionary<string, Variable>();
 
             for (int i = 0; i < variables.Length; i++)

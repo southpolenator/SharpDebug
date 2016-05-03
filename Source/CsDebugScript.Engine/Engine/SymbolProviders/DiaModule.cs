@@ -814,12 +814,23 @@ namespace CsDebugScript.Engine.SymbolProviders
             // Partially undecorated name should be in form: "const DerivedClass::`vftable'{for `BaseClass'}"
             string partiallyUndecoratedNameStart = string.Format("const {0}{1}{{for `", codeTypeName, vftableString);
 
+            string innerCodeTypeName;
+
             if (!partiallyUndecoratedName.StartsWith(partiallyUndecoratedNameStart))
             {
-                throw new Exception("Partially undecorated name is not starting with \"" + partiallyUndecoratedNameStart + "\"");
+                partiallyUndecoratedName = partiallyUndecoratedName.Substring(0, partiallyUndecoratedName.Length - 11);
+                if (partiallyUndecoratedName.StartsWith("const "))
+                {
+                    partiallyUndecoratedName = partiallyUndecoratedName.Substring(6);
+                }
+
+                innerCodeTypeName = partiallyUndecoratedName;
+            }
+            else
+            {
+                innerCodeTypeName = partiallyUndecoratedName.Substring(partiallyUndecoratedNameStart.Length, partiallyUndecoratedName.Length - 2 - partiallyUndecoratedNameStart.Length);
             }
 
-            string innerCodeTypeName = partiallyUndecoratedName.Substring(partiallyUndecoratedNameStart.Length, partiallyUndecoratedName.Length - 2 - partiallyUndecoratedNameStart.Length);
             var baseClassWithVTable = codeType.BaseClasses[innerCodeTypeName];
 
             return Tuple.Create(codeType, baseClassWithVTable.Item2);

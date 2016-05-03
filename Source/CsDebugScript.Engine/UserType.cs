@@ -17,7 +17,7 @@ namespace CsDebugScript
         /// <param name="variable">The variable.</param>
         public static T DynamicCastAs<T>(this Variable variable) where T : UserType
         {
-            if (variable == null || !variable.GetRuntimeType().Inherits<T>())
+            if (variable == null || !variable.DereferencePointer().GetRuntimeType().Inherits<T>())
             {
                 return null;
             }
