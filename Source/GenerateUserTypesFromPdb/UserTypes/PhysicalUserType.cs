@@ -86,7 +86,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     Access = "protected",
                     ConstructorText = "buffer",
                     FieldName = "memoryBuffer",
-                    FieldType = "CsDebugScript.Utility.MemoryBuffer",
+                    FieldType = "CsDebugScript.Engine.Utility.MemoryBuffer",
                     FieldTypeInfoComment = null,
                     OverrideWithNew = true,
                     PropertyName = null,
@@ -156,7 +156,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             yield return new UserTypeConstructor()
             {
-                Arguments = "Variable variable, CsDebugScript.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
+                Arguments = "Variable variable, CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
                 BaseClassInitialization = string.Format("base(variable, buffer, offset{0}, bufferAddress)", baseClassOffset > 0 ? " + " + baseClassOffset : ""),
                 ContainsFieldDefinitions = true,
                 Static = false,
@@ -164,7 +164,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             yield return new UserTypeConstructor()
             {
-                Arguments = "CsDebugScript.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
+                Arguments = "CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
                 BaseClassInitialization = string.Format("base(buffer, offset{0}, bufferAddress, codeType, address, name, path)", baseClassOffset > 0 ? " + " + baseClassOffset : ""),
                 ContainsFieldDefinitions = true,
                 Static = false,

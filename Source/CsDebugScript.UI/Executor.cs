@@ -2,8 +2,8 @@
 using System.Linq;
 using System.Runtime.InteropServices;
 using DbgEngManaged;
-using CsScripts;
 using CsDebugScript.UI;
+using CsDebugScript.Engine;
 
 namespace CsDebugScript
 {
@@ -25,7 +25,7 @@ namespace CsDebugScript
         /// <param name="client">The client.</param>
         public void InitializeContext(IDebugClient client)
         {
-            EngineContext.Initalize(client);
+            Context.Initalize(client);
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace CsDebugScript
         /// <param name="arguments">The arguments</param>
         public void EnterInteractiveMode(string arguments)
         {
-            EngineContext.Debugger.ExecuteAction(() => InteractiveExecution.Run());
+            Context.Debugger.ExecuteAction(() => InteractiveExecution.Run());
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace CsDebugScript
         /// <param name="args">The arguments.</param>
         public static void Execute(string path, params string[] args)
         {
-            EngineContext.Debugger.ExecuteAction(() =>
+            Context.Debugger.ExecuteAction(() =>
             {
                 using (ScriptExecution execution = new ScriptExecution())
                 {
@@ -123,7 +123,7 @@ namespace CsDebugScript
         /// <param name="code">The C# code.</param>
         public static void InterpretInteractive(string code)
         {
-            EngineContext.Debugger.ExecuteAction(() => InteractiveExecution.Interpret(code));
+            Context.Debugger.ExecuteAction(() => InteractiveExecution.Interpret(code));
         }
     }
 }

@@ -1,5 +1,5 @@
-﻿using CsDebugScript.Utility;
-using CsScripts;
+﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Utility;
 using Microsoft.Diagnostics.Runtime;
 using System;
 using System.Collections.Generic;
@@ -106,13 +106,13 @@ namespace CsDebugScript.CLR
         {
             switch (Process.EffectiveProcessorType)
             {
-                case Native.ImageFileMachine.I386:
+                case Engine.Native.ImageFileMachine.I386:
                     return Architecture.X86;
 
-                case Native.ImageFileMachine.AMD64:
+                case Engine.Native.ImageFileMachine.AMD64:
                     return Architecture.Amd64;
 
-                case Native.ImageFileMachine.ARM:
+                case Engine.Native.ImageFileMachine.ARM:
                     return Architecture.Arm;
 
                 default:
@@ -337,7 +337,7 @@ namespace CsDebugScript.CLR
                 if (dumpReader != null)
                     dumpReader.GetMemoryRange(addr, out baseAddress, out regionSize);
                 else
-                    EngineContext.Debugger.QueryVirtual(addr, out baseAddress, out regionSize);
+                    Context.Debugger.QueryVirtual(addr, out baseAddress, out regionSize);
                 vq = new VirtualQueryData(baseAddress, regionSize);
                 return true;
             }
@@ -353,7 +353,7 @@ namespace CsDebugScript.CLR
         /// </summary>
         private bool GetIsMinidump()
         {
-            return EngineContext.Debugger.IsMinidump(Process);
+            return Context.Debugger.IsMinidump(Process);
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using CsDebugScript;
-using CsScripts;
+using CsDebugScript.Engine;
 using DbgEngManaged;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -36,8 +36,8 @@ namespace DbgEngTest
         /// <param name="iid"></param>
         /// <param name="client"></param>
         /// <returns></returns>
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false)]
-        private static extern int DebugCreate(Guid iid, out IDebugClient client);
+        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
+        private static extern int DebugCreate([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, out IDebugClient client);
 
         private static IDebugClient client;
 
@@ -49,7 +49,7 @@ namespace DbgEngTest
         protected static void Initialize(string dumpFile, string symbolPath)
         {
             client = OpenDumpFile(dumpFile, symbolPath);
-            EngineContext.Initalize(client);
+            Context.Initalize(client);
         }
 
         protected StackFrame GetFrame(string functionName)

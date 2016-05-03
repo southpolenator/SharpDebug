@@ -1,10 +1,9 @@
-﻿using CsDebugScript;
-using CsScripts;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.CodeAnalysis.Scripting;
 
-namespace CsScripts
+namespace CsDebugScript
 {
     /// <summary>
     /// Helper for dumping objects using InteractiveScriptBase.ObjectWriter.
@@ -22,14 +21,10 @@ namespace CsScripts
             if (interactiveScript == null)
                 throw new NotImplementedException("Calling Dump() is only supported while using interactive scripting");
 
-            obj = interactiveScript.ObjectWriter.Output(obj);
-            interactiveScript._InternalObjectWriter_.Output(obj);
+            interactiveScript.Dump(obj);
         }
     }
-}
 
-namespace CsDebugScript
-{
     /// <summary>
     /// Base class for interactive script commands
     /// </summary>
@@ -82,15 +77,24 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// The interactive script collection of saved variables.
-        /// Don't use this directly, all undeclared variables are being redirected to this one.
-        /// </summary>
-        public dynamic _Interactive_Script_Variables_;
-
-        /// <summary>
         /// The interactive script base type for next compile iteration
         /// </summary>
         internal Type _InteractiveScriptBaseType_;
+
+        /// <summary>
+        /// The Roslyn script state
+        /// </summary>
+        internal ScriptState<object> _ScriptState_;
+
+        /// <summary>
+        /// Outputs the specified object using ObjectWriter.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        public void Dump(object obj)
+        {
+            obj = ObjectWriter.Output(obj);
+            _InternalObjectWriter_.Output(obj);
+        }
 
         private IEnumerable<string> GetCommands(Type type, System.Reflection.BindingFlags additionalBinding, string nameFilter = "")
         {
@@ -197,46 +201,46 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Lists the variables.
+        /// Gets stored variables in current interactive execution.
+        /// </summary>
+        /// <param name="nameFilter">The name filter.</param>
+        public IDictionary<string, object> GetVariables(string nameFilter = "")
+        {
+            IEnumerable<string> variableNames = _ScriptState_.Variables.Select(v => v.Name).Distinct();
+
+            if (!string.IsNullOrEmpty(nameFilter))
+            {
+                nameFilter = nameFilter.ToLower();
+                variableNames = variableNames.Where(v => v.ToLower() == nameFilter);
+            }
+
+            Dictionary<string, object> variables = new Dictionary<string, object>();
+
+            foreach (var variableName in variableNames)
+            {
+                variables.Add(variableName, _ScriptState_.GetVariable(variableName).Value);
+            }
+
+            return variables;
+        }
+
+        /// <summary>
+        /// Lists stored variables in current interactive execution.
         /// </summary>
         /// <param name="nameFilter">The name filter.</param>
         public void ListVariables(string nameFilter = "")
         {
-            nameFilter = nameFilter.ToLower();
-            foreach (var variable in (IDictionary<string, object>)_Interactive_Script_Variables_)
+            foreach (var variable in GetVariables(nameFilter))
             {
-                if (string.IsNullOrEmpty(nameFilter) || variable.Key.ToLower() == nameFilter)
-                {
-                    Console.WriteLine("  {0} [{1}] = {2}", variable.Key, variable.Value.GetType(), variable.Value);
-                }
+                Console.WriteLine("  {0} [{1}] = {2}", variable.Key, variable.Value.GetType(), variable.Value);
             }
-        }
-
-        /// <summary>
-        /// Erases the specified field by name.
-        /// </summary>
-        /// <param name="name">The field name.</param>
-        public void erase_field(string name)
-        {
-            ((IDictionary<string, object>)_Interactive_Script_Variables_).Remove(name);
-        }
-
-        /// <summary>
-        /// Helper function for fixing interactive script errors. It's usage is to produce error that will be fixed by internal compiler.
-        /// </summary>
-        /// <typeparam name="T1">The type of the 1.</typeparam>
-        /// <typeparam name="T2">The type of the 2.</typeparam>
-        /// <param name="whatEver">The what ever.</param>
-        /// <exception cref="System.NotImplementedException">This is not intended for usage</exception>
-        public void erase<T1, T2>(T2 whatEver)
-        {
-            throw new NotImplementedException("This is not intended for usage");
         }
 
         /// <summary>
         /// Changes the base class for interactive scripting.
         /// </summary>
         /// <param name="newBaseClassType">Type of the new base class.</param>
+        /// <remarks>Base class type must inherit InteractiveScriptBase.</remarks>
         public void ChangeBaseClass(Type newBaseClassType)
         {
             if (typeof(InteractiveScriptBase).IsAssignableFrom(newBaseClassType))

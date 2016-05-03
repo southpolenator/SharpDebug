@@ -433,7 +433,13 @@ library DbgEngManaged
                 process.WaitForExit();
             }
 
-            string tlbimpPlatform = IntPtr.Size == 4 ? "x86" : "x64";
+#if X64
+            string tlbimpPlatform = "x64";
+#elif X86
+            string tlbimpPlatform = "x86";
+#else
+            string tlbimpPlatform = "Agnostic";
+#endif
 
             startInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\TlbImp.exe");
             startInfo.Arguments = @"output.tlb /machine:" + tlbimpPlatform;
