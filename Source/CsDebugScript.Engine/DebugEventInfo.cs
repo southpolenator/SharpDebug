@@ -8,6 +8,9 @@ using CsDebugScript.Engine.Native;
 
 namespace CsDebugScript
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class DebugEventInfo
     {
         /// <summary>
@@ -16,12 +19,12 @@ namespace CsDebugScript
         public DEBUG_EVENT Type;
 
         /// <summary>
-        /// Current Process.
+        /// Process where Event occured.
         /// </summary>
         public Process Process;
 
         /// <summary>
-        /// Thread where event occurred.
+        /// Thread where Event occurred.
         /// </summary>
         public Thread Thread;
 
@@ -30,6 +33,9 @@ namespace CsDebugScript
         /// </summary>
         public string Description;
 
+        /// <summary>
+        /// Last Event Information.
+        /// </summary>
         public DEBUG_LAST_EVENT_INFO LastEventInfo;
 
         /// <summary>
