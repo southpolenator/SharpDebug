@@ -1,8 +1,11 @@
 ﻿using CsDebugScript.Engine.Marshaling;
 using CsDebugScript.Engine.Utility;
 using Microsoft.VisualStudio.Debugger;
+using Microsoft.VisualStudio.Debugger.CallStack;
+using Microsoft.VisualStudio.Debugger.Evaluation;
 using Microsoft.VisualStudio.Debugger.Symbols;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CsDebugScript.VS
@@ -95,11 +98,22 @@ namespace CsDebugScript.VS
             return process.GetThreads().Where(t => t.SystemPart.Id == thread.SystemId).Single();
         }
 
+        /// <summary>
+        /// Gets a value indicating whether debugger is currently in live debugging.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if debugger is currently in live debugging; otherwise, <c>false</c>.
+        /// </value>
         public bool IsLiveDebugging
         {
             get
             {
-                throw new NotImplementedException();
+                return ExecuteOnDkmInitializedThread(() =>
+                {
+                    DkmProcess process = ConvertProcess(Process.Current);
+
+                    return (process.SystemInformation.Flags & Microsoft.VisualStudio.Debugger.DefaultPort.DkmSystemInformationFlags.DumpFile) == 0;
+                });
             }
         }
 
@@ -161,9 +175,22 @@ namespace CsDebugScript.VS
             }
         }
 
+        /// <summary>
+        /// Gets the current stack frame of the specified thread.
+        /// </summary>
+        /// <param name="thread">The thread.</param>
         public StackFrame GetThreadCurrentStackFrame(Thread thread)
         {
-            throw new NotImplementedException();
+            if (GetProcessCurrentThread(thread.Process) == thread)
+            {
+                DkmStackWalkFrame dkmFrame = ExecuteOnDkmInitializedThread(() => DkmStackFrame.ExtractFromDTEObject(VSContext.DTE.Debugger.CurrentStackFrame));
+
+                return thread.StackTrace.Frames.Where(f => f.FrameOffset == dkmFrame.FrameBase).Single();
+            }
+            else
+            {
+                return thread.StackTrace.Frames[0];
+            }
         }
 
         /// <summary>
@@ -303,9 +330,30 @@ namespace CsDebugScript.VS
             patch = tempPatch;
         }
 
+        /// <summary>
+        /// Gets the actual processor type of the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
         public Engine.Native.ImageFileMachine GetProcessActualProcessorType(Process process)
         {
-            throw new NotImplementedException();
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess dkmProcess = ConvertProcess(process);
+
+                switch (dkmProcess.SystemInformation.ProcessorArchitecture)
+                {
+                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64:
+                        return Engine.Native.ImageFileMachine.AMD64;
+                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_ARM:
+                        return Engine.Native.ImageFileMachine.ARM;
+                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL:
+                        return string.IsNullOrEmpty(dkmProcess.SystemInformation.SystemWow64Directory)
+                            || dkmProcess.SystemInformation.SystemDirectory == dkmProcess.SystemInformation.SystemWow64Directory
+                                ? Engine.Native.ImageFileMachine.I386 : Engine.Native.ImageFileMachine.AMD64;
+                    default:
+                        throw new NotImplementedException("Unexpected DkmProcessorArchitecture");
+                }
+            });
         }
 
         public string GetProcessDumpFileName(Process process)
@@ -313,9 +361,28 @@ namespace CsDebugScript.VS
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Gets the effective processor type of the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
         public Engine.Native.ImageFileMachine GetProcessEffectiveProcessorType(Process process)
         {
-            throw new NotImplementedException();
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess dkmProcess = ConvertProcess(process);
+
+                switch (dkmProcess.SystemInformation.ProcessorArchitecture)
+                {
+                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64:
+                        return (dkmProcess.SystemInformation.Flags & Microsoft.VisualStudio.Debugger.DefaultPort.DkmSystemInformationFlags.Is64Bit) != 0 ? Engine.Native.ImageFileMachine.AMD64 : Engine.Native.ImageFileMachine.I386;
+                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_ARM:
+                        return Engine.Native.ImageFileMachine.ARM;
+                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL:
+                        return Engine.Native.ImageFileMachine.I386;
+                    default:
+                        throw new NotImplementedException("Unexpected DkmProcessorArchitecture");
+                }
+            });
         }
 
         public ulong GetProcessEnvironmentBlockAddress(Process process)
@@ -429,14 +496,91 @@ namespace CsDebugScript.VS
             });
         }
 
+        /// <summary>
+        /// Gets the stack trace of the specified thread.
+        /// </summary>
+        /// <param name="thread">The thread.</param>
         public StackTrace GetThreadStackTrace(Thread thread)
         {
-            //return ExecuteOnMainThread(() =>
-            //{
+            return ExecuteOnDkmInitializedThread(() =>
+            {
                 DkmThread dkmThread = ConvertThread(thread);
+                byte[] threadContextBytes = thread.ThreadContext.Bytes;
+                List<DkmStackFrame> dkmFrames = new List<DkmStackFrame>();
 
-                throw new NotImplementedException();
-            //});
+                using (DkmInspectionSession dkmInspectionSession = DkmInspectionSession.Create(dkmThread.Process, null))
+                using (DkmStackContext dkmStackContext = DkmStackContext.Create(dkmInspectionSession, dkmThread, DkmCallStackFilterOptions.None, new DkmFrameFormatOptions(), new System.Collections.ObjectModel.ReadOnlyCollection<byte>(threadContextBytes), null))
+                {
+                    bool done = false;
+
+                    while (!done)
+                    {
+                        DkmWorkList dkmWorkList = DkmWorkList.Create(null);
+
+                        dkmStackContext.GetNextFrames(dkmWorkList, int.MaxValue, (result) =>
+                        {
+                            dkmFrames.AddRange(result.Frames);
+                            done = result.Frames.Length == 0;
+                        });
+
+                        dkmWorkList.Execute();
+                    }
+                }
+
+                StackTrace stackTrace = new StackTrace(thread);
+                StackFrame[] frames = new StackFrame[dkmFrames.Count];
+
+                for (int i = 0; i < frames.Length; i++)
+                {
+                    ulong stackOffset, instructionOffset;
+
+                    switch (dkmFrames[i].Registers.TagValue)
+                    {
+                        case DkmFrameRegisters.Tag.X64Registers:
+                            {
+                                DkmX64FrameRegisters registers = (DkmX64FrameRegisters)dkmFrames[i].Registers;
+
+                                instructionOffset = registers.Rip;
+                                stackOffset = registers.Rsp;
+                            }
+                            break;
+                        case DkmFrameRegisters.Tag.X86Registers:
+                            {
+                                DkmX86FrameRegisters registers = (DkmX86FrameRegisters)dkmFrames[i].Registers;
+
+                                instructionOffset = registers.Eip;
+                                stackOffset = registers.Esp;
+                            }
+                            break;
+                        default:
+                            throw new NotImplementedException("Unexpected DkmFrameRegisters.Tag");
+                    }
+
+                    if (instructionOffset != dkmFrames[i].InstructionAddress.CPUInstructionPart.InstructionPointer)
+                    {
+                        throw new Exception("Instruction offset is not the same?");
+                    }
+
+                    ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, dkmFrames[i].FrameBase);
+
+                    frames[i] = new StackFrame(stackTrace, threadContext)
+                    {
+                        FrameNumber = (uint)i,
+                        FrameOffset = dkmFrames[i].FrameBase,
+                        StackOffset = stackOffset,
+                        InstructionOffset = instructionOffset,
+                        ReturnOffset = 0, // Populated in the loop after this one
+                        Virtual = false, // TODO:
+                    };
+                }
+
+                for (int i = frames.Length - 2; i >= 0; i--)
+                {
+                    frames[i].ReturnOffset = frames[i + 1].InstructionOffset;
+                }
+
+                return stackTrace;
+            });
         }
 
         public bool IsMinidump(Process process)

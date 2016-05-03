@@ -244,6 +244,19 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ThreadContext"/> class.
+        /// </summary>
+        /// <param name="instructionPointer">The instruction pointer.</param>
+        /// <param name="stackPointer">The stack pointer.</param>
+        /// <param name="framePointer">The frame pointer.</param>
+        internal ThreadContext(ulong instructionPointer, ulong stackPointer, ulong framePointer)
+        {
+            InstructionPointer = instructionPointer;
+            StackPointer = stackPointer;
+            FramePointer = framePointer;
+        }
+
+        /// <summary>
         /// Gets the size of the native structure.
         /// </summary>
         internal static uint NativeStructureSize
