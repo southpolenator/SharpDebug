@@ -22,7 +22,7 @@ namespace CsDebugScript
                 return null;
             }
 
-            CodeType runtimeType = variable.DereferencePointer().GetRuntimeType();
+            CodeType runtimeType = variable.GetRuntimeType();
 
             if (runtimeType.IsPointer)
             {

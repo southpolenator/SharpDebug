@@ -825,11 +825,11 @@ namespace CsDebugScript.Engine.SymbolProviders
                 }
 
                 innerCodeTypeName = partiallyUndecoratedName;
+
+                return Tuple.Create(codeType, 0);
             }
-            else
-            {
-                innerCodeTypeName = partiallyUndecoratedName.Substring(partiallyUndecoratedNameStart.Length, partiallyUndecoratedName.Length - 2 - partiallyUndecoratedNameStart.Length);
-            }
+
+            innerCodeTypeName = partiallyUndecoratedName.Substring(partiallyUndecoratedNameStart.Length, partiallyUndecoratedName.Length - 2 - partiallyUndecoratedNameStart.Length);
 
             var baseClassWithVTable = codeType.BaseClasses[innerCodeTypeName];
 
