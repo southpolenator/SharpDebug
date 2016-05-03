@@ -69,6 +69,7 @@ namespace CsDebugScript.VS
                 debuggerEvents.OnEnterDesignMode += DebuggerEvents_OnEnterDesignMode;
                 debuggerEvents.OnEnterRunMode += DebuggerEvents_OnEnterRunMode;
                 VSDebugger = new VSDebugger();
+                Engine.Context.InitializeDebugger(VSDebugger);
             }
         }
 
