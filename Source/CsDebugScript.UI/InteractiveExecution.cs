@@ -37,7 +37,7 @@ namespace CsDebugScript
         /// </summary>
         public InteractiveExecution()
         {
-            var scriptOptions = ScriptOptions.Default.WithImports("System", "System.Linq", "CsScripts").WithReferences(DefaultAssemblyReferences);
+            var scriptOptions = ScriptOptions.Default.WithImports("System", "System.Linq", "CsDebugScript").WithReferences(DefaultAssemblyReferences);
 
             scriptState = CSharpScript.RunAsync("", scriptOptions, scriptBase).Result;
             scriptBase.ObjectWriter = new DefaultObjectWriter();
