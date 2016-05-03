@@ -1041,6 +1041,69 @@ namespace CsDebugScript.Engine.Debuggers
             return false;
         }
 
+       /// <summary>
+        /// Gets Lasts Event, most exception or event.
+        /// </summary>
+        /// <returns></returns>
+        public DebugEventInfo GetLastEventInfo()
+        {
+            uint type;
+            uint processId;
+            uint threadId;
+            uint extraInfoUsed;
+            uint descriptionSize;
+
+            //  Collect EventSize 
+            //
+            StringBuilder description = new StringBuilder();
+
+            Control.GetLastEventInformation(
+                out type,
+                out processId,
+                out threadId,
+                IntPtr.Zero,
+                0,
+                out extraInfoUsed,
+                description,
+                0,
+                out descriptionSize);
+
+            //  Allocate structures are prepare string.
+            //
+            description.Capacity = (int)descriptionSize;
+
+            DEBUG_LAST_EVENT_INFO debugLastEventInfo = new DEBUG_LAST_EVENT_INFO();
+            extraInfoUsed = Math.Min(extraInfoUsed, (uint)Marshal.SizeOf(typeof(DEBUG_LAST_EVENT_INFO)));
+            GCHandle handle = GCHandle.Alloc(debugLastEventInfo, GCHandleType.Pinned);
+
+            try
+            {
+                Control.GetLastEventInformation(
+                    out type,
+                    out processId,
+                    out threadId,
+                    handle.AddrOfPinnedObject(),
+                    extraInfoUsed,
+                    out extraInfoUsed,
+                    description,
+                    descriptionSize,
+                    out descriptionSize);
+
+                return new DebugEventInfo
+                {
+                    Description = description.ToString(),
+                    LastEventInfo = debugLastEventInfo,
+                    Process = Process.All.First(r => r.Id == processId),
+                    Thread = Thread.All.First(r => r.Id == threadId),
+                    Type = (DEBUG_EVENT)type
+                };
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+
         /// <summary>
         /// Gets the timestamp and size of the module.
         /// </summary>

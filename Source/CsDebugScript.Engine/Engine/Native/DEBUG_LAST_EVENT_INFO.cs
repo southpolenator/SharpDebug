@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.Native
+namespace CsDebugScript.Engine.Native
 {
     public enum DEBUG_EVENT
     {
