@@ -71,7 +71,7 @@ namespace CsDebugScript
         /// <param name="length">The array length.</param>
         public CodeArray(Variable variable, int length)
         {
-            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
+            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer && length > 0)
             {
                 throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
             }
