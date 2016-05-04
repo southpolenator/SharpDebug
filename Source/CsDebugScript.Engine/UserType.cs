@@ -86,13 +86,16 @@ namespace CsDebugScript
             return variable.GetRuntimeType().Inherits<T>();
         }
 
-       /// <summary>
-        /// Reinterpret Cast, chanches underlaying code type.
+        /// <summary>
+        /// Reinterpret Cast, changes underlaying code type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="userType"></param>
-        /// <returns></returns>
-        public static CodePointer<T> ReinterpretPointerCast<T>(this Variable userType) where T : struct
+        /// <remarks>
+        /// Requested Type must be a primivite (int, short etc).
+        /// </remarks>
+        /// <typeparam name="T">Primitivy type to cast variable to.</typeparam>
+        /// <param name="variable">The variable.</param>
+        /// <returns>Return CodePointer to Variable pointer address.</returns>
+        public static CodePointer<T> ReinterpretPointerCast<T>(this Variable variable) where T : struct
         {
             // Get CodeType from the generic argument.
             //
@@ -123,21 +126,20 @@ namespace CsDebugScript
             //
             return new CodePointer<T>(
                 Variable.CreatePointer(
-                    CodeType.Create(codeTypeName, userType.GetCodeType().Module).PointerToType,
-                    userType.GetPointerAddress()));
+                    CodeType.Create(codeTypeName, variable.GetCodeType().Module).PointerToType,
+                    variable.GetPointerAddress()));
         }
 
 
         /// <summary>
         /// Adjust Pointer and Cast To Type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="userType"></param>
-        /// <param name="offset"></param>
-        /// <returns></returns>
-        public static T AdjustPointer<T>(this Variable userType, int offset) where T : UserType
+        /// <typeparam name="T">New type to cast variable to.</typeparam>
+        /// <param name="variable">The variable.</param>
+        /// <param name="offset">The offset.</param>
+        public static T AdjustPointer<T>(this Variable variable, int offset) where T : UserType
         {
-            return userType.AdjustPointer(offset).CastAs<T>();
+            return variable.AdjustPointer(offset).CastAs<T>();
         }
     }
 

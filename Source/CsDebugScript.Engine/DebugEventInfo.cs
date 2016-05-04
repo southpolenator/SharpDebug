@@ -9,7 +9,7 @@ using CsDebugScript.Engine.Native;
 namespace CsDebugScript
 {
     /// <summary>
-    /// 
+    /// Class Describing Debugger Event.
     /// </summary>
     public class DebugEventInfo
     {
