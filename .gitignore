@@ -220,3 +220,4 @@ ModelManifest.xml
 # temp gvim files
 *.swp
 *.swo
+/ExportSqlWinDbgCs.xml
