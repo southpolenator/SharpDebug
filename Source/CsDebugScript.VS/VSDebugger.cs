@@ -660,6 +660,7 @@ namespace CsDebugScript.VS
                         if (process.SystemId == vsProcess.ProcessID)
                         {
                             VSContext.DTE.Debugger.CurrentProcess = vsProcess;
+                            return;
                         }
                     }
 
@@ -687,6 +688,7 @@ namespace CsDebugScript.VS
                             if (thread.SystemId == vsThread.ID)
                             {
                                 VSContext.DTE.Debugger.CurrentThread = vsThread;
+                                return;
                             }
                         }
                     }
