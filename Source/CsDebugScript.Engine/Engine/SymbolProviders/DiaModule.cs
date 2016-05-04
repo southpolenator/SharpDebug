@@ -479,10 +479,11 @@ namespace CsDebugScript.Engine.SymbolProviders
                         case CV_HREG_e.CV_AMD64_RSP:
                             address = frameContext.StackPointer;
                             break;
-                        case CV_HREG_e.CV_AMD64_RIP:
+                        case CV_HREG_e.CV_AMD64_RIP: //case CV_HREG_e.CV_REG_EIP:
                             address = frameContext.InstructionPointer;
                             break;
                         case CV_HREG_e.CV_AMD64_RBP:
+                        case CV_HREG_e.CV_AMD64_EBP:
                             address = frameContext.FramePointer;
                             break;
                         default:
