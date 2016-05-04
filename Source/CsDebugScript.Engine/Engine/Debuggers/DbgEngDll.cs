@@ -1041,7 +1041,7 @@ namespace CsDebugScript.Engine.Debuggers
             return false;
         }
 
-       /// <summary>
+        /// <summary>
         /// Gets Lasts Event, most exception or event.
         /// </summary>
         /// <returns></returns>
@@ -1054,7 +1054,6 @@ namespace CsDebugScript.Engine.Debuggers
             uint descriptionSize;
 
             //  Collect EventSize 
-            //
             StringBuilder description = new StringBuilder();
 
             Control.GetLastEventInformation(
@@ -1069,7 +1068,6 @@ namespace CsDebugScript.Engine.Debuggers
                 out descriptionSize);
 
             //  Allocate structures are prepare string.
-            //
             description.Capacity = (int)descriptionSize;
 
             DEBUG_LAST_EVENT_INFO debugLastEventInfo = new DEBUG_LAST_EVENT_INFO();
@@ -1092,10 +1090,9 @@ namespace CsDebugScript.Engine.Debuggers
                 return new DebugEventInfo
                 {
                     Description = description.ToString(),
-                    LastEventInfo = debugLastEventInfo,
                     Process = Process.All.First(r => r.Id == processId),
                     Thread = Thread.All.First(r => r.Id == threadId),
-                    Type = (DEBUG_EVENT)type
+                    Type = (DebugEvent)type
                 };
             }
             finally

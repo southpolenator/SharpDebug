@@ -3,54 +3,6 @@ using System.Runtime.InteropServices;
 
 namespace CsDebugScript.Engine.Native
 {
-    public enum DEBUG_EVENT
-    {
-        /// <summary>
-        /// A breakpoint exception occurred in the target.
-        /// </summary>
-        DEBUG_EVENT_BREAKPOINT,
-
-        /// <summary>
-        /// An exception debugging event occurred in the target.
-        /// </summary>
-        DEBUG_EVENT_EXCEPTION,
-
-        /// <summary>
-        /// A create-thread debugging event occurred in the target.
-        /// </summary>
-        DEBUG_EVENT_CREATE_THREAD,
-
-        /// <summary>
-        /// An exit-thread debugging event occurred in the target.
-        /// </summary>
-        DEBUG_EVENT_EXIT_THREAD,
-
-        /// <summary>
-        /// A create-process debugging event occurred in the target.
-        /// </summary>
-        DEBUG_EVENT_CREATE_PROCESS,
-
-        /// <summary>
-        /// An exit-process debugging event occurred in the target.
-        /// </summary>
-        DEBUG_EVENT_EXIT_PROCESS,
-
-        /// <summary>
-        /// A module-load debugging event occurred in the target.
-        /// </summary>
-        DEBUG_EVENT_LOAD_MODULE,
-
-        /// <summary>
-        /// A module-unload debugging event occurred in the target.
-        /// </summary>
-        DEBUG_EVENT_UNLOAD_MODULE,
-
-        /// <summary>
-        /// A system error occurred in the target.
-        /// </summary>
-        DEBUG_EVENT_SYSTEM_ERROR,
-    }
-
     [StructLayout(LayoutKind.Explicit)]
     public struct DEBUG_LAST_EVENT_INFO
     {
