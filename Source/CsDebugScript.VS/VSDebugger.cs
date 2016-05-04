@@ -144,7 +144,10 @@ namespace CsDebugScript.VS
                 for (int i = 0; i < DkmProcesses.Length; i++)
                 {
                     processes[i] = Engine.GlobalCache.Processes[(uint)i];
-                    processes[i].systemId.Value = (uint)DkmProcesses[i].LivePart.Id;
+                    if (DkmProcesses[i].LivePart != null)
+                    {
+                        processes[i].systemId.Value = (uint)DkmProcesses[i].LivePart.Id;
+                    }
                 }
 
                 return processes;
@@ -183,7 +186,7 @@ namespace CsDebugScript.VS
         {
             if (GetProcessCurrentThread(thread.Process) == thread)
             {
-                DkmStackWalkFrame dkmFrame = ExecuteOnDkmInitializedThread(() => DkmStackFrame.ExtractFromDTEObject(VSContext.DTE.Debugger.CurrentStackFrame));
+                DkmStackWalkFrame dkmFrame = ExecuteOnMainThread(() => DkmStackFrame.ExtractFromDTEObject(VSContext.DTE.Debugger.CurrentStackFrame));
 
                 return thread.StackTrace.Frames.Where(f => f.FrameOffset == dkmFrame.FrameBase).Single();
             }
@@ -356,9 +359,23 @@ namespace CsDebugScript.VS
             });
         }
 
+        /// <summary>
+        /// Gets the dump file name of the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
         public string GetProcessDumpFileName(Process process)
         {
-            throw new NotImplementedException();
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess dkmProcess = ConvertProcess(process);
+
+                if (dkmProcess.LivePart == null)
+                {
+                    return dkmProcess.Path;
+                }
+
+                return string.Empty;
+            });
         }
 
         /// <summary>
@@ -428,7 +445,12 @@ namespace CsDebugScript.VS
             {
                 DkmProcess dkmProcess = ConvertProcess(process);
 
-                return (uint)dkmProcess.LivePart.Id;
+                if (dkmProcess.LivePart != null)
+                {
+                    return (uint)dkmProcess.LivePart.Id;
+                }
+
+                return (uint)0;
             });
         }
 
@@ -557,12 +579,31 @@ namespace CsDebugScript.VS
                             throw new NotImplementedException("Unexpected DkmFrameRegisters.Tag");
                     }
 
+                    bool found = false;
+                    ulong frameOffset = 0;
+
+                    for (int j = 0; !found && j < dkmFrames[i].Registers.UnwoundRegisters.Count; j++)
+                    {
+                        switch ((Dia2Lib.CV_HREG_e)dkmFrames[i].Registers.UnwoundRegisters[j].Identifier)
+                        {
+                            case Dia2Lib.CV_HREG_e.CV_AMD64_EBP:
+                            case Dia2Lib.CV_HREG_e.CV_AMD64_RBP:
+                                {
+                                    byte[] bytes = dkmFrames[i].Registers.UnwoundRegisters[j].Value.ToArray();
+
+                                    found = true;
+                                    frameOffset = bytes.Length == 8 ? BitConverter.ToUInt64(bytes, 0) : BitConverter.ToUInt32(bytes, 0);
+                                    break;
+                                }
+                        }
+                    }
+
                     if (instructionOffset != dkmFrames[i].InstructionAddress.CPUInstructionPart.InstructionPointer)
                     {
                         throw new Exception("Instruction offset is not the same?");
                     }
 
-                    ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, dkmFrames[i].FrameBase);
+                    ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset);
 
                     frames[i] = new StackFrame(stackTrace, threadContext)
                     {
@@ -763,7 +804,6 @@ namespace CsDebugScript.VS
         /// </summary>
         /// <typeparam name="T">The evaluator result type</typeparam>
         /// <param name="evaluator">The evaluator.</param>
-        /// <returns>The evaluator result.</returns>
         private static void ExecuteOnDkmInitializedThread(Action evaluator)
         {
             if (dkmInitializationForThread.Value)
@@ -772,7 +812,7 @@ namespace CsDebugScript.VS
             }
             else
             {
-                System.Windows.Application.Current.Dispatcher.Invoke(evaluator);
+                ExecuteOnMainThread(evaluator);
             }
         }
 
@@ -790,8 +830,29 @@ namespace CsDebugScript.VS
             }
             else
             {
-                return System.Windows.Application.Current.Dispatcher.Invoke(evaluator);
+                return ExecuteOnMainThread(evaluator);
             }
+        }
+
+        /// <summary>
+        /// Executes the specified evaluator on main thread.
+        /// </summary>
+        /// <typeparam name="T">The evaluator result type</typeparam>
+        /// <param name="evaluator">The evaluator.</param>
+        private static void ExecuteOnMainThread(Action evaluator)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(evaluator);
+        }
+
+        /// <summary>
+        /// Executes the specified evaluator on main thread.
+        /// </summary>
+        /// <typeparam name="T">The evaluator result type</typeparam>
+        /// <param name="evaluator">The evaluator.</param>
+        /// <returns>The evaluator result.</returns>
+        private static T ExecuteOnMainThread<T>(Func<T> evaluator)
+        {
+            return System.Windows.Application.Current.Dispatcher.Invoke(evaluator);
         }
     }
 }

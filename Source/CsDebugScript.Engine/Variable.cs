@@ -484,6 +484,18 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the element at the specified index.
+        /// </summary>
+        /// <param name="index">The array index.</param>
+        public Variable this[int index]
+        {
+            get
+            {
+                return GetArrayElement(index);
+            }
+        }
+
+        /// <summary>
         /// Determines whether this variable is null pointer.
         /// </summary>
         /// <returns></returns>

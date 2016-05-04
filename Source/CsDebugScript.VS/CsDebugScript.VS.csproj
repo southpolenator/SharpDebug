@@ -136,6 +136,10 @@
       <Project>{b63c2b4e-eb2e-45fc-93fd-5d6f2077064d}</Project>
       <Name>CsDebugScript.UI</Name>
     </ProjectReference>
+    <ProjectReference Include="..\DiaHelpers\DiaHelpers.csproj">
+      <Project>{3CA2D1D6-136F-4032-901E-043FA25B6255}</Project>
+      <Name>DiaHelpers</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Page Include="VSInteractiveWindowControl.xaml">

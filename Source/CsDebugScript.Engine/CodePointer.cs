@@ -227,7 +227,7 @@ namespace CsDebugScript
         /// Gets the &lt;T&gt; at the specified index.
         /// </summary>
         /// <param name="index">The array index.</param>
-        public T this[int index]
+        public new T this[int index]
         {
             get
             {
