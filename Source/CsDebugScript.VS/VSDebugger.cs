@@ -530,6 +530,7 @@ namespace CsDebugScript.VS
                 StackTrace stackTrace = new StackTrace(thread);
                 StackFrame[] frames = new StackFrame[dkmFrames.Count];
 
+                stackTrace.Frames = frames;
                 for (int i = 0; i < frames.Length; i++)
                 {
                     ulong stackOffset, instructionOffset;
