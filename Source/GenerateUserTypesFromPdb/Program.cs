@@ -618,8 +618,8 @@ namespace GenerateUserTypesFromPdb
                     compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
                 }
 
-                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsDebugScript.dll"));
-                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsScripts.CommonUserTypes.dll"));
+                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsDebugScript.Engine.dll"));
+                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsDebugScript.CommonUserTypes.dll"));
 
                 var filesToCompile = generatedFiles.Values.Union(includedFiles.Select(f => f.Path)).ToArray();
                 var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);

@@ -165,7 +165,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         {
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
             bool isStatic = field.DataKind == DataKind.StaticMember || forceIsStatic;
-            UserTypeTree fieldType = GetTypeString(field.Type, factory, field.Size);
+            UserTypeTree fieldType = GetFieldType(field, factory, field.Size);
             string fieldName = field.Name;
             string gettingField = "variable.GetField";
             string simpleFieldValue;
@@ -233,8 +233,12 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         protected virtual UserTypeField ExtractField(SymbolField field, UserTypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags options, bool extractingBaseClass)
         {
-            if (fieldType is UserTypeTreeGenericsType && !((UserTypeTreeGenericsType)fieldType).CanInstatiate)
+            //  Non Template User Type must use Instantiable Generics.
+            //
+            if (!(this is TemplateUserType) && fieldType is UserTypeTreeGenericsType && !((UserTypeTreeGenericsType)fieldType).CanInstatiate)
+            {
                 throw new Exception("Generics type cannot be instantiated");
+            }
 
             bool forceUserTypesToNewInsteadOfCasting = options.HasFlag(UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting);
             bool cacheUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheUserTypeFields);
@@ -747,6 +751,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             baseClassOffset = 0;
             return new UserTypeTreeVariable(false);
+        }
+
+        public virtual UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, int bitLength = 0)
+        {
+            return GetTypeString(field.Type, factory, bitLength);
         }
 
         public virtual UserTypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)

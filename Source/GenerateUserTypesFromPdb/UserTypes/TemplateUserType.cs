@@ -519,5 +519,48 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             return string.Join("", dict.Select(t => string.Format("    where {0} : {1}", t.Key, t.Value)));
         }
+
+
+        public override UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, int bitLength = 0)
+        {
+            var specializedFields = specializedTypes.Select(r => new Tuple<TemplateUserType, SymbolField>(r, r.Symbol.Fields.FirstOrDefault(q => q.Name == field.Name))).ToArray();
+
+            if (specializedFields.Any(r => r.Item2 == null))
+            {
+                // TODO
+                // Incorrect bucketizing. Field does not exist in all specialization.
+                //
+                return GetTypeString(field.Type, factory, bitLength);
+            }
+
+            if (specializedFields.All(r => r.Item2.Type.Name == field.Type.Name))
+            {
+                // There is no specialization, all types across the specializations are the same.
+                //
+                return GetTypeString(field.Type, factory, bitLength);
+            }
+
+            //  Check Types for all specializations
+            //
+            string[] specializedFieldTypes = specializedFields.Select(r => r.Item2.Type.Name).ToArray();
+
+            for (int argIndex = 0; argIndex < this.Arguments.Count; argIndex++)
+            {
+                string[] templateArguments = specializedTypes.Select(r => r.Arguments[argIndex]).ToArray();
+
+                bool allMatching = Enumerable.SequenceEqual(templateArguments, specializedFieldTypes);
+
+                if (allMatching)
+                {
+                    return new UserTypeTreeArgumentGenericsType(this.Arguments.Count > 1 ? argIndex + 1 : 0, this, factory);
+                }
+            }
+
+            // TODO 
+            // Investigate further why we can't match template specialization.
+            //
+
+            return GetTypeString(field.Type, factory, bitLength);
+        }
     }
 }
