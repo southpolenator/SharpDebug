@@ -243,12 +243,12 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="module">The module.</param>
         private ISymbolProviderModule GetDiaModule(Module module)
         {
-            if (module.SymbolProvider == null)
+            if (module == null)
             {
-                module.SymbolProvider = modules[module];
+                return null;
             }
 
-            return module.SymbolProvider;
+            return module.SymbolProvider ?? (module.SymbolProvider = modules[module]);
         }
 
         /// <summary>
@@ -387,7 +387,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             Module module;
             ISymbolProviderModule diaModule = GetDiaModule(process, vtableAddress, out distance, out module);
 
-            return diaModule.GetRuntimeCodeTypeAndOffset(process, vtableAddress, (uint)distance);
+            return diaModule?.GetRuntimeCodeTypeAndOffset(process, vtableAddress, (uint)distance);
         }
     }
 }

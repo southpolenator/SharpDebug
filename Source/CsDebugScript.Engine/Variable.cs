@@ -553,7 +553,12 @@ namespace CsDebugScript
                     MemoryBuffer memoryBuffer = Debugger.ReadMemory(process, GetPointerAddress(), process.GetPointerSize());
                     ulong vtableAddress = UserType.ReadPointer(memoryBuffer, 0, (int)process.GetPointerSize());
 
-                    return Context.SymbolProvider.GetRuntimeCodeTypeAndOffset(codeType.Module.Process, vtableAddress);
+                    Tuple<CodeType, int> runtimeCodeType = Context.SymbolProvider.GetRuntimeCodeTypeAndOffset(codeType.Module.Process, vtableAddress);
+
+                    if (runtimeCodeType != null)
+                    {
+                        return runtimeCodeType;
+                    }
                 }
             }
             catch (Exception)

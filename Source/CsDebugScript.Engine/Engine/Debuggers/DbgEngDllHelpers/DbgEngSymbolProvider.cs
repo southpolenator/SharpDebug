@@ -527,7 +527,8 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <param name="distance">The distance within the module.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance)
         {
-            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+            // Not Implemented 
+            return null;
         }
     }
 }

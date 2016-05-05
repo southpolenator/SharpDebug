@@ -803,9 +803,10 @@ namespace CsDebugScript.Engine.SymbolProviders
             // Fully undecorated name should be in form: "DerivedClass::`vftable'"
             const string vftableString = "::`vftable'";
 
-            if (!fullyUndecoratedName.EndsWith(vftableString))
+            if (string.IsNullOrEmpty(fullyUndecoratedName) || !fullyUndecoratedName.EndsWith(vftableString))
             {
-                throw new Exception("Fully undecorated name is not ending with \"" + vftableString + "\"");
+                // Pointer is not vtable.
+                return null;
             }
 
             string codeTypeName = fullyUndecoratedName.Substring(0, fullyUndecoratedName.Length - vftableString.Length);
