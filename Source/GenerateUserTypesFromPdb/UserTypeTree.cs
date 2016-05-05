@@ -508,6 +508,8 @@ namespace GenerateUserTypesFromPdb
                 case "fixed":
                 case "internal":
                 case "out":
+                case "override":
+                case "virtual":
                     return string.Format("_{0}", fieldName);
                 default:
                     break;
