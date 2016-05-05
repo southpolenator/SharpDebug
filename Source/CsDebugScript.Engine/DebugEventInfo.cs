@@ -85,6 +85,11 @@ namespace CsDebugScript
         public string Description;
 
         /// <summary>
+        /// Serialized Event Details.
+        /// </summary>
+        public byte[] EventExtraInfo;
+
+        /// <summary>
         /// Get Last occurent Event or Exception.
         /// </summary>
         public static DebugEventInfo LastEvent => Engine.Context.Debugger.GetLastEventInfo();
