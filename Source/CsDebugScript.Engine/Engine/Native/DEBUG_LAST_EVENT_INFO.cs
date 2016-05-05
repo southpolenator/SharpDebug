@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace CsDebugScript.Engine.Native
 {
     [StructLayout(LayoutKind.Explicit)]
-    public struct DEBUG_LAST_EVENT_INFO
+    internal struct DEBUG_LAST_EVENT_INFO
     {
         [FieldOffset(0)]
         public DEBUG_LAST_EVENT_INFO_BREAKPOINT Breakpoint;
@@ -23,7 +23,7 @@ namespace CsDebugScript.Engine.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct EXCEPTION_RECORD64
+    internal unsafe struct EXCEPTION_RECORD64
     {
         public UInt32 ExceptionCode;
         public UInt32 ExceptionFlags;
@@ -35,46 +35,45 @@ namespace CsDebugScript.Engine.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct DEBUG_LAST_EVENT_INFO_BREAKPOINT
+    internal struct DEBUG_LAST_EVENT_INFO_BREAKPOINT
     {
         public uint Id;
     }
 
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct DEBUG_LAST_EVENT_INFO_EXCEPTION
+    internal struct DEBUG_LAST_EVENT_INFO_EXCEPTION
     {
         public EXCEPTION_RECORD64 ExceptionRecord;
         public uint FirstChance;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct DEBUG_LAST_EVENT_INFO_EXIT_THREAD
+    internal struct DEBUG_LAST_EVENT_INFO_EXIT_THREAD
     {
         public uint ExitCode;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct DEBUG_LAST_EVENT_INFO_EXIT_PROCESS
+    internal struct DEBUG_LAST_EVENT_INFO_EXIT_PROCESS
     {
         public uint ExitCode;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct DEBUG_LAST_EVENT_INFO_LOAD_MODULE
-    {
-        public ulong Base;
-    }
-
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DEBUG_LAST_EVENT_INFO_UNLOAD_MODULE
+    internal struct DEBUG_LAST_EVENT_INFO_LOAD_MODULE
     {
         public ulong Base;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct DEBUG_LAST_EVENT_INFO_SYSTEM_ERROR
+    internal struct DEBUG_LAST_EVENT_INFO_UNLOAD_MODULE
+    {
+        public ulong Base;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct DEBUG_LAST_EVENT_INFO_SYSTEM_ERROR
     {
         public uint Error;
         public uint Level;

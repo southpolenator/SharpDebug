@@ -1074,6 +1074,8 @@ namespace CsDebugScript.Engine.Debuggers
             extraInfoUsed = Math.Min(extraInfoUsed, (uint)Marshal.SizeOf(typeof(DEBUG_LAST_EVENT_INFO)));
             GCHandle handle = GCHandle.Alloc(debugLastEventInfo, GCHandleType.Pinned);
 
+            byte[] eventExtraInfo = new byte[extraInfoUsed];
+          
             try
             {
                 Control.GetLastEventInformation(
@@ -1087,12 +1089,15 @@ namespace CsDebugScript.Engine.Debuggers
                     descriptionSize,
                     out descriptionSize);
 
+                Marshal.Copy(handle.AddrOfPinnedObject(), eventExtraInfo, 0, (int)extraInfoUsed);
+
                 return new DebugEventInfo
                 {
+                    Type = (DebugEvent)type,
                     Description = description.ToString(),
                     Process = Process.All.First(r => r.Id == processId),
                     Thread = Thread.All.First(r => r.Id == threadId),
-                    Type = (DebugEvent)type
+                    EventExtraInfo = eventExtraInfo
                 };
             }
             finally
