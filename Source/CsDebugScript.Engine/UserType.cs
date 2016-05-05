@@ -22,6 +22,8 @@ namespace CsDebugScript
                 return null;
             }
 
+            variable = variable.DowncastInterface();
+
             CodeType runtimeType = variable.GetRuntimeType();
 
             if (runtimeType.IsPointer)
@@ -31,7 +33,15 @@ namespace CsDebugScript
 
             if (runtimeType.Inherits<T>())
             {
-                return variable.CastAs<T>();
+                CodeType baseClassCodeType = variable.CastAs<T>().GetCodeType();
+
+                if (baseClassCodeType.IsPointer)
+                {
+                    baseClassCodeType = baseClassCodeType.ElementType;
+                }
+
+                // Cast to base class.
+                return variable.GetBaseClass<T>(baseClassCodeType.Name);
             }
             else
             {
