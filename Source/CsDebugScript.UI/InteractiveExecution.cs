@@ -15,7 +15,7 @@ namespace CsDebugScript
     {
     }
 
-    internal class InteractiveExecution : ScriptCompiler
+    internal class InteractiveExecution
     {
         /// <summary>
         /// The default prompt
@@ -37,7 +37,7 @@ namespace CsDebugScript
         /// </summary>
         public InteractiveExecution()
         {
-            var scriptOptions = ScriptOptions.Default.WithImports("System", "System.Linq", "CsDebugScript").WithReferences(DefaultAssemblyReferences);
+            var scriptOptions = ScriptOptions.Default.WithImports("System", "System.Linq", "CsDebugScript").WithReferences(ScriptCompiler.DefaultAssemblyReferences);
 
             scriptState = CSharpScript.RunAsync("", scriptOptions, scriptBase).Result;
             scriptBase.ObjectWriter = new DefaultObjectWriter();
@@ -184,7 +184,7 @@ namespace CsDebugScript
             scriptEnd = generatedCode.Substring(codeEnd);
             List<string> result = new List<string>();
 
-            result.AddRange(DefaultAssemblyReferences);
+            result.AddRange(ScriptCompiler.DefaultAssemblyReferences);
             result.AddRange(scriptState.Script.Options.MetadataReferences.Select(mr => mr.Display));
             return result;
         }
@@ -233,7 +233,7 @@ namespace CsDebugScript
         {
             string generatedCode = code;
 
-            return GenerateCode(usings, importedCode, generatedCode, scriptBase.GetType().FullName);
+            return ScriptCompiler.GenerateCode(usings, importedCode, generatedCode, scriptBase.GetType().FullName);
         }
     }
 }
