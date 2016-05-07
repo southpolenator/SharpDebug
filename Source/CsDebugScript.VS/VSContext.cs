@@ -75,12 +75,7 @@ namespace CsDebugScript.VS
             debuggerEvents.OnEnterBreakMode += DebuggerEvents_OnEnterBreakMode;
             debuggerEvents.OnEnterDesignMode += DebuggerEvents_OnEnterDesignMode;
             debuggerEvents.OnEnterRunMode += DebuggerEvents_OnEnterRunMode;
-            debuggerProxy = (VSDebuggerProxy)AppDomain.CurrentDomain.GetData(VSDebuggerProxy.AppDomainDataName);
-            if (debuggerProxy == null)
-            {
-                System.Windows.MessageBox.Show(string.Format("Creating new debugger proxy.\nCurrent domain: {0}\nStack trace: {1}", AppDomain.CurrentDomain.FriendlyName, Environment.StackTrace));
-                debuggerProxy = new VSDebuggerProxy();
-            }
+            debuggerProxy = (VSDebuggerProxy)AppDomain.CurrentDomain.GetData(VSDebuggerProxy.AppDomainDataName) ?? new VSDebuggerProxy();
             VSDebugger = new VSDebugger(debuggerProxy);
             Engine.Context.InitializeDebugger(VSDebugger);
         }

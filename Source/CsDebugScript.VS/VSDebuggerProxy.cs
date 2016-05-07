@@ -624,9 +624,7 @@ namespace CsDebugScript.VS
                 {
                     bool initialized = initializationForThread.Value;
 
-                    System.Windows.MessageBox.Show("Evaluating on STA thread");
                     evaluator();
-                    System.Windows.MessageBox.Show("Evaluated on STA thread");
                 });
                 thread.SetApartmentState(System.Threading.ApartmentState.STA);
                 thread.Start();
@@ -654,14 +652,11 @@ namespace CsDebugScript.VS
                 {
                     bool initialized = initializationForThread.Value;
 
-                    System.Windows.MessageBox.Show("Evaluating on STA thread");
                     result = evaluator();
-                    System.Windows.MessageBox.Show("Evaluated on STA thread");
                 });
                 thread.SetApartmentState(System.Threading.ApartmentState.STA);
                 thread.Start();
                 thread.Join();
-                System.Windows.MessageBox.Show("Returning result");
                 return result;
             }
         }

@@ -82,7 +82,6 @@ namespace CsDebugScript.VS
         {
             if (scriptDomain != null)
             {
-                System.Windows.MessageBox.Show("Unloading domain");
                 var domain = scriptDomain;
                 var proxy = this.proxy;
                 scriptDomain = null;
@@ -94,11 +93,12 @@ namespace CsDebugScript.VS
                     {
                         proxy?.ShutdownControl();
                         AppDomain.Unload(domain);
-                        System.Windows.MessageBox.Show("Domain unloaded");
                     }
                     catch (Exception ex)
                     {
+#if DEBUG
                         System.Windows.MessageBox.Show("Domain failed to unload:\n" + ex.ToString());
+#endif
                     }
                 });
             }
@@ -110,7 +110,6 @@ namespace CsDebugScript.VS
             {
                 try
                 {
-                    System.Windows.MessageBox.Show("Loading domain");
                     AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
                     AppDomainSetup setup = new AppDomainSetup()
                     {
@@ -124,11 +123,12 @@ namespace CsDebugScript.VS
 
                     grid.Children.Clear();
                     grid.Children.Add(control);
-                    System.Windows.MessageBox.Show("Using new control");
                 }
                 catch (Exception ex)
                 {
+#if DEBUG
                     System.Windows.MessageBox.Show("Loading domain failed:\n" + ex.ToString());
+#endif
                 }
             }
         }
