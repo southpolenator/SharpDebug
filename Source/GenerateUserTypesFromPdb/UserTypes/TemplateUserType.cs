@@ -521,8 +521,17 @@ namespace GenerateUserTypesFromPdb.UserTypes
         }
 
 
-        public override UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, int bitLength = 0)
+        public override UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
         {
+            if (extractingBaseClass)
+            {
+                // Do not match specializations when getting type for base class.
+                //
+                UserTypeTree baseClassType = GetTypeString(field.Type, factory, bitLength);
+
+                return baseClassType;
+            }
+
             var specializedFields = specializedTypes.Select(r => new Tuple<TemplateUserType, SymbolField>(r, r.Symbol.Fields.FirstOrDefault(q => q.Name == field.Name))).ToArray();
 
             if (specializedFields.Any(r => r.Item2 == null))

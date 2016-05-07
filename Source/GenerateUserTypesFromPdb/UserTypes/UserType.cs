@@ -165,7 +165,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         {
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
             bool isStatic = field.DataKind == DataKind.StaticMember || forceIsStatic;
-            UserTypeTree fieldType = GetFieldType(field, factory, field.Size);
+            UserTypeTree fieldType = GetFieldType(field, factory, extractingBaseClass, field.Size);
             string fieldName = field.Name;
             string gettingField = "variable.GetField";
             string simpleFieldValue;
@@ -297,6 +297,15 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // ex. class has 'in' and '_in' fields.
             // 
             fieldName = UserTypeField.GetPropertyName(fieldName, this);
+
+            //
+            //  When Creating Property for BaseClass, current class is generic type
+            //  Rename baseclass property name not to include specialization type.
+            //
+            if (extractingBaseClass && this is TemplateUserType && fieldType is UserTypeTreeGenericsType)
+            {
+                fieldName = ((UserTypeTreeGenericsType)(fieldType)).UserType.ClassName;
+            }
 
             return new UserTypeField
             {
@@ -753,7 +762,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return new UserTypeTreeVariable(false);
         }
 
-        public virtual UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, int bitLength = 0)
+        public virtual UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
         {
             return GetTypeString(field.Type, factory, bitLength);
         }
