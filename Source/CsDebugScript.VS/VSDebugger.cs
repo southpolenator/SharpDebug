@@ -1,11 +1,6 @@
 ﻿using CsDebugScript.Engine.Marshaling;
 using CsDebugScript.Engine.Utility;
-using Microsoft.VisualStudio.Debugger;
-using Microsoft.VisualStudio.Debugger.CallStack;
-using Microsoft.VisualStudio.Debugger.Evaluation;
-using Microsoft.VisualStudio.Debugger.Symbols;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace CsDebugScript.VS
@@ -13,89 +8,17 @@ namespace CsDebugScript.VS
     internal class VSDebugger : Engine.Debuggers.IDebuggerEngine
     {
         /// <summary>
-        /// The cached DKM processes
+        /// The Visual Studio debugger proxy running in Default AppDomain.
         /// </summary>
-        private SimpleCache<DkmProcess[]> dkmProcesses;
-
-        /// <summary>
-        /// The DKM component manager initialization for the thread
-        /// </summary>
-        private static System.Threading.ThreadLocal<bool> dkmInitializationForThread;
-
-        /// <summary>
-        /// Initializes the <see cref="VSDebugger"/> class.
-        /// </summary>
-        static VSDebugger()
-        {
-            dkmInitializationForThread = new System.Threading.ThreadLocal<bool>(() =>
-            {
-                try
-                {
-                    DkmComponentManager.InitializeThread(DkmComponentManager.IdeComponentId);
-                    return true;
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
-            });
-        }
+        private VSDebuggerProxy proxy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VSDebugger"/> class.
         /// </summary>
-        public VSDebugger()
+        /// <param name="proxy">The Visual Studio debugger proxy running in Default AppDomain.</param>
+        public VSDebugger(VSDebuggerProxy proxy)
         {
-            dkmProcesses = SimpleCache.Create(() => ExecuteOnDkmInitializedThread(() => DkmProcess.GetProcesses()));
-        }
-
-        /// <summary>
-        /// Gets the cached DKM processes.
-        /// </summary>
-        internal DkmProcess[] DkmProcesses
-        {
-            get
-            {
-                return dkmProcesses.Value;
-            }
-        }
-
-        /// <summary>
-        /// Converts Process into DkmProcess.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        private DkmProcess ConvertProcess(Process process)
-        {
-            return DkmProcesses[process.Id];
-        }
-
-        /// <summary>
-        /// Gets the name of the module.
-        /// </summary>
-        /// <param name="module">The module.</param>
-        private static string GetModuleName(DkmModuleInstance module)
-        {
-            return System.IO.Path.GetFileNameWithoutExtension(module.Name);
-        }
-
-        /// <summary>
-        /// Converts Module into DkmModuleInstance.
-        /// </summary>
-        /// <param name="module">The module.</param>
-        private DkmModuleInstance ConvertModule(Module module)
-        {
-            return ConvertProcess(module.Process).GetRuntimeInstances().SelectMany(r => r.GetModuleInstances()).Where(m => m.BaseAddress == module.Address).Single();
-        }
-
-        /// <summary>
-        /// Converts Thread into DkmThread.
-        /// </summary>
-        /// <param name="thread">The thread.</param>
-        private DkmThread ConvertThread(Thread thread)
-        {
-            DkmProcess process = ConvertProcess(thread.Process);
-
-            return process.GetThreads().Where(t => t.SystemPart.Id == thread.SystemId).Single();
+            this.proxy = proxy;
         }
 
         /// <summary>
@@ -108,12 +31,7 @@ namespace CsDebugScript.VS
         {
             get
             {
-                return ExecuteOnDkmInitializedThread(() =>
-                {
-                    DkmProcess process = ConvertProcess(Process.Current);
-
-                    return (process.SystemInformation.Flags & Microsoft.VisualStudio.Debugger.DefaultPort.DkmSystemInformationFlags.DumpFile) == 0;
-                });
+                return proxy.IsProcessLiveDebugging(Process.Current.Id);
             }
         }
 
@@ -137,21 +55,16 @@ namespace CsDebugScript.VS
         /// </summary>
         public Process[] GetAllProcesses()
         {
-            return ExecuteOnDkmInitializedThread(() =>
+            int[] processSystemIds = proxy.GetAllProcesses();
+            Process[] processes = new Process[processSystemIds.Length];
+
+            for (int i = 0; i < processes.Length; i++)
             {
-                Process[] processes = new Process[DkmProcesses.Length];
+                processes[i] = Engine.GlobalCache.Processes[(uint)i];
+                processes[i].systemId.Value = (uint)processSystemIds[i];
+            }
 
-                for (int i = 0; i < DkmProcesses.Length; i++)
-                {
-                    processes[i] = Engine.GlobalCache.Processes[(uint)i];
-                    if (DkmProcesses[i].LivePart != null)
-                    {
-                        processes[i].systemId.Value = (uint)DkmProcesses[i].LivePart.Id;
-                    }
-                }
-
-                return processes;
-            });
+            return processes;
         }
 
         /// <summary>
@@ -159,7 +72,9 @@ namespace CsDebugScript.VS
         /// </summary>
         public Process GetCurrentProcess()
         {
-            return Process.All.Where(p => p.SystemId == VSContext.DTE.Debugger.CurrentProcess.ProcessID).Single();
+            int currentProcessSystemId = proxy.GetCurrentProcessSystemId();
+
+            return Process.All.Where(p => p.SystemId == currentProcessSystemId).Single();
         }
 
         /// <summary>
@@ -170,7 +85,9 @@ namespace CsDebugScript.VS
         {
             if (GetCurrentProcess() == process)
             {
-                return process.Threads.Where(t => t.SystemId == VSContext.DTE.Debugger.CurrentThread.ID).Single();
+                int currentThreadSystemId = proxy.GetCurrentThreadSystemId();
+
+                return process.Threads.Where(t => t.SystemId == currentThreadSystemId).Single();
             }
             else
             {
@@ -186,9 +103,10 @@ namespace CsDebugScript.VS
         {
             if (GetProcessCurrentThread(thread.Process) == thread)
             {
-                DkmStackWalkFrame dkmFrame = ExecuteOnMainThread(() => DkmStackFrame.ExtractFromDTEObject(VSContext.DTE.Debugger.CurrentStackFrame));
+                StackTrace stackTrace = thread.StackTrace;
+                int currentStackFrameNumber = proxy.GetCurrentStackFrameNumber((int)thread.Id);
 
-                return thread.StackTrace.Frames.Where(f => f.FrameOffset == dkmFrame.FrameBase).Single();
+                return thread.StackTrace.Frames[currentStackFrameNumber];
             }
             else
             {
@@ -203,13 +121,7 @@ namespace CsDebugScript.VS
         /// <param name="moduleName">Name of the module.</param>
         public ulong GetModuleAddress(Process process, string moduleName)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess dkmProcess = ConvertProcess(process);
-
-                moduleName = moduleName.ToLower();
-                return dkmProcess.GetRuntimeInstances().SelectMany(r => r.GetModuleInstances()).Where(m => GetModuleName(m).ToLower() == moduleName).Single().BaseAddress;
-            });
+            return proxy.GetModuleAddress(process.Id, moduleName);
         }
 
         /// <summary>
@@ -219,12 +131,7 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public string GetModuleImageName(Module module)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmModuleInstance dkmModule = ConvertModule(module);
-
-                return dkmModule.FullName;
-            });
+            return proxy.GetModuleImageName(module.Id);
         }
 
         /// <summary>
@@ -253,12 +160,7 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public string GetModuleName(Module module)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmModuleInstance dkmModule = ConvertModule(module);
-
-                return GetModuleName(dkmModule);
-            });
+            return proxy.GetModuleName(module.Id);
         }
 
         /// <summary>
@@ -268,20 +170,7 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public string GetModuleSymbolFile(Module module)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmModuleInstance dkmModule = ConvertModule(module);
-                DkmSymbolFileId symbolFileId = dkmModule.SymbolFileId;
-
-                if (symbolFileId.TagValue == DkmSymbolFileId.Tag.PdbFileId)
-                {
-                    DkmPdbFileId pdbFileId = (DkmPdbFileId)symbolFileId;
-
-                    return pdbFileId.PdbName;
-                }
-
-                return dkmModule.FullName;
-            });
+            return proxy.GetModuleSymbolName(module.Id);
         }
 
         /// <summary>
@@ -290,12 +179,7 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public Tuple<DateTime, ulong> GetModuleTimestampAndSize(Module module)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmModuleInstance dkmModule = ConvertModule(module);
-
-                return Tuple.Create(DateTime.FromFileTimeUtc((long)dkmModule.TimeDateStamp), (ulong)dkmModule.Size);
-            });
+            return proxy.GetModuleTimestampAndSize(module.Id);
         }
 
         /// <summary>
@@ -308,29 +192,7 @@ namespace CsDebugScript.VS
         /// <param name="patch">The version patch number.</param>
         public void GetModuleVersion(Module module, out int major, out int minor, out int revision, out int patch)
         {
-            int tempMajor = 0, tempMinor = 0, tempRevision = 0, tempPatch = 0;
-
-            ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmModuleInstance dkmModule = ConvertModule(module);
-
-                if (dkmModule.Version != null)
-                {
-                    tempMajor = (int)(dkmModule.Version.ProductVersionMS / 65536);
-                    tempMinor = (int)(dkmModule.Version.ProductVersionMS % 65536);
-                    tempRevision = (int)(dkmModule.Version.ProductVersionLS / 65536);
-                    tempPatch = (int)(dkmModule.Version.ProductVersionLS % 65536);
-                }
-                else
-                {
-                    tempMajor = tempMinor = tempRevision = tempPatch = 0;
-                }
-            });
-
-            major = tempMajor;
-            minor = tempMinor;
-            revision = tempRevision;
-            patch = tempPatch;
+            proxy.GetModuleVersion(module.Id, out major, out minor, out revision, out patch);
         }
 
         /// <summary>
@@ -339,24 +201,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public Engine.Native.ImageFileMachine GetProcessActualProcessorType(Process process)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess dkmProcess = ConvertProcess(process);
-
-                switch (dkmProcess.SystemInformation.ProcessorArchitecture)
-                {
-                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64:
-                        return Engine.Native.ImageFileMachine.AMD64;
-                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_ARM:
-                        return Engine.Native.ImageFileMachine.ARM;
-                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL:
-                        return string.IsNullOrEmpty(dkmProcess.SystemInformation.SystemWow64Directory)
-                            || dkmProcess.SystemInformation.SystemDirectory == dkmProcess.SystemInformation.SystemWow64Directory
-                                ? Engine.Native.ImageFileMachine.I386 : Engine.Native.ImageFileMachine.AMD64;
-                    default:
-                        throw new NotImplementedException("Unexpected DkmProcessorArchitecture");
-                }
-            });
+            return proxy.GetProcessActualProcessorType(process.Id);
         }
 
         /// <summary>
@@ -365,17 +210,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public string GetProcessDumpFileName(Process process)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess dkmProcess = ConvertProcess(process);
-
-                if (dkmProcess.LivePart == null)
-                {
-                    return dkmProcess.Path;
-                }
-
-                return string.Empty;
-            });
+            return proxy.GetProcessDumpFileName(process.Id);
         }
 
         /// <summary>
@@ -384,22 +219,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public Engine.Native.ImageFileMachine GetProcessEffectiveProcessorType(Process process)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess dkmProcess = ConvertProcess(process);
-
-                switch (dkmProcess.SystemInformation.ProcessorArchitecture)
-                {
-                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64:
-                        return (dkmProcess.SystemInformation.Flags & Microsoft.VisualStudio.Debugger.DefaultPort.DkmSystemInformationFlags.Is64Bit) != 0 ? Engine.Native.ImageFileMachine.AMD64 : Engine.Native.ImageFileMachine.I386;
-                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_ARM:
-                        return Engine.Native.ImageFileMachine.ARM;
-                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL:
-                        return Engine.Native.ImageFileMachine.I386;
-                    default:
-                        throw new NotImplementedException("Unexpected DkmProcessorArchitecture");
-                }
-            });
+            return proxy.GetProcessEffectiveProcessorType(process.Id);
         }
 
         public ulong GetProcessEnvironmentBlockAddress(Process process)
@@ -413,12 +233,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public string GetProcessExecutableName(Process process)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess dkmProcess = ConvertProcess(process);
-
-                return dkmProcess.Path;
-            });
+            return proxy.GetProcessExecutableName(process.Id);
         }
 
         /// <summary>
@@ -427,12 +242,16 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public Module[] GetProcessModules(Process process)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess dkmProcess = ConvertProcess(process);
+            Tuple<uint, ulong>[] moduleIdsAndBaseAddresses = proxy.GetProcessModules(process.Id);
+            Module[] modules = new Module[moduleIdsAndBaseAddresses.Length];
 
-                return dkmProcess.GetRuntimeInstances().SelectMany(r => r.GetModuleInstances()).Select(m => process.ModulesById[m.BaseAddress]).ToArray();
-            });
+            for (int i = 0; i < modules.Length; i++)
+            {
+                modules[i] = process.ModulesById[moduleIdsAndBaseAddresses[i].Item2];
+                modules[i].Id = moduleIdsAndBaseAddresses[i].Item1;
+            }
+
+            return modules;
         }
 
         /// <summary>
@@ -441,17 +260,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public uint GetProcessSystemId(Process process)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess dkmProcess = ConvertProcess(process);
-
-                if (dkmProcess.LivePart != null)
-                {
-                    return (uint)dkmProcess.LivePart.Id;
-                }
-
-                return (uint)0;
-            });
+            return proxy.GetProcessSystemId(process.Id);
         }
 
         /// <summary>
@@ -460,19 +269,15 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public Thread[] GetProcessThreads(Process process)
         {
-            return ExecuteOnDkmInitializedThread(() =>
+            Tuple<uint, uint>[] threadIdsAndSystemIds = proxy.GetProcessThreads(process.Id);
+            Thread[] threads = new Thread[threadIdsAndSystemIds.Length];
+
+            for (int i = 0; i < threads.Length; i++)
             {
-                DkmProcess dkmProcess = ConvertProcess(process);
-                DkmThread[] dkmThreads = dkmProcess.GetThreads();
-                Thread[] threads = new Thread[dkmThreads.Length];
+                threads[i] = new Thread(threadIdsAndSystemIds[i].Item1, threadIdsAndSystemIds[i].Item2, process);
+            }
 
-                for (int i = 0; i < threads.Length; i++)
-                {
-                    threads[i] = new Thread((uint)i, (uint)dkmThreads[i].SystemPart.Id, process);
-                }
-
-                return threads;
-            });
+            return threads;
         }
 
         public uint GetProcessUpTime(Process process)
@@ -489,19 +294,14 @@ namespace CsDebugScript.VS
         /// Gets the thread context of the specified thread.
         /// </summary>
         /// <param name="thread">The thread.</param>
-        public unsafe ThreadContext GetThreadContext(Thread thread)
+        public ThreadContext GetThreadContext(Thread thread)
         {
-            return ExecuteOnDkmInitializedThread(() =>
+            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(thread.Process, 1))
             {
-                DkmThread dkmThread = ConvertThread(thread);
+                proxy.GetThreadContext(thread.Id, threadContextBuffer.Pointer, threadContextBuffer.Count * threadContextBuffer.Size);
 
-                using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(thread.Process, 1))
-                {
-                    dkmThread.GetContext(-1, threadContextBuffer.Pointer.ToPointer(), threadContextBuffer.Count * threadContextBuffer.Size);
-
-                    return threadContextBuffer.Elements.FirstOrDefault();
-                }
-            });
+                return threadContextBuffer.Elements.FirstOrDefault();
+            }
         }
 
         /// <summary>
@@ -510,12 +310,7 @@ namespace CsDebugScript.VS
         /// <param name="thread">The thread.</param>
         public ulong GetThreadEnvironmentBlockAddress(Thread thread)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmThread dkmThread = ConvertThread(thread);
-
-                return dkmThread.TebAddress;
-            });
+            return proxy.GetThreadEnvironmentBlockAddress(thread.Id);
         }
 
         /// <summary>
@@ -524,105 +319,33 @@ namespace CsDebugScript.VS
         /// <param name="thread">The thread.</param>
         public StackTrace GetThreadStackTrace(Thread thread)
         {
-            return ExecuteOnDkmInitializedThread(() =>
+            Tuple<ulong, ulong, ulong>[] framesData = proxy.GetThreadStackTrace(thread.Id, thread.ThreadContext.Bytes);
+            StackTrace stackTrace = new StackTrace(thread);
+            StackFrame[] frames = new StackFrame[framesData.Length];
+
+            stackTrace.Frames = frames;
+            for (int i = 0; i < frames.Length; i++)
             {
-                DkmThread dkmThread = ConvertThread(thread);
-                byte[] threadContextBytes = thread.ThreadContext.Bytes;
-                List<DkmStackFrame> dkmFrames = new List<DkmStackFrame>();
+                ulong instructionOffset = framesData[i].Item1, stackOffset = framesData[i].Item2, frameOffset = framesData[i].Item2;
 
-                using (DkmInspectionSession dkmInspectionSession = DkmInspectionSession.Create(dkmThread.Process, null))
-                using (DkmStackContext dkmStackContext = DkmStackContext.Create(dkmInspectionSession, dkmThread, DkmCallStackFilterOptions.None, new DkmFrameFormatOptions(), new System.Collections.ObjectModel.ReadOnlyCollection<byte>(threadContextBytes), null))
+                ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset);
+                frames[i] = new StackFrame(stackTrace, threadContext)
                 {
-                    bool done = false;
+                    FrameNumber = (uint)i,
+                    FrameOffset = frameOffset,
+                    StackOffset = stackOffset,
+                    InstructionOffset = instructionOffset,
+                    ReturnOffset = 0, // Populated in the loop after this one
+                    Virtual = false, // TODO:
+                };
+            }
 
-                    while (!done)
-                    {
-                        DkmWorkList dkmWorkList = DkmWorkList.Create(null);
+            for (int i = frames.Length - 2; i >= 0; i--)
+            {
+                frames[i].ReturnOffset = frames[i + 1].InstructionOffset;
+            }
 
-                        dkmStackContext.GetNextFrames(dkmWorkList, int.MaxValue, (result) =>
-                        {
-                            dkmFrames.AddRange(result.Frames);
-                            done = result.Frames.Length == 0;
-                        });
-
-                        dkmWorkList.Execute();
-                    }
-                }
-
-                StackTrace stackTrace = new StackTrace(thread);
-                StackFrame[] frames = new StackFrame[dkmFrames.Count];
-
-                stackTrace.Frames = frames;
-                for (int i = 0; i < frames.Length; i++)
-                {
-                    ulong stackOffset, instructionOffset;
-
-                    switch (dkmFrames[i].Registers.TagValue)
-                    {
-                        case DkmFrameRegisters.Tag.X64Registers:
-                            {
-                                DkmX64FrameRegisters registers = (DkmX64FrameRegisters)dkmFrames[i].Registers;
-
-                                instructionOffset = registers.Rip;
-                                stackOffset = registers.Rsp;
-                            }
-                            break;
-                        case DkmFrameRegisters.Tag.X86Registers:
-                            {
-                                DkmX86FrameRegisters registers = (DkmX86FrameRegisters)dkmFrames[i].Registers;
-
-                                instructionOffset = registers.Eip;
-                                stackOffset = registers.Esp;
-                            }
-                            break;
-                        default:
-                            throw new NotImplementedException("Unexpected DkmFrameRegisters.Tag");
-                    }
-
-                    bool found = false;
-                    ulong frameOffset = 0;
-
-                    for (int j = 0; !found && j < dkmFrames[i].Registers.UnwoundRegisters.Count; j++)
-                    {
-                        switch ((Dia2Lib.CV_HREG_e)dkmFrames[i].Registers.UnwoundRegisters[j].Identifier)
-                        {
-                            case Dia2Lib.CV_HREG_e.CV_AMD64_EBP:
-                            case Dia2Lib.CV_HREG_e.CV_AMD64_RBP:
-                                {
-                                    byte[] bytes = dkmFrames[i].Registers.UnwoundRegisters[j].Value.ToArray();
-
-                                    found = true;
-                                    frameOffset = bytes.Length == 8 ? BitConverter.ToUInt64(bytes, 0) : BitConverter.ToUInt32(bytes, 0);
-                                    break;
-                                }
-                        }
-                    }
-
-                    if (instructionOffset != dkmFrames[i].InstructionAddress.CPUInstructionPart.InstructionPointer)
-                    {
-                        throw new Exception("Instruction offset is not the same?");
-                    }
-
-                    ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset);
-
-                    frames[i] = new StackFrame(stackTrace, threadContext)
-                    {
-                        FrameNumber = (uint)i,
-                        FrameOffset = dkmFrames[i].FrameBase,
-                        StackOffset = stackOffset,
-                        InstructionOffset = instructionOffset,
-                        ReturnOffset = 0, // Populated in the loop after this one
-                        Virtual = false, // TODO:
-                    };
-                }
-
-                for (int i = frames.Length - 2; i >= 0; i--)
-                {
-                    frames[i].ReturnOffset = frames[i + 1].InstructionOffset;
-                }
-
-                return stackTrace;
-            });
+            return stackTrace;
         }
 
         public bool IsMinidump(Process process)
@@ -644,14 +367,9 @@ namespace CsDebugScript.VS
         /// <returns>Buffer containing read memory</returns>
         public MemoryBuffer ReadMemory(Process process, ulong address, uint size)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess dkmProcess = ConvertProcess(process);
-                byte[] bytes = new byte[size];
+            byte[] bytes = proxy.ReadMemory(process.Id, address, size);
 
-                dkmProcess.ReadMemory(address, DkmReadMemoryFlags.None, bytes);
-                return new MemoryBuffer(bytes);
-            });
+            return new MemoryBuffer(bytes);
         }
 
         /// <summary>
@@ -662,12 +380,7 @@ namespace CsDebugScript.VS
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public string ReadAnsiString(Process process, ulong address, int length = -1)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess dkmProcess = ConvertProcess(process);
-
-                return System.Text.ASCIIEncoding.Default.GetString(dkmProcess.ReadMemoryString(address, DkmReadMemoryFlags.None, 1, length));
-            });
+            return proxy.ReadAnsiString(process.Id, address, length);
         }
 
         /// <summary>
@@ -678,12 +391,7 @@ namespace CsDebugScript.VS
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public string ReadUnicodeString(Process process, ulong address, int length = -1)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess dkmProcess = ConvertProcess(process);
-
-                return System.Text.UnicodeEncoding.Default.GetString(dkmProcess.ReadMemoryString(address, DkmReadMemoryFlags.None, 2, length));
-            });
+            return proxy.ReadUnicodeString(process.Id, address, length);
         }
 
         /// <summary>
@@ -693,22 +401,7 @@ namespace CsDebugScript.VS
         /// <exception cref="System.ArgumentException">Process wasn't found</exception>
         public void SetCurrentProcess(Process process)
         {
-            ExecuteOnDkmInitializedThread(() =>
-            {
-                if (VSContext.DTE.Debugger.CurrentProcess.ProcessID != process.SystemId)
-                {
-                    foreach (EnvDTE.Process vsProcess in VSContext.DTE.Debugger.DebuggedProcesses)
-                    {
-                        if (process.SystemId == vsProcess.ProcessID)
-                        {
-                            VSContext.DTE.Debugger.CurrentProcess = vsProcess;
-                            return;
-                        }
-                    }
-
-                    throw new ArgumentException("Process wasn't found", nameof(process));
-                }
-            });
+            proxy.SetCurrentProcess(process.Id);
         }
 
         /// <summary>
@@ -718,26 +411,8 @@ namespace CsDebugScript.VS
         /// <exception cref="System.ArgumentException">Thread wasn't found</exception>
         public void SetCurrentThread(Thread thread)
         {
-            ExecuteOnDkmInitializedThread(() =>
-            {
-                SetCurrentProcess(thread.Process);
-                if (VSContext.DTE.Debugger.CurrentThread.ID != thread.SystemId)
-                {
-                    foreach (EnvDTE.Program vsProgram in VSContext.DTE.Debugger.CurrentProcess.Programs)
-                    {
-                        foreach (EnvDTE.Thread vsThread in vsProgram.Threads)
-                        {
-                            if (thread.SystemId == vsThread.ID)
-                            {
-                                VSContext.DTE.Debugger.CurrentThread = vsThread;
-                                return;
-                            }
-                        }
-                    }
-
-                    throw new ArgumentException("Thread wasn't found", nameof(thread));
-                }
-            });
+            SetCurrentProcess(thread.Process);
+            proxy.SetCurrentThread(thread.Id);
         }
 
         public void SetCurrentStackFrame(StackFrame stackFrame)
@@ -754,7 +429,7 @@ namespace CsDebugScript.VS
         internal void UpdateCache()
         {
             // This should update cache with new values. For now, just clear everything
-            dkmProcesses.Cached = false;
+            proxy.ClearCache();
             Engine.GlobalCache.Processes.Clear();
             Engine.GlobalCache.UserTypeCastedVariableCollections.Clear();
             Engine.GlobalCache.UserTypeCastedVariables.Clear();
@@ -798,61 +473,5 @@ namespace CsDebugScript.VS
             throw new NotImplementedException(NotImplementedExceptionText);
         }
         #endregion
-
-        /// <summary>
-        /// Executes the specified evaluator on DKM initialized thread. It will try to initialize current thread and if it fails it will fall-back to the main thread.
-        /// </summary>
-        /// <typeparam name="T">The evaluator result type</typeparam>
-        /// <param name="evaluator">The evaluator.</param>
-        private static void ExecuteOnDkmInitializedThread(Action evaluator)
-        {
-            if (dkmInitializationForThread.Value)
-            {
-                evaluator();
-            }
-            else
-            {
-                ExecuteOnMainThread(evaluator);
-            }
-        }
-
-        /// <summary>
-        /// Executes the specified evaluator on DKM initialized thread. It will try to initialize current thread and if it fails it will fall-back to the main thread.
-        /// </summary>
-        /// <typeparam name="T">The evaluator result type</typeparam>
-        /// <param name="evaluator">The evaluator.</param>
-        /// <returns>The evaluator result.</returns>
-        private static T ExecuteOnDkmInitializedThread<T>(Func<T> evaluator)
-        {
-            if (dkmInitializationForThread.Value)
-            {
-                return evaluator();
-            }
-            else
-            {
-                return ExecuteOnMainThread(evaluator);
-            }
-        }
-
-        /// <summary>
-        /// Executes the specified evaluator on main thread.
-        /// </summary>
-        /// <typeparam name="T">The evaluator result type</typeparam>
-        /// <param name="evaluator">The evaluator.</param>
-        private static void ExecuteOnMainThread(Action evaluator)
-        {
-            System.Windows.Application.Current.Dispatcher.Invoke(evaluator);
-        }
-
-        /// <summary>
-        /// Executes the specified evaluator on main thread.
-        /// </summary>
-        /// <typeparam name="T">The evaluator result type</typeparam>
-        /// <param name="evaluator">The evaluator.</param>
-        /// <returns>The evaluator result.</returns>
-        private static T ExecuteOnMainThread<T>(Func<T> evaluator)
-        {
-            return System.Windows.Application.Current.Dispatcher.Invoke(evaluator);
-        }
     }
 }

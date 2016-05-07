@@ -80,7 +80,6 @@ namespace CsDebugScript.VS
         /// <param name="package">Owner package, not null.</param>
         public static void Initialize(Package package)
         {
-            VSContext.SetServiceProvider(package);
             Instance = new VSInteractiveWindowCommand(package);
         }
 
