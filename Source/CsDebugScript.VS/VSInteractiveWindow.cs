@@ -1,10 +1,4 @@
-﻿//------------------------------------------------------------------------------
-// <copyright file="VSInteractiveWindow.cs" company="Company">
-//     Copyright (c) Company.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
-
-using Microsoft.VisualStudio.Shell;
+﻿using Microsoft.VisualStudio.Shell;
 using System;
 using System.AddIn.Contract;
 using System.AddIn.Pipeline;
@@ -47,7 +41,6 @@ namespace CsDebugScript.VS
     [Guid("774827b1-2776-4746-bacd-2cd95407f32a")]
     public class VSInteractiveWindow : ToolWindowPane
     {
-        private const string SlotName = "Slot.EEA97099-EEA4-41DA-B0AE-7A7A35EDE6AC";
         private const string DomainName = "CsDebugScript";
 
         private AppDomain scriptDomain;
@@ -116,7 +109,7 @@ namespace CsDebugScript.VS
                         ApplicationBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
                         PrivateBinPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
                     };
-                    scriptDomain = AppDomain.CreateDomain(string.Format("{0}{1}", DomainName, DateTime.Now.Ticks), null, setup);
+                    scriptDomain = AppDomain.CreateDomain(DomainName, null, setup);
                     VSContext.InitializeAppDomain(scriptDomain);
                     proxy = (VSInteractiveWindowProxy)scriptDomain.CreateInstanceAndUnwrap(typeof(VSInteractiveWindowProxy).Assembly.FullName, typeof(VSInteractiveWindowProxy).FullName);
                     var control = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl());

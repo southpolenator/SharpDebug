@@ -115,14 +115,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="index.html" />
-    <Content Include="license.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
     <Content Include="Resources\VSInteractiveWindowCommand.png" />
     <Content Include="Resources\VSInteractiveWindowPackage.ico" />
-    <Content Include="stylesheet.css" />
     <VSCTCompile Include="VSInteractiveWindowPackage.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
       <SubType>Designer</SubType>
