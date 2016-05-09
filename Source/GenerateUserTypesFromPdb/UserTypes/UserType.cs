@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace GenerateUserTypesFromPdb.UserTypes
 {
@@ -523,6 +524,20 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 output.WriteLine(indentation, "//   {0}", type.Name);
         }
 
+        protected string GenerateClassCodeTypeInfo()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach (var module in GlobalCache.GetSymbolModuleNames(Symbol))
+            {
+                sb.Append(string.Format("\"{0}!{1}\", ", module, TypeName));
+            }
+
+            sb.Length -= 2;
+
+            return sb.ToString();
+        }
+
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
             int baseClassOffset = 0;
@@ -835,8 +850,17 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         Symbol pointerType = type.ElementType;
 
                         UserType fakeUserType;
+                        factory.GetUserType(pointerType, out fakeUserType);
 
-                        if (factory.GetUserType(pointerType, out fakeUserType) && (fakeUserType is PrimitiveUserType))
+                        // When Exporting Pointer from Global Modules, always export types as code pointer.
+                        if (this is GlobalsUserType && fakeUserType != null)
+                        {
+                            return new UserTypeTreeCodePointer(UserTypeTreeUserType.Create(fakeUserType, factory));
+                        }
+
+                        // TODO Describe the condition.
+                        //
+                        if (fakeUserType is PrimitiveUserType)
                         {
                             return new UserTypeTreeCodePointer(UserTypeTreeUserType.Create(fakeUserType, factory));
                         }

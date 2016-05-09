@@ -515,11 +515,21 @@ namespace CsDebugScript
         private UserTypeDescription[] GetUserTypeDescription(Type type)
         {
             UserTypeMetadata[] metadata = UserTypeMetadata.ReadFromType(type);
-            UserTypeDescription[] descriptions = new UserTypeDescription[metadata.Length];
+            List<UserTypeDescription> descriptions = new List<UserTypeDescription>();
 
             for (int i = 0; i < metadata.Length; i++)
-                descriptions[i] = metadata[i].ConvertToDescription(this);
-            return descriptions;
+            {
+                try
+                {
+                    descriptions.Add(metadata[i].ConvertToDescription(this));
+                }
+                catch
+                {
+                    // ignore if module is not loaded
+                }
+            }
+
+            return descriptions.ToArray();
         }
 
         /// <summary>
