@@ -243,6 +243,11 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="module">The module.</param>
         private ISymbolProviderModule GetDiaModule(Module module)
         {
+            if (module == null)
+            {
+                return null;
+            }
+
             if (module.SymbolProvider == null)
             {
                 module.SymbolProvider = modules[module];
