@@ -38,6 +38,12 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 if (IsFieldFiltered(field) || field.Name == previousName)
                     continue;
 
+                if (field.Name.Contains("@"))
+                {
+                    // Skip names contaings '@'
+                    continue;
+                }
+
                 // Skip fields that have same name as the type
                 UserType userType;
                 factory.TryGetUserType(field.Type.Module, field.Type.Name, out userType);
@@ -46,15 +52,16 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     continue;
 
                 // Skip fields that are actual values of enum values
-                if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagEnum && field.Type.GetEnumValues().Where(t => t.Item1 == field.Name).Any())
+                if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagEnum && field.Type.GetEnumValues().Any(t => t.Item1 == field.Name))
                     continue;
 
                 var userField = ExtractField(field, factory, options, forceIsStatic: true);
 
                 if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagPointerType)
                 {
-                    // Don't export pointers
-                    continue;
+                    // Do not use const values for pointers.
+                    // We do not allow user type implicit conversion from integers.
+                    userField.ConstantValue = string.Empty;
                 }
 
                 userField.FieldName = userField.FieldName.Replace("?", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
