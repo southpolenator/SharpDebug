@@ -8,8 +8,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     internal class TemplateUserType : UserType
     {
-        private List<string> argumentsSymbols = new List<string>();
-        private List<UserType> argumentsUserType = new List<UserType>();
+        private readonly List<string> argumentsSymbols = new List<string>();
+        private readonly List<UserType> argumentsUserType = new List<UserType>();
 
         //  TODO consider new type holding specialized template usertypes.
         //
@@ -523,7 +523,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         public override UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
         {
-            if (extractingBaseClass)
+            if (extractingBaseClass || this.Arguments.Count == 0)
             {
                 // Do not match specializations when getting type for base class.
                 //
@@ -549,27 +549,33 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 return GetTypeString(field.Type, factory, bitLength);
             }
 
-            //  Check Types for all specializations
             //
-            string[] specializedFieldTypes = specializedFields.Select(r => r.Item2.Type.Name).ToArray();
+            UserTypeTree result = GetTypeString(field.Type, factory, bitLength);
 
-            for (int argIndex = 0; argIndex < this.Arguments.Count; argIndex++)
+            if (result is UserTypeTreeBaseType)
             {
-                string[] templateArguments = specializedTypes.Select(r => r.Arguments[argIndex]).ToArray();
+                // Correct result
+                //
+                UserType baseTypeUserType;
 
-                bool allMatching = Enumerable.SequenceEqual(templateArguments, specializedFieldTypes);
-
-                if (allMatching)
+                if (CreateFactory(factory).GetUserType(field.Type, out baseTypeUserType))
                 {
-                    return new UserTypeTreeArgumentGenericsType(this.Arguments.Count > 1 ? argIndex + 1 : 0, this, factory);
+                    UserTypeTree tree = UserTypeTreeUserType.Create(baseTypeUserType, factory);
+
+                    if (tree != null)
+                    {
+                        return tree;
+                    }
                 }
+
+                // Failed to match the type
+                // TODO, look for typedeclared
+                // Class is using different types than in template specialization.
+                // We cannot support it right now.
+                return new UserTypeTreeVariable();
             }
 
-            // TODO 
-            // Investigate further why we can't match template specialization.
-            //
-
-            return GetTypeString(field.Type, factory, bitLength);
+            return result;
         }
     }
 }
