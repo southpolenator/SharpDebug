@@ -115,8 +115,20 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Microsoft.CodeAnalysis.CSharp.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Microsoft.CodeAnalysis.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="Resources\VSInteractiveWindowCommand.png" />
     <Content Include="Resources\VSInteractiveWindowPackage.ico" />
+    <Content Include="System.Reflection.Metadata.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <VSCTCompile Include="VSInteractiveWindowPackage.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
       <SubType>Designer</SubType>
@@ -283,6 +295,12 @@
     <Error Condition="!Exists('..\..\packages\Microsoft.VSSDK.BuildTools.14.2.25123\build\Microsoft.VSSDK.BuildTools.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.VSSDK.BuildTools.14.2.25123\build\Microsoft.VSSDK.BuildTools.targets'))" />
   </Target>
   <Import Project="..\..\packages\Microsoft.VSSDK.BuildTools.14.2.25123\build\Microsoft.VSSDK.BuildTools.targets" Condition="Exists('..\..\packages\Microsoft.VSSDK.BuildTools.14.2.25123\build\Microsoft.VSSDK.BuildTools.targets')" />
+  <PropertyGroup>
+    <PreBuildEvent>copy $(OutDir)\Microsoft.CodeAnalysis.dll $(ProjectDir)
+copy $(OutDir)\Microsoft.CodeAnalysis.CSharp.dll $(ProjectDir)
+copy $(OutDir)\System.Reflection.Metadata.dll $(ProjectDir)
+</PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
