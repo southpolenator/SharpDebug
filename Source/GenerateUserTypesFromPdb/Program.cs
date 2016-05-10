@@ -584,10 +584,9 @@ namespace GenerateUserTypesFromPdb
                             diagnostic.IsWarningAsError ||
                             diagnostic.Severity == DiagnosticSeverity.Error);
 
-                        foreach (var diagnostic in failures)
-                        {
-                            Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
-                        }
+                        Console.Error.WriteLine("Compile errors (top 1000):");
+                        foreach (var diagnostic in failures.Take(1000))
+                            Console.Error.WriteLine(diagnostic);
                     }
                     else
                     {
@@ -627,8 +626,8 @@ namespace GenerateUserTypesFromPdb
 
                 if (compileResult.Errors.Count > 0)
                 {
-                    Console.Error.WriteLine("Compile errors:");
-                    foreach (CompilerError err in compileResult.Errors.Cast<CompilerError>().Take(100))
+                    Console.Error.WriteLine("Compile errors (top 1000):");
+                    foreach (CompilerError err in compileResult.Errors.Cast<CompilerError>().Take(1000))
                         Console.Error.WriteLine(err);
                 }
 
