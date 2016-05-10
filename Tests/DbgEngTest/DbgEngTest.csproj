@@ -118,6 +118,10 @@
       <Project>{21997eea-5b04-4b68-a8e6-5bce8621ef2c}</Project>
       <Name>ExceptionDumper</Name>
     </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Source\DbgEngHelpers\DbgEngHelpers.csproj">
+      <Project>{74CD700C-EDAA-4EB2-905E-7A4EA982E0C3}</Project>
+      <Name>DbgEngHelpers</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

@@ -1,6 +1,5 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
-using DbgEngManaged;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,11 +12,6 @@ namespace CsDebugScript
     /// </summary>
     public class StackFrame
     {
-        /// <summary>
-        /// The frame
-        /// </summary>
-        private _DEBUG_STACK_FRAME_EX frame;
-
         /// <summary>
         /// The source file name, line and displacement
         /// </summary>
@@ -62,13 +56,11 @@ namespace CsDebugScript
         /// Initializes a new instance of the <see cref="StackFrame" /> class.
         /// </summary>
         /// <param name="stackTrace">The stack trace.</param>
-        /// <param name="frame">The frame.</param>
         /// <param name="frameContext">The frame context.</param>
-        internal StackFrame(StackTrace stackTrace, _DEBUG_STACK_FRAME_EX frame, ThreadContext frameContext)
+        internal StackFrame(StackTrace stackTrace, ThreadContext frameContext)
         {
             StackTrace = stackTrace;
             FrameContext = frameContext;
-            this.frame = frame;
             sourceFileNameAndLine = SimpleCache.Create(ReadSourceFileNameAndLine);
             functionNameAndDisplacement = SimpleCache.Create(ReadFunctionNameAndDisplacement);
             locals = SimpleCache.Create(GetLocals);
@@ -165,74 +157,38 @@ namespace CsDebugScript
         ///   was formed from a thread's current context. Typically, this is <c>true</c> for the frame at the top of the
         ///   stack, where InstructionOffset is the current instruction pointer.
         /// </value>
-        public bool Virtual
-        {
-            get
-            {
-                return frame.Virtual != 0;
-            }
-        }
+        public bool Virtual { get; internal set; }
 
         /// <summary>
         /// Gets the index of the frame. This index counts the number of frames from the top of the call stack.
         /// The frame at the top of the stack, representing the current call, has index zero..
         /// </summary>
-        public uint FrameNumber
-        {
-            get
-            {
-                return frame.FrameNumber;
-            }
-        }
+        public uint FrameNumber { get; internal set; }
 
         /// <summary>
         /// Gets the location in the process's virtual address space of the stack frame, if known.
         /// Some processor architectures do not have a frame or have more than one. In these cases,
         /// the engine chooses a value most representative for the given level of the stack.
         /// </summary>
-        public ulong FrameOffset
-        {
-            get
-            {
-                return frame.FrameOffset;
-            }
-        }
+        public ulong FrameOffset { get; internal set; }
 
         /// <summary>
         /// Gets the location in the process's virtual address space of the related instruction for the stack frame.
         /// This is typically the return address for the next stack frame, or the current instruction pointer if the
         /// frame is at the top of the stack. 
         /// </summary>
-        public ulong InstructionOffset
-        {
-            get
-            {
-                return frame.InstructionOffset;
-            }
-        }
+        public ulong InstructionOffset { get; internal set; }
 
         /// <summary>
         /// Gets the location in the process's virtual address space of the return address for the stack frame.
         /// This is typically the related instruction for the previous stack frame.
         /// </summary>
-        public ulong ReturnOffset
-        {
-            get
-            {
-                return frame.ReturnOffset;
-            }
-        }
+        public ulong ReturnOffset { get; internal set; }
 
         /// <summary>
         /// Gets the location in the process's virtual address space of the processor stack.
         /// </summary>
-        public ulong StackOffset
-        {
-            get
-            {
-                return frame.StackOffset;
-            }
-        }
+        public ulong StackOffset { get; internal set; }
 
         /// <summary>
         /// Gets the name of the source file.

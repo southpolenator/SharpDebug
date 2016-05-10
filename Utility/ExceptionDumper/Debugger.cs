@@ -1,6 +1,5 @@
 ﻿using DbgEngManaged;
 using System;
-using System.Runtime.InteropServices;
 
 namespace ExceptionDumper
 {
@@ -18,13 +17,7 @@ namespace ExceptionDumper
             this.miniDump = miniDump;
 
             // Create debugging client
-            IDebugClient clientBase;
-            int hresult = DebugCreate(Marshal.GenerateGuidForType(typeof(IDebugClient)), out clientBase);
-
-            if (hresult < 0)
-            {
-                Marshal.ThrowExceptionForHR(hresult);
-            }
+            IDebugClient clientBase = DebugClient.DebugCreate();
 
             // Cast to upper clients
             client = (IDebugClient7)clientBase;
@@ -45,12 +38,6 @@ namespace ExceptionDumper
                 dumper.client.EndSession((uint)Defines.DebugEndActiveTerminate);
             }
         }
-
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
-        private static extern int DebugCreate([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, out IDebugClient client);
-
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreateEx", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
-        private static extern int DebugCreateEx([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, uint flags, out IDebugClient client);
 
         #region IDebugEventCallbacks
         public uint GetInterestMask()

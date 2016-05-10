@@ -16,7 +16,14 @@ namespace CsDebugScript.Engine.Utility
         /// <param name="callbacks">The callbacks.</param>
         public static OutputCallbacksSwitcher Create(DebuggerOutputToTextWriter callbacks)
         {
-            return new DbgEngOutputCallbacksSwitcher((DbgEngDll)Context.Debugger, (DbgEngDebuggerOutputToTextWriter)callbacks);
+            DbgEngDll dbgEngDll = Context.Debugger as DbgEngDll;
+
+            if (dbgEngDll != null)
+            {
+                return new DbgEngOutputCallbacksSwitcher(dbgEngDll, (DbgEngDebuggerOutputToTextWriter)callbacks);
+            }
+
+            return null;
         }
 
         /// <summary>

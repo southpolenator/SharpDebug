@@ -20,8 +20,25 @@ namespace CsDebugScript
             Frames = new StackFrame[frames.Length];
             for (int i = 0; i < frames.Length; i++)
             {
-                Frames[i] = new StackFrame(this, frames[i], frameContexts[i]);
+                Frames[i] = new StackFrame(this, frameContexts[i])
+                {
+                    Virtual = frames[i].Virtual != 0,
+                    FrameNumber = frames[i].FrameNumber,
+                    FrameOffset = frames[i].FrameOffset,
+                    InstructionOffset = frames[i].InstructionOffset,
+                    ReturnOffset = frames[i].ReturnOffset,
+                    StackOffset = frames[i].StackOffset,
+                };
             }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StackTrace"/> class.
+        /// </summary>
+        /// <param name="thread">The thread.</param>
+        internal StackTrace(Thread thread)
+        {
+            Thread = thread;
         }
 
         /// <summary>

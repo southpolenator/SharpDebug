@@ -92,6 +92,10 @@
       <Project>{2a7f1646-9b5a-433c-8a84-2215194f59b9}</Project>
       <Name>CsScriptManaged</Name>
     </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Source\DbgEngHelpers\DbgEngHelpers.csproj">
+      <Project>{74CD700C-EDAA-4EB2-905E-7A4EA982E0C3}</Project>
+      <Name>DbgEngHelpers</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

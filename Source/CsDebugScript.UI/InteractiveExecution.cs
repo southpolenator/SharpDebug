@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.Engine;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using System;
@@ -15,7 +16,7 @@ namespace CsDebugScript
     {
     }
 
-    internal class InteractiveExecution : ScriptCompiler
+    internal class InteractiveExecution
     {
         /// <summary>
         /// The default prompt
@@ -37,7 +38,7 @@ namespace CsDebugScript
         /// </summary>
         public InteractiveExecution()
         {
-            var scriptOptions = ScriptOptions.Default.WithImports("System", "System.Linq", "CsScripts").WithReferences(DefaultAssemblyReferences);
+            var scriptOptions = ScriptOptions.Default.WithImports("System", "System.Linq", "CsDebugScript").WithReferences(ScriptCompiler.DefaultAssemblyReferences);
 
             scriptState = CSharpScript.RunAsync("", scriptOptions, scriptBase).Result;
             scriptBase.ObjectWriter = new DefaultObjectWriter();
@@ -173,20 +174,58 @@ namespace CsDebugScript
             }
         }
 
+        /// <summary>
+        /// Gets the imports that are used in the current script.
+        /// </summary>
+        private IEnumerable<string> GetImports()
+        {
+            IEnumerable<string> imports = scriptState.Script.Options.Imports;
+
+            for (var a = scriptState.Script.Previous; a != null; a = a.Previous)
+                imports = imports.Union(a.Options.Imports);
+            return imports.Distinct();
+        }
+
+        /// <summary>
+        /// Gets the references used in the specified script.
+        /// </summary>
+        /// <param name="script">The script.</param>
+        private IEnumerable<string> GetReferences(Script script)
+        {
+            foreach (var reference in script.Options.MetadataReferences)
+            {
+                var ur = reference as UnresolvedMetadataReference;
+
+                if (ur != null)
+                    yield return ur.Reference;
+                else
+                    yield return reference.Display;
+            }
+        }
+
+        /// <summary>
+        /// Gets the references that are used in the current script.
+        /// </summary>
+        private IEnumerable<string> GetReferences()
+        {
+            IEnumerable<string> references = GetReferences(scriptState.Script);
+
+            for (var a = scriptState.Script.Previous; a != null; a = a.Previous)
+                references = references.Union(GetReferences(a));
+            return references.Distinct();
+        }
+
         internal IEnumerable<string> GetScriptHelperCode(out string scriptStart, out string scriptEnd)
         {
+            IEnumerable<string> imports = GetImports();
             const string code = "<This is my unique code string>";
             string importedCode = FixImportedCode("");
-            string generatedCode = GenerateCode(code, scriptState.Script.Options.Imports, importedCode);
+            string generatedCode = GenerateCode(code, imports, importedCode);
             int codeStart = generatedCode.IndexOf(code), codeEnd = codeStart + code.Length;
 
             scriptStart = generatedCode.Substring(0, codeStart);
             scriptEnd = generatedCode.Substring(codeEnd);
-            List<string> result = new List<string>();
-
-            result.AddRange(DefaultAssemblyReferences);
-            result.AddRange(scriptState.Script.Options.MetadataReferences.Select(mr => mr.Display));
-            return result;
+            return GetReferences();
         }
 
         internal static string GetCodeName(Type type)
@@ -233,7 +272,7 @@ namespace CsDebugScript
         {
             string generatedCode = code;
 
-            return GenerateCode(usings, importedCode, generatedCode, scriptBase.GetType().FullName);
+            return ScriptCompiler.GenerateCode(usings, importedCode, generatedCode, scriptBase.GetType().FullName);
         }
     }
 }

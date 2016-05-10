@@ -220,4 +220,6 @@ ModelManifest.xml
 # temp gvim files
 *.swp
 *.swo
-/ExportSqlWinDbgCs.xml
+/Source/CsDebugScript.VS/System.Reflection.Metadata.dll
+/Source/CsDebugScript.VS/Microsoft.CodeAnalysis.dll
+/Source/CsDebugScript.VS/Microsoft.CodeAnalysis.CSharp.dll

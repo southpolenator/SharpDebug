@@ -466,7 +466,7 @@ namespace CsDebugScript
         /// <param name="importedCode">The imported code.</param>
         /// <param name="scriptCode">The script code.</param>
         /// <param name="scriptBaseClassName">Name of the script base class.</param>
-        protected static string GenerateCode(IEnumerable<string> usings, string importedCode, string scriptCode, string scriptBaseClassName = "CsDebugScript.ScriptBase")
+        protected internal static string GenerateCode(IEnumerable<string> usings, string importedCode, string scriptCode, string scriptBaseClassName = "CsDebugScript.ScriptBase")
         {
             StringBuilder codeBuilder = new StringBuilder();
 

@@ -3,7 +3,6 @@ using CsDebugScript.Engine;
 using DbgEngManaged;
 using System;
 using System.Management.Automation;
-using System.Runtime.InteropServices;
 
 namespace PowershellDebugSession
 {
@@ -37,12 +36,6 @@ namespace PowershellDebugSession
     [Cmdlet(VerbsCommunications.Connect, "StartDebugSession")]
     public class StartDbgSession: Cmdlet
     {
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
-        public static extern int DebugCreate([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, out IDebugClient client);
-
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreateEx", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
-        public static extern int DebugCreateEx([In][MarshalAs(UnmanagedType.LPStruct)]Guid iid, UInt32 flags, out IDebugClient client);
-
         /// <summary>
         /// Path of the process to start under debugger.
         /// </summary>
@@ -62,18 +55,12 @@ namespace PowershellDebugSession
             state.IsConnected = true;
             state.ProcessPath = ProcessPath;
 
-            IDebugClient client;
-            int hresult = DebugCreateEx(Marshal.GenerateGuidForType(typeof(IDebugClient)), 0x60, out client);
-
-            if (hresult > 0)
-            {
-                Marshal.ThrowExceptionForHR(hresult);
-            }
-
             if (SymbolPath == null)
             {
                 SymbolPath = "srv*";
             }
+
+            IDebugClient client = DebugClient.DebugCreateEx(0x60);
 
             ((IDebugSymbols5)client).SetSymbolPathWide(SymbolPath);
             ((IDebugClient7)client).CreateProcessAndAttach(0, ProcessPath, 0x00000002); 

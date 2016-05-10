@@ -177,6 +177,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets or sets the module identifier.
+        /// </summary>
+        internal uint Id { get; set; }
+
+        /// <summary>
         /// Types by the name
         /// </summary>
         internal DictionaryCache<string, CodeType> TypesByName { get; private set; }
