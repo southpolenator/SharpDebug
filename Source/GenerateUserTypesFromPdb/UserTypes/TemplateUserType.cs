@@ -8,8 +8,8 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     internal class TemplateUserType : UserType
     {
-        private List<string> argumentsSymbols = new List<string>();
-        private List<UserType> argumentsUserType = new List<UserType>();
+        private readonly List<string> argumentsSymbols = new List<string>();
+        private readonly List<UserType> argumentsUserType = new List<UserType>();
 
         //  TODO consider new type holding specialized template usertypes.
         //
@@ -518,6 +518,64 @@ namespace GenerateUserTypesFromPdb.UserTypes
             var dict = GetInheritanceTypeConstraintDictionary(factory);
 
             return string.Join("", dict.Select(t => string.Format("    where {0} : {1}", t.Key, t.Value)));
+        }
+
+
+        public override UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
+        {
+            if (extractingBaseClass || this.Arguments.Count == 0)
+            {
+                // Do not match specializations when getting type for base class.
+                //
+                UserTypeTree baseClassType = GetTypeString(field.Type, factory, bitLength);
+
+                return baseClassType;
+            }
+
+            var specializedFields = specializedTypes.Select(r => new Tuple<TemplateUserType, SymbolField>(r, r.Symbol.Fields.FirstOrDefault(q => q.Name == field.Name))).ToArray();
+
+            if (specializedFields.Any(r => r.Item2 == null))
+            {
+                // TODO
+                // Incorrect bucketizing. Field does not exist in all specialization.
+                //
+                return GetTypeString(field.Type, factory, bitLength);
+            }
+
+            if (specializedFields.All(r => r.Item2.Type.Name == field.Type.Name))
+            {
+                // There is no specialization, all types across the specializations are the same.
+                //
+                return GetTypeString(field.Type, factory, bitLength);
+            }
+
+            //
+            UserTypeTree result = GetTypeString(field.Type, factory, bitLength);
+
+            if (result is UserTypeTreeBaseType)
+            {
+                // Correct result
+                //
+                UserType baseTypeUserType;
+
+                if (CreateFactory(factory).GetUserType(field.Type, out baseTypeUserType))
+                {
+                    UserTypeTree tree = UserTypeTreeUserType.Create(baseTypeUserType, factory);
+
+                    if (tree != null)
+                    {
+                        return tree;
+                    }
+                }
+
+                // Failed to match the type
+                // TODO, look for typedeclared
+                // Class is using different types than in template specialization.
+                // We cannot support it right now.
+                return new UserTypeTreeVariable();
+            }
+
+            return result;
         }
     }
 }

@@ -121,6 +121,7 @@
     <Compile Include="CodeArray.cs" />
     <Compile Include="CodeFunction.cs" />
     <Compile Include="CodePointer.cs" />
+    <Compile Include="DebugEventInfo.cs" />
     <Compile Include="Debugger.cs" />
     <Compile Include="CodeType.cs" />
     <Compile Include="Module.cs" />
@@ -142,6 +143,7 @@
     <Compile Include="Engine\Debuggers\IDebuggerEngine.cs" />
     <Compile Include="Engine\Marshaling\NamespaceDoc.cs" />
     <Compile Include="Engine\Native\DEBUG_MODULE_PARAMETERS.cs" />
+    <Compile Include="Engine\Native\DEBUG_LAST_EVENT_INFO.cs" /> 
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\StateCache.cs" />
     <Compile Include="Engine\SymbolProviders\NamespaceDoc.cs" />
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\DebuggerOutputCapture.cs" />

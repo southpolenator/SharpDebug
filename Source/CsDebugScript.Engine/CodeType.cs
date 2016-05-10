@@ -430,6 +430,28 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        ///  Creates the code type from list contianing specified module and type.
+        /// </summary>
+        /// <param name="codeTypeNames"></param>
+        /// <returns></returns>
+        public static CodeType Create(params string[] codeTypeNames)
+        {
+            foreach (var codeType in codeTypeNames)
+            {
+                try
+                {
+                    return Create(codeType);
+                }
+                catch
+                {
+                    // ignore this module and try another one
+                }
+            }
+
+            throw new Exception("Unable to create requested code type");
+        }
+
+        /// <summary>
         /// Checks if this instance inherits the specified code type.
         /// </summary>
         /// <param name="codeType">The code type.</param>
@@ -1428,7 +1450,7 @@ namespace CsDebugScript
         /// <param name="fieldName">Name of the field.</param>
         protected override Tuple<CodeType, int> GetFieldTypeAndOffset(string fieldName)
         {
-            var field = ClrType.Fields.Where(f => f.Name == fieldName).FirstOrDefault();
+            var field = ClrType.Fields.FirstOrDefault(f => f.Name == fieldName);
 
             if (field != null && field.Type != null)
             {

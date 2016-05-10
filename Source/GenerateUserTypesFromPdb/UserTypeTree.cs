@@ -82,6 +82,7 @@ namespace GenerateUserTypesFromPdb
 
             if (enumType != null)
                 return new UserTypeTreeEnum(enumType);
+
             return new UserTypeTreeUserType(userType);
         }
     }
@@ -98,6 +99,26 @@ namespace GenerateUserTypesFromPdb
         public override string GetUserTypeString()
         {
             return BaseType;
+        }
+    }
+
+    /// <summary>
+    /// Class represent Generic Argument Type.  
+    /// User when we know that the type is representing Generic Specialization.
+    /// </summary>
+    class UserTypeTreeArgumentGenericsType : UserTypeTreeGenericsType
+    {
+        private int argumentNumber;
+
+        public UserTypeTreeArgumentGenericsType(int genericArgumentNumber, UserType originalUserType, UserTypeFactory factory)
+            : base(originalUserType, factory)
+        {
+            argumentNumber = genericArgumentNumber;
+        }
+
+        public override string GetUserTypeString()
+        {
+            return "T" + (argumentNumber > 0 ? argumentNumber.ToString() : string.Empty);
         }
     }
 
@@ -487,6 +508,8 @@ namespace GenerateUserTypesFromPdb
                 case "fixed":
                 case "internal":
                 case "out":
+                case "override":
+                case "virtual":
                     return string.Format("_{0}", fieldName);
                 default:
                     break;

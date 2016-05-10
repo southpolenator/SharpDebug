@@ -1042,6 +1042,71 @@ namespace CsDebugScript.Engine.Debuggers
         }
 
         /// <summary>
+        /// Gets Lasts Event, most exception or event.
+        /// </summary>
+        /// <returns></returns>
+        public DebugEventInfo GetLastEventInfo()
+        {
+            uint type;
+            uint processId;
+            uint threadId;
+            uint extraInfoUsed;
+            uint descriptionSize;
+
+            //  Collect EventSize 
+            StringBuilder description = new StringBuilder();
+
+            Control.GetLastEventInformation(
+                out type,
+                out processId,
+                out threadId,
+                IntPtr.Zero,
+                0,
+                out extraInfoUsed,
+                description,
+                0,
+                out descriptionSize);
+
+            //  Allocate structures are prepare string.
+            description.Capacity = (int)descriptionSize;
+
+            DEBUG_LAST_EVENT_INFO debugLastEventInfo = new DEBUG_LAST_EVENT_INFO();
+            extraInfoUsed = Math.Min(extraInfoUsed, (uint)Marshal.SizeOf(typeof(DEBUG_LAST_EVENT_INFO)));
+            GCHandle handle = GCHandle.Alloc(debugLastEventInfo, GCHandleType.Pinned);
+
+            byte[] eventExtraInfo = new byte[extraInfoUsed];
+          
+            try
+            {
+                Control.GetLastEventInformation(
+                    out type,
+                    out processId,
+                    out threadId,
+                    handle.AddrOfPinnedObject(),
+                    extraInfoUsed,
+                    out extraInfoUsed,
+                    description,
+                    descriptionSize,
+                    out descriptionSize);
+
+                Marshal.Copy(handle.AddrOfPinnedObject(), eventExtraInfo, 0, (int)extraInfoUsed);
+
+                return new DebugEventInfo
+                {
+                    Type = (DebugEvent)type,
+                    Description = description.ToString(),
+                    Process = Process.All.First(r => r.Id == processId),
+                    Thread = Thread.All.First(r => r.Id == threadId),
+                    EventExtraInfo = eventExtraInfo
+                };
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+
+        /// <summary>
         /// Gets the timestamp and size of the module.
         /// </summary>
         /// <param name="module">The module.</param>

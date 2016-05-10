@@ -17,12 +17,12 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <summary>
         /// The DbgEngDll debugged engine
         /// </summary>
-        private DbgEngDll dbgEngDll;
+        private readonly DbgEngDll dbgEngDll;
 
         /// <summary>
         /// The typed data
         /// </summary>
-        private static DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA> typedData = new DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA>(GetTypedData);
+        private static readonly DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA> typedData = new DictionaryCache<Tuple<ulong, uint, ulong>, DEBUG_TYPED_DATA>(GetTypedData);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbgEngSymbolProvider"/> class.
@@ -527,7 +527,10 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <param name="distance">The distance within the module.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance)
         {
-            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+            // Not Implemented, this is not supported using DbgEng.dll. Please use DIA symbol provider. 
+            // We return null to avoiding throwing exception.
+
+            return null;
         }
     }
 }
