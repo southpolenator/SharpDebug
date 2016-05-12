@@ -41,6 +41,21 @@ namespace Dia2Lib
         /// <param name="symbol">The symbol.</param>
         /// <param name="nameWildcard">The name wildcard.</param>
         /// <param name="tag">The tag.</param>
+        public static IEnumerable<IDiaSymbol> GetChildren(this IDiaSymbol symbol, string name, SymTagEnum tag = SymTagEnum.SymTagNull)
+        {
+            IDiaEnumSymbols symbols;
+            const uint nsfCaseInsensitive = 0x1; // https://msdn.microsoft.com/en-us/library/yat28ads.aspx
+
+            symbol.findChildren(tag, name, nsfCaseInsensitive, out symbols);
+            return symbols.Enum();
+        }
+
+        /// <summary>
+        /// Gets the children using wildcard search: Applies a case-sensitive name match using asterisks (*) and question marks (?) as wildcards.
+        /// </summary>
+        /// <param name="symbol">The symbol.</param>
+        /// <param name="nameWildcard">The name wildcard.</param>
+        /// <param name="tag">The tag.</param>
         public static IEnumerable<IDiaSymbol> GetChildrenWildcard(this IDiaSymbol symbol, string nameWildcard, SymTagEnum tag = SymTagEnum.SymTagNull)
         {
             IDiaEnumSymbols symbols;

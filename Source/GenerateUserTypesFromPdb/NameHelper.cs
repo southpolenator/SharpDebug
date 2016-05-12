@@ -15,7 +15,7 @@ namespace GenerateUserTypesFromPdb
 
         private static string GetLookupForNamespace(string namespaceSymbol)
         {
-            int index = namespaceSymbol.IndexOf("<");
+            int index = namespaceSymbol.IndexOf('<');
 
             if (index > 0)
             {
@@ -27,7 +27,7 @@ namespace GenerateUserTypesFromPdb
 
         public static string GetLookupNameForSymbol(Symbol symbol)
         {
-            return string.Join("::", symbol.Namespaces.Select(r => NameHelper.GetLookupForNamespace(r)));
+            return string.Join("::", symbol.Namespaces.Select(NameHelper.GetLookupForNamespace));
         }
 
         /// <summary>

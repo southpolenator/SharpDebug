@@ -6,12 +6,12 @@ namespace GenerateUserTypesFromPdb.UserTypes
 {
     internal class NamespaceUserType : UserType
     {
-        private string[] namespaces;
+        private readonly string[] namespaces;
 
         internal NamespaceUserType(IEnumerable<string> namespaces, string nameSpace)
             : base(symbol: null, xmlType: null, nameSpace: null)
         {
-            this.namespaces = namespaces.Select(s => NormalizeSymbolName(s)).ToArray();
+            this.namespaces = namespaces.Select(NormalizeSymbolName).ToArray();
             NamespaceSymbol = string.Join(".", this.namespaces);
             if (!string.IsNullOrEmpty(nameSpace))
                 NamespaceSymbol = nameSpace + "." + NamespaceSymbol;

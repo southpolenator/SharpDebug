@@ -56,12 +56,7 @@ namespace CsDebugScript
         /// <param name="variable">The variable.</param>
         public static T SafeCastAs<T>(this Variable variable) where T : UserType
         {
-            if (variable == null)
-            {
-                return null;
-            }
-
-            return variable.CastAs<T>();
+            return variable?.CastAs<T>();
         }
 
         /// <summary>
@@ -111,13 +106,21 @@ namespace CsDebugScript
             //
             string codeTypeName;
 
-            if (typeof (T) == typeof (int))
+            if (typeof(T) == typeof(long))
+            {
+                codeTypeName = "long";
+            }
+            else if (typeof (T) == typeof (int))
             {
                 codeTypeName = "int";
             }
             else if (typeof (T) == typeof (short))
             {
                 codeTypeName = "short";
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                codeTypeName = "ulong";
             }
             else if (typeof (T) == typeof (uint))
             {
@@ -150,6 +153,17 @@ namespace CsDebugScript
         public static T AdjustPointer<T>(this Variable variable, int offset) where T : UserType
         {
             return variable.AdjustPointer(offset).CastAs<T>();
+        }
+
+
+        /// <summary>
+        /// Cast Variable to NakedPointer.
+        /// </summary>
+        /// <param name="variable">The Variable.</param>
+        /// <returns>Returns NakePointer to Variable pointer address.</returns>
+        public static NakedPointer ToNakedPointer(this Variable variable)
+        {
+            return new NakedPointer(variable != null ? variable.GetPointerAddress() : 0);
         }
     }
 

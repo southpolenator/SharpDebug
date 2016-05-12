@@ -472,6 +472,11 @@ namespace CsDebugScript.VS
         {
             throw new NotImplementedException(NotImplementedExceptionText);
         }
+
+        public DebugEventInfo GetLastEventInfo()
+        {
+            throw new NotImplementedException();
+        }
         #endregion
     }
 }

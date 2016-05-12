@@ -484,6 +484,22 @@ namespace CsDebugScript
                 return true;
             }
 
+            if (Name.Contains('<') && Name.EndsWith(">") || typeName.EndsWith("<>"))
+            {
+                // TODO
+                // generic template matching
+                // does not check for specialization
+                //
+                int nameTemplateIndex = Name.IndexOf('<');
+                int typeNameTemplateIndex = typeName.IndexOf('<');
+
+                if (nameTemplateIndex == typeNameTemplateIndex &&
+                    Name.Substring(0, nameTemplateIndex) == typeName.Substring(0, typeNameTemplateIndex))
+                {
+                    return true;
+                }
+            }
+
             foreach (var inheritedClass in InheritedClasses.Values)
             {
                 if (inheritedClass.Item1.Inherits(typeName))
@@ -528,8 +544,12 @@ namespace CsDebugScript
                 UserTypeMetadata[] metadatas = UserTypeMetadata.ReadFromType(type);
 
                 foreach (var metadata in metadatas)
+                {
                     if (Inherits(metadata.TypeName))
+                    {
                         return true;
+                    }
+                }
             }
 
             return false;

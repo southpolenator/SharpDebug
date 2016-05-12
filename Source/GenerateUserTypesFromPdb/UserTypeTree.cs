@@ -510,6 +510,10 @@ namespace GenerateUserTypesFromPdb
                 case "out":
                 case "override":
                 case "virtual":
+                case "namespace":
+                case "public":
+                case "private":
+                case "decimal":
                     return string.Format("_{0}", fieldName);
                 default:
                     break;

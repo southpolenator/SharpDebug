@@ -41,9 +41,14 @@ namespace GenerateUserTypesFromPdb
 
         public HashSet<string> PublicSymbols { get; private set; }
 
+        public Symbol[] FindGlobalTypeName(string name)
+        {
+            return session.globalScope.GetChildren(name, SymTagEnum.SymTagUDT).Select(GetSymbol).ToArray();
+        }
+
         public Symbol[] FindGlobalTypeWildcard(string nameWildcard)
         {
-            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).ToArray();
+            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(GetSymbol).ToArray();
         }
 
         public IEnumerable<Symbol> GetAllTypes()
@@ -55,7 +60,7 @@ namespace GenerateUserTypesFromPdb
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagPointerType));
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagArrayType));
 
-            var convertedTypes = diaGlobalTypes.Select(s => GetSymbol(s)).ToList();
+            var convertedTypes = diaGlobalTypes.Select(GetSymbol).ToList();
             var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).OrderBy(s => s.Name).ToArray();
 
             // Remove duplicates

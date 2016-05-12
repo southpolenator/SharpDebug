@@ -141,6 +141,10 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         symbolName += string.Join(", ", Enumerable.Range(1, GenericsArguments).Select(t => TemplateArgNameBase + t));
                         symbolName += ">";
                     }
+                    else
+                    {
+                        symbolName += "_T_";
+                    }
                 }
 
                 return symbolName;

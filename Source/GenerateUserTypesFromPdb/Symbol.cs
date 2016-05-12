@@ -169,7 +169,7 @@ namespace GenerateUserTypesFromPdb
                     return true;
                 if (Fields.Length > 0)
                     return false;
-                return !BaseClasses.Where(b => !b.IsEmpty).Any();
+                return BaseClasses.All(b => b.IsEmpty);
             }
         }
 
@@ -191,6 +191,12 @@ namespace GenerateUserTypesFromPdb
             s.pointerType = pointerType;
             s.userType = userType;
         }
+
+        /// <summary>
+        /// Force Symbol in declare Module.
+        /// Do no treat as duplicate.
+        /// </summary>
+        public bool ForceInDeclareModule { get; set; }
     }
 
     internal class SymbolField
