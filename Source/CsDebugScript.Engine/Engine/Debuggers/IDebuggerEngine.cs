@@ -275,5 +275,11 @@ namespace CsDebugScript.Engine.Debuggers
         /// </summary>
         /// <param name="process">The process.</param>
         bool IsMinidump(Process process);
+
+        /// <summary>
+        /// Gets last event info.
+        /// </summary>
+        /// <returns></returns>
+        DebugEventInfo GetLastEventInfo();
     }
 }

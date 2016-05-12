@@ -8,7 +8,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
     class PhysicalUserType : UserType
     {
         private const string ClassCodeType = "ClassCodeType";
-        private Dictionary<string, string> addedFieldTypes = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> addedFieldTypes = new Dictionary<string, string>();
         private int baseClassOffset = -1;
 
         public PhysicalUserType(Symbol symbol, XmlType xmlType, string nameSpace)
@@ -45,7 +45,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 yield return new UserTypeField
                 {
                     Access = "public",
-                    ConstructorText = string.Format("CodeType.Create(\"{0}!{1}\")", Symbol.Module.Name, TypeName),
+                    ConstructorText = string.Format("CodeType.Create({0})", GenerateClassCodeTypeInfo()),
                     FieldName = ClassCodeType,
                     FieldType = "CodeType",
                     FieldTypeInfoComment = null,

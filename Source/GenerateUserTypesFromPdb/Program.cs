@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -83,7 +84,7 @@ namespace GenerateUserTypesFromPdb
         }
     }
 
-    class Program
+    public class Program
     {
         private static Module OpenPdb(XmlModule module)
         {
@@ -99,8 +100,6 @@ namespace GenerateUserTypesFromPdb
 
         static void Main(string[] args)
         {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            var error = Console.Error;
             Options options = null;
 
             Parser.Default.ParseArguments<Options>(args)
@@ -140,9 +139,18 @@ namespace GenerateUserTypesFromPdb
                     };
             }
 
+            ProcessCodeGen(config);
+        }
+
+        public static void ProcessCodeGen(XmlConfig config)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var error = Console.Error;
+
             XmlModule[] xmlModules = config.Modules;
             XmlType[] typeNames = config.Types;
             XmlIncludedFile[] includedFiles = config.IncludedFiles;
+            XmlReferencedAssembly[] referencedAssemblies = config.ReferencedAssemblies;
             UserTypeGenerationFlags generationOptions = UserTypeGenerationFlags.None;
 
             if (!config.DontGenerateFieldTypeInfoComment)
@@ -532,7 +540,7 @@ namespace GenerateUserTypesFromPdb
                         });
 
                     if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
-                        syntaxTrees.Add(CSharpSyntaxTree.ParseText(stringOutput.ToString(), path: filename, encoding: System.Text.UTF8Encoding.Default));
+                        syntaxTrees.Add(CSharpSyntaxTree.ParseText(stringOutput.ToString(), path: filename, encoding: UTF8Encoding.Default));
                 }
             }
 
@@ -543,13 +551,13 @@ namespace GenerateUserTypesFromPdb
 
             if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
             {
-                MetadataReference[] references = new MetadataReference[]
+                List<MetadataReference> references = new List<MetadataReference>
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                    MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.Engine.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.CommonUserTypes.dll")),
+                    MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location)
                 };
+
+                references.AddRange(config.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(r.Path)));
 
                 foreach (var includedFile in includedFiles)
                     syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(includedFile.Path), path: includedFile.Path, encoding: System.Text.UTF8Encoding.Default));
@@ -576,10 +584,9 @@ namespace GenerateUserTypesFromPdb
                             diagnostic.IsWarningAsError ||
                             diagnostic.Severity == DiagnosticSeverity.Error);
 
-                        foreach (var diagnostic in failures)
-                        {
-                            Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
-                        }
+                        Console.Error.WriteLine("Compile errors (top 1000):");
+                        foreach (var diagnostic in failures.Take(1000))
+                            Console.Error.WriteLine(diagnostic);
                     }
                     else
                     {
@@ -619,8 +626,8 @@ namespace GenerateUserTypesFromPdb
 
                 if (compileResult.Errors.Count > 0)
                 {
-                    Console.Error.WriteLine("Compile errors:");
-                    foreach (CompilerError err in compileResult.Errors.Cast<CompilerError>().Take(100))
+                    Console.Error.WriteLine("Compile errors (top 1000):");
+                    foreach (CompilerError err in compileResult.Errors.Cast<CompilerError>().Take(1000))
                         Console.Error.WriteLine(err);
                 }
 

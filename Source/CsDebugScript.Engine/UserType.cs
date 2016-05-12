@@ -17,12 +17,36 @@ namespace CsDebugScript
         /// <param name="variable">The variable.</param>
         public static T DynamicCastAs<T>(this Variable variable) where T : UserType
         {
-            if (variable == null || !variable.GetRuntimeType().Inherits<T>())
+            if (variable == null)
             {
                 return null;
             }
 
-            return variable.CastAs<T>();
+            variable = variable.DowncastInterface();
+
+            CodeType runtimeType = variable.GetRuntimeType();
+
+            if (runtimeType.IsPointer)
+            {
+                runtimeType = runtimeType.ElementType;
+            }
+
+            if (runtimeType.Inherits<T>())
+            {
+                CodeType baseClassCodeType = variable.CastAs<T>().GetCodeType();
+
+                if (baseClassCodeType.IsPointer)
+                {
+                    baseClassCodeType = baseClassCodeType.ElementType;
+                }
+
+                // Cast to base class.
+                return variable.GetBaseClass<T>(baseClassCodeType.Name);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -70,6 +94,62 @@ namespace CsDebugScript
             where T : UserType
         {
             return variable.GetRuntimeType().Inherits<T>();
+        }
+
+        /// <summary>
+        /// Reinterpret Cast, changes underlaying code type.
+        /// </summary>
+        /// <remarks>
+        /// Requested Type must be a primivite (int, short etc).
+        /// </remarks>
+        /// <typeparam name="T">Primitivy type to cast variable to.</typeparam>
+        /// <param name="variable">The variable.</param>
+        /// <returns>Return CodePointer to Variable pointer address.</returns>
+        public static CodePointer<T> ReinterpretPointerCast<T>(this Variable variable) where T : struct
+        {
+            // Get CodeType from the generic argument.
+            //
+            string codeTypeName;
+
+            if (typeof (T) == typeof (int))
+            {
+                codeTypeName = "int";
+            }
+            else if (typeof (T) == typeof (short))
+            {
+                codeTypeName = "short";
+            }
+            else if (typeof (T) == typeof (uint))
+            {
+                codeTypeName = "unsigned int";
+            }
+            else if (typeof (T) == typeof (ushort))
+            {
+                codeTypeName = "unsigned short";
+            }
+            else
+            {
+                throw new NotSupportedException("Requested type is not supported.");
+            }
+
+            // Return CodePointer<T>
+            //
+            return new CodePointer<T>(
+                Variable.CreatePointer(
+                    CodeType.Create(codeTypeName, variable.GetCodeType().Module).PointerToType,
+                    variable.GetPointerAddress()));
+        }
+
+
+        /// <summary>
+        /// Adjust Pointer and Cast To Type.
+        /// </summary>
+        /// <typeparam name="T">New type to cast variable to.</typeparam>
+        /// <param name="variable">The variable.</param>
+        /// <param name="offset">The offset.</param>
+        public static T AdjustPointer<T>(this Variable variable, int offset) where T : UserType
+        {
+            return variable.AdjustPointer(offset).CastAs<T>();
         }
     }
 

@@ -751,9 +751,10 @@ namespace CsDebugScript.Engine.SymbolProviders
             // Fully undecorated name should be in form: "DerivedClass::`vftable'"
             const string vftableString = "::`vftable'";
 
-            if (!fullyUndecoratedName.EndsWith(vftableString))
+            if (string.IsNullOrEmpty(fullyUndecoratedName) || !fullyUndecoratedName.EndsWith(vftableString))
             {
-                throw new Exception("Fully undecorated name is not ending with \"" + vftableString + "\"");
+                // Pointer is not vtable.
+                return null;
             }
 
             string codeTypeName = fullyUndecoratedName.Substring(0, fullyUndecoratedName.Length - vftableString.Length);
@@ -764,10 +765,12 @@ namespace CsDebugScript.Engine.SymbolProviders
 
             if (!partiallyUndecoratedName.StartsWith(partiallyUndecoratedNameStart))
             {
-                throw new Exception("Partially undecorated name is not starting with \"" + partiallyUndecoratedNameStart + "\"");
+                // Single Inheritace
+                return Tuple.Create(codeType, 0);
             }
 
             string innerCodeTypeName = partiallyUndecoratedName.Substring(partiallyUndecoratedNameStart.Length, partiallyUndecoratedName.Length - 2 - partiallyUndecoratedNameStart.Length);
+
             var baseClassWithVTable = codeType.BaseClasses[innerCodeTypeName];
 
             return Tuple.Create(codeType, baseClassWithVTable.Item2);

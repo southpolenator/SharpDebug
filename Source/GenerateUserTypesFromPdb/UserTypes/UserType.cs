@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace GenerateUserTypesFromPdb.UserTypes
 {
@@ -165,7 +166,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
         {
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
             bool isStatic = field.DataKind == DataKind.StaticMember || forceIsStatic;
-            UserTypeTree fieldType = GetTypeString(field.Type, factory, field.Size);
+            UserTypeTree fieldType = GetFieldType(field, factory, extractingBaseClass, field.Size);
             string fieldName = field.Name;
             string gettingField = "variable.GetField";
             string simpleFieldValue;
@@ -233,8 +234,12 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         protected virtual UserTypeField ExtractField(SymbolField field, UserTypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags options, bool extractingBaseClass)
         {
-            if (fieldType is UserTypeTreeGenericsType && !((UserTypeTreeGenericsType)fieldType).CanInstatiate)
+            //  Non Template User Type must use Instantiable Generics.
+            //
+            if (!(this is TemplateUserType) && fieldType is UserTypeTreeGenericsType && !((UserTypeTreeGenericsType)fieldType).CanInstatiate)
+            {
                 throw new Exception("Generics type cannot be instantiated");
+            }
 
             bool forceUserTypesToNewInsteadOfCasting = options.HasFlag(UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting);
             bool cacheUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheUserTypeFields);
@@ -293,6 +298,15 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // ex. class has 'in' and '_in' fields.
             // 
             fieldName = UserTypeField.GetPropertyName(fieldName, this);
+
+            //
+            //  When Creating Property for BaseClass, current class is generic type
+            //  Rename baseclass property name not to include specialization type.
+            //
+            if (extractingBaseClass && this is TemplateUserType && fieldType is UserTypeTreeGenericsType)
+            {
+                fieldName = ((UserTypeTreeGenericsType)(fieldType)).UserType.ClassName;
+            }
 
             return new UserTypeField
             {
@@ -510,12 +524,26 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 output.WriteLine(indentation, "//   {0}", type.Name);
         }
 
+        protected string GenerateClassCodeTypeInfo()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach (var module in GlobalCache.GetSymbolModuleNames(Symbol))
+            {
+                sb.Append(string.Format("\"{0}!{1}\", ", module, TypeName));
+            }
+
+            sb.Length -= 2;
+
+            return sb.ToString();
+        }
+
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
             int baseClassOffset = 0;
             UserTypeTree baseType = ExportDynamicFields ? GetBaseTypeString(error, Symbol, factory, out baseClassOffset) : null;
-            var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
-            bool hasStatic = fields.Where(f => f.Static).Any(), hasNonStatic = fields.Where(f => !f.Static).Any();
+            var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.FieldName != "ClassCodeType").ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
+            bool hasStatic = fields.Any(f => f.Static), hasNonStatic = fields.Any(f => !f.Static);
             Symbol[] baseClasses = Symbol.BaseClasses;
 
             if (DeclaredInType == null)
@@ -527,7 +555,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     output.WriteLine();
                 }
 
-                //#fixme always put in namespace
                 if (!string.IsNullOrEmpty(Namespace))
                 {
                     output.WriteLine(indentation, "namespace {0}", Namespace);
@@ -700,7 +727,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 if (emptyTypes == baseClasses.Length - 1)
                 {
                     UserType userType;
-                    Symbol baseClassSymbol = baseClasses.Where(t => !t.IsEmpty).First();
+                    Symbol baseClassSymbol = baseClasses.First(t => !t.IsEmpty);
 
                     if (factory.GetUserType(baseClassSymbol, out userType) && !(userType is PrimitiveUserType))
                     {
@@ -748,6 +775,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
             baseClassOffset = 0;
             return new UserTypeTreeVariable(false);
+        }
+
+        public virtual UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
+        {
+            return GetTypeString(field.Type, factory, bitLength);
         }
 
         public virtual UserTypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)
@@ -818,8 +850,17 @@ namespace GenerateUserTypesFromPdb.UserTypes
                         Symbol pointerType = type.ElementType;
 
                         UserType fakeUserType;
+                        factory.GetUserType(pointerType, out fakeUserType);
 
-                        if (factory.GetUserType(pointerType, out fakeUserType) && (fakeUserType is PrimitiveUserType))
+                        // When Exporting Pointer from Global Modules, always export types as code pointer.
+                        if (this is GlobalsUserType && fakeUserType != null)
+                        {
+                            return new UserTypeTreeCodePointer(UserTypeTreeUserType.Create(fakeUserType, factory));
+                        }
+
+                        // TODO Describe the condition.
+                        //
+                        if (fakeUserType is PrimitiveUserType)
                         {
                             return new UserTypeTreeCodePointer(UserTypeTreeUserType.Create(fakeUserType, factory));
                         }
