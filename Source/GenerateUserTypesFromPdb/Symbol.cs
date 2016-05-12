@@ -50,7 +50,7 @@ namespace GenerateUserTypesFromPdb
                     {
                         var result = Module.GetSymbol(type);
                         if (Tag == SymTagEnum.SymTagPointerType)
-                           result.pointerType.Value = this;
+                            result.pointerType.Value = this;
                         return result;
                     }
                 }
@@ -134,6 +134,14 @@ namespace GenerateUserTypesFromPdb
             get
             {
                 return fields.Value;
+            }
+        }
+
+        internal IDiaSymbol DiaSymbol
+        {
+            get
+            {
+                return symbol;
             }
         }
 

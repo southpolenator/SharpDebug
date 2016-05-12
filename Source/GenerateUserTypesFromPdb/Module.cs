@@ -41,14 +41,9 @@ namespace GenerateUserTypesFromPdb
 
         public HashSet<string> PublicSymbols { get; private set; }
 
-        public Symbol[] FindGlobalTypeName(string name)
-        {
-            return session.globalScope.GetChildren(name, SymTagEnum.SymTagUDT).Select(GetSymbol).ToArray();
-        }
-
         public Symbol[] FindGlobalTypeWildcard(string nameWildcard)
         {
-            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(GetSymbol).ToArray();
+            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).ToArray();
         }
 
         public IEnumerable<Symbol> GetAllTypes()
@@ -60,8 +55,9 @@ namespace GenerateUserTypesFromPdb
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagPointerType));
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagArrayType));
 
-            var convertedTypes = diaGlobalTypes.Select(GetSymbol).ToList();
+            var convertedTypes = diaGlobalTypes.Select(s => new Symbol(this, s)).ToList();
             var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).OrderBy(s => s.Name).ToArray();
+            var cacheTypes = convertedTypes.OrderBy(s => s.Tag).ThenBy(s => s.Name).ToArray();
 
             // Remove duplicates
             var symbols = new List<Symbol>();
@@ -70,9 +66,21 @@ namespace GenerateUserTypesFromPdb
             foreach (var s in resultingTypes)
                 if (s.Name != previousName)
                 {
-                    symbols.Add(s);
+                    IDiaSymbol ss = session.globalScope.GetChild(s.Name, s.Tag);
+
+                    if (ss != null)
+                    {
+                        symbols.Add(GetSymbol(ss));
+                    }
+
                     previousName = s.Name;
                 }
+
+            foreach (var s in cacheTypes)
+            {
+                var symbolCache = GetSymbol(s.DiaSymbol);
+            }
+
             return symbols;
         }
 
