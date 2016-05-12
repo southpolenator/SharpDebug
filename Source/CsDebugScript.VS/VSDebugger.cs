@@ -473,9 +473,13 @@ namespace CsDebugScript.VS
             throw new NotImplementedException(NotImplementedExceptionText);
         }
 
+        /// <summary>
+        /// Gets last event info.
+        /// </summary>
+        /// <exception cref="System.NotImplementedException">This function is not planned to be implemented for VS debugger.</exception>
         public DebugEventInfo GetLastEventInfo()
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(NotImplementedExceptionText);
         }
         #endregion
     }
