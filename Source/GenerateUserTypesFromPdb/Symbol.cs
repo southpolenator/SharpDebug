@@ -199,12 +199,6 @@ namespace GenerateUserTypesFromPdb
             s.pointerType = pointerType;
             s.userType = userType;
         }
-
-        /// <summary>
-        /// Force Symbol in declare Module.
-        /// Do no treat as duplicate.
-        /// </summary>
-        public bool ForceInDeclareModule { get; set; }
     }
 
     internal class SymbolField

@@ -254,48 +254,23 @@ namespace GenerateUserTypesFromPdb
             Dictionary<string, List<Symbol>> symbolsByName = new Dictionary<string, List<Symbol>>();
             Dictionary<Symbol, List<Symbol>> duplicatedSymbols = new Dictionary<Symbol, List<Symbol>>();
 
-            foreach (var enumSymbol in allSymbols)
+            foreach (var symbol in allSymbols)
             {
-                Symbol symbol = null;
-
-                // For UDT Types search proper symbol by name
-                // 
-                if (enumSymbol.Tag == SymTagEnum.SymTagUDT)
-                {
-                    symbol = enumSymbol.Module.FindGlobalTypeName(enumSymbol.Name).FirstOrDefault();
-                }
-                
-                if (symbol == null)
-                {
-                    symbol = enumSymbol;
-                }
-
                 List<Symbol> symbols;
 
                 if (!symbolsByName.TryGetValue(symbol.Name, out symbols))
-                {
                     symbolsByName.Add(symbol.Name, symbols = new List<Symbol>());
-                }
 
                 bool found = false;
 
-                foreach (var s in symbols)
+                foreach (var s in symbols.ToArray())
                 {
                     if (s.Size != 0 && symbol.Size != 0 && s.Size != symbol.Size)
                     {
-                        symbol.ForceInDeclareModule = true;
-                        foreach (var sym in symbols)
-                        {
-                            // Symbols have different sizes,
-                            // No not de-duplicate it.
-                            sym.ForceInDeclareModule = true;
-                        }
-
-                        Console.WriteLine("Warning: {0}!{1} ({2}) {3}!{4} ({5})", s.Module.Name, s.Name, s.Size, symbol.Module.Name, symbol.Name, symbol.Size);
-
-                        // TODO
-                        // allow de-dup even if the sizes are different
-                        // continue;
+#if DEBUG
+                        Console.WriteLine("{0}!{1} ({2}) {3}!{4} ({5})", s.Module.Name, s.Name, s.Size, symbol.Module.Name, symbol.Name, symbol.Size);
+#endif
+                        continue;
                     }
 
                     if (s.Size == 0 && symbol.Size != 0)
@@ -353,29 +328,20 @@ namespace GenerateUserTypesFromPdb
             foreach (var symbols in symbolsByName.Values)
             {
                 if (symbols.Count != 1)
-                {
                     foreach (var s in symbols)
-                    {
                         symbolNamespaces.Add(s, modules[s.Module].Namespace);
-                    }
-                }
                 else
                 {
                     Symbol symbol = symbols.First();
                     List<Symbol> duplicates;
 
                     if (!duplicatedSymbols.TryGetValue(symbol, out duplicates))
-                    {
                         duplicates = new List<Symbol>();
-                    }
-
                     duplicates.Insert(0, symbol);
                     deduplicatedSymbols.Add(symbol.Name, duplicates.ToArray());
 
                     foreach (var s in duplicates)
-                    {
                         symbolNamespaces.Add(s, config.CommonTypesNamespace);
-                    }
                 }
             }
 
@@ -686,17 +652,11 @@ namespace GenerateUserTypesFromPdb
             Console.WriteLine("Total time: {0}", sw.Elapsed);
         }
 
-        private static readonly ConcurrentDictionary<string, string> createdDirectories = new ConcurrentDictionary<string, string>();
+        private static ConcurrentDictionary<string, string> createdDirectories = new ConcurrentDictionary<string, string>();
 
         private static Tuple<string, string> GenerateUseTypeCode(UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationOptions, ConcurrentDictionary<string, string> generatedFiles)
         {
             Symbol symbol = userType.Symbol;
-
-            if (symbol == null)
-            {
-                // ignore type without symbol
-                return Tuple.Create("", "");
-            }
 
             if (symbol.Tag == SymTagEnum.SymTagBaseType)
             {
