@@ -545,8 +545,9 @@ namespace GenerateUserTypesFromPdb.UserTypes
             var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.FieldName != "ClassCodeType").ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
             bool hasStatic = fields.Any(f => f.Static), hasNonStatic = fields.Any(f => !f.Static);
             Symbol[] baseClasses = Symbol.BaseClasses;
+            string nameSpace = null;
 
-            if (DeclaredInType == null)
+            if (DeclaredInType == null || (!options.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType))
             {
                 if (Usings.Count > 0 && !options.HasFlag(UserTypeGenerationFlags.SingleFileExport))
                 {
@@ -555,9 +556,10 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     output.WriteLine();
                 }
 
-                if (!string.IsNullOrEmpty(Namespace))
+                nameSpace = (DeclaredInType as NamespaceUserType)?.FullClassName ?? Namespace;
+                if (!string.IsNullOrEmpty(nameSpace))
                 {
-                    output.WriteLine(indentation, "namespace {0}", Namespace);
+                    output.WriteLine(indentation, "namespace {0}", nameSpace);
                     output.WriteLine(indentation++, "{{");
                 }
             }
@@ -645,7 +647,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // Class end
             output.WriteLine(--indentation, @"}}");
 
-            if (DeclaredInType == null && !string.IsNullOrEmpty(Namespace))
+            if ((DeclaredInType == null || (!options.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType)) && !string.IsNullOrEmpty(nameSpace))
             {
                 output.WriteLine(--indentation, "}}");
             }

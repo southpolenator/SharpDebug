@@ -12,9 +12,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
 
         public override void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
-            if (DeclaredInType == null && !string.IsNullOrEmpty(Namespace))
+            string nameSpace = (DeclaredInType as NamespaceUserType)?.FullClassName ?? Namespace;
+
+            if ((DeclaredInType == null || (!options.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType)) && !string.IsNullOrEmpty(nameSpace))
             {
-                output.WriteLine(indentation, "namespace {0}", Namespace);
+                output.WriteLine(indentation, "namespace {0}", nameSpace);
                 output.WriteLine(indentation++, "{{");
             }
 
@@ -35,7 +37,7 @@ namespace GenerateUserTypesFromPdb.UserTypes
             // Class end
             output.WriteLine(--indentation, @"}}");
 
-            if (DeclaredInType == null && !string.IsNullOrEmpty(Namespace))
+            if ((DeclaredInType == null || (!options.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType)) && !string.IsNullOrEmpty(nameSpace))
             {
                 output.WriteLine(--indentation, "}}");
             }

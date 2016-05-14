@@ -477,7 +477,7 @@ namespace GenerateUserTypesFromPdb
             // Code generation and saving it to disk
             Console.Write("Saving code to disk...");
 
-            if (!config.SingleFileExport)
+            if (!generationOptions.HasFlag(UserTypeGenerationFlags.SingleFileExport))
             {
                 // Generate Code
                 Parallel.ForEach(userTypes,
@@ -657,23 +657,22 @@ namespace GenerateUserTypesFromPdb
         {
             Symbol symbol = userType.Symbol;
 
-            if (symbol.Tag == SymTagEnum.SymTagBaseType)
+            if (symbol != null && symbol.Tag == SymTagEnum.SymTagBaseType)
             {
                 // ignore Base (Primitive) types.
                 return Tuple.Create("", "");
             }
 
-            if (userType.DeclaredInType != null)
+            if (userType is NamespaceUserType || (userType.DeclaredInType != null && !(userType.DeclaredInType is NamespaceUserType)))
             {
                 return Tuple.Create("", "");
             }
 
             string classOutputDirectory = outputDirectory;
+            string nameSpace = (userType.DeclaredInType as NamespaceUserType)?.FullClassName ?? userType.Namespace;
 
-            classOutputDirectory = Path.Combine(classOutputDirectory, userType.Symbol.Module.Name);
-
-            if (!string.IsNullOrEmpty(userType.Namespace))
-                classOutputDirectory = Path.Combine(classOutputDirectory, UserType.NormalizeSymbolName(UserType.NormalizeSymbolName(userType.Namespace).Replace(".", "\\").Replace(":", ".")));
+            if (!string.IsNullOrEmpty(nameSpace))
+                classOutputDirectory = Path.Combine(classOutputDirectory, UserType.NormalizeSymbolName(UserType.NormalizeSymbolName(nameSpace).Replace(".", "\\").Replace(":", ".")));
 
 
             string ss;
@@ -695,7 +694,7 @@ namespace GenerateUserTypesFromPdb
                     break;
                 }
 
-                filename = string.Format(@"{0}\{1}_{2}.exported.cs", classOutputDirectory, userType.ConstructorName, index++);
+                filename = string.Format(@"{0}\{1}{2}_{3}.exported.cs", classOutputDirectory, userType.ConstructorName, isEnum ? "_enum" : "", index++);
             }
 
             using (TextWriter output = new StreamWriter(filename, false /* append */, System.Text.Encoding.UTF8, 1 * 1024 * 1024))
