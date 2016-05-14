@@ -128,7 +128,7 @@ namespace GenerateUserTypesFromPdb
         {
             get
             {
-                return Name.EndsWith("<>");
+                return NameHelper.ContainsTemplateType(Name);
             }
         }
 

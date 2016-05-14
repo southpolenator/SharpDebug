@@ -399,9 +399,8 @@ namespace GenerateUserTypesFromPdb
                     return;
                 }
 
-                // Parent Class is Template, Nested is Physical
-                // Check if dealing template type.
-                if (NameHelper.ContainsTemplateType(symbolName) && NameHelper.ContainsTemplateType(scopedClassName))
+                // Check if symbol contains template type.
+                if (NameHelper.ContainsTemplateType(symbolName))
                 {
                     List<string> namespaces = symbol.Namespaces;
                     string className = namespaces.Last();

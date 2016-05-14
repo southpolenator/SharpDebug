@@ -29,66 +29,67 @@ namespace GenerateUserTypesFromPdb.UserTypes
             this.argumentsSymbols.Clear();
             this.argumentsUserType.Clear();
 
-            string symbolName = Symbol.Name;
-            symbolName = Symbol.Namespaces.Last();
-
+            string symbolName = Symbol.Namespaces.Last();
             int templateStart = symbolName.IndexOf('<');
-            var arguments = new List<string>();
             bool result = true;
 
-            for (int i = templateStart + 1; i < symbolName.Length && symbolName[i] != '>'; i++)
+            if (templateStart > 0)
             {
-                var originalyExtractedType = XmlTypeTransformation.ExtractType(symbolName, i);
-                var extractedType = originalyExtractedType.Trim();
+                var arguments = new List<string>();
 
-                i += originalyExtractedType.Length;
-                if (string.IsNullOrEmpty(extractedType))
+                for (int i = templateStart + 1; i < symbolName.Length && symbolName[i] != '>'; i++)
                 {
-                    // This can happen only when list is empty
-                    if (arguments.Count > 0)
-                        throw new NotImplementedException("Unexpected empty template argument in symbol " + symbolName);
-                    break;
-                }
+                    var originalyExtractedType = XmlTypeTransformation.ExtractType(symbolName, i);
+                    var extractedType = originalyExtractedType.Trim();
 
-                // Duplicate types should be merged/removed
-                if (arguments.Contains(extractedType))
-                    continue;
-
-                arguments.Add(extractedType);
-
-                double constant;
-
-                if (!double.TryParse(extractedType, out constant))
-                {
-                    Symbol symbol = GlobalCache.GetSymbol(extractedType, Module);
-
-                    // Check if type is existing type
-                    if (symbol == null)
+                    i += originalyExtractedType.Length;
+                    if (string.IsNullOrEmpty(extractedType))
                     {
-                        throw new Exception("Wrongly formed template argument");
+                        // This can happen only when list is empty
+                        if (arguments.Count > 0)
+                            throw new NotImplementedException("Unexpected empty template argument in symbol " + symbolName);
+                        break;
                     }
 
-                    this.argumentsSymbols.Add(symbol.Name);
+                    // Duplicate types should be merged/removed
+                    if (arguments.Contains(extractedType))
+                        continue;
 
-                    UserType specializationUserType = null;
+                    arguments.Add(extractedType);
 
-                    if (!factory.GetUserType(symbol, out specializationUserType))
+                    double constant;
+
+                    if (!double.TryParse(extractedType, out constant))
                     {
-                        if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
+                        Symbol symbol = GlobalCache.GetSymbol(extractedType, Module);
+
+                        // Check if type is existing type
+                        if (symbol == null)
                         {
-                            var typeString = GetTypeString(symbol, factory).GetUserTypeString();
-
-                            specializationUserType = new PrimitiveUserType(typeString, symbol);
+                            throw new Exception("Wrongly formed template argument");
                         }
-                    }
 
-                    this.argumentsUserType.Add(specializationUserType);
-                    result = result && specializationUserType != null;
+                        this.argumentsSymbols.Add(symbol.Name);
+
+                        UserType specializationUserType = null;
+
+                        if (!factory.GetUserType(symbol, out specializationUserType))
+                        {
+                            if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
+                            {
+                                var typeString = GetTypeString(symbol, factory).GetUserTypeString();
+
+                                specializationUserType = new PrimitiveUserType(typeString, symbol);
+                            }
+                        }
+
+                        this.argumentsUserType.Add(specializationUserType);
+                        result = result && specializationUserType != null;
+                    }
                 }
             }
 
             // TODO: Unused types should be removed
-
             return result;
         }
 
@@ -255,7 +256,6 @@ namespace GenerateUserTypesFromPdb.UserTypes
             return fullClassName.Substring(0, fullClassName.Length - className.Length) + symbolName;
         }
 
-
         public bool TryGetArgument(string typeName, out string argument)
         {
             int index = argumentsSymbols.IndexOf(typeName);
@@ -265,6 +265,11 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 argument = argumentsSymbols.Count == 1 ? TemplateArgNameBase : TemplateArgNameBase + (index + 1);
                 return true;
             }
+
+            TemplateUserType parentType = DeclaredInType as TemplateUserType;
+
+            if (parentType != null)
+                return parentType.TryGetArgument(typeName, out argument);
 
             argument = "";
             return false;
