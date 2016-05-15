@@ -199,6 +199,7 @@ namespace CsDebugScript
             assemblyReferences.Add(typeof(System.Object).Assembly.Location);
             assemblyReferences.Add(typeof(System.Linq.Enumerable).Assembly.Location);
             assemblyReferences.Add(typeof(CsDebugScript.Variable).Assembly.Location);
+            assemblyReferences.Add(typeof(CsDebugScript.InteractiveScriptBase).Assembly.Location);
 
             // Check if Microsoft.CSharp.dll should be added to the list of referenced assemblies
             const string MicrosoftCSharpDll = "microsoft.csharp.dll";
