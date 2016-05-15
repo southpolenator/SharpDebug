@@ -60,14 +60,7 @@ namespace CsDebugScript
                 // Check if we should execute C# command
                 try
                 {
-                    if (!command.StartsWith("#dbg "))
-                    {
-                        Interpret(command, prompt);
-                    }
-                    else
-                    {
-                        Debugger.Execute(command.Substring(5));
-                    }
+                    Interpret(command, prompt);
                 }
                 catch (ExitRequestedException)
                 {
@@ -89,7 +82,7 @@ namespace CsDebugScript
         {
             try
             {
-                Execute(code);
+                UnsafeInterpret(code);
             }
             catch (CompilationErrorException ex)
             {
@@ -107,7 +100,14 @@ namespace CsDebugScript
         /// <param name="code">The C# code.</param>
         internal void UnsafeInterpret(string code)
         {
-            Execute(code);
+            if (!code.StartsWith("#dbg "))
+            {
+                Execute(code);
+            }
+            else
+            {
+                Debugger.Execute(code.Substring(5));
+            }
         }
 
         /// <summary>
