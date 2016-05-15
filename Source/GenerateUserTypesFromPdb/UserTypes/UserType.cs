@@ -621,10 +621,12 @@ namespace GenerateUserTypesFromPdb.UserTypes
                 foreach (var type in baseClassesForProperties)
                 {
                     var field = ExtractField(type.CastAsSymbolField(), factory, options, true);
+                    string singleLineDefinition = string.Empty;
 
-                    //
-                    // TODO Verify getting base class for nested type
-                    //
+                    if (options.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
+                        singleLineDefinition = string.Format(" {{ get {{ return {0}; }} }}", field.ConstructorText);
+
+                    // TODO: Verify getting base class for nested type
                     field.PropertyName = UserType.NormalizeSymbolName(field.PropertyName);
 
                     field.PropertyName = field.PropertyName.Replace(" ", "").Replace('<', '_').Replace('>', '_').Replace(',', '_').Replace("__", "_").TrimEnd('_');
@@ -632,15 +634,18 @@ namespace GenerateUserTypesFromPdb.UserTypes
                     if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(field.FieldTypeInfoComment))
                         output.WriteLine(indentation, "// Property for getting base class: {0}", type.Name);
                     if (baseClasses.Length == 1)
-                        output.WriteLine(indentation, "public {0} BaseClass", field.FieldType);
+                        output.WriteLine(indentation, "public {0} BaseClass{1}", field.FieldType, singleLineDefinition);
                     else
-                        output.WriteLine(indentation, "public {0} BaseClass_{1}", field.FieldType, field.PropertyName);
-                    output.WriteLine(indentation++, "{{");
-                    output.WriteLine(indentation, "get");
-                    output.WriteLine(indentation++, "{{");
-                    output.WriteLine(indentation, "return {0};", field.ConstructorText);
-                    output.WriteLine(--indentation, "}}");
-                    output.WriteLine(--indentation, "}}");
+                        output.WriteLine(indentation, "public {0} BaseClass_{1}{2}", field.FieldType, field.PropertyName, singleLineDefinition);
+                    if (!options.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
+                    {
+                        output.WriteLine(indentation++, "{{");
+                        output.WriteLine(indentation, "get");
+                        output.WriteLine(indentation++, "{{");
+                        output.WriteLine(indentation, "return {0};", field.ConstructorText);
+                        output.WriteLine(--indentation, "}}");
+                        output.WriteLine(--indentation, "}}");
+                    }
                 }
             }
 

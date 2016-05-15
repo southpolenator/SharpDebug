@@ -153,6 +153,13 @@ namespace GenerateUserTypesFromPdb
             XmlReferencedAssembly[] referencedAssemblies = config.ReferencedAssemblies;
             UserTypeGenerationFlags generationOptions = UserTypeGenerationFlags.None;
 
+            if (config.CompressedOutput)
+            {
+                generationOptions |= UserTypeGenerationFlags.CompressedOutput;
+                config.DontGenerateFieldTypeInfoComment = true;
+                config.MultiLineProperties = false;
+            }
+
             if (!config.DontGenerateFieldTypeInfoComment)
                 generationOptions |= UserTypeGenerationFlags.GenerateFieldTypeInfoComment;
             if (!config.MultiLineProperties)
@@ -508,9 +515,9 @@ namespace GenerateUserTypesFromPdb
                 {
                     foreach (var u in usings.OrderBy(s => s))
                     {
-                        masterOutput.WriteLine("using {0};\n", u);
+                        masterOutput.WriteLine("using {0};", u);
                         if (config.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(config.GeneratedAssemblyName))
-                            stringOutput.WriteLine("using {0};\n", u);
+                            stringOutput.WriteLine("using {0};", u);
                     }
                     masterOutput.WriteLine();
                     if (config.GenerateAssemblyWithRoslyn)
@@ -700,7 +707,7 @@ namespace GenerateUserTypesFromPdb
             using (TextWriter output = new StreamWriter(filename, false /* append */, System.Text.Encoding.UTF8, 1 * 1024 * 1024))
             using (StringWriter stringOutput = new StringWriter())
             {
-                userType.WriteCode(new IndentedWriter(stringOutput), errorOutput, factory, generationOptions);
+                userType.WriteCode(new IndentedWriter(stringOutput, generationOptions.HasFlag(UserTypeGenerationFlags.CompressedOutput)), errorOutput, factory, generationOptions);
                 string text = stringOutput.ToString();
                 output.WriteLine(text);
                 return Tuple.Create(text, filename);
@@ -722,7 +729,7 @@ namespace GenerateUserTypesFromPdb
                 return false;
             }
 
-            userType.WriteCode(new IndentedWriter(output), errorOutput, factory, generationOptions);
+            userType.WriteCode(new IndentedWriter(output, generationOptions.HasFlag(UserTypeGenerationFlags.CompressedOutput)), errorOutput, factory, generationOptions);
             return true;
         }
     }

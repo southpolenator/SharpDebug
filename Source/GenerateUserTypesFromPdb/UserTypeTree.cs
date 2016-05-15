@@ -22,6 +22,7 @@ namespace GenerateUserTypesFromPdb
         GeneratePhysicalMappingOfUserTypes = 128,
         SingleFileExport = 256,
         UseHungarianNotation = 512,
+        CompressedOutput = 1024,
     }
 
     static class StringExtensions
@@ -437,7 +438,7 @@ namespace GenerateUserTypesFromPdb
         {
 
             if (string.IsNullOrEmpty(ConstantValue))
-                if (options.HasFlag(UserTypeGenerationFlags.SingleLineProperty) && CacheResult)
+                if (options.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
                 {
                     if (firstField)
                     {
@@ -445,10 +446,12 @@ namespace GenerateUserTypesFromPdb
                         firstField = false;
                     }
 
-                    if (UseUserMember)
+                    if (UseUserMember && CacheResult)
                         output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}.Value; }} }}", Static ? "static " : "", FieldType, PropertyName, FieldName);
-                    else
+                    else if (CacheResult)
                         output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}; }} }}", Static ? "static " : "", FieldType, PropertyName, FieldName);
+                    else
+                        output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}; }} }}", Static ? "static " : "", FieldType, PropertyName, ConstructorText);
                 }
                 else
                 {

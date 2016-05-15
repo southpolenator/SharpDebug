@@ -11,11 +11,18 @@ namespace GenerateUserTypesFromPdb
     {
         private TextWriter output;
         private int indentSpaces;
+        private bool compressed;
 
         public IndentedWriter(TextWriter output, int indentSpaces = 4)
         {
             this.output = output;
             this.indentSpaces = indentSpaces;
+        }
+
+        public IndentedWriter(TextWriter output, bool compressed)
+            : this(output, compressed ? 1 : 4)
+        {
+            this.compressed = compressed;
         }
 
         public void WriteLine(int indentation, string format, params object[] parameters)
@@ -26,7 +33,10 @@ namespace GenerateUserTypesFromPdb
 
         public void WriteLine()
         {
-            output.WriteLine();
+            if (!compressed)
+            {
+                output.WriteLine();
+            }
         }
     }
 }
