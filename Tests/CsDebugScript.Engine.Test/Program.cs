@@ -26,51 +26,32 @@ namespace CsDebugScript.Engine.Test
             if (options == null)
                 return;
 
-            //var client = DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath);
-            var client = DebugClient.OpenDumpFile(@"C:\Users\vujova\Documents\GitHub\dumps\TestMe\SQLDUMP0001.MDMP", @"C:\Users\vujova\Documents\GitHub\dumps\TestMe\Symbols\amd64");
+            var client = DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath);
 
-            Context.Initalize(client);
+            Console.WriteLine("Threads: {0}", Thread.All.Length);
+            Console.WriteLine("Current thread: {0}", Thread.Current.Id);
+            var frames = Thread.Current.StackTrace.Frames;
+            Console.WriteLine("Call stack:");
+            foreach (var frame in frames)
+                try
+                {
+                    Console.WriteLine("  {0,3:x} {1}+0x{2:x}   ({3}:{4})", frame.FrameNumber, frame.FunctionName, frame.FunctionDisplacement, frame.SourceFileName, frame.SourceFileLine);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("  {0,3:x} {1}+0x{2:x}", frame.FrameNumber, frame.FunctionName, frame.FunctionDisplacement);
+                }
 
+            // In order to use console output and error in scripts, we must set it to debug client
             DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
                 | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
                 | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
             var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
 
-            //using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
-            //{
-            //    Executor.InterpretInteractive(@"#load ""C:\Users\vujova\Documents\test.csx""");
-            //    Executor.InterpretInteractive(@"testMe();");
-            //    Executor.InterpretInteractive(@"using System.Security.Authentication;");
-            //    Executor.InterpretInteractive(@"CipherAlgorithmType.Aes256");
-            //}
-
-            Executor.ShowInteractiveWindow(true);
-            return;
-
-            //Console.WriteLine("Threads: {0}", Thread.All.Length);
-            //Console.WriteLine("Current thread: {0}", Thread.Current.Id);
-            //var frames = Thread.Current.StackTrace.Frames;
-            //Console.WriteLine("Call stack:");
-            //foreach (var frame in frames)
-            //    try
-            //    {
-            //        Console.WriteLine("  {0,3:x} {1}+0x{2:x}   ({3}:{4})", frame.FrameNumber, frame.FunctionName, frame.FunctionDisplacement, frame.SourceFileName, frame.SourceFileLine);
-            //    }
-            //    catch (Exception)
-            //    {
-            //        Console.WriteLine("  {0,3:x} {1}+0x{2:x}", frame.FrameNumber, frame.FunctionName, frame.FunctionDisplacement);
-            //    }
-
-            //// In order to use console output and error in scripts, we must set it to debug client
-            //DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
-            //    | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
-            //    | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
-            //var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
-
-            //using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
-            //{
-            //    Executor.Execute(@"..\..\..\..\samples\script.cs", new string[] { });
-            //}
+            using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
+            {
+                Executor.Execute(@"..\..\..\..\samples\script.cs", new string[] { });
+            }
         }
     }
 }
