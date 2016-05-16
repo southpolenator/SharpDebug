@@ -153,6 +153,11 @@ namespace CsDebugScript
         internal static readonly string[] DefaultAssemblyReferences = GetDefaultAssemblyReferences();
 
         /// <summary>
+        /// The default list of using commands used by the compiler
+        /// </summary>
+        internal static readonly string[] DefaultUsings = new string[] { "System", "System.Linq", "CsDebugScript" };
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ScriptCompiler"/> class.
         /// </summary>
         public ScriptCompiler()
