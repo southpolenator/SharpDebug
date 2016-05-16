@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System;
 using System.IO;
 
-namespace GenerateUserTypesFromPdb.UserTypes
+namespace CsDebugScript.CodeGen.UserTypes
 {
     class PhysicalUserType : UserType
     {

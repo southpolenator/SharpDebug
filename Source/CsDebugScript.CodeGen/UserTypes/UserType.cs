@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace GenerateUserTypesFromPdb.UserTypes
+namespace CsDebugScript.CodeGen.UserTypes
 {
     class UserType
     {

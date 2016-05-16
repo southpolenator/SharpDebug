@@ -1,7 +1,7 @@
 ﻿using Dia2Lib;
 using System.IO;
 
-namespace GenerateUserTypesFromPdb.UserTypes
+namespace CsDebugScript.CodeGen.UserTypes
 {
     class EnumUserType : UserType
     {

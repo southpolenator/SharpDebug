@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace GenerateUserTypesFromPdb.UserTypes
+namespace CsDebugScript.CodeGen.UserTypes
 {
     class GlobalsUserType : UserType
     {

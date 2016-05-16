@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 
-namespace GenerateUserTypesFromPdb.UserTypes
+namespace CsDebugScript.CodeGen.UserTypes
 {
     internal class NamespaceUserType : UserType
     {

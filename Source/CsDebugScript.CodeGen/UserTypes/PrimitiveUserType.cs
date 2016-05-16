@@ -1,4 +1,4 @@
-﻿namespace GenerateUserTypesFromPdb.UserTypes
+﻿namespace CsDebugScript.CodeGen.UserTypes
 {
     class PrimitiveUserType : UserType
     {
