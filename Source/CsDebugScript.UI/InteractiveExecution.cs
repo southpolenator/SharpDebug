@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.Engine;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Scripting;
@@ -109,6 +110,14 @@ namespace CsDebugScript
                     Console.Error.WriteLine(error);
                 }
             }
+        }
+
+        private static readonly CSharpParseOptions s_parseOptions =
+            new CSharpParseOptions(languageVersion: LanguageVersion.CSharp6, kind: SourceCodeKind.Script);
+
+        internal static bool IsCompleteSubmission(string text)
+        {
+            return SyntaxFactory.IsCompleteSubmission(SyntaxFactory.ParseSyntaxTree(text, options: s_parseOptions));
         }
 
         /// <summary>

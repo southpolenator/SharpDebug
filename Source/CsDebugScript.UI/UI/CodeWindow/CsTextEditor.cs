@@ -135,7 +135,14 @@ namespace CsDebugScript.UI.CodeWindow
 
         private void TextArea_ExecuteCSharpScript(object sender, ExecutedRoutedEventArgs e)
         {
-            OnExecuteCSharpScript();
+            if (InteractiveExecution.IsCompleteSubmission(Document.Text))
+            {
+                OnExecuteCSharpScript();
+            }
+            else
+            {
+                TextArea.PerformTextInput(Environment.NewLine);
+            }
         }
 
         private void TextArea_ExecuteWinDbgCommand(object sender, ExecutedRoutedEventArgs e)
