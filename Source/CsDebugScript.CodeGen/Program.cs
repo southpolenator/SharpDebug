@@ -59,7 +59,7 @@ namespace CsDebugScript.CodeGen
         public string XmlConfigPath { get; set; }
     }
 
-    public class ObjectPool<T>
+    internal class ObjectPool<T>
     {
         private ConcurrentBag<T> _objects;
         private Func<T> _objectGenerator;
