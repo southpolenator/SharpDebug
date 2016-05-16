@@ -183,7 +183,6 @@
     <Compile Include="UI\CodeWindow\EntityWrapper.cs" />
     <Compile Include="UI\CodeWindow\ParameterCompletionDataFactory.cs" />
     <Compile Include="UI\CodeWindow\ParameterDataProvider.cs" />
-    <Compile Include="CompileException.cs" />
     <Compile Include="Executor.cs" />
     <Compile Include="IExecutor.cs" />
     <Compile Include="UI\InteractiveCodeEditor.cs" />

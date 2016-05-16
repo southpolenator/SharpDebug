@@ -1,9 +1,10 @@
+#r "..\CsDebugScript.CommonUserTypes.dll"
+#load "helper.csx"
+
 using System;
 using System.Linq;
-using CsScripts;
-using std = CsScripts.CommonUserTypes.NativeTypes.std;
-import ..\CsScripts.CommonUserTypes.dll;
-import helper.cs;
+using CsDebugScript;
+using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
 
 Console.Error.WriteLine("This is sample error");
 HelpMe("It works!");

@@ -94,10 +94,7 @@ namespace CsDebugScript
         {
             Context.Debugger.ExecuteAction(() =>
             {
-                using (ScriptExecution execution = new ScriptExecution())
-                {
-                    execution.Execute(path, args);
-                }
+                ScriptExecution.Execute(path, args);
             });
         }
 

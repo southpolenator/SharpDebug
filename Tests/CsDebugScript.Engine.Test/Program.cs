@@ -26,7 +26,7 @@ namespace CsDebugScript.Engine.Test
             if (options == null)
                 return;
 
-            var client = DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath);
+            Context.Initalize(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
 
             Console.WriteLine("Threads: {0}", Thread.All.Length);
             Console.WriteLine("Current thread: {0}", Thread.Current.Id);
@@ -50,7 +50,7 @@ namespace CsDebugScript.Engine.Test
 
             using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
             {
-                Executor.Execute(@"..\..\..\..\samples\script.cs", new string[] { });
+                Executor.Execute(@"..\..\..\..\samples\script.csx");
             }
         }
     }
