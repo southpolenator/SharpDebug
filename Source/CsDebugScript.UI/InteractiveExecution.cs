@@ -1,6 +1,7 @@
 ﻿using CsDebugScript.Engine;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Scripting;
 using System;
 using System.Collections.Generic;
@@ -32,6 +33,11 @@ namespace CsDebugScript
         /// Interactive script base - Roslyn globals object
         /// </summary>
         internal InteractiveScriptBase scriptBase = new InteractiveScriptBase();
+
+        /// <summary>
+        /// The imported code (functions and classes defined in the scripts)
+        /// </summary>
+        private string importedCode = string.Empty;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveExecution"/> class.
@@ -154,6 +160,7 @@ namespace CsDebugScript
                 InteractiveScriptBase.Current = scriptBase;
                 scriptBase._ScriptState_ = scriptState;
                 scriptState = scriptState.ContinueWithAsync(code).Result;
+                importedCode = ExtractImportedCode(scriptState.Script, importedCode);
                 scriptBase.Dump(scriptState.ReturnValue);
 
                 if (scriptBase._InteractiveScriptBaseType_ != null && scriptBase._InteractiveScriptBaseType_ != scriptBase.GetType())
@@ -172,6 +179,36 @@ namespace CsDebugScript
             {
                 InteractiveScriptBase.Current = null;
             }
+        }
+
+        /// <summary>
+        /// Extracts the imported code (functions and classes) from the specified script.
+        /// </summary>
+        /// <param name="script">The script.</param>
+        /// <param name="previousImportedCode">The previously imported code.</param>
+        private static string ExtractImportedCode(Script script, string previousImportedCode)
+        {
+            StringBuilder newCode = new StringBuilder(previousImportedCode);
+            Compilation compilation = script.GetCompilation();
+
+            foreach (SyntaxTree tree in compilation.SyntaxTrees)
+            {
+                SyntaxNode root = tree.GetRoot();
+
+                if (root is CompilationUnitSyntax)
+                {
+                    foreach (SyntaxNode node in root.ChildNodes())
+                    {
+                        if (node is MethodDeclarationSyntax || node is ClassDeclarationSyntax || node is EnumDeclarationSyntax
+                            || node is InterfaceDeclarationSyntax || node is StructDeclarationSyntax)
+                        {
+                            newCode.AppendLine(node.ToFullString());
+                        }
+                    }
+                }
+            }
+
+            return newCode.ToString();
         }
 
         /// <summary>
@@ -219,7 +256,7 @@ namespace CsDebugScript
         {
             IEnumerable<string> imports = GetImports();
             const string code = "<This is my unique code string>";
-            string importedCode = FixImportedCode("");
+            string importedCode = FixImportedCode(this.importedCode);
             string generatedCode = GenerateCode(code, imports, importedCode);
             int codeStart = generatedCode.IndexOf(code), codeEnd = codeStart + code.Length;
 
@@ -250,9 +287,9 @@ namespace CsDebugScript
 
         private string FixImportedCode(string importedCode)
         {
-            StringBuilder newImportedCode = new StringBuilder();
+            StringBuilder newImportedCode = new StringBuilder(importedCode);
 
-            newImportedCode.AppendLine(importedCode);
+            // Get variables and add them as properties
             IEnumerable<string> variableNames = scriptState.Variables.Select(v => v.Name).Distinct();
             foreach (var variableName in variableNames)
             {
