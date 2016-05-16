@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 
-namespace GenerateUserTypesFromPdb
+namespace CsDebugScript.CodeGen
 {
     [XmlRoot]
     public class XmlConfig

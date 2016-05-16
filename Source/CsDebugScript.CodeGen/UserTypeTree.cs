@@ -1,12 +1,12 @@
 ﻿using Dia2Lib;
-using GenerateUserTypesFromPdb.UserTypes;
+using CsDebugScript.CodeGen.UserTypes;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace GenerateUserTypesFromPdb
+namespace CsDebugScript.CodeGen
 {
     [Flags]
     enum UserTypeGenerationFlags

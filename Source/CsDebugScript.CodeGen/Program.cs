@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 using Dia2Lib;
-using GenerateUserTypesFromPdb.UserTypes;
+using CsDebugScript.CodeGen.UserTypes;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CSharp;
@@ -15,7 +15,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace GenerateUserTypesFromPdb
+namespace CsDebugScript.CodeGen
 {
     class Options
     {

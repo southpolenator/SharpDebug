@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GenerateUserTypesFromPdb
+namespace CsDebugScript.CodeGen
 {
     class IndentedWriter
     {

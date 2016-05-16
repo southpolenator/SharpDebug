@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using GenerateUserTypesFromPdb.UserTypes;
+using CsDebugScript.CodeGen.UserTypes;
 
-namespace GenerateUserTypesFromPdb
+namespace CsDebugScript.CodeGen
 {
     internal static class GlobalCache
     {

@@ -7,8 +7,8 @@
     <ProjectGuid>{283A0331-2EAD-4DD2-A3FE-20D229E2D277}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GenerateUserTypesFromPdb</RootNamespace>
-    <AssemblyName>GenerateUserTypesFromPdb</AssemblyName>
+    <RootNamespace>CsDebugScript.CodeGen</RootNamespace>
+    <AssemblyName>CsDebugScript.CodeGen</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

@@ -1,11 +1,11 @@
 ﻿using CsDebugScript.Engine.Utility;
 using Dia2Lib;
-using GenerateUserTypesFromPdb.UserTypes;
+using CsDebugScript.CodeGen.UserTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace GenerateUserTypesFromPdb
+namespace CsDebugScript.CodeGen
 {
     internal class Symbol
     {
