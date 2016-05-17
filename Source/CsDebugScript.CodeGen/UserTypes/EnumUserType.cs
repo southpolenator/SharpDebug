@@ -1,5 +1,7 @@
 ﻿using Dia2Lib;
 using System.IO;
+using System;
+using System.Collections.Generic;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
@@ -23,6 +25,8 @@ namespace CsDebugScript.CodeGen.UserTypes
             if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                 output.WriteLine(indentation, "// {0} (original name: {1})", ClassName, Symbol.Name);
 
+            if (AreValuesFlags())
+                output.WriteLine(indentation, @"[System.Flags]");
             if (Symbol.Size != 0)
                 output.WriteLine(indentation, @"public enum {0} : {1}", ClassName, GetEnumType());
             else
@@ -41,6 +45,35 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 output.WriteLine(--indentation, "}}");
             }
+        }
+
+        private static bool IsPowerOfTwo(long x)
+        {
+            return (x & (x - 1)) == 0;
+        }
+
+        private bool AreValuesFlags()
+        {
+            try
+            {
+                SortedSet<long> values = new SortedSet<long>();
+
+                foreach (var enumValue in Symbol.GetEnumValues())
+                    values.Add(long.Parse(enumValue.Item2));
+
+                foreach (var value in values)
+                    if (!IsPowerOfTwo(value))
+                        return false;
+                if (values.Count < 2 || (values.Contains(0) && values.Contains(1) && values.Count == 2)
+                    || (values.Contains(0) && values.Contains(1) && values.Contains(2) && values.Count == 3))
+                    return false;
+                return true;
+            }
+            catch (Exception)
+            {
+            }
+
+            return false;
         }
 
         private string GetEnumType()
