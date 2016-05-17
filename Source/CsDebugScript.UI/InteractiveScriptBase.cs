@@ -239,6 +239,16 @@ namespace CsDebugScript
         /// <summary>
         /// Changes the base class for interactive scripting.
         /// </summary>
+        /// <typeparam name="T">Type of the new base class.</typeparam>
+        public void ChangeBaseClass<T>()
+            where T : InteractiveScriptBase
+        {
+            ChangeBaseClass(typeof(T));
+        }
+
+        /// <summary>
+        /// Changes the base class for interactive scripting.
+        /// </summary>
         /// <param name="newBaseClassType">Type of the new base class.</param>
         /// <remarks>Base class type must inherit InteractiveScriptBase.</remarks>
         public void ChangeBaseClass(Type newBaseClassType)

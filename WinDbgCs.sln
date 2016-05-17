@@ -22,7 +22,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CsScriptsTest", "Tests\CsSc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateDbgEngIdl", "Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj", "{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenerateUserTypesFromPdb", "Source\GenerateUserTypesFromPdb\GenerateUserTypesFromPdb.csproj", "{283A0331-2EAD-4DD2-A3FE-20D229E2D277}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.CodeGen", "Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj", "{283A0331-2EAD-4DD2-A3FE-20D229E2D277}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeDumpTest", "Tests\DumpApps\NativeDumpTest\NativeDumpTest.vcxproj", "{C48B3103-FA43-4C03-88C3-E14887F53527}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -33,9 +33,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiaHelpers", "Source\DiaHel
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.CommonUserTypes", "Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj", "{21A929EA-B96B-4523-9D0F-853EA771058D}"
 EndProject
-Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "CsScriptManagedReference", "Utility\CsScriptManagedReference\CsScriptManagedReference.shfbproj", "{7A19DBB3-DA7D-48E8-BCBA-48A727176063}"
+Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "CsDebugScript.Reference", "Utility\CsDebugScript.Reference\CsDebugScript.Reference.shfbproj", "{7A19DBB3-DA7D-48E8-BCBA-48A727176063}"
 	ProjectSection(ProjectDependencies) = postProject
+		{283A0331-2EAD-4DD2-A3FE-20D229E2D277} = {283A0331-2EAD-4DD2-A3FE-20D229E2D277}
 		{2A7F1646-9B5A-433C-8A84-2215194F59B9} = {2A7F1646-9B5A-433C-8A84-2215194F59B9}
+		{B63C2B4E-EB2E-45FC-93FD-5D6F2077064D} = {B63C2B4E-EB2E-45FC-93FD-5D6F2077064D}
 		{21A929EA-B96B-4523-9D0F-853EA771058D} = {21A929EA-B96B-4523-9D0F-853EA771058D}
 	EndProjectSection
 EndProject

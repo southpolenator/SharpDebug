@@ -15,7 +15,8 @@ namespace CsDebugScript
         /// </summary>
         /// <typeparam name="T">New type to cast variable to.</typeparam>
         /// <param name="variable">The variable.</param>
-        public static T DynamicCastAs<T>(this Variable variable) where T : UserType
+        public static T DynamicCastAs<T>(this Variable variable)
+            where T : UserType
         {
             if (variable == null)
             {
@@ -54,7 +55,8 @@ namespace CsDebugScript
         /// </summary>
         /// <typeparam name="T">New type to cast variable to.</typeparam>
         /// <param name="variable">The variable.</param>
-        public static T SafeCastAs<T>(this Variable variable) where T : UserType
+        public static T SafeCastAs<T>(this Variable variable)
+            where T : UserType
         {
             return variable?.CastAs<T>();
         }
@@ -95,12 +97,13 @@ namespace CsDebugScript
         /// Reinterpret Cast, changes underlaying code type.
         /// </summary>
         /// <remarks>
-        /// Requested Type must be a primivite (int, short etc).
+        /// Requested Type must be a primitive (int, short etc).
         /// </remarks>
-        /// <typeparam name="T">Primitivy type to cast variable to.</typeparam>
+        /// <typeparam name="T">Primitive type to cast variable to.</typeparam>
         /// <param name="variable">The variable.</param>
         /// <returns>Return CodePointer to Variable pointer address.</returns>
-        public static CodePointer<T> ReinterpretPointerCast<T>(this Variable variable) where T : struct
+        public static CodePointer<T> ReinterpretPointerCast<T>(this Variable variable)
+            where T : struct
         {
             // Get CodeType from the generic argument.
             //
@@ -143,6 +146,69 @@ namespace CsDebugScript
                     variable.GetPointerAddress()));
         }
 
+        /// <summary>
+        /// Converts the specified pointer variable to the code pointer.
+        /// This helper function is helpful only when variable is pointer and user wants to access more elements.
+        /// </summary>
+        /// <typeparam name="T">The user type to be converted to code pointer</typeparam>
+        /// <param name="pointerVariable">The pointer variable.</param>
+        public static CodePointer<T> ToCodePointer<T>(this T pointerVariable)
+            where T : UserType
+        {
+            return new CodePointer<T>(pointerVariable);
+        }
+
+        /// <summary>
+        /// Converts the specified pointer variable to the code array.
+        /// This helper function is helpful only when variable is pointer and user wants to access it as array of elements.
+        /// </summary>
+        /// <typeparam name="T">The user type to be converted to code array</typeparam>
+        /// <param name="pointerVariable">The pointer variable.</param>
+        /// <param name="length">The number of elements in array.</param>
+        public static CodeArray<T> ToCodeArray<T>(this T pointerVariable, int length)
+            where T : UserType
+        {
+            return new CodeArray<T>(pointerVariable, length);
+        }
+
+        /// <summary>
+        /// Converts the specified pointer variable to the code array.
+        /// This helper function is helpful only when variable is pointer and user wants to access it as array of elements.
+        /// </summary>
+        /// <typeparam name="T">The user type to be converted to code array</typeparam>
+        /// <param name="pointerVariable">The pointer variable.</param>
+        /// <param name="length">The number of elements in array.</param>
+        public static CodeArray<T> ToCodeArray<T>(this T pointerVariable, uint length)
+            where T : UserType
+        {
+            return new CodeArray<T>(pointerVariable, length);
+        }
+
+        /// <summary>
+        /// Converts the specified pointer variable to the code array.
+        /// This helper function is helpful only when variable is pointer and user wants to access it as array of elements.
+        /// </summary>
+        /// <typeparam name="T">The user type to be converted to code array</typeparam>
+        /// <param name="pointerVariable">The pointer variable.</param>
+        /// <param name="length">The number of elements in array.</param>
+        public static CodeArray<T> ToCodeArray<T>(this T pointerVariable, long length)
+            where T : UserType
+        {
+            return new CodeArray<T>(pointerVariable, length);
+        }
+
+        /// <summary>
+        /// Converts the specified pointer variable to the code array.
+        /// This helper function is helpful only when variable is pointer and user wants to access it as array of elements.
+        /// </summary>
+        /// <typeparam name="T">The user type to be converted to code array</typeparam>
+        /// <param name="pointerVariable">The pointer variable.</param>
+        /// <param name="length">The number of elements in array.</param>
+        public static CodeArray<T> ToCodeArray<T>(this T pointerVariable, ulong length)
+            where T : UserType
+        {
+            return new CodeArray<T>(pointerVariable, length);
+        }
 
         /// <summary>
         /// Adjust Pointer and Cast To Type.
@@ -150,7 +216,8 @@ namespace CsDebugScript
         /// <typeparam name="T">New type to cast variable to.</typeparam>
         /// <param name="variable">The variable.</param>
         /// <param name="offset">The offset.</param>
-        public static T AdjustPointer<T>(this Variable variable, int offset) where T : UserType
+        public static T AdjustPointer<T>(this Variable variable, int offset)
+            where T : UserType
         {
             return variable.AdjustPointer(offset).CastAs<T>();
         }

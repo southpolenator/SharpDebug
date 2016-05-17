@@ -153,6 +153,35 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CodePointer{T}"/> class.
+        /// </summary>
+        /// <param name="pointerType">Type of the pointer.</param>
+        /// <param name="address">The address.</param>
+        public CodePointer(CodeType pointerType, ulong address)
+            : this(Variable.CreatePointerNoCast(pointerType, address))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodePointer{T}"/> class.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        public CodePointer(Process process, ulong address)
+            : this(new NakedPointer(process, address))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodePointer{T}"/> class.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        public CodePointer(ulong address)
+            : this(new NakedPointer(address))
+        {
+        }
+
+        /// <summary>
         /// Gets the element.
         /// </summary>
         public T Element

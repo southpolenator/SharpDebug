@@ -1,11 +1,14 @@
 ﻿using CsDebugScript.Engine;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Scripting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CsDebugScript
 {
@@ -34,11 +37,26 @@ namespace CsDebugScript
         internal InteractiveScriptBase scriptBase = new InteractiveScriptBase();
 
         /// <summary>
+        /// The imported code (functions and classes defined in the scripts)
+        /// </summary>
+        private string importedCode = string.Empty;
+
+        /// <summary>
+        /// The list of imports (using commands)
+        /// </summary>
+        private HashSet<string> usings = new HashSet<string>(ScriptCompiler.DefaultUsings);
+
+        /// <summary>
+        /// The list of assembly references
+        /// </summary>
+        private HashSet<string> references = new HashSet<string>(ScriptCompiler.DefaultAssemblyReferences);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveExecution"/> class.
         /// </summary>
         public InteractiveExecution()
         {
-            var scriptOptions = ScriptOptions.Default.WithImports("System", "System.Linq", "CsDebugScript").WithReferences(ScriptCompiler.DefaultAssemblyReferences);
+            var scriptOptions = ScriptOptions.Default.WithImports(ScriptCompiler.DefaultUsings).WithReferences(ScriptCompiler.DefaultAssemblyReferences);
 
             scriptState = CSharpScript.RunAsync("", scriptOptions, scriptBase).Result;
             scriptBase.ObjectWriter = new DefaultObjectWriter();
@@ -60,14 +78,7 @@ namespace CsDebugScript
                 // Check if we should execute C# command
                 try
                 {
-                    if (!command.StartsWith("#dbg "))
-                    {
-                        Interpret(command, prompt);
-                    }
-                    else
-                    {
-                        Debugger.Execute(command.Substring(5));
-                    }
+                    Interpret(command, prompt);
                 }
                 catch (ExitRequestedException)
                 {
@@ -89,7 +100,7 @@ namespace CsDebugScript
         {
             try
             {
-                Execute(code);
+                UnsafeInterpret(code);
             }
             catch (CompilationErrorException ex)
             {
@@ -101,13 +112,28 @@ namespace CsDebugScript
             }
         }
 
+        private static readonly CSharpParseOptions s_parseOptions =
+            new CSharpParseOptions(languageVersion: LanguageVersion.CSharp6, kind: SourceCodeKind.Script);
+
+        internal static bool IsCompleteSubmission(string text)
+        {
+            return SyntaxFactory.IsCompleteSubmission(SyntaxFactory.ParseSyntaxTree(text, options: s_parseOptions));
+        }
+
         /// <summary>
         /// Interprets C# code, but without error handling.
         /// </summary>
         /// <param name="code">The C# code.</param>
         internal void UnsafeInterpret(string code)
         {
-            Execute(code);
+            if (!code.StartsWith("#dbg "))
+            {
+                Execute(code);
+            }
+            else
+            {
+                Debugger.Execute(code.Substring(5));
+            }
         }
 
         /// <summary>
@@ -154,6 +180,9 @@ namespace CsDebugScript
                 InteractiveScriptBase.Current = scriptBase;
                 scriptBase._ScriptState_ = scriptState;
                 scriptState = scriptState.ContinueWithAsync(code).Result;
+                importedCode = ExtractImportedCode(scriptState.Script, importedCode);
+                UpdateUsings(scriptState.Script, usings);
+                UpdateReferences(scriptState.Script, references);
                 scriptBase.Dump(scriptState.ReturnValue);
 
                 if (scriptBase._InteractiveScriptBaseType_ != null && scriptBase._InteractiveScriptBaseType_ != scriptBase.GetType())
@@ -175,57 +204,106 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Gets the imports that are used in the current script.
+        /// Extracts the imported code (functions and classes) from the specified script.
         /// </summary>
-        private IEnumerable<string> GetImports()
+        /// <param name="script">The script.</param>
+        /// <param name="previousImportedCode">The previously imported code.</param>
+        private static string ExtractImportedCode(Script script, string previousImportedCode)
         {
-            IEnumerable<string> imports = scriptState.Script.Options.Imports;
+            StringBuilder newCode = new StringBuilder(previousImportedCode);
+            Compilation compilation = script.GetCompilation();
 
-            for (var a = scriptState.Script.Previous; a != null; a = a.Previous)
-                imports = imports.Union(a.Options.Imports);
-            return imports.Distinct();
+            foreach (SyntaxTree tree in compilation.SyntaxTrees)
+            {
+                SyntaxNode root = tree.GetRoot();
+
+                if (root is CompilationUnitSyntax)
+                {
+                    foreach (SyntaxNode node in root.ChildNodes())
+                    {
+                        if (node is MethodDeclarationSyntax || node is ClassDeclarationSyntax || node is EnumDeclarationSyntax
+                            || node is InterfaceDeclarationSyntax || node is StructDeclarationSyntax)
+                        {
+                            newCode.AppendLine(node.ToFullString());
+                        }
+                    }
+                }
+            }
+
+            return newCode.ToString();
         }
 
         /// <summary>
-        /// Gets the references used in the specified script.
+        /// Updates the references from the specified script.
         /// </summary>
         /// <param name="script">The script.</param>
-        private IEnumerable<string> GetReferences(Script script)
+        /// <param name="references">The references.</param>
+        private static void UpdateReferences(Script script, HashSet<string> references)
         {
             foreach (var reference in script.Options.MetadataReferences)
             {
                 var ur = reference as UnresolvedMetadataReference;
 
                 if (ur != null)
-                    yield return ur.Reference;
+                    references.Add(ur.Reference);
                 else
-                    yield return reference.Display;
+                    references.Add(reference.Display);
             }
         }
 
         /// <summary>
-        /// Gets the references that are used in the current script.
+        /// The using command extraction regular expression.
         /// </summary>
-        private IEnumerable<string> GetReferences()
-        {
-            IEnumerable<string> references = GetReferences(scriptState.Script);
+        private static Regex usingExtractionRegex = new Regex(@"using ([^;]*);", RegexOptions.Compiled);
 
-            for (var a = scriptState.Script.Previous; a != null; a = a.Previous)
-                references = references.Union(GetReferences(a));
-            return references.Distinct();
+        /// <summary>
+        /// Updates the list of using commands from the specified script.
+        /// </summary>
+        /// <param name="script">The script.</param>
+        /// <param name="usings">The usings.</param>
+        private static void UpdateUsings(Script script, HashSet<string> usings)
+        {
+            foreach (var import in script.Options.Imports)
+            {
+                usings.Add(import);
+            }
+
+            Compilation compilation = script.GetCompilation();
+
+            foreach (SyntaxTree tree in compilation.SyntaxTrees)
+            {
+                if (string.IsNullOrEmpty(tree.FilePath))
+                {
+                    SyntaxNode root = tree.GetRoot();
+
+                    if (root is CompilationUnitSyntax)
+                    {
+                        foreach (SyntaxNode node in root.ChildNodes())
+                        {
+                            var usingDirective = node as UsingDirectiveSyntax;
+
+                            if (usingDirective != null)
+                            {
+                                Match match = usingExtractionRegex.Match(usingDirective.ToString());
+
+                                usings.Add(match.Groups[1].Value);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         internal IEnumerable<string> GetScriptHelperCode(out string scriptStart, out string scriptEnd)
         {
-            IEnumerable<string> imports = GetImports();
             const string code = "<This is my unique code string>";
-            string importedCode = FixImportedCode("");
-            string generatedCode = GenerateCode(code, imports, importedCode);
+            string importedCode = FixImportedCode(this.importedCode);
+            string generatedCode = GenerateCode(code, usings, importedCode);
             int codeStart = generatedCode.IndexOf(code), codeEnd = codeStart + code.Length;
 
             scriptStart = generatedCode.Substring(0, codeStart);
             scriptEnd = generatedCode.Substring(codeEnd);
-            return GetReferences();
+            return references;
         }
 
         internal static string GetCodeName(Type type)
@@ -250,9 +328,9 @@ namespace CsDebugScript
 
         private string FixImportedCode(string importedCode)
         {
-            StringBuilder newImportedCode = new StringBuilder();
+            StringBuilder newImportedCode = new StringBuilder(importedCode);
 
-            newImportedCode.AppendLine(importedCode);
+            // Get variables and add them as properties
             IEnumerable<string> variableNames = scriptState.Variables.Select(v => v.Name).Distinct();
             foreach (var variableName in variableNames)
             {

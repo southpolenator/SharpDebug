@@ -214,7 +214,7 @@ ModelManifest.xml
 # Custom project files
 *.VC.opendb
 *.VC.db
-/Utility/CsScriptManagedReference/Help
+/Utility/CsDebugScript.Reference/Help
 /NuGet.Packager/lib
 
 # temp gvim files
