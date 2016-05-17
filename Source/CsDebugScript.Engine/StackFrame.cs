@@ -475,7 +475,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="scope">The scope.</param>
         /// <param name="results">The results.</param>
-        public static IEnumerable<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> GetRecursiveSlots(Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbScope scope, List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> results = null)
+        private static IEnumerable<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> GetRecursiveSlots(Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbScope scope, List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> results = null)
         {
             if (results == null)
                 results = new List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot>();

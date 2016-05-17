@@ -13,6 +13,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="codePointer">The code pointer.</param>
         /// <param name="length">The length in characters. If length is -1, string is null terminated</param>
+        /// <returns>Read string from CodePointer.</returns>
         public static string ReadString(this CodePointer<char> codePointer, int length = -1)
         {
             return UserType.ReadString(codePointer.GetCodeType().Module.Process, codePointer.GetPointerAddress(), (int)codePointer.GetCodeType().ElementType.Size, length);
@@ -23,6 +24,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="codePointer">The code pointer.</param>
         /// <param name="length">The length in characters.</param>
+        /// <returns>Read string from CodePointer.</returns>
         public static string ReadString(this CodePointer<char> codePointer, uint length)
         {
             if (length > int.MaxValue)
@@ -38,6 +40,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="codePointer">The code pointer.</param>
         /// <param name="length">The length in characters.</param>
+        /// <returns>Read string from CodePointer.</returns>
         public static string ReadString(this CodePointer<char> codePointer, long length)
         {
             if (length > int.MaxValue)
@@ -53,6 +56,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="codePointer">The code pointer.</param>
         /// <param name="length">The length in characters.</param>
+        /// <returns>Read string from CodePointer.</returns>
         public static string ReadString(this CodePointer<char> codePointer, ulong length)
         {
             if (length > int.MaxValue)
@@ -64,10 +68,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Reads the string from CodePointer.
+        /// Reads the string from CodePointer with length specified as number of bytes.
         /// </summary>
         /// <param name="codePointer">The code pointer.</param>
         /// <param name="length">The length in bytes. If length is -1, string is null terminated</param>
+        /// <returns>Read string from CodePointer.</returns>
         public static string ReadStringByteLength(this CodePointer<char> codePointer, int length = -1)
         {
             int charSize = (int)codePointer.GetCodeType().ElementType.Size;
@@ -81,10 +86,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Reads the string from CodePointer.
+        /// Reads the string from CodePointer with length specified as number of bytes.
         /// </summary>
         /// <param name="codePointer">The code pointer.</param>
         /// <param name="length">The length in bytes.</param>
+        /// <returns>Read string from CodePointer.</returns>
         public static string ReadStringByteLength(this CodePointer<char> codePointer, uint length)
         {
             if (length > int.MaxValue)
@@ -96,10 +102,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Reads the string from CodePointer.
+        /// Reads the string from CodePointer with length specified as number of bytes.
         /// </summary>
         /// <param name="codePointer">The code pointer.</param>
         /// <param name="length">The length in bytes.</param>
+        /// <returns>Read string from CodePointer.</returns>
         public static string ReadStringByteLength(this CodePointer<char> codePointer, long length)
         {
             if (length > int.MaxValue)
@@ -111,10 +118,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Reads the string from CodePointer.
+        /// Reads the string from CodePointer with length specified as number of bytes.
         /// </summary>
         /// <param name="codePointer">The code pointer.</param>
         /// <param name="length">The length in bytes.</param>
+        /// <returns>Read string from CodePointer.</returns>
         public static string ReadStringByteLength(this CodePointer<char> codePointer, ulong length)
         {
             if (length > int.MaxValue)
@@ -209,7 +217,8 @@ namespace CsDebugScript
         /// <summary>
         /// Converts pointer to array of specified length.
         /// </summary>
-        /// <param name="length">The length.</param>
+        /// <param name="length">The number of elements.</param>
+        /// <returns>CodeArray with specified number of elements</returns>
         public CodeArray<T> ToCodeArray(uint length)
         {
             if (length > int.MaxValue)
@@ -223,7 +232,8 @@ namespace CsDebugScript
         /// <summary>
         /// Converts pointer to array of specified length.
         /// </summary>
-        /// <param name="length">The length.</param>
+        /// <param name="length">The number of elements.</param>
+        /// <returns>CodeArray with specified number of elements</returns>
         public CodeArray<T> ToCodeArray(int length)
         {
             return new CodeArray<T>(this, length);
@@ -232,7 +242,8 @@ namespace CsDebugScript
         /// <summary>
         /// Converts pointer to array of specified length.
         /// </summary>
-        /// <param name="length">The length.</param>
+        /// <param name="length">The number of elements.</param>
+        /// <returns>Array with specified number of elements</returns>
         public T[] ToArray(uint length)
         {
             if (length > int.MaxValue)
@@ -246,7 +257,8 @@ namespace CsDebugScript
         /// <summary>
         /// Converts pointer to array of specified length.
         /// </summary>
-        /// <param name="length">The length.</param>
+        /// <param name="length">The number of elements.</param>
+        /// <returns>Array with specified number of elements</returns>
         public T[] ToArray(int length)
         {
             return ToCodeArray(length).ToArray();
@@ -267,7 +279,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the ANSI string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in characters. If length is -1, string is null terminated</param>
+        /// <param name="length">The number of characters. If length is -1, string is null terminated.</param>
+        /// <returns>Read ANSI string from CodePointer.</returns>
         public string ReadAnsiString(int length = -1)
         {
             return UserType.ReadString(GetCodeType().Module.Process, GetPointerAddress(), 1, length);
@@ -276,7 +289,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the ANSI string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in characters.</param>
+        /// <param name="length">The number of characters.</param>
+        /// <returns>Read ANSI string from CodePointer.</returns>
         public string ReadAnsiString(uint length)
         {
             if (length > int.MaxValue)
@@ -290,7 +304,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the ANSI string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in characters.</param>
+        /// <param name="length">The number of characters. If length is -1, string is null terminated.</param>
+        /// <returns>Read ANSI string from CodePointer.</returns>
         public string ReadAnsiString(long length)
         {
             if (length > int.MaxValue)
@@ -304,7 +319,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the ANSI string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in characters.</param>
+        /// <param name="length">The number of characters.</param>
+        /// <returns>Read ANSI string from CodePointer.</returns>
         public string ReadAnsiString(ulong length)
         {
             if (length > int.MaxValue)
@@ -318,7 +334,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the Unicode string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in characters. If length is -1, string is null terminated</param>
+        /// <param name="length">The number of characters. If length is -1, string is null terminated.</param>
+        /// <returns>Read Unicode string from CodePointer.</returns>
         public string ReadUnicodeString(int length = -1)
         {
             return UserType.ReadString(GetCodeType().Module.Process, GetPointerAddress(), 2, length);
@@ -327,7 +344,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the Unicode string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in characters.</param>
+        /// <param name="length">The number of characters.</param>
+        /// <returns>Read Unicode string from CodePointer.</returns>
         public string ReadUnicodeString(uint length)
         {
             if (length > int.MaxValue)
@@ -341,7 +359,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the Unicode string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in characters.</param>
+        /// <param name="length">The number of characters. If length is -1, string is null terminated.</param>
+        /// <returns>Read Unicode string from CodePointer.</returns>
         public string ReadUnicodeString(long length)
         {
             if (length > int.MaxValue)
@@ -355,7 +374,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the Unicode string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in characters.</param>
+        /// <param name="length">The number of characters.</param>
+        /// <returns>Read Unicode string from CodePointer.</returns>
         public string ReadUnicodeString(ulong length)
         {
             if (length > int.MaxValue)
@@ -369,7 +389,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the Unicode string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in bytes. If length is -1, string is null terminated</param>
+        /// <param name="length">The number of bytes. If length is -1, string is null terminated.</param>
+        /// <returns>Read Unicode string from CodePointer.</returns>
         public string ReadUnicodeStringByteLength(int length)
         {
             if ((length & 1) != 0)
@@ -383,7 +404,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the Unicode string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in bytes.</param>
+        /// <param name="length">The number of bytes.</param>
+        /// <returns>Read Unicode string from CodePointer.</returns>
         public string ReadUnicodeStringByteLength(uint length)
         {
             if (length > int.MaxValue)
@@ -397,7 +419,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the Unicode string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in bytes.</param>
+        /// <param name="length">The number of bytes. If length is -1, string is null terminated.</param>
+        /// <returns>Read Unicode string from CodePointer.</returns>
         public string ReadUnicodeStringByteLength(long length)
         {
             if (length > int.MaxValue)
@@ -411,7 +434,8 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the Unicode string from CodePointer.
         /// </summary>
-        /// <param name="length">The length in bytes.</param>
+        /// <param name="length">The number of bytes.</param>
+        /// <returns>Read Unicode string from CodePointer.</returns>
         public string ReadUnicodeStringByteLength(ulong length)
         {
             if (length > int.MaxValue)

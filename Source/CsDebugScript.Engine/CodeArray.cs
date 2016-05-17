@@ -16,6 +16,7 @@ namespace CsDebugScript
         /// Reads the string from CodeArray.
         /// </summary>
         /// <param name="codeArray">The code array.</param>
+        /// <returns>Read string from CodeArray.</returns>
         public static string ReadString(this CodeArray<char> codeArray)
         {
             if (codeArray.variable != null)
@@ -206,6 +207,9 @@ namespace CsDebugScript
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
+        /// <returns>
+        /// A <see cref="T:System.Collections.Generic.IEnumerator`1" /> that can be used to iterate through the collection.
+        /// </returns>
         public IEnumerator<T> GetEnumerator()
         {
             return Enumerate().GetEnumerator();
@@ -214,6 +218,9 @@ namespace CsDebugScript
         /// <summary>
         /// Returns an enumerator that iterates through a collection.
         /// </summary>
+        /// <returns>
+        /// An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.
+        /// </returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return Enumerate().GetEnumerator();
