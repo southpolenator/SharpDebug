@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace CsDebugScript.CodeGen
@@ -13,7 +14,7 @@ namespace CsDebugScript.CodeGen
         private ConcurrentDictionary<uint, Symbol> symbolById = new ConcurrentDictionary<uint, Symbol>();
         private ConcurrentDictionary<string, Symbol> symbolByName = new ConcurrentDictionary<string, Symbol>();
 
-        public Module(string name, string nameSpace, IDiaDataSource dia, IDiaSession session)
+        private Module(string name, string nameSpace, IDiaDataSource dia, IDiaSession session)
         {
             this.session = session;
             this.dia = dia;
@@ -31,6 +32,18 @@ namespace CsDebugScript.CodeGen
                 type.get_undecoratedNameEx(0x1000, out undecoratedName);
                 return undecoratedName ?? type.name;
             }));
+        }
+
+        public static Module Open(XmlModule module)
+        {
+            IDiaDataSource dia = new DiaSource();
+            IDiaSession session;
+            string moduleName = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.PdbPath).ToLower();
+
+            module.Name = moduleName;
+            dia.loadDataFromPdb(module.PdbPath);
+            dia.openSession(out session);
+            return new Module(module.Name, module.Namespace, dia, session);
         }
 
         public Symbol GlobalScope { get; private set; }

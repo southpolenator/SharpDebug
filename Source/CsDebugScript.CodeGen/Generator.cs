@@ -24,44 +24,29 @@ namespace CsDebugScript.CodeGen
         /// Generates user types using the specified XML configuration.
         /// </summary>
         /// <param name="xmlConfig">The XML configuration.</param>
-        public static void Generate(XmlConfig xmlConfig)
+        /// <param name="logger">The logger text writer. If set to null, Console.Out will be used.</param>
+        /// <param name="errorLogger">The error logger text writer. If set to null, Console.Error will be used.</param>
+        public static void Generate(XmlConfig xmlConfig, TextWriter logger = null, TextWriter errorLogger = null)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            var error = Console.Error;
-
             XmlModule[] xmlModules = xmlConfig.Modules;
             XmlType[] typeNames = xmlConfig.Types;
             XmlIncludedFile[] includedFiles = xmlConfig.IncludedFiles;
             XmlReferencedAssembly[] referencedAssemblies = xmlConfig.ReferencedAssemblies;
-            UserTypeGenerationFlags generationOptions = UserTypeGenerationFlags.None;
+            UserTypeGenerationFlags generationOptions = xmlConfig.GetGenerationFlags();
+            ConcurrentDictionary<string, string> generatedFiles = new ConcurrentDictionary<string, string>();
+            var syntaxTrees = new ConcurrentBag<SyntaxTree>();
+            string currentDirectory = Directory.GetCurrentDirectory();
+            string outputDirectory = currentDirectory + "\\output\\";
 
-            if (xmlConfig.CompressedOutput)
-            {
-                generationOptions |= UserTypeGenerationFlags.CompressedOutput;
-                xmlConfig.DontGenerateFieldTypeInfoComment = true;
-                xmlConfig.MultiLineProperties = false;
-            }
+            // Check logger and error logger
+            if (errorLogger == null)
+                errorLogger = Console.Error;
+            if (logger == null)
+                logger = Console.Out;
 
-            if (!xmlConfig.DontGenerateFieldTypeInfoComment)
-                generationOptions |= UserTypeGenerationFlags.GenerateFieldTypeInfoComment;
-            if (!xmlConfig.MultiLineProperties)
-                generationOptions |= UserTypeGenerationFlags.SingleLineProperty;
-            if (xmlConfig.UseDiaSymbolProvider)
-                generationOptions |= UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
-            if (xmlConfig.ForceUserTypesToNewInsteadOfCasting)
-                generationOptions |= UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting;
-            if (xmlConfig.CacheUserTypeFields)
-                generationOptions |= UserTypeGenerationFlags.CacheUserTypeFields;
-            if (xmlConfig.CacheStaticUserTypeFields)
-                generationOptions |= UserTypeGenerationFlags.CacheStaticUserTypeFields;
-            if (xmlConfig.LazyCacheUserTypeFields)
-                generationOptions |= UserTypeGenerationFlags.LazyCacheUserTypeFields;
-            if (xmlConfig.GeneratePhysicalMappingOfUserTypes)
-                generationOptions |= UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes;
-            if (xmlConfig.SingleFileExport)
-                generationOptions |= UserTypeGenerationFlags.SingleFileExport;
-            if (xmlConfig.UseHungarianNotation)
-                generationOptions |= UserTypeGenerationFlags.UseHungarianNotation;
+            // Create output directory
+            Directory.CreateDirectory(outputDirectory);
 
             // Verify that included files exist
             if (!string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
@@ -69,28 +54,22 @@ namespace CsDebugScript.CodeGen
                     if (!File.Exists(file.Path))
                         throw new FileNotFoundException("", file.Path);
 
-            ConcurrentDictionary<string, string> generatedFiles = new ConcurrentDictionary<string, string>();
-            var syntaxTrees = new ConcurrentBag<SyntaxTree>();
-
-            string currentDirectory = Directory.GetCurrentDirectory();
-            string outputDirectory = currentDirectory + "\\output\\";
-            Directory.CreateDirectory(outputDirectory);
-
-            // Load modules
+            // Loading modules
             ConcurrentDictionary<Module, XmlModule> modules = new ConcurrentDictionary<Module, XmlModule>();
             ConcurrentDictionary<XmlModule, Symbol[]> globalTypesPerModule = new ConcurrentDictionary<XmlModule, Symbol[]>();
 
-            Console.Write("Loading modules...");
+            logger.Write("Loading modules...");
             Parallel.ForEach(xmlModules, (xmlModule) =>
             {
-                Module module = OpenPdb(xmlModule);
+                Module module = Module.Open(xmlModule);
 
                 modules.TryAdd(module, xmlModule);
             });
 
-            Console.WriteLine(" {0}", sw.Elapsed);
+            logger.WriteLine(" {0}", sw.Elapsed);
 
-            Console.Write("Enumerating symbols...");
+            // Enumerating symbols
+            logger.Write("Enumerating symbols...");
             Parallel.ForEach(modules, (mm) =>
             {
                 XmlModule xmlModule = mm.Value;
@@ -104,7 +83,7 @@ namespace CsDebugScript.CodeGen
                     Symbol[] foundSymbols = module.FindGlobalTypeWildcard(type.NameWildcard);
 
                     if (foundSymbols.Length == 0)
-                        error.WriteLine("Symbol not found: {0}", type.Name);
+                        errorLogger.WriteLine("Symbol not found: {0}", type.Name);
                     else
                         symbols.AddRange(foundSymbols);
                 }
@@ -122,11 +101,11 @@ namespace CsDebugScript.CodeGen
                     if (i < symbolsPerModule[j].Length)
                         allSymbols.Add(symbolsPerModule[j][i]);
 
-            Console.WriteLine(" {0}", sw.Elapsed);
+            logger.WriteLine(" {0}", sw.Elapsed);
 
 #if false
             // Initialize symbol fields and base classes
-            Console.Write("Initializing symbol values...");
+            logger.Write("Initializing symbol values...");
 
             Parallel.ForEach(Partitioner.Create(allSymbols), (symbol) =>
             {
@@ -134,10 +113,10 @@ namespace CsDebugScript.CodeGen
                 var baseClasses = symbol.BaseClasses;
             });
 
-            Console.WriteLine(" {0}", sw.Elapsed);
+            logger.WriteLine(" {0}", sw.Elapsed);
 #endif
 
-            Console.Write("Deduplicating symbols...");
+            logger.Write("Deduplicating symbols...");
 
             // Group duplicated symbols
             Dictionary<string, List<Symbol>> symbolsByName = new Dictionary<string, List<Symbol>>();
@@ -157,7 +136,7 @@ namespace CsDebugScript.CodeGen
                     if (s.Size != 0 && symbol.Size != 0 && s.Size != symbol.Size)
                     {
 #if DEBUG
-                        Console.WriteLine("{0}!{1} ({2}) {3}!{4} ({5})", s.Module.Name, s.Name, s.Size, symbol.Module.Name, symbol.Name, symbol.Size);
+                        logger.WriteLine("{0}!{1} ({2}) {3}!{4} ({5})", s.Module.Name, s.Name, s.Size, symbol.Module.Name, symbol.Name, symbol.Size);
 #endif
                         continue;
                     }
@@ -236,16 +215,16 @@ namespace CsDebugScript.CodeGen
 
             var globalTypes = symbolsByName.SelectMany(s => s.Value).ToArray();
 
-            Console.WriteLine(" {0}", sw.Elapsed);
-            Console.WriteLine("  Total symbols: {0}", globalTypesPerModule.Sum(gt => gt.Value.Length));
-            Console.WriteLine("  Unique symbol names: {0}", symbolsByName.Count);
-            Console.WriteLine("  Dedupedlicated symbols: {0}", globalTypes.Length);
+            logger.WriteLine(" {0}", sw.Elapsed);
+            logger.WriteLine("  Total symbols: {0}", globalTypesPerModule.Sum(gt => gt.Value.Length));
+            logger.WriteLine("  Unique symbol names: {0}", symbolsByName.Count);
+            logger.WriteLine("  Dedupedlicated symbols: {0}", globalTypes.Length);
 
             // Initialize GlobalCache with deduplicatedSymbols
             GlobalCache.Update(deduplicatedSymbols);
 
             // Collecting types
-            Console.Write("Collecting types...");
+            logger.Write("Collecting types...");
 
             var factory = new UserTypeFactory(xmlConfig.Transformations);
             List<UserType> userTypes = new List<UserType>();
@@ -260,7 +239,7 @@ namespace CsDebugScript.CodeGen
             {
                 string symbolName = symbol.Name;
 
-                //  TODO add configurable filter
+                // TODO: Add configurable filter
                 //
                 if (symbolName.StartsWith("$") || symbolName.StartsWith("__vc_attributes") || symbolName.Contains("`anonymous-namespace'") || symbolName.Contains("`anonymous namespace'") || symbolName.Contains("::$") || symbolName.Contains("`"))
                 {
@@ -303,8 +282,7 @@ namespace CsDebugScript.CodeGen
                             templateSymbols[symbolId].Add(symbol);
                     }
 
-                    //
-                    // TO DO
+                    // TODO:
                     // Do not add physical types for template specialization (not now)
                     // do if types contains static fields
                     // nested in templates
@@ -313,10 +291,10 @@ namespace CsDebugScript.CodeGen
                     simpleSymbols.Add(symbol);
             });
 
-            Console.WriteLine(" {0}", sw.Elapsed);
+            logger.WriteLine(" {0}", sw.Elapsed);
 
             // Populate Templates
-            Console.Write("Populating templates...");
+            logger.Write("Populating templates...");
             foreach (List<Symbol> symbols in templateSymbols.Values)
             {
                 Symbol symbol = symbols.First();
@@ -330,41 +308,41 @@ namespace CsDebugScript.CodeGen
                 userTypes.AddRange(factory.AddSymbols(symbols, type, symbolNamespaces[symbol], generationOptions));
             }
 
-            Console.WriteLine(" {0}", sw.Elapsed);
+            logger.WriteLine(" {0}", sw.Elapsed);
 
             // Specialized class
-            Console.Write("Populating specialized classes...");
+            logger.Write("Populating specialized classes...");
             foreach (Symbol symbol in simpleSymbols)
             {
                 userTypes.Add(factory.AddSymbol(symbol, null, symbolNamespaces[symbol], generationOptions));
             }
 
-            Console.WriteLine(" {0}", sw.Elapsed);
+            logger.WriteLine(" {0}", sw.Elapsed);
 
             // To solve template dependencies. Update specialization arguments once all the templates has been populated.
-            Console.Write("Updating template arguments...");
+            logger.Write("Updating template arguments...");
             foreach (TemplateUserType templateUserType in userTypes.OfType<TemplateUserType>())
             {
                 foreach (TemplateUserType specializedTemplateUserType in templateUserType.specializedTypes)
                     if (!specializedTemplateUserType.UpdateArguments(factory))
                     {
 #if DEBUG
-                        Console.WriteLine("Template user type cannot be updated: {0}", specializedTemplateUserType.Symbol.Name);
+                        logger.WriteLine("Template user type cannot be updated: {0}", specializedTemplateUserType.Symbol.Name);
 #endif
                     }
             }
 
-            Console.WriteLine(" {0}", sw.Elapsed);
+            logger.WriteLine(" {0}", sw.Elapsed);
 
             // Post processing user types (filling DeclaredInType)
-            Console.Write("Post processing user types...");
+            logger.Write("Post processing user types...");
             var namespaceTypes = factory.ProcessTypes(userTypes, symbolNamespaces).ToArray();
             userTypes.AddRange(namespaceTypes);
 
-            Console.WriteLine(" {0}", sw.Elapsed);
+            logger.WriteLine(" {0}", sw.Elapsed);
 
             // Code generation and saving it to disk
-            Console.Write("Saving code to disk...");
+            logger.Write("Saving code to disk...");
 
             if (!generationOptions.HasFlag(UserTypeGenerationFlags.SingleFileExport))
             {
@@ -372,7 +350,7 @@ namespace CsDebugScript.CodeGen
                 Parallel.ForEach(userTypes,
                     (symbolEntry) =>
                     {
-                        Tuple<string, string> result = GenerateUseTypeCode(symbolEntry, factory, outputDirectory, error, generationOptions, generatedFiles);
+                        Tuple<string, string> result = GenerateCode(symbolEntry, factory, outputDirectory, errorLogger, generationOptions, generatedFiles);
                         string text = result.Item1;
                         string filename = result.Item2;
 
@@ -413,7 +391,7 @@ namespace CsDebugScript.CodeGen
                             var output = stringWriterPool.GetObject();
 
                             output.GetStringBuilder().Clear();
-                            GenerateUseTypeCodeInSingleFile(output, symbolEntry, factory, error, generationOptions);
+                            GenerateCodeInSingleFile(output, symbolEntry, factory, errorLogger, generationOptions);
                             string text = output.ToString();
 
                             if (!string.IsNullOrEmpty(text))
@@ -432,7 +410,7 @@ namespace CsDebugScript.CodeGen
                 }
             }
 
-            Console.WriteLine(" {0}", sw.Elapsed);
+            logger.WriteLine(" {0}", sw.Elapsed);
 
             // Compiling the code
             string binFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -456,7 +434,7 @@ namespace CsDebugScript.CodeGen
                     references: references,
                     options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, platform: Platform.X64));
 
-                Console.WriteLine("Syntax trees: {0}", syntaxTrees.Count);
+                logger.WriteLine("Syntax trees: {0}", syntaxTrees.Count);
 
                 string dllFilename = Path.Combine(outputDirectory, xmlConfig.GeneratedAssemblyName);
                 string pdbFilename = Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(dllFilename) + ".pdb");
@@ -472,18 +450,18 @@ namespace CsDebugScript.CodeGen
                             diagnostic.IsWarningAsError ||
                             diagnostic.Severity == DiagnosticSeverity.Error);
 
-                        Console.Error.WriteLine("Compile errors (top 1000):");
+                        errorLogger.WriteLine("Compile errors (top 1000):");
                         foreach (var diagnostic in failures.Take(1000))
-                            Console.Error.WriteLine(diagnostic);
+                            errorLogger.WriteLine(diagnostic);
                     }
                     else
                     {
-                        Console.WriteLine("DLL size: {0}", dllStream.Position);
-                        Console.WriteLine("PDB size: {0}", pdbStream.Position);
+                        logger.WriteLine("DLL size: {0}", dllStream.Position);
+                        logger.WriteLine("PDB size: {0}", pdbStream.Position);
                     }
                 }
 
-                Console.WriteLine("Compiling: {0}", sw.Elapsed);
+                logger.WriteLine("Compiling: {0}", sw.Elapsed);
             }
 
             // Check whether we should generate assembly
@@ -514,12 +492,12 @@ namespace CsDebugScript.CodeGen
 
                 if (compileResult.Errors.Count > 0)
                 {
-                    Console.Error.WriteLine("Compile errors (top 1000):");
+                    errorLogger.WriteLine("Compile errors (top 1000):");
                     foreach (CompilerError err in compileResult.Errors.Cast<CompilerError>().Take(1000))
-                        Console.Error.WriteLine(err);
+                        errorLogger.WriteLine(err);
                 }
 
-                Console.WriteLine("Compiling: {0}", sw.Elapsed);
+                logger.WriteLine("Compiling: {0}", sw.Elapsed);
             }
 
             // Generating props file
@@ -537,12 +515,20 @@ namespace CsDebugScript.CodeGen
                 }
             }
 
-            Console.WriteLine("Total time: {0}", sw.Elapsed);
+            logger.WriteLine("Total time: {0}", sw.Elapsed);
         }
 
-        private static ConcurrentDictionary<string, string> createdDirectories = new ConcurrentDictionary<string, string>();
-
-        private static Tuple<string, string> GenerateUseTypeCode(UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationOptions, ConcurrentDictionary<string, string> generatedFiles)
+        /// <summary>
+        /// Generates the code for user type and creates a file for it.
+        /// </summary>
+        /// <param name="userType">The user type.</param>
+        /// <param name="factory">The user type factory.</param>
+        /// <param name="outputDirectory">The output directory where code file will be stored.</param>
+        /// <param name="errorOutput">The error output.</param>
+        /// <param name="generationFlags">The user type generation flags.</param>
+        /// <param name="generatedFiles">The list of already generated files.</param>
+        /// <returns>Tuple of generated code and filename</returns>
+        private static Tuple<string, string> GenerateCode(UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationFlags, ConcurrentDictionary<string, string> generatedFiles)
         {
             Symbol symbol = userType.Symbol;
 
@@ -562,14 +548,7 @@ namespace CsDebugScript.CodeGen
 
             if (!string.IsNullOrEmpty(nameSpace))
                 classOutputDirectory = Path.Combine(classOutputDirectory, UserType.NormalizeSymbolName(UserType.NormalizeSymbolName(nameSpace).Replace(".", "\\").Replace(":", ".")));
-
-
-            string ss;
-            if (!createdDirectories.TryGetValue(classOutputDirectory, out ss))
-            {
-                Directory.CreateDirectory(classOutputDirectory);
-                createdDirectories.TryAdd(classOutputDirectory, classOutputDirectory);
-            }
+            Directory.CreateDirectory(classOutputDirectory);
 
             bool isEnum = userType is EnumUserType;
 
@@ -586,17 +565,26 @@ namespace CsDebugScript.CodeGen
                 filename = string.Format(@"{0}\{1}{2}_{3}.exported.cs", classOutputDirectory, userType.ConstructorName, isEnum ? "_enum" : "", index++);
             }
 
-            using (TextWriter output = new StreamWriter(filename, false /* append */, System.Text.Encoding.UTF8, 1 * 1024 * 1024))
+            using (TextWriter output = new StreamWriter(filename))
             using (StringWriter stringOutput = new StringWriter())
             {
-                userType.WriteCode(new IndentedWriter(stringOutput, generationOptions.HasFlag(UserTypeGenerationFlags.CompressedOutput)), errorOutput, factory, generationOptions);
+                userType.WriteCode(new IndentedWriter(stringOutput, generationFlags.HasFlag(UserTypeGenerationFlags.CompressedOutput)), errorOutput, factory, generationFlags);
                 string text = stringOutput.ToString();
                 output.WriteLine(text);
                 return Tuple.Create(text, filename);
             }
         }
 
-        private static bool GenerateUseTypeCodeInSingleFile(TextWriter output, UserType userType, UserTypeFactory factory, TextWriter errorOutput, UserTypeGenerationFlags generationOptions)
+        /// <summary>
+        /// Generates the code for user type in single file.
+        /// </summary>
+        /// <param name="output">The output text writer.</param>
+        /// <param name="userType">The user type.</param>
+        /// <param name="factory">The user type factory.</param>
+        /// <param name="errorOutput">The error output.</param>
+        /// <param name="generationFlags">The user type generation flags.</param>
+        /// <returns><c>true</c> if code was generated for the type; otherwise <c>false</c></returns>
+        private static bool GenerateCodeInSingleFile(TextWriter output, UserType userType, UserTypeFactory factory, TextWriter errorOutput, UserTypeGenerationFlags generationFlags)
         {
             Symbol symbol = userType.Symbol;
 
@@ -611,46 +599,58 @@ namespace CsDebugScript.CodeGen
                 return false;
             }
 
-            userType.WriteCode(new IndentedWriter(output, generationOptions.HasFlag(UserTypeGenerationFlags.CompressedOutput)), errorOutput, factory, generationOptions);
+            userType.WriteCode(new IndentedWriter(output, generationFlags.HasFlag(UserTypeGenerationFlags.CompressedOutput)), errorOutput, factory, generationFlags);
             return true;
-        }
-
-        private static Module OpenPdb(XmlModule module)
-        {
-            IDiaDataSource dia = new DiaSource();
-            IDiaSession session;
-            string moduleName = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.PdbPath).ToLower();
-
-            module.Name = moduleName;
-            dia.loadDataFromPdb(module.PdbPath);
-            dia.openSession(out session);
-            return new Module(module.Name, module.Namespace, dia, session);
         }
     }
 
+    /// <summary>
+    /// Simple object pool leveraging <see cref="ConcurrentBag{T}"/>.
+    /// </summary>
+    /// <typeparam name="T">Type of object that will be stored in the pool.</typeparam>
     internal class ObjectPool<T>
     {
-        private ConcurrentBag<T> _objects;
-        private Func<T> _objectGenerator;
+        /// <summary>
+        /// The concurrent bag of objects
+        /// </summary>
+        private ConcurrentBag<T> objects;
 
+        /// <summary>
+        /// The object generator function
+        /// </summary>
+        private Func<T> objectGenerator;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ObjectPool{T}"/> class.
+        /// </summary>
+        /// <param name="objectGenerator">The object generator function.</param>
         public ObjectPool(Func<T> objectGenerator)
         {
             if (objectGenerator == null)
-                throw new ArgumentNullException("objectGenerator");
-            _objects = new ConcurrentBag<T>();
-            _objectGenerator = objectGenerator;
+                throw new ArgumentNullException(nameof(objectGenerator));
+            objects = new ConcurrentBag<T>();
+            this.objectGenerator = objectGenerator;
         }
 
+        /// <summary>
+        /// Gets the object from the pool.
+        /// </summary>
         public T GetObject()
         {
             T item;
-            if (_objects.TryTake(out item)) return item;
-            return _objectGenerator();
+
+            if (objects.TryTake(out item))
+                return item;
+            return objectGenerator();
         }
 
+        /// <summary>
+        /// Puts the object back to the pool.
+        /// </summary>
+        /// <param name="item">The object.</param>
         public void PutObject(T item)
         {
-            _objects.Add(item);
+            objects.Add(item);
         }
     }
 }
