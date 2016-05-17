@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace CsDebugScript.VS
 {
-    internal class VSDebugger : Engine.Debuggers.IDebuggerEngine
+    internal class VSDebugger : Engine.IDebuggerEngine
     {
         /// <summary>
         /// The Visual Studio debugger proxy running in Default AppDomain.
@@ -35,12 +35,12 @@ namespace CsDebugScript.VS
             }
         }
 
-        public Engine.SymbolProviders.ISymbolProvider CreateDefaultSymbolProvider()
+        public Engine.ISymbolProvider CreateDefaultSymbolProvider()
         {
             throw new NotImplementedException();
         }
 
-        public Engine.SymbolProviders.ISymbolProviderModule CreateDefaultSymbolProviderModule()
+        public Engine.ISymbolProviderModule CreateDefaultSymbolProviderModule()
         {
             throw new NotImplementedException();
         }
