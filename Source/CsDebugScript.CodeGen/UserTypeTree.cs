@@ -446,6 +446,8 @@ namespace CsDebugScript.CodeGen
                         firstField = false;
                     }
 
+                    if (!UseUserMember && !CacheResult && options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
+                        output.WriteLine(indentation, FieldTypeInfoComment);
                     if (UseUserMember && CacheResult)
                         output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}.Value; }} }}", Static ? "static " : "", FieldType, PropertyName, FieldName);
                     else if (CacheResult)
