@@ -239,7 +239,13 @@ namespace CsDebugScript
     /// It is needed when Generics User Type casts variable to new user type (that is template and possible generics). When user type is generics, engine cannot
     /// deduce CodeType that needs to be used, while generated user type code expects correct one. This class provides the bridge between two worlds.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <example>
+    /// When you have exported user type that is generics <code>MyGenericsType&lt;T&gt;</code> you should use this class to solve
+    /// problems that can arise of having this somewhere in the code:
+    /// <code>MyGenericsType&lt;MySecondGenericsType&lt;int&gt;&gt;</code>.
+    /// Using generics element caster solves problems by extracting inner user type from the code type and later using it when casting.
+    /// </example>
+    /// <typeparam name="T">Resulting user type</typeparam>
     public class GenericsElementCaster<T>
     {
         /// <summary>
@@ -251,7 +257,7 @@ namespace CsDebugScript
         /// Initializes a new instance of the <see cref="GenericsElementCaster{T}"/> class.
         /// </summary>
         /// <param name="thisClass">The thisClass variable in generated UserType.</param>
-        /// <param name="argumentNumber">The argument number.</param>
+        /// <param name="argumentNumber">The argument number in original user type.</param>
         public GenericsElementCaster(UserMember<Variable> thisClass, int argumentNumber)
             : this(thisClass.Value, argumentNumber)
         {
@@ -261,7 +267,7 @@ namespace CsDebugScript
         /// Initializes a new instance of the <see cref="GenericsElementCaster{T}"/> class.
         /// </summary>
         /// <param name="thisClass">The thisClass variable in generated UserType.</param>
-        /// <param name="argumentNumber">The argument number.</param>
+        /// <param name="argumentNumber">The argument number in original user type.</param>
         public GenericsElementCaster(Variable thisClass, int argumentNumber)
             : this(thisClass.GetCodeType(), argumentNumber)
         {
@@ -271,7 +277,7 @@ namespace CsDebugScript
         /// Initializes a new instance of the <see cref="GenericsElementCaster{T}"/> class.
         /// </summary>
         /// <param name="parentCodeType">CodeType of the generics class that will be using this helper class.</param>
-        /// <param name="argumentNumber">The argument number.</param>
+        /// <param name="argumentNumber">The argument number in original user type.</param>
         public GenericsElementCaster(CodeType parentCodeType, int argumentNumber)
         {
             try
@@ -291,7 +297,10 @@ namespace CsDebugScript
         public T CastAs(Variable variable)
         {
             if (elementCodeType != null)
+            {
                 variable = variable.CastAs(elementCodeType);
+            }
+
             return variable.CastAs<T>();
         }
     }

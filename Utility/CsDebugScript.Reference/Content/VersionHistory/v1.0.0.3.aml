@@ -29,7 +29,7 @@
           </listItem>
           <listItem>
             <para>
-              <codeEntityReference qualifyHint="true">M:CsScripts.UserMember`1.ToString</codeEntityReference> now forwards call to cached value's ToString() function.
+              <codeEntityReference qualifyHint="true">M:CsDebugScript.UserMember`1.ToString</codeEntityReference> now forwards call to cached value's ToString() function.
             </para>
           </listItem>
           <listItem>
@@ -49,47 +49,47 @@
           </listItem>
           <listItem>
             <para>
-              Adding support for accessing base classes from <codeEntityReference>T:CsScripts.CodeType</codeEntityReference>
+              Adding support for accessing base classes from <codeEntityReference>T:CsDebugScript.CodeType</codeEntityReference>
             </para>
           </listItem>
           <listItem>
             <para>
-              Easy conversion from <codeEntityReference>T:CsScripts.CodePointer`1</codeEntityReference> to <codeEntityReference>T:CsScripts.CodeArray`1</codeEntityReference>.
+              Easy conversion from <codeEntityReference>T:CsDebugScript.CodePointer`1</codeEntityReference> to <codeEntityReference>T:CsDebugScript.CodeArray`1</codeEntityReference>.
             </para>
           </listItem>
           <listItem>
             <para>
-              <codeEntityReference>T:CsScripts.Debugger</codeEntityReference> now has function for searching memory for pattern:
+              <codeEntityReference>T:CsDebugScript.Debugger</codeEntityReference> now has function for searching memory for pattern:
             </para>
             <list class="bullet">
               <listItem>
                 <para>
-                  <codeEntityReference>Overload:CsScripts.Debugger.FindBytePatternInMemory</codeEntityReference>
+                  <codeEntityReference>Overload:CsDebugScript.Debugger.FindBytePatternInMemory</codeEntityReference>
                 </para>
               </listItem>
               <listItem>
                 <para>
-                  <codeEntityReference>Overload:CsScripts.Debugger.FindAllBytePatternInMemory</codeEntityReference>
+                  <codeEntityReference>Overload:CsDebugScript.Debugger.FindAllBytePatternInMemory</codeEntityReference>
                 </para>
               </listItem>
               <listItem>
                 <para>
-                  <codeEntityReference>Overload:CsScripts.Debugger.FindPatternInMemory</codeEntityReference>
+                  <codeEntityReference>Overload:CsDebugScript.Debugger.FindPatternInMemory</codeEntityReference>
                 </para>
               </listItem>
               <listItem>
                 <para>
-                  <codeEntityReference>Overload:CsScripts.Debugger.FindAllPatternInMemory</codeEntityReference>
+                  <codeEntityReference>Overload:CsDebugScript.Debugger.FindAllPatternInMemory</codeEntityReference>
                 </para>
               </listItem>
               <listItem>
                 <para>
-                  <codeEntityReference>Overload:CsScripts.Debugger.FindTextPatternInMemory</codeEntityReference>
+                  <codeEntityReference>Overload:CsDebugScript.Debugger.FindTextPatternInMemory</codeEntityReference>
                 </para>
               </listItem>
               <listItem>
                 <para>
-                  <codeEntityReference>Overload:CsScripts.Debugger.FindAllTextPatternInMemory</codeEntityReference>
+                  <codeEntityReference>Overload:CsDebugScript.Debugger.FindAllTextPatternInMemory</codeEntityReference>
                 </para>
               </listItem>
             </list>
@@ -105,7 +105,7 @@
               </listItem>
               <listItem>
                 <para>
-                  <codeEntityReference qualifyHint="true">M:CsScripts.Variable.CastAs``1</codeEntityReference> works with UserType types that haven't been loaded into metadata cache.
+                  <codeEntityReference qualifyHint="true">M:CsDebugScript.Variable.CastAs``1</codeEntityReference> works with UserType types that haven't been loaded into metadata cache.
                 </para>
               </listItem>
               <listItem>
@@ -113,12 +113,12 @@
               </listItem>
               <listItem>
                 <para>
-                  <codeEntityReference qualifyHint="true">M:CsScripts.Variable.#ctor(CsScripts.Variable)</codeEntityReference> now copies all member fields.
+                  <codeEntityReference qualifyHint="true">M:CsDebugScript.Variable.#ctor(CsDebugScript.Variable)</codeEntityReference> now copies all member fields.
                 </para>
               </listItem>
               <listItem>
                 <para>
-                  <codeEntityReference qualifyHint="true">M:CsScripts.Variable.GetName</codeEntityReference> now has full path to how user get to this variable.
+                  <codeEntityReference qualifyHint="true">M:CsDebugScript.Variable.GetName</codeEntityReference> now has full path to how user get to this variable.
                 </para>
               </listItem>
             </list>

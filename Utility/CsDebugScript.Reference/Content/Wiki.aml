@@ -9,11 +9,11 @@
     </introduction>
 
     <section address="Installing_CSharp_scripts_and_using_it_in_WinDbg">
-      <title>Installing C# scripts and using it in WinDbg</title>
+      <title>Installing C# debug scripts and using it in WinDbg</title>
       <content/>
       <sections>
         <section address="Installing_CSharp_scripts_support">
-          <title>Installing C# scripts support</title>
+          <title>Installing C# debug scripts support</title>
           <content>
             <para>
               Copy flavor you need from Official build location (or build it yourself from
@@ -57,7 +57,7 @@
               Use <codeInline>!execute</codeInline> command exported from CsDebugScript.WinDbg extension:
             </para>
             <code>
-              !execute path_to_cs_script [optional arguments given to the script]
+              !execute path_to_csx_script [optional arguments given to the script]
             </code>
             <para>
               For example:
@@ -69,7 +69,7 @@
               In case you have one more extension that exports <codeInline>!execute</codeInline> command, you must specify extension at the beginning:
             </para>
             <code>
-              !CsDebugScript.WinDbg.execute c:\Scripts\myscript.csx
+              !CsDebugScript.execute c:\Scripts\myscript.csx
             </code>
           </content>
         </section>
@@ -77,10 +77,10 @@
           <title>Entering interactive mode</title>
           <content>
             <para>
-              Use <codeInline>!interactive</codeInline> command exported from CsDebugScript.WinDbg extension:
+              Use <codeInline>!interactive</codeInline> command exported from CsDebugScript extension:
             </para>
             <code>
-              !CsDebugScript.WinDbg.interactive
+              !CsDebugScript.interactive
             </code>
             <para>
               Interactive mode can execute both WinDbg commands and C# expressions. C# expression saves the state and must end with semicolon (;). WinDbg commands start with #dbg. For example you can enter following commands and not get an error:
@@ -90,6 +90,20 @@
               #dbg kn
               writeln("{0}:{1}", a.Id, a.SystemId);
             </code>
+          </content>
+        </section>
+        <section address="Entering_UI_interactive_mode">
+          <title>Entering UI interactive mode</title>
+          <content>
+            <para>
+              Use <codeInline>!openui</codeInline> command exported from CsDebugScript extension:
+            </para>
+            <code>
+              !CsDebugScript.openui
+            </code>
+            <para>
+              UI interactive mode is more powerful than regular interactive mode as it provides C# editor, completion window, XML documentation, etc.
+            </para>
           </content>
         </section>
       </sections>
@@ -130,6 +144,9 @@
             <list class="bullet">
               <listItem>
                 <codeEntityReference>T:CsDebugScript.Thread</codeEntityReference>
+              </listItem>
+              <listItem>
+                <codeEntityReference linkText="Process.Threads">P:CsDebugScript.Process.Threads</codeEntityReference>
               </listItem>
               <listItem>
                 <codeEntityReference>M:CsDebugScript.ScriptBase.writeln(System.String,System.Object[])</codeEntityReference>
@@ -447,7 +464,7 @@
             <para>
               Please take a look at
               <externalLink>
-                <linkText>CsScripts managed test</linkText>
+                <linkText>CsDebugScript.Engine.Test</linkText>
                 <linkUri>https://github.com/southpolenator/WinDbgCs/blob/master/Tests/CsDebugScript.Engine.Test/Program.cs</linkUri>
               </externalLink>.
               It shows how to:
@@ -491,7 +508,7 @@
           <title>Using XML export configuration file</title>
           <content>
             <code language="powershell">
-              CsDebugScript.CodeGen -p myPdb.pdb -x export.xml
+              CsDebugScript.CodeGen -x export.xml
             </code>
             <para>
               Where export.xml looks like:
@@ -501,6 +518,9 @@
                 &lt;Types&gt;
                   &lt;Type Name="MyTestClass" /&gt;
                 &lt;/Types&gt;
+                &lt;Modules&gt;
+                  &lt;Module Namespace="MyModule" PdbPath="myPdb.pdb"/&gt;
+                &lt;/Modules&gt;
                 &lt;Transformations&gt;
                   &lt;Transformation OriginalType="std::basic_string&amp;lt;wchar_t,${char_traits},${allocator}&amp;gt;" NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.wstring" Constructor="${new}" /&gt;
                   &lt;Transformation OriginalType="std::vector&amp;lt;${T},${allocator}&amp;gt;" NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.vector&amp;lt;${T}&amp;gt;" Constructor="${new}" /&gt;

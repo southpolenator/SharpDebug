@@ -342,22 +342,26 @@ namespace CsDebugScript
         /// Gets the type of the class field.
         /// </summary>
         /// <param name="classFieldName">Name of the class field.</param>
+        /// <returns>The type of the class field.</returns>
         public CodeType GetClassFieldType(string classFieldName)
         {
             return ClassFields[classFieldName].Item1;
         }
 
         /// <summary>
-        /// Gets field offset.
+        /// Gets the field offset.
         /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns>The field offset.</returns>
         public int GetFieldOffset(string fieldName)
         {
             return allFieldTypesAndOffsets[fieldName].Item2;
         }
 
         /// <summary>
-        /// Gets offset of all fields.
+        /// Gets the offset of all fields.
         /// </summary>
+        /// <returns>The offset of all fields.</returns>
         public Dictionary<string, int> GetFieldOffsets()
         {
             Dictionary<string, int> offsets = new Dictionary<string, int>();
@@ -371,16 +375,19 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Gets field code type.
+        /// Gets the field code type.
         /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns>The field code type.</returns>
         public CodeType GetFieldType(string fieldName)
         {
             return allFieldTypesAndOffsets[fieldName].Item1;
         }
 
         /// <summary>
-        /// Gets code type of all fields.
+        /// Gets the code type of all fields.
         /// </summary>
+        /// <returns>The code type of all fields.</returns>
         public Dictionary<string, CodeType> GetFieldTypes()
         {
             Dictionary<string, CodeType> offsets = new Dictionary<string, CodeType>();
@@ -398,6 +405,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="codeTypeName">The code type name.</param>
         /// <param name="module">The module.</param>
+        /// <returns>CodeType from specified name and module</returns>
         public static CodeType Create(string codeTypeName, Module module = null)
         {
             int moduleIndex = codeTypeName.IndexOf('!');
@@ -430,10 +438,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        ///  Creates the code type from list contianing specified module and type.
+        /// Creates the code type from the list containing specified module name and type.
+        /// First successful created code type is returned.
         /// </summary>
-        /// <param name="codeTypeNames"></param>
-        /// <returns></returns>
+        /// <param name="codeTypeNames">The list of code type names in form "module!codetype".</param>
+        /// <returns>CodeType from specified name and module</returns>
         public static CodeType Create(params string[] codeTypeNames)
         {
             foreach (var codeType in codeTypeNames)
@@ -455,6 +464,7 @@ namespace CsDebugScript
         /// Checks if this instance inherits the specified code type.
         /// </summary>
         /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if this instance inherits the specified code type; otherwise <c>false</c></returns>
         public bool Inherits(CodeType codeType)
         {
             if (this == codeType)
@@ -477,6 +487,7 @@ namespace CsDebugScript
         /// Checks if this instance inherits the specified type name.
         /// </summary>
         /// <param name="typeName">The type name.</param>
+        /// <returns><c>true</c> if this instance inherits the specified type name; otherwise <c>false</c></returns>
         public bool Inherits(string typeName)
         {
             if (Name == typeName)
@@ -515,6 +526,7 @@ namespace CsDebugScript
         /// Checks if this instance inherits the specified type.
         /// </summary>
         /// <typeparam name="T">Type to check if this instance inherits it</typeparam>
+        /// <returns><c>true</c> if this instance inherits the specified type; otherwise <c>false</c></returns>
         public bool Inherits<T>()
             where T : UserType
         {
@@ -525,6 +537,7 @@ namespace CsDebugScript
         /// Checks if this instance inherits the specified type.
         /// </summary>
         /// <param name="type">The type.</param>
+        /// <returns><c>true</c> if this instance inherits the specified type; otherwise <c>false</c></returns>
         public bool Inherits(Type type)
         {
             if (type.IsSubclassOf(typeof(Variable)))
@@ -558,64 +571,76 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the element type.
         /// </summary>
+        /// <returns>The element type.</returns>
         protected abstract CodeType GetElementType();
 
         /// <summary>
         /// Gets the pointer to type.
         /// </summary>
+        /// <returns>The pointer to type.</returns>
         protected abstract CodeType GetPointerToType();
 
         /// <summary>
         /// Gets the name of the type.
         /// </summary>
+        /// <returns>The name of the type.</returns>
         protected abstract string GetTypeName();
 
         /// <summary>
         /// Gets the size of the type.
         /// </summary>
+        /// <returns>The size of the type.</returns>
         protected abstract uint GetTypeSize();
 
         /// <summary>
         /// Gets the direct base classes and offsets.
         /// </summary>
+        /// <returns>The direct base classes and offsets.</returns>
         protected abstract Dictionary<string, Tuple<CodeType, int>> GetDirectBaseClassesAndOffsets();
 
         /// <summary>
         /// Gets the type all field names (including all base classes).
         /// </summary>
+        /// <returns>The type all field names (including all base classes).</returns>
         protected abstract string[] GetTypeAllFieldNames();
 
         /// <summary>
         /// Gets the type field names.
         /// </summary>
+        /// <returns>The type field names.</returns>
         protected abstract string[] GetTypeFieldNames();
 
         /// <summary>
         /// Gets field type and offset from all fields (including all base classes).
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
+        /// <returns>Field type and offset from all fields (including all base classes).</returns>
         protected abstract Tuple<CodeType, int> GetAllFieldTypeAndOffset(string fieldName);
 
         /// <summary>
         /// Gets the field type and offset.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
+        /// <returns>The field type and offset.</returns>
         protected abstract Tuple<CodeType, int> GetFieldTypeAndOffset(string fieldName);
 
         /// <summary>
         /// Gets the base class and offset.
         /// </summary>
         /// <param name="className">Name of the class.</param>
+        /// <returns>The base class and offset.</returns>
         protected abstract Tuple<CodeType, int> GetBaseClassAndOffset(string className);
 
         /// <summary>
         /// Gets the template arguments.
         /// </summary>
+        /// <returns>The template arguments.</returns>
         protected abstract object[] GetTemplateArguments();
 
         /// <summary>
         /// Gets the template arguments strings.
         /// </summary>
+        /// <returns>The template arguments strings.</returns>
         protected abstract string[] GetTemplateArgumentsStrings();
     }
 

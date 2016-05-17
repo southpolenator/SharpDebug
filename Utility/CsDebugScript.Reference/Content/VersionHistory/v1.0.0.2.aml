@@ -18,9 +18,9 @@
           <listItem>
             <para>
               Adding ability to change current
-              <codeEntityReference>T:CsScripts.Process</codeEntityReference>,
-              <codeEntityReference>T:CsScripts.Thread</codeEntityReference>,
-              <codeEntityReference>T:CsScripts.StackFrame</codeEntityReference>
+              <codeEntityReference>T:CsDebugScript.Process</codeEntityReference>,
+              <codeEntityReference>T:CsDebugScript.Thread</codeEntityReference>,
+              <codeEntityReference>T:CsDebugScript.StackFrame</codeEntityReference>
             </para>
           </listItem>
 

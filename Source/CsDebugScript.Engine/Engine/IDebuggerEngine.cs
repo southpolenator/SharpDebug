@@ -1,9 +1,8 @@
 ﻿using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using System;
 
-namespace CsDebugScript.Engine.Debuggers
+namespace CsDebugScript.Engine
 {
     /// <summary>
     /// Debugger engine interface that provides functionality for controlling debugger engine

@@ -13,7 +13,7 @@ namespace CsDebugScript.UI
     /// Helper class that represents UIElement to be created as result of executing interactive script.
     /// This class is needed since UI operations must be done in STA thread, so it will be lazily evaluated in UI thread.
     /// </summary>
-    public class LazyUIResult
+    internal class LazyUIResult
     {
         private Func<UIElement> creator;
 
