@@ -119,6 +119,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Generator.cs" />
     <Compile Include="GlobalCache.cs" />
     <Compile Include="IndentedWriter.cs" />
     <Compile Include="Module.cs" />

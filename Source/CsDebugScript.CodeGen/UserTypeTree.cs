@@ -2,14 +2,13 @@
 using CsDebugScript.CodeGen.UserTypes;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 
 namespace CsDebugScript.CodeGen
 {
     [Flags]
-    enum UserTypeGenerationFlags
+    internal enum UserTypeGenerationFlags
     {
         None = 0,
         SingleLineProperty = 1,
@@ -25,7 +24,7 @@ namespace CsDebugScript.CodeGen
         CompressedOutput = 1024,
     }
 
-    static class StringExtensions
+    internal static class StringExtensions
     {
         public static string UppercaseFirst(this string s)
         {
@@ -33,6 +32,7 @@ namespace CsDebugScript.CodeGen
             {
                 return string.Empty;
             }
+
             char[] a = s.ToCharArray();
             a[0] = char.ToUpper(a[0]);
             return new string(a);
@@ -88,7 +88,7 @@ namespace CsDebugScript.CodeGen
         }
     }
 
-    class UserTypeTreeBaseType : UserTypeTree
+    internal class UserTypeTreeBaseType : UserTypeTree
     {
         public UserTypeTreeBaseType(string baseType)
         {
@@ -107,7 +107,7 @@ namespace CsDebugScript.CodeGen
     /// Class represent Generic Argument Type.  
     /// User when we know that the type is representing Generic Specialization.
     /// </summary>
-    class UserTypeTreeArgumentGenericsType : UserTypeTreeGenericsType
+    internal class UserTypeTreeArgumentGenericsType : UserTypeTreeGenericsType
     {
         private int argumentNumber;
 
@@ -123,7 +123,7 @@ namespace CsDebugScript.CodeGen
         }
     }
 
-    class UserTypeTreeGenericsType : UserTypeTreeUserType
+    internal class UserTypeTreeGenericsType : UserTypeTreeUserType
     {
         public bool CanInstatiate;
 
@@ -345,7 +345,7 @@ namespace CsDebugScript.CodeGen
         }
     }
 
-    class UserTypeFunction : UserTypeField
+    internal class UserTypeFunction : UserTypeField
     {
         public override void WriteConstructorCode(IndentedWriter output, int indentation)
         {
@@ -363,7 +363,7 @@ namespace CsDebugScript.CodeGen
         }
     }
 
-    class UserTypeField
+    internal class UserTypeField
     {
         public string SimpleFieldValue { get; set; }
 
@@ -473,12 +473,12 @@ namespace CsDebugScript.CodeGen
                 }
         }
 
-
         /// <summary>
-        /// Gets property name based on the fieldName
+        /// Gets the name of the property based on the field name.
         /// </summary>
-        /// <param name="fieldName"></param>
-        /// <returns></returns>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="userType">Type of the user.</param>
+        /// <returns>The name of the property.</returns>
         public static string GetPropertyName(string fieldName, UserType userType)
         {
             if (fieldName == userType.Symbol.Name)
@@ -522,7 +522,7 @@ namespace CsDebugScript.CodeGen
         }
     }
 
-    class UserTypeConstructor
+    internal class UserTypeConstructor
     {
         public string Arguments { get; set; } = "";
 
@@ -558,7 +558,7 @@ namespace CsDebugScript.CodeGen
         }
     }
 
-    class UserTypeTransformation
+    internal class UserTypeTransformation
     {
         private Func<string, string> typeConverter;
         private UserType ownerUserType;
