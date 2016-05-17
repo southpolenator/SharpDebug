@@ -114,6 +114,7 @@
     <Compile Include="CLR\AppDomain.cs" />
     <Compile Include="CLR\DataReader.cs" />
     <Compile Include="CLR\Heap.cs" />
+    <Compile Include="CLR\NamespaceDoc.cs" />
     <Compile Include="CLR\Runtime.cs" />
     <Compile Include="Engine\Constants.cs" />
     <Compile Include="Engine\Context.cs" />
@@ -140,10 +141,10 @@
     <Compile Include="VariableCollection.cs" />
     <Compile Include="VoidType.cs" />
     <Compile Include="Engine\Debuggers\DbgEngDll.cs" />
-    <Compile Include="Engine\Debuggers\IDebuggerEngine.cs" />
+    <Compile Include="Engine\IDebuggerEngine.cs" />
     <Compile Include="Engine\Marshaling\NamespaceDoc.cs" />
     <Compile Include="Engine\Native\DEBUG_MODULE_PARAMETERS.cs" />
-    <Compile Include="Engine\Native\DEBUG_LAST_EVENT_INFO.cs" /> 
+    <Compile Include="Engine\Native\DEBUG_LAST_EVENT_INFO.cs" />
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\StateCache.cs" />
     <Compile Include="Engine\SymbolProviders\NamespaceDoc.cs" />
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\DebuggerOutputCapture.cs" />
@@ -176,8 +177,8 @@
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\DbgEngSymbolProvider.cs" />
     <Compile Include="Engine\SymbolProviders\DiaModule.cs" />
     <Compile Include="Engine\SymbolProviders\DiaSymbolProvider.cs" />
-    <Compile Include="Engine\SymbolProviders\ISymbolProvider.cs" />
-    <Compile Include="Engine\SymbolProviders\ISymbolProviderModule.cs" />
+    <Compile Include="Engine\ISymbolProvider.cs" />
+    <Compile Include="Engine\ISymbolProviderModule.cs" />
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\ThreadSwitcher.cs" />
     <Compile Include="Engine\UserTypeDescription.cs" />
     <Compile Include="Engine\UserTypeMetadata.cs" />

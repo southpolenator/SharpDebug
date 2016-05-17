@@ -8,7 +8,7 @@ namespace CsDebugScript.Engine.Marshaling
     /// Marshaled structure that can have extended part of the structure.
     /// </summary>
     /// <typeparam name="T">The structure type</typeparam>
-    public class MarshalStructure<T> : IDisposable
+    internal class MarshalStructure<T> : IDisposable
         where T : struct
     {
         /// <summary>
@@ -126,7 +126,7 @@ namespace CsDebugScript.Engine.Marshaling
     /// Marshaled structure extended by ANSI string.
     /// </summary>
     /// <typeparam name="T">The structure type</typeparam>
-    public class MarshalStructureExtendedWithAnsiString<T> : MarshalStructure<T>
+    internal class MarshalStructureExtendedWithAnsiString<T> : MarshalStructure<T>
         where T : struct
     {
         /// <summary>

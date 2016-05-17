@@ -3,7 +3,7 @@ using Dia2Lib;
 using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.Engine.SymbolProviders
+namespace CsDebugScript.Engine
 {
     /// <summary>
     /// Debugging symbol provider for a module.

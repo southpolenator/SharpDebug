@@ -72,11 +72,11 @@ namespace CsDebugScript.Engine
         public Type Type { get; private set; }
 
         /// <summary>
-        /// Determines whether the specified <see cref="CsDebugScript.UserTypeDescription" />, is equal to this instance.
+        /// Determines whether the specified <see cref="UserTypeDescription" />, is equal to this instance.
         /// </summary>
-        /// <param name="other">The <see cref="CsDebugScript.UserTypeDescription" /> to compare with this instance.</param>
+        /// <param name="other">The <see cref="UserTypeDescription" /> to compare with this instance.</param>
         /// <returns>
-        ///   <c>true</c> if the specified <see cref="CsDebugScript.UserTypeDescription" /> is equal to this instance; otherwise, <c>false</c>.
+        ///   <c>true</c> if the specified <see cref="UserTypeDescription" /> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
         public bool Equals(UserTypeDescription other)
         {
