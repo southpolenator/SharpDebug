@@ -45,10 +45,10 @@ namespace CsDebugScript.CodeGen.TypeTrees
                     continue;
 
                 // Try to find specialized arguments for template type
-                Symbol[] arguments = templateType.ExtractSpecializedSymbols();
-                TypeTree[] specializedArguments = new TypeTree[arguments.Length];
+                IReadOnlyList<Symbol> arguments = templateType.TemplateArgumentsAsSymbols;
+                TypeTree[] specializedArguments = new TypeTree[arguments.Count];
 
-                for (int i = 0; i < arguments.Length; i++)
+                for (int i = 0; i < arguments.Count; i++)
                 {
                     UserType userType;
 
@@ -122,7 +122,7 @@ namespace CsDebugScript.CodeGen.TypeTrees
                 NamespaceUserType namespaceType = userType as NamespaceUserType;
 
                 if (templateType != null)
-                    sb.Append(templateType.GetSpecializedType(SpecializedArguments[j].Select(t => t.GetTypeString()).ToArray()));
+                    sb.Append(templateType.GetSpecializedStringVersion(SpecializedArguments[j].Select(t => t.GetTypeString()).ToArray()));
                 else if (namespaceType != null)
                 {
                     if (j == 0)

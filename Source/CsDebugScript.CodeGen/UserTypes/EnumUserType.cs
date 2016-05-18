@@ -167,7 +167,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     // Enum cannot be instantiated in generic type.
                     // We must choose template specialization - first on the list.
                     TemplateUserType declaredInTemplateUserType = (DeclaredInType as TemplateUserType);
-                    string declaredInSpecializedType = declaredInTemplateUserType.GetSpecializedTypeDefinedInstance();
+                    string declaredInSpecializedType = declaredInTemplateUserType.GetSpecializedStringVersion();
 
                     return string.Format("{0}.{1}", declaredInSpecializedType, ClassName);
                 }

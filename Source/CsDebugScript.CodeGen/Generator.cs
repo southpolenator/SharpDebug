@@ -324,7 +324,7 @@ namespace CsDebugScript.CodeGen
             foreach (TemplateUserType templateUserType in userTypes.OfType<TemplateUserType>())
             {
                 foreach (TemplateUserType specializedTemplateUserType in templateUserType.SpecializedTypes)
-                    if (!specializedTemplateUserType.UpdateArguments(factory))
+                    if (!specializedTemplateUserType.UpdateTemplateArguments(factory))
                     {
 #if DEBUG
                         logger.WriteLine("Template user type cannot be updated: {0}", specializedTemplateUserType.Symbol.Name);

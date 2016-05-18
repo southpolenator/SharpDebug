@@ -98,7 +98,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                         TemplateUserType templateType = new TemplateUserType(symbol, type, nameSpace, this);
 
-                        int templateArgs = templateType.GenericsArguments;
+                        int templateArgs = templateType.NumberOfTemplateArguments;
 
 #if false // TODO: Check if we want to use simple user type instead of template user type
                         if (templateArgs == 0)
@@ -144,7 +144,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                     foreach (var specializedTemplate in templates)
                     {
-                        var arguments = specializedTemplate.Arguments;
+                        var arguments = specializedTemplate.TemplateArguments;
 
                         // Check if all arguments are simple user type
                         bool simpleUserType = true;

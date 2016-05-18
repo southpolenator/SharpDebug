@@ -51,39 +51,39 @@ namespace CsDebugScript.CodeGen.UserTypes
 
         private bool TryGetArgument(string typeString, out string argumentName)
         {
-            if (TemplateType.TryGetArgument(typeString, out argumentName))
+            if (TemplateType.TryGetTemplateArgument(typeString, out argumentName))
             {
                 return true;
             }
 
             if (typeString == "wchar_t")
             {
-                if (TemplateType.TryGetArgument("unsigned short", out argumentName))
+                if (TemplateType.TryGetTemplateArgument("unsigned short", out argumentName))
                     return true;
             }
             else if (typeString == "unsigned short")
             {
-                if (TemplateType.TryGetArgument("whcar_t", out argumentName))
+                if (TemplateType.TryGetTemplateArgument("whcar_t", out argumentName))
                     return true;
             }
             else if (typeString == "unsigned long long")
             {
-                if (TemplateType.TryGetArgument("unsigned __int64", out argumentName))
+                if (TemplateType.TryGetTemplateArgument("unsigned __int64", out argumentName))
                     return true;
             }
             else if (typeString == "unsigned __int64")
             {
-                if (TemplateType.TryGetArgument("unsigned long long", out argumentName))
+                if (TemplateType.TryGetTemplateArgument("unsigned long long", out argumentName))
                     return true;
             }
             else if (typeString == "long long")
             {
-                if (TemplateType.TryGetArgument("__int64", out argumentName))
+                if (TemplateType.TryGetTemplateArgument("__int64", out argumentName))
                     return true;
             }
             else if (typeString == "__int64")
             {
-                if (TemplateType.TryGetArgument("long long", out argumentName))
+                if (TemplateType.TryGetTemplateArgument("long long", out argumentName))
                     return true;
             }
 
