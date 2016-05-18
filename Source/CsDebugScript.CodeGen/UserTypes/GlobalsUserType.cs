@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.CodeGen.TypeTrees;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -76,10 +77,10 @@ namespace CsDebugScript.CodeGen.UserTypes
         }
 
 
-        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected override TypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
             baseClassOffset = 0;
-            return new UserTypeStaticClass();
+            return new StaticClassTypeTree();
         }
 
         protected override IEnumerable<UserTypeConstructor> GenerateConstructors()

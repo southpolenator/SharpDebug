@@ -1,4 +1,5 @@
-﻿using Dia2Lib;
+﻿using CsDebugScript.CodeGen.TypeTrees;
+using Dia2Lib;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,10 +8,22 @@ using System.Text;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
-    class UserType
+    /// <summary>
+    /// Base class for any exported user type
+    /// </summary>
+    internal class UserType
     {
+        /// <summary>
+        /// Flag that saves if thisClass variable was used during generation and should be exported.
+        /// </summary>
         protected bool usedThisClass = false;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserType"/> class.
+        /// </summary>
+        /// <param name="symbol">The symbol we are generating this user type from.</param>
+        /// <param name="xmlType">The XML description of the type.</param>
+        /// <param name="nameSpace">The namespace it belongs to.</param>
         public UserType(Symbol symbol, XmlType xmlType, string nameSpace)
         {
             Symbol = symbol;
@@ -20,8 +33,14 @@ namespace CsDebugScript.CodeGen.UserTypes
             NamespaceSymbol = nameSpace;
         }
 
+        /// <summary>
+        /// Gets the symbol we are generating this user type from..
+        /// </summary>
         public Symbol Symbol { get; private set; }
 
+        /// <summary>
+        /// Gets the original name of this user type.
+        /// </summary>
         protected string TypeName
         {
             get
@@ -31,13 +50,12 @@ namespace CsDebugScript.CodeGen.UserTypes
         }
 
         /// <summary>
-        /// Namespace in DIA Symbols name
+        /// Gets or sets the namespace in symbol name.
         /// </summary>
         protected string NamespaceSymbol { get; set; }
 
         /// <summary>
-        /// Normalized Namespace.
-        /// If defined as nested does to include Parent Type.
+        /// Gets the normalized Namespace. If this user type is defined as nested type it does include parent type name.
         /// </summary>
         public string Namespace
         {
@@ -166,7 +184,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
             bool isStatic = field.DataKind == DataKind.StaticMember || forceIsStatic;
-            UserTypeTree fieldType = GetFieldType(field, factory, extractingBaseClass, field.Size);
+            TypeTree fieldType = GetFieldType(field, factory, extractingBaseClass, field.Size);
             string fieldName = field.Name;
             string gettingField = "variable.GetField";
             string simpleFieldValue;
@@ -218,8 +236,8 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             if (extractingBaseClass)
             {
-                if (fieldType is UserTypeTreeUserType && ((UserTypeTreeUserType)fieldType).UserType is PrimitiveUserType)
-                    userTypeField.ConstructorText = string.Format("CastAs<{0}>()", fieldType.GetUserTypeString());
+                if (fieldType is UserTypeTree && ((UserTypeTree)fieldType).UserType is PrimitiveUserType)
+                    userTypeField.ConstructorText = string.Format("CastAs<{0}>()", fieldType.GetTypeString());
                 else if (useThisClass)
                 {
                     userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("thisClass.Value.GetClassField", "GetBaseClass");
@@ -232,11 +250,11 @@ namespace CsDebugScript.CodeGen.UserTypes
             return userTypeField;
         }
 
-        protected virtual UserTypeField ExtractField(SymbolField field, UserTypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags options, bool extractingBaseClass)
+        protected virtual UserTypeField ExtractField(SymbolField field, TypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags options, bool extractingBaseClass)
         {
             //  Non Template User Type must use Instantiable Generics.
             //
-            if (!(this is TemplateUserType) && fieldType is UserTypeTreeGenericsType && !((UserTypeTreeGenericsType)fieldType).CanInstatiate)
+            if (!(this is TemplateUserType) && fieldType is TemplateTypeTree && !((TemplateTypeTree)fieldType).CanInstantiate)
             {
                 throw new Exception("Generics type cannot be instantiated");
             }
@@ -250,7 +268,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             string constructorText;
             bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
             bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.ContainsSymbol(Symbol.Module, castingTypeString);
-            var fieldTypeString = fieldType.GetUserTypeString();
+            var fieldTypeString = fieldType.GetTypeString();
             bool isConstant = field.LocationType == LocationType.Constant;
             string constantString = "";
 
@@ -263,7 +281,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 constructorText = simpleFieldValue;
             }
-            else if (fieldType is UserTypeTreeEnum)
+            else if (fieldType is EnumTreeType)
             {
                 constructorText = string.Format("({0})(ulong){1}", castingTypeString, simpleFieldValue);
             }
@@ -271,11 +289,11 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 constructorText = string.Format("{0}.ToString()", simpleFieldValue);
             }
-            else if (fieldType is UserTypeTreeBaseType && castingTypeString != "NakedPointer")
+            else if (fieldType is BasicTypeTree && castingTypeString != "NakedPointer")
             {
                 constructorText = string.Format("({0}){1}", castingTypeString, simpleFieldValue);
             }
-            else if (fieldType is UserTypeTreeBaseType || fieldType is UserTypeTreeCodeFunction || fieldType is UserTypeTreeCodeArray || fieldType is UserTypeTreeCodePointer || castWithNewInsteadOfCasting)
+            else if (fieldType is BasicTypeTree || fieldType is FunctionTypeTree || fieldType is ArrayTypeTree || fieldType is PointerTypeTree || castWithNewInsteadOfCasting)
             {
                 constructorText = string.Format("new {0}({1})", castingTypeString, simpleFieldValue);
             }
@@ -303,9 +321,9 @@ namespace CsDebugScript.CodeGen.UserTypes
             //  When Creating Property for BaseClass, current class is generic type
             //  Rename baseclass property name not to include specialization type.
             //
-            if (extractingBaseClass && this is TemplateUserType && fieldType is UserTypeTreeGenericsType)
+            if (extractingBaseClass && this is TemplateUserType && fieldType is TemplateTypeTree)
             {
-                fieldName = ((UserTypeTreeGenericsType)(fieldType)).UserType.ClassName;
+                fieldName = ((TemplateTypeTree)(fieldType)).UserType.ClassName;
             }
 
             return new UserTypeField
@@ -433,22 +451,22 @@ namespace CsDebugScript.CodeGen.UserTypes
                 var pointerField = userTypeArray.Key;
                 var counterField = userTypeArray.Value;
 
-                UserTypeTree fieldType = GetTypeString(pointerField.Type, factory, pointerField.Size);
+                TypeTree fieldType = GetTypeString(pointerField.Type, factory, pointerField.Size);
 
-                if (fieldType is UserTypeTreeCodeArray)
+                if (fieldType is ArrayTypeTree)
                     continue;
 
-                UserTypeTreeCodePointer fieldTypeCodePointer = fieldType as UserTypeTreeCodePointer;
+                PointerTypeTree fieldTypeCodePointer = fieldType as PointerTypeTree;
 
                 if (fieldTypeCodePointer != null)
                 {
-                    fieldType = fieldTypeCodePointer.InnerType;
+                    fieldType = fieldTypeCodePointer.ElementType;
                 }
 
-                fieldType = new UserTypeTreeCodeArray(fieldType);
+                fieldType = new ArrayTypeTree(fieldType);
                 string fieldName = pointerField.Name + "Array";
                 string constructorText = string.Format("new {0}({1}, {2})", fieldType, pointerField.Name, counterField.Name);
-                string fieldTypeString = fieldType.GetUserTypeString();
+                string fieldTypeString = fieldType.GetTypeString();
                 bool isStatic = pointerField.LocationType == LocationType.Static;
                 bool cacheUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheUserTypeFields);
                 bool cacheStaticUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheStaticUserTypeFields);
@@ -541,7 +559,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
         {
             int baseClassOffset = 0;
-            UserTypeTree baseType = ExportDynamicFields ? GetBaseTypeString(error, Symbol, factory, out baseClassOffset) : null;
+            TypeTree baseType = ExportDynamicFields ? GetBaseTypeString(error, Symbol, factory, out baseClassOffset) : null;
             var fields = ExtractFields(factory, options).OrderBy(f => !f.Static).ThenBy(f => f.FieldName != "ClassCodeType").ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
             bool hasStatic = fields.Any(f => f.Static), hasNonStatic = fields.Any(f => !f.Static);
             Symbol[] baseClasses = Symbol.BaseClasses;
@@ -570,7 +588,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 foreach (var moduleName in GlobalCache.GetSymbolModuleNames(Symbol))
                     output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, TypeName);
-                output.WriteLine(indentation, @"public partial class {0} {1} {2}", ClassName, !string.IsNullOrEmpty(baseType.GetUserTypeString()) ? ":" : "", baseType);
+                output.WriteLine(indentation, @"public partial class {0} {1} {2}", ClassName, !string.IsNullOrEmpty(baseType.GetTypeString()) ? ":" : "", baseType);
             }
             else
                 output.WriteLine(indentation, @"public static class {0}", ClassName);
@@ -608,11 +626,11 @@ namespace CsDebugScript.CodeGen.UserTypes
                 innerType.WriteCode(output, error, factory, options, indentation);
             }
 
-            if (baseType is UserTypeTreeMultiClassInheritance || baseType is UserTypeTreeSingleClassInheritanceWithInterfaces)
+            if (baseType is MultiClassInheritanceTypeTree || baseType is SingleClassInheritanceWithInterfacesTypeTree)
             {
                 IEnumerable<Symbol> baseClassesForProperties = baseClasses;
 
-                if (baseType is UserTypeTreeSingleClassInheritanceWithInterfaces)
+                if (baseType is SingleClassInheritanceWithInterfacesTypeTree)
                 {
                     baseClassesForProperties = baseClasses.Where(b => b.IsEmpty);
                 }
@@ -716,14 +734,14 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
         }
 
-        protected virtual string GetCastingString(UserTypeTree typeTree)
+        protected virtual string GetCastingString(TypeTree typeTree)
         {
-            if (typeTree is UserTypeTreeVariable)
+            if (typeTree is VariableTypeTree)
                 return "";
-            return typeTree.GetUserTypeString();
+            return typeTree.GetTypeString();
         }
 
-        protected virtual UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected virtual TypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
             var baseClasses = type.BaseClasses;
 
@@ -739,12 +757,12 @@ namespace CsDebugScript.CodeGen.UserTypes
                     if (factory.GetUserType(baseClassSymbol, out userType) && !(userType is PrimitiveUserType))
                     {
                         baseClassOffset = baseClassSymbol.Offset;
-                        return new UserTypeTreeSingleClassInheritanceWithInterfaces(userType, factory);
+                        return new SingleClassInheritanceWithInterfacesTypeTree(userType, factory);
                     }
                 }
 
                 baseClassOffset = 0;
-                return new UserTypeTreeMultiClassInheritance();
+                return new MultiClassInheritanceTypeTree();
             }
 
             if (baseClasses.Length == 1)
@@ -757,20 +775,20 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (transformation != null)
                 {
                     baseClassOffset = 0;
-                    return new UserTypeTreeTransformation(transformation);
+                    return new TransformationTypeTree(transformation);
                 }
 
                 UserType baseUserType;
 
                 if (factory.GetUserType(baseClassType, out baseUserType))
                 {
-                    UserTypeTree tree = UserTypeTreeUserType.Create(baseUserType, factory);
-                    UserTypeTreeGenericsType genericsTree = tree as UserTypeTreeGenericsType;
+                    TypeTree tree = UserTypeTree.Create(baseUserType, factory);
+                    TemplateTypeTree genericsTree = tree as TemplateTypeTree;
 
-                    if (genericsTree != null && !genericsTree.CanInstatiate)
+                    if (genericsTree != null && !genericsTree.CanInstantiate)
                     {
                         baseClassOffset = 0;
-                        return new UserTypeTreeVariable(false);
+                        return new VariableTypeTree(false);
                     }
 
                     baseClassOffset = baseClassType.Offset;
@@ -781,49 +799,49 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
 
             baseClassOffset = 0;
-            return new UserTypeTreeVariable(false);
+            return new VariableTypeTree(false);
         }
 
-        public virtual UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
+        public virtual TypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
         {
             return GetTypeString(field.Type, factory, bitLength);
         }
 
-        public virtual UserTypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)
+        public virtual TypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
             switch (type.Tag)
             {
                 case SymTagEnum.SymTagBaseType:
                     if (bitLength == 1)
-                        return new UserTypeTreeBaseType("bool");
+                        return new BasicTypeTree("bool");
                     switch (type.BasicType)
                     {
                         case BasicType.Bit:
                         case BasicType.Bool:
-                            return new UserTypeTreeBaseType("bool");
+                            return new BasicTypeTree("bool");
                         case BasicType.Char:
                         case BasicType.WChar:
-                            return new UserTypeTreeBaseType("char");
+                            return new BasicTypeTree("char");
                         case BasicType.BSTR:
-                            return new UserTypeTreeBaseType("string");
+                            return new BasicTypeTree("string");
                         case BasicType.Void:
-                            return new UserTypeTreeBaseType("VoidType");
+                            return new BasicTypeTree("VoidType");
                         case BasicType.Float:
-                            return new UserTypeTreeBaseType(type.Size <= 4 ? "float" : "double");
+                            return new BasicTypeTree(type.Size <= 4 ? "float" : "double");
                         case BasicType.Int:
                         case BasicType.Long:
                             switch (type.Size)
                             {
                                 case 0:
-                                    return new UserTypeTreeBaseType("VoidType");
+                                    return new BasicTypeTree("VoidType");
                                 case 1:
-                                    return new UserTypeTreeBaseType("sbyte");
+                                    return new BasicTypeTree("sbyte");
                                 case 2:
-                                    return new UserTypeTreeBaseType("short");
+                                    return new BasicTypeTree("short");
                                 case 4:
-                                    return new UserTypeTreeBaseType("int");
+                                    return new BasicTypeTree("int");
                                 case 8:
-                                    return new UserTypeTreeBaseType("long");
+                                    return new BasicTypeTree("long");
                                 default:
                                     throw new Exception("Unexpected type length " + type.Size);
                             }
@@ -833,21 +851,21 @@ namespace CsDebugScript.CodeGen.UserTypes
                             switch (type.Size)
                             {
                                 case 0:
-                                    return new UserTypeTreeBaseType("VoidType");
+                                    return new BasicTypeTree("VoidType");
                                 case 1:
-                                    return new UserTypeTreeBaseType("byte");
+                                    return new BasicTypeTree("byte");
                                 case 2:
-                                    return new UserTypeTreeBaseType("ushort");
+                                    return new BasicTypeTree("ushort");
                                 case 4:
-                                    return new UserTypeTreeBaseType("uint");
+                                    return new BasicTypeTree("uint");
                                 case 8:
-                                    return new UserTypeTreeBaseType("ulong");
+                                    return new BasicTypeTree("ulong");
                                 default:
                                     throw new Exception("Unexpected type length " + type.Size);
                             }
 
                         case BasicType.Hresult:
-                            return new UserTypeTreeBaseType("uint"); // TODO: Create Hresult type
+                            return new BasicTypeTree("uint"); // TODO: Create Hresult type
                         default:
                             throw new Exception("Unexpected basic type " + type.BasicType);
                     }
@@ -862,14 +880,14 @@ namespace CsDebugScript.CodeGen.UserTypes
                         // When Exporting Pointer from Global Modules, always export types as code pointer.
                         if (this is GlobalsUserType && fakeUserType != null)
                         {
-                            return new UserTypeTreeCodePointer(UserTypeTreeUserType.Create(fakeUserType, factory));
+                            return new PointerTypeTree(UserTypeTree.Create(fakeUserType, factory));
                         }
 
-                        // TODO Describe the condition.
+                        // TODO: Describe the condition.
                         //
                         if (fakeUserType is PrimitiveUserType)
                         {
-                            return new UserTypeTreeCodePointer(UserTypeTreeUserType.Create(fakeUserType, factory));
+                            return new PointerTypeTree(UserTypeTree.Create(fakeUserType, factory));
                         }
 
                         switch (pointerType.Tag)
@@ -877,17 +895,17 @@ namespace CsDebugScript.CodeGen.UserTypes
                             case SymTagEnum.SymTagBaseType:
                             case SymTagEnum.SymTagEnum:
                                 {
-                                    string innerType = GetTypeString(pointerType, factory).GetUserTypeString();
+                                    string innerType = GetTypeString(pointerType, factory).GetTypeString();
 
                                     if (innerType == "void")
-                                        return new UserTypeTreeBaseType("NakedPointer");
-                                    return new UserTypeTreeCodePointer(GetTypeString(pointerType, factory));
+                                        return new BasicTypeTree("NakedPointer");
+                                    return new PointerTypeTree(GetTypeString(pointerType, factory));
                                 }
 
                             case SymTagEnum.SymTagUDT:
                                 return GetTypeString(pointerType, factory);
                             default:
-                                return new UserTypeTreeCodePointer(GetTypeString(pointerType, factory));
+                                return new PointerTypeTree(GetTypeString(pointerType, factory));
                         }
                     }
 
@@ -898,34 +916,34 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                         if (transformation != null)
                         {
-                            return new UserTypeTreeTransformation(transformation);
+                            return new TransformationTypeTree(transformation);
                         }
 
                         UserType userType;
 
                         if (factory.GetUserType(type, out userType))
                         {
-                            UserTypeTree tree = UserTypeTreeUserType.Create(userType, factory);
-                            UserTypeTreeGenericsType genericsTree = tree as UserTypeTreeGenericsType;
+                            TypeTree tree = UserTypeTree.Create(userType, factory);
+                            TemplateTypeTree genericsTree = tree as TemplateTypeTree;
 
-                            if (genericsTree != null && !genericsTree.CanInstatiate)
-                                return new UserTypeTreeVariable();
+                            if (genericsTree != null && !genericsTree.CanInstantiate)
+                                return new VariableTypeTree();
                             return tree;
                         }
 
                         if (type.Tag == SymTagEnum.SymTagEnum)
                         {
-                            return new UserTypeTreeBaseType("uint");
+                            return new BasicTypeTree("uint");
                         }
 
-                        return new UserTypeTreeVariable();
+                        return new VariableTypeTree();
                     }
 
                 case SymTagEnum.SymTagArrayType:
-                    return new UserTypeTreeCodeArray(GetTypeString(type.ElementType, factory));
+                    return new ArrayTypeTree(GetTypeString(type.ElementType, factory));
 
                 case SymTagEnum.SymTagFunctionType:
-                    return new UserTypeTreeCodeFunction();
+                    return new FunctionTypeTree();
 
                 default:
                     throw new Exception("Unexpected type tag " + type.Tag);

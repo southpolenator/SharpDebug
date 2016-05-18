@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.CodeGen.TypeTrees;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -77,7 +78,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         {
                             if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
                             {
-                                var typeString = GetTypeString(symbol, factory).GetUserTypeString();
+                                var typeString = GetTypeString(symbol, factory).GetTypeString();
 
                                 specializationUserType = new PrimitiveUserType(typeString, symbol);
                             }
@@ -275,17 +276,17 @@ namespace CsDebugScript.CodeGen.UserTypes
             return false;
         }
 
-        public override UserTypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)
+        public override TypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
             return base.GetTypeString(type, CreateFactory(factory), bitLength);
         }
 
-        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected override TypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
-            UserTypeTree baseType = base.GetBaseTypeString(error, type, CreateFactory(factory), out baseClassOffset);
+            TypeTree baseType = base.GetBaseTypeString(error, type, CreateFactory(factory), out baseClassOffset);
 
             // Check if base type is template argument. It if is, export it as if it is multi class inheritance.
-            UserTypeTreeUserType userBaseType = baseType as UserTypeTreeUserType;
+            UserTypeTree userBaseType = baseType as UserTypeTree;
             PrimitiveUserType primitiveUserType = userBaseType != null ? userBaseType.UserType as PrimitiveUserType : null;
             if (userBaseType != null && primitiveUserType != null)
             {
@@ -293,10 +294,10 @@ namespace CsDebugScript.CodeGen.UserTypes
                 string commonBaseClass;
 
                 if (dict.TryGetValue(primitiveUserType.ClassName, out commonBaseClass))
-                    return UserTypeTreeUserType.Create(new PrimitiveUserType(commonBaseClass, null), factory);
+                    return UserTypeTree.Create(new PrimitiveUserType(commonBaseClass, null), factory);
 
                 baseClassOffset = 0;
-                return new UserTypeTreeMultiClassInheritance();
+                return new MultiClassInheritanceTypeTree();
             }
 
             return baseType;
@@ -443,7 +444,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         break;
                     case TypeOfSpecializationType.UserType:
                         if (templateCommonType != null)
-                            userTypeName = new UserTypeTreeGenericsType(templateCommonType, factory).GetUserTypeString();
+                            userTypeName = new TemplateTypeTree(templateCommonType, factory).GetTypeString();
                         else
                             userTypeName = commonType.FullClassName;
                         break;
@@ -526,13 +527,13 @@ namespace CsDebugScript.CodeGen.UserTypes
         }
 
 
-        public override UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
+        public override TypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
         {
             if (extractingBaseClass || this.Arguments.Count == 0)
             {
                 // Do not match specializations when getting type for base class.
                 //
-                UserTypeTree baseClassType = GetTypeString(field.Type, factory, bitLength);
+                TypeTree baseClassType = GetTypeString(field.Type, factory, bitLength);
 
                 return baseClassType;
             }
@@ -555,9 +556,9 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
 
             //
-            UserTypeTree result = GetTypeString(field.Type, factory, bitLength);
+            TypeTree result = GetTypeString(field.Type, factory, bitLength);
 
-            if (result is UserTypeTreeBaseType)
+            if (result is BasicTypeTree)
             {
                 // Correct result
                 //
@@ -565,7 +566,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (CreateFactory(factory).GetUserType(field.Type, out baseTypeUserType))
                 {
-                    UserTypeTree tree = UserTypeTreeUserType.Create(baseTypeUserType, factory);
+                    TypeTree tree = UserTypeTree.Create(baseTypeUserType, factory);
 
                     if (tree != null)
                     {
@@ -577,7 +578,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 // TODO, look for typedeclared
                 // Class is using different types than in template specialization.
                 // We cannot support it right now.
-                return new UserTypeTreeVariable();
+                return new VariableTypeTree();
             }
 
             return result;

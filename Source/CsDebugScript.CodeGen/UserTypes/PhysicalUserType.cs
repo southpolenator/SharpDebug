@@ -1,10 +1,34 @@
-﻿using Dia2Lib;
-using System.Collections.Generic;
+﻿using CsDebugScript.CodeGen.TypeTrees;
+using Dia2Lib;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
+    /// <summary>
+    /// Helper functions for string manipulation.
+    /// </summary>
+    internal static class StringExtensions
+    {
+        /// <summary>
+        /// Makes first letter in string uppercase.
+        /// </summary>
+        /// <param name="s">The input string.</param>
+        /// <returns>String that has first letter uppercase.</returns>
+        public static string UppercaseFirst(this string s)
+        {
+            if (string.IsNullOrEmpty(s))
+            {
+                return string.Empty;
+            }
+
+            char[] a = s.ToCharArray();
+            a[0] = char.ToUpper(a[0]);
+            return new string(a);
+        }
+    }
+
     class PhysicalUserType : UserType
     {
         private const string ClassCodeType = "ClassCodeType";
@@ -16,9 +40,9 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
         }
 
-        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected override TypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
-            UserTypeTree baseType = base.GetBaseTypeString(error, type, factory, out baseClassOffset);
+            TypeTree baseType = base.GetBaseTypeString(error, type, factory, out baseClassOffset);
 
             this.baseClassOffset = baseClassOffset;
             return baseType;
@@ -171,7 +195,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             };
         }
 
-        protected override UserTypeField ExtractField(SymbolField field, UserTypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags options, bool extractingBaseClass)
+        protected override UserTypeField ExtractField(SymbolField field, TypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags options, bool extractingBaseClass)
         {
             if (!isStatic)
             {
@@ -180,44 +204,44 @@ namespace CsDebugScript.CodeGen.UserTypes
                 bool cacheStaticUserTypeFields = options.HasFlag(UserTypeGenerationFlags.CacheStaticUserTypeFields);
                 string constructorText = "";
                 string fieldName = field.Name;
-                string fieldTypeString = fieldType.GetUserTypeString();
-                UserTypeTreeBaseType baseType = fieldType as UserTypeTreeBaseType;
-                UserTypeTreeCodeArray codeArrayType = fieldType as UserTypeTreeCodeArray;
-                UserTypeTreeUserType userType = fieldType as UserTypeTreeUserType;
-                UserTypeTreeTransformation transformationType = fieldType as UserTypeTreeTransformation;
+                string fieldTypeString = fieldType.GetTypeString();
+                BasicTypeTree baseType = fieldType as BasicTypeTree;
+                ArrayTypeTree codeArrayType = fieldType as ArrayTypeTree;
+                UserTypeTree userType = fieldType as UserTypeTree;
+                TransformationTypeTree transformationType = fieldType as TransformationTypeTree;
                 bool isEmbedded = field.Type.Tag != SymTagEnum.SymTagPointerType;
 
                 if (baseType != null)
                 {
-                    if (baseType.BaseType == "string")
+                    if (baseType.BasicType == "string")
                     {
                         int charSize = field.Type.ElementType.Size;
 
                         constructorText = string.Format("ReadString(GetCodeType().Module.Process, ReadPointer(memoryBuffer, memoryBufferOffset + {0}, {1}), {2})", field.Offset, field.Type.Size, charSize);
                     }
-                    else if (baseType.BaseType != "NakedPointer")
+                    else if (baseType.BasicType != "NakedPointer")
                     {
                         if (field.LocationType == LocationType.BitField)
-                            constructorText = string.Format("Read{0}(memoryBuffer, memoryBufferOffset + {1}, {2}, {3})", baseType.GetUserTypeString().UppercaseFirst(), field.Offset, field.Size, field.BitPosition);
+                            constructorText = string.Format("Read{0}(memoryBuffer, memoryBufferOffset + {1}, {2}, {3})", baseType.GetTypeString().UppercaseFirst(), field.Offset, field.Size, field.BitPosition);
                         else
-                            constructorText = string.Format("Read{0}(memoryBuffer, memoryBufferOffset + {1})", baseType.GetUserTypeString().UppercaseFirst(), field.Offset);
+                            constructorText = string.Format("Read{0}(memoryBuffer, memoryBufferOffset + {1})", baseType.GetTypeString().UppercaseFirst(), field.Offset);
                     }
                 }
                 else if (codeArrayType != null)
                 {
-                    if (codeArrayType.InnerType is UserTypeTreeBaseType)
+                    if (codeArrayType.ElementType is BasicTypeTree)
                     {
-                        baseType = (UserTypeTreeBaseType)codeArrayType.InnerType;
-                        if (baseType != null && baseType.BaseType != "string" && baseType.BaseType != "NakedPointer")
+                        baseType = (BasicTypeTree)codeArrayType.ElementType;
+                        if (baseType != null && baseType.BasicType != "string" && baseType.BasicType != "NakedPointer")
                         {
                             int arraySize = field.Type.Size;
                             int elementSize = field.Type.ElementType.Size;
 
-                            if (baseType.BaseType == "char")
-                                constructorText = string.Format("Read{0}Array(memoryBuffer, memoryBufferOffset + {1}, {2}, {3})", baseType.GetUserTypeString().UppercaseFirst(), field.Offset, arraySize / elementSize, elementSize);
+                            if (baseType.BasicType == "char")
+                                constructorText = string.Format("Read{0}Array(memoryBuffer, memoryBufferOffset + {1}, {2}, {3})", baseType.GetTypeString().UppercaseFirst(), field.Offset, arraySize / elementSize, elementSize);
                             else
-                                constructorText = string.Format("Read{0}Array(memoryBuffer, memoryBufferOffset + {1}, {2})", baseType.GetUserTypeString().UppercaseFirst(), field.Offset, arraySize / elementSize);
-                            fieldTypeString = baseType.GetUserTypeString() + "[]";
+                                constructorText = string.Format("Read{0}Array(memoryBuffer, memoryBufferOffset + {1}, {2})", baseType.GetTypeString().UppercaseFirst(), field.Offset, arraySize / elementSize);
+                            fieldTypeString = baseType.GetTypeString() + "[]";
                         }
                     }
                 }

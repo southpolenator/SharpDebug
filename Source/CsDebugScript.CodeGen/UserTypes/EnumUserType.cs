@@ -5,8 +5,17 @@ using System.Collections.Generic;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
-    class EnumUserType : UserType
+    /// <summary>
+    /// User type that represents Enum.
+    /// </summary>
+    /// <seealso cref="UserType" />
+    internal class EnumUserType : UserType
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EnumUserType"/> class.
+        /// </summary>
+        /// <param name="symbol">The symbol we are generating this user type from.</param>
+        /// <param name="nameSpace">The namespace it belongs to.</param>
         public EnumUserType(Symbol symbol, string nameSpace)
             : base(symbol, null, nameSpace)
         {
