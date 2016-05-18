@@ -149,7 +149,7 @@
     <Compile Include="UserTypes\GlobalsUserType.cs" />
     <Compile Include="UserTypes\NamespaceUserType.cs" />
     <Compile Include="UserTypes\PhysicalUserType.cs" />
-    <Compile Include="UserTypes\PrimitiveUserType.cs" />
+    <Compile Include="UserTypes\TemplateArgumentUserType.cs" />
     <Compile Include="UserTypes\TemplateUserType.cs" />
     <Compile Include="UserTypeFactory\TemplateUserTypeFactory.cs" />
     <Compile Include="UserTypes\UserType.cs" />

@@ -21,46 +21,63 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
         }
 
-        public override void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags options, int indentation = 0)
+        /// <summary>
+        /// Writes the code for this user type to the specified output.
+        /// </summary>
+        /// <param name="output">The output.</param>
+        /// <param name="error">The error text writer.</param>
+        /// <param name="factory">The user type factory.</param>
+        /// <param name="generationFlags">The user type generation flags.</param>
+        /// <param name="indentation">The current indentation.</param>
+        public override void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags generationFlags, int indentation = 0)
         {
+            // Check if we need to write namespace
             string nameSpace = (DeclaredInType as NamespaceUserType)?.FullClassName ?? Namespace;
 
-            if ((DeclaredInType == null || (!options.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType)) && !string.IsNullOrEmpty(nameSpace))
+            if ((DeclaredInType == null || (!generationFlags.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType)) && !string.IsNullOrEmpty(nameSpace))
             {
                 output.WriteLine(indentation, "namespace {0}", nameSpace);
                 output.WriteLine(indentation++, "{{");
             }
 
-            if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
+            // Write beginning of the enumeration
+            if (generationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                 output.WriteLine(indentation, "// {0} (original name: {1})", ClassName, Symbol.Name);
 
             if (AreValuesFlags())
                 output.WriteLine(indentation, @"[System.Flags]");
             if (Symbol.Size != 0)
-                output.WriteLine(indentation, @"public enum {0} : {1}", ClassName, GetEnumType());
+                output.WriteLine(indentation, @"public enum {0} : {1}", ClassName, GetEnumBasicType(Symbol));
             else
                 output.WriteLine(indentation, @"public enum {0}", ClassName);
             output.WriteLine(indentation++, @"{{");
 
+            // Write values
             foreach (var enumValue in Symbol.GetEnumValues())
             {
                 output.WriteLine(indentation, "{0} = {1},", enumValue.Item1, enumValue.Item2);
             }
 
-            // Class end
+            // Enumeration end
             output.WriteLine(--indentation, @"}}");
-
-            if ((DeclaredInType == null || (!options.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType)) && !string.IsNullOrEmpty(nameSpace))
+            if ((DeclaredInType == null || (!generationFlags.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType)) && !string.IsNullOrEmpty(nameSpace))
             {
                 output.WriteLine(--indentation, "}}");
             }
         }
 
+        /// <summary>
+        /// Determines whether the specified number is power of two.
+        /// </summary>
+        /// <param name="x">The number.</param>
         private static bool IsPowerOfTwo(long x)
         {
             return (x & (x - 1)) == 0;
         }
 
+        /// <summary>
+        /// Checks whether values inside the enumeration are flags.
+        /// </summary>
         private bool AreValuesFlags()
         {
             try
@@ -85,13 +102,17 @@ namespace CsDebugScript.CodeGen.UserTypes
             return false;
         }
 
-        private string GetEnumType()
+        /// <summary>
+        /// Gets the basic type string for the specified enumeration symbol.
+        /// </summary>
+        /// <param name="symbol">The enumeration symbol.</param>
+        internal static string GetEnumBasicType(Symbol symbol)
         {
-            switch (Symbol.BasicType)
+            switch (symbol.BasicType)
             {
                 case BasicType.Int:
                 case BasicType.Long:
-                    switch (Symbol.Size)
+                    switch (symbol.Size)
                     {
                         case 8:
                             return "long";
@@ -110,7 +131,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 case BasicType.UInt:
                 case BasicType.ULong:
-                    switch (Symbol.Size)
+                    switch (symbol.Size)
                     {
                         case 8:
                             return "ulong";
@@ -135,26 +156,18 @@ namespace CsDebugScript.CodeGen.UserTypes
         }
 
         /// <summary>
-        /// Full Class Name.
-        /// Handle special logic for enums embedded in template types.
+        /// Gets the full name of the class, including namespace and "parent" type it is declared into.
         /// </summary>
         public override string FullClassName
         {
             get
             {
-                if (DeclaredInType as TemplateUserType != null)
+                if (DeclaredInType is TemplateUserType)
                 {
                     // Enum cannot be instantiated in generic type.
                     // We must choose template specialization - first on the list.
-                    //
                     TemplateUserType declaredInTemplateUserType = (DeclaredInType as TemplateUserType);
-
                     string declaredInSpecializedType = declaredInTemplateUserType.GetSpecializedTypeDefinedInstance();
-
-                    if (declaredInSpecializedType.Contains("SequencedObject"))
-                    {
-
-                    }
 
                     return string.Format("{0}.{1}", declaredInSpecializedType, ClassName);
                 }

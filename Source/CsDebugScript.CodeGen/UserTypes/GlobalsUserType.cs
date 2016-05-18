@@ -1,20 +1,30 @@
 ﻿using CsDebugScript.CodeGen.TypeTrees;
-using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
-    class GlobalsUserType : UserType
+    /// <summary>
+    /// User type that represents static class for getting global variables located in Module.
+    /// </summary>
+    /// <seealso cref="UserType" />
+    internal class GlobalsUserType : UserType
     {
-        public GlobalsUserType(Symbol symbol, XmlType type, string nameSpace)
-            : base(symbol, type, nameSpace)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GlobalsUserType"/> class.
+        /// </summary>
+        /// <param name="symbol">The symbol we are generating this user type from.</param>
+        /// <param name="xmlType">The XML description of the type.</param>
+        /// <param name="nameSpace">The namespace it belongs to.</param>
+        public GlobalsUserType(Symbol symbol, XmlType xmlType, string nameSpace)
+            : base(symbol, xmlType, nameSpace)
         {
         }
 
+        /// <summary>
+        /// Gets the class name for this user type. Class name doesn't contain namespace.
+        /// </summary>
         public override string ClassName
         {
             get
@@ -23,12 +33,17 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
         }
 
-        internal override IEnumerable<UserTypeField> ExtractFields(UserTypeFactory factory, UserTypeGenerationFlags options)
+        /// <summary>
+        /// Extracts all fields from the user type.
+        /// </summary>
+        /// <param name="factory">The user type factory.</param>
+        /// <param name="generationFlags">The user type generation flags.</param>
+        protected override IEnumerable<UserTypeField> ExtractFields(UserTypeFactory factory, UserTypeGenerationFlags generationFlags)
         {
             ExportStaticFields = true;
 
             var fields = Symbol.Fields.OrderBy(s => s.Name).ToArray();
-            bool useThisClass = options.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
+            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
             string previousName = "";
 
             foreach (var field in fields)
@@ -56,7 +71,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagEnum && field.Type.GetEnumValues().Any(t => t.Item1 == field.Name))
                     continue;
 
-                var userField = ExtractField(field, factory, options, forceIsStatic: true);
+                var userField = ExtractField(field, factory, generationFlags, forceIsStatic: true);
 
                 if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagPointerType)
                 {
@@ -77,12 +92,23 @@ namespace CsDebugScript.CodeGen.UserTypes
         }
 
 
-        protected override TypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        /// <summary>
+        /// Gets the type tree for the base class.
+        /// If class has multi inheritance, it can return MultiClassInheritanceTypeTree or SingleClassInheritanceWithInterfacesTypeTree.
+        /// </summary>
+        /// <param name="error">The error text writer.</param>
+        /// <param name="type">The type for which we are getting base class.</param>
+        /// <param name="factory">The user type factory.</param>
+        /// <param name="baseClassOffset">The base class offset.</param>
+        protected override TypeTree GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
             baseClassOffset = 0;
             return new StaticClassTypeTree();
         }
 
+        /// <summary>
+        /// Generates the constructors.
+        /// </summary>
         protected override IEnumerable<UserTypeConstructor> GenerateConstructors()
         {
             yield return new UserTypeConstructor()

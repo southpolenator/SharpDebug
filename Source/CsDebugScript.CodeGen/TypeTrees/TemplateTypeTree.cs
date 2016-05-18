@@ -73,7 +73,7 @@ namespace CsDebugScript.CodeGen.TypeTrees
                         }
 
                         // #fixme can't deal with it
-                        specializedArguments[i] = templateType.GetTypeString(arguments[i], factory);
+                        specializedArguments[i] = templateType.GetSymbolTypeTree(arguments[i], factory);
                     }
                 }
 

@@ -323,7 +323,7 @@ namespace CsDebugScript.CodeGen
             logger.Write("Updating template arguments...");
             foreach (TemplateUserType templateUserType in userTypes.OfType<TemplateUserType>())
             {
-                foreach (TemplateUserType specializedTemplateUserType in templateUserType.specializedTypes)
+                foreach (TemplateUserType specializedTemplateUserType in templateUserType.SpecializedTypes)
                     if (!specializedTemplateUserType.UpdateArguments(factory))
                     {
 #if DEBUG

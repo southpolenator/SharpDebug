@@ -192,7 +192,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     // Move all types under the selected type
                     foreach (var specializedTemplate in templates)
                     {
-                        template.specializedTypes.Add(specializedTemplate);
+                        template.SpecializedTypes.Add(specializedTemplate);
                         specializedTemplate.TemplateType = template;
                     }
 
@@ -282,7 +282,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     {
                         namespaceUserType = new NamespaceUserType(new string[] { namespaces[i] }, previousNamespaceUserType == null ? symbolNamespaces[symbol] : null);
                         if (previousNamespaceUserType != null)
-                            namespaceUserType.SetDeclaredInType(previousNamespaceUserType);
+                            namespaceUserType.UpdateDeclaredInType(previousNamespaceUserType);
                         namespaceTypes.Add(currentNamespace, namespaceUserType);
                         newTypes.Add(namespaceUserType);
                     }
@@ -290,7 +290,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     previousNamespaceUserType = namespaceUserType;
                 }
 
-                userType.SetDeclaredInType(previousNamespaceUserType);
+                userType.UpdateDeclaredInType(previousNamespaceUserType);
             }
 
             // Remove duplicate types from exported template types (TODO: Remove this when template types start checking subtypes)

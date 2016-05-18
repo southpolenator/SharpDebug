@@ -7,15 +7,22 @@ using System.Text;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
+    /// <summary>
+    /// User type that represents template user type. For example: MyType&lt;T&gt;
+    /// </summary>
+    /// <seealso cref="UserType" />
     internal class TemplateUserType : UserType
     {
-        private readonly List<string> argumentsSymbols = new List<string>();
-        private readonly List<UserType> argumentsUserType = new List<UserType>();
+        private List<string> argumentsSymbols = new List<string>();
+        private List<UserType> argumentsUserType = new List<UserType>();
 
-        //  TODO consider new type holding specialized template usertypes.
-        //
-        public List<TemplateUserType> specializedTypes = new List<TemplateUserType>();
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TemplateUserType" /> class.
+        /// </summary>
+        /// <param name="symbol">The symbol we are generating this user type from.</param>
+        /// <param name="xmlType">The XML description of the type.</param>
+        /// <param name="nameSpace">The namespace it belongs to.</param>
+        /// <param name="factory">The user type factory.</param>
         public TemplateUserType(Symbol symbol, XmlType xmlType, string nameSpace, UserTypeFactory factory)
             : base(symbol, xmlType, nameSpace)
         {
@@ -24,6 +31,10 @@ namespace CsDebugScript.CodeGen.UserTypes
         }
 
         public TemplateUserType TemplateType { get; internal set; }
+
+        //  TODO consider new type holding specialized template usertypes.
+        //
+        public List<TemplateUserType> SpecializedTypes { get; private set; } = new List<TemplateUserType>();
 
         public bool UpdateArguments(UserTypeFactory factory)
         {
@@ -78,9 +89,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                         {
                             if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
                             {
-                                var typeString = GetTypeString(symbol, factory).GetTypeString();
+                                var typeString = GetSymbolTypeTree(symbol, factory).GetTypeString();
 
-                                specializationUserType = new PrimitiveUserType(typeString, symbol);
+                                specializationUserType = new TemplateArgumentUserType(typeString, symbol);
                             }
                         }
 
@@ -109,11 +120,6 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (this != TemplateType && TemplateType != null)
                     return TemplateType.DeclaredInType;
                 return base.DeclaredInType;
-            }
-
-            set
-            {
-                base.DeclaredInType = value;
             }
         }
 
@@ -276,25 +282,25 @@ namespace CsDebugScript.CodeGen.UserTypes
             return false;
         }
 
-        public override TypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)
+        internal override TypeTree GetSymbolTypeTree(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
-            return base.GetTypeString(type, CreateFactory(factory), bitLength);
+            return base.GetSymbolTypeTree(type, CreateFactory(factory), bitLength);
         }
 
-        protected override TypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected override TypeTree GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
-            TypeTree baseType = base.GetBaseTypeString(error, type, CreateFactory(factory), out baseClassOffset);
+            TypeTree baseType = base.GetBaseClassTypeTree(error, type, CreateFactory(factory), out baseClassOffset);
 
             // Check if base type is template argument. It if is, export it as if it is multi class inheritance.
             UserTypeTree userBaseType = baseType as UserTypeTree;
-            PrimitiveUserType primitiveUserType = userBaseType != null ? userBaseType.UserType as PrimitiveUserType : null;
+            TemplateArgumentUserType primitiveUserType = userBaseType != null ? userBaseType.UserType as TemplateArgumentUserType : null;
             if (userBaseType != null && primitiveUserType != null)
             {
                 var dict = GetInheritanceTypeConstraintDictionary(factory);
                 string commonBaseClass;
 
                 if (dict.TryGetValue(primitiveUserType.ClassName, out commonBaseClass))
-                    return UserTypeTree.Create(new PrimitiveUserType(commonBaseClass, null), factory);
+                    return UserTypeTree.Create(new TemplateArgumentUserType(commonBaseClass, null), factory);
 
                 baseClassOffset = 0;
                 return new MultiClassInheritanceTypeTree();
@@ -308,7 +314,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             base.WriteClassComment(output, indentation);
             output.WriteLine(indentation, "// ---------------------------------------------------");
             output.WriteLine(indentation, "// Specializations of this class");
-            foreach (var type in specializedTypes)
+            foreach (var type in SpecializedTypes)
                 output.WriteLine(indentation, "//   {0}", type.Symbol.Name);
         }
 
@@ -339,7 +345,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
         public string[] GetCommonBaseTypesForSpecialization(UserTypeFactory factory)
         {
-            if (!specializedTypes.Any())
+            if (!SpecializedTypes.Any())
             {
                 return null;
             }
@@ -348,7 +354,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             for (int i = 0; i < GenericsArguments; i++)
             {
-                string[] specializedTypes = this.specializedTypes.Select(r => r.argumentsSymbols[i]).ToArray();
+                string[] specializedTypes = this.SpecializedTypes.Select(r => r.argumentsSymbols[i]).ToArray();
                 TypeOfSpecializationType specializationType = TypeOfSpecializationType.Unmatched;
                 UserType commonType = null;
 
@@ -515,48 +521,43 @@ namespace CsDebugScript.CodeGen.UserTypes
 #endif
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        protected override string GetInheritanceTypeConstraint(UserTypeFactory factory)
+        protected override IEnumerable<string> GetGenericTypeConstraints(UserTypeFactory factory)
         {
             var dict = GetInheritanceTypeConstraintDictionary(factory);
 
-            return string.Join("", dict.Select(t => string.Format("    where {0} : {1}", t.Key, t.Value)));
+            return dict.Select(t => string.Format("where {0} : {1}", t.Key, t.Value));
         }
 
-
-        public override TypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
+        protected override TypeTree GetFieldTypeTree(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
         {
             if (extractingBaseClass || this.Arguments.Count == 0)
             {
                 // Do not match specializations when getting type for base class.
                 //
-                TypeTree baseClassType = GetTypeString(field.Type, factory, bitLength);
+                TypeTree baseClassType = GetSymbolTypeTree(field.Type, factory, bitLength);
 
                 return baseClassType;
             }
 
-            var specializedFields = specializedTypes.Select(r => new Tuple<TemplateUserType, SymbolField>(r, r.Symbol.Fields.FirstOrDefault(q => q.Name == field.Name))).ToArray();
+            var specializedFields = SpecializedTypes.Select(r => new Tuple<TemplateUserType, SymbolField>(r, r.Symbol.Fields.FirstOrDefault(q => q.Name == field.Name))).ToArray();
 
             if (specializedFields.Any(r => r.Item2 == null))
             {
                 // TODO
                 // Incorrect bucketizing. Field does not exist in all specialization.
                 //
-                return GetTypeString(field.Type, factory, bitLength);
+                return GetSymbolTypeTree(field.Type, factory, bitLength);
             }
 
             if (specializedFields.All(r => r.Item2.Type.Name == field.Type.Name))
             {
                 // There is no specialization, all types across the specializations are the same.
                 //
-                return GetTypeString(field.Type, factory, bitLength);
+                return GetSymbolTypeTree(field.Type, factory, bitLength);
             }
 
             //
-            TypeTree result = GetTypeString(field.Type, factory, bitLength);
+            TypeTree result = GetSymbolTypeTree(field.Type, factory, bitLength);
 
             if (result is BasicTypeTree)
             {

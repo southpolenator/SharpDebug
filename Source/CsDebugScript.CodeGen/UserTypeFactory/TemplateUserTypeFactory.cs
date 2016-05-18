@@ -28,7 +28,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             if (TryGetArgument(typeString, out argumentName))
             {
                 //#fixme invesitage this
-                userType = new PrimitiveUserType(argumentName, type);
+                userType = new TemplateArgumentUserType(argumentName, type);
                 return true;
             }
 
@@ -42,7 +42,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             if (TryGetArgument(typeString, out argumentName))
             {
                 //#fixme invesitage this
-                userType = new PrimitiveUserType(argumentName, null);
+                userType = new TemplateArgumentUserType(argumentName, null);
                 return true;
             }
 
