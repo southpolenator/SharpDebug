@@ -1,53 +1,87 @@
-﻿using CsDebugScript.CodeGen.UserTypes;
-using System;
-using System.Linq;
+﻿using System.Linq;
 
-namespace CsDebugScript.CodeGen
+namespace CsDebugScript.CodeGen.UserTypes
 {
-    internal class UserTypeFunction : UserTypeField
-    {
-        public override void WriteConstructorCode(IndentedWriter output, int indentation)
-        {
-            output.WriteLine(indentation, "{0}();", FieldName);
-        }
-
-        public override void WriteFieldCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options)
-        {
-            output.WriteLine(indentation, "{0} {1}();", FieldType, FieldName);
-        }
-
-        public override void WritePropertyCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options, ref bool firstField)
-        {
-            // Do nothing
-        }
-    }
-
+    /// <summary>
+    /// Class represents field in user type
+    /// </summary>
     internal class UserTypeField
     {
+        /// <summary>
+        /// Gets or sets the simple field value. It represents code that gets field variable and is used when creating UserTypeTransformation.
+        /// </summary>
         public string SimpleFieldValue { get; set; }
 
+        /// <summary>
+        /// Gets or sets the name of the field.
+        /// </summary>
         public string FieldName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the type of the field.
+        /// </summary>
         public string FieldType { get; set; }
 
+        /// <summary>
+        /// Gets or sets the name of the property.
+        /// </summary>
         public string PropertyName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the constructor code.
+        /// </summary>
         public string ConstructorText { get; set; }
 
+        /// <summary>
+        /// Gets or sets the field type information comment.
+        /// </summary>
         public string FieldTypeInfoComment { get; set; }
 
+        /// <summary>
+        /// Gets or sets the constant value (if field is a constant).
+        /// </summary>
         public string ConstantValue { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this field is static.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if field is static; otherwise, <c>false</c>.
+        /// </value>
         public bool Static { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether field should use UserMember caching.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if field should use UserMember caching; otherwise, <c>false</c>.
+        /// </value>
         public bool UseUserMember { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether field value should be cached inside the user type.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if field value should be cached inside the user type; otherwise, <c>false</c>.
+        /// </value>
         public bool CacheResult { get; set; }
 
+        /// <summary>
+        /// Gets or sets the access level (public/private/internal/protected).
+        /// </summary>
         public string Access { get; set; } = "private";
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this field overrides base class field.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this field overrides base class field; otherwise, <c>false</c>.
+        /// </value>
         public bool OverrideWithNew { get; set; } = false;
 
+        /// <summary>
+        /// Gets the constant value if this field is a constant.
+        /// </summary>
         private string GetConstantValue()
         {
             if (ConstantValue.StartsWith("-"))
@@ -68,9 +102,15 @@ namespace CsDebugScript.CodeGen
             return "(" + ConstantValue + ")";
         }
 
-        public virtual void WriteFieldCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options)
+        /// <summary>
+        /// Writes the field code to the specified output.
+        /// </summary>
+        /// <param name="output">The output.</param>
+        /// <param name="indentation">The current indentation.</param>
+        /// <param name="generationFlags">The user type generation flags.</param>
+        public virtual void WriteFieldCode(IndentedWriter output, int indentation, UserTypeGenerationFlags generationFlags)
         {
-            if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
+            if (generationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
                 output.WriteLine(indentation, FieldTypeInfoComment);
             if (!string.IsNullOrEmpty(ConstantValue))
                 output.WriteLine(indentation, "public static {0} {1} = ({0}){2};", FieldType, FieldName, GetConstantValue());
@@ -80,10 +120,15 @@ namespace CsDebugScript.CodeGen
                 output.WriteLine(indentation, "{3}{4} {0}UserMember<{1}> {2};", Static ? "static " : "", FieldType, FieldName, Access, OverrideWithNew ? " new" : "");
             else if (CacheResult)
                 output.WriteLine(indentation, "{3}{4} {0}{1} {2};", Static ? "static " : "", FieldType, FieldName, Access, OverrideWithNew ? " new" : "");
-            if (options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
+            if (generationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                 output.WriteLine();
         }
 
+        /// <summary>
+        /// Writes the constructor code to the specified output.
+        /// </summary>
+        /// <param name="output">The output.</param>
+        /// <param name="indentation">The current indentation.</param>
         public virtual void WriteConstructorCode(IndentedWriter output, int indentation)
         {
             if (string.IsNullOrEmpty(ConstantValue))
@@ -93,11 +138,17 @@ namespace CsDebugScript.CodeGen
                     output.WriteLine(indentation, "{2}{0} = {1};", FieldName, ConstructorText, !Static ? "this." : "");
         }
 
-        public virtual void WritePropertyCode(IndentedWriter output, int indentation, UserTypeGenerationFlags options, ref bool firstField)
+        /// <summary>
+        /// Writes the property code to the specified output.
+        /// </summary>
+        /// <param name="output">The output.</param>
+        /// <param name="indentation">The current indentation.</param>
+        /// <param name="generationFlags">The user type generation flags.</param>
+        /// <param name="firstField">if set to <c>true</c> this is the first field in the user type.</param>
+        public virtual void WritePropertyCode(IndentedWriter output, int indentation, UserTypeGenerationFlags generationFlags, ref bool firstField)
         {
-
             if (string.IsNullOrEmpty(ConstantValue))
-                if (options.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
+                if (generationFlags.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
                 {
                     if (firstField)
                     {
@@ -105,7 +156,7 @@ namespace CsDebugScript.CodeGen
                         firstField = false;
                     }
 
-                    if (!UseUserMember && !CacheResult && options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
+                    if (!UseUserMember && !CacheResult && generationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
                         output.WriteLine(indentation, FieldTypeInfoComment);
                     if (UseUserMember && CacheResult)
                         output.WriteLine(indentation, "public {0}{1} {2} {{ get {{ return {3}.Value; }} }}", Static ? "static " : "", FieldType, PropertyName, FieldName);
@@ -117,7 +168,7 @@ namespace CsDebugScript.CodeGen
                 else
                 {
                     output.WriteLine();
-                    if (!UseUserMember && !CacheResult && options.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
+                    if (!UseUserMember && !CacheResult && generationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && !string.IsNullOrEmpty(FieldTypeInfoComment))
                         output.WriteLine(indentation, FieldTypeInfoComment);
                     output.WriteLine(indentation, "public {0}{1} {2}", Static ? "static " : "", FieldType, PropertyName);
                     output.WriteLine(indentation++, "{{");
@@ -138,16 +189,18 @@ namespace CsDebugScript.CodeGen
         /// Gets the name of the property based on the field name.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
-        /// <param name="userType">Type of the user.</param>
+        /// <param name="userType">The user type owning the field.</param>
         /// <returns>The name of the property.</returns>
         public static string GetPropertyName(string fieldName, UserType userType)
         {
-            if (fieldName == userType.Symbol.Name)
+            // Check if field name is the same as owner type name
+            if (fieldName == userType.Symbol.Name) // TODO: Check if this should be userType.ClassName
             {
                 // property name cannot be equal to class name
                 return string.Format("_{0}", fieldName);
             }
 
+            // Check if field name is the same as any inner type name
             foreach (string className in userType.InnerTypes.Select(r => r.ClassName))
             {
                 if (fieldName == className)
@@ -181,72 +234,5 @@ namespace CsDebugScript.CodeGen
 
             return fieldName;
         }
-    }
-
-    internal class UserTypeConstructor
-    {
-        public string Arguments { get; set; } = "";
-
-        public string BaseClassInitialization { get; set; } = "";
-
-        public bool ContainsFieldDefinitions { get; set; }
-
-        public bool Static { get; set; }
-
-        public void WriteCode(IndentedWriter output, int indentation, UserTypeField[] fields, string constructorName, bool exportStaticFields)
-        {
-            if (Static)
-            {
-                // Do nothing. We are initializing static variables in declaration statement.
-            }
-            else
-            {
-                output.WriteLine();
-                output.WriteLine(indentation, "public {0}({1})", constructorName, Arguments);
-                if (!string.IsNullOrEmpty(BaseClassInitialization))
-                    output.WriteLine(indentation + 1, ": {0}", BaseClassInitialization);
-                output.WriteLine(indentation++, "{{");
-                if (ContainsFieldDefinitions)
-                    foreach (var field in fields)
-                    {
-                        if (!field.CacheResult && !field.UseUserMember)
-                            continue;
-                        if (!field.Static)
-                            field.WriteConstructorCode(output, indentation);
-                    }
-                output.WriteLine(--indentation, "}}");
-            }
-        }
-    }
-
-    internal class UserTypeTransformation
-    {
-        private Func<string, string> typeConverter;
-        private UserType ownerUserType;
-        private Symbol type;
-
-        public UserTypeTransformation(XmlTypeTransformation transformation, Func<string, string> typeConverter, UserType ownerUserType, Symbol type)
-        {
-            this.Transformation = transformation;
-            this.typeConverter = typeConverter;
-            this.ownerUserType = ownerUserType;
-            this.type = type;
-        }
-
-        internal string TransformType()
-        {
-            string originalFieldTypeString = type.Name;
-
-            return Transformation.TransformType(originalFieldTypeString, ownerUserType.ClassName, typeConverter);
-        }
-
-        internal string TransformConstructor(string field, string fieldOffset)
-        {
-            string originalFieldTypeString = type.Name;
-
-            return Transformation.TransformConstructor(originalFieldTypeString, field, fieldOffset, ownerUserType.ClassName, typeConverter);
-        }
-
-        public XmlTypeTransformation Transformation { get; private set; }
     }
 }

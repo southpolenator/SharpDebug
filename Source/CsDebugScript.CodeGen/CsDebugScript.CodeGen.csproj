@@ -130,7 +130,6 @@
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Source\CsDebugScript.Engine\Engine\Utility\SimpleCache.cs" />
     <Compile Include="Symbol.cs" />
-    <Compile Include="UserTypeField.cs" />
     <Compile Include="TypeTrees\ArrayTypeTree.cs" />
     <Compile Include="TypeTrees\BasicTypeTree.cs" />
     <Compile Include="TypeTrees\EnumTreeType.cs" />
@@ -155,6 +154,10 @@
     <Compile Include="UserTypeFactory\TemplateUserTypeFactory.cs" />
     <Compile Include="UserTypes\UserType.cs" />
     <Compile Include="UserTypeFactory\UserTypeFactory.cs" />
+    <Compile Include="UserTypes\UserTypeConstructor.cs" />
+    <Compile Include="UserTypes\UserTypeField.cs" />
+    <Compile Include="UserTypes\UserTypeFunction.cs" />
+    <Compile Include="UserTypes\UserTypeTransformation.cs" />
     <Compile Include="XmlConfig.cs" />
   </ItemGroup>
   <ItemGroup>

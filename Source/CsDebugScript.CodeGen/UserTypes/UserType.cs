@@ -610,7 +610,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             var constructors = GenerateConstructors();
 
             foreach (var constructor in constructors)
-                constructor.WriteCode(output, indentation, fields, ConstructorName, ExportStaticFields);
+                constructor.WriteCode(output, indentation, fields, ConstructorName);
 
             foreach (var field in fields)
             {

@@ -1,4 +1,6 @@
-﻿namespace CsDebugScript.CodeGen.TypeTrees
+﻿using CsDebugScript.CodeGen.UserTypes;
+
+namespace CsDebugScript.CodeGen.TypeTrees
 {
     /// <summary>
     /// Type tree that represents transformation to be applied.
