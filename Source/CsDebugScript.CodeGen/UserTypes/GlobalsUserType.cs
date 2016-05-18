@@ -62,7 +62,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 // Skip fields that have same name as the type
                 UserType userType;
-                factory.TryGetUserType(field.Type.Module, field.Type.Name, out userType);
+                factory.GetUserType(field.Type.Module, field.Type.Name, out userType);
 
                 if (userType == null)
                     continue;

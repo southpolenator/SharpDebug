@@ -291,16 +291,16 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// Tries to match the specified type name against template arguments.
         /// </summary>
         /// <param name="typeName">The type name.</param>
-        /// <param name="argument">The found argument name.</param>
+        /// <param name="argumentName">The found argument name.</param>
         /// <returns><c>true</c> if template argument was matched.</returns>
-        public bool TryGetTemplateArgument(string typeName, out string argument)
+        public bool TryGetTemplateArgument(string typeName, out string argumentName)
         {
             // Does it belong to our template arguments?
             int index = templateArgumentsAsSymbols.FindIndex(s => s.Name == typeName);
 
             if (index >= 0)
             {
-                argument = NumberOfTemplateArguments == 1 ? TemplateArgumentsNameBase : TemplateArgumentsNameBase + (index + 1);
+                argumentName = NumberOfTemplateArguments == 1 ? TemplateArgumentsNameBase : TemplateArgumentsNameBase + (index + 1);
                 return true;
             }
 
@@ -312,12 +312,12 @@ namespace CsDebugScript.CodeGen.UserTypes
                 TemplateUserType templateParentType = parentType as TemplateUserType;
 
                 if (templateParentType != null)
-                    return templateParentType.TryGetTemplateArgument(typeName, out argument);
+                    return templateParentType.TryGetTemplateArgument(typeName, out argumentName);
                 parentType = parentType.DeclaredInType;
             }
 
             // Template argument wasn't found
-            argument = "";
+            argumentName = "";
             return false;
         }
 

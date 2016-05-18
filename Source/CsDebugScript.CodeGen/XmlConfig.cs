@@ -345,7 +345,7 @@ namespace CsDebugScript.CodeGen
         {
             get
             {
-                return NameHelper.ContainsTemplateType(Name);
+                return SymbolNameHelper.ContainsTemplateType(Name);
             }
         }
 

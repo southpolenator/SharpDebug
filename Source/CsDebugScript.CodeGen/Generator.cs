@@ -268,11 +268,11 @@ namespace CsDebugScript.CodeGen
                 }
 
                 // Check if symbol contains template type.
-                if (NameHelper.ContainsTemplateType(symbolName))
+                if (SymbolNameHelper.ContainsTemplateType(symbolName))
                 {
                     List<string> namespaces = symbol.Namespaces;
                     string className = namespaces.Last();
-                    var symbolId = Tuple.Create(symbolNamespaces[symbol], NameHelper.GetLookupNameForSymbol(symbol));
+                    var symbolId = Tuple.Create(symbolNamespaces[symbol], SymbolNameHelper.CreateLookupNameForSymbol(symbol));
 
                     lock (templateSymbols)
                     {
@@ -298,7 +298,7 @@ namespace CsDebugScript.CodeGen
             foreach (List<Symbol> symbols in templateSymbols.Values)
             {
                 Symbol symbol = symbols.First();
-                string symbolName = NameHelper.GetLookupNameForSymbol(symbol);
+                string symbolName = SymbolNameHelper.CreateLookupNameForSymbol(symbol);
 
                 XmlType type = new XmlType()
                 {

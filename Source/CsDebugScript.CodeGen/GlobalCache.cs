@@ -15,7 +15,7 @@ namespace CsDebugScript.CodeGen
 
             if (deduplicatedSymbols.TryGetValue(typeName, out symbols))
                 return symbols[0];
-            return module.GetTypeSymbol(typeName);
+            return module.GetSymbol(typeName);
         }
 
         public static UserType GetUserType(string typeName, Module module)

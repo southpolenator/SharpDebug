@@ -64,7 +64,7 @@ namespace CsDebugScript.CodeGen.TypeTrees
                     else
                     {
                         // TODO: Check why do we go one more round trip through module for getting argument symbol
-                        Symbol symbol = templateSpecialization.Symbol.Module.GetTypeSymbol(arguments[i].Name);
+                        Symbol symbol = templateSpecialization.Symbol.Module.GetSymbol(arguments[i].Name);
 
                         if (symbol.Tag != SymTagEnum.SymTagBaseType)
                         {
