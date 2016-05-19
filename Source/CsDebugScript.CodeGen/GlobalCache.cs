@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using CsDebugScript.CodeGen.UserTypes;
+using System.Text;
 
 namespace CsDebugScript.CodeGen
 {
@@ -14,7 +15,7 @@ namespace CsDebugScript.CodeGen
 
             if (deduplicatedSymbols.TryGetValue(typeName, out symbols))
                 return symbols[0];
-            return module.GetTypeSymbol(typeName);
+            return module.GetSymbol(typeName);
         }
 
         public static UserType GetUserType(string typeName, Module module)
@@ -92,6 +93,20 @@ namespace CsDebugScript.CodeGen
                 foreach (var field in s.Fields)
                     if (field.DataKind == Dia2Lib.DataKind.StaticMember && field.IsValidStatic)
                         yield return field;
+        }
+
+        public static string GenerateClassCodeTypeInfo(Symbol symbol, string typeName)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach (var module in GetSymbolModuleNames(symbol))
+            {
+                sb.Append(string.Format("\"{0}!{1}\", ", module, typeName));
+            }
+
+            sb.Length -= 2;
+
+            return sb.ToString();
         }
     }
 }

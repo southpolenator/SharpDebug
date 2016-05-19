@@ -2,18 +2,44 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace CsDebugScript.CodeGen
 {
+    /// <summary>
+    /// Class represents module during debugging. It is being described by PDB.
+    /// </summary>
     internal class Module
     {
+        /// <summary>
+        /// The DIA data source
+        /// </summary>
         private IDiaDataSource dia;
+
+        /// <summary>
+        /// The DIA session
+        /// </summary>
         private IDiaSession session;
+
+        /// <summary>
+        /// The dictionary cache of symbols by symbol ID.
+        /// </summary>
         private ConcurrentDictionary<uint, Symbol> symbolById = new ConcurrentDictionary<uint, Symbol>();
+
+        /// <summary>
+        /// The dictionary cache of symbols by symbol name.
+        /// </summary>
         private ConcurrentDictionary<string, Symbol> symbolByName = new ConcurrentDictionary<string, Symbol>();
 
-        public Module(string name, string nameSpace, IDiaDataSource dia, IDiaSession session)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Module"/> class.
+        /// </summary>
+        /// <param name="name">The module name.</param>
+        /// <param name="nameSpace">The default namespace.</param>
+        /// <param name="dia">The DIA data source.</param>
+        /// <param name="session">The DIA session.</param>
+        private Module(string name, string nameSpace, IDiaDataSource dia, IDiaSession session)
         {
             this.session = session;
             this.dia = dia;
@@ -33,33 +59,69 @@ namespace CsDebugScript.CodeGen
             }));
         }
 
+        /// <summary>
+        /// Opens the module for the specified XML module description.
+        /// </summary>
+        /// <param name="module">The XML module description.</param>
+        public static Module Open(XmlModule module)
+        {
+            IDiaDataSource dia = new DiaSource();
+            IDiaSession session;
+            string moduleName = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.PdbPath).ToLower();
+
+            module.Name = moduleName;
+            dia.loadDataFromPdb(module.PdbPath);
+            dia.openSession(out session);
+            return new Module(module.Name, module.Namespace, dia, session);
+        }
+
+        /// <summary>
+        /// Gets the global scope symbol.
+        /// </summary>
         public Symbol GlobalScope { get; private set; }
 
+        /// <summary>
+        /// Gets the module name.
+        /// </summary>
         public string Name { get; private set; }
 
+        /// <summary>
+        /// Gets the default namespace.
+        /// </summary>
         public string Namespace { get; private set; }
 
+        /// <summary>
+        /// Gets the set of public symbols.
+        /// </summary>
         public HashSet<string> PublicSymbols { get; private set; }
 
+        /// <summary>
+        /// Finds the list of global types specified by the wildcard.
+        /// </summary>
+        /// <param name="nameWildcard">The type name wildcard.</param>
         public Symbol[] FindGlobalTypeWildcard(string nameWildcard)
         {
             return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).ToArray();
         }
 
+        /// <summary>
+        /// Gets all types defined in the symbol.
+        /// </summary>
         public IEnumerable<Symbol> GetAllTypes()
         {
-            // Get all types and cache symbols
+            // Get all types defined in the symbol
             var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagEnum));
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType));
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagPointerType));
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagArrayType));
 
+            // Create symbols from types
             var convertedTypes = diaGlobalTypes.Select(s => new Symbol(this, s)).ToList();
             var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).OrderBy(s => s.Name).ToArray();
             var cacheTypes = convertedTypes.OrderBy(s => s.Tag).ThenBy(s => s.Name).ToArray();
 
-            // Remove duplicates
+            // Remove duplicate symbols by searching for the by name
             var symbols = new List<Symbol>();
             var previousName = "";
 
@@ -76,6 +138,7 @@ namespace CsDebugScript.CodeGen
                     previousName = s.Name;
                 }
 
+            // Cache symbols inside the module
             foreach (var s in cacheTypes)
             {
                 var symbolCache = GetSymbol(s.DiaSymbol);
@@ -84,6 +147,10 @@ namespace CsDebugScript.CodeGen
             return symbols;
         }
 
+        /// <summary>
+        /// Gets the symbol from the cache or adds new entry in the cache if symbol wasn't previously found.
+        /// </summary>
+        /// <param name="symbol">The symbol.</param>
         internal Symbol GetSymbol(IDiaSymbol symbol)
         {
             if (symbol == null)
@@ -117,7 +184,12 @@ namespace CsDebugScript.CodeGen
             return s;
         }
 
-        public Symbol GetTypeSymbol(string name)
+        /// <summary>
+        /// Gets the symbol by name from the cache.
+        /// </summary>
+        /// <param name="name">The symbol name.</param>
+        /// <returns>Symbol if found; otherwise null.</returns>
+        public Symbol GetSymbol(string name)
         {
             Symbol symbol;
             string originalName = name;
@@ -156,6 +228,10 @@ namespace CsDebugScript.CodeGen
             return symbol;
         }
 
+        /// <summary>
+        /// Fixes the symbol name for the search.
+        /// </summary>
+        /// <param name="name">The symbol name.</param>
         private static void FixSymbolSearchName(ref string name)
         {
             name = name.Trim();

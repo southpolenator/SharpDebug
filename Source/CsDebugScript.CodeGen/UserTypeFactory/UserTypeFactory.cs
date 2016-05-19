@@ -8,26 +8,53 @@ using System.Threading.Tasks;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
-    class UserTypeFactory
+    /// <summary>
+    /// Class representing user type factory. It is being used to find types.
+    /// </summary>
+    internal class UserTypeFactory
     {
+        /// <summary>
+        /// The list of available type transformations
+        /// </summary>
         protected XmlTypeTransformation[] typeTransformations;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserTypeFactory"/> class.
+        /// </summary>
+        /// <param name="transformations">The transformations.</param>
         public UserTypeFactory(XmlTypeTransformation[] transformations)
         {
             typeTransformations = transformations;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserTypeFactory"/> class.
+        /// </summary>
+        /// <param name="factory">The user type factory.</param>
         public UserTypeFactory(UserTypeFactory factory)
             : this(factory.typeTransformations)
         {
         }
 
-        internal virtual bool TryGetUserType(Module module, string typeString, out UserType userType)
+        /// <summary>
+        /// Look up for user type based on the specified module and type string.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeString">The type string.</param>
+        /// <param name="userType">The found user type.</param>
+        /// <returns><c>true</c> if user type was found.</returns>
+        internal virtual bool GetUserType(Module module, string typeString, out UserType userType)
         {
             userType = GlobalCache.GetUserType(typeString, module);
             return userType != null;
         }
 
+        /// <summary>
+        /// Look up for user type based on the specified symbol.
+        /// </summary>
+        /// <param name="type">The symbol.</param>
+        /// <param name="userType">The found user type.</param>
+        /// <returns><c>true</c> if user type was found.</returns>
         internal virtual bool GetUserType(Symbol type, out UserType userType)
         {
             userType = GlobalCache.GetUserType(type);
@@ -48,7 +75,28 @@ namespace CsDebugScript.CodeGen.UserTypes
             return userType != null;
         }
 
-        internal UserType AddSymbol(Symbol symbol, XmlType type, string nameSpace, UserTypeGenerationFlags generationOptions)
+        /// <summary>
+        /// Determines whether the factory contains the specified type.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeString">The type string.</param>
+        /// <returns><c>true</c> if user type was found.</returns>
+        internal bool ContainsSymbol(Module module, string typeString)
+        {
+            UserType userType;
+
+            return GetUserType(module, typeString, out userType);
+        }
+
+        /// <summary>
+        /// Adds the symbol to user type factory and generates the user type.
+        /// </summary>
+        /// <param name="symbol">The non-template symbol.</param>
+        /// <param name="type">The XML type description.</param>
+        /// <param name="nameSpace">The namespace.</param>
+        /// <param name="generationFlags">The user type generation flags.</param>
+        /// <returns>Generated user type for the specified symbol.</returns>
+        internal UserType AddSymbol(Symbol symbol, XmlType type, string nameSpace, UserTypeGenerationFlags generationFlags)
         {
             UserType userType;
 
@@ -60,7 +108,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 userType = new GlobalsUserType(symbol, type, nameSpace);
             }
-            else if (generationOptions.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
+            else if (generationFlags.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
             {
                 userType = new PhysicalUserType(symbol, type, nameSpace);
             }
@@ -73,17 +121,26 @@ namespace CsDebugScript.CodeGen.UserTypes
             return userType;
         }
 
-        internal IEnumerable<UserType> AddSymbols(IEnumerable<Symbol> symbols, XmlType type, string nameSpace, UserTypeGenerationFlags generationOptions)
+        /// <summary>
+        /// Adds the symbols to user type factory and generates the user types.
+        /// </summary>
+        /// <param name="symbols">The template symbols grouped around the same template type.</param>
+        /// <param name="type">The XML type description.</param>
+        /// <param name="nameSpace">The namespace.</param>
+        /// <param name="generationFlags">The user type generation flags.</param>
+        /// <returns>Generated user types for the specified symbols.</returns>
+        internal IEnumerable<UserType> AddSymbols(IEnumerable<Symbol> symbols, XmlType type, string nameSpace, UserTypeGenerationFlags generationFlags)
         {
-            if (!type.IsTemplate && symbols.Any())
+            if (!type.IsTemplate && symbols.Count() > 1)
                 throw new Exception("Type has more than one symbol for " + type.Name);
 
             if (!type.IsTemplate)
             {
-                yield return AddSymbol(symbols.First(), type, nameSpace, generationOptions);
+                yield return AddSymbol(symbols.First(), type, nameSpace, generationFlags);
             }
             else
             {
+                // Bucketize template user types based on number of template arguments
                 var buckets = new Dictionary<int, List<TemplateUserType>>();
 
                 foreach (Symbol symbol in symbols)
@@ -96,12 +153,11 @@ namespace CsDebugScript.CodeGen.UserTypes
                         if (symbol.Name == null || symbol.Size == 0)
                             continue;
 
+                        // Generate template user type
                         TemplateUserType templateType = new TemplateUserType(symbol, type, nameSpace, this);
 
-                        int templateArgs = templateType.GenericsArguments;
-
-#if false // TODO: Check if we want to use simple user type instead of template user type
-                        if (templateArgs == 0)
+#if false // TODO: Verify if we want to use simple user type instead of template user type
+                        if (templateType.NumberOfTemplateArguments == 0)
                         {
                             // Template does not have arguments that can be used by generic 
                             // Make it specialized type
@@ -113,8 +169,8 @@ namespace CsDebugScript.CodeGen.UserTypes
                             List<TemplateUserType> templates;
 
                             symbol.UserType = templateType;
-                            if (!buckets.TryGetValue(templateArgs, out templates))
-                                buckets.Add(templateArgs, templates = new List<TemplateUserType>());
+                            if (!buckets.TryGetValue(templateType.NumberOfTemplateArguments, out templates))
+                                buckets.Add(templateType.NumberOfTemplateArguments, templates = new List<TemplateUserType>());
                             templates.Add(templateType);
                         }
                     }
@@ -132,7 +188,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 // Add newly generated types
                 foreach (var templates in buckets.Values)
                 {
-                    // TODO: Verify that all templates in the list can be described by the same class (also check for subtypes)
+                    // TODO: Verify that all templates in the list can be described by the same class (also do check for inner-types)
 
                     // Sort Templates by Class Name.
                     // This removes ambiguity caused by parallel type processing.
@@ -144,46 +200,50 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                     foreach (var specializedTemplate in templates)
                     {
-                        var arguments = specializedTemplate.Arguments;
+                        var arguments = specializedTemplate.TemplateArguments;
 
-                        // Check if all arguments are simple user type
-                        bool simpleUserType = true;
-
-                        foreach (var argument in arguments)
+                        // Check if all arguments are different
+                        if (arguments.Distinct().Count() == arguments.Count())
                         {
-                            var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
+                            // Check if all arguments are simple user type
+                            bool simpleUserType = true;
 
-                            if (argumentSymbol.Tag != SymTagEnum.SymTagUDT || argumentSymbol.Name.Contains("<"))
+                            foreach (var argument in arguments)
                             {
-                                simpleUserType = false;
+                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
+
+                                if (argumentSymbol.Tag != SymTagEnum.SymTagUDT || argumentSymbol.Name.Contains("<"))
+                                {
+                                    simpleUserType = false;
+                                    break;
+                                }
+                            }
+
+                            if (simpleUserType)
+                            {
+                                template = specializedTemplate;
                                 break;
                             }
-                        }
 
-                        if (simpleUserType)
-                        {
-                            template = specializedTemplate;
-                            break;
-                        }
+                            // Check if none of the arguments is template user type
+                            bool noneIsTemplate = true;
 
-                        // Check if none of the arguments is template user type
-                        bool noneIsTemplate = true;
-
-                        foreach (var argument in arguments)
-                        {
-                            var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
-
-                            if (argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
+                            foreach (var argument in arguments)
                             {
-                                noneIsTemplate = false;
-                                break;
-                            }
-                        }
+                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
 
-                        if (noneIsTemplate)
-                        {
-                            template = specializedTemplate;
-                            continue;
+                                if (argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
+                                {
+                                    noneIsTemplate = false;
+                                    break;
+                                }
+                            }
+
+                            if (noneIsTemplate)
+                            {
+                                template = specializedTemplate;
+                                continue;
+                            }
                         }
 
                         // This one is good as any...
@@ -192,7 +252,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     // Move all types under the selected type
                     foreach (var specializedTemplate in templates)
                     {
-                        template.specializedTypes.Add(specializedTemplate);
+                        template.SpecializedTypes.Add(specializedTemplate);
                         specializedTemplate.TemplateType = template;
                     }
 
@@ -206,9 +266,9 @@ namespace CsDebugScript.CodeGen.UserTypes
         ///  - If UserType has static members in more than one module, split it into multiple user types.
         ///  - Find parent type/namespace.
         /// </summary>
-        /// <param name="userTypes">The user types.</param>
+        /// <param name="userTypes">The list of user types.</param>
         /// <param name="symbolNamespaces">The symbol namespaces.</param>
-        /// <returns></returns>
+        /// <returns>Newly generated user types.</returns>
         internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, Dictionary<Symbol, string> symbolNamespaces)
         {
             ConcurrentBag<UserType> newTypes = new ConcurrentBag<UserType>();
@@ -282,7 +342,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     {
                         namespaceUserType = new NamespaceUserType(new string[] { namespaces[i] }, previousNamespaceUserType == null ? symbolNamespaces[symbol] : null);
                         if (previousNamespaceUserType != null)
-                            namespaceUserType.SetDeclaredInType(previousNamespaceUserType);
+                            namespaceUserType.UpdateDeclaredInType(previousNamespaceUserType);
                         namespaceTypes.Add(currentNamespace, namespaceUserType);
                         newTypes.Add(namespaceUserType);
                     }
@@ -290,7 +350,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     previousNamespaceUserType = namespaceUserType;
                 }
 
-                userType.SetDeclaredInType(previousNamespaceUserType);
+                userType.UpdateDeclaredInType(previousNamespaceUserType);
             }
 
             // Remove duplicate types from exported template types (TODO: Remove this when template types start checking subtypes)
@@ -318,24 +378,76 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
             }
 
+            // Find all derived classes
+            foreach (UserType userType in userTypes)
+            {
+                // We are doing this only for UDTs
+                if (userType is EnumUserType || userType is GlobalsUserType || userType is NamespaceUserType)
+                    continue;
+
+                // For template user types, we want to remember all specializations
+                TemplateUserType templateUserType = userType as TemplateUserType;
+
+                if (templateUserType != null)
+                {
+                    foreach (UserType specializedUserType in templateUserType.SpecializedTypes)
+                    {
+                        AddDerivedClassToBaseClasses(specializedUserType);
+                    }
+                }
+                else
+                {
+                    AddDerivedClassToBaseClasses(userType);
+                }
+            }
+
             return newTypes;
         }
 
+        /// <summary>
+        /// Adds the specified user type as derived class to all its base classes.
+        /// </summary>
+        /// <param name="userType">The user type.</param>
+        private void AddDerivedClassToBaseClasses(UserType userType)
+        {
+            IEnumerable<Symbol> allBaseClasses = userType.Symbol.GetAllBaseClasses();
+
+            foreach (Symbol baseClass in allBaseClasses)
+            {
+                UserType baseClassUserType = GlobalCache.GetUserType(baseClass);
+                TemplateUserType templateUserType = baseClassUserType as TemplateUserType;
+
+                if (templateUserType != null)
+                    baseClassUserType = templateUserType.TemplateType;
+
+                if (baseClassUserType != null)
+                    baseClassUserType.AddDerivedClass(userType);
+            }
+        }
+
+        /// <summary>
+        /// Tries to match transformation for the specified type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="ownerUserType">The owner user type.</param>
+        /// <returns>Transformation if matched one is found; otherwise null.</returns>
         internal UserTypeTransformation FindTransformation(Symbol type, UserType ownerUserType)
         {
+            // Find first transformation that matches the specified type
             string originalFieldTypeString = type.Name;
             var transformation = typeTransformations.FirstOrDefault(t => t.Matches(originalFieldTypeString));
 
             if (transformation == null)
                 return null;
 
+            // Create type converter function for the transformation
             Func<string, string> typeConverter = null;
 
             typeConverter = (inputType) =>
             {
                 UserType userType;
 
-                if (TryGetUserType(type.Module, inputType, out userType))
+                if (GetUserType(type.Module, inputType, out userType))
                 {
                     return userType.FullClassName;
                 }
@@ -351,13 +463,6 @@ namespace CsDebugScript.CodeGen.UserTypes
             };
 
             return new UserTypeTransformation(transformation, typeConverter, ownerUserType, type);
-        }
-
-        internal bool ContainsSymbol(Module module, string typeString)
-        {
-            UserType userType;
-
-            return TryGetUserType(module, typeString, out userType);
         }
     }
 }

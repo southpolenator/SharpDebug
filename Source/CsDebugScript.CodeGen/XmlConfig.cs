@@ -221,6 +221,43 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
+        /// Gets the user type generation flags.
+        /// </summary>
+        internal UserTypeGenerationFlags GetGenerationFlags()
+        {
+            UserTypeGenerationFlags generationFlags = UserTypeGenerationFlags.None;
+
+            if (CompressedOutput)
+            {
+                generationFlags |= UserTypeGenerationFlags.CompressedOutput;
+                DontGenerateFieldTypeInfoComment = true;
+                MultiLineProperties = false;
+            }
+
+            if (!DontGenerateFieldTypeInfoComment)
+                generationFlags |= UserTypeGenerationFlags.GenerateFieldTypeInfoComment;
+            if (!MultiLineProperties)
+                generationFlags |= UserTypeGenerationFlags.SingleLineProperty;
+            if (UseDiaSymbolProvider)
+                generationFlags |= UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
+            if (ForceUserTypesToNewInsteadOfCasting)
+                generationFlags |= UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting;
+            if (CacheUserTypeFields)
+                generationFlags |= UserTypeGenerationFlags.CacheUserTypeFields;
+            if (CacheStaticUserTypeFields)
+                generationFlags |= UserTypeGenerationFlags.CacheStaticUserTypeFields;
+            if (LazyCacheUserTypeFields)
+                generationFlags |= UserTypeGenerationFlags.LazyCacheUserTypeFields;
+            if (GeneratePhysicalMappingOfUserTypes)
+                generationFlags |= UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes;
+            if (SingleFileExport)
+                generationFlags |= UserTypeGenerationFlags.SingleFileExport;
+            if (UseHungarianNotation)
+                generationFlags |= UserTypeGenerationFlags.UseHungarianNotation;
+            return generationFlags;
+        }
+
+        /// <summary>
         /// Creates the XML serializer for this XML configuration.
         /// </summary>
         private static XmlSerializer CreateSerializer()
@@ -308,7 +345,7 @@ namespace CsDebugScript.CodeGen
         {
             get
             {
-                return NameHelper.ContainsTemplateType(Name);
+                return SymbolNameHelper.ContainsTemplateType(Name);
             }
         }
 

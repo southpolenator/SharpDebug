@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.CodeGen.TypeTrees;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,41 +7,169 @@ using System.Text;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
+    /// <summary>
+    /// User type that represents template user type. For example: MyType&lt;T&gt;
+    /// </summary>
+    /// <seealso cref="UserType" />
     internal class TemplateUserType : UserType
     {
-        private readonly List<string> argumentsSymbols = new List<string>();
-        private readonly List<UserType> argumentsUserType = new List<UserType>();
+        /// <summary>
+        /// The list of template arguments stored as symbols
+        /// </summary>
+        private List<Symbol> templateArgumentsAsSymbols = new List<Symbol>();
 
-        //  TODO consider new type holding specialized template usertypes.
-        //
-        public List<TemplateUserType> specializedTypes = new List<TemplateUserType>();
+        /// <summary>
+        /// The list of template arguments stored as user types
+        /// </summary>
+        private List<UserType> templateArgumentsAsUserTypes = new List<UserType>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TemplateUserType" /> class.
+        /// </summary>
+        /// <param name="symbol">The symbol we are generating this user type from.</param>
+        /// <param name="xmlType">The XML description of the type.</param>
+        /// <param name="nameSpace">The namespace it belongs to.</param>
+        /// <param name="factory">The user type factory.</param>
         public TemplateUserType(Symbol symbol, XmlType xmlType, string nameSpace, UserTypeFactory factory)
             : base(symbol, xmlType, nameSpace)
         {
-            UpdateArguments(factory);
+            UpdateTemplateArguments(factory);
             ExportStaticFields = false;
         }
 
+        /// <summary>
+        /// Gets or sets the template type used for all specializations (SpecializedTypes).
+        /// TODO: Consider using new instance of type for holding specializations (instead of choosing one like we do today).
+        /// </summary>
         public TemplateUserType TemplateType { get; internal set; }
 
-        public bool UpdateArguments(UserTypeFactory factory)
-        {
-            this.argumentsSymbols.Clear();
-            this.argumentsUserType.Clear();
+        /// <summary>
+        /// Gets the list of specializations (specialized types).
+        /// </summary>
+        public List<TemplateUserType> SpecializedTypes { get; private set; } = new List<TemplateUserType>();
 
+        /// <summary>
+        /// Gets the full name of the class (specialized version), including namespace and "parent" type it is declared into.
+        /// This specialized version of FullClassName returns it with original specialization.
+        /// </summary>
+        internal override string SpecializedFullClassName
+        {
+            get
+            {
+                string className = GetSpecializedStringVersion(false);
+
+                if (DeclaredInType != null)
+                {
+                    UserType userType = DeclaredInType;
+                    TemplateUserType templateUserType = userType as TemplateUserType;
+
+                    if (templateUserType != null)
+                    {
+                        string specializationNamespace = Symbol.Namespaces[Symbol.Namespaces.Count - 2];
+                        bool updated = false;
+
+                        // Find correct specialization of the template user type
+                        foreach (TemplateUserType specializationType in templateUserType.SpecializedTypes)
+                        {
+                            if (specializationType.Symbol.Namespaces.Last() == specializationNamespace)
+                            {
+                                userType = specializationType;
+                                updated = true;
+                                break;
+                            }
+                        }
+
+#if false
+                        // TODO: This doesn't help because inner types of different buckets are not correctly assigned...
+                        if (!updated)
+                        {
+                            // Try full new search for the specialized parent type
+                            List<string> namespaces = Symbol.Namespaces;
+                            StringBuilder currentNamespaceSB = new StringBuilder();
+
+                            for (int i = 0; i < namespaces.Count - 1; i++)
+                            {
+                                if (i > 0)
+                                    currentNamespaceSB.Append("::");
+                                currentNamespaceSB.Append(namespaces[i]);
+                            }
+
+                            userType = GlobalCache.GetUserType(currentNamespaceSB.ToString(), Module);
+                            updated = userType != null;
+                        }
+#endif
+
+                        if (!updated)
+                        {
+                            // There is no such specialization that we need?!?
+                            // We should fall back to no arguments at all
+                            throw new Exception("Specialization is not possible");
+                        }
+                    }
+
+                    return string.Format("{0}.{1}", userType.SpecializedFullClassName, className);
+                }
+
+                if (!string.IsNullOrEmpty(Namespace))
+                {
+                    return string.Format("{0}.{1}", Namespace, className);
+                }
+
+                return string.Format("{0}", className);
+            }
+        }
+
+        /// <summary>
+        /// Gets the full name of the class (non-specialized version), including namespace and "parent" type it is declared into.
+        /// This non-specialized version of FullClassName returns it with template being trimmed to just &lt;&gt;.
+        /// </summary>
+        internal override string NonSpecializedFullClassName
+        {
+            get
+            {
+                string className = ClassName;
+
+                int templateStart = className.IndexOf('<');
+
+                if (templateStart > 0)
+                    className = className.Substring(0, templateStart) + "<>";
+
+                if (DeclaredInType != null)
+                {
+                    return string.Format("{0}.{1}", DeclaredInType.NonSpecializedFullClassName, className);
+                }
+
+                if (!string.IsNullOrEmpty(Namespace))
+                {
+                    return string.Format("{0}.{1}", Namespace, className);
+                }
+
+                return string.Format("{0}", className);
+            }
+        }
+
+        /// <summary>
+        /// Updates the template arguments (symbols and user types).
+        /// </summary>
+        /// <param name="factory">The user type factory.</param>
+        /// <returns><c>true</c> if all template arguments are resolved as user types.</returns>
+        public bool UpdateTemplateArguments(UserTypeFactory factory)
+        {
             string symbolName = Symbol.Namespaces.Last();
             int templateStart = symbolName.IndexOf('<');
             bool result = true;
 
+            templateArgumentsAsSymbols.Clear();
+            templateArgumentsAsUserTypes.Clear();
             if (templateStart > 0)
             {
-                var arguments = new List<string>();
+                // Parse template arguments
+                List<string> arguments = new List<string>();
 
                 for (int i = templateStart + 1; i < symbolName.Length && symbolName[i] != '>'; i++)
                 {
-                    var originalyExtractedType = XmlTypeTransformation.ExtractType(symbolName, i);
-                    var extractedType = originalyExtractedType.Trim();
+                    string originalyExtractedType = XmlTypeTransformation.ExtractType(symbolName, i);
+                    string extractedType = originalyExtractedType.Trim();
 
                     i += originalyExtractedType.Length;
                     if (string.IsNullOrEmpty(extractedType))
@@ -51,39 +180,34 @@ namespace CsDebugScript.CodeGen.UserTypes
                         break;
                     }
 
-                    // Duplicate types should be merged/removed
-                    if (arguments.Contains(extractedType))
-                        continue;
-
                     arguments.Add(extractedType);
 
+                    // Try to see if argument is number (constants are removed from the template arguments as they cannot be used in C#)
                     double constant;
 
                     if (!double.TryParse(extractedType, out constant))
                     {
+                        // Check if type is existing type (symbol)
                         Symbol symbol = GlobalCache.GetSymbol(extractedType, Module);
 
-                        // Check if type is existing type
                         if (symbol == null)
-                        {
                             throw new Exception("Wrongly formed template argument");
-                        }
+                        templateArgumentsAsSymbols.Add(symbol);
 
-                        this.argumentsSymbols.Add(symbol.Name);
-
+                        // Try to get user type for the symbol
                         UserType specializationUserType = null;
 
                         if (!factory.GetUserType(symbol, out specializationUserType))
                         {
                             if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
                             {
-                                var typeString = GetTypeString(symbol, factory).GetUserTypeString();
+                                var typeString = GetSymbolTypeTree(symbol, factory).GetTypeString();
 
-                                specializationUserType = new PrimitiveUserType(typeString, symbol);
+                                specializationUserType = new TemplateArgumentUserType(typeString, symbol);
                             }
                         }
 
-                        this.argumentsUserType.Add(specializationUserType);
+                        templateArgumentsAsUserTypes.Add(specializationUserType);
                         result = result && specializationUserType != null;
                     }
                 }
@@ -93,6 +217,9 @@ namespace CsDebugScript.CodeGen.UserTypes
             return result;
         }
 
+        /// <summary>
+        /// Gets the module where symbol is located.
+        /// </summary>
         public Module Module
         {
             get
@@ -101,6 +228,9 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
         }
 
+        /// <summary>
+        /// Gets the "parent" user type where this user type is declared in.
+        /// </summary>
         public override UserType DeclaredInType
         {
             get
@@ -109,13 +239,11 @@ namespace CsDebugScript.CodeGen.UserTypes
                     return TemplateType.DeclaredInType;
                 return base.DeclaredInType;
             }
-
-            set
-            {
-                base.DeclaredInType = value;
-            }
         }
 
+        /// <summary>
+        /// Gets the class name for this user type. Class name doesn't contain namespace.
+        /// </summary>
         public override string ClassName
         {
             get
@@ -132,14 +260,14 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (templateStart > 0)
                 {
                     symbolName = symbolName.Substring(0, templateStart);
-                    if (GenericsArguments == 1)
+                    if (NumberOfTemplateArguments == 1)
                     {
-                        symbolName += "<" + TemplateArgNameBase + ">";
+                        symbolName += "<" + TemplateArgumentsNameBase + ">";
                     }
-                    else if (GenericsArguments > 1)
+                    else if (NumberOfTemplateArguments > 1)
                     {
                         symbolName += "<";
-                        symbolName += string.Join(", ", Enumerable.Range(1, GenericsArguments).Select(t => TemplateArgNameBase + t));
+                        symbolName += string.Join(", ", Enumerable.Range(1, NumberOfTemplateArguments).Select(t => TemplateArgumentsNameBase + t));
                         symbolName += ">";
                     }
                     else
@@ -152,23 +280,45 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
         }
 
-        public int GenericsArguments
+        /// <summary>
+        /// Gets the number of template arguments.
+        /// </summary>
+        public int NumberOfTemplateArguments
         {
             get
             {
-                return argumentsSymbols.Count;
+                return templateArgumentsAsSymbols.Count;
             }
         }
 
-        public List<string> Arguments
+        /// <summary>
+        /// Gets the template arguments as parsed strings.
+        /// </summary>
+        public IEnumerable<string> TemplateArguments
         {
             get
             {
-                return argumentsSymbols;
+                return templateArgumentsAsSymbols.Select(s => s.Name);
             }
         }
 
-        private string TemplateArgNameBase
+        /// <summary>
+        /// Gets the template arguments as symbols.
+        /// </summary>
+        public IReadOnlyList<Symbol> TemplateArgumentsAsSymbols
+        {
+            get
+            {
+                return templateArgumentsAsSymbols;
+            }
+        }
+
+        /// <summary>
+        /// Gets the template arguments name base.
+        /// For single template user type this will be T.
+        /// For inner template user types, this will be Ti, Tii, etc.
+        /// </summary>
+        private string TemplateArgumentsNameBase
         {
             get
             {
@@ -188,42 +338,17 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
         }
 
-        public string[] ExtractSpecializedTypes()
+        /// <summary>
+        /// Gets the specialized string version of this template user type based on the specified types.
+        /// </summary>
+        /// <param name="types">The types to be used as template arguments.</param>
+        public string GetSpecializedStringVersion(string[] types)
         {
-            List<string> results = new List<string>();
-            foreach (string specializedType in argumentsSymbols)
-            {
-                UserType userType = GlobalCache.GetUserType(specializedType, Module);
-
-                if (userType != null)
-                {
-                    results.Add(userType.FullClassName);
-                    continue;
-                }
-
-                results.Add(specializedType);
-            }
-
-            //#wrong
-            return results.ToArray();
-        }
-
-        public Symbol[] ExtractSpecializedSymbols()
-        {
-            List<Symbol> results = new List<Symbol>();
-            foreach (string specializedType in argumentsSymbols)
-            {
-                results.Add(GlobalCache.GetSymbol(specializedType, Module));
-            }
-
-            return results.ToArray();
-        }
-
-        public string GetSpecializedType(IEnumerable<string> types)
-        {
-            if (types.Count() != GenericsArguments)
+            if (types.Length != NumberOfTemplateArguments)
                 throw new Exception("Wrong number of generics arguments");
 
+            // TODO: Consider using ConstructorName instead of ClassName
+            // TODO: Why is this function using ClassName and one with no arguments is using FullClassName?
             string className = ClassName;
             string symbolName = className;
             int templateStart = symbolName.IndexOf('<');
@@ -239,9 +364,13 @@ namespace CsDebugScript.CodeGen.UserTypes
             return symbolName;
         }
 
-        public string GetSpecializedTypeDefinedInstance()
+        /// <summary>
+        /// Gets the specialized string version of this template user type.
+        /// </summary>
+        /// <param name="useFullClassName">if set to <c>true</c> FullClassName will be used when generating specialized string version. If set to <c>false</c>, ClassName will be used.</param>
+        public string GetSpecializedStringVersion(bool useFullClassName = true)
         {
-            string fullClassName = FullClassName;
+            string fullClassName = useFullClassName ? FullClassName : ClassName;
             string className = ClassName;
             string symbolName = className;
 
@@ -249,7 +378,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             if (templateStart > 0)
             {
-                var types = this.argumentsUserType.Select(r => r is TemplateUserType ? ((TemplateUserType)r).GetSpecializedTypeDefinedInstance() : r.FullClassName);
+                IEnumerable<string> types = templateArgumentsAsUserTypes.Select(r => r.SpecializedFullClassName);
 
                 symbolName = symbolName.Substring(0, templateStart);
                 symbolName += "<";
@@ -260,77 +389,115 @@ namespace CsDebugScript.CodeGen.UserTypes
             return fullClassName.Substring(0, fullClassName.Length - className.Length) + symbolName;
         }
 
-        public bool TryGetArgument(string typeName, out string argument)
+        /// <summary>
+        /// Tries to match the specified type name against template arguments.
+        /// </summary>
+        /// <param name="typeName">The type name.</param>
+        /// <param name="argumentName">The found argument name.</param>
+        /// <returns><c>true</c> if template argument was matched.</returns>
+        public bool TryGetTemplateArgument(string typeName, out string argumentName)
         {
-            int index = argumentsSymbols.IndexOf(typeName);
+            // Does it belong to our template arguments?
+            int index = templateArgumentsAsSymbols.FindIndex(s => s.Name == typeName);
 
             if (index >= 0)
             {
-                argument = argumentsSymbols.Count == 1 ? TemplateArgNameBase : TemplateArgNameBase + (index + 1);
+                argumentName = NumberOfTemplateArguments == 1 ? TemplateArgumentsNameBase : TemplateArgumentsNameBase + (index + 1);
                 return true;
             }
 
-            TemplateUserType parentType = DeclaredInType as TemplateUserType;
+            // Does it belong to one of the "parent" template types?
+            UserType parentType = DeclaredInType;
 
-            if (parentType != null)
-                return parentType.TryGetArgument(typeName, out argument);
+            while (parentType != null)
+            {
+                TemplateUserType templateParentType = parentType as TemplateUserType;
 
-            argument = "";
+                if (templateParentType != null)
+                    return templateParentType.TryGetTemplateArgument(typeName, out argumentName);
+                parentType = parentType.DeclaredInType;
+            }
+
+            // Template argument wasn't found
+            argumentName = "";
             return false;
         }
 
-        public override UserTypeTree GetTypeString(Symbol type, UserTypeFactory factory, int bitLength = 0)
+        /// <summary>
+        /// Gets the type tree for the specified type (symbol).
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="factory">The user type factory.</param>
+        /// <param name="bitLength">Number of bits used for this symbol.</param>
+        internal override TypeTree GetSymbolTypeTree(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
-            return base.GetTypeString(type, CreateFactory(factory), bitLength);
+            return base.GetSymbolTypeTree(type, CreateFactory(factory), bitLength);
         }
 
-        protected override UserTypeTree GetBaseTypeString(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        /// <summary>
+        /// Gets the type tree for the base class.
+        /// If class has multi inheritance, it can return MultiClassInheritanceTypeTree or SingleClassInheritanceWithInterfacesTypeTree.
+        /// </summary>
+        /// <param name="error">The error text writer.</param>
+        /// <param name="type">The type for which we are getting base class.</param>
+        /// <param name="factory">The user type factory.</param>
+        /// <param name="baseClassOffset">The base class offset.</param>
+        protected override TypeTree GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
-            UserTypeTree baseType = base.GetBaseTypeString(error, type, CreateFactory(factory), out baseClassOffset);
+            TypeTree baseType = base.GetBaseClassTypeTree(error, type, CreateFactory(factory), out baseClassOffset);
 
             // Check if base type is template argument. It if is, export it as if it is multi class inheritance.
-            UserTypeTreeUserType userBaseType = baseType as UserTypeTreeUserType;
-            PrimitiveUserType primitiveUserType = userBaseType != null ? userBaseType.UserType as PrimitiveUserType : null;
+            UserTypeTree userBaseType = baseType as UserTypeTree;
+            TemplateArgumentUserType primitiveUserType = userBaseType != null ? userBaseType.UserType as TemplateArgumentUserType : null;
             if (userBaseType != null && primitiveUserType != null)
             {
-                var dict = GetInheritanceTypeConstraintDictionary(factory);
+                var dict = GetGenericTypeConstraintsDictionary(factory);
                 string commonBaseClass;
 
                 if (dict.TryGetValue(primitiveUserType.ClassName, out commonBaseClass))
-                    return UserTypeTreeUserType.Create(new PrimitiveUserType(commonBaseClass, null), factory);
+                    return UserTypeTree.Create(new TemplateArgumentUserType(commonBaseClass, null), factory);
 
                 baseClassOffset = 0;
-                return new UserTypeTreeMultiClassInheritance();
+                return new MultiClassInheritanceTypeTree();
             }
 
             return baseType;
         }
 
+        /// <summary>
+        /// Writes the class comment on the specified output.
+        /// </summary>
+        /// <param name="output">The output.</param>
+        /// <param name="indentation">The current indentation.</param>
         protected override void WriteClassComment(IndentedWriter output, int indentation)
         {
             base.WriteClassComment(output, indentation);
             output.WriteLine(indentation, "// ---------------------------------------------------");
             output.WriteLine(indentation, "// Specializations of this class");
-            foreach (var type in specializedTypes)
+            foreach (var type in SpecializedTypes)
                 output.WriteLine(indentation, "//   {0}", type.Symbol.Name);
         }
 
-
-
+        /// <summary>
+        /// Creates the user type factory based on this template user type.
+        /// </summary>
+        /// <param name="factory">The original user type factory.</param>
         private UserTypeFactory CreateFactory(UserTypeFactory factory)
         {
+            // Check if we are trying to create factory from factory that we already created
             var templateFactory = factory as TemplateUserTypeFactory;
 
             if (templateFactory != null)
             {
                 if (templateFactory.TemplateType != this)
                     return CreateFactory(templateFactory.OriginalFactory);
+
+                // TODO: Verify if we want to keep existing template factory or we want to add our type too
                 return templateFactory;
             }
 
             return new TemplateUserTypeFactory(factory, this);
         }
-
 
         private enum TypeOfSpecializationType
         {
@@ -340,26 +507,31 @@ namespace CsDebugScript.CodeGen.UserTypes
             UserType,
         }
 
-        public string[] GetCommonBaseTypesForSpecialization(UserTypeFactory factory)
+        /// <summary>
+        /// Gets the common base types for all specializations.
+        /// </summary>
+        /// <param name="factory">The user type factory.</param>
+        private string[] GetCommonBaseTypesForAllSpecializations(UserTypeFactory factory)
         {
-            if (!specializedTypes.Any())
+            // If we don't have specializations, we cannot continue
+            if (!SpecializedTypes.Any())
             {
                 return null;
             }
 
-            string[] results = new string[GenericsArguments];
+            // Do this for every template argument
+            string[] results = new string[NumberOfTemplateArguments];
 
-            for (int i = 0; i < GenericsArguments; i++)
+            for (int i = 0; i < NumberOfTemplateArguments; i++)
             {
-                string[] specializedTypes = this.specializedTypes.Select(r => r.argumentsSymbols[i]).ToArray();
+                // Get all specializations for current template argument
+                Symbol[] specializedSymbols = SpecializedTypes.Select(r => r.templateArgumentsAsSymbols[i]).ToArray();
                 TypeOfSpecializationType specializationType = TypeOfSpecializationType.Unmatched;
                 UserType commonType = null;
 
-                foreach (string specializedType in specializedTypes)
+                foreach (Symbol type in specializedSymbols)
                 {
                     // Check base type
-                    var type = GlobalCache.GetSymbol(specializedType, Module);
-
                     if (type.Tag == Dia2Lib.SymTagEnum.SymTagBaseType || type.Tag == Dia2Lib.SymTagEnum.SymTagEnum)
                         if (type.Name != "void")
                         {
@@ -381,7 +553,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                     if (type.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
                     {
-                        throw new NotImplementedException("Unexpected symbol type " + type.Tag + ". Symbol name: " + specializedType);
+                        throw new NotImplementedException("Unexpected symbol type " + type.Tag + ". Symbol name: " + type.Name);
                     }
 
                     // Check if type has user type
@@ -412,8 +584,8 @@ namespace CsDebugScript.CodeGen.UserTypes
                     }
 
                     // Try to find common type for commonType and userType
-                    var commonTypeBases = ExtractBaseClasses(commonType);
-                    var userTypeBases = ExtractBaseClasses(userType);
+                    var commonTypeBases = ExtractAllBaseClasses(commonType);
+                    var userTypeBases = ExtractAllBaseClasses(userType);
                     bool found = false;
 
                     foreach (var ct in commonTypeBases)
@@ -434,6 +606,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         specializationType = TypeOfSpecializationType.Variable;
                 }
 
+                // Save result based on specialization type
                 string userTypeName;
                 var templateCommonType = commonType as TemplateUserType;
 
@@ -447,7 +620,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         break;
                     case TypeOfSpecializationType.UserType:
                         if (templateCommonType != null)
-                            userTypeName = new UserTypeTreeGenericsType(templateCommonType, factory).GetUserTypeString();
+                            userTypeName = new TemplateTypeTree(templateCommonType, factory).GetTypeString();
                         else
                             userTypeName = commonType.FullClassName;
                         break;
@@ -462,7 +635,11 @@ namespace CsDebugScript.CodeGen.UserTypes
             return results;
         }
 
-        private static List<UserType> ExtractBaseClasses(UserType userType)
+        /// <summary>
+        /// Extracts all base classes for the specified user type.
+        /// </summary>
+        /// <param name="userType">The user type.</param>
+        private static List<UserType> ExtractAllBaseClasses(UserType userType)
         {
             var userTypes = new List<UserType>();
             Symbol symbol = userType.Symbol;
@@ -485,7 +662,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
 
                 symbol = baseClasses[0];
-                userType = symbol != null ? symbol.UserType : null;
+                userType = symbol?.UserType;
                 if (userType != null)
                     userTypes.Add(userType);
             }
@@ -493,11 +670,15 @@ namespace CsDebugScript.CodeGen.UserTypes
             return userTypes;
         }
 
-        private Dictionary<string, string> GetInheritanceTypeConstraintDictionary(UserTypeFactory factory)
+        /// <summary>
+        /// Gets the dictionary of generic type constraints per template argument (that has constraint).
+        /// </summary>
+        /// <param name="factory">The user type factory.</param>
+        private Dictionary<string, string> GetGenericTypeConstraintsDictionary(UserTypeFactory factory)
         {
             Dictionary<string, string> result = new Dictionary<string, string>();
 #if false
-            string[] commonBaseSpecializationTypes = GetCommonBaseTypesForSpecialization(factory);
+            string[] commonBaseSpecializationTypes = GetCommonBaseTypesForAllSpecializations(factory);
 
             if (commonBaseSpecializationTypes == null || commonBaseSpecializationTypes.All(r => string.IsNullOrEmpty(r)))
 #endif
@@ -509,67 +690,65 @@ namespace CsDebugScript.CodeGen.UserTypes
 #if false
             StringBuilder sb = new StringBuilder();
             if (commonBaseSpecializationTypes.Count() == 1)
-                result.Add(TemplateArgNameBase, commonBaseSpecializationTypes[0]);
+                result.Add(TemplateArgumentsNameBase, commonBaseSpecializationTypes[0]);
             else
                 for (int i = 0; i < commonBaseSpecializationTypes.Count(); i++)
                     if (!string.IsNullOrEmpty(commonBaseSpecializationTypes[i]))
-                        result.Add(string.Format("{0}{1}", TemplateArgNameBase, i + 1), commonBaseSpecializationTypes[i]);
+                        result.Add(string.Format("{0}{1}", TemplateArgumentsNameBase, i + 1), commonBaseSpecializationTypes[i]);
             return result;
 #endif
         }
 
         /// <summary>
-        /// 
+        /// Gets the list of generic type constraints.
         /// </summary>
-        /// <returns></returns>
-        protected override string GetInheritanceTypeConstraint(UserTypeFactory factory)
+        /// <param name="factory">The user type factory.</param>
+        protected override IEnumerable<string> GetGenericTypeConstraints(UserTypeFactory factory)
         {
-            var dict = GetInheritanceTypeConstraintDictionary(factory);
+            var dict = GetGenericTypeConstraintsDictionary(factory);
 
-            return string.Join("", dict.Select(t => string.Format("    where {0} : {1}", t.Key, t.Value)));
+            return dict.Select(t => string.Format("where {0} : {1}", t.Key, t.Value));
         }
 
-
-        public override UserTypeTree GetFieldType(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
+        /// <summary>
+        /// Gets the type tree for the specified field.
+        /// </summary>
+        /// <param name="field">The field.</param>
+        /// <param name="factory">The user type factory.</param>
+        /// <param name="extractingBaseClass">if set to <c>true</c> user type field is being generated for getting base class.</param>
+        /// <param name="bitLength">Number of bits used for this symbol.</param>
+        protected override TypeTree GetFieldTypeTree(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
         {
-            if (extractingBaseClass || this.Arguments.Count == 0)
-            {
-                // Do not match specializations when getting type for base class.
-                //
-                UserTypeTree baseClassType = GetTypeString(field.Type, factory, bitLength);
+            // Do not match specializations when getting type for base class.
+            if (extractingBaseClass || NumberOfTemplateArguments == 0)
+                return GetSymbolTypeTree(field.Type, factory, bitLength);
 
-                return baseClassType;
-            }
-
-            var specializedFields = specializedTypes.Select(r => new Tuple<TemplateUserType, SymbolField>(r, r.Symbol.Fields.FirstOrDefault(q => q.Name == field.Name))).ToArray();
+            // Check field in all specializations
+            var specializedFields = SpecializedTypes.Select(r => new Tuple<TemplateUserType, SymbolField>(r, r.Symbol.Fields.FirstOrDefault(q => q.Name == field.Name))).ToArray();
 
             if (specializedFields.Any(r => r.Item2 == null))
             {
-                // TODO
-                // Incorrect bucketizing. Field does not exist in all specialization.
-                //
-                return GetTypeString(field.Type, factory, bitLength);
+                // TODO: Incorrect bucketization. Field does not exist in all specialization.
+                return GetSymbolTypeTree(field.Type, factory, bitLength);
             }
 
             if (specializedFields.All(r => r.Item2.Type.Name == field.Type.Name))
             {
                 // There is no specialization, all types across the specializations are the same.
-                //
-                return GetTypeString(field.Type, factory, bitLength);
+                return GetSymbolTypeTree(field.Type, factory, bitLength);
             }
 
-            //
-            UserTypeTree result = GetTypeString(field.Type, factory, bitLength);
+            // Try to get type tree
+            TypeTree result = GetSymbolTypeTree(field.Type, factory, bitLength);
 
-            if (result is UserTypeTreeBaseType)
+            if (result is BasicTypeTree)
             {
-                // Correct result
-                //
-                UserType baseTypeUserType;
+                // Basic type tree is not challenged against template arguments, so try to do that.
+                UserType basicUserType;
 
-                if (CreateFactory(factory).GetUserType(field.Type, out baseTypeUserType))
+                if (CreateFactory(factory).GetUserType(field.Type, out basicUserType))
                 {
-                    UserTypeTree tree = UserTypeTreeUserType.Create(baseTypeUserType, factory);
+                    TypeTree tree = UserTypeTree.Create(basicUserType, factory);
 
                     if (tree != null)
                     {
@@ -578,10 +757,8 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
 
                 // Failed to match the type
-                // TODO, look for typedeclared
-                // Class is using different types than in template specialization.
-                // We cannot support it right now.
-                return new UserTypeTreeVariable();
+                // TODO: Look for typedeclared. Class is using different types than in template specialization. We cannot support it right now.
+                return new VariableTypeTree();
             }
 
             return result;

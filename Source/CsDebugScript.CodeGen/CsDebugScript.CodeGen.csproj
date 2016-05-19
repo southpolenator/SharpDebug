@@ -129,16 +129,34 @@
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Source\CsDebugScript.Engine\Engine\Utility\SimpleCache.cs" />
     <Compile Include="Symbol.cs" />
-    <Compile Include="UserTypeTree.cs" />
+    <Compile Include="TypeTrees\ArrayTypeTree.cs" />
+    <Compile Include="TypeTrees\BasicTypeTree.cs" />
+    <Compile Include="TypeTrees\EnumTreeType.cs" />
+    <Compile Include="TypeTrees\FunctionTypeTree.cs" />
+    <Compile Include="TypeTrees\MultiClassInheritanceTypeTree.cs" />
+    <Compile Include="TypeTrees\PointerTypeTree.cs" />
+    <Compile Include="TypeTrees\SingleClassInheritanceWithInterfacesTypeTree.cs" />
+    <Compile Include="TypeTrees\StaticClassTypeTree.cs" />
+    <Compile Include="TypeTrees\TemplateArgumentTreeType.cs" />
+    <Compile Include="TypeTrees\TemplateTypeTree.cs" />
+    <Compile Include="TypeTrees\TransformationTypeTree.cs" />
+    <Compile Include="TypeTrees\TypeTree.cs" />
+    <Compile Include="TypeTrees\UserTypeTree.cs" />
+    <Compile Include="TypeTrees\VariableTypeTree.cs" />
+    <Compile Include="UserTypeGenerationFlags.cs" />
     <Compile Include="UserTypes\EnumUserType.cs" />
     <Compile Include="UserTypes\GlobalsUserType.cs" />
     <Compile Include="UserTypes\NamespaceUserType.cs" />
     <Compile Include="UserTypes\PhysicalUserType.cs" />
-    <Compile Include="UserTypes\PrimitiveUserType.cs" />
+    <Compile Include="UserTypes\TemplateArgumentUserType.cs" />
     <Compile Include="UserTypes\TemplateUserType.cs" />
     <Compile Include="UserTypeFactory\TemplateUserTypeFactory.cs" />
     <Compile Include="UserTypes\UserType.cs" />
     <Compile Include="UserTypeFactory\UserTypeFactory.cs" />
+    <Compile Include="UserTypes\UserTypeConstructor.cs" />
+    <Compile Include="UserTypes\UserTypeField.cs" />
+    <Compile Include="UserTypes\UserTypeFunction.cs" />
+    <Compile Include="UserTypes\UserTypeTransformation.cs" />
     <Compile Include="XmlConfig.cs" />
   </ItemGroup>
   <ItemGroup>
