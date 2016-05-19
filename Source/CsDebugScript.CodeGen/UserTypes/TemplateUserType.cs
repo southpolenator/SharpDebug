@@ -49,6 +49,106 @@ namespace CsDebugScript.CodeGen.UserTypes
         public List<TemplateUserType> SpecializedTypes { get; private set; } = new List<TemplateUserType>();
 
         /// <summary>
+        /// Gets the full name of the class (specialized version), including namespace and "parent" type it is declared into.
+        /// This specialized version of FullClassName returns it with original specialization.
+        /// </summary>
+        internal override string SpecializedFullClassName
+        {
+            get
+            {
+                string className = GetSpecializedStringVersion(false);
+
+                if (DeclaredInType != null)
+                {
+                    UserType userType = DeclaredInType;
+                    TemplateUserType templateUserType = userType as TemplateUserType;
+
+                    if (templateUserType != null)
+                    {
+                        string specializationNamespace = Symbol.Namespaces[Symbol.Namespaces.Count - 2];
+                        bool updated = false;
+
+                        // Find correct specialization of the template user type
+                        foreach (TemplateUserType specializationType in templateUserType.SpecializedTypes)
+                        {
+                            if (specializationType.Symbol.Namespaces.Last() == specializationNamespace)
+                            {
+                                userType = specializationType;
+                                updated = true;
+                                break;
+                            }
+                        }
+
+#if false
+                        // TODO: This doesn't help because inner types of different buckets are not correctly assigned...
+                        if (!updated)
+                        {
+                            // Try full new search for the specialized parent type
+                            List<string> namespaces = Symbol.Namespaces;
+                            StringBuilder currentNamespaceSB = new StringBuilder();
+
+                            for (int i = 0; i < namespaces.Count - 1; i++)
+                            {
+                                if (i > 0)
+                                    currentNamespaceSB.Append("::");
+                                currentNamespaceSB.Append(namespaces[i]);
+                            }
+
+                            userType = GlobalCache.GetUserType(currentNamespaceSB.ToString(), Module);
+                            updated = userType != null;
+                        }
+#endif
+
+                        if (!updated)
+                        {
+                            // There is no such specialization that we need?!?
+                            // We should fall back to no arguments at all
+                            throw new Exception("Specialization is not possible");
+                        }
+                    }
+
+                    return string.Format("{0}.{1}", userType.SpecializedFullClassName, className);
+                }
+
+                if (!string.IsNullOrEmpty(Namespace))
+                {
+                    return string.Format("{0}.{1}", Namespace, className);
+                }
+
+                return string.Format("{0}", className);
+            }
+        }
+
+        /// <summary>
+        /// Gets the full name of the class (non-specialized version), including namespace and "parent" type it is declared into.
+        /// This non-specialized version of FullClassName returns it with template being trimmed to just &lt;&gt;.
+        /// </summary>
+        internal override string NonSpecializedFullClassName
+        {
+            get
+            {
+                string className = ClassName;
+
+                int templateStart = className.IndexOf('<');
+
+                if (templateStart > 0)
+                    className = className.Substring(0, templateStart) + "<>";
+
+                if (DeclaredInType != null)
+                {
+                    return string.Format("{0}.{1}", DeclaredInType.NonSpecializedFullClassName, className);
+                }
+
+                if (!string.IsNullOrEmpty(Namespace))
+                {
+                    return string.Format("{0}.{1}", Namespace, className);
+                }
+
+                return string.Format("{0}", className);
+            }
+        }
+
+        /// <summary>
         /// Updates the template arguments (symbols and user types).
         /// </summary>
         /// <param name="factory">The user type factory.</param>
@@ -80,9 +180,6 @@ namespace CsDebugScript.CodeGen.UserTypes
                         break;
                     }
 
-                    // Duplicate types should be merged/removed as we cannot know which argument was targeted
-                    if (arguments.Contains(extractedType))
-                        continue;
                     arguments.Add(extractedType);
 
                     // Try to see if argument is number (constants are removed from the template arguments as they cannot be used in C#)
@@ -266,9 +363,10 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Gets the specialized string version of this template user type.
         /// </summary>
-        public string GetSpecializedStringVersion()
+        /// <param name="useFullClassName">if set to <c>true</c> FullClassName will be used when generating specialized string version. If set to <c>false</c>, ClassName will be used.</param>
+        public string GetSpecializedStringVersion(bool useFullClassName = true)
         {
-            string fullClassName = FullClassName;
+            string fullClassName = useFullClassName ? FullClassName : ClassName;
             string className = ClassName;
             string symbolName = className;
 
@@ -276,7 +374,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             if (templateStart > 0)
             {
-                IEnumerable<string> types = templateArgumentsAsUserTypes.Select(r => r is TemplateUserType ? ((TemplateUserType)r).GetSpecializedStringVersion() : r.FullClassName);
+                IEnumerable<string> types = templateArgumentsAsUserTypes.Select(r => r.SpecializedFullClassName);
 
                 symbolName = symbolName.Substring(0, templateStart);
                 symbolName += "<";

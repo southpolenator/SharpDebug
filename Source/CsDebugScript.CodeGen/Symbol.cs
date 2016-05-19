@@ -294,6 +294,39 @@ namespace CsDebugScript.CodeGen
             s.pointerType = pointerType;
             s.userType = userType;
         }
+
+        /// <summary>
+        /// Determines whether symbol has virtual table of functions.
+        /// </summary>
+        internal bool HasVTable()
+        {
+            if (symbol.GetChildren(SymTagEnum.SymTagVTable).Any())
+                return true;
+            foreach (Symbol baseClass in BaseClasses)
+                if (baseClass.Offset == 0 && baseClass.HasVTable())
+                    return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Gets all base classes (including base classes of base classes).
+        /// </summary>
+        internal IEnumerable<Symbol> GetAllBaseClasses()
+        {
+            List<Symbol> unprocessed = BaseClasses.ToList();
+
+            while (unprocessed.Count > 0)
+            {
+                List<Symbol> symbols = unprocessed;
+
+                unprocessed = new List<Symbol>();
+                foreach (var symbol in symbols)
+                {
+                    yield return symbol;
+                    unprocessed.AddRange(symbol.BaseClasses);
+                }
+            }
+        }
     }
 
     /// <summary>

@@ -116,6 +116,11 @@ namespace CsDebugScript.CodeGen.UserTypes
         internal bool ExportStaticFields { get; set; } = true;
 
         /// <summary>
+        /// Gets the list of derived classes.
+        /// </summary>
+        internal HashSet<UserType> DerivedClasses { get; private set; } = new HashSet<UserType>();
+
+        /// <summary>
         /// Gets or sets a value indicating whether user type should export dynamic fields.
         /// </summary>
         /// <value>
@@ -194,6 +199,50 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (DeclaredInType != null)
                 {
                     return string.Format("{0}.{1}", DeclaredInType.FullClassName, ClassName);
+                }
+
+                if (!string.IsNullOrEmpty(Namespace))
+                {
+                    return string.Format("{0}.{1}", Namespace, ClassName);
+                }
+
+                return string.Format("{0}", ClassName);
+            }
+        }
+
+        /// <summary>
+        /// Gets the full name of the class (specialized version), including namespace and "parent" type it is declared into.
+        /// This specialized version of FullClassName returns it with original specialization.
+        /// </summary>
+        internal virtual string SpecializedFullClassName
+        {
+            get
+            {
+                if (DeclaredInType != null)
+                {
+                    return string.Format("{0}.{1}", DeclaredInType.SpecializedFullClassName, ClassName);
+                }
+
+                if (!string.IsNullOrEmpty(Namespace))
+                {
+                    return string.Format("{0}.{1}", Namespace, ClassName);
+                }
+
+                return string.Format("{0}", ClassName);
+            }
+        }
+
+        /// <summary>
+        /// Gets the full name of the class (non-specialized version), including namespace and "parent" type it is declared into.
+        /// This non-specialized version of FullClassName returns it with template being trimmed to just &lt;&gt;.
+        /// </summary>
+        internal virtual string NonSpecializedFullClassName
+        {
+            get
+            {
+                if (DeclaredInType != null)
+                {
+                    return string.Format("{0}.{1}", DeclaredInType.NonSpecializedFullClassName, ClassName);
                 }
 
                 if (!string.IsNullOrEmpty(Namespace))
@@ -410,6 +459,15 @@ namespace CsDebugScript.CodeGen.UserTypes
                 SimpleFieldValue = simpleFieldValue,
                 ConstantValue = constantString,
             };
+        }
+
+        /// <summary>
+        /// Adds the derived class to the list of derived classes.
+        /// </summary>
+        /// <param name="derivedClass">The derived class.</param>
+        internal void AddDerivedClass(UserType derivedClass)
+        {
+            DerivedClasses.Add(derivedClass);
         }
 
         /// <summary>
@@ -675,6 +733,25 @@ namespace CsDebugScript.CodeGen.UserTypes
                 WriteClassComment(output, indentation);
             if (ExportDynamicFields)
             {
+                // If symbol has vtable, we would like to add DerivedClassAttribute to it
+                if (Symbol.HasVTable())
+                    foreach (var derivedClass in DerivedClasses)
+                    {
+                        string fullClassName;
+
+                        try
+                        {
+                            fullClassName = derivedClass.SpecializedFullClassName;
+                        }
+                        catch
+                        {
+                            fullClassName = derivedClass.NonSpecializedFullClassName;
+                        }
+
+                        output.WriteLine(indentation, @"[DerivedClass(Type = typeof({0}), Priority = {1}, TypeName = ""{2}"")]", fullClassName, derivedClass.DerivedClasses.Count, derivedClass.Symbol.Name);
+                    }
+
+                // Write all UserTypeAttributes and class header
                 foreach (var moduleName in GlobalCache.GetSymbolModuleNames(Symbol))
                     output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, TypeName);
                 output.WriteLine(indentation, @"public partial class {0} {1} {2}", ClassName, !string.IsNullOrEmpty(baseType.GetTypeString()) ? ":" : "", baseType);

@@ -202,44 +202,48 @@ namespace CsDebugScript.CodeGen.UserTypes
                     {
                         var arguments = specializedTemplate.TemplateArguments;
 
-                        // Check if all arguments are simple user type
-                        bool simpleUserType = true;
-
-                        foreach (var argument in arguments)
+                        // Check if all arguments are different
+                        if (arguments.Distinct().Count() == arguments.Count())
                         {
-                            var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
+                            // Check if all arguments are simple user type
+                            bool simpleUserType = true;
 
-                            if (argumentSymbol.Tag != SymTagEnum.SymTagUDT || argumentSymbol.Name.Contains("<"))
+                            foreach (var argument in arguments)
                             {
-                                simpleUserType = false;
+                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
+
+                                if (argumentSymbol.Tag != SymTagEnum.SymTagUDT || argumentSymbol.Name.Contains("<"))
+                                {
+                                    simpleUserType = false;
+                                    break;
+                                }
+                            }
+
+                            if (simpleUserType)
+                            {
+                                template = specializedTemplate;
                                 break;
                             }
-                        }
 
-                        if (simpleUserType)
-                        {
-                            template = specializedTemplate;
-                            break;
-                        }
+                            // Check if none of the arguments is template user type
+                            bool noneIsTemplate = true;
 
-                        // Check if none of the arguments is template user type
-                        bool noneIsTemplate = true;
-
-                        foreach (var argument in arguments)
-                        {
-                            var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
-
-                            if (argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
+                            foreach (var argument in arguments)
                             {
-                                noneIsTemplate = false;
-                                break;
-                            }
-                        }
+                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
 
-                        if (noneIsTemplate)
-                        {
-                            template = specializedTemplate;
-                            continue;
+                                if (argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
+                                {
+                                    noneIsTemplate = false;
+                                    break;
+                                }
+                            }
+
+                            if (noneIsTemplate)
+                            {
+                                template = specializedTemplate;
+                                continue;
+                            }
                         }
 
                         // This one is good as any...
@@ -374,7 +378,51 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
             }
 
+            // Find all derived classes
+            foreach (UserType userType in userTypes)
+            {
+                // We are doing this only for UDTs
+                if (userType is EnumUserType || userType is GlobalsUserType || userType is NamespaceUserType)
+                    continue;
+
+                // For template user types, we want to remember all specializations
+                TemplateUserType templateUserType = userType as TemplateUserType;
+
+                if (templateUserType != null)
+                {
+                    foreach (UserType specializedUserType in templateUserType.SpecializedTypes)
+                    {
+                        AddDerivedClassToBaseClasses(specializedUserType);
+                    }
+                }
+                else
+                {
+                    AddDerivedClassToBaseClasses(userType);
+                }
+            }
+
             return newTypes;
+        }
+
+        /// <summary>
+        /// Adds the specified user type as derived class to all its base classes.
+        /// </summary>
+        /// <param name="userType">The user type.</param>
+        private void AddDerivedClassToBaseClasses(UserType userType)
+        {
+            IEnumerable<Symbol> allBaseClasses = userType.Symbol.GetAllBaseClasses();
+
+            foreach (Symbol baseClass in allBaseClasses)
+            {
+                UserType baseClassUserType = GlobalCache.GetUserType(baseClass);
+                TemplateUserType templateUserType = baseClassUserType as TemplateUserType;
+
+                if (templateUserType != null)
+                    baseClassUserType = templateUserType.TemplateType;
+
+                if (baseClassUserType != null)
+                    baseClassUserType.AddDerivedClass(userType);
+            }
         }
 
         /// <summary>

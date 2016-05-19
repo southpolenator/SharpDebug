@@ -95,5 +95,39 @@ namespace CsDebugScript.CodeGen.UserTypes
                 return string.Format("{0}", Namespace);
             }
         }
+
+        /// <summary>
+        /// Gets the full name of the class (specialized version), including namespace and "parent" type it is declared into.
+        /// This specialized version of FullClassName returns it with original specialization.
+        /// </summary>
+        internal override string SpecializedFullClassName
+        {
+            get
+            {
+                if (DeclaredInType != null)
+                {
+                    return string.Format("{0}.{1}", DeclaredInType.SpecializedFullClassName, Namespace);
+                }
+
+                return string.Format("{0}", Namespace);
+            }
+        }
+
+        /// <summary>
+        /// Gets the full name of the class (non-specialized version), including namespace and "parent" type it is declared into.
+        /// This non-specialized version of FullClassName returns it with template being trimmed to just &lt;&gt;.
+        /// </summary>
+        internal override string NonSpecializedFullClassName
+        {
+            get
+            {
+                if (DeclaredInType != null)
+                {
+                    return string.Format("{0}.{1}", DeclaredInType.NonSpecializedFullClassName, Namespace);
+                }
+
+                return string.Format("{0}", Namespace);
+            }
+        }
     }
 }
