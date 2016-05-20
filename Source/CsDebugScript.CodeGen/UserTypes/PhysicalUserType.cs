@@ -300,9 +300,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                     }
                 }
                 // Specialization for user types
-                else if (userType != null)
+                else if (userType != null && !extractingBaseClass)
                 {
-                    if (!(userType.UserType is EnumUserType) && !extractingBaseClass)
+                    if (!(userType.UserType is EnumUserType))
                     {
                         string thisClassCodeType;
 
@@ -343,6 +343,10 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                             constructorText = string.Format("new {0}(memoryBuffer, memoryBufferOffset + {1}, memoryBufferAddress, {2}, {3}, \"{4}\")", fieldTypeString, field.Offset, fieldCodeType, fieldAddress, fieldName);
                         }
+                    }
+                    else
+                    {
+                        // TODO: This is enum. Read how much enum base type is big and just cast to enum type...
                     }
                 }
                 // Specialization for transformations
