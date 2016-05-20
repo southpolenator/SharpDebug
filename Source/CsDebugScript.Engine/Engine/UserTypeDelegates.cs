@@ -60,6 +60,11 @@ namespace CsDebugScript.Engine
         /// Gets the physical constructor, or null if not available.
         /// </summary>
         PhysicalConstructorDelegate PhysicalConstructor { get; }
+
+        /// <summary>
+        /// Gets the derived class attributes.
+        /// </summary>
+        DerivedClassAttribute[] DerivedClassAttributes { get; }
     }
 
     /// <summary>
@@ -77,6 +82,11 @@ namespace CsDebugScript.Engine
         /// Gets the physical constructor, or null if not available.
         /// </summary>
         PhysicalConstructorDelegate<T> PhysicalConstructor { get; }
+
+        /// <summary>
+        /// Gets the derived class attributes.
+        /// </summary>
+        DerivedClassAttribute[] DerivedClassAttributes { get; }
     }
 
     /// <summary>
@@ -209,7 +219,15 @@ namespace CsDebugScript.Engine
                     physicalConstructorTyped = (PhysicalConstructorDelegate<T>)method.CreateDelegate(typeof(PhysicalConstructorDelegate<T>));
                 }
             }
+
+            // Get type attributes
+            DerivedClassAttributes = userType.GetCustomAttributes<DerivedClassAttribute>(false).ToArray();
         }
+
+        /// <summary>
+        /// Gets the derived class attributes.
+        /// </summary>
+        public DerivedClassAttribute[] DerivedClassAttributes { get; private set; }
 
         /// <summary>
         /// Gets the physical constructor, or null if not available.

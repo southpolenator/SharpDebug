@@ -1,6 +1,7 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CsDebugScript
@@ -80,6 +81,75 @@ namespace CsDebugScript
             }
 
             return variable;
+        }
+
+        /// <summary>
+        /// Does the full downcast, looks up the type based on virtual table and shifts variable address if multi-inheritance was involved.
+        /// Difference from <see cref="VariableCastExtender.DowncastInterface(Variable)"/> is that this function returns downcasted .NET object
+        /// if T contains <see cref="DerivedClassAttribute"/>.
+        /// </summary>
+        /// <typeparam name="T">The base user type which will be downcasted.</typeparam>
+        /// <param name="userType">The user type.</param>
+        /// <returns>Downcasted .NET object.</returns>
+        public static T DowncastObject<T>(this T userType)
+            where T : UserType
+        {
+            DerivedClassAttribute[] attributes = UserTypeDelegates<T>.Instance.DerivedClassAttributes;
+
+            if (attributes.Length == 0)
+            {
+                throw new Exception(string.Format("Specified type {0} doesn't contain derived class attributes", typeof(T).Name));
+            }
+
+            Variable variable = userType.DowncastInterface();
+            Dictionary<string, DerivedClassAttribute> dict = attributes.ToDictionary(a => a.TypeName);
+            CodeType originalCodeType = variable.GetCodeType();
+            List<Tuple<CodeType, int>> types = new List<Tuple<CodeType, int>>();
+
+            if (originalCodeType.IsPointer)
+            {
+                originalCodeType = originalCodeType.ElementType;
+            }
+
+            types.Add(Tuple.Create(originalCodeType, 0));
+            while (types.Count > 0)
+            {
+                List<Tuple<CodeType, int>> newTypes = new List<Tuple<CodeType, int>>();
+
+                foreach (Tuple<CodeType, int> tuple in types)
+                {
+                    int offset = tuple.Item2;
+                    CodeType codeType = tuple.Item1;
+                    DerivedClassAttribute attribute;
+
+                    if (dict.TryGetValue(codeType.Name, out attribute))
+                    {
+                        // Check if we don't have top level code type
+                        if (originalCodeType != codeType)
+                        {
+                            if (offset > 0)
+                            {
+                                variable = variable.AdjustPointer(offset);
+                            }
+
+                            variable = variable.CastAs(codeType);
+                        }
+
+                        return (T)variable.CastAs(attribute.Type);
+                    }
+
+                    // Add base classes
+                    foreach (var t in codeType.InheritedClasses.Values)
+                    {
+                        newTypes.Add(Tuple.Create(t.Item1, offset + t.Item2));
+                    }
+                }
+
+                // Continue with new types
+                types = newTypes;
+            }
+
+            return userType;
         }
 
         /// <summary>
