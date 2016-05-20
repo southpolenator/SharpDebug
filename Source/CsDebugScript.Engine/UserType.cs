@@ -140,7 +140,7 @@ namespace CsDebugScript
                             variable = variable.CastAs(codeType);
                         }
 
-                        return (T)variable.CastAs(attribute.Type);
+                        return (UserType)variable.CastAs(attribute.Type);
                     }
 
                     // Add base classes
