@@ -80,6 +80,12 @@ namespace CsDebugScript
                 {
                     Interpret(command, prompt);
                 }
+                catch (AggregateException ex)
+                {
+                    if (ex.InnerException is ExitRequestedException)
+                        break;
+                    throw;
+                }
                 catch (ExitRequestedException)
                 {
                     break;
