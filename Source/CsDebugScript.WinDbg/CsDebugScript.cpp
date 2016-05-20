@@ -363,17 +363,46 @@ CSDEBUGSCRIPT_API HRESULT interactive(
 	return result;
 }
 
+struct OpenUiSecondThreadParameters
+{
+	IDebugClient* Client;
+	char* Args;
+};
+
+DWORD WINAPI OpenUiSecondThread(void* parameter)
+{
+	OpenUiSecondThreadParameters* p = (OpenUiSecondThreadParameters*)parameter;
+	IDebugClient* Client = p->Client;
+	char* Args = p->Args;
+	CAutoComPtr<IDebugClient> client2;
+
+	CHECKCOM(Client->CreateClient(&client2));
+
+	wstringstream ss;
+
+	ss << Args;
+	clr.InitializeContext(client2);
+	HRESULT result = clr.OpenUI(ss.str().c_str());
+
+	delete[] p->Args;
+	delete p;
+	return result;
+}
+
 CSDEBUGSCRIPT_API HRESULT openui(
 	_In_     IDebugClient* Client,
 	_In_opt_ PCSTR         Args)
 {
-	wstringstream ss;
+	OpenUiSecondThreadParameters* p = new OpenUiSecondThreadParameters();
+	int size = strlen(Args) + 1;
+	p->Client = Client;
+	p->Args = new char[size];
+	strcpy_s(p->Args, size, Args);
 
-	ss << Args;
-	clr.InitializeContext(Client);
-	HRESULT result = clr.OpenUI(ss.str().c_str());
-	clr.InitializeContext(nullptr);
-	return result;
+	HANDLE thread = CreateThread(nullptr, 0, OpenUiSecondThread, p, 0, nullptr);
+
+	CloseHandle(thread);
+	return S_OK;
 }
 
 CSDEBUGSCRIPT_API HRESULT interpret(
