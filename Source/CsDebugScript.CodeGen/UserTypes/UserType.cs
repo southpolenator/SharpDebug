@@ -568,7 +568,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 foreach (SymbolField pointerField in fields.Where(r => (r.Name.StartsWith(PointerPrefix) || r.Name.StartsWith(ArrayPrefix)) && r.Name.EndsWith(counterNameSurfix)))
                 {
-                    if ((counterField.LocationType == LocationType.Static) != (pointerField.LocationType == LocationType.Static))
+                    if ((counterField.IsStatic) != (pointerField.IsStatic))
                         continue;
 
                     if (pointerField.Type.Tag != SymTagEnum.SymTagPointerType)
@@ -607,7 +607,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 string fieldName = pointerField.Name + "Array";
                 string constructorText = string.Format("new {0}({1}, {2})", fieldType, pointerField.Name, counterField.Name);
                 string fieldTypeString = fieldType.GetTypeString();
-                bool isStatic = pointerField.LocationType == LocationType.Static;
+                bool isStatic = pointerField.IsStatic;
                 bool cacheUserTypeFields = generationFlags.HasFlag(UserTypeGenerationFlags.CacheUserTypeFields);
                 bool cacheStaticUserTypeFields = generationFlags.HasFlag(UserTypeGenerationFlags.CacheStaticUserTypeFields);
                 bool lazyCacheUserTypeFields = generationFlags.HasFlag(UserTypeGenerationFlags.LazyCacheUserTypeFields);

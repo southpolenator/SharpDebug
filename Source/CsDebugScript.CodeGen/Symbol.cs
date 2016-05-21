@@ -250,7 +250,7 @@ namespace CsDebugScript.CodeGen
             {
                 if (Size == 0)
                     return true;
-                if (Fields.Length > 0)
+                if (Fields.Where(f => !f.IsStatic).Any())
                     return false;
                 return !BaseClasses.Where(b => !b.IsEmpty).Any();
             }
@@ -379,7 +379,21 @@ namespace CsDebugScript.CodeGen
         {
             get
             {
-                return LocationType == LocationType.Static && Module.PublicSymbols.Contains(ParentType.Name + "::" + Name);
+                return IsStatic && Module.PublicSymbols.Contains(ParentType.Name + "::" + Name);
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this field is static.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this field is static; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsStatic
+        {
+            get
+            {
+                return LocationType == LocationType.Static;
             }
         }
 
