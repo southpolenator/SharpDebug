@@ -347,9 +347,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             // If we are generating field for getting base class, we need to "transform" code to do so.
             if (extractingBaseClass)
             {
-                if (fieldType is UserTypeTree && ((UserTypeTree)fieldType).UserType is TemplateArgumentUserType)
-                    userTypeField.ConstructorText = string.Format("CastAs<{0}>()", fieldType.GetTypeString());
-                else if (useThisClass)
+                if (useThisClass)
                 {
                     userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("thisClass.Value.GetClassField", "GetBaseClass");
                     usedThisClass = true;
@@ -440,9 +438,16 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             // When creating property for BaseClass and current class is generic type
             // we need to rename BaseClass property name not to include specialization type.
-            if (extractingBaseClass && this is TemplateUserType && fieldTypeAsTemplate != null)
+            if (extractingBaseClass && this is TemplateUserType)
             {
-                fieldName = fieldTypeAsTemplate.UserType.ClassName;
+                if (fieldTypeAsTemplate != null)
+                {
+                    fieldName = fieldTypeAsTemplate.UserType.ClassName;
+                }
+                else if (fieldType is TemplateArgumentTreeType || (fieldType is UserTypeTree && ((UserTypeTree)fieldType).UserType is TemplateArgumentUserType))
+                {
+                    fieldName = fieldType.GetTypeString();
+                }
             }
 
             // Do create user type field
@@ -809,6 +814,23 @@ namespace CsDebugScript.CodeGen.UserTypes
                     var field = ExtractField(type.CastAsSymbolField(), factory, generationFlags, true);
                     string singleLineDefinition = string.Empty;
 
+                    // Change getting base class to use index instead of name.
+                    // It works better with generics.
+                    foreach (var baseClass in Symbol.BaseClasses)
+                    {
+                        string baseClassString = string.Format("\"{0}\"", baseClass.Name);
+                        int index = field.ConstructorText.IndexOf(baseClassString);
+
+                        if (index >= 0)
+                        {
+                            int baseClassIndex = Symbol.BaseClasses.OrderBy(s => s.Offset).ToList().IndexOf(baseClass);
+
+                            field.ConstructorText = field.ConstructorText.Replace(baseClassString, baseClassIndex.ToString());
+                            break;
+                        }
+                    }
+
+                    // Generate single line definition
                     if (generationFlags.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
                         singleLineDefinition = string.Format(" {{ get {{ return {0}; }} }}", field.ConstructorText);
 
