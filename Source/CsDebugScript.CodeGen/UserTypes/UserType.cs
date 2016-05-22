@@ -349,7 +349,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 if (useThisClass)
                 {
-                    userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("thisClass.Value.GetClassField", "GetBaseClass");
+                    userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("thisClass.Value.GetClassField", "thisClass.Value.GetBaseClass");
                     usedThisClass = true;
                 }
                 else
@@ -642,7 +642,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             if (ExportDynamicFields)
             {
-                if (hasNonStatic && useThisClass)
+                if (Symbol.Tag != SymTagEnum.SymTagExe && useThisClass)
                 {
                     yield return new UserTypeField
                     {
@@ -657,7 +657,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     };
                 }
 
-                if (hasNonStatic && useThisClass)
+                if (Symbol.Tag != SymTagEnum.SymTagExe && useThisClass)
                 {
                     yield return new UserTypeField
                     {
@@ -814,14 +814,15 @@ namespace CsDebugScript.CodeGen.UserTypes
                     // It works better with generics.
                     foreach (var baseClass in Symbol.BaseClasses)
                     {
-                        string baseClassString = string.Format("\"{0}\"", baseClass.Name);
+                        string baseClassString = string.Format("\"{0}\"", baseClass.CastAsSymbolField().Name);
                         int index = field.ConstructorText.IndexOf(baseClassString);
 
                         if (index >= 0)
                         {
                             int baseClassIndex = Symbol.BaseClasses.OrderBy(s => s.Offset).ToList().IndexOf(baseClass);
 
-                            field.ConstructorText = field.ConstructorText.Replace(baseClassString, baseClassIndex.ToString());
+                            if (field.ConstructorText.StartsWith("thisClass."))
+                                field.ConstructorText = field.ConstructorText.Replace(baseClassString, baseClassIndex.ToString());
                             break;
                         }
                     }
