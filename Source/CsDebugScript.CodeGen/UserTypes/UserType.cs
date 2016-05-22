@@ -709,11 +709,13 @@ namespace CsDebugScript.CodeGen.UserTypes
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags generationFlags, int indentation = 0)
         {
             int baseClassOffset = 0;
+            string nameSpace = null;
             TypeTree baseType = ExportDynamicFields ? GetBaseClassTypeTree(error, Symbol, factory, out baseClassOffset) : null;
+            Symbol[] baseClasses = Symbol.BaseClasses;
+            Symbol[] baseClassesForProperties = baseType is SingleClassInheritanceWithInterfacesTypeTree ? baseClasses.Where(b => b.IsEmpty).ToArray() : baseClasses;
+            UserTypeField[] baseClassesForPropertiesAsFields = baseClassesForProperties.Select(type => ExtractField(type.CastAsSymbolField(), factory, generationFlags, true)).ToArray();
             var fields = ExtractFields(factory, generationFlags).OrderBy(f => !f.Static).ThenBy(f => f.FieldName != "ClassCodeType").ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
             bool hasStatic = fields.Any(f => f.Static), hasNonStatic = fields.Any(f => !f.Static);
-            Symbol[] baseClasses = Symbol.BaseClasses;
-            string nameSpace = null;
 
             // Check if we need to write usings and namespace
             if (DeclaredInType == null || (!generationFlags.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType))
@@ -801,17 +803,11 @@ namespace CsDebugScript.CodeGen.UserTypes
             // Check for multi class inheritance
             if (baseType is MultiClassInheritanceTypeTree || baseType is SingleClassInheritanceWithInterfacesTypeTree)
             {
-                IEnumerable<Symbol> baseClassesForProperties = baseClasses;
-
-                if (baseType is SingleClassInheritanceWithInterfacesTypeTree)
-                {
-                    baseClassesForProperties = baseClasses.Where(b => b.IsEmpty);
-                }
-
                 // Write all properties for getting base classes
-                foreach (var type in baseClassesForProperties)
+                for (int i = 0; i < baseClassesForProperties.Length; i++)
                 {
-                    var field = ExtractField(type.CastAsSymbolField(), factory, generationFlags, true);
+                    Symbol type = baseClassesForProperties[i];
+                    UserTypeField field = baseClassesForPropertiesAsFields[i];
                     string singleLineDefinition = string.Empty;
 
                     // Change getting base class to use index instead of name.
