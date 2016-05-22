@@ -836,17 +836,17 @@ namespace CsDebugScript
         /// <remarks>This is not casted to user type</remarks>
         public Variable GetBaseClass()
         {
-            if (codeType.BaseClasses.Count == 0)
+            if (codeType.InheritedClasses.Count == 0)
             {
                 throw new Exception("CodeType doesn't have any base class.");
             }
 
-            if (codeType.BaseClasses.Count > 1)
+            if (codeType.InheritedClasses.Count > 1)
             {
                 throw new Exception("There is more than one base class.");
             }
 
-            return GetBaseClass(codeType.BaseClasses.Values.First());
+            return GetBaseClass(codeType.InheritedClasses.Values.First());
         }
 
         /// <summary>
@@ -867,12 +867,12 @@ namespace CsDebugScript
         /// <param name="baseClassIndex">Index of the base class by looking at the offset.</param>
         public Variable GetBaseClass(int baseClassIndex)
         {
-            if (baseClassIndex < 0 || baseClassIndex >= codeType.BaseClasses.Count)
+            if (baseClassIndex < 0 || baseClassIndex >= codeType.InheritedClasses.Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(baseClassIndex));
             }
 
-            var tuple = codeType.BaseClasses.Values.OrderBy(t => t.Item2).ElementAt(baseClassIndex);
+            var tuple = codeType.InheritedClasses.Values.OrderBy(t => t.Item2).ElementAt(baseClassIndex);
 
             return GetBaseClass(tuple);
         }
