@@ -201,7 +201,8 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Generates the constructors.
         /// </summary>
-        protected override IEnumerable<UserTypeConstructor> GenerateConstructors()
+        /// <param name="generationFlags">The user type generation flags.</param>
+        protected override IEnumerable<UserTypeConstructor> GenerateConstructors(UserTypeGenerationFlags generationFlags)
         {
             yield return new UserTypeConstructor()
             {

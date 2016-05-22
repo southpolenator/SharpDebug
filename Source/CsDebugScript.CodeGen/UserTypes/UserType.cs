@@ -657,7 +657,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     };
                 }
 
-                if (Symbol.Tag != SymTagEnum.SymTagExe && useThisClass)
+                if (Symbol.Tag != SymTagEnum.SymTagExe)
                 {
                     yield return new UserTypeField
                     {
@@ -780,7 +780,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
 
             // Write code for constructors
-            var constructors = GenerateConstructors();
+            var constructors = GenerateConstructors(generationFlags);
 
             foreach (var constructor in constructors)
                 constructor.WriteCode(output, indentation, fields, ConstructorName);
@@ -866,7 +866,8 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Generates the constructors.
         /// </summary>
-        protected virtual IEnumerable<UserTypeConstructor> GenerateConstructors()
+        /// <param name="generationFlags">The user type generation flags.</param>
+        protected virtual IEnumerable<UserTypeConstructor> GenerateConstructors(UserTypeGenerationFlags generationFlags)
         {
             yield return new UserTypeConstructor()
             {
@@ -876,29 +877,42 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             if (ExportDynamicFields)
             {
-                yield return new UserTypeConstructor()
+                if (generationFlags.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
                 {
-                    Arguments = "Variable variable",
-                    BaseClassInitialization = "base(variable)",
-                    ContainsFieldDefinitions = true,
-                    Static = false,
-                };
+                    yield return new UserTypeConstructor()
+                    {
+                        Arguments = "Variable variable",
+                        BaseClassInitialization = "this(variable.GetBaseClass(baseClassString), Debugger.ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass(baseClassString).GetPointerAddress(), variable.GetBaseClass(baseClassString).GetCodeType().Size), 0, variable.GetBaseClass(baseClassString).GetPointerAddress())",
+                        ContainsFieldDefinitions = true,
+                        Static = false,
+                    };
 
-                yield return new UserTypeConstructor()
-                {
-                    Arguments = "Variable variable, CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
-                    BaseClassInitialization = "base(variable, buffer, offset, bufferAddress)",
-                    ContainsFieldDefinitions = true,
-                    Static = false,
-                };
+                    yield return new UserTypeConstructor()
+                    {
+                        Arguments = "Variable variable, CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
+                        BaseClassInitialization = "base(variable, buffer, offset, bufferAddress)",
+                        ContainsFieldDefinitions = true,
+                        Static = false,
+                    };
 
-                yield return new UserTypeConstructor()
+                    yield return new UserTypeConstructor()
+                    {
+                        Arguments = "CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
+                        BaseClassInitialization = "base(buffer, offset, bufferAddress, codeType, address, name, path)",
+                        ContainsFieldDefinitions = true,
+                        Static = false,
+                    };
+                }
+                else
                 {
-                    Arguments = "CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
-                    BaseClassInitialization = "base(buffer, offset, bufferAddress, codeType, address, name, path)",
-                    ContainsFieldDefinitions = true,
-                    Static = false,
-                };
+                    yield return new UserTypeConstructor()
+                    {
+                        Arguments = "Variable variable",
+                        BaseClassInitialization = "base(variable)",
+                        ContainsFieldDefinitions = true,
+                        Static = false,
+                    };
+                }
             }
         }
 
