@@ -58,8 +58,6 @@ namespace CsDebugScript
 
             if (!assemblyReferences.Where(a => a.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Any())
             {
-                // TODO:
-                var assembly = Assembly.LoadFile(@"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5\Microsoft.CSharp.dll");
                 assemblyReferences.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic && a.Location.ToLowerInvariant().Contains(MicrosoftCSharpDll)).Select(a => a.Location));
             }
 
