@@ -134,6 +134,10 @@ namespace CsDebugScript.CodeGen
                     {
                         symbols.Add(GetSymbol(ss));
                     }
+                    else
+                    {
+                        symbols.Add(GetSymbol(s.DiaSymbol));
+                    }
 
                     previousName = s.Name;
                 }
