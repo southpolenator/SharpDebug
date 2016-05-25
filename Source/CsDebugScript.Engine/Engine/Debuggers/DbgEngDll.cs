@@ -895,13 +895,39 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
-                if (length < 0)
-                    length = (int)Constants.MaxStringReadLength;
+                bool readAll = true;
 
-                uint stringLength;
+                if (length < 0)
+                {
+                    readAll = false;
+                    length = (int)Constants.MaxStringReadLength;
+                }
+
+                uint byteLength;
                 StringBuilder sb = new StringBuilder(length);
 
-                DataSpaces.ReadMultiByteStringVirtual(address, Constants.MaxStringReadLength, sb, (uint)sb.Capacity, out stringLength);
+
+                if (readAll)
+                {
+                    while (length > 0)
+                    {
+                        StringBuilder temp = new StringBuilder(length);
+
+                        DataSpaces.ReadMultiByteStringVirtual(address, (uint)temp.Capacity, temp, (uint)temp.Capacity, out byteLength);
+                        sb.Append(temp);
+                        length -= (int)byteLength;
+                        if (length > 0)
+                        {
+                            address += byteLength;
+                            sb.Append('\0');
+                        }
+                    }
+                }
+                else
+                {
+                    DataSpaces.ReadMultiByteStringVirtual(address, (uint)sb.Capacity, sb, (uint)sb.Capacity, out byteLength);
+                }
+
                 return sb.ToString();
             }
         }
@@ -916,13 +942,38 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
-                if (length < 0)
-                    length = (int)Constants.MaxStringReadLength;
+                bool readAll = true;
 
-                uint stringLength;
+                if (length < 0)
+                {
+                    readAll = false;
+                    length = (int)Constants.MaxStringReadLength;
+                }
+
+                uint byteLength = 0;
                 StringBuilder sb = new StringBuilder(length);
 
-                DataSpaces.ReadUnicodeStringVirtualWide(address, Constants.MaxStringReadLength * 2, sb, (uint)sb.Capacity, out stringLength);
+                if (readAll)
+                {
+                    while (length > 0)
+                    {
+                        StringBuilder temp = new StringBuilder(length);
+
+                        DataSpaces.ReadUnicodeStringVirtualWide(address, (uint)temp.Capacity * 2, temp, (uint)temp.Capacity, out byteLength);
+                        sb.Append(temp);
+                        length -= (int)byteLength / 2;
+                        if (length > 0)
+                        {
+                            address += byteLength;
+                            sb.Append('\0');
+                        }
+                    }
+                }
+                else
+                {
+                    DataSpaces.ReadUnicodeStringVirtualWide(address, (uint)sb.Capacity * 2, sb, (uint)sb.Capacity, out byteLength);
+                }
+
                 return sb.ToString();
             }
         }
