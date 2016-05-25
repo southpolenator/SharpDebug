@@ -111,6 +111,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseClassesArrayAttribute.cs" />
     <Compile Include="CLR\AppDomain.cs" />
     <Compile Include="CLR\DataReader.cs" />
     <Compile Include="CLR\Heap.cs" />
@@ -126,6 +127,8 @@
     <Compile Include="DebugEventInfo.cs" />
     <Compile Include="Debugger.cs" />
     <Compile Include="CodeType.cs" />
+    <Compile Include="ICastableObject.cs" />
+    <Compile Include="IMultiClassInheritance.cs" />
     <Compile Include="Module.cs" />
     <Compile Include="NakedPointer.cs" />
     <Compile Include="NamespaceDoc.cs" />
@@ -192,7 +195,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(SolutionDir)\Key.snk" />
+    <EmbeddedResource Include="$(SolutionDir)\Key.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
