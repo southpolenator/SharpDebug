@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CsDebugScript
@@ -113,11 +114,44 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the TEB (Thread environment block) address.
         /// </summary>
-        public ulong TEB
+        public ulong TebAddress
         {
             get
             {
                 return tebAddress.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the variable that represents TEB (Thread environment block).
+        /// </summary>
+        public Variable TEB
+        {
+            get
+            {
+                try
+                {
+                    List<string> searchModulesOrder = new List<string> { Process.Modules[0].Name.ToLower(), "wow64", "ntdll", "nt" };
+                    IEnumerable<Module> modules = Process.Modules.OrderByDescending(m => searchModulesOrder.IndexOf(m.Name.ToLower()));
+
+                    foreach (Module module in modules)
+                    {
+                        try
+                        {
+                            CodeType pebCodeType = CodeType.Create("_TEB", module);
+
+                            return Variable.Create(pebCodeType, TebAddress, "TEB", "Thread.TEB");
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+                catch
+                {
+                }
+
+                return new NakedPointer(Process, TebAddress);
             }
         }
 

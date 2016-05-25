@@ -830,6 +830,65 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the variable that is casted to base class. <see cref="CodeType"/> of this variable must have single base class.
+        /// This is mostly used by auto generated code (exported from PDB) or to access multi inheritance base classes.
+        /// </summary>
+        /// <remarks>This is not casted to user type</remarks>
+        public Variable GetBaseClass()
+        {
+            if (codeType.InheritedClasses.Count == 0)
+            {
+                throw new Exception("CodeType doesn't have any base class.");
+            }
+
+            if (codeType.InheritedClasses.Count > 1)
+            {
+                throw new Exception("There is more than one base class.");
+            }
+
+            return GetBaseClass(codeType.InheritedClasses.Values.First());
+        }
+
+        /// <summary>
+        /// Gets the variable that is casted to base class. <see cref="CodeType" /> of this variable must have single base class.
+        /// This is mostly used by auto generated code (exported from PDB) or to access multi inheritance base classes.
+        /// </summary>
+        /// <typeparam name="T">Type to cast returned variable into.</typeparam>
+        public T GetBaseClass<T>()
+        {
+            return GetBaseClass().CastAs<T>();
+        }
+
+        /// <summary>
+        /// Gets the variable that is casted to base class given by index.
+        /// This is mostly used by auto generated code (exported from PDB) or to access multi inheritance base classes.
+        /// </summary>
+        /// <remarks>This is not casted to user type</remarks>
+        /// <param name="baseClassIndex">Index of the base class by looking at the offset.</param>
+        public Variable GetBaseClass(int baseClassIndex)
+        {
+            if (baseClassIndex < 0 || baseClassIndex >= codeType.InheritedClasses.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(baseClassIndex));
+            }
+
+            var tuple = codeType.InheritedClasses.Values.OrderBy(t => t.Item2).ElementAt(baseClassIndex);
+
+            return GetBaseClass(tuple);
+        }
+
+        /// <summary>
+        /// Gets the variable that is casted to base class given by index.
+        /// This is mostly used by auto generated code (exported from PDB) or to access multi inheritance base classes.
+        /// </summary>
+        /// <typeparam name="T">Type to cast returned variable into.</typeparam>
+        /// <param name="baseClassIndex">Index of the base class by looking at the offset.</param>
+        public T GetBaseClass<T>(int baseClassIndex)
+        {
+            return GetBaseClass(baseClassIndex).CastAs<T>();
+        }
+
+        /// <summary>
         /// Gets the variable that is casted to base class given by name.
         /// This is mostly used by auto generated code (exported from PDB) or to access multi inheritance base classes.
         /// </summary>
@@ -843,7 +902,18 @@ namespace CsDebugScript
             }
 
             var tuple = codeType.BaseClasses[className];
-            var newCodeType = tuple.Item1;
+
+            return GetBaseClass(tuple);
+        }
+
+        /// <summary>
+        /// Gets the variable that is casted to base class given by the mighty tuple.
+        /// </summary>
+        /// <remarks>This is not casted to user type</remarks>
+        /// <param name="baseClassCodeTypeAndOffset">The base class code type and offset tuple.</param>
+        private Variable GetBaseClass(Tuple<CodeType, int> baseClassCodeTypeAndOffset)
+        {
+            var newCodeType = baseClassCodeTypeAndOffset.Item1;
 
             if (newCodeType == codeType)
             {
@@ -862,20 +932,20 @@ namespace CsDebugScript
 
             if (newCodeType.IsPointer)
             {
-                return CreatePointerNoCast(newCodeType, GetPointerAddress() + (uint)tuple.Item2, name, path);
+                return CreatePointerNoCast(newCodeType, GetPointerAddress() + (uint)baseClassCodeTypeAndOffset.Item2, name, path);
             }
             else
             {
-                return CreateNoCast(newCodeType, GetPointerAddress() + (uint)tuple.Item2, name, path);
+                return CreateNoCast(newCodeType, GetPointerAddress() + (uint)baseClassCodeTypeAndOffset.Item2, name, path);
             }
         }
 
         /// <summary>
-        /// GetBaseClass with cast.
+        /// Gets the variable that is casted to base class given by name.
+        /// This is mostly used by auto generated code (exported from PDB) or to access multi inheritance base classes.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="className"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">Type to cast returned variable into.</typeparam>
+        /// <param name="className">The class name.</param>
         public T GetBaseClass<T>(string className)
         {
             return GetBaseClass(className).CastAs<T>();

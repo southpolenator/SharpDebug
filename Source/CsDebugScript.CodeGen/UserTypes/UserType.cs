@@ -347,11 +347,9 @@ namespace CsDebugScript.CodeGen.UserTypes
             // If we are generating field for getting base class, we need to "transform" code to do so.
             if (extractingBaseClass)
             {
-                if (fieldType is UserTypeTree && ((UserTypeTree)fieldType).UserType is TemplateArgumentUserType)
-                    userTypeField.ConstructorText = string.Format("CastAs<{0}>()", fieldType.GetTypeString());
-                else if (useThisClass)
+                if (useThisClass)
                 {
-                    userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("thisClass.Value.GetClassField", "GetBaseClass");
+                    userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("thisClass.Value.GetClassField", "thisClass.Value.GetBaseClass");
                     usedThisClass = true;
                 }
                 else
@@ -440,9 +438,16 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             // When creating property for BaseClass and current class is generic type
             // we need to rename BaseClass property name not to include specialization type.
-            if (extractingBaseClass && this is TemplateUserType && fieldTypeAsTemplate != null)
+            if (extractingBaseClass && this is TemplateUserType)
             {
-                fieldName = fieldTypeAsTemplate.UserType.ClassName;
+                if (fieldTypeAsTemplate != null)
+                {
+                    fieldName = fieldTypeAsTemplate.UserType.ClassName;
+                }
+                else if (fieldType is TemplateArgumentTreeType || (fieldType is UserTypeTree && ((UserTypeTree)fieldType).UserType is TemplateArgumentUserType))
+                {
+                    fieldName = fieldType.GetTypeString();
+                }
             }
 
             // Do create user type field
@@ -568,7 +573,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 foreach (SymbolField pointerField in fields.Where(r => (r.Name.StartsWith(PointerPrefix) || r.Name.StartsWith(ArrayPrefix)) && r.Name.EndsWith(counterNameSurfix)))
                 {
-                    if ((counterField.LocationType == LocationType.Static) != (pointerField.LocationType == LocationType.Static))
+                    if ((counterField.IsStatic) != (pointerField.IsStatic))
                         continue;
 
                     if (pointerField.Type.Tag != SymTagEnum.SymTagPointerType)
@@ -607,7 +612,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 string fieldName = pointerField.Name + "Array";
                 string constructorText = string.Format("new {0}({1}, {2})", fieldType, pointerField.Name, counterField.Name);
                 string fieldTypeString = fieldType.GetTypeString();
-                bool isStatic = pointerField.LocationType == LocationType.Static;
+                bool isStatic = pointerField.IsStatic;
                 bool cacheUserTypeFields = generationFlags.HasFlag(UserTypeGenerationFlags.CacheUserTypeFields);
                 bool cacheStaticUserTypeFields = generationFlags.HasFlag(UserTypeGenerationFlags.CacheStaticUserTypeFields);
                 bool lazyCacheUserTypeFields = generationFlags.HasFlag(UserTypeGenerationFlags.LazyCacheUserTypeFields);
@@ -637,7 +642,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             if (ExportDynamicFields)
             {
-                if (hasNonStatic && useThisClass)
+                if (Symbol.Tag != SymTagEnum.SymTagExe && useThisClass)
                 {
                     yield return new UserTypeField
                     {
@@ -652,7 +657,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     };
                 }
 
-                if (hasNonStatic && useThisClass)
+                if (Symbol.Tag != SymTagEnum.SymTagExe)
                 {
                     yield return new UserTypeField
                     {
@@ -704,11 +709,13 @@ namespace CsDebugScript.CodeGen.UserTypes
         public virtual void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags generationFlags, int indentation = 0)
         {
             int baseClassOffset = 0;
+            string nameSpace = null;
             TypeTree baseType = ExportDynamicFields ? GetBaseClassTypeTree(error, Symbol, factory, out baseClassOffset) : null;
+            Symbol[] baseClasses = Symbol.BaseClasses;
+            Symbol[] baseClassesForProperties = baseType is SingleClassInheritanceWithInterfacesTypeTree ? baseClasses.Where(b => b.IsEmpty).ToArray() : baseClasses;
+            UserTypeField[] baseClassesForPropertiesAsFields = baseClassesForProperties.Select(type => ExtractField(type.CastAsSymbolField(), factory, generationFlags, true)).ToArray();
             var fields = ExtractFields(factory, generationFlags).OrderBy(f => !f.Static).ThenBy(f => f.FieldName != "ClassCodeType").ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
             bool hasStatic = fields.Any(f => f.Static), hasNonStatic = fields.Any(f => !f.Static);
-            Symbol[] baseClasses = Symbol.BaseClasses;
-            string nameSpace = null;
 
             // Check if we need to write usings and namespace
             if (DeclaredInType == null || (!generationFlags.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType))
@@ -773,7 +780,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
 
             // Write code for constructors
-            var constructors = GenerateConstructors();
+            var constructors = GenerateConstructors(generationFlags);
 
             foreach (var constructor in constructors)
                 constructor.WriteCode(output, indentation, fields, ConstructorName);
@@ -796,19 +803,31 @@ namespace CsDebugScript.CodeGen.UserTypes
             // Check for multi class inheritance
             if (baseType is MultiClassInheritanceTypeTree || baseType is SingleClassInheritanceWithInterfacesTypeTree)
             {
-                IEnumerable<Symbol> baseClassesForProperties = baseClasses;
-
-                if (baseType is SingleClassInheritanceWithInterfacesTypeTree)
-                {
-                    baseClassesForProperties = baseClasses.Where(b => b.IsEmpty);
-                }
-
                 // Write all properties for getting base classes
-                foreach (var type in baseClassesForProperties)
+                for (int i = 0; i < baseClassesForProperties.Length; i++)
                 {
-                    var field = ExtractField(type.CastAsSymbolField(), factory, generationFlags, true);
+                    Symbol type = baseClassesForProperties[i];
+                    UserTypeField field = baseClassesForPropertiesAsFields[i];
                     string singleLineDefinition = string.Empty;
 
+                    // Change getting base class to use index instead of name.
+                    // It works better with generics.
+                    foreach (var baseClass in Symbol.BaseClasses)
+                    {
+                        string baseClassString = string.Format("\"{0}\"", baseClass.CastAsSymbolField().Name);
+                        int index = field.ConstructorText.IndexOf(baseClassString);
+
+                        if (index >= 0)
+                        {
+                            int baseClassIndex = Symbol.BaseClasses.OrderBy(s => s.Offset).ToList().IndexOf(baseClass);
+
+                            if (field.ConstructorText.StartsWith("thisClass."))
+                                field.ConstructorText = field.ConstructorText.Replace(baseClassString, baseClassIndex.ToString());
+                            break;
+                        }
+                    }
+
+                    // Generate single line definition
                     if (generationFlags.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
                         singleLineDefinition = string.Format(" {{ get {{ return {0}; }} }}", field.ConstructorText);
 
@@ -847,7 +866,8 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Generates the constructors.
         /// </summary>
-        protected virtual IEnumerable<UserTypeConstructor> GenerateConstructors()
+        /// <param name="generationFlags">The user type generation flags.</param>
+        protected virtual IEnumerable<UserTypeConstructor> GenerateConstructors(UserTypeGenerationFlags generationFlags)
         {
             yield return new UserTypeConstructor()
             {
@@ -857,29 +877,42 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             if (ExportDynamicFields)
             {
-                yield return new UserTypeConstructor()
+                if (generationFlags.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
                 {
-                    Arguments = "Variable variable",
-                    BaseClassInitialization = "base(variable)",
-                    ContainsFieldDefinitions = true,
-                    Static = false,
-                };
+                    yield return new UserTypeConstructor()
+                    {
+                        Arguments = "Variable variable",
+                        BaseClassInitialization = "this(variable.GetBaseClass(baseClassString), Debugger.ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass(baseClassString).GetPointerAddress(), variable.GetBaseClass(baseClassString).GetCodeType().Size), 0, variable.GetBaseClass(baseClassString).GetPointerAddress())",
+                        ContainsFieldDefinitions = true,
+                        Static = false,
+                    };
 
-                yield return new UserTypeConstructor()
-                {
-                    Arguments = "Variable variable, CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
-                    BaseClassInitialization = "base(variable, buffer, offset, bufferAddress)",
-                    ContainsFieldDefinitions = true,
-                    Static = false,
-                };
+                    yield return new UserTypeConstructor()
+                    {
+                        Arguments = "Variable variable, CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress",
+                        BaseClassInitialization = "base(variable, buffer, offset, bufferAddress)",
+                        ContainsFieldDefinitions = true,
+                        Static = false,
+                    };
 
-                yield return new UserTypeConstructor()
+                    yield return new UserTypeConstructor()
+                    {
+                        Arguments = "CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
+                        BaseClassInitialization = "base(buffer, offset, bufferAddress, codeType, address, name, path)",
+                        ContainsFieldDefinitions = true,
+                        Static = false,
+                    };
+                }
+                else
                 {
-                    Arguments = "CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath",
-                    BaseClassInitialization = "base(buffer, offset, bufferAddress, codeType, address, name, path)",
-                    ContainsFieldDefinitions = true,
-                    Static = false,
-                };
+                    yield return new UserTypeConstructor()
+                    {
+                        Arguments = "Variable variable",
+                        BaseClassInitialization = "base(variable)",
+                        ContainsFieldDefinitions = true,
+                        Static = false,
+                    };
+                }
             }
         }
 

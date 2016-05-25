@@ -91,7 +91,7 @@ namespace CsDebugScript
         /// <typeparam name="T">The base user type which will be downcasted.</typeparam>
         /// <param name="userType">The user type.</param>
         /// <returns>Downcasted .NET object.</returns>
-        public static T DowncastObject<T>(this T userType)
+        public static UserType DowncastObject<T>(this T userType)
             where T : UserType
         {
             DerivedClassAttribute[] attributes = UserTypeDelegates<T>.Instance.DerivedClassAttributes;
@@ -135,7 +135,7 @@ namespace CsDebugScript
                             variable = variable.CastAs(codeType);
                         }
 
-                        return (T)variable.CastAs(attribute.Type);
+                        return (UserType)variable.CastAs(attribute.Type);
                     }
 
                     // Add base classes

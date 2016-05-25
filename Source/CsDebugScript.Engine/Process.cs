@@ -266,11 +266,44 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the PEB (Process environment block) address.
         /// </summary>
-        public ulong PEB
+        public ulong PebAddress
         {
             get
             {
                 return pebAddress.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the variable that represents PEB (Process environment block).
+        /// </summary>
+        public Variable PEB
+        {
+            get
+            {
+                try
+                {
+                    List<string> searchModulesOrder = new List<string>{ Modules[0].Name.ToLower(), "wow64", "ntdll", "nt" };
+                    IEnumerable<Module> modules = Modules.OrderByDescending(m => searchModulesOrder.IndexOf(m.Name.ToLower()));
+
+                    foreach (Module module in modules)
+                    {
+                        try
+                        {
+                            CodeType pebCodeType = CodeType.Create("_PEB", module);
+
+                            return Variable.Create(pebCodeType, PebAddress, "PEB", "Process.PEB");
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+                catch
+                {
+                }
+
+                return new NakedPointer(this, PebAddress);
             }
         }
 
