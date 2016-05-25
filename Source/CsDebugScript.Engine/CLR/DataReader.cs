@@ -170,7 +170,7 @@ namespace CsDebugScript.CLR
         /// </returns>
         public ulong GetThreadTeb(uint thread)
         {
-            return Process.Threads.Where(t => t.SystemId == thread).First().TEB;
+            return Process.Threads.Where(t => t.SystemId == thread).First().TebAddress;
         }
 
         /// <summary>
