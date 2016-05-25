@@ -34,9 +34,111 @@ namespace CreateDbgEngIdl
             return newLine.Trim();
         }
 
+        public enum MachineType
+        {
+            Native = 0,
+            I386 = 0x014c,
+            Itanium = 0x0200,
+            x64 = 0x8664
+        }
+
+        public static MachineType GetMachineType(string fileName)
+        {
+            const int PE_POINTER_OFFSET = 60;
+            const int MACHINE_OFFSET = 4;
+            byte[] data = File.ReadAllBytes(fileName);
+
+            // dos header is 64 bytes, last element, long (4 bytes) is the address of the PE header
+            int PE_HEADER_ADDR = BitConverter.ToInt32(data, PE_POINTER_OFFSET);
+            int machineUint = BitConverter.ToUInt16(data, PE_HEADER_ADDR + MACHINE_OFFSET);
+            return (MachineType)machineUint;
+        }
+
+        static readonly string ProgramFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+        static readonly string[] HeaderFiles = new string[]
+            {
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10586.0\um\dbgeng.h"),
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10240.0\um\dbgeng.h"),
+                Path.Combine(ProgramFiles, @"Windows Kits\8.1\Include\um\DbgEng.h"),
+            };
+        static readonly string[] MidlPaths = new string[]
+            {
+                Path.Combine(ProgramFiles, @"Windows Kits\10\bin\x64\midl.exe"),
+                Path.Combine(ProgramFiles, @"Windows Kits\10\bin\x86\midl.exe"),
+                Path.Combine(ProgramFiles, @"Windows Kits\8.1\bin\x64\midl.exe"),
+                Path.Combine(ProgramFiles, @"Windows Kits\8.1\bin\x86\midl.exe"),
+            };
+        static readonly string[] UmPaths = new string[]
+            {
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10586.0\um"),
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10240.0\um"),
+                Path.Combine(ProgramFiles, @"Windows Kits\8.1\Include\um"),
+            };
+        static readonly string[] SharedPaths = new string[]
+            {
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10586.0\shared"),
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10240.0\shared"),
+                Path.Combine(ProgramFiles, @"Windows Kits\8.1\Include\shared"),
+            };
+        static readonly string[] VCBinPaths = new string[]
+            {
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 14.0\VC\bin"),
+            };
+        static readonly string[] TlbImpPaths = new string[]
+            {
+                Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools\x64\TlbImp.exe"),
+                Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools\TlbImp.exe"),
+                Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\x64\TlbImp.exe"),
+                Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\TlbImp.exe"),
+                Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v8.1A\bin\NETFX 4.5.1 Tools\x64\TlbImp.exe"),
+                Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v8.1A\bin\NETFX 4.5.1 Tools\TlbImp.exe"),
+            };
+
+        static string FindFile(string fileName, params string[] paths)
+        {
+            foreach (string path in paths)
+                if (File.Exists(path))
+                    return path;
+
+            throw new Exception(fileName + " not found. Have you installed Windows Kit?");
+        }
+
+        static string FindExe(string fileName, params string[] paths)
+        {
+            foreach (string path in paths)
+                if (File.Exists(path))
+                {
+                    MachineType machineType = GetMachineType(path);
+
+                    if (machineType == MachineType.x64 && !Environment.Is64BitOperatingSystem)
+                        continue;
+
+                    return path;
+                }
+
+            throw new Exception(fileName + " not found. Have you installed Windows Kit?");
+        }
+
+        static string FindFolder(string folderName, params string[] paths)
+        {
+            foreach (string path in paths)
+                if (Directory.Exists(path))
+                    return path;
+
+            throw new Exception(folderName + " not found. Have you installed Windows Kit?");
+        }
+
         static void Main(string[] args)
         {
-            const string HeaderFile = @"C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\um\dbgeng.h";
+            // Find paths
+            string HeaderFile = FindFile("DbgEng.h", HeaderFiles);
+            string MidlPath = FindExe("midl.exe", MidlPaths);
+            string UmPath = FindFolder("um", UmPaths);
+            string SharedPath = FindFolder("um", SharedPaths);
+            string VCBinPath = FindFolder("VC\\bin", VCBinPaths);
+            string TlbImpPath = FindExe("TlbImp.exe", TlbImpPaths);
+
+            // Generate IDL file
             Regex defineDeclarationRegex = new Regex(@"#define\s+([^(]+)\s+((0x|)[0-9a-fA-F]+)$");
             Regex typedefStructOneLineRegex = new Regex(@"typedef struct.*;");
             Regex typedefStructMultiLineRegex = new Regex(@"typedef struct[^;]+");
@@ -422,12 +524,12 @@ library DbgEngManaged
                 output.WriteLine("};");
             }
 
-            ProcessStartInfo startInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Windows Kits\10\bin\x64\midl.exe");
+            ProcessStartInfo startInfo = new ProcessStartInfo(MidlPath);
             string midlPlatform = IntPtr.Size == 4 ? "/win32 /robust" : "/x64";
 
-            startInfo.Arguments = @"/I""C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\um"" /I""C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\shared"" output.idl /tlb output.tlb " + midlPlatform;
+            startInfo.Arguments = string.Format(@"/I""{0}"" /I""{1}"" output.idl /tlb output.tlb {2}", UmPath, SharedPath, midlPlatform);
             startInfo.UseShellExecute = false;
-            startInfo.EnvironmentVariables["Path"] = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin;" + startInfo.EnvironmentVariables["Path"];
+            startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
             using (Process process = Process.Start(startInfo))
             {
                 process.WaitForExit();
@@ -441,10 +543,10 @@ library DbgEngManaged
             string tlbimpPlatform = "Agnostic";
 #endif
 
-            startInfo = new ProcessStartInfo(@"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\TlbImp.exe");
+            startInfo = new ProcessStartInfo(TlbImpPath);
             startInfo.Arguments = @"output.tlb /machine:" + tlbimpPlatform;
             startInfo.UseShellExecute = false;
-            startInfo.EnvironmentVariables["Path"] = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin;" + startInfo.EnvironmentVariables["Path"];
+            startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
             using (Process process = Process.Start(startInfo))
             {
                 process.WaitForExit();
