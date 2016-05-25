@@ -83,6 +83,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NativeTypes\ProcessEnvironmentBlock.cs" />
     <Compile Include="NativeTypes\std\basic_string.cs" />
     <Compile Include="NativeTypes\std\list.cs" />
     <Compile Include="NativeTypes\std\NamespaceDoc.cs" />
