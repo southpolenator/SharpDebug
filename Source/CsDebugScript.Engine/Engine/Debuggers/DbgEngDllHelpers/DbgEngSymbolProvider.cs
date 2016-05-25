@@ -75,8 +75,8 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                var typedData = DbgEngSymbolProvider.typedData[Tuple.Create(module.Address, typeId, module.Process.PEB)];
-                typedData.Data = module.Process.PEB;
+                var typedData = DbgEngSymbolProvider.typedData[Tuple.Create(module.Address, typeId, module.Process.PebAddress)];
+                typedData.Data = module.Process.PebAddress;
                 var result = dbgEngDll.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
                 {
                     Operation = ExtTdop.GetDereference,
@@ -96,8 +96,8 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                var typedData = DbgEngSymbolProvider.typedData[Tuple.Create(module.Address, typeId, module.Process.PEB)];
-                typedData.Data = module.Process.PEB;
+                var typedData = DbgEngSymbolProvider.typedData[Tuple.Create(module.Address, typeId, module.Process.PebAddress)];
+                typedData.Data = module.Process.PebAddress;
                 var result = dbgEngDll.Advanced.Request(DebugRequest.ExtTypedDataAnsi, new EXT_TYPED_DATA()
                 {
                     Operation = ExtTdop.GetPointerTo,
@@ -201,7 +201,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                return typedData[Tuple.Create(module.Address, typeId, module.Process.PEB)].Tag;
+                return typedData[Tuple.Create(module.Address, typeId, module.Process.PebAddress)].Tag;
             }
         }
 
