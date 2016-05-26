@@ -102,14 +102,15 @@ namespace CsDebugScript.CodeGen.TypeTrees
         /// <summary>
         /// Gets the string representing this type tree in C# code.
         /// </summary>
+        /// <param name="truncateNamespace">if set to <c>true</c> namespace will be truncated from generating type string.</param>
         /// <returns>
         /// The string representing this type tree in C# code.
         /// </returns>
-        public override string GetTypeString()
+        public override string GetTypeString(bool truncateNamespace = false)
         {
             StringBuilder sb = new StringBuilder();
 
-            if (DeclaredInTypeHierarchy[0].Namespace != null)
+            if (!truncateNamespace && DeclaredInTypeHierarchy[0].Namespace != null)
             {
                 sb.Append(DeclaredInTypeHierarchy[0].Namespace);
                 sb.Append('.');
@@ -122,10 +123,10 @@ namespace CsDebugScript.CodeGen.TypeTrees
                 NamespaceUserType namespaceType = userType as NamespaceUserType;
 
                 if (templateType != null)
-                    sb.Append(templateType.GetSpecializedStringVersion(SpecializedArguments[j].Select(t => t.GetTypeString()).ToArray()));
+                    sb.Append(templateType.GetSpecializedStringVersion(SpecializedArguments[j].Select(t => t.GetTypeString(truncateNamespace)).ToArray()));
                 else if (namespaceType != null)
                 {
-                    if (j == 0)
+                    if (j == 0 || truncateNamespace)
                         continue;
                     sb.Append(namespaceType.Namespace);
                 }

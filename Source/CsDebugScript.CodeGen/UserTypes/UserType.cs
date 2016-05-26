@@ -266,7 +266,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </remarks>
         public static string NormalizeSymbolName(string symbolName)
         {
-            return symbolName.Replace("::", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').TrimEnd('_');
+            return symbolName.Replace("::", "_").Replace(".", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').TrimEnd('_');
         }
 
         /// <summary>
@@ -441,19 +441,9 @@ namespace CsDebugScript.CodeGen.UserTypes
             // TODO: More extensive checks are needed for property name. We must not create duplicate after adding '_'. For example: class has 'in' and '_in' fields.
             fieldName = UserTypeField.GetPropertyName(fieldName, this);
 
-            // When creating property for BaseClass and current class is generic type
-            // we need to rename BaseClass property name not to include specialization type.
-            if (extractingBaseClass && this is TemplateUserType)
-            {
-                if (fieldTypeAsTemplate != null)
-                {
-                    fieldName = fieldTypeAsTemplate.UserType.ClassName;
-                }
-                else if (fieldType is TemplateArgumentTreeType || (fieldType is UserTypeTree && ((UserTypeTree)fieldType).UserType is TemplateArgumentUserType))
-                {
-                    fieldName = fieldType.GetTypeString();
-                }
-            }
+            // When creating property for BaseClass use our generated type and name to avoid specializations
+            if (extractingBaseClass && !(fieldType is VariableTypeTree))
+                fieldName = fieldType.GetTypeString(truncateNamespace: true);
 
             // Do create user type field
             return new UserTypeField
