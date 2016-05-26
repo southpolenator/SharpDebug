@@ -18,6 +18,19 @@ namespace CsDebugScript.Engine.SymbolProviders
         private DictionaryCache<Module, ISymbolProviderModule> modules = new DictionaryCache<Module, ISymbolProviderModule>(LoadModule);
 
         /// <summary>
+        /// The cache of runtime code type and offset
+        /// </summary>
+        private DictionaryCache<Tuple<Process, ulong>, Tuple<CodeType, int>> runtimeCodeTypeAndOffsetCache;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DiaSymbolProvider"/> class.
+        /// </summary>
+        public DiaSymbolProvider()
+        {
+            runtimeCodeTypeAndOffsetCache = new DictionaryCache<Tuple<Process, ulong>, Tuple<CodeType, int>>(GetRuntimeCodeTypeAndOffset);
+        }
+
+        /// <summary>
         /// Loads the module from PDB file.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -388,6 +401,17 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="vtableAddress">The vtable address.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress)
         {
+            return runtimeCodeTypeAndOffsetCache[Tuple.Create(process, vtableAddress)];
+        }
+
+        /// <summary>
+        /// Gets the runtime code type and offset to original code type.
+        /// </summary>
+        /// <param name="tuple">The tuple containing process and vtable address.</param>
+        private Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Tuple<Process, ulong> tuple)
+        {
+            Process process = tuple.Item1;
+            ulong vtableAddress = tuple.Item2;
             ulong distance;
             Module module;
             ISymbolProviderModule diaModule = GetDiaModule(process, vtableAddress, out distance, out module);
