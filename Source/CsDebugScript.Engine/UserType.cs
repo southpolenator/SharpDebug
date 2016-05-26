@@ -3,7 +3,6 @@ using CsDebugScript.Engine.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace CsDebugScript
 {
@@ -545,7 +544,7 @@ namespace CsDebugScript
                 variable = variable.CastAs(elementCodeType);
             }
 
-            return variable.CastAs<T>();
+            return UserTypeDelegates<T>.Instance.Downcaster(variable);
         }
     }
 

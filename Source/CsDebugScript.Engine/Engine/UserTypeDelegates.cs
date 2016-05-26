@@ -49,6 +49,13 @@ namespace CsDebugScript.Engine
     internal delegate T PhysicalConstructorDelegate<T>(MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name, string path);
 
     /// <summary>
+    /// The downcaster delegate. Creates a new user type by calling constructor with signature of this delegate and downcasted interface.
+    /// </summary>
+    /// <param name="variable">The variable.</param>
+    /// <returns>Downcasted instance of user type</returns>
+    internal delegate T DowncasterDelegate<T>(Variable variable);
+
+    /// <summary>
     /// Helper delegates for manipulating user types
     /// </summary>
     internal interface IUserTypeDelegates
@@ -107,6 +114,11 @@ namespace CsDebugScript.Engine
         /// Gets the physical constructor, or null if not available.
         /// </summary>
         PhysicalConstructorDelegate<T> PhysicalConstructor { get; }
+
+        /// <summary>
+        /// Gets the downcaster delegate.
+        /// </summary>
+        DowncasterDelegate<T> Downcaster { get; }
 
         /// <summary>
         /// Gets the derived class attributes.
@@ -227,6 +239,11 @@ namespace CsDebugScript.Engine
         private SimpleCache<Tuple<SymbolicConstructorDelegate, SymbolicConstructorDelegate<T>>> symbolicConstructors;
 
         /// <summary>
+        /// The cache of downcaster
+        /// </summary>
+        private SimpleCache<DowncasterDelegate<T>> downcaster;
+
+        /// <summary>
         /// The cache of derived class attributes
         /// </summary>
         private SimpleCache<DerivedClassAttribute[]> derivedClassAttributes;
@@ -329,6 +346,28 @@ namespace CsDebugScript.Engine
                 }
 
                 return null;
+            });
+
+            downcaster = SimpleCache.Create(() =>
+            {
+                if (userType.IsSubclassOf(typeof(UserType)) && typeof(ICastableObject).IsAssignableFrom(userType) && DerivedClassAttributes.Length > 0)
+                {
+                    MethodInfo downcastObjectMethod = typeof(VariableCastExtender).GetMethod(nameof(VariableCastExtender.DowncastObject));
+                    MethodInfo downcastObjectGenericMethod = downcastObjectMethod.MakeGenericMethod(typeof(T));
+                    MethodInfo castAsMethod = typeof(Variable).GetMethod(nameof(Variable.CastAs), BindingFlags.Static | BindingFlags.Public);
+                    MethodInfo castAsGenericMethod = castAsMethod.MakeGenericMethod(typeof(T));
+                    DynamicMethod method = new DynamicMethod(nameof(VariableCastExtender.DowncastObject), userType, new Type[] { typeof(Variable) });
+                    ILGenerator gen = method.GetILGenerator();
+
+                    gen.Emit(OpCodes.Ldarg_0);
+                    gen.Emit(OpCodes.Call, castAsGenericMethod);
+                    gen.Emit(OpCodes.Call, downcastObjectGenericMethod);
+                    gen.Emit(OpCodes.Ret);
+
+                    return (DowncasterDelegate<T>)method.CreateDelegate(typeof(DowncasterDelegate<T>));
+                }
+
+                return new DowncasterDelegate<T>((value) => value.CastAs<T>());
             });
 
             derivedClassAttributes = SimpleCache.Create(() => userType.GetCustomAttributes<DerivedClassAttribute>(false).ToArray());
@@ -438,6 +477,17 @@ namespace CsDebugScript.Engine
             get
             {
                 return baseClassesCacheForCasting.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the downcaster delegate.
+        /// </summary>
+        public DowncasterDelegate<T> Downcaster
+        {
+            get
+            {
+                return downcaster.Value;
             }
         }
 
