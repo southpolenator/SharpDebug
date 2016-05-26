@@ -53,6 +53,11 @@ namespace CsDebugScript
         protected internal SimpleCache<Dictionary<string, Tuple<CodeType, int>>> directBaseClassesAndOffsets;
 
         /// <summary>
+        /// The direct base classes and offsets sorted by offset
+        /// </summary>
+        protected internal SimpleCache<Tuple<CodeType, int>[]> directBaseClassesAndOffsetsArraySorted;
+
+        /// <summary>
         /// All field types and offsets
         /// </summary>
         protected internal DictionaryCache<string, Tuple<CodeType, int>> allFieldTypesAndOffsets;
@@ -90,6 +95,7 @@ namespace CsDebugScript
             name = SimpleCache.Create(GetTypeName);
             size = SimpleCache.Create(GetTypeSize);
             directBaseClassesAndOffsets = SimpleCache.Create(GetDirectBaseClassesAndOffsets);
+            directBaseClassesAndOffsetsArraySorted = SimpleCache.Create(() => InheritedClasses.Values.OrderBy(t => t.Item2).ToArray());
             allFieldNames = SimpleCache.Create(GetTypeAllFieldNames);
             fieldNames = SimpleCache.Create(GetTypeFieldNames);
             allFieldTypesAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>(GetAllFieldTypeAndOffset);
@@ -204,6 +210,17 @@ namespace CsDebugScript
             get
             {
                 return directBaseClassesAndOffsets.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the base classes - classes that this class inherits from. Array is sorted by offset.
+        /// </summary>
+        internal Tuple<CodeType, int>[] InheritedClassesSorted
+        {
+            get
+            {
+                return directBaseClassesAndOffsetsArraySorted.Value;
             }
         }
 
@@ -472,7 +489,7 @@ namespace CsDebugScript
                 return true;
             }
 
-            foreach (var inheritedClass in InheritedClasses.Values)
+            foreach (var inheritedClass in InheritedClassesSorted)
             {
                 if (inheritedClass.Item1.Inherits(codeType))
                 {
@@ -490,28 +507,12 @@ namespace CsDebugScript
         /// <returns><c>true</c> if this instance inherits the specified type name; otherwise <c>false</c></returns>
         public bool Inherits(string typeName)
         {
-            if (Name == typeName)
+            if (TypeNameMatches(Name, typeName))
             {
                 return true;
             }
 
-            if (Name.Contains('<') && Name.EndsWith(">") || typeName.EndsWith("<>"))
-            {
-                // TODO
-                // generic template matching
-                // does not check for specialization
-                //
-                int nameTemplateIndex = Name.IndexOf('<');
-                int typeNameTemplateIndex = typeName.IndexOf('<');
-
-                if (nameTemplateIndex == typeNameTemplateIndex &&
-                    Name.Substring(0, nameTemplateIndex) == typeName.Substring(0, typeNameTemplateIndex))
-                {
-                    return true;
-                }
-            }
-
-            foreach (var inheritedClass in InheritedClasses.Values)
+            foreach (var inheritedClass in InheritedClassesSorted)
             {
                 if (inheritedClass.Item1.Inherits(typeName))
                 {
@@ -553,7 +554,6 @@ namespace CsDebugScript
                         return true;
                 }
 
-                // TODO: Do better with generics
                 UserTypeMetadata[] metadatas = UserTypeMetadata.ReadFromType(type);
 
                 foreach (var metadata in metadatas)
@@ -563,6 +563,66 @@ namespace CsDebugScript
                         return true;
                     }
                 }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Determines whether the specified type can be used for this code type.
+        /// </summary>
+        /// <param name="type">The user type.</param>
+        /// <returns><c>true</c> if the specified type can be used for this code type.</returns>
+        public bool IsFor(Type type)
+        {
+            if (type.IsSubclassOf(typeof(Variable)))
+            {
+                UserTypeDescription[] descriptions = Module.Process.TypeToUserTypeDescription[type];
+
+                foreach (var description in descriptions)
+                {
+                    CodeType newType = description.UserType;
+
+                    // Check if it was non-unique generics type
+                    if (newType != null && this == newType)
+                        return true;
+                }
+
+                UserTypeMetadata[] metadatas = UserTypeMetadata.ReadFromType(type);
+
+                foreach (var metadata in metadatas)
+                    if (TypeNameMatches(Name, metadata.TypeName))
+                        return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Determines whether the specified type name can be used for this code type.
+        /// </summary>
+        /// <param name="typeName">The type name written as attribute on user type.</param>
+        /// <returns><c>true</c> if the specified type name can be used for this code type.</returns>
+        internal bool IsFor(string typeName)
+        {
+            return TypeNameMatches(Name, typeName);
+        }
+
+        /// <summary>
+        /// Checks whether types matches by comparing names.
+        /// </summary>
+        /// <param name="name">The type name.</param>
+        /// <param name="className">The string read from the user type.</param>
+        internal static bool TypeNameMatches(string name, string className)
+        {
+            if (name == className)
+                return true;
+
+            // TODO: Do better matching of generics type
+            if (className.EndsWith("<>"))
+            {
+                if (name.StartsWith(className.Substring(0, className.Length - 1)))
+                    return true;
             }
 
             return false;

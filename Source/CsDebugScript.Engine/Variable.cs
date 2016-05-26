@@ -846,7 +846,7 @@ namespace CsDebugScript
                 throw new Exception("There is more than one base class.");
             }
 
-            return GetBaseClass(codeType.InheritedClasses.Values.First());
+            return GetBaseClass(codeType.InheritedClassesSorted[0]);
         }
 
         /// <summary>
@@ -872,7 +872,7 @@ namespace CsDebugScript
                 throw new ArgumentOutOfRangeException(nameof(baseClassIndex));
             }
 
-            var tuple = codeType.InheritedClasses.Values.OrderBy(t => t.Item2).ElementAt(baseClassIndex);
+            var tuple = codeType.InheritedClassesSorted[baseClassIndex];
 
             return GetBaseClass(tuple);
         }
@@ -886,6 +886,37 @@ namespace CsDebugScript
         public T GetBaseClass<T>(int baseClassIndex)
         {
             return GetBaseClass(baseClassIndex).CastAs<T>();
+        }
+
+        /// <summary>
+        /// Gets the variable that is casted to base class given by index.
+        /// This is mostly used by auto generated code (exported from PDB) or to access multi inheritance base classes.
+        /// </summary>
+        /// <remarks>This is not casted to user type</remarks>
+        /// <typeparam name="TParent">The type of the multi-class-inheritance "parent".</typeparam>
+        /// <param name="baseClassIndex">Index of the base class by looking at the offset.</param>
+        /// <param name="userType">The user type.</param>
+        public Variable GetBaseClass<TParent>(int baseClassIndex, TParent userType)
+            where TParent : UserType
+        {
+            return GetBaseClass<Variable, TParent>(baseClassIndex, userType);
+        }
+
+        /// <summary>
+        /// Gets the variable that is casted to base class given by index.
+        /// This is mostly used by auto generated code (exported from PDB) or to access multi inheritance base classes.
+        /// </summary>
+        /// <typeparam name="T">Type to cast returned variable into.</typeparam>
+        /// <typeparam name="TParent">The type of the multi-class-inheritance "parent".</typeparam>
+        /// <param name="baseClassIndex">Index of the base class by looking at the offset.</param>
+        /// <param name="userType">The user type.</param>
+        public T GetBaseClass<T, TParent>(int baseClassIndex, TParent userType)
+            where TParent : UserType
+        {
+            object instance = GetBaseClass(baseClassIndex).CastAs(UserTypeDelegates<TParent>.Instance.GetMciAuxiliaryClassType<T>());
+
+            ((IMultiClassInheritance)instance).DowncastParent = userType;
+            return (T)instance;
         }
 
         /// <summary>
@@ -911,7 +942,7 @@ namespace CsDebugScript
         /// </summary>
         /// <remarks>This is not casted to user type</remarks>
         /// <param name="baseClassCodeTypeAndOffset">The base class code type and offset tuple.</param>
-        private Variable GetBaseClass(Tuple<CodeType, int> baseClassCodeTypeAndOffset)
+        internal Variable GetBaseClass(Tuple<CodeType, int> baseClassCodeTypeAndOffset)
         {
             var newCodeType = baseClassCodeTypeAndOffset.Item1;
 

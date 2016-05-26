@@ -1,5 +1,7 @@
 ﻿using CsDebugScript.Engine.Utility;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -47,6 +49,13 @@ namespace CsDebugScript.Engine
     internal delegate T PhysicalConstructorDelegate<T>(MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name, string path);
 
     /// <summary>
+    /// The downcaster delegate. Creates a new user type by calling constructor with signature of this delegate and downcasted interface.
+    /// </summary>
+    /// <param name="variable">The variable.</param>
+    /// <returns>Downcasted instance of user type</returns>
+    internal delegate T DowncasterDelegate<T>(Variable variable);
+
+    /// <summary>
     /// Helper delegates for manipulating user types
     /// </summary>
     internal interface IUserTypeDelegates
@@ -65,6 +74,29 @@ namespace CsDebugScript.Engine
         /// Gets the derived class attributes.
         /// </summary>
         DerivedClassAttribute[] DerivedClassAttributes { get; }
+
+        /// <summary>
+        /// Gets the dictionary of derived class attributes by type name.
+        /// </summary>
+        Dictionary<string, DerivedClassAttribute> DerivedClassAttributesDictionary { get; }
+
+        /// <summary>
+        /// Gets the base classes cache for casting. It is array of types that have base classes.
+        /// Each element has BaseClassString and array of MciAuxiliaryClassTypes for base classes.
+        /// </summary>
+        Tuple<string, Type[]>[] BaseClassesCacheForCasting { get; }
+
+        /// <summary>
+        /// Gets the multi-class-inheritance auxiliary class type.
+        /// </summary>
+        /// <typeparam name="TBase">The base type</typeparam>
+        Type GetMciAuxiliaryClassType<TBase>();
+
+        /// <summary>
+        /// Gets the multi-class-inheritance auxiliary class type.
+        /// </summary>
+        /// <param name="baseType">The base type.</param>
+        Type GetMciAuxiliaryClassType(Type baseType);
     }
 
     /// <summary>
@@ -84,9 +116,37 @@ namespace CsDebugScript.Engine
         PhysicalConstructorDelegate<T> PhysicalConstructor { get; }
 
         /// <summary>
+        /// Gets the downcaster delegate.
+        /// </summary>
+        DowncasterDelegate<T> Downcaster { get; }
+
+        /// <summary>
         /// Gets the derived class attributes.
         /// </summary>
         DerivedClassAttribute[] DerivedClassAttributes { get; }
+
+        /// <summary>
+        /// Gets the dictionary of derived class attributes by type name.
+        /// </summary>
+        Dictionary<string, DerivedClassAttribute> DerivedClassAttributesDictionary { get; }
+
+        /// <summary>
+        /// Gets the base classes cache for casting. It is array of types that have base classes.
+        /// Each element has BaseClassString and array of MciAuxiliaryClassTypes for base classes.
+        /// </summary>
+        Tuple<string, Type[]>[] BaseClassesCacheForCasting { get; }
+
+        /// <summary>
+        /// Gets the multi-class-inheritance auxiliary class type.
+        /// </summary>
+        /// <typeparam name="TBase">The base type</typeparam>
+        Type GetMciAuxiliaryClassType<TBase>();
+
+        /// <summary>
+        /// Gets the multi-class-inheritance auxiliary class type.
+        /// </summary>
+        /// <param name="baseType">The base type.</param>
+        Type GetMciAuxiliaryClassType(Type baseType);
     }
 
     /// <summary>
@@ -98,6 +158,51 @@ namespace CsDebugScript.Engine
         /// The cache of user type delegates
         /// </summary>
         public static DictionaryCache<Type, IUserTypeDelegates> Delegates = new DictionaryCache<Type, IUserTypeDelegates>(Get);
+
+        /// <summary>
+        /// The number of dynamically created types
+        /// </summary>
+        internal static int NumberOfDynamicTypes;
+
+        /// <summary>
+        /// The cache of module builder used for creating dynamic types
+        /// </summary>
+        private static SimpleCache<ModuleBuilder> moduleBuilder;
+
+        /// <summary>
+        /// Initializes the <see cref="UserTypeDelegates"/> class.
+        /// </summary>
+        static UserTypeDelegates()
+        {
+            moduleBuilder = SimpleCache.Create(() =>
+            {
+                AssemblyName assemblyName = new AssemblyName("CsDebugScript.DynamicAssembly");
+                byte[] bytes;
+
+                using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CsDebugScript.Key.snk"))
+                {
+                    bytes = new byte[stream.Length];
+                    stream.Read(bytes, 0, bytes.Length);
+                }
+
+                assemblyName.KeyPair = new StrongNameKeyPair(bytes);
+
+                AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+
+                return assemblyBuilder.DefineDynamicModule("CsDebugScript.Dynamic");
+            });
+        }
+
+        /// <summary>
+        /// Gets the module builder used for creating dynamic types.
+        /// </summary>
+        internal static ModuleBuilder ModuleBuilder
+        {
+            get
+            {
+                return moduleBuilder.Value;
+            }
+        }
 
         /// <summary>
         /// Gets the delegates interface for the specified user type.
@@ -124,110 +229,200 @@ namespace CsDebugScript.Engine
         public static IUserTypeDelegates<T> Instance = new UserTypeDelegates<T>();
 
         /// <summary>
-        /// The physical constructor
+        /// The cache of physical constructors
         /// </summary>
-        private PhysicalConstructorDelegate physicalConstructor = null;
+        private SimpleCache<Tuple<PhysicalConstructorDelegate, PhysicalConstructorDelegate<T>>> physicalConstructors;
 
         /// <summary>
-        /// The typed physical constructor
+        /// The cache of symbolic constructors
         /// </summary>
-        private PhysicalConstructorDelegate<T> physicalConstructorTyped = null;
+        private SimpleCache<Tuple<SymbolicConstructorDelegate, SymbolicConstructorDelegate<T>>> symbolicConstructors;
 
         /// <summary>
-        /// The symbolic constructor
+        /// The cache of downcaster
         /// </summary>
-        private SymbolicConstructorDelegate symbolicConstructor = null;
+        private SimpleCache<DowncasterDelegate<T>> downcaster;
 
         /// <summary>
-        /// The typed symbolic constructor
+        /// The cache of derived class attributes
         /// </summary>
-        private SymbolicConstructorDelegate<T> symbolicConstructorTyped = null;
+        private SimpleCache<DerivedClassAttribute[]> derivedClassAttributes;
+
+        /// <summary>
+        /// The cache of dictionary of derived class attributes by type name.
+        /// </summary>
+        private SimpleCache<Dictionary<string, DerivedClassAttribute>> derivedClassAttributesDictionary;
+
+        /// <summary>
+        /// The cache of base classes cache for casting.
+        /// </summary>
+        private SimpleCache<Tuple<string, Type[]>[]> baseClassesCacheForCasting;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserTypeDelegates{T}"/> class.
         /// </summary>
         internal protected UserTypeDelegates()
         {
-            // Find symbolic constructor
-            var userType = typeof(T);
-            var constructors = userType.GetConstructors();
+            Type userType = typeof(T);
+            ConstructorInfo[] constructors = userType.GetConstructors();
 
-            foreach (var constructor in constructors)
+            symbolicConstructors = SimpleCache.Create(() =>
             {
-                if (!constructor.IsPublic)
+                foreach (ConstructorInfo constructor in constructors)
                 {
-                    continue;
+                    if (!constructor.IsPublic)
+                    {
+                        continue;
+                    }
+
+                    var parameters = constructor.GetParameters();
+
+                    if (parameters.Length < 1 || parameters.Count(p => !p.HasDefaultValue) > 1)
+                    {
+                        continue;
+                    }
+
+                    if (parameters[0].ParameterType == typeof(Variable))
+                    {
+                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(Variable) });
+                        ILGenerator gen = method.GetILGenerator();
+
+                        gen.Emit(OpCodes.Ldarg_0);
+                        gen.Emit(OpCodes.Newobj, constructor);
+                        gen.Emit(OpCodes.Ret);
+
+                        var symbolicConstructor = (SymbolicConstructorDelegate)method.CreateDelegate(typeof(SymbolicConstructorDelegate));
+                        var symbolicConstructorTyped = (SymbolicConstructorDelegate<T>)method.CreateDelegate(typeof(SymbolicConstructorDelegate<T>));
+
+                        return Tuple.Create(symbolicConstructor, symbolicConstructorTyped);
+                    }
                 }
 
-                var parameters = constructor.GetParameters();
+                return null;
+            });
 
-                if (parameters.Length < 1 || parameters.Count(p => !p.HasDefaultValue) > 1)
+            physicalConstructors = SimpleCache.Create(() =>
+            {
+                foreach (var constructor in constructors)
                 {
-                    continue;
+                    if (!constructor.IsPublic)
+                    {
+                        continue;
+                    }
+
+                    var parameters = constructor.GetParameters();
+
+                    if (parameters.Length < 7 || parameters.Count(p => !p.HasDefaultValue) > 7)
+                    {
+                        continue;
+                    }
+
+                    if (parameters[0].ParameterType == typeof(MemoryBuffer)
+                        && parameters[1].ParameterType == typeof(int)
+                        && parameters[2].ParameterType == typeof(ulong)
+                        && parameters[3].ParameterType == typeof(CodeType)
+                        && parameters[4].ParameterType == typeof(ulong)
+                        && parameters[5].ParameterType == typeof(string)
+                        && parameters[6].ParameterType == typeof(string))
+                    {
+                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(MemoryBuffer), typeof(int), typeof(ulong), typeof(CodeType), typeof(ulong), typeof(string), typeof(string) });
+                        ILGenerator gen = method.GetILGenerator();
+
+                        gen.Emit(OpCodes.Ldarg_0);
+                        gen.Emit(OpCodes.Ldarg_1);
+                        gen.Emit(OpCodes.Ldarg_2);
+                        gen.Emit(OpCodes.Ldarg_3);
+                        gen.Emit(OpCodes.Ldarg, (short)4);
+                        gen.Emit(OpCodes.Ldarg, (short)5);
+                        gen.Emit(OpCodes.Ldarg, (short)6);
+                        gen.Emit(OpCodes.Newobj, constructor);
+                        gen.Emit(OpCodes.Ret);
+
+                        var physicalConstructor = (PhysicalConstructorDelegate)method.CreateDelegate(typeof(PhysicalConstructorDelegate));
+                        var physicalConstructorTyped = (PhysicalConstructorDelegate<T>)method.CreateDelegate(typeof(PhysicalConstructorDelegate<T>));
+
+                        return Tuple.Create(physicalConstructor, physicalConstructorTyped);
+                    }
                 }
 
-                if (parameters[0].ParameterType == typeof(Variable))
+                return null;
+            });
+
+            downcaster = SimpleCache.Create(() =>
+            {
+                if (userType.IsSubclassOf(typeof(UserType)) && typeof(ICastableObject).IsAssignableFrom(userType) && DerivedClassAttributes.Length > 0)
                 {
-                    DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(Variable) });
+                    MethodInfo downcastObjectMethod = typeof(VariableCastExtender).GetMethod(nameof(VariableCastExtender.DowncastObject));
+                    MethodInfo downcastObjectGenericMethod = downcastObjectMethod.MakeGenericMethod(typeof(T));
+                    MethodInfo castAsMethod = typeof(Variable).GetMethod(nameof(Variable.CastAs), BindingFlags.Static | BindingFlags.Public);
+                    MethodInfo castAsGenericMethod = castAsMethod.MakeGenericMethod(typeof(T));
+                    DynamicMethod method = new DynamicMethod(nameof(VariableCastExtender.DowncastObject), userType, new Type[] { typeof(Variable) });
                     ILGenerator gen = method.GetILGenerator();
 
                     gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Newobj, constructor);
+                    gen.Emit(OpCodes.Call, castAsGenericMethod);
+                    gen.Emit(OpCodes.Call, downcastObjectGenericMethod);
                     gen.Emit(OpCodes.Ret);
-                    symbolicConstructor = (SymbolicConstructorDelegate)method.CreateDelegate(typeof(SymbolicConstructorDelegate));
-                    symbolicConstructorTyped = (SymbolicConstructorDelegate<T>)method.CreateDelegate(typeof(SymbolicConstructorDelegate<T>));
-                    break;
-                }
-            }
 
-            // Find physical constructor
-            foreach (var constructor in constructors)
+                    return (DowncasterDelegate<T>)method.CreateDelegate(typeof(DowncasterDelegate<T>));
+                }
+
+                return new DowncasterDelegate<T>((value) => value.CastAs<T>());
+            });
+
+            derivedClassAttributes = SimpleCache.Create(() => userType.GetCustomAttributes<DerivedClassAttribute>(false).ToArray());
+            derivedClassAttributesDictionary = SimpleCache.Create(() => DerivedClassAttributes.ToDictionary(a => a.TypeName));
+
+            baseClassesCacheForCasting = SimpleCache.Create(() =>
             {
-                if (!constructor.IsPublic)
+                List<Tuple<string, Type[]>> typeArrays = new List<Tuple<string, Type[]>>();
+                Type type = userType;
+
+                while (type != null)
                 {
-                    continue;
+                    BaseClassesArrayAttribute attribute = type.GetCustomAttribute<BaseClassesArrayAttribute>(false);
+
+                    if (attribute != null)
+                    {
+                        FieldInfo typesField = type.GetField(attribute.FieldName, BindingFlags.Public | BindingFlags.Static);
+                        Type[] originalTypes = (Type[])typesField.GetValue(null);
+                        Type[] convertedTypes = new Type[originalTypes.Length];
+                        string ownerCodeTypeString = UserType.GetBaseClassString(type);
+
+                        for (int i = 0; i < originalTypes.Length; i++)
+                            if (originalTypes[i] != null)
+                                convertedTypes[i] = GetMciAuxiliaryClassType(originalTypes[i]);
+                        typeArrays.Add(Tuple.Create(ownerCodeTypeString, convertedTypes));
+                    }
+
+                    type = type.BaseType;
                 }
 
-                var parameters = constructor.GetParameters();
-
-                if (parameters.Length < 7 || parameters.Count(p => !p.HasDefaultValue) > 7)
-                {
-                    continue;
-                }
-
-                if (parameters[0].ParameterType == typeof(MemoryBuffer)
-                    && parameters[1].ParameterType == typeof(int)
-                    && parameters[2].ParameterType == typeof(ulong)
-                    && parameters[3].ParameterType == typeof(CodeType)
-                    && parameters[4].ParameterType == typeof(ulong)
-                    && parameters[5].ParameterType == typeof(string)
-                    && parameters[6].ParameterType == typeof(string))
-                {
-                    DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(MemoryBuffer), typeof(int), typeof(ulong), typeof(CodeType), typeof(ulong), typeof(string), typeof(string) });
-                    ILGenerator gen = method.GetILGenerator();
-
-                    gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Ldarg_1);
-                    gen.Emit(OpCodes.Ldarg_2);
-                    gen.Emit(OpCodes.Ldarg_3);
-                    gen.Emit(OpCodes.Ldarg, (short)4);
-                    gen.Emit(OpCodes.Ldarg, (short)5);
-                    gen.Emit(OpCodes.Ldarg, (short)6);
-                    gen.Emit(OpCodes.Newobj, constructor);
-                    gen.Emit(OpCodes.Ret);
-                    physicalConstructor = (PhysicalConstructorDelegate)method.CreateDelegate(typeof(PhysicalConstructorDelegate));
-                    physicalConstructorTyped = (PhysicalConstructorDelegate<T>)method.CreateDelegate(typeof(PhysicalConstructorDelegate<T>));
-                }
-            }
-
-            // Get type attributes
-            DerivedClassAttributes = userType.GetCustomAttributes<DerivedClassAttribute>(false).ToArray();
+                return typeArrays.ToArray();
+            });
         }
 
         /// <summary>
         /// Gets the derived class attributes.
         /// </summary>
-        public DerivedClassAttribute[] DerivedClassAttributes { get; private set; }
+        public DerivedClassAttribute[] DerivedClassAttributes
+        {
+            get
+            {
+                return derivedClassAttributes.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the dictionary of derived class attributes by type name.
+        /// </summary>
+        public Dictionary<string, DerivedClassAttribute> DerivedClassAttributesDictionary
+        {
+            get
+            {
+                return derivedClassAttributesDictionary.Value;
+            }
+        }
 
         /// <summary>
         /// Gets the physical constructor, or null if not available.
@@ -236,7 +431,7 @@ namespace CsDebugScript.Engine
         {
             get
             {
-                return physicalConstructor;
+                return physicalConstructors.Value.Item1;
             }
         }
 
@@ -247,7 +442,7 @@ namespace CsDebugScript.Engine
         {
             get
             {
-                return physicalConstructorTyped;
+                return physicalConstructors.Value.Item2;
             }
         }
 
@@ -258,7 +453,7 @@ namespace CsDebugScript.Engine
         {
             get
             {
-                return symbolicConstructor;
+                return symbolicConstructors.Value.Item1;
             }
         }
 
@@ -269,7 +464,138 @@ namespace CsDebugScript.Engine
         {
             get
             {
-                return symbolicConstructorTyped;
+                return symbolicConstructors.Value.Item2;
+            }
+        }
+
+        /// <summary>
+        /// Gets the base classes cache for casting. It is array of types that have base classes.
+        /// Each element has BaseClassString and array of MciAuxiliaryClassTypes for base classes.
+        /// </summary>
+        public Tuple<string, Type[]>[] BaseClassesCacheForCasting
+        {
+            get
+            {
+                return baseClassesCacheForCasting.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the downcaster delegate.
+        /// </summary>
+        public DowncasterDelegate<T> Downcaster
+        {
+            get
+            {
+                return downcaster.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the multi-class-inheritance auxiliary class type.
+        /// </summary>
+        /// <typeparam name="TBase">The base type</typeparam>
+        public Type GetMciAuxiliaryClassType<TBase>()
+        {
+            return MciAuxiliaryClassTypeCreatetor<TBase>.Type;
+        }
+
+        /// <summary>
+        /// The cache of multi-class-inheritance auxiliary class types
+        /// </summary>
+        private static DictionaryCache<Type, Type> mciAuxiliaryClassTypes = new DictionaryCache<Type, Type>(GetMciAuxiliaryClassTypeFromCreator);
+
+        /// <summary>
+        /// Gets the multi-class-inheritance auxiliary class type.
+        /// </summary>
+        /// <param name="baseType">The base type.</param>
+        public Type GetMciAuxiliaryClassType(Type baseType)
+        {
+            return mciAuxiliaryClassTypes[baseType];
+        }
+
+        /// <summary>
+        /// Gets the multi-class-inheritance auxiliary class type from creator.
+        /// </summary>
+        /// <param name="baseType">The base type.</param>
+        private static Type GetMciAuxiliaryClassTypeFromCreator(Type baseType)
+        {
+            Type castableTypeCreatorType = typeof(MciAuxiliaryClassTypeCreatetor<>);
+            castableTypeCreatorType = castableTypeCreatorType.MakeGenericType(new Type[] { typeof(T), baseType });
+            FieldInfo typeField = castableTypeCreatorType.GetField(nameof(MciAuxiliaryClassTypeCreatetor<Variable>.Type));
+            return (Type)typeField.GetValue(null);
+        }
+
+        /// <summary>
+        /// The multi-class-inheritance auxiliary class type creator.
+        /// </summary>
+        /// <typeparam name="TBase">The base type.</typeparam>
+        private class MciAuxiliaryClassTypeCreatetor<TBase>
+        {
+            /// <summary>
+            /// The multi-class-inheritance auxiliary class type
+            /// </summary>
+            public static Type Type = CreateType();
+
+            /// <summary>
+            /// Creates the multi-class-inheritance auxiliary class type.
+            /// </summary>
+            private static Type CreateType()
+            {
+                Type baseType = typeof(TBase);
+                Type parentType = typeof(T);
+                ConstructorInfo[] constructors = baseType.GetConstructors();
+                string typeName = string.Format("DynamicType{0}", System.Threading.Interlocked.Increment(ref UserTypeDelegates.NumberOfDynamicTypes));
+                TypeBuilder typeBuilder = UserTypeDelegates.ModuleBuilder.DefineType(typeName, TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit | TypeAttributes.AutoLayout, baseType, new Type[] { typeof(IMultiClassInheritance) });
+
+                // Define constructors
+                foreach (ConstructorInfo baseConstructor in constructors)
+                {
+                    Type[] parameters = baseConstructor.GetParameters().Select(p => p.ParameterType).ToArray();
+                    ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.RTSpecialName, CallingConventions.Any, parameters);
+                    ILGenerator ilGenerator = constructorBuilder.GetILGenerator();
+
+                    ilGenerator.Emit(OpCodes.Ldarg_0);
+                    if (parameters.Length >= 1)
+                        ilGenerator.Emit(OpCodes.Ldarg_1);
+                    if (parameters.Length >= 2)
+                        ilGenerator.Emit(OpCodes.Ldarg_2);
+                    if (parameters.Length >= 3)
+                        ilGenerator.Emit(OpCodes.Ldarg_3);
+                    for (int i = 4; i <= parameters.Length; i++)
+                        ilGenerator.Emit(OpCodes.Ldarg, (short)i);
+                    ilGenerator.Emit(OpCodes.Call, baseConstructor);
+                    ilGenerator.Emit(OpCodes.Ret);
+                }
+
+                // Add field for storing parent
+                string fieldName = "parent";
+                FieldBuilder fieldBuilder = typeBuilder.DefineField(fieldName, parentType, FieldAttributes.Private);
+
+                // Implement property for IMultiClassInheritance
+                Type propertyType = typeof(UserType);
+                string propertyName = nameof(IMultiClassInheritance.DowncastParent);
+                PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.HasDefault, propertyType, null);
+                MethodBuilder getPropertyMethodBuilder = typeBuilder.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual, propertyType, Type.EmptyTypes);
+                ILGenerator il = getPropertyMethodBuilder.GetILGenerator();
+
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, fieldBuilder);
+                il.Emit(OpCodes.Ret);
+                propertyBuilder.SetGetMethod(getPropertyMethodBuilder);
+
+                MethodBuilder setPropertyMethodBuilder = typeBuilder.DefineMethod("set_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual, null, new Type[] { propertyType });
+                il = setPropertyMethodBuilder.GetILGenerator();
+
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Castclass, parentType);
+                il.Emit(OpCodes.Stfld, fieldBuilder);
+                il.Emit(OpCodes.Ret);
+                propertyBuilder.SetSetMethod(setPropertyMethodBuilder);
+
+                // Build type
+                return typeBuilder.CreateType();
             }
         }
     }

@@ -326,6 +326,10 @@ namespace CsDebugScript.CodeGen.UserTypes
                                 constructorText = string.Format("ReadPointer<{0}>(thisClass, \"{1}\", memoryBuffer, memoryBufferOffset + {2}, {3})", fieldTypeString, fieldName, field.Offset, field.Type.Size);
                                 usedThisClass = true;
                             }
+
+                            // Do downcasting if field has vtable
+                            if (userType.UserType.Symbol.HasVTable() && userType.UserType.DerivedClasses.Count > 0)
+                                constructorText += ".DowncastObject()";
                         }
                         else
                         {

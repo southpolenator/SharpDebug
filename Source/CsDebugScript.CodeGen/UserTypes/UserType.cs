@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
@@ -265,7 +266,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </remarks>
         public static string NormalizeSymbolName(string symbolName)
         {
-            return symbolName.Replace("::", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').TrimEnd('_');
+            return symbolName.Replace("::", "_").Replace(".", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').TrimEnd('_');
         }
 
         /// <summary>
@@ -349,7 +350,11 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 if (useThisClass)
                 {
-                    userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("thisClass.Value.GetClassField", "thisClass.Value.GetBaseClass");
+                    userTypeField.ConstructorText = userTypeField.ConstructorText
+                        .Replace("thisClass.Value.GetClassField", "thisClass.Value.GetBaseClass")
+                        .Replace("\")", "\", this)")
+                        .Replace(string.Format("<{0}>", userTypeField.FieldType), string.Format("<{0}, {1}>", userTypeField.FieldType, ClassName))
+                        .Replace("GetBaseClass(", string.Format("GetBaseClass<{0}>(", ClassName));
                     usedThisClass = true;
                 }
                 else
@@ -433,22 +438,19 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
             }
 
+            // Do downcasting if field is pointer and has vtable
+            UserTypeTree userType = fieldType as UserTypeTree;
+            bool isEmbedded = field.Type.Tag != SymTagEnum.SymTagPointerType;
+
+            if (userType != null && !(userType.UserType is EnumUserType) && !isEmbedded && userType.UserType.Symbol.HasVTable() && userType.UserType.DerivedClasses.Count > 0)
+                constructorText += ".DowncastObject()";
+
             // TODO: More extensive checks are needed for property name. We must not create duplicate after adding '_'. For example: class has 'in' and '_in' fields.
             fieldName = UserTypeField.GetPropertyName(fieldName, this);
 
-            // When creating property for BaseClass and current class is generic type
-            // we need to rename BaseClass property name not to include specialization type.
-            if (extractingBaseClass && this is TemplateUserType)
-            {
-                if (fieldTypeAsTemplate != null)
-                {
-                    fieldName = fieldTypeAsTemplate.UserType.ClassName;
-                }
-                else if (fieldType is TemplateArgumentTreeType || (fieldType is UserTypeTree && ((UserTypeTree)fieldType).UserType is TemplateArgumentUserType))
-                {
-                    fieldName = fieldType.GetTypeString();
-                }
-            }
+            // When creating property for BaseClass use our generated type and name to avoid specializations
+            if (extractingBaseClass && !(fieldType is VariableTypeTree))
+                fieldName = fieldType.GetTypeString(truncateNamespace: true);
 
             // Do create user type field
             return new UserTypeField
@@ -699,6 +701,12 @@ namespace CsDebugScript.CodeGen.UserTypes
         }
 
         /// <summary>
+        /// The number of base class arrays created during code generation.
+        /// Used as unique number for next base class array name.
+        /// </summary>
+        private static long baseClassArraysCreated = 0;
+
+        /// <summary>
         /// Writes the code for this user type to the specified output.
         /// </summary>
         /// <param name="output">The output.</param>
@@ -716,6 +724,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             UserTypeField[] baseClassesForPropertiesAsFields = baseClassesForProperties.Select(type => ExtractField(type.CastAsSymbolField(), factory, generationFlags, true)).ToArray();
             var fields = ExtractFields(factory, generationFlags).OrderBy(f => !f.Static).ThenBy(f => f.FieldName != "ClassCodeType").ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
             bool hasStatic = fields.Any(f => f.Static), hasNonStatic = fields.Any(f => !f.Static);
+            string baseClassesArrayName = string.Format("RandomlyNamed_BaseClassesArray{0}", System.Threading.Interlocked.Increment(ref baseClassArraysCreated));
 
             // Check if we need to write usings and namespace
             if (DeclaredInType == null || (!generationFlags.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType))
@@ -761,7 +770,17 @@ namespace CsDebugScript.CodeGen.UserTypes
                 // Write all UserTypeAttributes and class header
                 foreach (var moduleName in GlobalCache.GetSymbolModuleNames(Symbol))
                     output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, TypeName);
-                output.WriteLine(indentation, @"public partial class {0} {1} {2}", ClassName, !string.IsNullOrEmpty(baseType.GetTypeString()) ? ":" : "", baseType);
+
+                // If we have multi class inheritance, generate attribute for getting static field with base class C# types
+                if (baseType is MultiClassInheritanceTypeTree || baseType is SingleClassInheritanceWithInterfacesTypeTree)
+                    output.WriteLine(indentation, "[BaseClassesArray(FieldName = \"{0}\")]", baseClassesArrayName);
+
+                // Write class definition
+                string baseTypeString = baseType.GetTypeString();
+
+                if (Symbol.HasVTable())
+                    baseTypeString += ", ICastableObject";
+                output.WriteLine(indentation, @"public partial class {0} {1} {2}", ClassName, !string.IsNullOrEmpty(baseTypeString) ? ":" : "", baseTypeString);
             }
             else
                 output.WriteLine(indentation, @"public static class {0}", ClassName);
@@ -804,6 +823,8 @@ namespace CsDebugScript.CodeGen.UserTypes
             if (baseType is MultiClassInheritanceTypeTree || baseType is SingleClassInheritanceWithInterfacesTypeTree)
             {
                 // Write all properties for getting base classes
+                string[] baseClassTypes = new string[baseClasses.Length];
+
                 for (int i = 0; i < baseClassesForProperties.Length; i++)
                 {
                     Symbol type = baseClassesForProperties[i];
@@ -823,6 +844,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                             if (field.ConstructorText.StartsWith("thisClass."))
                                 field.ConstructorText = field.ConstructorText.Replace(baseClassString, baseClassIndex.ToString());
+                            baseClassTypes[baseClassIndex] = field.FieldType;
                             break;
                         }
                     }
@@ -852,6 +874,20 @@ namespace CsDebugScript.CodeGen.UserTypes
                         output.WriteLine(--indentation, "}}");
                     }
                 }
+
+                // Write array of types for base classes
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append("public static System.Type[] ");
+                sb.Append(baseClassesArrayName);
+                sb.Append(" = new System.Type[] {{ ");
+                foreach (string baseClassType in baseClassTypes)
+                    if (!string.IsNullOrEmpty(baseClassType))
+                        sb.AppendFormat("typeof({0}), ", baseClassType);
+                    else
+                        sb.Append("null, ");
+                sb.Append("}};");
+                output.WriteLine(indentation, sb.ToString());
             }
 
             // Class end

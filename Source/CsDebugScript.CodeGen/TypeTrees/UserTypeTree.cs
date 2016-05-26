@@ -26,12 +26,13 @@ namespace CsDebugScript.CodeGen.TypeTrees
         /// <summary>
         /// Gets the string representing this type tree in C# code.
         /// </summary>
+        /// <param name="truncateNamespace">if set to <c>true</c> namespace will be truncated from generating type string.</param>
         /// <returns>
         /// The string representing this type tree in C# code.
         /// </returns>
-        public override string GetTypeString()
+        public override string GetTypeString(bool truncateNamespace = false)
         {
-            return UserType.FullClassName;
+            return truncateNamespace ? UserType.ClassName : UserType.FullClassName;
         }
 
         /// <summary>

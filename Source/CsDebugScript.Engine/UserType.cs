@@ -90,19 +90,18 @@ namespace CsDebugScript
         /// </summary>
         /// <typeparam name="T">The base user type which will be downcasted.</typeparam>
         /// <param name="userType">The user type.</param>
-        /// <returns>Downcasted .NET object.</returns>
-        public static UserType DowncastObject<T>(this T userType)
-            where T : UserType
+        /// <returns>Downcasted .NET object, but upcasted to the original user type.</returns>
+        public static T DowncastObject<T>(this T userType)
+            where T : UserType, ICastableObject
         {
-            DerivedClassAttribute[] attributes = UserTypeDelegates<T>.Instance.DerivedClassAttributes;
+            Dictionary<string, DerivedClassAttribute> attributes = UserTypeDelegates<T>.Instance.DerivedClassAttributesDictionary;
 
-            if (attributes.Length == 0)
+            if (attributes.Count == 0)
             {
                 throw new Exception(string.Format("Specified type {0} doesn't contain derived class attributes", typeof(T).Name));
             }
 
             Variable variable = userType.DowncastInterface();
-            Dictionary<string, DerivedClassAttribute> dict = attributes.ToDictionary(a => a.TypeName);
             CodeType originalCodeType = variable.GetCodeType();
             List<Tuple<CodeType, int>> types = new List<Tuple<CodeType, int>>();
 
@@ -122,7 +121,7 @@ namespace CsDebugScript
                     CodeType codeType = tuple.Item1;
                     DerivedClassAttribute attribute;
 
-                    if (dict.TryGetValue(codeType.Name, out attribute))
+                    if (attributes.TryGetValue(codeType.Name, out attribute))
                     {
                         // Check if we don't have top level code type
                         if (originalCodeType != codeType)
@@ -135,11 +134,13 @@ namespace CsDebugScript
                             variable = variable.CastAs(codeType);
                         }
 
-                        return (UserType)variable.CastAs(attribute.Type);
+                        UserType downcastedObject = (UserType)variable.CastAs(attribute.Type);
+
+                        return AsUpcast<T>(downcastedObject, (int)(userType.GetPointerAddress() - variable.GetPointerAddress()));
                     }
 
                     // Add base classes
-                    foreach (var t in codeType.InheritedClasses.Values)
+                    foreach (var t in codeType.InheritedClassesSorted)
                     {
                         newTypes.Add(Tuple.Create(t.Item1, offset + t.Item2));
                     }
@@ -293,6 +294,194 @@ namespace CsDebugScript
         }
 
 
+
+
+        /// <summary>
+        /// Does the same work as <code>is</code> operator but just for multi-class-inheritance objects used in scripts.
+        /// </summary>
+        /// <typeparam name="T">Type to do the check for.</typeparam>
+        /// <param name="userType">The user type.</param>
+        /// <returns><c>true</c> if object can be casted to the specified type.</returns>
+        public static bool Is<T>(this UserType userType)
+            where T : UserType
+        {
+            return As<T>(userType) != null;
+        }
+
+        /// <summary>
+        /// Does the same work as <code>as</code> operator but just for multi-class-inheritance objects used in scripts.
+        /// </summary>
+        /// <typeparam name="T">Type to do the cast to.</typeparam>
+        /// <param name="userType">The user type.</param>
+        /// <returns>Casted object, or null if object cannot be casted to the specified type.</returns>
+        public static T As<T>(this UserType userType)
+            where T : UserType
+        {
+            if (userType == null)
+            {
+                return null;
+            }
+
+            // Try to find going down
+            T result = AsDowncast<T>(userType);
+
+            // Try to find going up
+            if (result == null)
+            {
+                result = AsUpcast<T>(userType);
+            }
+
+            // Try to find going all the way down and then search up
+            if (result == null)
+            {
+                result = AsUpcast<T>(GetDowncast(userType));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Helper function for doing upcasting.
+        /// </summary>
+        /// <typeparam name="T">Type to do the cast to.</typeparam>
+        /// <param name="userType">The user type to be upcasted.</param>
+        /// <param name="offsetToFollow">The offset to follow when doing upcasting. If less than 0, do searches through all base classes.</param>
+        private static T AsUpcast<T>(UserType userType, int offsetToFollow = -1)
+            where T : UserType
+        {
+            // Check if this C# inheritance contains requested type
+            T result = userType as T;
+
+            if (result != null)
+            {
+                return result;
+            }
+
+            // Get all types that have base classes
+            Type type = userType.GetType();
+            var userTypeDelegates = UserTypeDelegates.Delegates[type];
+            Tuple<string, Type[]>[] typeArrays = userTypeDelegates.BaseClassesCacheForCasting;
+
+            // Do downcasting over types that have base classes
+            CodeType codeType = userType.GetCodeType();
+            int baseClassOffset = 0;
+
+            if (codeType.IsPointer)
+                codeType = codeType.ElementType;
+
+            foreach (Tuple<string, Type[]> typeTuple in typeArrays)
+            {
+                string ownerCodeTypeString = typeTuple.Item1;
+                Type[] mciAuxiliaryClassTypes = typeTuple.Item2;
+                CodeType nextCodeType = null;
+
+                // Move code type to the correct user type
+                while (!codeType.IsFor(ownerCodeTypeString))
+                {
+                    var tuple = codeType.InheritedClassesSorted[0];
+
+                    baseClassOffset += tuple.Item2;
+                    codeType = tuple.Item1;
+                }
+
+                // If we are following the offset, find base class index to follow
+                int selectedIndex = -1;
+                Tuple<CodeType, int>[] inheritedClasses = codeType.InheritedClassesSorted;
+
+                if (offsetToFollow >= 0)
+                {
+                    for (selectedIndex = 0; selectedIndex < inheritedClasses.Length; selectedIndex++)
+                        if (baseClassOffset + inheritedClasses[selectedIndex].Item2 > offsetToFollow)
+                            break;
+                    selectedIndex--;
+                }
+
+                // Go over base classes and try to find the correct one
+                for (int i = 0; i < mciAuxiliaryClassTypes.Length; i++)
+                {
+                    Type mciAuxiliaryClassType = mciAuxiliaryClassTypes[i];
+
+                    if (mciAuxiliaryClassType != null)
+                    {
+                        if (offsetToFollow < 0 || selectedIndex == i)
+                        {
+                            object baseClass = userType.GetBaseClass(i, codeType, baseClassOffset, mciAuxiliaryClassType);
+
+                            result = AsUpcast<T>((UserType)baseClass, offsetToFollow < 0 ? offsetToFollow : offsetToFollow - baseClassOffset - inheritedClasses[i].Item2);
+                            if (result != null)
+                            {
+                                return result;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var tuple = codeType.InheritedClassesSorted[i];
+
+                        nextCodeType = tuple.Item1;
+                        baseClassOffset += tuple.Item2;
+                    }
+                }
+
+                codeType = nextCodeType;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Helper function for doing downcasting.
+        /// </summary>
+        /// <typeparam name="T">Type to do the cast to.</typeparam>
+        /// <param name="userType">The user type to be downcasted.</param>
+        private static T AsDowncast<T>(UserType userType)
+            where T : UserType
+        {
+            while (userType != null)
+            {
+                T result = userType as T;
+
+                if (result != null)
+                {
+                    return result;
+                }
+
+                IMultiClassInheritance mc = userType as IMultiClassInheritance;
+
+                userType = mc?.DowncastParent;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the full downcast object by going through multi-class-inheritance classes.
+        /// </summary>
+        /// <param name="userType">The user type that has multi-class-inheritance.</param>
+        /// <returns>Fully downcasted C# object.</returns>
+        public static UserType GetDowncast(this UserType userType)
+        {
+            IMultiClassInheritance mci = userType as IMultiClassInheritance;
+
+            while (mci != null)
+            {
+                userType = mci.DowncastParent as UserType;
+                mci = userType as IMultiClassInheritance;
+            }
+
+            return userType;
+        }
+
+        /// <summary>
+        /// Gets the type of the full downcast object. See <see cref="GetDowncast(UserType)"/> for more info.
+        /// </summary>
+        /// <param name="userType">The user type that has multi-class-inheritance.</param>
+        /// <returns>Type of the fully downcasted C# object.</returns>
+        public static Type GetDowncastType(this UserType userType)
+        {
+            return GetDowncast(userType)?.GetType();
+        }
+
         /// <summary>
         /// Cast Variable to NakedPointer.
         /// </summary>
@@ -371,7 +560,7 @@ namespace CsDebugScript
                 variable = variable.CastAs(elementCodeType);
             }
 
-            return variable.CastAs<T>();
+            return UserTypeDelegates<T>.Instance.Downcaster(variable);
         }
     }
 
@@ -956,6 +1145,22 @@ namespace CsDebugScript
             }
 
             return Variable.CreatePointerNoCast(classCodeType.GetClassFieldType(classFieldName), pointer, classFieldName).CastAs<T>();
+        }
+
+        /// <summary>
+        /// Gets the variable that is casted to base class.
+        /// </summary>
+        /// <param name="baseClassIndex">Index of the base class by looking at the offset.</param>
+        /// <param name="codeType">The current code type.</param>
+        /// <param name="offset">The current code type offset.</param>
+        /// <param name="mciAuxiliaryClass">The multi-class-inheritance auxiliary class type.</param>
+        internal object GetBaseClass(int baseClassIndex, CodeType codeType, int offset, Type mciAuxiliaryClass)
+        {
+            var tuple = codeType.InheritedClassesSorted[baseClassIndex];
+            object instance = GetBaseClass(Tuple.Create(tuple.Item1, tuple.Item2 + offset)).CastAs(mciAuxiliaryClass);
+
+            ((IMultiClassInheritance)instance).DowncastParent = this;
+            return instance;
         }
     }
 }

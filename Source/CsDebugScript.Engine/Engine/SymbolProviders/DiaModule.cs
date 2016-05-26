@@ -601,7 +601,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
                 type = type.type;
 
-            if (TypeNameMatches(type.name, className))
+            if (CodeType.TypeNameMatches(type.name, className))
             {
                 return Tuple.Create(type.symIndexId, 0);
             }
@@ -619,7 +619,7 @@ namespace CsDebugScript.Engine.SymbolProviders
                 {
                     int offset = tuple.Item2 + b.offset;
 
-                    if (TypeNameMatches(b.name, className))
+                    if (CodeType.TypeNameMatches(b.name, className))
                     {
                         return Tuple.Create(GetTypeId(module, b.name), offset);
                     }
@@ -629,21 +629,6 @@ namespace CsDebugScript.Engine.SymbolProviders
             }
 
             throw new Exception("Base class not found");
-        }
-
-        private static bool TypeNameMatches(string name, string className)
-        {
-            if (name == className)
-                return true;
-
-            // TODO: Do better matching of generics type
-            if (className.EndsWith("<>"))
-            {
-                if (name.StartsWith(className.Substring(0, className.Length - 1)))
-                    return true;
-            }
-
-            return false;
         }
 
         /// <summary>
