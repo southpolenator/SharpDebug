@@ -438,6 +438,13 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
             }
 
+            // Do downcasting if field is pointer and has vtable
+            UserTypeTree userType = fieldType as UserTypeTree;
+            bool isEmbedded = field.Type.Tag != SymTagEnum.SymTagPointerType;
+
+            if (userType != null && !(userType.UserType is EnumUserType) && !isEmbedded && userType.UserType.Symbol.HasVTable() && userType.UserType.DerivedClasses.Count > 0)
+                constructorText += ".DowncastObject()";
+
             // TODO: More extensive checks are needed for property name. We must not create duplicate after adding '_'. For example: class has 'in' and '_in' fields.
             fieldName = UserTypeField.GetPropertyName(fieldName, this);
 
