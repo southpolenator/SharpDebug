@@ -99,6 +99,11 @@ namespace CsDebugScript
         public static T DowncastObject<T>(this T userType)
             where T : UserType, ICastableObject
         {
+            if (userType == null)
+            {
+                return null;
+            }
+
             Dictionary<string, DerivedClassAttribute> attributes = UserTypeDelegates<T>.Instance.DerivedClassAttributesDictionary;
 
             if (attributes.Count == 0)
