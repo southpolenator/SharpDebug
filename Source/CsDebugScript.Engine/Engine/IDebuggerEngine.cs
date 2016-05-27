@@ -254,10 +254,11 @@ namespace CsDebugScript.Engine
         /// <summary>
         /// Finds memory range where the specified address belongs to.
         /// </summary>
+        /// <param name="process">The process.</param>
         /// <param name="address">The address.</param>
         /// <param name="baseAddress">The base address.</param>
         /// <param name="regionSize">Size of the region.</param>
-        void QueryVirtual(ulong address, out ulong baseAddress, out ulong regionSize);
+        void QueryVirtual(Process process, ulong address, out ulong baseAddress, out ulong regionSize);
 
         /// <summary>
         /// Gets the module version.

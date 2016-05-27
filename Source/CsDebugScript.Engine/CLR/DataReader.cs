@@ -337,7 +337,7 @@ namespace CsDebugScript.CLR
                 if (dumpReader != null)
                     dumpReader.GetMemoryRange(addr, out baseAddress, out regionSize);
                 else
-                    Context.Debugger.QueryVirtual(addr, out baseAddress, out regionSize);
+                    Context.Debugger.QueryVirtual(Process, addr, out baseAddress, out regionSize);
                 vq = new VirtualQueryData(baseAddress, regionSize);
                 return true;
             }

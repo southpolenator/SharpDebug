@@ -1,7 +1,6 @@
 ﻿using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
 using CsDebugScript.Engine.Marshaling;
 using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
 using DbgEngManaged;
@@ -1046,16 +1045,22 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// Finds memory range where the specified address belongs to.
         /// </summary>
+        /// <param name="process">The process.</param>
         /// <param name="address">The address.</param>
         /// <param name="baseAddress">The base address.</param>
         /// <param name="regionSize">Size of the region.</param>
-        public void QueryVirtual(ulong address, out ulong baseAddress, out ulong regionSize)
+        public void QueryVirtual(Process process, ulong address, out ulong baseAddress, out ulong regionSize)
         {
-            var memoryInfo = DataSpaces.QueryVirtual(address);
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
+            {
+                var memoryInfo = DataSpaces.QueryVirtual(address);
 
-            baseAddress = memoryInfo.BaseAddress;
-            regionSize = memoryInfo.RegionSize;
+                baseAddress = memoryInfo.BaseAddress;
+                regionSize = memoryInfo.RegionSize;
+            }
         }
+
+
 
         /// <summary>
         /// Gets the module version.
