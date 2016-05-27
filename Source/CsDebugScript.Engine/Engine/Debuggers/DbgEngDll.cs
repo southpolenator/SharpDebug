@@ -1060,7 +1060,44 @@ namespace CsDebugScript.Engine.Debuggers
             }
         }
 
+        /// <summary>
+        /// Gets the all memory regions available in the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <returns>Array of <see cref="MemoryRegion"/> objects available in the specified process</returns>
+        public MemoryRegion[] GetMemoryRegions(Process process)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
+            {
+                List<MemoryRegion> regionsList = new List<MemoryRegion>();
+                ulong currentAddress = 0, baseAddress, regionSize;
 
+                while (true)
+                {
+                    currentAddress = DataSpaces.GetNextDifferentlyValidOffsetVirtual(currentAddress);
+                    if (currentAddress == 0)
+                    {
+                        break;
+                    }
+
+                    QueryVirtual(process, currentAddress, out baseAddress, out regionSize);
+                    regionsList.Add(new MemoryRegion { BaseAddress = baseAddress, RegionSize = regionSize });
+                }
+
+                // Merge consecutive regions
+                MemoryRegion[] regions = regionsList.ToArray();
+
+                int newEnd = 0;
+                for (int i = 1; i < regions.Length; i++)
+                    if (regions[i].MemoryStart == regions[newEnd].MemoryEnd)
+                        regions[newEnd].MemoryEnd = regions[i].MemoryEnd;
+                    else
+                        regions[++newEnd] = regions[i];
+                newEnd++;
+                Array.Resize(ref regions, newEnd);
+                return regions;
+            }
+        }
 
         /// <summary>
         /// Gets the module version.

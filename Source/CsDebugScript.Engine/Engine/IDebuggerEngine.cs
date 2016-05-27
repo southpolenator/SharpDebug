@@ -261,6 +261,13 @@ namespace CsDebugScript.Engine
         void QueryVirtual(Process process, ulong address, out ulong baseAddress, out ulong regionSize);
 
         /// <summary>
+        /// Gets the all memory regions available in the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <returns>Array of <see cref="MemoryRegion"/> objects available in the specified process</returns>
+        MemoryRegion[] GetMemoryRegions(Process process);
+
+        /// <summary>
         /// Gets the module version.
         /// </summary>
         /// <param name="module">The module.</param>

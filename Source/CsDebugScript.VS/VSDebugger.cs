@@ -358,6 +358,11 @@ namespace CsDebugScript.VS
             throw new NotImplementedException();
         }
 
+        public MemoryRegion[] GetMemoryRegions(Process process)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Reads the memory from the specified process.
         /// </summary>

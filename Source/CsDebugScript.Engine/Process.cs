@@ -84,6 +84,11 @@ namespace CsDebugScript
         private SimpleCache<CsDebugScript.CLR.AppDomain> currentAppDomain;
 
         /// <summary>
+        /// The cache of memory regions
+        /// </summary>
+        private SimpleCache<MemoryRegion[]> memoryRegions;
+
+        /// <summary>
         /// The ANSI string cache
         /// </summary>
         private DictionaryCache<Tuple<ulong, int>, string> ansiStringCache;
@@ -134,6 +139,13 @@ namespace CsDebugScript
                 {
                     return null;
                 }
+            });
+            memoryRegions = SimpleCache.Create(() =>
+            {
+                if (DumpFileMemoryReader != null)
+                    return DumpFileMemoryReader.GetMemoryRanges();
+                else
+                    return Context.Debugger.GetMemoryRegions(this);
             });
             TypeToUserTypeDescription = new DictionaryCache<Type, UserTypeDescription[]>(GetUserTypeDescription);
             ansiStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadAnsiString);
@@ -369,6 +381,17 @@ namespace CsDebugScript
             get
             {
                 return effectiveProcessorType.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the all memory regions available in the this process.
+        /// </summary>
+        public MemoryRegion[] MemoryRegions
+        {
+            get
+            {
+                return memoryRegions.Value;
             }
         }
 

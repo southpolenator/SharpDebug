@@ -132,6 +132,7 @@
     <Compile Include="Exceptions\WrongCodeTypeException.cs" />
     <Compile Include="ICastableObject.cs" />
     <Compile Include="IMultiClassInheritance.cs" />
+    <Compile Include="MemoryRegion.cs" />
     <Compile Include="Module.cs" />
     <Compile Include="NakedPointer.cs" />
     <Compile Include="NamespaceDoc.cs" />

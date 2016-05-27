@@ -242,6 +242,15 @@ namespace CsDebugScript.Engine.Utility
             rangeSize = location.MemoryEnd - location.MemoryStart;
         }
 
+        internal MemoryRegion[] GetMemoryRanges()
+        {
+            MemoryRegion[] regions = new MemoryRegion[ranges.Length];
+
+            for (int i = 0; i < regions.Length; i++)
+                regions[i] = new MemoryRegion { BaseAddress = ranges[i].MemoryStart, MemoryEnd = ranges[i].MemoryEnd };
+            return regions;
+        }
+
         private MemoryLocation FindMemoryLocation(ulong address)
         {
             var location = ranges[previousRange];
