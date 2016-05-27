@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
+using CsDebugScript.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -98,7 +99,7 @@ namespace CsDebugScript
         {
             if (!codeType.IsPointer)
             {
-                throw new Exception("You cannot assign data to non-pointer type variable. Type was " + codeType);
+                throw new WrongCodeTypeException(codeType, nameof(codeType), "pointer");
             }
 
             this.data.Value = data;

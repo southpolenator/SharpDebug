@@ -815,9 +815,7 @@ namespace CsDebugScript
                 for (int i = 0; i < elements; i++)
                     array[i] = (char)ReadUshort(buffer, offset + 2 * i);
             else
-            {
-                throw new Exception("Unsupported char size: " + charSize);
-            }
+                throw new ArgumentOutOfRangeException(nameof(charSize), "Unsupported char size: " + charSize);
             return array;
         }
 
@@ -840,7 +838,7 @@ namespace CsDebugScript
                 for (int i = 0; i < elements; i++, offset += 8)
                     array[i] = ReadUlong(buffer, offset);
             else
-                throw new Exception("Unsupported pointer size");
+                throw new ArgumentOutOfRangeException(nameof(pointerSize), "Unsupported pointer size: " + pointerSize);
             return array;
         }
 
@@ -1076,7 +1074,7 @@ namespace CsDebugScript
             else if (pointerSize == 8)
                 return ReadUlong(buffer, offset);
             else
-                throw new Exception("Unsupported pointer size");
+                throw new ArgumentOutOfRangeException(nameof(pointerSize), "Unsupported pointer size: " + pointerSize);
         }
 
         /// <summary>
