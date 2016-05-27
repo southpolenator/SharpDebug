@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Collections.Generic;
+using CsDebugScript.Exceptions;
 
 namespace CsDebugScript.Engine.Utility
 {
@@ -86,11 +87,6 @@ namespace CsDebugScript.Engine.Utility
                 buckets = element.buckets;
                 dispose = false;
             }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine(ex);
-                throw;
-            }
             finally
             {
                 if (dispose)
@@ -157,9 +153,14 @@ namespace CsDebugScript.Engine.Utility
         {
             var position = FindDumpPositionAndSize(address);
 
+            if (size < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size), "size cannot be less than 0");
+            }
+
             if ((ulong)size > position.size)
             {
-                throw new Exception("Reading more that it is found");
+                throw new NotAllMemoryCanBeReadException(address, (uint)size, position.size);
             }
 
             return new MemoryBuffer(basePointer + position.position, size);
@@ -274,7 +275,7 @@ namespace CsDebugScript.Engine.Utility
                 }
             }
 
-            throw new ArgumentOutOfRangeException(nameof(address));
+            throw new InvalidMemoryAddressException(address);
         }
 
         private DumpPosition FindDumpPositionAndSize(ulong address)
