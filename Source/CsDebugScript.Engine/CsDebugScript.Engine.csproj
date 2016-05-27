@@ -127,6 +127,7 @@
     <Compile Include="DebugEventInfo.cs" />
     <Compile Include="Debugger.cs" />
     <Compile Include="CodeType.cs" />
+    <Compile Include="Exceptions\WrongCodeTypeException.cs" />
     <Compile Include="ICastableObject.cs" />
     <Compile Include="IMultiClassInheritance.cs" />
     <Compile Include="Module.cs" />
