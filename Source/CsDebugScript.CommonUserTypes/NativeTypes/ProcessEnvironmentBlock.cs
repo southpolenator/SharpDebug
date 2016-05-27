@@ -9,12 +9,12 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
     [UserType(ModuleName = "ntdll", TypeName = "_PEB")]
     [UserType(ModuleName = "nt", TypeName = "_PEB")]
     [UserType(ModuleName = "wow64", TypeName = "_PEB")]
-    public class ProcessEnvironmentBlock : UserType
+    public class ProcessEnvironmentBlock : DynamicSelfUserType
     {
         /// <summary>
         /// Class that represents ProcessParameters field inside PEB.
         /// </summary>
-        public class ProcessParametersStructure : Variable
+        public class ProcessParametersStructure : DynamicSelfVariable
         {
             /// <summary>
             /// Initializes a new instance of the <see cref="ProcessParametersStructure"/> class.
@@ -32,7 +32,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
             {
                 get
                 {
-                    return TryExecute(() => GetField("CommandLine").GetField("Buffer").ToString());
+                    return TryExecute(() => self.CommandLine.Buffer.ToString());
                 }
             }
 
@@ -43,7 +43,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
             {
                 get
                 {
-                    return TryExecute(() => GetField("ImagePathName").GetField("Buffer").ToString());
+                    return TryExecute(() => self.ImagePathName.Buffer.ToString());
                 }
             }
 
@@ -56,8 +56,8 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
                 {
                     return TryExecute(() =>
                     {
-                        ulong size = (ulong)GetField("EnvironmentSize");
-                        CodePointer<char> s = new CodePointer<char>(GetField("Environment").GetPointerAddress());
+                        ulong size = (ulong)self.EnvironmentSize;
+                        CodePointer<char> s = new CodePointer<char>(self.Environment.GetPointerAddress());
 
                         return s.ReadUnicodeStringByteLength(size).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
                     });
@@ -101,7 +101,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
         {
             get
             {
-                return TryExecute(() => (bool)GetField("BeingDebugged"));
+                return TryExecute(() => (bool)self.BeingDebugged);
             }
         }
 
@@ -112,7 +112,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
         {
             get
             {
-                return TryExecute(() => new ProcessParametersStructure(GetField("ProcessParameters")));
+                return TryExecute(() => new ProcessParametersStructure(self.ProcessParameters));
             }
         }
 
@@ -123,7 +123,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
         {
             get
             {
-                return TryExecute(() => GetField("ProcessHeap"));
+                return TryExecute(() => self.ProcessHeap);
             }
         }
 
@@ -136,7 +136,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
             {
                 return TryExecute(() =>
                 {
-                    Variable heaps = GetField("ProcessHeaps");
+                    Variable heaps = self.ProcessHeaps;
                     List<Variable> result = new List<Variable>();
 
                     for (int i = 0; !heaps.GetArrayElement(i).IsNullPointer(); i++)
