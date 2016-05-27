@@ -15,6 +15,7 @@ namespace CsDebugScript.Exceptions
         /// <param name="requestedSize">The requested size.</param>
         /// <param name="availableSize">The available size.</param>
         public NotAllMemoryCanBeReadException(ulong address, uint requestedSize, uint availableSize)
+            : base(string.Format("Not all memory can be read at address (0x{0:X}). Requested memory block ({1}) is larger than available memory block ({2}).", address, requestedSize, availableSize))
         {
             Address = address;
             RequestedSize = requestedSize;
