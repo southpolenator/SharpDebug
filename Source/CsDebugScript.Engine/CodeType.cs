@@ -425,6 +425,18 @@ namespace CsDebugScript
         /// <returns>CodeType from specified name and module</returns>
         public static CodeType Create(string codeTypeName, Module module = null)
         {
+            return Create(module != null ? module.Process : Process.Current, codeTypeName, module);
+        }
+
+        /// <summary>
+        /// Creates the code type from specified name and module. If name contains module!, module can be omitted.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="codeTypeName">The code type name.</param>
+        /// <param name="module">The module.</param>
+        /// <returns>CodeType from specified name and module</returns>
+        public static CodeType Create(Process process, string codeTypeName, Module module = null)
+        {
             int moduleIndex = codeTypeName.IndexOf('!');
 
             if (moduleIndex > 0)
@@ -438,7 +450,7 @@ namespace CsDebugScript
 
                 if (module == null && string.IsNullOrEmpty(moduleName) == false)
                 {
-                    module = Process.Current.ModulesByName[moduleName];
+                    module = process.ModulesByName[moduleName];
                 }
                 else
                 {
@@ -462,11 +474,23 @@ namespace CsDebugScript
         /// <returns>CodeType from specified name and module</returns>
         public static CodeType Create(params string[] codeTypeNames)
         {
+            return Create(Process.Current, codeTypeNames);
+        }
+
+        /// <summary>
+        /// Creates the code type from the list containing specified module name and type.
+        /// First successful created code type is returned.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="codeTypeNames">The list of code type names in form "module!codetype".</param>
+        /// <returns>CodeType from specified name and module</returns>
+        public static CodeType Create(Process process, params string[] codeTypeNames)
+        {
             foreach (var codeType in codeTypeNames)
             {
                 try
                 {
-                    return Create(codeType);
+                    return Create(process, codeType);
                 }
                 catch
                 {

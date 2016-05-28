@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes
+namespace CsDebugScript.CommonUserTypes.NativeTypes.Windows
 {
     /// <summary>
     /// Class that represents PEB (Process environment block).
@@ -17,7 +17,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
         public class ProcessParametersStructure : DynamicSelfVariable
         {
             /// <summary>
-            /// Initializes a new instance of the <see cref="ProcessParametersStructure"/> class.
+            /// Initializes a new instance of the <see cref="ProcessParametersStructure" /> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
             public ProcessParametersStructure(Variable variable)
@@ -66,12 +66,24 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
         }
 
         /// <summary>
+        /// The heap code type
+        /// </summary>
+        private CodeType heapCodeType;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ProcessEnvironmentBlock"/> class.
         /// </summary>
         /// <param name="variable">The variable that represents PEB.</param>
         public ProcessEnvironmentBlock(Variable variable)
             : base(variable)
         {
+            try
+            {
+                heapCodeType = Heap.GetCodeType(variable.GetCodeType().Module.Process);
+            }
+            catch
+            {
+            }
         }
 
         /// <summary>
@@ -119,34 +131,45 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
         /// <summary>
         /// Gets the process heap.
         /// </summary>
-        public Variable ProcessHeap
+        public Heap ProcessHeap
         {
             get
             {
-                return TryExecute(() => self.ProcessHeap);
+                return TryExecute(() => CastHeap(self.ProcessHeap));
             }
         }
 
         /// <summary>
         /// Gets the process heaps.
         /// </summary>
-        public Variable[] ProcessHeaps
+        public Heap[] ProcessHeaps
         {
             get
             {
                 return TryExecute(() =>
                 {
                     Variable heaps = self.ProcessHeaps;
-                    List<Variable> result = new List<Variable>();
+                    List<Heap> result = new List<Heap>();
 
                     for (int i = 0; !heaps.GetArrayElement(i).IsNullPointer(); i++)
                     {
-                        result.Add(heaps.GetArrayElement(i));
+                        result.Add(CastHeap(heaps.GetArrayElement(i)));
                     }
 
                     return result.ToArray();
                 });
             }
+        }
+
+        /// <summary>
+        /// Casts the variable into the heap user type.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        private Heap CastHeap(Variable variable)
+        {
+            if (heapCodeType != null)
+                variable = variable.CastAs(heapCodeType);
+            return new Heap(variable);
         }
 
         /// <summary>
