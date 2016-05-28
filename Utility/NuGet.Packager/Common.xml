@@ -1,0 +1,11 @@
+﻿<?xml version="1.0"?>
+<metadata>
+  <authors>Vuk Jovanovic</authors>
+  <owners>Vuk Jovanovic</owners>
+  <projectUrl>https://github.com/southpolenator/WinDbgCs</projectUrl>
+  <iconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</iconUrl>
+  <requireLicenseAcceptance>false</requireLicenseAcceptance>
+  <licenseUrl>https://github.com/southpolenator/WinDbgCs/blob/master/license.txt</licenseUrl>
+  <copyright>Copyright  2015</copyright>
+  <tags>WinDbg C# dump processing</tags>
+</metadata>

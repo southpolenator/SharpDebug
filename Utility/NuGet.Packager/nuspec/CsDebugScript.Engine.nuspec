@@ -1,0 +1,32 @@
+﻿<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>CsDebugScript.Engine</id>
+    <version>$version$</version>
+    <title>WinDbgCs</title>
+    <authors>$authors$</authors>
+    <owners>$owners$</owners>
+    <releaseNotes>$releaseNotes$</releaseNotes>
+    <description>Engine for debugger scripting. Natively it uses DbgEng.dll as debugger, but other nugets can add more debuggers.</description>
+    <summary>Engine for debugger scripting. Natively it uses DbgEng.dll as debugger, but other nugets can add more debuggers.</summary>
+    <language>en-US</language>
+    <projectUrl>$projectUrl$</projectUrl>
+    <iconUrl>$iconUrl$</iconUrl>
+    <requireLicenseAcceptance>$requireLicenseAcceptance$</requireLicenseAcceptance>
+    <licenseUrl>$licenseUrl$</licenseUrl>
+    <copyright>$copyright$</copyright>
+    <dependencies>
+      <dependency id="Microsoft.CodeAnalysis.Analyzers" version="1.1.0" />
+      <dependency id="Microsoft.CodeAnalysis.Common" version="1.1.1" />
+      <dependency id="Microsoft.CodeAnalysis.CSharp" version="1.1.1" />
+    </dependencies>
+    <tags>$tags$</tags>
+  </metadata>
+  <files>
+    <file src="CsDebugScript.Engine.dll" target="lib\dotnet" />
+    <file src="CsDebugScript.Engine.xml" target="lib\dotnet" />
+    <file src="CsDebugScript.Engine.pdb" target="lib\dotnet" />
+    <!-- Once all fixes are inside ClrMD, we should remove it from the package -->
+    <file src="Microsoft.Diagnostics.Runtime.dll" target="lib\dotnet" />
+  </files>
+</package>
