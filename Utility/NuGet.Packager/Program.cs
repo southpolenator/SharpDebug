@@ -21,7 +21,7 @@ namespace NuGet.Packager
             Console.WriteLine("Processing");
             foreach (string file in Directory.EnumerateFiles(Path.GetFullPath("nuspec")))
             {
-                Console.WriteLine("  {0}.nuget", Path.GetFileNameWithoutExtension(file));
+                Console.WriteLine("  {0}", Path.GetFileNameWithoutExtension(file));
                 CreateNuget(file, variables);
             }
         }
