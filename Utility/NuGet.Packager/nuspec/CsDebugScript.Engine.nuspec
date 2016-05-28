@@ -3,7 +3,7 @@
   <metadata>
     <id>CsDebugScript.Engine</id>
     <version>$version$</version>
-    <title>WinDbgCs</title>
+    <title>CsDebugScript.Engine</title>
     <authors>$authors$</authors>
     <owners>$owners$</owners>
     <releaseNotes>$releaseNotes$</releaseNotes>
@@ -16,9 +16,8 @@
     <licenseUrl>$licenseUrl$</licenseUrl>
     <copyright>$copyright$</copyright>
     <dependencies>
-      <dependency id="Microsoft.CodeAnalysis.Analyzers" version="1.1.0" />
-      <dependency id="Microsoft.CodeAnalysis.Common" version="1.1.1" />
-      <dependency id="Microsoft.CodeAnalysis.CSharp" version="1.1.1" />
+      <dependency id="CsDebugScript.DbgEng" version="$version$" />
+      <dependency id="CsDebugScript.DiaHelpers" version="$version$" />
     </dependencies>
     <tags>$tags$</tags>
   </metadata>

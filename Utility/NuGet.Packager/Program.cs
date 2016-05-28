@@ -14,7 +14,7 @@ namespace NuGet.Packager
         {
             Dictionary<string, string> variables = ExtractCommonVariables();
 
-            variables.Add("version", FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion);
+            variables.Add("version", FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion + "-beta");
             Console.WriteLine("Variables:");
             foreach (var t in variables)
                 Console.WriteLine("  {0} = \"{1}\"", t.Key, t.Value);
