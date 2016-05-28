@@ -7,7 +7,7 @@ namespace CsDebugScript.Engine.Test
 {
     class Options
     {
-        [Option('d', "dump", Default = "NativeDumpTest.dmp", HelpText = "Path to memory dump file that will be debugged")]
+        [Option('d', "dump", Default = "NativeDumpTest.x64.dmp", HelpText = "Path to memory dump file that will be debugged")]
         public string DumpPath { get; set; }
 
         [Option('p', "symbol-path", Default = @"srv*;.\", HelpText = "Symbol path to be set in debugger")]
@@ -50,7 +50,7 @@ namespace CsDebugScript.Engine.Test
 
             using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
             {
-                Executor.Execute(@"..\..\..\..\samples\script.csx");
+                Executor.Execute(@"..\..\..\samples\script.csx");
             }
         }
     }

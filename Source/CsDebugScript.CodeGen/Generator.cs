@@ -432,7 +432,7 @@ namespace CsDebugScript.CodeGen
                     Path.GetFileNameWithoutExtension(xmlConfig.GeneratedAssemblyName),
                     syntaxTrees: syntaxTrees,
                     references: references,
-                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, platform: Platform.X64));
+                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, platform: Platform.AnyCpu));
 
                 logger.WriteLine("Syntax trees: {0}", syntaxTrees.Count);
 
