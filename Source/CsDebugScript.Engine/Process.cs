@@ -89,6 +89,11 @@ namespace CsDebugScript
         private SimpleCache<MemoryRegion[]> memoryRegions;
 
         /// <summary>
+        /// The cache of memory region finder
+        /// </summary>
+        private SimpleCache<MemoryRegionFinder> memoryRegionFinder;
+
+        /// <summary>
         /// The ANSI string cache
         /// </summary>
         private DictionaryCache<Tuple<ulong, int>, string> ansiStringCache;
@@ -147,6 +152,7 @@ namespace CsDebugScript
                 else
                     return Context.Debugger.GetMemoryRegions(this);
             });
+            memoryRegionFinder = SimpleCache.Create(() => new MemoryRegionFinder(MemoryRegions));
             TypeToUserTypeDescription = new DictionaryCache<Type, UserTypeDescription[]>(GetUserTypeDescription);
             ansiStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadAnsiString);
             unicodeStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadUnicodeString);
@@ -462,6 +468,16 @@ namespace CsDebugScript
             }
 
             throw new ArgumentException("Global variable wasn't found, name: " + name);
+        }
+
+        /// <summary>
+        /// Finds the index of memory region where the specified address is located or -1 if not found.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <returns>The index of memory region where the specified address is located or -1 if not found.</returns>
+        public int FindMemoryRegion(ulong address)
+        {
+            return memoryRegionFinder.Value.Find(address);
         }
 
         /// <summary>
