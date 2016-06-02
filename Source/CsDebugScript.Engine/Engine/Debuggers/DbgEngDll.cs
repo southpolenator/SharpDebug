@@ -1,8 +1,8 @@
 ﻿using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
 using CsDebugScript.Engine.Marshaling;
 using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
+using CsDebugScript.Exceptions;
 using DbgEngManaged;
 using System;
 using System.Collections.Generic;
@@ -315,24 +315,31 @@ namespace CsDebugScript.Engine.Debuggers
         /// </returns>
         public MemoryBuffer ReadMemory(Process process, ulong address, uint size)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
+            try
             {
-                IntPtr buffer = Marshal.AllocHGlobal((int)size);
-                uint read;
-
-                try
+                using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
                 {
-                    DataSpaces.ReadVirtual(address, buffer, size, out read);
+                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                    uint read;
 
-                    byte[] bytes = new byte[size];
+                    try
+                    {
+                        DataSpaces.ReadVirtual(address, buffer, size, out read);
 
-                    Marshal.Copy(buffer, bytes, 0, (int)size);
-                    return new MemoryBuffer(bytes);
+                        byte[] bytes = new byte[size];
+
+                        Marshal.Copy(buffer, bytes, 0, (int)size);
+                        return new MemoryBuffer(bytes);
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(buffer);
+                    }
                 }
-                finally
-                {
-                    Marshal.FreeHGlobal(buffer);
-                }
+            }
+            catch (Exception)
+            {
+                throw new InvalidMemoryAddressException(address);
             }
         }
 
@@ -893,42 +900,49 @@ namespace CsDebugScript.Engine.Debuggers
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public string ReadAnsiString(Process process, ulong address, int length = -1)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
+            try
             {
-                bool readAll = true;
-
-                if (length < 0)
+                using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
                 {
-                    readAll = false;
-                    length = (int)Constants.MaxStringReadLength;
-                }
+                    bool readAll = true;
 
-                uint byteLength;
-                StringBuilder sb = new StringBuilder(length);
-
-
-                if (readAll)
-                {
-                    while (length > 0)
+                    if (length < 0)
                     {
-                        StringBuilder temp = new StringBuilder(length);
+                        readAll = false;
+                        length = (int)Constants.MaxStringReadLength;
+                    }
 
-                        DataSpaces.ReadMultiByteStringVirtual(address, (uint)temp.Capacity, temp, (uint)temp.Capacity, out byteLength);
-                        sb.Append(temp);
-                        length -= (int)byteLength;
-                        if (length > 0)
+                    uint byteLength;
+                    StringBuilder sb = new StringBuilder(length);
+
+
+                    if (readAll)
+                    {
+                        while (length > 0)
                         {
-                            address += byteLength;
-                            sb.Append('\0');
+                            StringBuilder temp = new StringBuilder(length);
+
+                            DataSpaces.ReadMultiByteStringVirtual(address, (uint)temp.Capacity, temp, (uint)temp.Capacity, out byteLength);
+                            sb.Append(temp);
+                            length -= (int)byteLength;
+                            if (length > 0)
+                            {
+                                address += byteLength;
+                                sb.Append('\0');
+                            }
                         }
                     }
-                }
-                else
-                {
-                    DataSpaces.ReadMultiByteStringVirtual(address, (uint)sb.Capacity, sb, (uint)sb.Capacity, out byteLength);
-                }
+                    else
+                    {
+                        DataSpaces.ReadMultiByteStringVirtual(address, (uint)sb.Capacity, sb, (uint)sb.Capacity, out byteLength);
+                    }
 
-                return sb.ToString();
+                    return sb.ToString();
+                }
+            }
+            catch (Exception)
+            {
+                throw new InvalidMemoryAddressException(address);
             }
         }
 
@@ -940,41 +954,48 @@ namespace CsDebugScript.Engine.Debuggers
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public string ReadUnicodeString(Process process, ulong address, int length = -1)
         {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
+            try
             {
-                bool readAll = true;
-
-                if (length < 0)
+                using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
                 {
-                    readAll = false;
-                    length = (int)Constants.MaxStringReadLength;
-                }
+                    bool readAll = true;
 
-                uint byteLength = 0;
-                StringBuilder sb = new StringBuilder(length);
-
-                if (readAll)
-                {
-                    while (length > 0)
+                    if (length < 0)
                     {
-                        StringBuilder temp = new StringBuilder(length);
+                        readAll = false;
+                        length = (int)Constants.MaxStringReadLength;
+                    }
 
-                        DataSpaces.ReadUnicodeStringVirtualWide(address, (uint)temp.Capacity * 2, temp, (uint)temp.Capacity, out byteLength);
-                        sb.Append(temp);
-                        length -= (int)byteLength / 2;
-                        if (length > 0)
+                    uint byteLength = 0;
+                    StringBuilder sb = new StringBuilder(length);
+
+                    if (readAll)
+                    {
+                        while (length > 0)
                         {
-                            address += byteLength;
-                            sb.Append('\0');
+                            StringBuilder temp = new StringBuilder(length);
+
+                            DataSpaces.ReadUnicodeStringVirtualWide(address, (uint)temp.Capacity * 2, temp, (uint)temp.Capacity, out byteLength);
+                            sb.Append(temp);
+                            length -= (int)byteLength / 2;
+                            if (length > 0)
+                            {
+                                address += byteLength;
+                                sb.Append('\0');
+                            }
                         }
                     }
-                }
-                else
-                {
-                    DataSpaces.ReadUnicodeStringVirtualWide(address, (uint)sb.Capacity * 2, sb, (uint)sb.Capacity, out byteLength);
-                }
+                    else
+                    {
+                        DataSpaces.ReadUnicodeStringVirtualWide(address, (uint)sb.Capacity * 2, sb, (uint)sb.Capacity, out byteLength);
+                    }
 
-                return sb.ToString();
+                    return sb.ToString();
+                }
+            }
+            catch (Exception)
+            {
+                throw new InvalidMemoryAddressException(address);
             }
         }
 
@@ -1024,15 +1045,58 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// Finds memory range where the specified address belongs to.
         /// </summary>
+        /// <param name="process">The process.</param>
         /// <param name="address">The address.</param>
         /// <param name="baseAddress">The base address.</param>
         /// <param name="regionSize">Size of the region.</param>
-        public void QueryVirtual(ulong address, out ulong baseAddress, out ulong regionSize)
+        public void QueryVirtual(Process process, ulong address, out ulong baseAddress, out ulong regionSize)
         {
-            var memoryInfo = DataSpaces.QueryVirtual(address);
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
+            {
+                var memoryInfo = DataSpaces.QueryVirtual(address);
 
-            baseAddress = memoryInfo.BaseAddress;
-            regionSize = memoryInfo.RegionSize;
+                baseAddress = memoryInfo.BaseAddress;
+                regionSize = memoryInfo.RegionSize;
+            }
+        }
+
+        /// <summary>
+        /// Gets the all memory regions available in the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <returns>Array of <see cref="MemoryRegion"/> objects available in the specified process</returns>
+        public MemoryRegion[] GetMemoryRegions(Process process)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
+            {
+                List<MemoryRegion> regionsList = new List<MemoryRegion>();
+                ulong currentAddress = 0, baseAddress, regionSize;
+
+                while (true)
+                {
+                    currentAddress = DataSpaces.GetNextDifferentlyValidOffsetVirtual(currentAddress);
+                    if (currentAddress == 0)
+                    {
+                        break;
+                    }
+
+                    QueryVirtual(process, currentAddress, out baseAddress, out regionSize);
+                    regionsList.Add(new MemoryRegion { BaseAddress = baseAddress, RegionSize = regionSize });
+                }
+
+                // Merge consecutive regions
+                MemoryRegion[] regions = regionsList.ToArray();
+
+                int newEnd = 0;
+                for (int i = 1; i < regions.Length; i++)
+                    if (regions[i].MemoryStart == regions[newEnd].MemoryEnd)
+                        regions[newEnd].MemoryEnd = regions[i].MemoryEnd;
+                    else
+                        regions[++newEnd] = regions[i];
+                newEnd++;
+                Array.Resize(ref regions, newEnd);
+                return regions;
+            }
         }
 
         /// <summary>

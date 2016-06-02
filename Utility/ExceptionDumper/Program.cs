@@ -4,10 +4,10 @@ namespace ExceptionDumper
 {
     class Options
     {
-        [Option('a', "app", Default = "NativeDumpTest.exe", HelpText = "Path to application will be debugged and dumped on exception")]
+        [Option('a', "app", Default = "NativeDumpTest.x64.exe", HelpText = "Path to application will be debugged and dumped on exception")]
         public string AppPath { get; set; }
 
-        [Option('d', "dump", Default = "NativeDumpTest.mdmp", HelpText = "Path to dump file to be generated")]
+        [Option('d', "dump", Default = "NativeDumpTest.x64.mdmp", HelpText = "Path to dump file to be generated")]
         public string DumpPath { get; set; }
 
         [Option("mini-dump", Default = false, HelpText = "Generate mini dump instead of full dump", Required = false)]

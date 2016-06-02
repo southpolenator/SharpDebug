@@ -17,66 +17,22 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)\bin\AnyCPU\Debug\</OutputPath>
+    <OutputPath>$(SolutionDir)\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(SolutionDir)\bin\AnyCPU\Debug\CsDebugScript.Engine.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\Debug\CsDebugScript.Engine.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)\bin\AnyCPU\Release\</OutputPath>
+    <OutputPath>$(SolutionDir)\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(SolutionDir)\bin\AnyCPU\Release\CsDebugScript.Engine.XML</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>$(SolutionDir)\bin\x64\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;X64,USE_ROSLYN_COMPILER</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(SolutionDir)\bin\x64\Debug\CsDebugScript.Engine.XML</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>$(SolutionDir)\bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE;X64,USE_ROSLYN_COMPILER</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(SolutionDir)\bin\x64\Release\CsDebugScript.Engine.XML</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>$(SolutionDir)\bin\x86\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;X86,USE_ROSLYN_COMPILER</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(SolutionDir)\bin\x86\Debug\CsDebugScript.Engine.XML</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>$(SolutionDir)\bin\x86\Release\</OutputPath>
-    <DefineConstants>TRACE;X86,USE_ROSLYN_COMPILER</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(SolutionDir)\bin\x86\Release\CsDebugScript.Engine.XML</DocumentationFile>
+    <DocumentationFile>$(SolutionDir)\bin\Release\CsDebugScript.Engine.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -127,8 +83,12 @@
     <Compile Include="DebugEventInfo.cs" />
     <Compile Include="Debugger.cs" />
     <Compile Include="CodeType.cs" />
+    <Compile Include="Exceptions\InvalidMemoryAddressException.cs" />
+    <Compile Include="Exceptions\NotAllMemoryCanBeReadException.cs" />
+    <Compile Include="Exceptions\WrongCodeTypeException.cs" />
     <Compile Include="ICastableObject.cs" />
     <Compile Include="IMultiClassInheritance.cs" />
+    <Compile Include="MemoryRegion.cs" />
     <Compile Include="Module.cs" />
     <Compile Include="NakedPointer.cs" />
     <Compile Include="NamespaceDoc.cs" />

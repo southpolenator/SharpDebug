@@ -87,6 +87,11 @@ namespace CsDebugScript.Engine
         Tuple<string, Type[]>[] BaseClassesCacheForCasting { get; }
 
         /// <summary>
+        /// Gets the virtual methods.
+        /// </summary>
+        MethodInfo[] VirtualMethods { get; }
+
+        /// <summary>
         /// Gets the multi-class-inheritance auxiliary class type.
         /// </summary>
         /// <typeparam name="TBase">The base type</typeparam>
@@ -135,6 +140,11 @@ namespace CsDebugScript.Engine
         /// Each element has BaseClassString and array of MciAuxiliaryClassTypes for base classes.
         /// </summary>
         Tuple<string, Type[]>[] BaseClassesCacheForCasting { get; }
+
+        /// <summary>
+        /// Gets the virtual methods.
+        /// </summary>
+        MethodInfo[] VirtualMethods { get; }
 
         /// <summary>
         /// Gets the multi-class-inheritance auxiliary class type.
@@ -257,6 +267,11 @@ namespace CsDebugScript.Engine
         /// The cache of base classes cache for casting.
         /// </summary>
         private SimpleCache<Tuple<string, Type[]>[]> baseClassesCacheForCasting;
+
+        /// <summary>
+        /// The cache of virtual methods
+        /// </summary>
+        private SimpleCache<MethodInfo[]> virtualMethods;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserTypeDelegates{T}"/> class.
@@ -400,6 +415,8 @@ namespace CsDebugScript.Engine
 
                 return typeArrays.ToArray();
             });
+
+            virtualMethods = SimpleCache.Create(() => GetVirtualMethods(userType));
         }
 
         /// <summary>
@@ -492,6 +509,17 @@ namespace CsDebugScript.Engine
         }
 
         /// <summary>
+        /// Gets the virtual methods.
+        /// </summary>
+        public MethodInfo[] VirtualMethods
+        {
+            get
+            {
+                return virtualMethods.Value;
+            }
+        }
+
+        /// <summary>
         /// Gets the multi-class-inheritance auxiliary class type.
         /// </summary>
         /// <typeparam name="TBase">The base type</typeparam>
@@ -524,6 +552,89 @@ namespace CsDebugScript.Engine
             castableTypeCreatorType = castableTypeCreatorType.MakeGenericType(new Type[] { typeof(T), baseType });
             FieldInfo typeField = castableTypeCreatorType.GetField(nameof(MciAuxiliaryClassTypeCreatetor<Variable>.Type));
             return (Type)typeField.GetValue(null);
+        }
+
+        /// <summary>
+        /// Determines whether the specified methods contains method, by comparing name, parameters, generic arguments and return type.
+        /// </summary>
+        /// <param name="methods">The list of methods.</param>
+        /// <param name="method">The method.</param>
+        private static bool ContainsMethod(IEnumerable<MethodInfo> methods, MethodInfo method)
+        {
+            var parameters = method.GetParameters();
+            var genericArguments = method.GetGenericArguments();
+
+            foreach (var m in methods.Where(mm => mm.Name == method.Name))
+            {
+                // Check return type
+                if (m.ReturnType != method.ReturnType)
+                    continue;
+
+                // Check parameters
+                var p = m.GetParameters();
+                bool found = true;
+
+                if (parameters.Length != p.Length)
+                    continue;
+                for (int i = 0; i < p.Length && found; i++)
+                {
+                    if (p[i].ParameterType != parameters[i].ParameterType)
+                        found = false;
+                    if (p[i].IsOut != parameters[i].IsOut)
+                        found = false;
+                    if (p[i].IsIn != parameters[i].IsIn)
+                        found = false;
+                }
+
+                if (!found)
+                    continue;
+
+                // Check generic arguments
+                var g = m.GetGenericArguments();
+
+                if (genericArguments.Length != g.Length)
+                    continue;
+
+                // We found it :)
+                return true;
+            }
+
+            // Nope, it isn't here
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the array of virtual methods for the specified type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        private static MethodInfo[] GetVirtualMethods(Type type)
+        {
+            List<MethodInfo> result = new List<MethodInfo>();
+
+            while (type != null)
+            {
+                var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Instance);
+
+                foreach (var method in methods.Where(mm => mm.IsVirtual))
+                {
+                    // TODO: Investigate should we remove Object.Finalize from the list of virtual methods
+                    //if (method.Name == "Finalize" && method.DeclaringType == typeof(object))
+                    //    continue;
+
+                    if (method.IsFinal || !method.Attributes.HasFlag(MethodAttributes.NewSlot))
+                        continue;
+
+                    if (!method.IsFamily && !method.IsPublic)
+                        continue;
+
+                    if (!ContainsMethod(result, method))
+                        result.Add(method);
+                }
+
+                type = type.BaseType;
+            }
+
+            return result.ToArray();
         }
 
         /// <summary>
@@ -593,6 +704,50 @@ namespace CsDebugScript.Engine
                 il.Emit(OpCodes.Stfld, fieldBuilder);
                 il.Emit(OpCodes.Ret);
                 propertyBuilder.SetSetMethod(setPropertyMethodBuilder);
+
+                // Forward all virtual methods
+                MethodInfo[] parentVirtualMethods = Instance.VirtualMethods;
+                MethodInfo[] baseVirtualMethods = UserTypeDelegates<TBase>.Instance.VirtualMethods;
+
+                foreach (MethodInfo parentVirtualMethod in parentVirtualMethods)
+                {
+                    MethodAttributes methodAttributes = MethodAttributes.Virtual | MethodAttributes.HideBySig;
+
+                    methodAttributes |= parentVirtualMethod.IsFamily ? MethodAttributes.Family : MethodAttributes.Public;
+                    if (!ContainsMethod(baseVirtualMethods, parentVirtualMethod))
+                        methodAttributes |= MethodAttributes.NewSlot;
+
+                    Type[] parameters = parentVirtualMethod.GetParameters().Select(p => p.ParameterType).ToArray();
+                    MethodBuilder methodBuilder = typeBuilder.DefineMethod(parentVirtualMethod.Name, methodAttributes, parentVirtualMethod.ReturnType, parameters);
+                    Type[] parentVirtualMethodGenericArguments = parentVirtualMethod.GetGenericArguments();
+
+                    if (parentVirtualMethodGenericArguments.Length > 0)
+                    {
+                        // TODO: Generic methods are not supported
+                        GenericTypeParameterBuilder[] typeParameters = methodBuilder.DefineGenericParameters(parentVirtualMethodGenericArguments.Select(p => p.Name).ToArray());
+
+                        for (int i = 0; i < typeParameters.Length; i++)
+                            typeParameters[i].SetGenericParameterAttributes(parentVirtualMethodGenericArguments[i].GenericParameterAttributes);
+                        throw new NotSupportedException();
+                    }
+
+                    il = methodBuilder.GetILGenerator();
+
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldfld, fieldBuilder);
+                    if (parameters.Length >= 1)
+                        il.Emit(OpCodes.Ldarg_1);
+                    if (parameters.Length >= 2)
+                        il.Emit(OpCodes.Ldarg_2);
+                    if (parameters.Length >= 3)
+                        il.Emit(OpCodes.Ldarg_3);
+                    for (int i = 4; i <= parameters.Length; i++)
+                        il.Emit(OpCodes.Ldarg, (short)i);
+                    il.Emit(OpCodes.Callvirt, parentVirtualMethod);
+                    il.Emit(OpCodes.Ret);
+                }
+
+                // TODO: What about virtual properties?
 
                 // Build type
                 return typeBuilder.CreateType();

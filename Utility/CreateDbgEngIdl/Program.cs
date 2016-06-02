@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -402,6 +403,8 @@ namespace CreateDbgEngIdl
                 WriteConstants(outputString, usedConstants, ref remainingConstants, "", "Defines");
 
                 // Write file header
+                FileVersionInfo fileVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
+
                 output.WriteLine(@"import ""oaidl.idl"";
 import ""ocidl.idl"";
 
@@ -411,7 +414,8 @@ midl_pragma warning( disable: 2362 )
 
 [
     uuid({0}),
-    helpstring(""DbgEng Type Library"")
+    helpstring(""DbgEng Type Library""),
+    version({1}.{2}),
 ]
 library DbgEngManaged
 {{
@@ -419,7 +423,7 @@ library DbgEngManaged
     importlib(""stdole2.tlb"");
 
     ///////////////////////////////////////////////////////////
-    // interface forward declaration", Guid.NewGuid());
+    // interface forward declaration", Guid.NewGuid(), fileVersion.ProductMajorPart, fileVersion.ProductMinorPart);
                 foreach (var uuid in uuids)
                 {
                     output.WriteLine("    interface {0};", uuid.Key);

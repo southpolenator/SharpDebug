@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.Exceptions;
+using System;
 using System.Linq;
 
 namespace CsDebugScript
@@ -154,7 +155,7 @@ namespace CsDebugScript
         {
             if (!GetCodeType().IsPointer)
             {
-                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+                throw new WrongCodeTypeException(variable, nameof(variable), "pointer");
             }
 
             element = UserMember.Create(() => variable.DereferencePointer().CastAs<T>());

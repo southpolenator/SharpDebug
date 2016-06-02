@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes
+namespace CsDebugScript.CommonUserTypes.NativeTypes.Windows
 {
     /// <summary>
     /// Class that represents PEB (Process environment block).
@@ -9,15 +9,15 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
     [UserType(ModuleName = "ntdll", TypeName = "_PEB")]
     [UserType(ModuleName = "nt", TypeName = "_PEB")]
     [UserType(ModuleName = "wow64", TypeName = "_PEB")]
-    public class ProcessEnvironmentBlock : UserType
+    public class ProcessEnvironmentBlock : DynamicSelfUserType
     {
         /// <summary>
         /// Class that represents ProcessParameters field inside PEB.
         /// </summary>
-        public class ProcessParametersStructure : Variable
+        public class ProcessParametersStructure : DynamicSelfVariable
         {
             /// <summary>
-            /// Initializes a new instance of the <see cref="ProcessParametersStructure"/> class.
+            /// Initializes a new instance of the <see cref="ProcessParametersStructure" /> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
             public ProcessParametersStructure(Variable variable)
@@ -32,7 +32,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
             {
                 get
                 {
-                    return TryExecute(() => GetField("CommandLine").GetField("Buffer").ToString());
+                    return TryExecute(() => self.CommandLine.Buffer.ToString());
                 }
             }
 
@@ -43,7 +43,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
             {
                 get
                 {
-                    return TryExecute(() => GetField("ImagePathName").GetField("Buffer").ToString());
+                    return TryExecute(() => self.ImagePathName.Buffer.ToString());
                 }
             }
 
@@ -56,8 +56,8 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
                 {
                     return TryExecute(() =>
                     {
-                        ulong size = (ulong)GetField("EnvironmentSize");
-                        CodePointer<char> s = new CodePointer<char>(GetField("Environment").GetPointerAddress());
+                        ulong size = (ulong)self.EnvironmentSize;
+                        CodePointer<char> s = new CodePointer<char>(self.Environment.GetPointerAddress());
 
                         return s.ReadUnicodeStringByteLength(size).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
                     });
@@ -66,12 +66,24 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
         }
 
         /// <summary>
+        /// The heap code type
+        /// </summary>
+        private CodeType heapCodeType;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ProcessEnvironmentBlock"/> class.
         /// </summary>
         /// <param name="variable">The variable that represents PEB.</param>
         public ProcessEnvironmentBlock(Variable variable)
             : base(variable)
         {
+            try
+            {
+                heapCodeType = Heap.GetCodeType(variable.GetCodeType().Module.Process);
+            }
+            catch
+            {
+            }
         }
 
         /// <summary>
@@ -101,7 +113,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
         {
             get
             {
-                return TryExecute(() => (bool)GetField("BeingDebugged"));
+                return TryExecute(() => (bool)self.BeingDebugged);
             }
         }
 
@@ -112,41 +124,52 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes
         {
             get
             {
-                return TryExecute(() => new ProcessParametersStructure(GetField("ProcessParameters")));
+                return TryExecute(() => new ProcessParametersStructure(self.ProcessParameters));
             }
         }
 
         /// <summary>
         /// Gets the process heap.
         /// </summary>
-        public Variable ProcessHeap
+        public Heap ProcessHeap
         {
             get
             {
-                return TryExecute(() => GetField("ProcessHeap"));
+                return TryExecute(() => CastHeap(self.ProcessHeap));
             }
         }
 
         /// <summary>
         /// Gets the process heaps.
         /// </summary>
-        public Variable[] ProcessHeaps
+        public Heap[] ProcessHeaps
         {
             get
             {
                 return TryExecute(() =>
                 {
-                    Variable heaps = GetField("ProcessHeaps");
-                    List<Variable> result = new List<Variable>();
+                    Variable heaps = self.ProcessHeaps;
+                    List<Heap> result = new List<Heap>();
 
                     for (int i = 0; !heaps.GetArrayElement(i).IsNullPointer(); i++)
                     {
-                        result.Add(heaps.GetArrayElement(i));
+                        result.Add(CastHeap(heaps.GetArrayElement(i)));
                     }
 
                     return result.ToArray();
                 });
             }
+        }
+
+        /// <summary>
+        /// Casts the variable into the heap user type.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        private Heap CastHeap(Variable variable)
+        {
+            if (heapCodeType != null)
+                variable = variable.CastAs(heapCodeType);
+            return new Heap(variable);
         }
 
         /// <summary>

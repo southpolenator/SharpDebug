@@ -92,7 +92,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CSDEBUGSCRIPT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutputPath)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutputPath);$(SolutionDir)\bin\$(Configuration)\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -103,6 +103,10 @@
       <Command>
       </Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy $(OutDir)\CsDebugScript.WinDbg.dll $(SolutionDir)\bin\$(Configuration)\
+copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -111,7 +115,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;CSDEBUGSCRIPT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutputPath)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutputPath);$(SolutionDir)\bin\$(Configuration)\</AdditionalIncludeDirectories>
       <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
@@ -126,6 +130,10 @@
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy $(OutDir)\CsDebugScript.WinDbg.dll $(SolutionDir)\bin\$(Configuration)\
+copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -136,7 +144,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CSDEBUGSCRIPT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutputPath)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutputPath);$(SolutionDir)\bin\$(Configuration)\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -149,6 +157,10 @@
       <Command>
       </Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy $(OutDir)\CsDebugScript.WinDbg.dll $(SolutionDir)\bin\$(Configuration)\
+copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -159,7 +171,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;CSDEBUGSCRIPT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(OutputPath)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutputPath);$(SolutionDir)\bin\$(Configuration)\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -172,6 +184,10 @@
       <Command>
       </Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy $(OutDir)\CsDebugScript.WinDbg.dll $(SolutionDir)\bin\$(Configuration)\
+copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CsDebugScript.h" />

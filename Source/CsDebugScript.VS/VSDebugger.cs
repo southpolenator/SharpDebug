@@ -353,7 +353,12 @@ namespace CsDebugScript.VS
             throw new NotImplementedException();
         }
 
-        public void QueryVirtual(ulong address, out ulong baseAddress, out ulong regionSize)
+        public void QueryVirtual(Process process, ulong address, out ulong baseAddress, out ulong regionSize)
+        {
+            throw new NotImplementedException();
+        }
+
+        public MemoryRegion[] GetMemoryRegions(Process process)
         {
             throw new NotImplementedException();
         }

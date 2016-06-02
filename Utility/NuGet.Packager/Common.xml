@@ -1,0 +1,11 @@
+﻿<?xml version="1.0"?>
+<metadata>
+  <authors>WinDbgCs Team</authors>
+  <owners>southpolenator</owners>
+  <projectUrl>https://github.com/southpolenator/WinDbgCs</projectUrl>
+  <iconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</iconUrl>
+  <requireLicenseAcceptance>true</requireLicenseAcceptance>
+  <licenseUrl>https://github.com/southpolenator/WinDbgCs/blob/master/license.txt</licenseUrl>
+  <copyright>Copyright © 2016</copyright>
+  <tags>WinDbg C# dump debugging</tags>
+</metadata>

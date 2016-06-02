@@ -138,9 +138,9 @@ namespace CsDebugScript
                     {
                         try
                         {
-                            CodeType pebCodeType = CodeType.Create("_TEB", module);
+                            CodeType tebCodeType = CodeType.Create("_TEB", module);
 
-                            return Variable.Create(pebCodeType, TebAddress, "TEB", "Thread.TEB");
+                            return Variable.Create(tebCodeType, TebAddress, "TEB", "Thread.TEB");
                         }
                         catch
                         {

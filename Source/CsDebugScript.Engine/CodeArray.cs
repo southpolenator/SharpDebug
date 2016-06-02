@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
+using CsDebugScript.Exceptions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -59,7 +60,7 @@ namespace CsDebugScript
         {
             if (!variable.GetCodeType().IsArray)
             {
-                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+                throw new WrongCodeTypeException(variable, nameof(variable), "array");
             }
 
             Initialize(variable, variable.GetArrayLength());
@@ -74,7 +75,7 @@ namespace CsDebugScript
         {
             if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
             {
-                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+                throw new WrongCodeTypeException(variable, nameof(variable), "array or pointer");
             }
 
             Initialize(variable, length);
@@ -89,7 +90,7 @@ namespace CsDebugScript
         {
             if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
             {
-                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+                throw new WrongCodeTypeException(variable, nameof(variable), "array or pointer");
             }
 
             if (length > int.MaxValue)
@@ -109,7 +110,7 @@ namespace CsDebugScript
         {
             if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
             {
-                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+                throw new WrongCodeTypeException(variable, nameof(variable), "array or pointer");
             }
 
             if (length > int.MaxValue)
@@ -129,7 +130,7 @@ namespace CsDebugScript
         {
             if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
             {
-                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+                throw new WrongCodeTypeException(variable, nameof(variable), "array or pointer");
             }
 
             if (length > int.MaxValue)

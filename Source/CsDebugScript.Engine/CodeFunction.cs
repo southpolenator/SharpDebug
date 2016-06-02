@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
+using CsDebugScript.Exceptions;
 using System;
 
 namespace CsDebugScript
@@ -42,7 +43,7 @@ namespace CsDebugScript
             // Verify code type
             if (!VerifyCodeType(variable.GetCodeType()))
             {
-                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+                throw new WrongCodeTypeException(variable, nameof(variable), "function");
             }
         }
 

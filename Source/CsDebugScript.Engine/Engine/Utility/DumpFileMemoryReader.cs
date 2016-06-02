@@ -5,20 +5,17 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Collections.Generic;
+using CsDebugScript.Exceptions;
 
 namespace CsDebugScript.Engine.Utility
 {
     internal unsafe class DumpFileMemoryReader : IDisposable
     {
-        private const int BucketSizeBits = 8;
-
         private FileStream fileStream;
         private MemoryMappedFile memoryMappedFile;
         private MemoryMappedViewStream stream;
         private MemoryLocation[] ranges;
-        private ulong triesStartMask;
-        private int triesStartBits;
-        private TriesElement[] buckets;
+        private MemoryRegionFinder finder;
         private int previousRange;
         byte* basePointer = null;
 
@@ -67,29 +64,8 @@ namespace CsDebugScript.Engine.Utility
                         ranges[++newEnd] = ranges[i];
                 newEnd++;
                 Array.Resize(ref ranges, newEnd);
-                var minValue = ranges[0].MemoryStart;
-                var maxValue = ranges[ranges.Length - 1].MemoryEnd;
-
-                triesStartBits = 64 - BucketSizeBits;
-                triesStartMask = ((1UL << BucketSizeBits) - 1) << triesStartBits;
-                while ((triesStartMask & (maxValue - 1)) == 0)
-                {
-                    triesStartMask >>= BucketSizeBits;
-                    triesStartBits -= BucketSizeBits;
-                }
-
-                var rangesTuple = new Tuple<int, MemoryLocation>[ranges.Length];
-                for (int i = 0; i < rangesTuple.Length; i++)
-                    rangesTuple[i] = Tuple.Create(i, ranges[i]);
-                var element = new TriesElement(rangesTuple, triesStartMask, triesStartBits);
-
-                buckets = element.buckets;
+                finder = new MemoryRegionFinder(ranges.Select(r => new MemoryRegion { BaseAddress = r.MemoryStart, MemoryEnd = r.MemoryEnd }).ToArray());
                 dispose = false;
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine(ex);
-                throw;
             }
             finally
             {
@@ -157,9 +133,14 @@ namespace CsDebugScript.Engine.Utility
         {
             var position = FindDumpPositionAndSize(address);
 
+            if (size < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size), "size cannot be less than 0");
+            }
+
             if ((ulong)size > position.size)
             {
-                throw new Exception("Reading more that it is found");
+                throw new NotAllMemoryCanBeReadException(address, (uint)size, position.size);
             }
 
             return new MemoryBuffer(basePointer + position.position, size);
@@ -241,6 +222,15 @@ namespace CsDebugScript.Engine.Utility
             rangeSize = location.MemoryEnd - location.MemoryStart;
         }
 
+        internal MemoryRegion[] GetMemoryRanges()
+        {
+            MemoryRegion[] regions = new MemoryRegion[ranges.Length];
+
+            for (int i = 0; i < regions.Length; i++)
+                regions[i] = new MemoryRegion { BaseAddress = ranges[i].MemoryStart, MemoryEnd = ranges[i].MemoryEnd };
+            return regions;
+        }
+
         private MemoryLocation FindMemoryLocation(ulong address)
         {
             var location = ranges[previousRange];
@@ -250,31 +240,20 @@ namespace CsDebugScript.Engine.Utility
                 return location;
             }
 
-            var mask = triesStartMask;
-            var offset = triesStartBits;
-            var bucketIndex = (address & mask) >> offset;
-            var bucket = buckets[bucketIndex];
+            int index = finder.Find(address);
 
-            while (bucket != null && bucket.buckets != null)
+            if (index >= 0)
             {
-                mask >>= BucketSizeBits;
-                offset -= BucketSizeBits;
-                bucketIndex = (address & mask) >> offset;
-                bucket = bucket.buckets[bucketIndex];
-            }
-
-            if (bucket != null)
-            {
-                location = ranges[bucket.location];
+                location = ranges[index];
 
                 if (location.MemoryStart <= address && location.MemoryEnd > address)
                 {
-                    previousRange = bucket.location;
+                    previousRange = index;
                     return location;
                 }
             }
 
-            throw new ArgumentOutOfRangeException(nameof(address));
+            throw new InvalidMemoryAddressException(address);
         }
 
         private DumpPosition FindDumpPositionAndSize(ulong address)
@@ -299,42 +278,6 @@ namespace CsDebugScript.Engine.Utility
             public ulong MemoryStart;
             public ulong MemoryEnd;
             public ulong FilePosition;
-        }
-
-        private class TriesElement
-        {
-            public TriesElement[] buckets;
-            public int location;
-
-            public TriesElement(IEnumerable<Tuple<int, MemoryLocation>> ranges, ulong triesStartMask, int triesStartBits, ulong minValue = 0, ulong maxValue = ulong.MaxValue)
-            {
-                if (ranges.Count() > 1)
-                {
-                    var division = new List<Tuple<int, MemoryLocation>>[1 << BucketSizeBits];
-
-                    foreach (var range in ranges)
-                    {
-                        var bucketStart = (Math.Max(minValue, range.Item2.MemoryStart) & triesStartMask) >> triesStartBits;
-                        var bucketEnd = (Math.Min(maxValue, range.Item2.MemoryEnd - 1) & triesStartMask) >> triesStartBits;
-
-                        for (var j = bucketStart; j <= bucketEnd; j++)
-                        {
-                            if (division[j] == null)
-                                division[j] = new List<Tuple<int, MemoryLocation>>();
-                            division[j].Add(range);
-                        }
-                    }
-
-                    buckets = new TriesElement[1 << BucketSizeBits];
-                    for (int i = 0; i < 1 << BucketSizeBits; i++)
-                        if (division[i] != null)
-                            buckets[i] = new TriesElement(division[i], triesStartMask >> BucketSizeBits, triesStartBits - BucketSizeBits, minValue | ((ulong)i << triesStartBits), minValue | (((ulong)i + 1) << triesStartBits) - 1);
-                }
-                else
-                {
-                    location = ranges.First().Item1;
-                }
-            }
         }
 
         #region Native structures and methods

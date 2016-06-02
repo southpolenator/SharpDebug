@@ -1,5 +1,4 @@
 ﻿using CsDebugScript.Engine;
-using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +27,7 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the list of search folders.
         /// </summary>
-        internal static List<string> SearchFolders { get; private set; }
+        internal static List<string> SearchFolders { get; private set; } = new List<string>();
 
         /// <summary>
         /// The default assembly references used by the compiler

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.Exceptions;
+using System;
 
 namespace CsDebugScript
 {
@@ -16,7 +17,7 @@ namespace CsDebugScript
         {
             if (!GetCodeType().IsPointer)
             {
-                throw new Exception("Wrong code type of passed variable " + GetCodeType().Name);
+                throw new WrongCodeTypeException(variable, nameof(variable), "pointer");
             }
         }
 

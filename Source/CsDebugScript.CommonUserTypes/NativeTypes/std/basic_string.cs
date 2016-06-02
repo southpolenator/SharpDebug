@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.Exceptions;
+using System;
 
 namespace CsDebugScript.CommonUserTypes.NativeTypes.std
 {
@@ -36,7 +37,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             // Verify code type
             if (!VerifyCodeType(variable.GetCodeType()))
             {
-                throw new Exception("Wrong code type of passed variable " + variable.GetCodeType().Name);
+                throw new WrongCodeTypeException(variable, nameof(variable), "std::basic_string");
             }
 
             // Initialize members

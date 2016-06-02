@@ -11,7 +11,7 @@ namespace DbgEngTest
     [TestClass]
     public class NativeDumpTest : TestBase
     {
-        private const string DefaultDumpFile = "NativeDumpTest.dmp";
+        private const string DefaultDumpFile = "NativeDumpTest.x64.dmp";
 
         private const string DefaultSymbolPath = @"srv*;.\";
 
