@@ -68,7 +68,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 if (NamespaceSymbol != null)
                 {
-                    return NormalizeSymbolName(NamespaceSymbol.Replace("::", "."));
+                    return NormalizeSymbolNamespace(NamespaceSymbol.Replace("::", "."));
                 }
                 else
                 {
@@ -266,7 +266,21 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </remarks>
         public static string NormalizeSymbolName(string symbolName)
         {
-            return symbolName.Replace("::", "_").Replace(".", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').TrimEnd('_');
+            return NormalizeSymbolNamespace(symbolName).Replace(".", "_");
+        }
+
+        /// <summary>
+        /// Normalizes the symbol namespace by removing special characters.
+        /// </summary>
+        /// <param name="symbolName">The symbol namespace.</param>
+        /// <returns>Normalized symbol name.</returns>
+        /// <remarks>
+        /// Do not trim right, some of the classes start with '_'.
+        /// We cannot replace __ with _ , it will generate class name collisions.
+        /// </remarks>
+        public static string NormalizeSymbolNamespace(string symbolNamespace)
+        {
+            return symbolNamespace.Replace("::", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').TrimEnd('_');
         }
 
         /// <summary>
