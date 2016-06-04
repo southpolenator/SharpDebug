@@ -272,7 +272,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Normalizes the symbol namespace by removing special characters.
         /// </summary>
-        /// <param name="symbolName">The symbol namespace.</param>
+        /// <param name="symbolNamespace">The symbol namespace.</param>
         /// <returns>Normalized symbol name.</returns>
         /// <remarks>
         /// Do not trim right, some of the classes start with '_'.
