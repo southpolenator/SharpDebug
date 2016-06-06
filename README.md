@@ -1,5 +1,5 @@
 # WinDbgCs
-WinDbg extension for executing C# scripts
+WinDbg extension for executing C# scripts. It can be also used without WinDbg to open dumps.
 
 # Prerequisites for building the project
 1. Windows SDK 10: https://dev.windows.com/en-US/downloads/windows-10-sdk
