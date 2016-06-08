@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using CsDebugScript.CodeGen.UserTypes;
 using System.Text;
+using Dia2Lib;
 
 namespace CsDebugScript.CodeGen
 {
@@ -38,6 +39,10 @@ namespace CsDebugScript.CodeGen
                 {
                     // Try to use Pointer
                     symbol = GetSymbol(symbol.Name.Substring(0, symbol.Name.Length - 1), symbol.Module);
+                }
+                else if (symbol.UserType == null && symbol.Tag == SymTagEnum.SymTagArrayType)
+                {
+                    symbol = GetSymbol(symbol.ElementType.Name, symbol.Module);
                 }
 
                 return symbol.UserType;
