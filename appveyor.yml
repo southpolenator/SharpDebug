@@ -6,8 +6,8 @@ configuration:
 
 platform:
   - Any CPU
-;  - x86
-;  - x64
+#  - x86
+#  - x64
 
 assembly_info:
   patch: true
