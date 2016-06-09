@@ -13,6 +13,8 @@ namespace DbgEngTest
     {
         private const string DefaultDumpFile = "NativeDumpTest.x64.dmp";
 
+        private const string DefaultModuleName = "NativeDumpTest_x64";
+
         private const string DefaultSymbolPath = @"srv*;.\";
 
         [ClassInitialize]
@@ -43,7 +45,7 @@ namespace DbgEngTest
         [TestMethod]
         public void CurrentThreadContainsNativeDumpTestMainFunction()
         {
-            Assert.AreNotEqual(GetFrame("NativeDumpTest!main"), null);
+            Assert.AreNotEqual(GetFrame(DefaultModuleName + "!main"), null);
         }
 
         [TestMethod]
