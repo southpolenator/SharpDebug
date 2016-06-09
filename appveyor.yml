@@ -1,0 +1,8 @@
+configuration: Release
+
+# Restore nuget packages before running the build
+before_build:
+  - nuget restore
+
+build:
+  verbosity: minimal
