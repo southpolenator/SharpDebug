@@ -56,7 +56,7 @@ namespace DbgEngTest
                 }
             }
 
-            Assert.Fail(string.Format("Frame not found '{0}'", functionName));
+            Assert.Fail($"Frame not found '{functionName}'");
             return null;
         }
     }
