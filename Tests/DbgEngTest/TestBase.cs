@@ -24,6 +24,11 @@ namespace DbgEngTest
                 dumpFile = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), dumpFile));
             }
 
+            if (!Path.IsPathRooted(symbolPath))
+            {
+                symbolPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), symbolPath));
+            }
+
             client = DebugClient.OpenDumpFile(dumpFile, symbolPath);
             Context.Initalize(client);
         }
