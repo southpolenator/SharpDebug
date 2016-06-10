@@ -3,6 +3,8 @@ using CsDebugScript.Engine;
 using DbgEngManaged;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.IO;
+using System.Reflection;
 
 namespace DbgEngTest
 {
@@ -17,6 +19,11 @@ namespace DbgEngTest
         /// <param name="symbolPath">The symbol path.</param>
         protected static void Initialize(string dumpFile, string symbolPath)
         {
+            if (!Path.IsPathRooted(dumpFile))
+            {
+                dumpFile = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), dumpFile));
+            }
+
             client = DebugClient.OpenDumpFile(dumpFile, symbolPath);
             Context.Initalize(client);
         }
