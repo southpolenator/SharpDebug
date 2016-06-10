@@ -17,7 +17,8 @@ namespace DbgEngTest
         /// </summary>
         /// <param name="dumpFile">The dump file.</param>
         /// <param name="symbolPath">The symbol path.</param>
-        protected static void Initialize(string dumpFile, string symbolPath)
+        /// <param name="addSymbolServer">if set to <c>true</c> symbol server will be added to the symbol path.</param>
+        protected static void Initialize(string dumpFile, string symbolPath, bool addSymbolServer = true)
         {
             if (!Path.IsPathRooted(dumpFile))
             {
@@ -27,6 +28,11 @@ namespace DbgEngTest
             if (!Path.IsPathRooted(symbolPath))
             {
                 symbolPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), symbolPath));
+            }
+
+            if (addSymbolServer)
+            {
+                symbolPath += ";srv*";
             }
 
             client = DebugClient.OpenDumpFile(dumpFile, symbolPath);

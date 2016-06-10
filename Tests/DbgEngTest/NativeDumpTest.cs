@@ -15,7 +15,7 @@ namespace DbgEngTest
 
         private const string DefaultModuleName = "NativeDumpTest_x64";
 
-        private const string DefaultSymbolPath = @"srv*;.\";
+        private const string DefaultSymbolPath = @".\";
 
         [ClassInitialize]
         public static void TestSetup(TestContext context)
