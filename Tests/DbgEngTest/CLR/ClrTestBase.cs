@@ -4,6 +4,7 @@ using System;
 using System.CodeDom.Compiler;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace DbgEngTest.CLR
 {
@@ -11,9 +12,10 @@ namespace DbgEngTest.CLR
     {
         protected static string CompileApp(string appName, params string[] files)
         {
-            string destination = Path.Combine(Environment.CurrentDirectory, appName + ".exe");
-            string pdbPath = Path.Combine(Environment.CurrentDirectory, appName + ".pdb");
-            string[] fullPathFiles = files.Select(f => Path.Combine(Environment.CurrentDirectory, "CLR", "Apps", f)).ToArray();
+            string directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string destination = Path.Combine(directory, appName + ".exe");
+            string pdbPath = Path.Combine(directory, appName + ".pdb");
+            string[] fullPathFiles = files.Select(f => Path.Combine(directory, "CLR", "Apps", f)).ToArray();
 
             // Check if we need to compile at all
             if (File.Exists(destination) && File.Exists(pdbPath))
