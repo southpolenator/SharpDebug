@@ -8,7 +8,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DbgEngTest</RootNamespace>
     <AssemblyName>DbgEngTest</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
@@ -99,6 +99,7 @@
   <ItemGroup>
     <Compile Include="CLR\ValueTests.cs" />
     <Compile Include="CodeGenTests.cs" />
+    <Compile Include="InteractiveModeTests.cs" />
     <Compile Include="NativeDumpTest32.cs" />
     <Compile Include="NativeDumpTest32Release.cs" />
     <Compile Include="NativeDumpTest64.cs" />
@@ -136,6 +137,10 @@
     <ProjectReference Include="..\..\Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj">
       <Project>{21a929ea-b96b-4523-9d0f-853ea771058d}</Project>
       <Name>CsDebugScript.CommonUserTypes</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Source\CsDebugScript.UI\CsDebugScript.UI.csproj">
+      <Project>{b63c2b4e-eb2e-45fc-93fd-5d6f2077064d}</Project>
+      <Name>CsDebugScript.UI</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>
