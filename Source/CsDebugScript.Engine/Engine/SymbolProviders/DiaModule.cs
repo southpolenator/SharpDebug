@@ -228,12 +228,12 @@ namespace CsDebugScript.Engine.SymbolProviders
             {
                 if (!BasicTypes.TryGetValue(typeName, out type))
                 {
-                    type = globalScope.GetChild(typeName);
+                    type = GetTypeFromGlobalSpace(typeName);
                 }
             }
             else
             {
-                type = globalScope.GetChild(typeName);
+                type = GetTypeFromGlobalSpace(typeName);
                 if (type == null)
                 {
                     type = BasicTypes[typeName];
@@ -241,6 +241,27 @@ namespace CsDebugScript.Engine.SymbolProviders
             }
 
             return GetTypeId(type);
+        }
+
+        /// <summary>
+        /// Gets the type from global space.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        private IDiaSymbol GetTypeFromGlobalSpace(string typeName)
+        {
+            IDiaSymbol type = globalScope.GetChild(typeName, SymTagEnum.SymTagUDT);
+
+            if (type == null)
+            {
+                type = globalScope.GetChild(typeName, SymTagEnum.SymTagEnum);
+            }
+
+            if (type == null)
+            {
+                type = globalScope.GetChild(typeName);
+            }
+
+            return type;
         }
 
         /// <summary>
