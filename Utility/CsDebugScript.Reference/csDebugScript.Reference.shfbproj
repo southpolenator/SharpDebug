@@ -7,6 +7,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
     <!-- NOTE: Update the version number in the path (YYYY.M.D.R) to match the package version -->
+    <ComponentPath Condition=" '$(SHFBROOT)' == '' ">$(MSBuildThisFileDirectory)..\..\packages\EWSoftware.SHFB.NETFramework.4.6.1\tools\Data\.NETFramework</ComponentPath>
     <SHFBROOT Condition=" '$(SHFBROOT)' == '' ">$(MSBuildThisFileDirectory)..\..\packages\EWSoftware.SHFB.2016.5.28.0\tools\</SHFBROOT>
     <ProjectGuid>7a19dbb3-da7d-48e8-bcba-48a727176063</ProjectGuid>
     <SHFBSchemaVersion>2015.6.5.0</SHFBSchemaVersion>
