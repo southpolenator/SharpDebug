@@ -61,5 +61,11 @@ namespace DbgEngTest
         {
             testRunner.CheckCodeFunction();
         }
+
+        [TestMethod]
+        public void CheckDebugger()
+        {
+            testRunner.CheckDebugger();
+        }
     }
 }

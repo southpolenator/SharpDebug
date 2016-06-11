@@ -38,6 +38,12 @@ namespace DbgEngTest
             testRunner.CheckProcess();
         }
 
+        [TestMethod]
+        public void CheckDebugger()
+        {
+            testRunner.CheckDebugger();
+        }
+
         // TODO: Fix ExceptionDumper to catch correct exception
         #region Enable tests when ExceptionDumper is fixed for 32bit apps
         //[TestMethod]

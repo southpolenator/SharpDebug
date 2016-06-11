@@ -162,5 +162,15 @@ namespace DbgEngTest
             Assert.AreNotEqual(0, mainFunction.SourceFileLine);
             Console.WriteLine("SourceFileDisplacement: {0}", mainFunction.SourceFileDisplacement);
         }
+
+        public void CheckDebugger()
+        {
+            string version = Debugger.ExecuteAndCapture("version");
+
+            Console.WriteLine("Debugger version: {0}", version);
+            Assert.IsTrue(Debugger.FindAllPatternInMemory(0x1212121212121212).Any());
+            Assert.IsTrue(Debugger.FindAllBytePatternInMemory(new byte[] { 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12 }).Any());
+            Assert.IsTrue(Debugger.FindAllTextPatternInMemory("qwerty").Any());
+        }
     }
 }
