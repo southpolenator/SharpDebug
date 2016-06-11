@@ -8,22 +8,24 @@ namespace DbgEngTest
     /// <summary>
     /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.exe.
     /// </summary>
-    [TestClass]
     public class NativeDumpTest : TestBase
     {
-        private const string DefaultDumpFile = "NativeDumpTest.x64.dmp";
+        private readonly string DefaultDumpFile;
+        private readonly string DefaultModuleName;
+        private readonly string DefaultSymbolPath;
 
-        private const string DefaultModuleName = "NativeDumpTest_x64";
+        public NativeDumpTest(string defaultDumpFile, string defaultModuleName, string defaultSymbolPath)
+        {
+            DefaultDumpFile = defaultDumpFile;
+            DefaultModuleName = defaultModuleName;
+            DefaultSymbolPath = defaultSymbolPath;
+        }
 
-        private const string DefaultSymbolPath = @".\";
-
-        [TestInitialize]
         public void TestSetup()
         {
             Initialize(DefaultDumpFile, DefaultSymbolPath);
         }
 
-        [TestMethod]
         public void CurrentThreadContainsNativeDumpTestCpp()
         {
             const string sourceFileName = "nativedumptest.cpp";
@@ -44,13 +46,11 @@ namespace DbgEngTest
             Assert.Fail($"{sourceFileName} not found on the current thread stack trace");
         }
 
-        [TestMethod]
         public void CurrentThreadContainsNativeDumpTestMainFunction()
         {
             Assert.AreNotEqual(GetFrame($"{DefaultModuleName}!main"), null);
         }
 
-        [TestMethod]
         public void TestModuleExtraction()
         {
             Assert.IsTrue(Module.All.Any(module => module.Name == DefaultModuleName));
