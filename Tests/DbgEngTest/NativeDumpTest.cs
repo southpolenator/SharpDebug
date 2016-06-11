@@ -21,6 +21,14 @@ namespace DbgEngTest
             DefaultSymbolPath = defaultSymbolPath;
         }
 
+        private Module DefaultModule
+        {
+            get
+            {
+                return Module.All.Single(module => module.Name == DefaultModuleName);
+            }
+        }
+
         public void TestSetup()
         {
             Initialize(DefaultDumpFile, DefaultSymbolPath);
@@ -54,6 +62,22 @@ namespace DbgEngTest
         public void TestModuleExtraction()
         {
             Assert.IsTrue(Module.All.Any(module => module.Name == DefaultModuleName));
+        }
+
+        public void ReadingFloatPointTypes()
+        {
+            Variable doubleTest = DefaultModule.GetVariable("doubleTest");
+
+            Assert.AreEqual((double)doubleTest.GetField("d"), 3.5);
+            Assert.AreEqual((float)doubleTest.GetField("f"), 2.5);
+            Assert.AreEqual((int)doubleTest.GetField("i"), 5);
+        }
+
+        public void GettingClassStaticMember()
+        {
+            Variable staticVariable = DefaultModule.GetVariable("MyTestClass::staticVariable");
+
+            Assert.AreEqual((int)staticVariable, 1212121212);
         }
     }
 }
