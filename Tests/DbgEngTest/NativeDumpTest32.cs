@@ -27,20 +27,6 @@ namespace DbgEngTest
         }
 
         [TestMethod]
-        public void CurrentThreadContainsNativeDumpTestCpp()
-        {
-            // TODO: Fix ExceptionDumper to catch correct exception
-            //testRunner.CurrentThreadContainsNativeDumpTestCpp();
-        }
-
-        [TestMethod]
-        public void CurrentThreadContainsNativeDumpTestMainFunction()
-        {
-            // TODO: Fix ExceptionDumper to catch correct exception
-            //testRunner.CurrentThreadContainsNativeDumpTestMainFunction();
-        }
-
-        [TestMethod]
         public void TestModuleExtraction()
         {
             testRunner.TestModuleExtraction();
@@ -59,37 +45,48 @@ namespace DbgEngTest
         }
 
         [TestMethod]
-        public void CheckMainArguments()
-        {
-            // TODO: Fix ExceptionDumper to catch correct exception
-            //testRunner.CheckMainArguments();
-        }
-
-        [TestMethod]
         public void CheckProcess()
         {
             testRunner.CheckProcess();
         }
 
-        [TestMethod]
-        public void CheckThread()
-        {
-            // TODO: Fix ExceptionDumper to catch correct exception
-            //testRunner.CheckThread();
-        }
+        // TODO: Fix ExceptionDumper to catch correct exception
+        #region Enable tests when ExceptionDumper is fixed for 32bit apps
+        //[TestMethod]
+        //public void CurrentThreadContainsNativeDumpTestCpp()
+        //{
+        //    testRunner.CurrentThreadContainsNativeDumpTestCpp();
+        //}
 
-        [TestMethod]
-        public void CheckCodeArray()
-        {
-            // TODO: Fix ExceptionDumper to catch correct exception
-            //testRunner.CheckCodeArray();
-        }
+        //[TestMethod]
+        //public void CurrentThreadContainsNativeDumpTestMainFunction()
+        //{
+        //    testRunner.CurrentThreadContainsNativeDumpTestMainFunction();
+        //}
 
-        [TestMethod]
-        public void CheckCodeFunction()
-        {
-            // TODO: Fix ExceptionDumper to catch correct exception
-            //testRunner.CheckCodeFunction();
-        }
+        //[TestMethod]
+        //public void CheckMainArguments()
+        //{
+        //    testRunner.CheckMainArguments();
+        //}
+
+        //[TestMethod]
+        //public void CheckThread()
+        //{
+        //    testRunner.CheckThread();
+        //}
+
+        //[TestMethod]
+        //public void CheckCodeArray()
+        //{
+        //    testRunner.CheckCodeArray();
+        //}
+
+        //[TestMethod]
+        //public void CheckCodeFunction()
+        //{
+        //    testRunner.CheckCodeFunction();
+        //}
+        #endregion
     }
 }
