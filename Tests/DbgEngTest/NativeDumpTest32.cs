@@ -64,5 +64,11 @@ namespace DbgEngTest
             // TODO: Fix ExceptionDumper to catch correct exception
             //testRunner.CheckMainArguments();
         }
+
+        [TestMethod]
+        public void CheckProcess()
+        {
+            testRunner.CheckProcess();
+        }
     }
 }

@@ -61,5 +61,11 @@ namespace DbgEngTest
         {
             testRunner.CheckMainArguments();
         }
+
+        [TestMethod]
+        public void CheckProcess()
+        {
+            testRunner.CheckProcess();
+        }
     }
 }

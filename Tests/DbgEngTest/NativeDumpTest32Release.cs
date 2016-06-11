@@ -45,5 +45,11 @@ namespace DbgEngTest
         {
             testRunner.TestModuleExtraction();
         }
+
+        [TestMethod]
+        public void CheckProcess()
+        {
+            testRunner.CheckProcess();
+        }
     }
 }

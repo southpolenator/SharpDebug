@@ -71,6 +71,11 @@ namespace DbgEngTest
             Assert.AreEqual(3.5, (double)doubleTest.GetField("d"));
             Assert.AreEqual(2.5, (float)doubleTest.GetField("f"));
             Assert.AreEqual(5, (int)doubleTest.GetField("i"));
+
+            Variable doubleTest2 = Process.Current.GetGlobal($"{DefaultModuleName}!doubleTest");
+
+            Assert.AreEqual(doubleTest.GetPointerAddress(), doubleTest2.GetPointerAddress());
+            Assert.AreEqual(doubleTest.GetCodeType(), doubleTest2.GetCodeType());
         }
 
         public void GettingClassStaticMember()
@@ -101,6 +106,20 @@ namespace DbgEngTest
             Assert.IsFalse(arguments.TryGetValue("p", out p));
             Assert.IsNull(arguments.Names.FirstOrDefault(n => n == "p"));
             Assert.IsNull(arguments.FirstOrDefault(a => a.GetName() == "p"));
+        }
+
+        public void CheckProcess()
+        {
+            Process process = Process.Current;
+
+            Console.WriteLine("Actual processor type: {0}", process.ActualProcessorType);
+            Console.WriteLine("SystemId: {0}", process.SystemId);
+            Assert.AreNotSame(0, process.SystemId);
+            Assert.AreNotSame(0, Process.All.Length);
+            Assert.AreNotEqual(-1, process.FindMemoryRegion(DefaultModule.Address));
+            Assert.AreEqual(DefaultModule.ImageName, process.ExecutableName);
+            Assert.IsNotNull(process.PEB);
+            Assert.IsNull(process.CurrentCLRAppDomain);
         }
     }
 }
