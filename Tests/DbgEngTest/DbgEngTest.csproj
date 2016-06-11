@@ -98,6 +98,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="CLR\ValueTests.cs" />
+    <Compile Include="CodeGenTests.cs" />
     <Compile Include="NativeDumpTest32.cs" />
     <Compile Include="NativeDumpTest32Release.cs" />
     <Compile Include="NativeDumpTest64.cs" />
@@ -127,6 +128,10 @@
     <ProjectReference Include="$(SolutionDir)\Source\DbgEngHelpers\DbgEngHelpers.csproj">
       <Project>{74CD700C-EDAA-4EB2-905E-7A4EA982E0C3}</Project>
       <Name>DbgEngHelpers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj">
+      <Project>{283a0331-2ead-4dd2-a3fe-20d229e2d277}</Project>
+      <Name>CsDebugScript.CodeGen</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj">
       <Project>{21a929ea-b96b-4523-9d0f-853ea771058d}</Project>
