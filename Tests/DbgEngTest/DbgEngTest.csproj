@@ -98,7 +98,9 @@
   <ItemGroup>
     <Compile Include="CLR\ValueTests.cs" />
     <Compile Include="NativeDumpTest32.cs" />
+    <Compile Include="NativeDumpTest32Release.cs" />
     <Compile Include="NativeDumpTest64.cs" />
+    <Compile Include="NativeDumpTest64Release.cs" />
     <Compile Include="TestBase.cs" />
     <None Include="CLR\Apps\LocalVariables.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

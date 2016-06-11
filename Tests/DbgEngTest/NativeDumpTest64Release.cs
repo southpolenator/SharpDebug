@@ -6,10 +6,10 @@ namespace DbgEngTest
     /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.x64.exe.
     /// </summary>
     [TestClass]
-    public class NativeDumpTest64
+    public class NativeDumpTest64Release
     {
-        private const string DefaultDumpFile = "NativeDumpTest.x64.dmp";
-        private const string DefaultModuleName = "NativeDumpTest_x64";
+        private const string DefaultDumpFile = "NativeDumpTest.x64.Release.dmp";
+        private const string DefaultModuleName = "NativeDumpTest_x64_Release";
         private const string DefaultSymbolPath = @".\";
 
         private static NativeDumpTest testRunner;
@@ -42,18 +42,6 @@ namespace DbgEngTest
         public void TestModuleExtraction()
         {
             testRunner.TestModuleExtraction();
-        }
-
-        [TestMethod]
-        public void ReadingFloatPointTypes()
-        {
-            testRunner.ReadingFloatPointTypes();
-        }
-
-        [TestMethod]
-        public void GettingClassStaticMember()
-        {
-            testRunner.GettingClassStaticMember();
         }
     }
 }

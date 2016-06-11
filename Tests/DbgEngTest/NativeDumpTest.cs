@@ -64,7 +64,6 @@ namespace DbgEngTest
             Assert.IsTrue(Module.All.Any(module => module.Name == DefaultModuleName));
         }
 
-#if DEBUG
         public void ReadingFloatPointTypes()
         {
             Variable doubleTest = DefaultModule.GetVariable("doubleTest");
@@ -80,6 +79,5 @@ namespace DbgEngTest
 
             Assert.AreEqual((int)staticVariable, 1212121212);
         }
-#endif
     }
 }
