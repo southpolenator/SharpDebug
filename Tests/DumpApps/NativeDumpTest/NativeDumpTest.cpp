@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 
 	throw std::bad_exception();
 
-    return 0;
+	return 0;
 }
 
 struct DoubleTest

@@ -56,7 +56,7 @@ namespace DbgEngTest
 
         public void CurrentThreadContainsNativeDumpTestMainFunction()
         {
-            Assert.AreNotEqual(GetFrame($"{DefaultModuleName}!main"), null);
+            Assert.IsNotNull(GetFrame($"{DefaultModuleName}!main"));
         }
 
         public void TestModuleExtraction()
@@ -68,9 +68,9 @@ namespace DbgEngTest
         {
             Variable doubleTest = DefaultModule.GetVariable("doubleTest");
 
-            Assert.AreEqual((double)doubleTest.GetField("d"), 3.5);
-            Assert.AreEqual((float)doubleTest.GetField("f"), 2.5);
-            Assert.AreEqual((int)doubleTest.GetField("i"), 5);
+            Assert.AreEqual(3.5, (double)doubleTest.GetField("d"));
+            Assert.AreEqual(2.5, (float)doubleTest.GetField("f"));
+            Assert.AreEqual(5, (int)doubleTest.GetField("i"));
         }
 
         public void GettingClassStaticMember()
@@ -78,6 +78,29 @@ namespace DbgEngTest
             Variable staticVariable = DefaultModule.GetVariable("MyTestClass::staticVariable");
 
             Assert.AreEqual((int)staticVariable, 1212121212);
+        }
+
+        public void CheckMainArguments()
+        {
+            StackFrame mainFrame = GetFrame($"{DefaultModuleName}!main");
+            VariableCollection arguments = mainFrame.Arguments;
+
+            Assert.IsTrue(arguments.ContainsName("argc"));
+            Assert.IsTrue(arguments.ContainsName("argv"));
+            Assert.AreEqual(1, (int)arguments["argc"]);
+
+            Assert.AreEqual(2, arguments.Count);
+            for (int i = 0; i < arguments.Count; i++)
+            {
+                Variable argument = arguments[i];
+
+                Assert.IsFalse(argument.IsNullPointer());
+            }
+
+            Variable p;
+            Assert.IsFalse(arguments.TryGetValue("p", out p));
+            Assert.IsNull(arguments.Names.FirstOrDefault(n => n == "p"));
+            Assert.IsNull(arguments.FirstOrDefault(a => a.GetName() == "p"));
         }
     }
 }

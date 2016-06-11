@@ -55,5 +55,11 @@ namespace DbgEngTest
         {
             testRunner.GettingClassStaticMember();
         }
+
+        [TestMethod]
+        public void CheckMainArguments()
+        {
+            testRunner.CheckMainArguments();
+        }
     }
 }

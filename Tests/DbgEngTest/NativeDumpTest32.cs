@@ -57,5 +57,12 @@ namespace DbgEngTest
         {
             testRunner.GettingClassStaticMember();
         }
+
+        [TestMethod]
+        public void CheckMainArguments()
+        {
+            // TODO: Fix ExceptionDumper to catch correct exception
+            //testRunner.CheckMainArguments();
+        }
     }
 }
