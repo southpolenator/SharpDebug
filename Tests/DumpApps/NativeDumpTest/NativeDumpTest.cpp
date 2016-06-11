@@ -8,6 +8,8 @@
 
 using namespace std;
 
+int main(int argc, char** argv);
+
 enum MyEnum
 {
 	enumEntry0,
@@ -43,6 +45,9 @@ public:
 
 int MyTestClass::staticVariable = 1212121212;
 
+int(*mainAddress)(int, char**) = main;
+int recursionCount = 0;
+
 int main(int argc, char** argv)
 {
 	MyTestClass * p = &globalVariable;
@@ -59,6 +64,12 @@ int main(int argc, char** argv)
 
 	for (int i = 0; i < sizeof(testArray) / sizeof(testArray[0]); i++)
 		testArray[i] = 0x12121212;
+
+	if (recursionCount < 1)
+	{
+		recursionCount++;
+		mainAddress(argc, argv);
+	}
 
 	throw std::bad_exception();
 

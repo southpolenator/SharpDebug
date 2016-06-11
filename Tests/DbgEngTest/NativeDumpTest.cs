@@ -10,6 +10,8 @@ namespace DbgEngTest
     /// </summary>
     public class NativeDumpTest : TestBase
     {
+        private const string MainSourceFileName = "nativedumptest.cpp";
+
         private readonly string DefaultDumpFile;
         private readonly string DefaultModuleName;
         private readonly string DefaultSymbolPath;
@@ -36,13 +38,11 @@ namespace DbgEngTest
 
         public void CurrentThreadContainsNativeDumpTestCpp()
         {
-            const string sourceFileName = "nativedumptest.cpp";
-
             foreach (var frame in Thread.Current.StackTrace.Frames)
             {
                 try
                 {
-                    if (frame.SourceFileName.ToLower().EndsWith(sourceFileName))
+                    if (frame.SourceFileName.ToLower().EndsWith(MainSourceFileName))
                         return;
                 }
                 catch (Exception)
@@ -51,7 +51,7 @@ namespace DbgEngTest
                 }
             }
 
-            Assert.Fail($"{sourceFileName} not found on the current thread stack trace");
+            Assert.Fail($"{MainSourceFileName} not found on the current thread stack trace");
         }
 
         public void CurrentThreadContainsNativeDumpTestMainFunction()
@@ -142,6 +142,25 @@ namespace DbgEngTest
             Assert.AreEqual(10000, testArray.Length);
             foreach (int value in testArray)
                 Assert.AreEqual(0x12121212, value);
+        }
+
+        public void CheckCodeFunction()
+        {
+            // TODO: Investigate why this is not working
+            //Variable mainAddressVariable = DefaultModule.GetVariable($"{DefaultModuleName}!mainAddress");
+            //CodeFunction mainFunction = new CodeFunction(mainAddressVariable);
+
+            StackFrame mainFrame = GetFrame($"{DefaultModuleName}!main");
+            CodeFunction mainFunction = new CodeFunction(mainFrame.InstructionOffset);
+
+            Assert.AreNotEqual(0, mainFunction.Address);
+            Assert.AreNotEqual(0, mainFunction.FunctionDisplacement);
+            Assert.AreEqual($"{DefaultModuleName}!main", mainFunction.FunctionName);
+            Assert.AreEqual($"main", mainFunction.FunctionNameWithoutModule);
+            Assert.AreEqual(Process.Current, mainFunction.Process);
+            Assert.IsTrue(mainFunction.SourceFileName.Contains(MainSourceFileName));
+            Assert.AreNotEqual(0, mainFunction.SourceFileLine);
+            Console.WriteLine("SourceFileDisplacement: {0}", mainFunction.SourceFileDisplacement);
         }
     }
 }

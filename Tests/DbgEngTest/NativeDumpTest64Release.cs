@@ -55,5 +55,11 @@ namespace DbgEngTest
         {
             testRunner.CheckThread();
         }
+
+        [TestMethod]
+        public void CheckCodeFunction()
+        {
+            testRunner.CheckCodeFunction();
+        }
     }
 }
