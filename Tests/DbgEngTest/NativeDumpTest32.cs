@@ -46,6 +46,7 @@ namespace DbgEngTest
             testRunner.TestModuleExtraction();
         }
 
+#if DEBUG
         [TestMethod]
         public void ReadingFloatPointTypes()
         {
@@ -57,5 +58,6 @@ namespace DbgEngTest
         {
             testRunner.GettingClassStaticMember();
         }
+#endif
     }
 }
