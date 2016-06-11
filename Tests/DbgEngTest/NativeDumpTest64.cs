@@ -73,5 +73,11 @@ namespace DbgEngTest
         {
             testRunner.CheckThread();
         }
+
+        [TestMethod]
+        public void CheckCodeArray()
+        {
+            testRunner.CheckCodeArray();
+        }
     }
 }

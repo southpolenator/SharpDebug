@@ -55,6 +55,11 @@ int main(int argc, char** argv)
 	p->ansiStrings.push_back("AnsiFoo");
 	p->ansiStrings.push_back("AnsiBar");
 
+	int testArray[10000];
+
+	for (int i = 0; i < sizeof(testArray) / sizeof(testArray[0]); i++)
+		testArray[i] = 0x12121212;
+
 	throw std::bad_exception();
 
 	return 0;

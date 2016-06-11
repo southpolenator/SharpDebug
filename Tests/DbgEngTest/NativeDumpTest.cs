@@ -131,5 +131,17 @@ namespace DbgEngTest
             Assert.IsNotNull(thread.TEB);
             Assert.IsNotNull(thread.ThreadContext);
         }
+
+        public void CheckCodeArray()
+        {
+            StackFrame mainFrame = GetFrame($"{DefaultModuleName}!main");
+            VariableCollection locals = mainFrame.Locals;
+            Variable testArrayVariable = locals["testArray"];
+            CodeArray<int> testArray = new CodeArray<int>(testArrayVariable);
+
+            Assert.AreEqual(10000, testArray.Length);
+            foreach (int value in testArray)
+                Assert.AreEqual(0x12121212, value);
+        }
     }
 }

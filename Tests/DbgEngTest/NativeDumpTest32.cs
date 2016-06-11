@@ -77,5 +77,12 @@ namespace DbgEngTest
             // TODO: Fix ExceptionDumper to catch correct exception
             //testRunner.CheckThread();
         }
+
+        [TestMethod]
+        public void CheckCodeArray()
+        {
+            // TODO: Fix ExceptionDumper to catch correct exception
+            //testRunner.CheckCodeArray();
+        }
     }
 }
