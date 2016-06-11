@@ -15,10 +15,10 @@ namespace DbgEngTest
 
         private const string DefaultModuleName = "NativeDumpTest_x64";
 
-        private const string DefaultSymbolPath = @"srv*;.\";
+        private const string DefaultSymbolPath = @".\";
 
-        [ClassInitialize]
-        public static void TestSetup(TestContext context)
+        [TestInitialize]
+        public void TestSetup()
         {
             Initialize(DefaultDumpFile, DefaultSymbolPath);
         }
@@ -26,11 +26,13 @@ namespace DbgEngTest
         [TestMethod]
         public void CurrentThreadContainsNativeDumpTestCpp()
         {
+            const string sourceFileName = "nativedumptest.cpp";
+
             foreach (var frame in Thread.Current.StackTrace.Frames)
             {
                 try
                 {
-                    if (frame.SourceFileName.EndsWith("nativedumptest.cpp"))
+                    if (frame.SourceFileName.ToLower().EndsWith(sourceFileName))
                         return;
                 }
                 catch (Exception)
@@ -39,19 +41,19 @@ namespace DbgEngTest
                 }
             }
 
-            Assert.Fail("nativedumptest.cpp not found on the current thread stack trace");
+            Assert.Fail($"{sourceFileName} not found on the current thread stack trace");
         }
 
         [TestMethod]
         public void CurrentThreadContainsNativeDumpTestMainFunction()
         {
-            Assert.AreNotEqual(GetFrame(DefaultModuleName + "!main"), null);
+            Assert.AreNotEqual(GetFrame($"{DefaultModuleName}!main"), null);
         }
 
         [TestMethod]
         public void TestModuleExtraction()
         {
-            Assert.IsTrue(Module.All.Any(module => module.ImageName.Contains("NativeDump")));
+            Assert.IsTrue(Module.All.Any(module => module.Name == DefaultModuleName));
         }
     }
 }
