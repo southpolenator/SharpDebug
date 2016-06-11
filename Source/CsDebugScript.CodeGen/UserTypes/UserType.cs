@@ -1111,6 +1111,8 @@ namespace CsDebugScript.CodeGen.UserTypes
                             return new BasicTypeTree("bool");
                         case BasicType.Char:
                         case BasicType.WChar:
+                        case BasicType.Char16:
+                        case BasicType.Char32:
                             return new BasicTypeTree("char");
                         case BasicType.BSTR:
                             return new BasicTypeTree("string");
@@ -1156,6 +1158,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                         case BasicType.Hresult:
                             return new BasicTypeTree("uint"); // TODO: Create Hresult type
+
                         default:
                             throw new Exception("Unexpected basic type " + type.BasicType);
                     }
