@@ -121,5 +121,15 @@ namespace DbgEngTest
             Assert.IsNotNull(process.PEB);
             Assert.IsNull(process.CurrentCLRAppDomain);
         }
+
+        public void CheckThread()
+        {
+            Thread thread = Thread.Current;
+
+            Assert.AreNotSame(0, Thread.All.Length);
+            Assert.IsNotNull(thread.Locals);
+            Assert.IsNotNull(thread.TEB);
+            Assert.IsNotNull(thread.ThreadContext);
+        }
     }
 }
