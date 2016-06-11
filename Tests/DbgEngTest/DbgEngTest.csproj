@@ -81,6 +81,7 @@
       <HintPath>$(OutputPath)\..\DbgEngManaged.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
   </ItemGroup>
   <Choose>
@@ -126,6 +127,10 @@
     <ProjectReference Include="$(SolutionDir)\Source\DbgEngHelpers\DbgEngHelpers.csproj">
       <Project>{74CD700C-EDAA-4EB2-905E-7A4EA982E0C3}</Project>
       <Name>DbgEngHelpers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj">
+      <Project>{21a929ea-b96b-4523-9d0f-853ea771058d}</Project>
+      <Name>CsDebugScript.CommonUserTypes</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>

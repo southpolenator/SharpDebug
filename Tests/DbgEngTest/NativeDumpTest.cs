@@ -1,4 +1,5 @@
 ﻿using CsDebugScript;
+using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
@@ -106,6 +107,33 @@ namespace DbgEngTest
             Assert.IsFalse(arguments.TryGetValue("p", out p));
             Assert.IsNull(arguments.Names.FirstOrDefault(n => n == "p"));
             Assert.IsNull(arguments.FirstOrDefault(a => a.GetName() == "p"));
+        }
+
+        public void CheckMainLocals()
+        {
+            StackFrame mainFrame = GetFrame($"{DefaultModuleName}!main");
+            VariableCollection arguments = mainFrame.Locals;
+            dynamic p = arguments["p"];
+            std.wstring string1 = new std.wstring(p.string1);
+            Assert.AreEqual("qwerty", string1.Text);
+            std.list<std.wstring> strings = new std.list<std.wstring>(p.strings);
+            std.vector<std.@string> ansiStrings = new std.vector<std.@string>(p.ansiStrings);
+
+            string[] stringsConverted = strings.Select(s => s.Text).ToArray();
+            string[] ansiStringsConverted = ansiStrings.Select(s => s.Text).ToArray();
+
+            CompareArrays(new[] { "Foo", "Bar" }, stringsConverted);
+            CompareArrays(new[] { "AnsiFoo", "AnsiBar" }, ansiStringsConverted);
+
+            foreach (std.wstring s in strings)
+                Assert.IsTrue(s.Length <= s.Reserved);
+            for (int i = 0; i < ansiStrings.Length; i++)
+                Assert.IsTrue(ansiStrings[i].Length <= ansiStrings[i].Reserved);
+
+            dynamic e = arguments["e"];
+
+            Assert.AreEqual("enumEntry3", e.ToString());
+            Assert.AreEqual(3, (int)e);
         }
 
         public void CheckProcess()

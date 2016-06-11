@@ -59,5 +59,12 @@ namespace DbgEngTest
             Assert.Fail($"Frame not found '{functionName}'");
             return null;
         }
+
+        public static void CompareArrays<T>(T[] array1, T[] array2)
+        {
+            Assert.AreEqual(array1.Length, array2.Length);
+            for (int i = 0; i < array1.Length; i++)
+                Assert.AreEqual(array1[i], array2[i]);
+        }
     }
 }

@@ -93,6 +93,12 @@ namespace DbgEngTest
         //{
         //    testRunner.CheckCodeFunction();
         //}
+
+        //[TestMethod]
+        //public void CheckMainLocals()
+        //{
+        //    testRunner.CheckMainLocals();
+        //}
         #endregion
     }
 }

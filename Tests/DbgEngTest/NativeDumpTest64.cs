@@ -91,5 +91,11 @@ namespace DbgEngTest
         {
             testRunner.CheckDebugger();
         }
+
+        [TestMethod]
+        public void CheckMainLocals()
+        {
+            testRunner.CheckMainLocals();
+        }
     }
 }
