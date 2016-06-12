@@ -29,13 +29,14 @@ namespace DbgEngTest
             mtaTask.Wait();
         }
 
-        //[TestMethod, Timeout(30000)]
+        [TestMethod, Timeout(30000)]
         public void SimpleEndToEnd()
         {
             // To generate code for this test, select "Generate Code for Coded UI Test" from the shortcut menu and select one of the menu items.
             Executor.ShowInteractiveWindow(false);
             UIMap.AssertMethod1();
             UIMap.RecordedMethod1();
+            System.Threading.Thread.Sleep(1000);
         }
 
         /// <summary>

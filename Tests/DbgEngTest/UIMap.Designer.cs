@@ -54,18 +54,13 @@ namespace DbgEngTest
             WinWindow uICInteractiveWindowWindow1 = this.UICInteractiveWindowWindow1;
             #endregion
 
-            // Click 'C# Interactive Window' title bar
-            Mouse.Click(uICInteractiveWindowTitleBar, new Point(628, 15));
-
-            // Click first custom control next to 'C#>' label
-            Mouse.Click(uIItemCustom, new Point(792, 9));
-
             WaitForReadyState();
 
             // Type '{#}dbg{Space}k{Enter}' in 'C# Interactive Window' window
             //Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys, ModifierKeys.None);
 
-            WaitForReadyState();
+            //WaitForExecutionState();
+            //WaitForReadyState();
 
             // Type 'var{Space}a{Space}={Space}new{Space}{[}{]}{Space}{RShiftKey}{{}' in 'C# Interactive Window' window
             Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys1, ModifierKeys.None);
@@ -76,11 +71,13 @@ namespace DbgEngTest
             // Type '1,{Space}2,{Space}3,{Space}4,{Space}5,{Space}6,{Space}7,{Space}{RShiftKey}{}};{Enter}' in 'C# Interactive Window' window
             Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys3, ModifierKeys.None);
 
+            WaitForExecutionState();
             WaitForReadyState();
 
             // Type 'writeln{RShiftKey}{(}a.{RShiftKey}Len{Enter}{RShiftKey}{)};{Enter}' in 'C# Interactive Window' window
             Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys4, ModifierKeys.None);
 
+            WaitForExecutionState();
             WaitForReadyState();
 
             // Type 'q{Enter}{Enter}' in 'C# Interactive Window' window
@@ -98,7 +95,7 @@ namespace DbgEngTest
         {
             WpfText uITypehelptogetstartedText1 = this.UICInteractiveWindowWindow.UITypehelptogetstartedText.UITypehelptogetstartedText1;
 
-            uITypehelptogetstartedText1.WaitForControlCondition(c => c.GetProperty(WpfText.PropertyNames.Name).ToString() == "Executing...", 5000);
+            uITypehelptogetstartedText1.WaitForControlCondition(c => c.GetProperty(WpfText.PropertyNames.Name).ToString() == "Executing...", 500);
         }
 
         #region Properties
