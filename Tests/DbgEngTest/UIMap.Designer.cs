@@ -80,6 +80,12 @@ namespace DbgEngTest
             WaitForExecutionState();
             WaitForReadyState();
 
+            // Type 'writeln{RShiftKey}{(}a.{RShiftKey}Len{Enter}{RShiftKey}{)};{Enter}' in 'C# Interactive Window' window
+            Keyboard.SendKeys(uICInteractiveWindowWindow1, "a{Enter}{Enter}", ModifierKeys.None);
+
+            WaitForExecutionState();
+            WaitForReadyState();
+
             // Type 'q{Enter}{Enter}' in 'C# Interactive Window' window
             Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys5, ModifierKeys.None);
         }
