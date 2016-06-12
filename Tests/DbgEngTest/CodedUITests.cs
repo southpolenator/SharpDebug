@@ -39,7 +39,6 @@ namespace DbgEngTest
             });
 
             mtaTask.Start();
-            System.Threading.Thread.Sleep(5000); // TODO: Wait for window to appear and become operational
             UIMap.AssertMethod1();
             UIMap.RecordedMethod1();
             mtaTask.Wait();

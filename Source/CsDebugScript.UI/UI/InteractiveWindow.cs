@@ -242,6 +242,7 @@ namespace CsDebugScript.UI
                 }
 
                 window.Close();
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
             });
         }
 
@@ -269,6 +270,7 @@ namespace CsDebugScript.UI
                 }
 
                 window.Close();
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
             }, waitForExecution: false);
         }
 
