@@ -1,5 +1,6 @@
 ﻿using CsDebugScript;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.IO;
 
 namespace DbgEngTest
@@ -18,48 +19,91 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        public void TestExecutor()
+        {
+            ExecuteScript((fileName, arguments) => new Executor().ExecuteScript(fileName),
+                @"writeln(1 + 2);");
+            ExecuteScript((fileName, arguments) => new Executor().ExecuteScript(fileName, arguments),
+                @"writeln(args[0]);writeln(args[1]);", "First argument", "Second \" argument");
+        }
+
+        [TestMethod]
         public void SimpleScript()
         {
-            ExecuteScript(@"writeln(1 + 2);");
+            string[] lines = ExecuteScript(@"writeln(1 + 2);");
+
+            CompareArrays(lines, new[] { "3" });
         }
 
         [TestMethod]
         public void ScriptArguments()
         {
-            ExecuteScript(@"writeln(args[0]);writeln(args[1]);", "First argument", "Second \" argument");
+            string[] arguments = new[] { "First argument", "Second \" argument" };
+            string[] lines = ExecuteScript(@"writeln(args[0]);writeln(args[1]);", arguments);
+
+            CompareArrays(lines, arguments);
         }
 
         [TestMethod]
         public void DynamicTest()
         {
-            ExecuteScript(@"dynamic a = new [] { 1, 2, 3, 4, 5, 6, 7 }; writeln(a.Length);");
+            string[] lines = ExecuteScript(@"dynamic a = new [] { 1, 2, 3, 4, 5, 6, 7 }; writeln(a.Length);");
+
+            CompareArrays(lines, new[] { "7" });
         }
 
         [TestMethod]
         public void ScriptBase()
         {
-            ExecuteScript($@"
+            string[] lines = ExecuteScript($@"
 var module = Modules.{DefaultModuleName};
 var moduleName = module.Name;
 var doubleTest = module.doubleTest;
 var doubleTest2 = Globals.doubleTest;
 
-write(Processes.Length);
-Write(Threads.Length);
+WriteLine(moduleName);
+write(doubleTest.GetPointerAddress() == doubleTest2.GetPointerAddress());
+write(Processes.Length > 0);
+Write(Threads.Length > 0);
 ");
+
+            CompareArrays(lines, new[] { DefaultModuleName, "TrueTrueTrue" });
         }
 
-        private static void ExecuteScript(string code, params string[] arguments)
+        private static string[] ExecuteScript(string code, params string[] arguments)
+        {
+            TextWriter output = Console.Out;
+            TextWriter error = Console.Error;
+
+            try
+            {
+                using (StringWriter writer = new StringWriter())
+                {
+                    Console.SetError(writer);
+                    Console.SetOut(writer);
+                    ExecuteScript((fileName, args) => ScriptExecution.Execute(fileName, args), code, arguments);
+                    writer.Flush();
+
+                    string text = writer.GetStringBuilder().ToString();
+
+                    return text.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                }
+            }
+            finally
+            {
+                Console.SetOut(output);
+                Console.SetError(error);
+            }
+        }
+
+        private static void ExecuteScript(Action<string, string[]> executor, string code, params string[] arguments)
         {
             string fileName = Path.GetTempFileName();
 
             try
             {
                 File.WriteAllText(fileName, code);
-                if (arguments.Length == 0)
-                    new Executor().ExecuteScript(fileName);
-                else
-                    new Executor().ExecuteScript(fileName, arguments);
+                executor(fileName, arguments);
             }
             finally
             {
