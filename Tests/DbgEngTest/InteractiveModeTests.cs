@@ -19,13 +19,25 @@ namespace DbgEngTest
         public void DynamicTest()
         {
             Executor.InterpretInteractive("dynamic a = 5");
-            new Executor().Interpret("Console.WriteLine(a);");
+            Executor.InterpretInteractive("Console.WriteLine(a);");
+            Executor.InterpretInteractive("Dump(a);");
+            Executor.InterpretInteractive("a");
+        }
+
+        [TestMethod]
+        public void ScriptBaseTest()
+        {
+            Executor.InterpretInteractive("ListCommands();");
+            Executor.InterpretInteractive("ListAllCommands();");
+            Executor.InterpretInteractive("ListVariables();");
+            Executor.InterpretInteractive("ChangeBaseClass<InteractiveScriptBase>();");
+            Executor.InterpretInteractive("exit");
         }
 
         [TestMethod]
         public void DebuggerCommand()
         {
-            Executor.InterpretInteractive("#dbg k");
+            new Executor().Interpret("#dbg k");
         }
     }
 }
