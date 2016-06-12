@@ -8,9 +8,9 @@ namespace DbgEngTest
     [TestClass]
     public class NativeDumpTest64
     {
-        private const string DefaultDumpFile = "NativeDumpTest.x64.dmp";
-        private const string DefaultModuleName = "NativeDumpTest_x64";
-        private const string DefaultSymbolPath = @".\";
+        internal const string DefaultDumpFile = "NativeDumpTest.x64.dmp";
+        internal const string DefaultModuleName = "NativeDumpTest_x64";
+        internal const string DefaultSymbolPath = @".\";
 
         private static NativeDumpTest testRunner;
 

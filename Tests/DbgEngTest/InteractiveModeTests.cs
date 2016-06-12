@@ -6,8 +6,8 @@ namespace DbgEngTest
     [TestClass]
     public class InteractiveModeTests : TestBase
     {
-        private const string DefaultDumpFile = "NativeDumpTest.x64.dmp";
-        private const string DefaultSymbolPath = @".\";
+        private const string DefaultDumpFile = NativeDumpTest64.DefaultDumpFile;
+        private const string DefaultSymbolPath = NativeDumpTest64.DefaultSymbolPath;
 
         [TestInitialize]
         public void TestInitialize()
@@ -19,7 +19,13 @@ namespace DbgEngTest
         public void DynamicTest()
         {
             Executor.InterpretInteractive("dynamic a = 5");
-            Executor.InterpretInteractive("Console.WriteLine(a);");
+            new Executor().Interpret("Console.WriteLine(a);");
+        }
+
+        [TestMethod]
+        public void DebuggerCommand()
+        {
+            Executor.InterpretInteractive("#dbg k");
         }
     }
 }

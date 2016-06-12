@@ -22,12 +22,12 @@ namespace DbgEngTest
         {
             if (!Path.IsPathRooted(dumpFile))
             {
-                dumpFile = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), dumpFile));
+                dumpFile = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(TestBase).Assembly.Location), dumpFile));
             }
 
             if (!Path.IsPathRooted(symbolPath))
             {
-                symbolPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), symbolPath));
+                symbolPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(TestBase).Assembly.Location), symbolPath));
             }
 
             if (addSymbolServer)

@@ -14,7 +14,7 @@
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
-    <IsCodedUITest>False</IsCodedUITest>
+    <IsCodedUITest>True</IsCodedUITest>
     <TestProjectType>UnitTest</TestProjectType>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -83,6 +83,10 @@
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -98,13 +102,21 @@
   </Choose>
   <ItemGroup>
     <Compile Include="CLR\ValueTests.cs" />
+    <Compile Include="CodedUITests.cs" />
     <Compile Include="CodeGenTests.cs" />
     <Compile Include="InteractiveModeTests.cs" />
     <Compile Include="NativeDumpTest32.cs" />
     <Compile Include="NativeDumpTest32Release.cs" />
     <Compile Include="NativeDumpTest64.cs" />
     <Compile Include="NativeDumpTest64Release.cs" />
+    <Compile Include="ScriptExecutionTests.cs" />
     <Compile Include="TestBase.cs" />
+    <Compile Include="UIMap.cs">
+      <DependentUpon>UIMap.uitest</DependentUpon>
+    </Compile>
+    <Compile Include="UIMap.Designer.cs">
+      <DependentUpon>UIMap.uitest</DependentUpon>
+    </Compile>
     <None Include="CLR\Apps\LocalVariables.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -116,6 +128,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
     <None Include="packages.config" />
+    <None Include="UIMap.uitest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj">
