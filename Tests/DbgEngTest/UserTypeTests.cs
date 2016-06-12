@@ -36,10 +36,50 @@ namespace DbgEngTest
             try
             {
                 Console.WriteLine(peb.BeingDebugged);
+            }
+            catch (InvalidSymbolsException)
+            {
+                // Ignore this exception
+            }
+
+            try
+            {
                 Console.WriteLine(peb.ProcessHeap.GetPointerAddress());
+            }
+            catch (InvalidSymbolsException)
+            {
+                // Ignore this exception
+            }
+
+            try
+            {
                 Console.WriteLine(peb.ProcessHeaps.Length);
+            }
+            catch (InvalidSymbolsException)
+            {
+                // Ignore this exception
+            }
+
+            try
+            {
                 Console.WriteLine(peb.ProcessParameters.CommandLine);
+            }
+            catch (InvalidSymbolsException)
+            {
+                // Ignore this exception
+            }
+
+            try
+            {
                 Console.WriteLine(peb.ProcessParameters.EnvironmentVariables.Length);
+            }
+            catch (InvalidSymbolsException)
+            {
+                // Ignore this exception
+            }
+
+            try
+            {
                 Console.WriteLine(peb.ProcessParameters.ImagePathName);
             }
             catch (InvalidSymbolsException)
