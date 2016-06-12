@@ -35,7 +35,7 @@ namespace DbgEngTest
             // To generate code for this test, select "Generate Code for Coded UI Test" from the shortcut menu and select one of the menu items.
             Executor.ShowInteractiveWindow(false);
             UIMap.AssertMethod1();
-            //UIMap.RecordedMethod1();
+            UIMap.RecordedMethod1();
         }
 
         /// <summary>

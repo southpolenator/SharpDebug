@@ -62,26 +62,26 @@ namespace DbgEngTest
 
             WaitForReadyState();
 
-            // Type '{#}dbg{Space}k{Enter}' in 'C# Interactive Window' window
-            //Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys, ModifierKeys.None);
+            //// Type '{#}dbg{Space}k{Enter}' in 'C# Interactive Window' window
+            ////Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys, ModifierKeys.None);
 
-            // Type 'var{Space}a{Space}={Space}new{Space}{[}{]}{Space}{RShiftKey}{{}' in 'C# Interactive Window' window
-            Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys1, ModifierKeys.None);
+            //// Type 'var{Space}a{Space}={Space}new{Space}{[}{]}{Space}{RShiftKey}{{}' in 'C# Interactive Window' window
+            //Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys1, ModifierKeys.None);
 
-            // Type 'Shift + {Space}' in 'C# Interactive Window' window
-            Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys2, ModifierKeys.Shift);
+            //// Type 'Shift + {Space}' in 'C# Interactive Window' window
+            //Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys2, ModifierKeys.Shift);
 
-            // Type '1,{Space}2,{Space}3,{Space}4,{Space}5,{Space}6,{Space}7,{Space}{RShiftKey}{}};{Enter}' in 'C# Interactive Window' window
-            Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys3, ModifierKeys.None);
+            //// Type '1,{Space}2,{Space}3,{Space}4,{Space}5,{Space}6,{Space}7,{Space}{RShiftKey}{}};{Enter}' in 'C# Interactive Window' window
+            //Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys3, ModifierKeys.None);
 
-            WaitForExecutionState();
-            WaitForReadyState();
+            //WaitForExecutionState();
+            //WaitForReadyState();
 
-            // Type 'writeln{RShiftKey}{(}a.{RShiftKey}Len{Enter}{RShiftKey}{)};{Enter}' in 'C# Interactive Window' window
-            Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys4, ModifierKeys.None);
+            //// Type 'writeln{RShiftKey}{(}a.{RShiftKey}Len{Enter}{RShiftKey}{)};{Enter}' in 'C# Interactive Window' window
+            //Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys4, ModifierKeys.None);
 
-            WaitForExecutionState();
-            WaitForReadyState();
+            //WaitForExecutionState();
+            //WaitForReadyState();
 
             // Type 'q{Enter}{Enter}' in 'C# Interactive Window' window
             Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys5, ModifierKeys.None);
