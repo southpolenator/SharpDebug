@@ -39,7 +39,7 @@ namespace DbgEngTest
         public void ScriptBase()
         {
             ExecuteScript($@"
-var module = Modules[""{DefaultModuleName}""];
+var module = Modules.{DefaultModuleName};
 var moduleName = module.Name;
 var doubleTest = module.doubleTest;
 var doubleTest2 = Globals.doubleTest;
