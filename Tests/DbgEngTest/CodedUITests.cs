@@ -33,15 +33,9 @@ namespace DbgEngTest
         public void SimpleEndToEnd()
         {
             // To generate code for this test, select "Generate Code for Coded UI Test" from the shortcut menu and select one of the menu items.
-            Task mtaTask = new Task(() =>
-            {
-                Executor.ShowInteractiveWindow(true);
-            });
-
-            mtaTask.Start();
+            Executor.ShowInteractiveWindow(false);
             UIMap.AssertMethod1();
             UIMap.RecordedMethod1();
-            mtaTask.Wait();
         }
 
         /// <summary>
