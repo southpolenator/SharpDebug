@@ -1107,7 +1107,10 @@ namespace CsDebugScript
             for (int i = 0; i < variables.Length; i++)
             {
                 variables[i] = originalCollection[i].codeType.Module.Process.CastVariableToUserType(originalCollection[i]);
-                variablesByName.Add(originalCollection[i].name, variables[i]);
+                if (!string.IsNullOrEmpty(originalCollection[i].name))
+                {
+                    variablesByName.Add(originalCollection[i].name, variables[i]);
+                }
             }
 
             return new VariableCollection(variables, variablesByName);

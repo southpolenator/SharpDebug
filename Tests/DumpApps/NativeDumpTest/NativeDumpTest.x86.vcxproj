@@ -63,7 +63,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>pushd "$(OutDir)"&amp;ExceptionDumper.exe -a "$(TargetPath)" -d "$(OutDir)$(ProjectName).dmp"</Command>
+      <Command>pushd "$(OutDir)"&amp;ExceptionDumper32.exe -a "$(TargetPath)" -d "$(OutDir)$(ProjectName).dmp"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>IF EXIST "$(OutDir)\$(ProjectName).dmp" del /F /Q "$(OutDir)\$(ProjectName).dmp"</Command>
@@ -81,7 +81,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>pushd "$(OutDir)"&amp;ExceptionDumper.exe -a "$(TargetPath)" -d "$(OutDir)$(ProjectName).dmp"</Command>
+      <Command>pushd "$(OutDir)"&amp;ExceptionDumper32.exe -a "$(TargetPath)" -d "$(OutDir)$(ProjectName).dmp"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>IF EXIST "$(OutDir)\$(ProjectName).dmp" del /F /Q "$(OutDir)\$(ProjectName).dmp"</Command>

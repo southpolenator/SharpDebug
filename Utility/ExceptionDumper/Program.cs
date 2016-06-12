@@ -14,9 +14,9 @@ namespace ExceptionDumper
         public bool MiniDump { get; set; }
     }
 
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             Options options = null;
 

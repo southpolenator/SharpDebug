@@ -44,31 +44,28 @@ namespace DbgEngTest
             testRunner.CheckDebugger();
         }
 
-        // TODO: Fix ExceptionDumper to catch correct exception
-        #region Enable tests when ExceptionDumper is fixed for 32bit apps
-        //[TestMethod]
-        //public void CurrentThreadContainsNativeDumpTestCpp()
-        //{
-        //    testRunner.CurrentThreadContainsNativeDumpTestCpp();
-        //}
+        [TestMethod]
+        public void CurrentThreadContainsNativeDumpTestCpp()
+        {
+            testRunner.CurrentThreadContainsNativeDumpTestCpp();
+        }
 
-        //[TestMethod]
-        //public void CurrentThreadContainsNativeDumpTestMainFunction()
-        //{
-        //    testRunner.CurrentThreadContainsNativeDumpTestMainFunction();
-        //}
+        [TestMethod]
+        public void CurrentThreadContainsNativeDumpTestMainFunction()
+        {
+            testRunner.CurrentThreadContainsNativeDumpTestMainFunction();
+        }
 
-        //[TestMethod]
-        //public void CheckThread()
-        //{
-        //    testRunner.CheckThread();
-        //}
+        [TestMethod]
+        public void CheckThread()
+        {
+            testRunner.CheckThread();
+        }
 
-        //[TestMethod]
-        //public void CheckCodeFunction()
-        //{
-        //    testRunner.CheckCodeFunction();
-        //}
-        #endregion
+        [TestMethod]
+        public void CheckCodeFunction()
+        {
+            testRunner.CheckCodeFunction();
+        }
     }
 }

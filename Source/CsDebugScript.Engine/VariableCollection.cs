@@ -25,7 +25,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="variables">The variables.</param>
         public VariableCollection(Variable[] variables)
-            : this(variables, variables.ToDictionary(v => v.GetName()))
+            : this(variables, variables.Where(v => !string.IsNullOrEmpty(v.GetName())).ToDictionary(v => v.GetName()))
         {
         }
 

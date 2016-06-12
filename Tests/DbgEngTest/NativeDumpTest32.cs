@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using CsDebugScript;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DbgEngTest
 {
@@ -24,6 +25,7 @@ namespace DbgEngTest
         public void TestInitialize()
         {
             testRunner.TestSetup();
+            Debugger.Execute(".effmach x86");
         }
 
         [TestMethod]
@@ -56,49 +58,46 @@ namespace DbgEngTest
             testRunner.CheckDebugger();
         }
 
-        // TODO: Fix ExceptionDumper to catch correct exception
-        #region Enable tests when ExceptionDumper is fixed for 32bit apps
-        //[TestMethod]
-        //public void CurrentThreadContainsNativeDumpTestCpp()
-        //{
-        //    testRunner.CurrentThreadContainsNativeDumpTestCpp();
-        //}
+        [TestMethod]
+        public void CurrentThreadContainsNativeDumpTestCpp()
+        {
+            testRunner.CurrentThreadContainsNativeDumpTestCpp();
+        }
 
-        //[TestMethod]
-        //public void CurrentThreadContainsNativeDumpTestMainFunction()
-        //{
-        //    testRunner.CurrentThreadContainsNativeDumpTestMainFunction();
-        //}
+        [TestMethod]
+        public void CurrentThreadContainsNativeDumpTestMainFunction()
+        {
+            testRunner.CurrentThreadContainsNativeDumpTestMainFunction();
+        }
 
-        //[TestMethod]
-        //public void CheckMainArguments()
-        //{
-        //    testRunner.CheckMainArguments();
-        //}
+        [TestMethod]
+        public void CheckMainArguments()
+        {
+            testRunner.CheckMainArguments();
+        }
 
-        //[TestMethod]
-        //public void CheckThread()
-        //{
-        //    testRunner.CheckThread();
-        //}
+        [TestMethod]
+        public void CheckThread()
+        {
+            testRunner.CheckThread();
+        }
 
-        //[TestMethod]
-        //public void CheckCodeArray()
-        //{
-        //    testRunner.CheckCodeArray();
-        //}
+        [TestMethod]
+        public void CheckCodeArray()
+        {
+            testRunner.CheckCodeArray();
+        }
 
-        //[TestMethod]
-        //public void CheckCodeFunction()
-        //{
-        //    testRunner.CheckCodeFunction();
-        //}
+        [TestMethod]
+        public void CheckCodeFunction()
+        {
+            testRunner.CheckCodeFunction();
+        }
 
-        //[TestMethod]
-        //public void CheckMainLocals()
-        //{
-        //    testRunner.CheckMainLocals();
-        //}
-        #endregion
+        [TestMethod]
+        public void CheckMainLocals()
+        {
+            testRunner.CheckMainLocals();
+        }
     }
 }
