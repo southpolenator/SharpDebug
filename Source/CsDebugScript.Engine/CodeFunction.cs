@@ -131,7 +131,7 @@ namespace CsDebugScript
         /// <param name="codeType">The code type.</param>
         private static bool VerifyCodeType(CodeType codeType)
         {
-            return codeType.IsFunction;
+            return codeType.IsFunction || (codeType.IsPointer && codeType.ElementType.IsFunction);
         }
 
         /// <summary>
