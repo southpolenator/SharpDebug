@@ -445,18 +445,18 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             typeConverter = (inputType) =>
             {
-                UserType userType;
-
-                if (GetUserType(type.Module, inputType, out userType))
-                {
-                    return userType.FullClassName;
-                }
-
                 var tr = typeTransformations.FirstOrDefault(t => t.Matches(inputType));
 
                 if (tr != null)
                 {
                     return tr.TransformType(inputType, ownerUserType.ClassName, typeConverter);
+                }
+
+                UserType userType;
+
+                if (GetUserType(type.Module, inputType, out userType))
+                {
+                    return userType.FullClassName;
                 }
 
                 return "Variable";

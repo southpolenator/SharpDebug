@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.CodeGen;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -69,6 +70,18 @@ namespace DbgEngTest
                         NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
                         OriginalType = "std::basic_string<char,${char_traits},${allocator}>",
                     },
+                    new XmlTypeTransformation()
+                    {
+                        Constructor = "${new}",
+                        NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
+                        OriginalType = "std::vector<${T},${allocator}>",
+                    },
+                    new XmlTypeTransformation()
+                    {
+                        Constructor = "${new}",
+                        NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.list<${T}>",
+                        OriginalType = "std::list<${T},${allocator}>",
+                    },
                 },
             };
         }
@@ -77,35 +90,72 @@ namespace DbgEngTest
         public void NativeDumpTest_x64()
         {
             DoCodeGen("NativeDumpTest.x64.pdb");
+            DoCodeGen("NativeDumpTest.x64.pdb", singleFileExport: false);
+            DoCodeGen("NativeDumpTest.x64.pdb", compileWithRoslyn: false);
         }
 
         [TestMethod]
         public void NativeDumpTest_x64_Release()
         {
             DoCodeGen("NativeDumpTest.x64.Release.pdb");
+            DoCodeGen("NativeDumpTest.x64.Release.pdb", singleFileExport: false);
+            DoCodeGen("NativeDumpTest.x64.Release.pdb", compileWithRoslyn: false);
         }
 
         [TestMethod]
         public void NativeDumpTest_x86()
         {
             DoCodeGen("NativeDumpTest.x86.pdb");
+            DoCodeGen("NativeDumpTest.x86.pdb", singleFileExport: false);
+            DoCodeGen("NativeDumpTest.x86.pdb", compileWithRoslyn: false);
         }
 
         [TestMethod]
         public void NativeDumpTest_x86_Release()
         {
             DoCodeGen("NativeDumpTest.x86.Release.pdb");
+            DoCodeGen("NativeDumpTest.x86.Release.pdb", singleFileExport: false);
+            DoCodeGen("NativeDumpTest.x86.Release.pdb", compileWithRoslyn: false);
         }
 
-        private void DoCodeGen(string pdbFile)
+        private void DoCodeGen(string pdbFile, bool singleFileExport = true, bool compileWithRoslyn = true)
         {
-            Task mtaTask = new Task(() =>
-            {
-                Generator.Generate(GetXmlConfig(pdbFile));
-            });
+            XmlConfig xmlConfig = GetXmlConfig(pdbFile);
 
-            mtaTask.Start();
-            mtaTask.Wait();
+            xmlConfig.SingleFileExport = singleFileExport;
+            xmlConfig.GenerateAssemblyWithRoslyn = compileWithRoslyn;
+            DoCodeGen(xmlConfig);
+        }
+
+        private void DoCodeGen(XmlConfig xmlConfig)
+        {
+            TextWriter error = Console.Error;
+
+            try
+            {
+                using (StringWriter writer = new StringWriter())
+                {
+                    Console.SetError(writer);
+
+                    Task mtaTask = new Task(() =>
+                    {
+                        Generator.Generate(xmlConfig);
+                    });
+
+                    mtaTask.Start();
+                    mtaTask.Wait();
+
+                    writer.Flush();
+                    string errorText = writer.GetStringBuilder().ToString();
+
+                    if (!string.IsNullOrEmpty(errorText))
+                        throw new Exception(errorText);
+                }
+            }
+            finally
+            {
+                Console.SetError(error);
+            }
         }
     }
 }
