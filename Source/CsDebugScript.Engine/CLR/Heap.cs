@@ -65,6 +65,10 @@ namespace CsDebugScript.CLR
             foreach (ulong address in ClrHeap.EnumerateObjectAddresses())
             {
                 var clrType = ClrHeap.GetObjectType(address);
+
+                if (clrType.IsFree)
+                    continue;
+
                 var codeType = Runtime.Process.FromClrType(clrType);
 
                 yield return Variable.Create(codeType, address);

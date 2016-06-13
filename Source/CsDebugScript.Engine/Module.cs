@@ -151,6 +151,7 @@ namespace CsDebugScript
             });
             TypesByName = new DictionaryCache<string, CodeType>(GetTypeByName);
             TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
+            ClrTypes = new DictionaryCache<Microsoft.Diagnostics.Runtime.ClrType, CodeType>(GetClrCodeType);
             GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
             UserTypeCastedGlobalVariables = new DictionaryCache<string, Variable>((name) =>
             {
@@ -185,6 +186,11 @@ namespace CsDebugScript
         /// Types by the name
         /// </summary>
         internal DictionaryCache<string, CodeType> TypesByName { get; private set; }
+
+        /// <summary>
+        /// Dictionary cache of CLR types.
+        /// </summary>
+        internal DictionaryCache<Microsoft.Diagnostics.Runtime.ClrType, CodeType> ClrTypes { get; private set; }
 
         /// <summary>
         /// Types by the identifier
@@ -516,7 +522,7 @@ namespace CsDebugScript
                 if (clrType != null)
                 {
                     // Create a code type
-                    return new ClrCodeType(this, clrType);
+                    return GetClrCodeType(clrType);
                 }
             }
             catch (Exception)
@@ -559,6 +565,15 @@ namespace CsDebugScript
         internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
         {
             return Process.FromClrType(clrType);
+        }
+
+        /// <summary>
+        /// Creates CodeType from the CLR type.
+        /// </summary>
+        /// <param name="clrType">The CLR type.</param>
+        private CodeType GetClrCodeType(Microsoft.Diagnostics.Runtime.ClrType clrType)
+        {
+            return new ClrCodeType(this, clrType);
         }
         #endregion
     }

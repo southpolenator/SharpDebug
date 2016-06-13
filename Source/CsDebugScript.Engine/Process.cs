@@ -546,7 +546,7 @@ namespace CsDebugScript
         /// <param name="clrType">The CLR type.</param>
         internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
         {
-            return ModulesById[clrType.Module.ImageBase].TypesByName[clrType.Name];
+            return ModulesById[clrType.Module.ImageBase].ClrTypes[clrType];
         }
 
         /// <summary>
