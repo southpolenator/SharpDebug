@@ -42,6 +42,10 @@ namespace DbgEngTest
                     {
                         Path = "CsDebugScript.Engine.dll",
                     },
+                    new XmlReferencedAssembly()
+                    {
+                        Path = "CsDebugScript.CommonUserTypes.dll",
+                    },
                 },
                 Types = new XmlType[0],
                 IncludedFiles = new XmlIncludedFile[0],

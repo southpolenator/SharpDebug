@@ -19,13 +19,7 @@ namespace DbgEngTest
         public static void ClassInitialize(TestContext testContext)
         {
             testRunner = new NativeDumpTest(DefaultDumpFile, DefaultModuleName, DefaultSymbolPath);
-        }
-
-        [TestInitialize]
-        public void TestInitialize()
-        {
             testRunner.TestSetup();
-            Debugger.Execute(".effmach x86");
         }
 
         [TestMethod]
