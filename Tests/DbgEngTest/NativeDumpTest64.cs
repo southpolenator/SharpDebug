@@ -18,11 +18,6 @@ namespace DbgEngTest
         public static void ClassInitialize(TestContext testContext)
         {
             testRunner = new NativeDumpTest(DefaultDumpFile, DefaultModuleName, DefaultSymbolPath);
-        }
-
-        [TestInitialize]
-        public void TestInitialize()
-        {
             testRunner.TestSetup();
         }
 

@@ -13,8 +13,8 @@ namespace DbgEngTest
         private const string DefaultSymbolPath = NativeDumpTest64.DefaultSymbolPath;
         private const string DefaultModuleName = NativeDumpTest64.DefaultModuleName;
 
-        [TestInitialize]
-        public void TestInitialize()
+        [ClassInitialize]
+        public static void ClassInitialize(TestContext testContext)
         {
             Initialize(DefaultDumpFile, DefaultSymbolPath);
         }
