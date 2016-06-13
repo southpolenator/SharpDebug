@@ -249,6 +249,11 @@ namespace CsDebugScript
             {
                 return imageName.Value;
             }
+
+            internal set
+            {
+                imageName.Value = value;
+            }
         }
 
         /// <summary>
@@ -259,6 +264,11 @@ namespace CsDebugScript
             get
             {
                 return loadedImageName.Value;
+            }
+
+            internal set
+            {
+                loadedImageName.Value = value;
             }
         }
 
@@ -271,6 +281,11 @@ namespace CsDebugScript
             get
             {
                 return symbolFileName.Value;
+            }
+
+            internal set
+            {
+                symbolFileName.Value = value;
             }
         }
 
@@ -317,6 +332,17 @@ namespace CsDebugScript
             {
                 return timestampAndSize.Value.Item2;
             }
+
+            internal set
+            {
+                DateTime dateTime = DateTime.MaxValue;
+                if (timestampAndSize.Cached)
+                {
+                    dateTime = timestampAndSize.Value.Item1;
+                }
+
+                timestampAndSize.Value = Tuple.Create(dateTime, value);
+            }
         }
 
         /// <summary>
@@ -327,6 +353,11 @@ namespace CsDebugScript
             get
             {
                 return clrModule.Value;
+            }
+
+            set
+            {
+                clrModule.Value = value;
             }
         }
 

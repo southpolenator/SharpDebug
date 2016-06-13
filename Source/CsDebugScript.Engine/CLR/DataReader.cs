@@ -212,10 +212,26 @@ namespace CsDebugScript.CLR
             }
         }
 
+        /// <summary>
+        /// Read memory out of the target process.
+        /// </summary>
+        /// <param name="address">The address of memory to read.</param>
+        /// <param name="buffer">The buffer to write to.</param>
+        /// <param name="bytesRequested">The number of bytes to read.</param>
+        /// <param name="bytesRead">The number of bytes actually read out of the target process.</param>
+        /// <returns>
+        /// True if any bytes were read at all, false if the read failed (and no bytes were read).
+        /// </returns>
         public bool ReadMemory(ulong address, IntPtr buffer, int bytesRequested, out int bytesRead)
         {
             try
             {
+                // We might get pointer address that doesn't care about high bits, so we should trim it.
+                if (address > uint.MaxValue && GetPointerSize() == 4)
+                {
+                    address = address & uint.MaxValue;
+                }
+
                 MemoryBuffer memoryBuffer = Debugger.ReadMemory(Process, address, (uint)bytesRequested);
 
                 unsafe
