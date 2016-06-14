@@ -58,13 +58,18 @@ namespace DbgEngTest.CLR
             return cr.PathToAssembly;
         }
 
-        protected static void CompileAndInitialize(string appName)
+        protected static void CompileAndInitialize(string appName, string customDumpName = null, bool forceDumpRecreate = false)
         {
             string appPath = CompileApp(appName, appName + ".cs", "SharedLibrary.cs");
             string appDirectory = Path.GetDirectoryName(appPath);
             string dumpPath = Path.Combine(appDirectory, Path.GetFileNameWithoutExtension(appName) + ".mdmp");
 
-            if (!File.Exists(dumpPath) || File.GetLastWriteTimeUtc(appPath) > File.GetLastWriteTimeUtc(dumpPath))
+            if (!string.IsNullOrEmpty(customDumpName))
+            {
+                dumpPath = Path.Combine(appDirectory, customDumpName);
+            }
+
+            if (forceDumpRecreate || !File.Exists(dumpPath) || File.GetLastWriteTimeUtc(appPath) > File.GetLastWriteTimeUtc(dumpPath))
             {
                 ExceptionDumper.Dumper.RunAndDumpOnException(appPath, dumpPath, false);
             }
