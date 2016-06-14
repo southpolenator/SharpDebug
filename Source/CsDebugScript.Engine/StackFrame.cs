@@ -86,6 +86,10 @@ namespace CsDebugScript
 
                 if (m == null && ClrStackFrame != null)
                     m = Process.Modules.Where(mm => mm.ClrModule == ClrStackFrame.Module).FirstOrDefault();
+                if (m == null && ClrStackFrame != null)
+                    m = Process.Modules.Where(mm => mm.Address == ClrStackFrame.Module.ImageBase).FirstOrDefault();
+                if (m == null && ClrStackFrame != null)
+                    m = Process.ClrModuleCache[ClrStackFrame.Module];
                 return m;
             });
         }
@@ -289,6 +293,11 @@ namespace CsDebugScript
             {
                 return clrStackFrame.Value;
             }
+
+            set
+            {
+                clrStackFrame.Value = value;
+            }
         }
 
         /// <summary>
@@ -315,10 +324,14 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the function name and displacement.
         /// </summary>
-        /// <returns></returns>
         /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
         private Tuple<string, ulong> ReadFunctionNameAndDisplacement()
         {
+            if (clrStackFrame.Cached && clrStackFrame.Value != null)
+            {
+                return ReadClrFunctionNameAndDisplacement();
+            }
+
             try
             {
                 ulong displacement;
@@ -331,9 +344,7 @@ namespace CsDebugScript
             {
                 if (ClrStackFrame != null)
                 {
-                    string functionName = Module.Name + "!" + ClrStackFrame.Method;
-
-                    return Tuple.Create(functionName, ulong.MaxValue);
+                    return ReadClrFunctionNameAndDisplacement();
                 }
 
                 throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
@@ -345,6 +356,18 @@ namespace CsDebugScript
         /// </summary>
         private VariableCollection GetArguments()
         {
+            if (clrStackFrame.Cached && ClrStackFrame != null)
+            {
+                if (ClrStackFrame.Arguments.Count > 0)
+                {
+                    return ConvertClrToVariableCollection(ClrStackFrame.Arguments, GetClrArgumentsNames());
+                }
+                else
+                {
+                    return new VariableCollection(new Variable[0]);
+                }
+            }
+
             VariableCollection arguments = null;
 
             try
@@ -365,10 +388,33 @@ namespace CsDebugScript
 
         #region CLR specific methods
         /// <summary>
+        /// Reads the CLR function name and displacement.
+        /// </summary>
+        private Tuple<string, ulong> ReadClrFunctionNameAndDisplacement()
+        {
+            string moduleName = Module?.Name ?? "???";
+            string functionName = moduleName + "!" + ClrStackFrame.Method;
+
+            return Tuple.Create(functionName, ulong.MaxValue);
+        }
+
+        /// <summary>
         /// Gets the local variables.
         /// </summary>
         private VariableCollection GetLocals()
         {
+            if (clrStackFrame.Cached && ClrStackFrame != null)
+            {
+                if (ClrStackFrame.Locals.Count > 0)
+                {
+                    return ConvertClrToVariableCollection(ClrStackFrame.Locals, GetClrLocalsNames());
+                }
+                else
+                {
+                    return new VariableCollection(new Variable[0]);
+                }
+            }
+
             VariableCollection locals = null;
 
             try
@@ -392,7 +438,23 @@ namespace CsDebugScript
         /// </summary>
         private string[] GetClrLocalsNames()
         {
-            var pdb = Module.ClrPdbReader;
+            var pdb = Module?.ClrPdbReader;
+
+            if (Module == null)
+            {
+                try
+                {
+                    string pdbPath = ClrStackFrame.Runtime.DataTarget.SymbolLocator.FindPdb(ClrStackFrame.Module.Pdb);
+
+                    if (!string.IsNullOrEmpty(pdbPath))
+                    {
+                        pdb = new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath);
+                    }
+                }
+                catch
+                {
+                }
+            }
 
             if (pdb == null)
             {

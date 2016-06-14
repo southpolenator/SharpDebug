@@ -562,9 +562,8 @@ namespace CsDebugScript.CodeGen.UserTypes
                     if (userType == null)
                     {
                         // TODO: This shouldn't happen
-                        //specializationType = TypeOfSpecializationType.Variable;
-                        //continue;
-                        throw new Exception("This should never happen");
+                        specializationType = TypeOfSpecializationType.Variable;
+                        continue;
                     }
 
                     if (specializationType == TypeOfSpecializationType.Variable)
@@ -607,7 +606,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
 
                 // Save result based on specialization type
-                string userTypeName;
+                string userTypeName = null;
                 var templateCommonType = commonType as TemplateUserType;
 
                 switch (specializationType)
@@ -620,7 +619,91 @@ namespace CsDebugScript.CodeGen.UserTypes
                         break;
                     case TypeOfSpecializationType.UserType:
                         if (templateCommonType != null)
-                            userTypeName = new TemplateTypeTree(templateCommonType, factory).GetTypeString();
+                        {
+                            // Common specialization is template type. In order to use it, we need to take specialization from this type
+                            // and not the one that engine picked up as generalization.
+                            UserType templateArgumentUserType = templateArgumentsAsUserTypes[i];
+                            List<UserType> baseClasses = ExtractAllBaseClasses(templateArgumentUserType);
+
+                            foreach (UserType baseClass in baseClasses)
+                            {
+                                TemplateUserType templateBaseClass = baseClass as TemplateUserType;
+
+                                if (templateBaseClass != null && templateCommonType == templateBaseClass.TemplateType)
+                                {
+                                    templateCommonType = templateBaseClass;
+                                    break;
+                                }
+                            }
+
+                            // In order to use template as specialization, we need to have all arguments coming from our template arguments.
+                            // If not, we cannot trust them and should continue with the base classes.
+                            var tree = new TemplateTypeTree(templateCommonType, factory);
+                            bool ok = true;
+
+                            do
+                            {
+                                // Check if all arguments are coming from our template arguments.
+                                ok = true;
+                                foreach (var args in tree.SpecializedArguments)
+                                    if (args != null)
+                                        foreach (var arg in args)
+                                            if (!(arg is TemplateArgumentTreeType) && !(arg is UserTypeTree && ((UserTypeTree)arg).UserType is TemplateArgumentUserType))
+                                            {
+                                                ok = false;
+                                                break;
+                                            }
+
+                                if (!ok)
+                                {
+                                    // Find base class that we should continue with
+                                    UserType nextBaseClass = null;
+                                    Symbol symbol = templateCommonType.Symbol;
+
+                                    while (nextBaseClass == null)
+                                    {
+                                        if (symbol.BaseClasses == null || symbol.BaseClasses.Length == 0)
+                                        {
+                                            // We have finished all
+                                            break;
+                                        }
+
+                                        if (symbol.BaseClasses.Length > 1)
+                                        {
+                                            // We cannot match common type with multi-inheritance
+                                            break;
+                                        }
+
+                                        symbol = symbol.BaseClasses[0];
+                                        nextBaseClass = symbol?.UserType;
+                                    }
+
+                                    // No base class, use Variable
+                                    if (nextBaseClass == null)
+                                    {
+                                        userTypeName = "Variable";
+                                        break;
+                                    }
+                                    else if (nextBaseClass is TemplateUserType)
+                                    {
+                                        // Base class is template, continue with checks
+                                        templateCommonType = (TemplateUserType)nextBaseClass;
+                                        tree = new TemplateTypeTree(templateCommonType, factory);
+                                    }
+                                    else
+                                    {
+                                        // Base class is not template, so we can stop testing it.
+                                        userTypeName = nextBaseClass.FullClassName;
+                                        break;
+                                    }
+                                }
+                            }
+                            while (!ok);
+
+                            // All checks passed for this template user type, use it.
+                            if (ok)
+                                userTypeName = tree.GetTypeString();
+                        }
                         else
                             userTypeName = commonType.FullClassName;
                         break;
@@ -705,7 +788,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="factory">The user type factory.</param>
         protected override IEnumerable<string> GetGenericTypeConstraints(UserTypeFactory factory)
         {
-            var dict = GetGenericTypeConstraintsDictionary(factory);
+            var dict = GetGenericTypeConstraintsDictionary(CreateFactory(factory));
 
             return dict.Select(t => string.Format("where {0} : {1}", t.Key, t.Value));
         }

@@ -125,12 +125,12 @@ namespace CsDebugScript
         /// <summary>
         /// The Modules dynamic object. You can use this dynamic variable to easily access Modules and afterwards global variables.
         /// </summary>
-        protected dynamic Modules = new ModulesDynamicObject();
+        public dynamic Modules = new ModulesDynamicObject();
 
         /// <summary>
         /// The Globals dynamic object. You can use this dynamic variable to easily access global variables.
         /// </summary>
-        protected dynamic Globals = new GlobalsDynamicObject();
+        public dynamic Globals = new GlobalsDynamicObject();
 
         /// <summary>
         /// Gets the array of all processes being debugged.

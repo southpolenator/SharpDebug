@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="BaseClassesArrayAttribute.cs" />
     <Compile Include="CLR\AppDomain.cs" />
+    <Compile Include="CLR\ClrThread.cs" />
     <Compile Include="CLR\DataReader.cs" />
     <Compile Include="CLR\Heap.cs" />
     <Compile Include="CLR\NamespaceDoc.cs" />

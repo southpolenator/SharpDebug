@@ -8,15 +8,21 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DbgEngTest</RootNamespace>
     <AssemblyName>DbgEngTest</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
-    <IsCodedUITest>False</IsCodedUITest>
+    <IsCodedUITest>True</IsCodedUITest>
     <TestProjectType>UnitTest</TestProjectType>
     <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)\Key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -81,7 +87,12 @@
       <HintPath>$(OutputPath)\..\DbgEngManaged.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -96,8 +107,27 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="CLR\HeapTests.cs" />
     <Compile Include="CLR\ValueTests.cs" />
+    <Compile Include="CodedUITests.cs" />
+    <Compile Include="CodeGenTests.cs" />
+    <Compile Include="InteractiveModeTests.cs" />
+    <Compile Include="NativeDumpTest32.cs" />
+    <Compile Include="NativeDumpTest32Release.cs" />
+    <Compile Include="NativeDumpTest64.cs" />
+    <Compile Include="NativeDumpTest64Release.cs" />
+    <Compile Include="ScriptExecutionTests.cs" />
     <Compile Include="TestBase.cs" />
+    <Compile Include="UIMap.cs">
+      <DependentUpon>UIMap.uitest</DependentUpon>
+    </Compile>
+    <Compile Include="UIMap.Designer.cs">
+      <DependentUpon>UIMap.uitest</DependentUpon>
+    </Compile>
+    <Compile Include="UserTypeTests.cs" />
+    <None Include="CLR\Apps\Types.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="CLR\Apps\LocalVariables.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -108,6 +138,9 @@
     <Compile Include="NativeDumpTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
+    <None Include="packages.config" />
+    <None Include="$(SolutionDir)\Key.snk" />
+    <None Include="UIMap.uitest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj">
@@ -121,6 +154,18 @@
     <ProjectReference Include="$(SolutionDir)\Source\DbgEngHelpers\DbgEngHelpers.csproj">
       <Project>{74CD700C-EDAA-4EB2-905E-7A4EA982E0C3}</Project>
       <Name>DbgEngHelpers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj">
+      <Project>{283a0331-2ead-4dd2-a3fe-20d229e2d277}</Project>
+      <Name>CsDebugScript.CodeGen</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj">
+      <Project>{21a929ea-b96b-4523-9d0f-853ea771058d}</Project>
+      <Name>CsDebugScript.CommonUserTypes</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Source\CsDebugScript.UI\CsDebugScript.UI.csproj">
+      <Project>{b63c2b4e-eb2e-45fc-93fd-5d6f2077064d}</Project>
+      <Name>CsDebugScript.UI</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>
@@ -136,6 +181,25 @@
           <Private>False</Private>
         </Reference>
         <Reference Include="Microsoft.VisualStudio.TestTools.UITesting, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+      </ItemGroup>
+    </When>
+    <When Condition="'$(VisualStudioVersion)' == '14.0' And '$(IsCodedUITest)' == 'True'">
+      <ItemGroup>
+        <Reference Include="Microsoft.VisualStudio.QualityTools.CodedUITestFramework, Version=$(VisualStudioVersion).0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITest.Common, Version=$(VisualStudioVersion).0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITest.Extension, Version=$(VisualStudioVersion).0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.VisualStudio.TestTools.UITesting, Version=$(VisualStudioVersion).0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="UiaComWrapper, Version=$(VisualStudioVersion).0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
           <Private>False</Private>
         </Reference>
       </ItemGroup>

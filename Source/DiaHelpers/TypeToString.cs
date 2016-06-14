@@ -77,6 +77,12 @@ namespace Dia2Lib
                             case BasicType.Hresult:
                                 return "HRESULT";
 
+                            case BasicType.Char16:
+                                return "char16_t";
+
+                            case BasicType.Char32:
+                                return "char32_t";
+
                             default:
                                 throw new Exception("Unexpected basic type " + (BasicType)type.baseType);
                         }

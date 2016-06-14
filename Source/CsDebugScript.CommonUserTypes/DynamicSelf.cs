@@ -18,7 +18,7 @@
         public DynamicSelfVariable(Variable variable)
             : base(variable)
         {
-            self = this;
+            self = variable;
         }
     }
 
@@ -40,7 +40,7 @@
         public DynamicSelfUserType(Variable variable)
             : base(variable)
         {
-            self = this;
+            self = variable;
         }
     }
 }

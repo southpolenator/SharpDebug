@@ -640,7 +640,7 @@ namespace CsDebugScript.Engine.Debuggers
                 if (contextAddress == IntPtr.Zero)
                 {
                     using (ThreadSwitcher switcher = new ThreadSwitcher(StateCache, thread))
-                    using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(1))
+                    using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(thread.Process, 1))
                     {
                         Advanced.GetThreadContext(threadContextBuffer.Pointer, (uint)(threadContextBuffer.Count * threadContextBuffer.Size));
                         return ReadStackTraceFromContext(thread, threadContextBuffer.Pointer);
@@ -1072,30 +1072,31 @@ namespace CsDebugScript.Engine.Debuggers
                 List<MemoryRegion> regionsList = new List<MemoryRegion>();
                 ulong currentAddress = 0, baseAddress, regionSize;
 
-                while (true)
+                try
                 {
-                    currentAddress = DataSpaces.GetNextDifferentlyValidOffsetVirtual(currentAddress);
-                    if (currentAddress == 0)
+                    while (true)
                     {
-                        break;
-                    }
+                        currentAddress = DataSpaces.GetNextDifferentlyValidOffsetVirtual(currentAddress);
+                        if (currentAddress == 0)
+                        {
+                            break;
+                        }
 
-                    QueryVirtual(process, currentAddress, out baseAddress, out regionSize);
-                    regionsList.Add(new MemoryRegion { BaseAddress = baseAddress, RegionSize = regionSize });
+                        QueryVirtual(process, currentAddress, out baseAddress, out regionSize);
+
+                        // Merge consecutive regions
+                        if (regionsList.Count > 0 && regionsList[regionsList.Count - 1].MemoryEnd == baseAddress)
+                            regionsList[regionsList.Count - 1] = new MemoryRegion { BaseAddress = regionsList[regionsList.Count - 1].BaseAddress, MemoryEnd = baseAddress + regionSize };
+                        else
+                            regionsList.Add(new MemoryRegion { BaseAddress = baseAddress, RegionSize = regionSize });
+                        currentAddress = baseAddress + regionSize - 1;
+                    }
+                }
+                catch
+                {
                 }
 
-                // Merge consecutive regions
-                MemoryRegion[] regions = regionsList.ToArray();
-
-                int newEnd = 0;
-                for (int i = 1; i < regions.Length; i++)
-                    if (regions[i].MemoryStart == regions[newEnd].MemoryEnd)
-                        regions[newEnd].MemoryEnd = regions[i].MemoryEnd;
-                    else
-                        regions[++newEnd] = regions[i];
-                newEnd++;
-                Array.Resize(ref regions, newEnd);
-                return regions;
+                return regionsList.ToArray();
             }
         }
 

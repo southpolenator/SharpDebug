@@ -268,7 +268,7 @@ namespace CsDebugScript.CodeGen
                 }
 
                 // Check if symbol contains template type.
-                if (SymbolNameHelper.ContainsTemplateType(symbolName))
+                if (SymbolNameHelper.ContainsTemplateType(symbolName) && symbol.Tag == SymTagEnum.SymTagUDT)
                 {
                     List<string> namespaces = symbol.Namespaces;
                     string className = namespaces.Last();

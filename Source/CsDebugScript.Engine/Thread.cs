@@ -1,4 +1,5 @@
-﻿using CsDebugScript.Engine;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
 using System.Collections.Generic;
 using System.Linq;
@@ -175,6 +176,27 @@ namespace CsDebugScript
             {
                 return clrThread.Value;
             }
+
+            set
+            {
+                clrThread.Value = value;
+            }
+        }
+
+        /// <summary>
+        /// Finds the CLR thread object correlated with this native thread.
+        /// If this thread is not used by CLR, it will return null.
+        /// </summary>
+        public ClrThread FindClrThread()
+        {
+            if (ClrThread != null)
+            {
+                Runtime runtime = Process.ClrRuntimes.Single(r => r.ClrRuntime == ClrThread.Runtime);
+
+                return runtime.Threads.FirstOrDefault(t => t.ClrThread == ClrThread);
+            }
+
+            return null;
         }
 
         /// <summary>

@@ -228,12 +228,12 @@ namespace CsDebugScript.Engine.SymbolProviders
             {
                 if (!BasicTypes.TryGetValue(typeName, out type))
                 {
-                    type = globalScope.GetChild(typeName);
+                    type = GetTypeFromGlobalSpace(typeName);
                 }
             }
             else
             {
-                type = globalScope.GetChild(typeName);
+                type = GetTypeFromGlobalSpace(typeName);
                 if (type == null)
                 {
                     type = BasicTypes[typeName];
@@ -241,6 +241,27 @@ namespace CsDebugScript.Engine.SymbolProviders
             }
 
             return GetTypeId(type);
+        }
+
+        /// <summary>
+        /// Gets the type from global space.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        private IDiaSymbol GetTypeFromGlobalSpace(string typeName)
+        {
+            IDiaSymbol type = globalScope.GetChild(typeName, SymTagEnum.SymTagUDT);
+
+            if (type == null)
+            {
+                type = globalScope.GetChild(typeName, SymTagEnum.SymTagEnum);
+            }
+
+            if (type == null)
+            {
+                type = globalScope.GetChild(typeName);
+            }
+
+            return type;
         }
 
         /// <summary>
@@ -414,13 +435,15 @@ namespace CsDebugScript.Engine.SymbolProviders
             session.findSymbolByRVAEx(relativeAddress, SymTagEnum.SymTagFunction, out function, out displacement);
             foreach (var symbol in function.GetChildren(SymTagEnum.SymTagData))
             {
-                if (arguments && (DataKind)symbol.dataKind != DataKind.Param)
+                DataKind symbolDataKind = (DataKind)symbol.dataKind;
+
+                if (arguments && symbolDataKind != DataKind.Param)
                 {
                     continue;
                 }
 
                 CodeType codeType = module.TypesById[symbol.typeId];
-                ulong address = ResolveAddress(symbol, frame.FrameContext);
+                ulong address = ResolveAddress(module.Process, symbol, frame.FrameContext);
                 var variableName = symbol.name;
 
                 variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
@@ -432,9 +455,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Resolves the symbol address.
         /// </summary>
+        /// <param name="process">The process.</param>
         /// <param name="symbol">The symbol.</param>
         /// <param name="frameContext">The frame context.</param>
-        private static ulong ResolveAddress(IDiaSymbol symbol, ThreadContext frameContext)
+        private static ulong ResolveAddress(Process process, IDiaSymbol symbol, ThreadContext frameContext)
         {
             ulong address;
 
@@ -453,6 +477,12 @@ namespace CsDebugScript.Engine.SymbolProviders
                         case CV_HREG_e.CV_AMD64_RBP:
                         case CV_HREG_e.CV_AMD64_EBP:
                             address = frameContext.FramePointer;
+                            break;
+                        case CV_HREG_e.CV_ALLREG_VFRAME:
+                            if (process.EffectiveProcessorType == ImageFileMachine.AMD64)
+                                address = frameContext.StackPointer;
+                            else
+                                address = frameContext.FramePointer;
                             break;
                         default:
                             throw new Exception("Unknown register id" + (CV_HREG_e)symbol.registerId);
