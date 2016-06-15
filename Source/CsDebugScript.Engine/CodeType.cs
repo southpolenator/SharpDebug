@@ -1490,7 +1490,7 @@ namespace CsDebugScript
         {
             get
             {
-                return ClrType.IsPointer;
+                return ClrType.IsPointer || ClrType.IsObjectReference;
             }
         }
 
@@ -1546,7 +1546,7 @@ namespace CsDebugScript
         {
             get
             {
-                return ClrType.IsString;
+                return ClrType.IsPointer && ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Char;
             }
         }
 
@@ -1688,6 +1688,37 @@ namespace CsDebugScript
         /// </summary>
         protected override uint GetTypeSize()
         {
+            if (ClrType.HasSimpleValue)
+            {
+                switch (ClrType.ElementType)
+                {
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Char:
+                        return 2;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.String:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Object:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Pointer:
+                        return Module.Process.GetPointerSize();
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Float:
+                        return 4;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Double:
+                        return 8;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int8:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt8:
+                        return 1;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int16:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt16:
+                        return 2;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int32:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt32:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.NativeInt:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.NativeUInt:
+                        return 4;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int64:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt64:
+                        return 8;
+                }
+            }
+
             return (uint)ClrType.BaseSize;
         }
     }

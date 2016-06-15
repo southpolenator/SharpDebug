@@ -378,7 +378,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 
             if (nativeCodeType == null)
             {
-                throw new ArgumentOutOfRangeException(nameof(codeType), "This is only supported for NativeCodeType");
+                return Debugger.ReadSimpleData(codeType, address);
             }
 
             Module module = codeType.Module;

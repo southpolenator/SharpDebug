@@ -107,6 +107,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="CLR\ExceptionTests.cs" />
     <Compile Include="CLR\HeapTests.cs" />
     <Compile Include="CLR\ValueTests.cs" />
     <Compile Include="CodedUITests.cs" />
@@ -129,6 +130,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="CLR\Apps\LocalVariables.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="CLR\Apps\NestedExceptions.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="CLR\Apps\SharedLibrary.cs">

@@ -94,7 +94,7 @@ namespace CsDebugScript
         /// <param name="name">The name.</param>
         /// <param name="path">The path.</param>
         /// <param name="data">The loaded data value (this can be used only with pointers).</param>
-        private Variable(CodeType codeType, ulong address, string name, string path, ulong data)
+        internal Variable(CodeType codeType, ulong address, string name, string path, ulong data)
             : this(codeType, address, name, path)
         {
             if (!codeType.IsPointer)
@@ -468,20 +468,15 @@ namespace CsDebugScript
 
             // TODO: Call custom caster (e.g. std::string, std::wstring)
 
-            // Check if it is pointer
-            if (codeType.IsPointer)
+            // Check pointer size
+            if (codeType.Module.Process.GetPointerSize() == 4)
             {
-                if (codeType.Size == 4)
-                {
-                    return string.Format("0x{0:X4}", Data);
-                }
-                else
-                {
-                    return string.Format("0x{0:X8}", Data);
-                }
+                return string.Format("0x{0:X4} ({1})", GetPointerAddress(), codeType.Name);
             }
-
-            return "{" + codeType.Name + "}";
+            else
+            {
+                return string.Format("0x{0:X8} ({1})", GetPointerAddress(), codeType.Name);
+            }
         }
 
         /// <summary>
@@ -1033,8 +1028,24 @@ namespace CsDebugScript
         {
             CodeType fieldType = codeType.GetFieldType(name);
             ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
+            Variable field = CreateNoCast(fieldType, fieldAddress, name, GenerateNewPath(".{0}", name));
 
-            return CreateNoCast(fieldType, fieldAddress, name, GenerateNewPath(".{0}", name));
+            // Check if it is CLR field
+            ClrCodeType clrFieldType = fieldType as ClrCodeType;
+
+            if (clrFieldType != null)
+            {
+                // Get runtime type
+                Microsoft.Diagnostics.Runtime.ClrType newClrType = clrFieldType.ClrType.Heap.GetObjectType(field.GetPointerAddress());
+
+                if (newClrType != clrFieldType.ClrType && newClrType.Module != null)
+                {
+                    // New code type is correct, use it
+                    field.codeType = Process.Current.FromClrType(newClrType);
+                }
+            }
+
+            return field;
         }
 
         /// <summary>
