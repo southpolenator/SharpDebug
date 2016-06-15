@@ -505,7 +505,19 @@ namespace CsDebugScript
         /// <returns>The index of memory region where the specified address is located or -1 if not found.</returns>
         public int FindMemoryRegion(ulong address)
         {
-            return memoryRegionFinder.Value.Find(address);
+            int index = memoryRegionFinder.Value.Find(address);
+
+            if (index >= 0)
+            {
+                MemoryRegion region = MemoryRegions[index];
+
+                if (address < region.MemoryStart || address >= region.MemoryEnd)
+                {
+                    index = -1;
+                }
+            }
+
+            return index;
         }
 
         /// <summary>
