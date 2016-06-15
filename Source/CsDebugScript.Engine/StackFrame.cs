@@ -522,8 +522,12 @@ namespace CsDebugScript
                     try
                     {
                         var value = values[i];
+                        CodeType codeType = Module.FromClrType(value.Type);
 
-                        variables.Add(Variable.CreateNoCast(Module.FromClrType(value.Type), value.Address, names[i]));
+                        if (codeType.IsPointer)
+                            variables.Add(Variable.CreatePointerNoCast(codeType, value.Address, names[i]));
+                        else
+                            variables.Add(Variable.CreateNoCast(codeType, value.Address, names[i]));
                     }
                     catch (Exception)
                     {

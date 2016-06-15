@@ -1,7 +1,11 @@
 ﻿using CsDebugScript;
 using CsDebugScript.CLR;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace DbgEngTest.CLR
 {
@@ -31,6 +35,9 @@ namespace DbgEngTest.CLR
             Assert.IsFalse(foo.IsNullPointer());
             Assert.AreEqual("Foo", foo.GetCodeType().Name);
             Assert.AreEqual("foo", foo.GetName());
+
+            Assert.AreEqual(8.4, (double)foo.GetField("d"));
+            Assert.AreEqual("Foo string", new ClrString(foo.GetField("FooString")).Text);
         }
     }
 }

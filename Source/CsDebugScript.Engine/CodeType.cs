@@ -1591,7 +1591,7 @@ namespace CsDebugScript
         /// <param name="field">The CLR field.</param>
         private Tuple<CodeType, int> GetFieldTypeAndOffset(Microsoft.Diagnostics.Runtime.ClrInstanceField field)
         {
-            return Tuple.Create(Module.FromClrType(field.Type), (int)field.GetAddress(0));
+            return Tuple.Create(Module.FromClrType(field.Type), (int)field.GetAddress(0, ClrType.IsValueClass));
         }
 
         /// <summary>
@@ -1692,6 +1692,8 @@ namespace CsDebugScript
             {
                 switch (ClrType.ElementType)
                 {
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Boolean:
+                        return 1;
                     case Microsoft.Diagnostics.Runtime.ClrElementType.Char:
                         return 2;
                     case Microsoft.Diagnostics.Runtime.ClrElementType.String:
