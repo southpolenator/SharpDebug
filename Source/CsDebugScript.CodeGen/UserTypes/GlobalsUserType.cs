@@ -60,12 +60,6 @@ namespace CsDebugScript.CodeGen.UserTypes
                     continue;
                 }
 
-                // Skip fields that have same name as the type
-                UserType userType;
-                factory.GetUserType(field.Type.Module, field.Type.Name, out userType);
-
-                if (userType == null)
-                    continue;
 
                 // Skip fields that are actual values of enum values
                 if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagEnum && field.Type.GetEnumValues().Any(t => t.Item1 == field.Name))
