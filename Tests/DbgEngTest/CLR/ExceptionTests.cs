@@ -17,6 +17,9 @@ namespace DbgEngTest.CLR
         public void ExceptionPropertyTest()
         {
             ClrThread thread = Thread.Current.FindClrThread();
+
+            Assert.IsFalse(thread.IsFinalizerThread);
+
             ClrException exception = thread.LastThrownException;
 
             Assert.IsNotNull(exception);
@@ -25,6 +28,8 @@ namespace DbgEngTest.CLR
             Assert.IsNotNull(exception.InnerException);
             Assert.AreEqual("FNF Message", exception.InnerException.Message);
             Assert.AreEqual("System.IO.FileNotFoundException", exception.InnerException.GetCodeType().Name);
+
+            // TODO: Check the call stack
         }
     }
 }

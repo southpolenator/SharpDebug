@@ -122,5 +122,19 @@ namespace CsDebugScript.CLR
                 return lastThrownException.Value;
             }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether this is finalizer thread.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this is finalizer thread; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsFinalizerThread
+        {
+            get
+            {
+                return ClrThread.IsFinalizer;
+            }
+        }
     }
 }
