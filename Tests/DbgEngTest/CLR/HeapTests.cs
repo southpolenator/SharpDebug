@@ -12,7 +12,7 @@ namespace DbgEngTest.CLR
         [ClassInitialize]
         public static void TestSetup(TestContext context)
         {
-            CompileAndInitialize("Types");
+            CompileAndInitialize(ClrTestApps.Types);
         }
 
         [TestMethod]
@@ -51,7 +51,7 @@ namespace DbgEngTest.CLR
         public void ServerSegmentTests()
         {
             Environment.SetEnvironmentVariable("COMPlus_BuildFlavor", "svr");
-            CompileAndInitialize("Types", customDumpName: "TypesServerGC.mdmp");
+            CompileAndInitialize(ClrTestApps.Types, customDumpName: "TypesServerGC.mdmp");
             Runtime runtime = Process.Current.ClrRuntimes.Single();
 
             Assert.IsTrue(runtime.ServerGC);
@@ -61,7 +61,7 @@ namespace DbgEngTest.CLR
         public void WorkstationSegmentTests()
         {
             Environment.SetEnvironmentVariable("COMPlus_BuildFlavor", "");
-            CompileAndInitialize("Types", customDumpName: "TypesWorkstation.mdmp");
+            CompileAndInitialize(ClrTestApps.Types, customDumpName: "TypesWorkstation.mdmp");
             Runtime runtime = Process.Current.ClrRuntimes.Single();
 
             Assert.IsFalse(runtime.ServerGC);

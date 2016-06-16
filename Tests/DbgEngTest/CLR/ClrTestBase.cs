@@ -8,14 +8,24 @@ using System.Reflection;
 
 namespace DbgEngTest.CLR
 {
+    public enum ClrTestApps
+    {
+        LocalVariables,
+        NestedExceptions,
+        Types,
+    }
+
     public class ClrTestBase : TestBase
     {
         protected static string CompileApp(string appName, params string[] files)
         {
             string directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string destination = Path.Combine(directory, appName + ".exe");
-            string pdbPath = Path.Combine(directory, appName + ".pdb");
+            string destinationDirectory = Path.Combine(directory, IntPtr.Size.ToString());
+            string destination = Path.Combine(destinationDirectory, appName + ".exe");
+            string pdbPath = Path.Combine(destinationDirectory, appName + ".pdb");
             string[] fullPathFiles = files.Select(f => Path.Combine(directory, "CLR", "Apps", f)).ToArray();
+
+            Directory.CreateDirectory(destinationDirectory);
 
             // Check if we need to compile at all
             if (File.Exists(destination) && File.Exists(pdbPath))
@@ -58,7 +68,12 @@ namespace DbgEngTest.CLR
             return cr.PathToAssembly;
         }
 
-        protected static void CompileAndInitialize(string appName, string customDumpName = null, bool forceDumpRecreate = false)
+        protected static void CompileAndInitialize(ClrTestApps app, string customDumpName = null, bool forceDumpRecreate = false)
+        {
+            CompileAndInitialize(app.ToString(), customDumpName, forceDumpRecreate);
+        }
+
+        private static void CompileAndInitialize(string appName, string customDumpName = null, bool forceDumpRecreate = false)
         {
             string appPath = CompileApp(appName, appName + ".cs", "SharedLibrary.cs");
             string appDirectory = Path.GetDirectoryName(appPath);

@@ -15,7 +15,7 @@ namespace DbgEngTest.CLR
         [ClassInitialize]
         public static void TestSetup(TestContext context)
         {
-            CompileAndInitialize("NestedExceptions");
+            CompileAndInitialize(ClrTestApps.NestedExceptions);
         }
 
         [TestMethod]

@@ -11,7 +11,7 @@ namespace DbgEngTest.CLR
         [ClassInitialize]
         public static void TestSetup(TestContext context)
         {
-            CompileAndInitialize("Types");
+            CompileAndInitialize(ClrTestApps.Types);
         }
 
         [TestMethod]
