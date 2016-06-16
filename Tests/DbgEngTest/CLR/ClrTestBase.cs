@@ -17,6 +17,18 @@ namespace DbgEngTest.CLR
 
     public class ClrTestBase : TestBase
     {
+        private static object synchronizationObject = new object();
+
+        protected static void Initialize()
+        {
+            System.Threading.Monitor.Enter(synchronizationObject);
+        }
+
+        protected static void Cleanup()
+        {
+            System.Threading.Monitor.Exit(synchronizationObject);
+        }
+
         protected static string CompileApp(string appName, params string[] files)
         {
             string directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

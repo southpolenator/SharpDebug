@@ -15,7 +15,14 @@ namespace DbgEngTest.CLR
         [ClassInitialize]
         public static void TestSetup(TestContext context)
         {
+            Initialize();
             CompileAndInitialize(ClrTestApps.NestedExceptions);
+        }
+
+        [ClassCleanup]
+        public static void TestCleanup()
+        {
+            Cleanup();
         }
 
         [TestMethod]
