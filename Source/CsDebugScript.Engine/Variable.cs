@@ -1028,24 +1028,50 @@ namespace CsDebugScript
         {
             CodeType fieldType = codeType.GetFieldType(name);
             ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
-            Variable field = CreateNoCast(fieldType, fieldAddress, name, GenerateNewPath(".{0}", name));
+            Variable field = CreateNoCast(fieldType, fieldAddress, name, GenerateNewPath(".{0}", path));
 
-            // Check if it is CLR field
-            ClrCodeType clrFieldType = fieldType as ClrCodeType;
+            return UpcastClrVariable(field);
+        }
 
-            if (clrFieldType != null)
+        /// <summary>
+        /// Upcasts the CLR variable to a runtime type.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        internal static Variable UpcastClrVariable(Variable variable)
+        {
+            // Check if it is CLR variable
+            ClrCodeType clrCodeType = variable.GetCodeType() as ClrCodeType;
+
+            if (clrCodeType != null)
             {
                 // Get runtime type
-                Microsoft.Diagnostics.Runtime.ClrType newClrType = clrFieldType.ClrType.Heap.GetObjectType(field.GetPointerAddress());
+                Microsoft.Diagnostics.Runtime.ClrType newClrType = clrCodeType.ClrType.Heap.GetObjectType(variable.GetPointerAddress());
 
-                if (newClrType != clrFieldType.ClrType && newClrType.Module != null)
+                if (newClrType != clrCodeType.ClrType && newClrType.Module != null)
                 {
                     // New code type is correct, use it
-                    field.codeType = Process.Current.FromClrType(newClrType);
+                    CodeType newCodeType = Process.Current.FromClrType(newClrType);
+                    ulong address = variable.GetPointerAddress();
+
+                    // If original filed type was System.Object (pointer) and resulting type is struct or simple type (not pointer)
+                    // Then, we need to move address for a vtable.
+                    if (clrCodeType.IsPointer && !newCodeType.IsPointer)
+                    {
+                        address = variable.Data + clrCodeType.Module.Process.GetPointerSize();
+                    }
+
+                    if (newCodeType.IsPointer)
+                    {
+                        return CreatePointerNoCast(newCodeType, address, variable.name, variable.path);
+                    }
+                    else
+                    {
+                        return CreateNoCast(newCodeType, address, variable.name, variable.path);
+                    }
                 }
             }
 
-            return field;
+            return variable;
         }
 
         /// <summary>

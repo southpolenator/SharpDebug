@@ -522,12 +522,21 @@ namespace CsDebugScript
                     try
                     {
                         var value = values[i];
+                        ulong address = value.Address;
                         CodeType codeType = Module.FromClrType(value.Type);
+                        Variable variable;
 
                         if (codeType.IsPointer)
-                            variables.Add(Variable.CreatePointerNoCast(codeType, value.Address, names[i]));
+                            variable = Variable.CreatePointerNoCast(codeType, address, names[i]);
                         else
-                            variables.Add(Variable.CreateNoCast(codeType, value.Address, names[i]));
+                        {
+                            // TODO: This address unboxing should be part of ClrMD.
+                            if (value.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Class)
+                                address += Process.GetPointerSize();
+                            variable = Variable.CreateNoCast(codeType, address, names[i]);
+                        }
+
+                        variables.Add(variable);
                     }
                     catch (Exception)
                     {
