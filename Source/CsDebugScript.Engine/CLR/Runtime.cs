@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.Engine.Utility;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CsDebugScript.CLR
@@ -53,7 +54,7 @@ namespace CsDebugScript.CLR
             Process = process;
             ClrRuntime = clrRuntime;
             appDomains = SimpleCache.Create(() => ClrRuntime.AppDomains.Select(ad => new AppDomain(this, ad)).ToArray());
-            modules = SimpleCache.Create(() => ClrRuntime.Modules.Select(mm => Process.Modules.Where(m => m.Address == mm.ImageBase).FirstOrDefault()).Where(m => m != null).ToArray());
+            modules = SimpleCache.Create(() => ClrRuntime.Modules.Select(mm => Process.ClrModuleCache[mm]).ToArray());
             sharedDomain = SimpleCache.Create(() => ClrRuntime.SharedDomain != null ? new AppDomain(this, ClrRuntime.SharedDomain) : null);
             systemDomain = SimpleCache.Create(() => ClrRuntime.SystemDomain != null ? new AppDomain(this, ClrRuntime.SystemDomain) : null);
             threads = SimpleCache.Create(() => ClrRuntime.Threads.Select(tt => new ClrThread(Process.Threads.Where(t => t.SystemId == tt.OSThreadId).FirstOrDefault(), tt, Process)).ToArray());
@@ -89,6 +90,20 @@ namespace CsDebugScript.CLR
             get
             {
                 return appDomains.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the enumeration of all application domains in the process including System and Shared AppDomain.
+        /// </summary>
+        public IEnumerable<AppDomain> AllAppDomains
+        {
+            get
+            {
+                foreach (AppDomain appDomain in AppDomains)
+                    yield return appDomain;
+                yield return SharedDomain;
+                yield return SystemDomain;
             }
         }
 
@@ -188,5 +203,27 @@ namespace CsDebugScript.CLR
         /// Gets or sets the CLR runtime.
         /// </summary>
         internal Microsoft.Diagnostics.Runtime.ClrRuntime ClrRuntime { get; private set; }
+
+        /// <summary>
+        /// Gets the AppDomain specified by the name. If multiple AppDomains have same name, it will throw exception.
+        /// If there is no such AppDomain, it will return null.
+        /// </summary>
+        /// <param name="appDomainName">The application domain name.</param>
+        public AppDomain GetAppDomainByName(string appDomainName)
+        {
+            return AppDomains.SingleOrDefault(ad => ad.Name == appDomainName);
+        }
+
+        /// <summary>
+        /// Gets the module by the file name.
+        /// </summary>
+        /// <param name="fileName">Name of the file.</param>
+        public Module GetModuleByFileName(string fileName)
+        {
+            return (from module in Modules
+                    let file = System.IO.Path.GetFileName(module.ImageName)
+                    where file.Equals(fileName, System.StringComparison.OrdinalIgnoreCase)
+                    select module).SingleOrDefault();
+        }
     }
 }

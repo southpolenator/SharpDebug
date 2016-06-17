@@ -1,10 +1,18 @@
-﻿namespace CsDebugScript.CLR
+﻿using CsDebugScript.Engine.Utility;
+using System.Linq;
+
+namespace CsDebugScript.CLR
 {
     /// <summary>
     /// CLR code AppDomain. This is valid only if there is CLR loaded into debugging process.
     /// </summary>
     public class AppDomain
     {
+        /// <summary>
+        /// The cache of modules
+        /// </summary>
+        private SimpleCache<Module[]> modules;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AppDomain" /> class.
         /// </summary>
@@ -14,12 +22,24 @@
         {
             Runtime = runtime;
             ClrAppDomain = clrAppDomain;
+            modules = SimpleCache.Create(() => Runtime.ClrRuntime.Modules.Where(m => m.AppDomains.Contains(ClrAppDomain)).Select(mm => Runtime.Process.ClrModuleCache[mm]).ToArray());
         }
 
         /// <summary>
         /// Gets the runtime associated with this AppDomain.
         /// </summary>
         public Runtime Runtime { get; private set; }
+
+        /// <summary>
+        /// Gets the array of modules loaded into this AppDomain.
+        /// </summary>
+        public Module[] Modules
+        {
+            get
+            {
+                return modules.Value;
+            }
+        }
 
         /// <summary>
         /// Gets the base directory for this AppDomain. This may return null if the targeted

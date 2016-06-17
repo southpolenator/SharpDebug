@@ -107,6 +107,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="CLR\AppDomainTests.cs" />
     <Compile Include="CLR\ExceptionTests.cs" />
     <Compile Include="CLR\HeapTests.cs" />
     <Compile Include="CLR\ModuleTests.cs" />
@@ -128,13 +129,16 @@
       <DependentUpon>UIMap.uitest</DependentUpon>
     </Compile>
     <Compile Include="UserTypeTests.cs" />
+    <None Include="CLR\Apps\AppDomains.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="CLR\Apps\Types.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="CLR\Apps\LocalVariables.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="CLR\Apps\NestedExceptions.cs">
+    <None Include="CLR\Apps\NestedException.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="CLR\Apps\SharedLibrary.cs">

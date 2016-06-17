@@ -10,8 +10,9 @@ namespace DbgEngTest.CLR
 {
     public enum ClrTestApps
     {
+        AppDomains,
         LocalVariables,
-        NestedExceptions,
+        NestedException,
         Types,
     }
 
