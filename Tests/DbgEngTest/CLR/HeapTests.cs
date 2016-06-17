@@ -12,14 +12,14 @@ namespace DbgEngTest.CLR
         [ClassInitialize]
         public static void TestSetup(TestContext context)
         {
-            Initialize();
+            SyncStart();
             CompileAndInitialize(ClrTestApps.Types);
         }
 
         [ClassCleanup]
         public static void TestCleanup()
         {
-            Cleanup();
+            SyncStop();
         }
 
         [TestMethod]

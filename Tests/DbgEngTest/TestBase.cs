@@ -11,6 +11,18 @@ namespace DbgEngTest
     public class TestBase
     {
         private static IDebugClient client;
+        private static object synchronizationObject = new object();
+
+        internal static void SyncStart()
+        {
+            System.Threading.Monitor.Enter(synchronizationObject);
+        }
+
+        internal static void SyncStop()
+        {
+            System.Threading.Monitor.Exit(synchronizationObject);
+        }
+
 
         /// <summary>
         /// Initializes the test class with the specified dump file.
