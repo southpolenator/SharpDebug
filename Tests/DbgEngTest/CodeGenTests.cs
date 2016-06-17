@@ -8,8 +8,20 @@ using System.Threading.Tasks;
 namespace DbgEngTest
 {
     [TestClass]
-    public class CodeGenTests
+    public class CodeGenTests : TestBase
     {
+        [ClassInitialize]
+        public static void TestSetup(TestContext context)
+        {
+            SyncStart();
+        }
+
+        [ClassCleanup]
+        public static void TestCleanup()
+        {
+            SyncStop();
+        }
+
         public static XmlConfig GetXmlConfig(string pdbFile)
         {
             if (!Path.IsPathRooted(pdbFile))
