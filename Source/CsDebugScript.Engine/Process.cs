@@ -147,11 +147,22 @@ namespace CsDebugScript
             GlobalCache.UserTypeCastedVariables.Add(UserTypeCastedVariables);
             ClrModuleCache = new DictionaryCache<Microsoft.Diagnostics.Runtime.ClrModule, Module>((clrModule) =>
             {
-                Module module = new Module(this, clrModule.ImageBase);
+                // TODO: This needs to change when ClrModule starts to be child of Module
+                Module module = ModulesById[clrModule.ImageBase];
 
                 module.ClrModule = clrModule;
                 module.ImageName = clrModule.Name;
-                module.SymbolFileName = clrModule.Pdb.FileName;
+                try
+                {
+                    if (!module.SymbolFileName.ToLowerInvariant().EndsWith(".pdb"))
+                    {
+                        module.SymbolFileName = clrModule.Pdb.FileName;
+                    }
+                }
+                catch
+                {
+                    module.SymbolFileName = clrModule.Pdb.FileName;
+                }
                 module.Name = Path.GetFileNameWithoutExtension(clrModule.Name);
                 module.LoadedImageName = clrModule.Name;
                 module.Size = clrModule.Size;
@@ -558,7 +569,7 @@ namespace CsDebugScript
         /// <param name="clrType">The CLR type.</param>
         internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
         {
-            return ModulesById[clrType.Module.ImageBase].ClrTypes[clrType];
+            return ClrModuleCache[clrType.Module].ClrTypes[clrType];
         }
 
         /// <summary>
