@@ -568,7 +568,7 @@ namespace CsDebugScript
         /// <param name="clrType">The CLR type.</param>
         internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
         {
-            return ClrTypes[clrType];
+            return Process.FromClrType(clrType);
         }
 
         /// <summary>

@@ -42,12 +42,7 @@ namespace DbgEngTest.CLR
 
             Assert.AreEqual(42, (int)fooObject.GetField("SetValue").GetField("i"));
             Assert.IsTrue(fooObject.GetField("NullValue").IsNullPointer());
-        }
-
-        [TestMethod]
-        public void ArrayElementTests()
-        {
-            // TODO: ArrayElementTests test is not converted
+            Assert.IsTrue(clrThread.EnumerateStackObjects().Contains(fooObject));
         }
 
         [TestMethod]
@@ -56,11 +51,19 @@ namespace DbgEngTest.CLR
             ClrThread clrThread = Thread.Current.FindClrThread();
             StackFrame frame;
 
+            foreach (var f in clrThread.ClrStackTrace.Frames)
+                foreach (var variable in f.Locals)
+                    System.Console.WriteLine(" {2} = ({0}) {1:X}", variable.GetCodeType(), variable.GetPointerAddress(), variable.GetName());
+
+            foreach (Variable variable in clrThread.EnumerateStackObjects())
+                System.Console.WriteLine("   ({0}) {1:X}", variable.GetCodeType(), variable.GetPointerAddress());
+
             frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Inner(")).Single();
             Assert.IsTrue((bool)frame.Locals["b"]);
             Assert.AreEqual('c', (char)frame.Locals["c"]);
             Assert.AreEqual("hello world", new ClrString(frame.Locals["s"]).Text);
             Assert.AreEqual(42, (int)frame.Locals["st"].GetField("i"));
+            Assert.IsTrue(clrThread.EnumerateStackObjects().Contains(frame.Locals["s"]));
 
             frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Middle(")).Single();
             Assert.AreEqual(0x42, (byte)frame.Locals["b"]);
@@ -84,6 +87,7 @@ namespace DbgEngTest.CLR
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable foo = frame.Locals["foo"];
 
+            Assert.IsTrue(clrThread.EnumerateStackObjects().Contains(foo));
             Assert.AreEqual(42, (int)foo.GetField("i"));
             Assert.AreEqual(0x42u, (uint)foo.GetField("ui"));
             Assert.AreEqual("string", new ClrString(foo.GetField("s")).Text);

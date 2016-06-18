@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.Engine.Utility;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CsDebugScript.CLR
@@ -134,6 +135,24 @@ namespace CsDebugScript.CLR
             get
             {
                 return ClrThread.IsFinalizer;
+            }
+        }
+
+        /// <summary>
+        /// Enumerates the GC references (objects) on the stack.
+        /// </summary>
+        public IEnumerable<Variable> EnumerateStackObjects()
+        {
+            foreach (Microsoft.Diagnostics.Runtime.ClrRoot root in ClrThread.EnumerateStackObjects())
+            {
+                if (root.Type.IsFree || root.Type.Module == null)
+                {
+                    continue;
+                }
+
+                Variable field = Variable.CreateNoCast(Process.FromClrType(root.Type), root.Address);
+
+                yield return Variable.UpcastClrVariable(field);
             }
         }
     }
