@@ -1,4 +1,5 @@
-﻿using CsDebugScript.Engine;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
 using System;
@@ -151,6 +152,23 @@ namespace CsDebugScript
             }
             catch (Exception ex)
             {
+                // Try to find function among CLR ones
+                foreach (Runtime runtime in Process.ClrRuntimes)
+                {
+                    try
+                    {
+                        Microsoft.Diagnostics.Runtime.ClrMethod method = runtime.ClrRuntime.GetMethodByAddress(Address);
+
+                        if (method != null)
+                        {
+                            return StackFrame.ReadClrSourceFileNameAndLine(Process.ClrModuleCache[method.Type.Module], method, Address);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
                 throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
             }
         }
@@ -172,6 +190,23 @@ namespace CsDebugScript
             }
             catch (Exception ex)
             {
+                // Try to find function among CLR ones
+                foreach (Runtime runtime in Process.ClrRuntimes)
+                {
+                    try
+                    {
+                        Microsoft.Diagnostics.Runtime.ClrMethod method = runtime.ClrRuntime.GetMethodByAddress(Address);
+
+                        if (method != null)
+                        {
+                            return StackFrame.ReadClrFunctionNameAndDisplacement(Process.ClrModuleCache[method.Type.Module], method, Address);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
                 throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
             }
         }

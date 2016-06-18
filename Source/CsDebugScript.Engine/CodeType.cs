@@ -106,6 +106,28 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CodeType"/> class.
+        /// </summary>
+        /// <param name="originalCodeType">The original CodeType.</param>
+        protected CodeType(CodeType originalCodeType)
+        {
+            Module = originalCodeType.Module;
+            elementType = originalCodeType.elementType;
+            pointerToType = originalCodeType.pointerToType;
+            name = originalCodeType.name;
+            size = originalCodeType.size;
+            directBaseClassesAndOffsets = originalCodeType.directBaseClassesAndOffsets;
+            directBaseClassesAndOffsetsArraySorted = originalCodeType.directBaseClassesAndOffsetsArraySorted;
+            allFieldNames = originalCodeType.allFieldNames;
+            fieldNames = originalCodeType.fieldNames;
+            allFieldTypesAndOffsets = originalCodeType.allFieldTypesAndOffsets;
+            fieldTypeAndOffsets = originalCodeType.fieldTypeAndOffsets;
+            baseClassesAndOffsets = originalCodeType.baseClassesAndOffsets;
+            templateArgumentsStrings = originalCodeType.templateArgumentsStrings;
+            templateArguments = originalCodeType.templateArguments;
+        }
+
+        /// <summary>
         /// Gets the module.
         /// </summary>
         public Module Module { get; private set; }
@@ -1381,6 +1403,11 @@ namespace CsDebugScript
     internal class ClrCodeType : CodeType
     {
         /// <summary>
+        /// The array code type specializations
+        /// </summary>
+        private DictionaryCache<int, ClrArrayCodeType> arraySpecializations;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ClrCodeType"/> class.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -1389,6 +1416,32 @@ namespace CsDebugScript
             : base(module)
         {
             ClrType = clrType;
+            arraySpecializations = new DictionaryCache<int, ClrArrayCodeType>((elementsCount) => new ClrArrayCodeType(this, elementsCount));
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClrCodeType"/> class.
+        /// </summary>
+        /// <param name="originalClrCodeType">The original CLR code type.</param>
+        public ClrCodeType(ClrCodeType originalClrCodeType)
+            : base(originalClrCodeType)
+        {
+            ClrType = originalClrCodeType.ClrType;
+            arraySpecializations = originalClrCodeType.arraySpecializations;
+        }
+
+        /// <summary>
+        /// Gets the specialized code type.
+        /// </summary>
+        /// <param name="address">The variable address.</param>
+        internal ClrCodeType GetSpecializedCodeType(ulong address)
+        {
+            if (IsArray)
+            {
+                return arraySpecializations[ClrType.GetArrayLength(address)];
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -1722,6 +1775,26 @@ namespace CsDebugScript
             }
 
             return (uint)ClrType.BaseSize;
+        }
+    }
+
+    /// <summary>
+    /// Specialization code type for CLR array
+    /// </summary>
+    internal class ClrArrayCodeType : ClrCodeType
+    {
+        internal ClrArrayCodeType(ClrCodeType arrayCodeType, int length)
+            : base(arrayCodeType)
+        {
+            size = SimpleCache.Create(GetTypeSize);
+            Length = length;
+        }
+
+        internal int Length { get; private set; }
+
+        protected override uint GetTypeSize()
+        {
+            return (uint)(ClrType.ElementSize * Length);
         }
     }
 }

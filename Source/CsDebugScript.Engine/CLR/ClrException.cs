@@ -1,6 +1,7 @@
 ﻿using CsDebugScript.Exceptions;
 using System;
 using System.Collections;
+using System.Linq;
 
 namespace CsDebugScript.CLR
 {
@@ -129,14 +130,37 @@ namespace CsDebugScript.CLR
         /// Note that this may be empty or partial depending on the state of the exception in the process.
         /// (It may have never been thrown or we may be in the middle of constructing the stackwalk.). 
         /// </remarks>
-        public StackTrace StackTrace
+        public CodeFunction[] StackTrace
         {
             get
             {
+                // Get field containing the stack trace
                 Variable field = GetField("_stackTrace");
 
-                // TODO: Implement
-                throw new NotImplementedException();
+                if (field == null)
+                {
+                    return null;
+                }
+
+                // Read the stack trace from the bytes buffer
+                CodeArray<byte> codeArray = new CodeArray<byte>(field);
+                byte[] bytes = codeArray.ToArray();
+                Process process = GetCodeType().Module.Process;
+                int pointerSize = (int)process.GetPointerSize();
+                int offset = 0;
+                ulong frameCount = ReadPointer(bytes, offset, pointerSize);
+                CodeFunction[] stackTrace = new CodeFunction[frameCount];
+
+                offset += pointerSize * 2;
+                for (ulong i = 0; i < frameCount; i++)
+                {
+                    ulong instructionPointer = ReadPointer(bytes, offset, pointerSize);
+
+                    stackTrace[i] = new CodeFunction(instructionPointer, process);
+                    offset += pointerSize * 4;
+                }
+
+                return stackTrace;
             }
         }
 
@@ -166,6 +190,28 @@ namespace CsDebugScript.CLR
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Reads the pointer from the specified buffer.
+        /// </summary>
+        /// <param name="buffer">The bytes buffer.</param>
+        /// <param name="offset">The offset in the buffer.</param>
+        /// <param name="pointerSize">Size of the pointer.</param>
+        private static ulong ReadPointer(byte[] buffer, int offset, int pointerSize)
+        {
+            if (pointerSize == 4)
+            {
+                return BitConverter.ToUInt32(buffer, offset);
+            }
+            else if (pointerSize == 8)
+            {
+                return BitConverter.ToUInt64(buffer, offset);
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(pointerSize));
+            }
         }
     }
 }

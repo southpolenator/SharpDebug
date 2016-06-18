@@ -1046,11 +1046,12 @@ namespace CsDebugScript
             {
                 // Get runtime type
                 Microsoft.Diagnostics.Runtime.ClrType newClrType = clrCodeType.ClrType.Heap.GetObjectType(variable.GetPointerAddress());
+                ClrCodeType clrCodeTypeSpecialization = clrCodeType.GetSpecializedCodeType(variable.GetPointerAddress());
 
-                if (newClrType != clrCodeType.ClrType && newClrType.Module != null)
+                if ((newClrType != clrCodeType.ClrType && newClrType.Module != null) || clrCodeTypeSpecialization != clrCodeType)
                 {
                     // New code type is correct, use it
-                    CodeType newCodeType = Process.Current.FromClrType(newClrType);
+                    ClrCodeType newCodeType = Process.Current.FromClrType(newClrType) as ClrCodeType;
                     ulong address = variable.GetPointerAddress();
 
                     // If original filed type was System.Object (pointer) and resulting type is struct or simple type (not pointer)
@@ -1060,6 +1061,18 @@ namespace CsDebugScript
                         address = variable.Data + clrCodeType.Module.Process.GetPointerSize();
                     }
 
+                    // Find code type specialization
+                    newCodeType = newCodeType.GetSpecializedCodeType(address);
+
+                    // If it is array, take pointer of the first element
+                    ClrArrayCodeType clrArrayCodeType = newCodeType as ClrArrayCodeType;
+
+                    if (clrArrayCodeType != null)
+                    {
+                        address = clrArrayCodeType.ClrType.GetArrayElementAddress(address, 0);
+                    }
+
+                    // Create new variable
                     if (newCodeType.IsPointer)
                     {
                         return CreatePointerNoCast(newCodeType, address, variable.name, variable.path);

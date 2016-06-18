@@ -1,5 +1,4 @@
 ﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using System;
 using System.Linq;
@@ -415,7 +414,7 @@ namespace CsDebugScript
 
             if (clrType == null)
             {
-                throw new Exception("CLR type not found " + typeName);
+                throw new Exception($"CLR type not found {typeName}");
             }
 
             string variableName = name.Substring(variableNameIndex + 1);
@@ -423,7 +422,7 @@ namespace CsDebugScript
 
             if (staticField == null)
             {
-                throw new Exception("Field " + staticField + " wasn't found in CLR type " + typeName);
+                throw new Exception($"Field {staticField} wasn't found in CLR type {typeName}");
             }
 
             var address = staticField.GetAddress(appDomain.ClrAppDomain);
