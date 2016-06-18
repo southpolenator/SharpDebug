@@ -45,7 +45,7 @@ namespace CsDebugScript.CLR
                 StackTrace stackTrace = new StackTrace(this);
                 uint frameNumber = 0;
 
-                stackTrace.Frames = ClrThread.StackTrace.Select(f =>
+                stackTrace.Frames = ClrThread.StackTrace.Where(f => f.Method != null).Select(f =>
                 {
                     return new StackFrame(stackTrace, new ThreadContext(f.InstructionPointer, f.StackPointer, ulong.MaxValue))
                     {

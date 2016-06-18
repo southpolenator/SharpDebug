@@ -302,7 +302,7 @@ namespace CsDebugScript
         /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
         private Tuple<string, uint, ulong> ReadSourceFileNameAndLine()
         {
-            if (clrStackFrame.Cached && clrStackFrame.Value != null)
+            if (clrStackFrame.Cached && clrStackFrame.Value != null && ClrStackFrame.Method != null)
             {
                 return ReadClrSourceFileNameAndLine(Module, ClrStackFrame.Method, InstructionOffset);
             }
@@ -318,7 +318,7 @@ namespace CsDebugScript
             }
             catch (Exception ex)
             {
-                if (ClrStackFrame != null)
+                if (ClrStackFrame != null && ClrStackFrame.Method != null)
                 {
                     return ReadClrSourceFileNameAndLine(Module, ClrStackFrame.Method, InstructionOffset);
                 }
@@ -333,7 +333,7 @@ namespace CsDebugScript
         /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
         private Tuple<string, ulong> ReadFunctionNameAndDisplacement()
         {
-            if (clrStackFrame.Cached && clrStackFrame.Value != null)
+            if (clrStackFrame.Cached && clrStackFrame.Value != null && ClrStackFrame.Method != null)
             {
                 return ReadClrFunctionNameAndDisplacement(Module, ClrStackFrame.Method, InstructionOffset);
             }
@@ -348,7 +348,7 @@ namespace CsDebugScript
             }
             catch (Exception ex)
             {
-                if (ClrStackFrame != null)
+                if (ClrStackFrame != null && ClrStackFrame.Method != null)
                 {
                     return ReadClrFunctionNameAndDisplacement(Module, ClrStackFrame.Method, InstructionOffset);
                 }
