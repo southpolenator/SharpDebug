@@ -112,6 +112,7 @@
     <Compile Include="CLR\HeapTests.cs" />
     <Compile Include="CLR\ModuleTests.cs" />
     <Compile Include="CLR\StackTests.cs" />
+    <Compile Include="CLR\TypeTests.cs" />
     <Compile Include="CLR\ValueTests.cs" />
     <Compile Include="CodedUITests.cs" />
     <Compile Include="CodeGenTests.cs" />

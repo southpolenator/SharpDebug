@@ -282,10 +282,18 @@ namespace CsDebugScript
         /// <param name="address">The address.</param>
         internal static ulong ReadSimpleData(CodeType codeType, ulong address)
         {
-            byte[] buffer = ReadMemory(codeType.Module.Process, address, codeType.Size).Bytes;
+            Process process = codeType.Module.Process;
+            uint size = codeType.Size;
+
+            if (codeType.IsPointer)
+            {
+                size = process.GetPointerSize();
+            }
+
+            byte[] buffer = ReadMemory(process, address, size).Bytes;
 
             // TODO: This doesn't work with bit fields
-            switch (codeType.Size)
+            switch (size)
             {
                 case 1:
                     return buffer[0];
@@ -296,7 +304,7 @@ namespace CsDebugScript
                 case 8:
                     return BitConverter.ToUInt64(buffer, 0);
                 default:
-                    throw new Exception("Unexpected data size " + codeType.Size);
+                    throw new Exception("Unexpected data size " + size);
             }
         }
 

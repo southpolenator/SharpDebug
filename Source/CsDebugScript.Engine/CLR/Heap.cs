@@ -69,9 +69,20 @@ namespace CsDebugScript.CLR
                 if (clrType.IsFree)
                     continue;
 
-                var codeType = Runtime.Process.FromClrType(clrType);
+                CodeType codeType = Runtime.Process.FromClrType(clrType);
+                Variable variable;
 
-                yield return Variable.Create(codeType, address);
+                if (codeType.IsPointer)
+                    variable = Variable.CreatePointerNoCast(codeType, address);
+                else
+                {
+                    // TODO: This address unboxing should be part of ClrMD.
+                    ulong address2 = address + Runtime.Process.GetPointerSize();
+
+                    variable = Variable.CreateNoCast(codeType, address2);
+                }
+
+                yield return Variable.UpcastClrVariable(variable);
             }
         }
 

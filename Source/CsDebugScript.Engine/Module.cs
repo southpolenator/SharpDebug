@@ -426,8 +426,9 @@ namespace CsDebugScript
             }
 
             var address = staticField.GetAddress(appDomain.ClrAppDomain);
+            Variable field = Variable.CreateNoCast(FromClrType(clrType), address, variableName);
 
-            return Variable.CreateNoCast(FromClrType(clrType), address, variableName);
+            return Variable.UpcastClrVariable(field);
         }
 
         #region Cache filling functions
@@ -488,15 +489,19 @@ namespace CsDebugScript
                 {
                     uint typeId = Context.SymbolProvider.GetTypeId(this, name);
 
-                    codeType = TypesById[typeId];
+                    if (Context.SymbolProvider.GetTypeTag(this, typeId) != Engine.Native.SymTag.Compiland)
+                    {
+                        codeType = TypesById[typeId];
+                    }
                 }
             }
-            catch (Exception)
+            catch
             {
-                if (ClrModule != null)
-                {
-                    codeType = GetClrTypeByName(name);
-                }
+            }
+
+            if (ClrModule != null)
+            {
+                codeType = GetClrTypeByName(name);
             }
 
             if (codeType == null)
@@ -521,7 +526,7 @@ namespace CsDebugScript
                 if (clrType != null)
                 {
                     // Create a code type
-                    return GetClrCodeType(clrType);
+                    return ClrTypes[clrType];
                 }
             }
             catch (Exception)
@@ -563,7 +568,7 @@ namespace CsDebugScript
         /// <param name="clrType">The CLR type.</param>
         internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
         {
-            return Process.FromClrType(clrType);
+            return ClrTypes[clrType];
         }
 
         /// <summary>

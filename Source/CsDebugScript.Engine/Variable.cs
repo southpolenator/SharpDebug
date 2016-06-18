@@ -11,7 +11,7 @@ namespace CsDebugScript
     /// <summary>
     /// Ultimate class for working with variables from process being debugged.
     /// </summary>
-    public class Variable : DynamicObject, IConvertible
+    public class Variable : DynamicObject, IConvertible, IEquatable<Variable>
     {
         /// <summary>
         /// The name of variable when its value is computed
@@ -1051,7 +1051,7 @@ namespace CsDebugScript
                 if ((newClrType != clrCodeType.ClrType && newClrType.Module != null) || clrCodeTypeSpecialization != clrCodeType)
                 {
                     // New code type is correct, use it
-                    ClrCodeType newCodeType = Process.Current.FromClrType(newClrType) as ClrCodeType;
+                    ClrCodeType newCodeType = clrCodeTypeSpecialization != clrCodeType ? clrCodeTypeSpecialization : Process.Current.FromClrType(newClrType) as ClrCodeType;
                     ulong address = variable.GetPointerAddress();
 
                     // If original filed type was System.Object (pointer) and resulting type is struct or simple type (not pointer)
@@ -1297,7 +1297,7 @@ namespace CsDebugScript
             return TryGetMember(indexes[0].ToString(), out result);
         }
 
-#region Forbidden setters/deleters
+        #region Forbidden setters/deleters
         /// <summary>
         /// Tries to delete the member - it is forbidden.
         /// </summary>
@@ -1589,6 +1589,70 @@ namespace CsDebugScript
         {
             return CastAs(conversionType);
         }
-#endregion
+        #endregion
+
+        #region IEquatable<Variable>
+        /// <summary>
+        /// Indicates whether the current object is equal to another object of the same type.
+        /// </summary>
+        /// <param name="other">An object to compare with this object.</param>
+        /// <returns>
+        /// true if the current object is equal to the <paramref name="other" /> parameter; otherwise, false.
+        /// </returns>
+        public bool Equals(Variable other)
+        {
+            if (other == null && IsNullPointer())
+            {
+                return true;
+            }
+
+            if (other == null || GetPointerAddress() != other.GetPointerAddress())
+            {
+                return false;
+            }
+
+            if (codeType == other.codeType)
+            {
+                return true;
+            }
+
+            if (codeType.IsPointer == other.codeType.IsPointer)
+            {
+                return false;
+            }
+
+            if ((codeType.IsPointer && codeType.ElementType == other.codeType)
+                || (other.codeType.IsPointer && other.codeType.ElementType == codeType))
+            {
+                return true;
+            }
+
+            return false;
+        }
+        #endregion
+
+        /// <summary>
+        /// Determines whether the specified <see cref="System.Object" />, is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
+        public override bool Equals(object obj)
+        {
+            if (obj == null && IsNullPointer())
+            {
+                return true;
+            }
+
+            Variable other = obj as Variable;
+
+            if (other != null)
+            {
+                return Equals(other);
+            }
+
+            return base.Equals(obj);
+        }
     }
 }
