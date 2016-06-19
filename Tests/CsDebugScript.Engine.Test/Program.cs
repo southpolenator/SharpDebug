@@ -26,17 +26,7 @@ namespace CsDebugScript.Engine.Test
             if (options == null)
                 return;
 
-            //Context.Initalize(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
-            Context.Initalize(DebugClient.OpenDumpFile(@"F:\ShareWrite\WinDbgCache\d_tfs6449901\SQLDUMP0001.MDMP", @"F:\ShareWrite\WinDbgCache\d_tfs6449901"));
-
-            var regions = Process.Current.MemoryRegions;
-            ulong address = 0x4DB9E69CC0;
-
-            for (int i = 0; i < regions.Length; i++)
-                if (regions[i].BaseAddress <= address && address < regions[i].BaseAddress + regions[i].RegionSize)
-                    Console.WriteLine("{0}     {1:X}   {2:X}", i, regions[i].BaseAddress, regions[i].BaseAddress + regions[i].RegionSize);
-            Console.WriteLine(Process.Current.FindMemoryRegion(address));
-            Environment.Exit(1);
+            Context.Initalize(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
 
             Console.WriteLine("Threads: {0}", Thread.All.Length);
             Console.WriteLine("Current thread: {0}", Thread.Current.Id);
