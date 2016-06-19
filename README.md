@@ -25,7 +25,8 @@ foreach (Module module in Process.Current.Modules)
 ```
 
 # Wiki
-Take a look a [Wiki page](https://github.com/southpolenator/WinDbgCs/wiki) to get hooked up :)
+Take a look a [Wiki page](https://github.com/southpolenator/WinDbgCs/wiki) to get hooked up :)  
+Or jump to [WinDbg interactive mode screenshots](https://github.com/southpolenator/WinDbgCs/wiki/WinDbg-interactive-mode-screenshots)...
 
 # Code reference
 Now that you are hooked up, cou can take a look at [code reference](http://southpolenator.github.io/WinDbgCsReference/).
