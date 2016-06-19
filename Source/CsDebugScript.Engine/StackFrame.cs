@@ -297,6 +297,31 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            try
+            {
+                return string.Format("{4,3}  {0}+0x{1:x}   ({2}:{3})", FunctionName, FunctionDisplacement, SourceFileName, SourceFileLine, FrameNumber);
+            }
+            catch
+            {
+                try
+                {
+                    return string.Format("{2,3}  {0}+0x{1:x}", FunctionName, FunctionDisplacement, FrameNumber);
+                }
+                catch
+                {
+                    return string.Format("{1,3}  0x{0:x}", InstructionOffset, FrameNumber);
+                }
+            }
+        }
+
+        /// <summary>
         /// Reads the name of the source file, line and displacement.
         /// </summary>
         /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>

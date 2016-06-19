@@ -177,6 +177,17 @@ namespace CsDebugScript.CLR
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return Message;
+        }
+
+        /// <summary>
         /// Gets the string from the specified string field given by name.
         /// </summary>
         /// <param name="stringFieldName">Name of the string field.</param>

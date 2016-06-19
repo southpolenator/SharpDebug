@@ -47,5 +47,16 @@ namespace CsDebugScript.CLR
                 return GetCodeType().Module.Process.ReadString(firstChar.GetPointerAddress(), 2, Length);
             }
         }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return Text;
+        }
     }
 }

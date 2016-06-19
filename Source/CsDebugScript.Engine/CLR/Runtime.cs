@@ -205,6 +205,17 @@ namespace CsDebugScript.CLR
         internal Microsoft.Diagnostics.Runtime.ClrRuntime ClrRuntime { get; private set; }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return Version.ToString();
+        }
+
+        /// <summary>
         /// Gets the AppDomain specified by the name. If multiple AppDomains have same name, it will throw exception.
         /// If there is no such AppDomain, it will return null.
         /// </summary>

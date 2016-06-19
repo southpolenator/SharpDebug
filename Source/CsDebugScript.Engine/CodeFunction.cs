@@ -127,6 +127,31 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            try
+            {
+                return string.Format("{0}+0x{1:x}   ({2}:{3})", FunctionName, FunctionDisplacement, SourceFileName, SourceFileLine);
+            }
+            catch
+            {
+                try
+                {
+                    return string.Format("{0}+0x{1:x}", FunctionName, FunctionDisplacement);
+                }
+                catch
+                {
+                    return string.Format("0x{0:x}", Address);
+                }
+            }
+        }
+
+        /// <summary>
         /// Verifies if the specified code type is correct for this class.
         /// </summary>
         /// <param name="codeType">The code type.</param>

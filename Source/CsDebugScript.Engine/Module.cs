@@ -378,6 +378,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"{Name} (Address = 0x{Address:X}, Version = {ModuleVersion}";
+        }
+
+        /// <summary>
         /// Gets the global or static variable.
         /// </summary>
         /// <param name="name">The variable name.</param>

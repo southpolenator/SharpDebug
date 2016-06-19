@@ -479,6 +479,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"({Id}:{SystemId}) - {ExecutableName}";
+        }
+
+        /// <summary>
         /// Gets the global variable.
         /// </summary>
         /// <param name="name">The name.</param>

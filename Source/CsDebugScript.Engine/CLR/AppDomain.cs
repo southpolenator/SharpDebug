@@ -91,5 +91,16 @@ namespace CsDebugScript.CLR
         /// Gets the CLR application domain.
         /// </summary>
         internal Microsoft.Diagnostics.Runtime.ClrAppDomain ClrAppDomain { get; private set; }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"{Id}: {Name}";
+        }
     }
 }
