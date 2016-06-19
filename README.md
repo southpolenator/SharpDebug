@@ -9,6 +9,8 @@ It can be also used without WinDbg to open dumps.
 [![Nuget version](https://img.shields.io/nuget/v/csdebugscript.engine.svg?style=flat)](https://www.nuget.org/packages/csdebugscript.engine/)
 [![GitHub release](https://img.shields.io/github/release/southpolenator/windbgcs.svg?style=flat)](https://github.com/southpolenator/WinDbgCs/releases/latest)
 
+If you want newer build that what is available in Releases page or on the Nuget.org, you can click on [Latest build](https://ci.appveyor.com/project/southpolenator/windbgcs/branch/master), select Configuration and click on Artifacts. You can also use private nuget feed [https://ci.appveyor.com/nuget/windbgcs-raewbx34ffcq](https://ci.appveyor.com/nuget/windbgcs-raewbx34ffcq).
+
 # Easy start for using engine
 * Create a new .NET project (you can use Console Application)
 * Add NuGet package [CsDebugScript.Engine](https://www.nuget.org/packages/CsDebugScript.Engine)
