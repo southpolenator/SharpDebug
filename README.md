@@ -1,5 +1,7 @@
 # WinDbgCs
-WinDbg extension for executing C# scripts. It can be also used without WinDbg to open dumps.
+WinDbg extension for executing C# scripts.
+It allows you to automate data querying/processing of both native and managed applications.
+It can be also used without WinDbg to open dumps.
 
 ### Latest status
 [![Build status](https://ci.appveyor.com/api/projects/status/d2j4lxglq0tl1x1i/branch/master?svg=true)](https://ci.appveyor.com/project/southpolenator/windbgcs/branch/master)
