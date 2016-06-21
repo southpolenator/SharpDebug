@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.Engine.Utility;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CsDebugScript.CLR
@@ -24,6 +25,11 @@ namespace CsDebugScript.CLR
         SimpleCache<StackTrace> clrStackTrace;
 
         /// <summary>
+        /// The cache of last thrown exception
+        /// </summary>
+        SimpleCache<ClrException> lastThrownException;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ClrThread"/> class.
         /// </summary>
         /// <param name="thread">The thread.</param>
@@ -40,7 +46,7 @@ namespace CsDebugScript.CLR
                 StackTrace stackTrace = new StackTrace(this);
                 uint frameNumber = 0;
 
-                stackTrace.Frames = ClrThread.StackTrace.Select(f =>
+                stackTrace.Frames = ClrThread.StackTrace.Where(f => f.Method != null).Select(f =>
                 {
                     return new StackFrame(stackTrace, new ThreadContext(f.InstructionPointer, f.StackPointer, ulong.MaxValue))
                     {
@@ -54,6 +60,7 @@ namespace CsDebugScript.CLR
                 }).ToArray();
                 return stackTrace;
             });
+            lastThrownException = SimpleCache.Create(() => ClrThread.CurrentException != null ? new ClrException(this, ClrThread.CurrentException) : null);
         }
 
         /// <summary>
@@ -101,6 +108,51 @@ namespace CsDebugScript.CLR
             get
             {
                 return clrStackTrace.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the last thrown exception on the thread. Note that this field may be null.
+        /// It may be stale...meaning the thread could be done processing the exception but
+        /// a crash dump was taken before the exception was cleared off the field.
+        /// </summary>
+        public ClrException LastThrownException
+        {
+            get
+            {
+                return lastThrownException.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is finalizer thread.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this is finalizer thread; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsFinalizerThread
+        {
+            get
+            {
+                return ClrThread.IsFinalizer;
+            }
+        }
+
+        /// <summary>
+        /// Enumerates the GC references (objects) on the stack.
+        /// </summary>
+        public IEnumerable<Variable> EnumerateStackObjects()
+        {
+            foreach (Microsoft.Diagnostics.Runtime.ClrRoot root in ClrThread.EnumerateStackObjects())
+            {
+                if (root.Type.IsFree || root.Type.Module == null)
+                {
+                    continue;
+                }
+
+                Variable field = Variable.CreateNoCast(Process.FromClrType(root.Type), root.Address);
+
+                yield return Variable.UpcastClrVariable(field);
             }
         }
     }

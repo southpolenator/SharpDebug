@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copy/pasted from ClrMD tests. We just want to support similar tests...
+
+using System;
 
 class Types
 {

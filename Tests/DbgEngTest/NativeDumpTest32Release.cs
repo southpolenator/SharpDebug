@@ -6,7 +6,7 @@ namespace DbgEngTest
     /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.x86.exe.
     /// </summary>
     [TestClass]
-    public class NativeDumpTest32Release
+    public class NativeDumpTest32Release : TestBase
     {
         private const string DefaultDumpFile = "NativeDumpTest.x86.Release.dmp";
         private const string DefaultModuleName = "NativeDumpTest_x86_Release";
@@ -17,8 +17,15 @@ namespace DbgEngTest
         [ClassInitialize]
         public static void ClassInitialize(TestContext testContext)
         {
+            SyncStart();
             testRunner = new NativeDumpTest(DefaultDumpFile, DefaultModuleName, DefaultSymbolPath);
             testRunner.TestSetup();
+        }
+
+        [ClassCleanup]
+        public static void TestCleanup()
+        {
+            SyncStop();
         }
 
         [TestMethod]

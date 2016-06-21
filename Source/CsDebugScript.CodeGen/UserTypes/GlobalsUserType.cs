@@ -60,7 +60,6 @@ namespace CsDebugScript.CodeGen.UserTypes
                     continue;
                 }
 
-
                 // Skip fields that are actual values of enum values
                 if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagEnum && field.Type.GetEnumValues().Any(t => t.Item1 == field.Name))
                     continue;

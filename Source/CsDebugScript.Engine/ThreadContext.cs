@@ -306,6 +306,17 @@ namespace CsDebugScript
         public byte[] Bytes { get; private set; }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"IP = 0x{InstructionPointer:X}, SP = 0x{StackPointer:X}, FP = 0x{FramePointer:X}";
+        }
+
+        /// <summary>
         /// Creates the array marshaler.
         /// </summary>
         /// <param name="process">The process.</param>

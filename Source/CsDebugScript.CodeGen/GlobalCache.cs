@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CsDebugScript.CodeGen.UserTypes;
 using System.Text;
 using Dia2Lib;
@@ -44,7 +43,6 @@ namespace CsDebugScript.CodeGen
                 {
                     symbol = GetSymbol(symbol.ElementType.Name, symbol.Module);
                 }
-
                 return symbol.UserType;
             }
 
@@ -80,7 +78,7 @@ namespace CsDebugScript.CodeGen
             else
                 foreach (var s in symbols)
                     foreach (var field in s.Fields)
-                        if (field.DataKind == Dia2Lib.DataKind.StaticMember && field.IsValidStatic)
+                        if (field.DataKind == DataKind.StaticMember && field.IsValidStatic)
                         {
                             yield return s;
                             break;
@@ -96,7 +94,7 @@ namespace CsDebugScript.CodeGen
 
             foreach (var s in symbols)
                 foreach (var field in s.Fields)
-                    if (field.DataKind == Dia2Lib.DataKind.StaticMember && field.IsValidStatic)
+                    if (field.DataKind == DataKind.StaticMember && field.IsValidStatic)
                         yield return field;
         }
 

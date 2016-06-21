@@ -144,7 +144,7 @@ public:
 		// Set custom memory manager and start CLR
 		//
 		CHECKCOM(runtimeInfo->BindAsLegacyV2Runtime());
-		//CHECKCOM(runtimeInfo->SetDefaultStartupFlags(clrStartupFlags, nullptr));
+		CHECKCOM(runtimeInfo->SetDefaultStartupFlags(STARTUP_SERVER_GC, nullptr));
 		CHECKCOM(runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&clrRuntimeHost)));
 		CHECKCOM(clrRuntimeHost->Start());
 

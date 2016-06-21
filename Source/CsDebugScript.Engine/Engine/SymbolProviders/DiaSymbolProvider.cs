@@ -38,12 +38,18 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             string pdb = module.SymbolFileName;
 
-            if (string.IsNullOrEmpty(pdb) || Path.GetExtension(pdb).ToLower() != ".pdb")
+            if (!string.IsNullOrEmpty(pdb) && Path.GetExtension(pdb).ToLower() == ".pdb")
             {
-                return Context.Debugger.CreateDefaultSymbolProviderModule();
+                try
+                {
+                    return new DiaModule(pdb, module);
+                }
+                catch
+                {
+                }
             }
 
-            return new DiaModule(pdb, module);
+            return Context.Debugger.CreateDefaultSymbolProviderModule();
         }
 
         /// <summary>

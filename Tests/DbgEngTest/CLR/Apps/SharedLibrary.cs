@@ -1,4 +1,5 @@
-﻿public class Foo
+﻿// Copy/pasted from ClrMD tests. We just want to support similar tests...
+public class Foo
 {
     char c = 'c';
     byte by = 0x12;

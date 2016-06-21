@@ -184,6 +184,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"({Id}:{SystemId})";
+        }
+
+        /// <summary>
         /// Finds the CLR thread object correlated with this native thread.
         /// If this thread is not used by CLR, it will return null.
         /// </summary>

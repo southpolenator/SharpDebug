@@ -494,7 +494,12 @@ namespace CsDebugScript
         /// <returns>Returns NakePointer to Variable pointer address.</returns>
         public static NakedPointer ToNakedPointer(this Variable variable)
         {
-            return new NakedPointer(variable != null ? variable.GetPointerAddress() : 0);
+            if (variable == null)
+            {
+                return null;
+            }
+
+            return new NakedPointer(variable.GetCodeType().Module.Process, variable.GetPointerAddress());
         }
     }
 
