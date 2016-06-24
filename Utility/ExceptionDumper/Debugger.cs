@@ -58,7 +58,7 @@ namespace ExceptionDumper
             if (FirstChance != 1)
             {
                 // Save the dump
-                client.WriteDumpFile(dumpPath, (uint)(miniDump ? Defines.DebugDumpSmall : Defines.DebugDumpDefault));
+                client.WriteDumpFile2(dumpPath, (uint)Defines.DebugDumpSmall, (uint)(miniDump ? Defines.DebugFormatDefault : Defines.DebugFormatUserSmallFullMemory | Defines.DebugFormatUserSmallHandleData));
                 dumpTaken = true;
             }
         }

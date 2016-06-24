@@ -31,12 +31,17 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// The threads
         /// </summary>
-        private SimpleCache<Thread[]> threads;
+        private SimpleCache<ClrThread[]> threads;
 
         /// <summary>
         /// The GC threads
         /// </summary>
-        private SimpleCache<Thread[]> gcThreads;
+        private SimpleCache<ClrThread[]> gcThreads;
+
+        /// <summary>
+        /// The cache of CLR heap
+        /// </summary>
+        private SimpleCache<Heap> heap;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Runtime" /> class.
@@ -51,8 +56,9 @@ namespace CsDebugScript.CLR
             modules = SimpleCache.Create(() => ClrRuntime.Modules.Select(mm => Process.Modules.Where(m => m.Address == mm.ImageBase).FirstOrDefault()).Where(m => m != null).ToArray());
             sharedDomain = SimpleCache.Create(() => ClrRuntime.SharedDomain != null ? new AppDomain(this, ClrRuntime.SharedDomain) : null);
             systemDomain = SimpleCache.Create(() => ClrRuntime.SystemDomain != null ? new AppDomain(this, ClrRuntime.SystemDomain) : null);
-            threads = SimpleCache.Create(() => ClrRuntime.Threads.Select(tt => Process.Threads.Where(t => t.SystemId == tt.OSThreadId).FirstOrDefault()).Where(t => t != null).ToArray());
-            gcThreads = SimpleCache.Create(() => ClrRuntime.EnumerateGCThreads().Select(tt => Process.Threads.Where(t => t.SystemId == tt).FirstOrDefault()).Where(t => t != null).ToArray());
+            threads = SimpleCache.Create(() => ClrRuntime.Threads.Select(tt => new ClrThread(Process.Threads.Where(t => t.SystemId == tt.OSThreadId).FirstOrDefault(), tt, Process)).ToArray());
+            gcThreads = SimpleCache.Create(() => ClrRuntime.EnumerateGCThreads().Select(tt => new ClrThread(Process.Threads.Where(t => t.SystemId == tt).FirstOrDefault(), ClrRuntime.Threads.First(ct => ct.OSThreadId == tt), Process)).ToArray());
+            heap = SimpleCache.Create(() => new Heap(this, ClrRuntime.GetHeap()));
 
             var version = ClrRuntime.ClrInfo.Version;
 
@@ -122,7 +128,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the array of all managed threads in the process. Only threads which have previously run managed code will be enumerated.
         /// </summary>
-        public Thread[] Threads
+        public ClrThread[] Threads
         {
             get
             {
@@ -133,7 +139,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the array of GC threads in the runtime.
         /// </summary>
-        public Thread[] GCThreads
+        public ClrThread[] GCThreads
         {
             get
             {
@@ -164,6 +170,17 @@ namespace CsDebugScript.CLR
             get
             {
                 return ClrRuntime.ServerGC;
+            }
+        }
+
+        /// <summary>
+        /// Gets the GC heap of the process.
+        /// </summary>
+        public Heap Heap
+        {
+            get
+            {
+                return heap.Value;
             }
         }
 

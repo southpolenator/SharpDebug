@@ -187,7 +187,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.Windows
             }
             catch
             {
-                throw new Exception("It looks like you don't have symbols for Windows modules.");
+                throw new InvalidSymbolsException("It looks like you don't have symbols for Windows modules.");
             }
         }
     }

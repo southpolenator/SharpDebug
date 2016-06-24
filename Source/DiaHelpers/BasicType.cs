@@ -93,6 +93,16 @@
         /// <summary>
         /// Basic type is an HRESULT.
         /// </summary>
-        Hresult = 31
+        Hresult = 31,
+
+        /// <summary>
+        /// TODO: Undocumented
+        /// </summary>
+        Char16 = 32,
+
+        /// <summary>
+        /// TODO: Undocumented
+        /// </summary>
+        Char32 = 33,
     };
 }

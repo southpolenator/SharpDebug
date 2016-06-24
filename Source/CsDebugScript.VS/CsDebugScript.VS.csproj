@@ -8,6 +8,7 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <UseCodebase>true</UseCodebase>
+    <DeployExtension Condition="'$(AppVeyor)' != ''">False</DeployExtension>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>

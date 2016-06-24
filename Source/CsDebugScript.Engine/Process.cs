@@ -4,6 +4,7 @@ using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace CsDebugScript
@@ -127,13 +128,35 @@ namespace CsDebugScript
                 dataTarget.SymbolLocator.SymbolPath += ";http://symweb";
                 return dataTarget;
             });
-            clrRuntimes = SimpleCache.Create(() => ClrDataTarget.ClrVersions.Select(clrInfo => new Runtime(this, clrInfo.CreateRuntime())).ToArray());
+            clrRuntimes = SimpleCache.Create(() =>
+            {
+                try
+                {
+                    return ClrDataTarget.ClrVersions.Select(clrInfo => new Runtime(this, clrInfo.CreateRuntime())).ToArray();
+                }
+                catch
+                {
+                    return new Runtime[0];
+                }
+            });
             currentAppDomain = SimpleCache.Create(() => ClrRuntimes.SelectMany(r => r.AppDomains).FirstOrDefault());
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
             ModulesById = new DictionaryCache<ulong, Module>(GetModuleByAddress);
             Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
             UserTypeCastedVariables = new DictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
             GlobalCache.UserTypeCastedVariables.Add(UserTypeCastedVariables);
+            ClrModuleCache = new DictionaryCache<Microsoft.Diagnostics.Runtime.ClrModule, Module>((clrModule) =>
+            {
+                Module module = new Module(this, clrModule.ImageBase);
+
+                module.ClrModule = clrModule;
+                module.ImageName = clrModule.Name;
+                module.SymbolFileName = clrModule.Pdb.FileName;
+                module.Name = Path.GetFileNameWithoutExtension(clrModule.Name);
+                module.LoadedImageName = clrModule.Name;
+                module.Size = clrModule.Size;
+                return module;
+            });
             dumpFileMemoryReader = SimpleCache.Create(() =>
             {
                 try
@@ -199,6 +222,11 @@ namespace CsDebugScript
         /// Gets the variables by constructor key.
         /// </summary>
         internal DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable> Variables { get; private set; }
+
+        /// <summary>
+        /// The cache of CLR module to Module.
+        /// </summary>
+        internal DictionaryCache<Microsoft.Diagnostics.Runtime.ClrModule, Module> ClrModuleCache { get; private set; }
 
         /// <summary>
         /// Gets the user type casted variables.
@@ -518,7 +546,7 @@ namespace CsDebugScript
         /// <param name="clrType">The CLR type.</param>
         internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
         {
-            return ModulesById[clrType.Module.ImageBase].TypesByName[clrType.Name];
+            return ModulesById[clrType.Module.ImageBase].ClrTypes[clrType];
         }
 
         /// <summary>
