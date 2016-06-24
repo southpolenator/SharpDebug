@@ -506,22 +506,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="address">The address.</param>
         public ulong ReadSimpleData(CodeType codeType, ulong address)
         {
-            byte[] buffer = Debugger.ReadMemory(codeType.Module.Process, address, codeType.Size).Bytes;
-
-            // TODO: This doesn't work with bit fields
-            switch (codeType.Size)
-            {
-                case 1:
-                    return buffer[0];
-                case 2:
-                    return BitConverter.ToUInt16(buffer, 0);
-                case 4:
-                    return BitConverter.ToUInt32(buffer, 0);
-                case 8:
-                    return BitConverter.ToUInt64(buffer, 0);
-                default:
-                    throw new Exception("Unexpected data size " + codeType.Size);
-            }
+            return Debugger.ReadSimpleData(codeType, address);
         }
 
         /// <summary>

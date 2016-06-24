@@ -16,7 +16,14 @@ namespace DbgEngTest
         [ClassInitialize]
         public static void ClassInitialize(TestContext testContext)
         {
+            SyncStart();
             Initialize(DefaultDumpFile, DefaultSymbolPath);
+        }
+
+        [ClassCleanup]
+        public static void TestCleanup()
+        {
+            SyncStop();
         }
 
         [TestMethod]

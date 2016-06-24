@@ -106,6 +106,28 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CodeType"/> class.
+        /// </summary>
+        /// <param name="originalCodeType">The original CodeType.</param>
+        protected CodeType(CodeType originalCodeType)
+        {
+            Module = originalCodeType.Module;
+            elementType = originalCodeType.elementType;
+            pointerToType = originalCodeType.pointerToType;
+            name = originalCodeType.name;
+            size = originalCodeType.size;
+            directBaseClassesAndOffsets = originalCodeType.directBaseClassesAndOffsets;
+            directBaseClassesAndOffsetsArraySorted = originalCodeType.directBaseClassesAndOffsetsArraySorted;
+            allFieldNames = originalCodeType.allFieldNames;
+            fieldNames = originalCodeType.fieldNames;
+            allFieldTypesAndOffsets = originalCodeType.allFieldTypesAndOffsets;
+            fieldTypeAndOffsets = originalCodeType.fieldTypeAndOffsets;
+            baseClassesAndOffsets = originalCodeType.baseClassesAndOffsets;
+            templateArgumentsStrings = originalCodeType.templateArgumentsStrings;
+            templateArguments = originalCodeType.templateArguments;
+        }
+
+        /// <summary>
         /// Gets the module.
         /// </summary>
         public Module Module { get; private set; }
@@ -619,6 +641,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return Name;
+        }
+
+        /// <summary>
         /// Determines whether the specified type name can be used for this code type.
         /// </summary>
         /// <param name="typeName">The type name written as attribute on user type.</param>
@@ -647,6 +680,19 @@ namespace CsDebugScript
 
             return false;
         }
+
+        /// <summary>
+        /// Gets the static field from this type.
+        /// </summary>
+        /// <param name="staticFieldName">Name of the static field.</param>
+        public abstract Variable GetStaticField(string staticFieldName);
+
+        /// <summary>
+        /// Gets the static field from CLR type.
+        /// </summary>
+        /// <param name="staticFieldName">Name of the static field.</param>
+        /// <param name="appDomain">The CLR application domain.</param>
+        public abstract Variable GetClrStaticField(string staticFieldName, CLR.AppDomain appDomain);
 
         /// <summary>
         /// Gets the element type.
@@ -923,17 +969,6 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Returns a <see cref="System.String" /> that represents this instance.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
-        public override string ToString()
-        {
-            return Name;
-        }
-
-        /// <summary>
         /// Gets the name of the type.
         /// </summary>
         protected override string GetTypeName()
@@ -1160,6 +1195,26 @@ namespace CsDebugScript
 
             return inputType.Substring(indexStart, i - indexStart);
         }
+
+        /// <summary>
+        /// Gets the static field from this type.
+        /// </summary>
+        /// <param name="staticFieldName">Name of the static field.</param>
+        public override Variable GetStaticField(string staticFieldName)
+        {
+            return Module.GetVariable($"{Name}::{staticFieldName}");
+        }
+
+        /// <summary>
+        /// Gets the static field from CLR type.
+        /// </summary>
+        /// <param name="staticFieldName">Name of the static field.</param>
+        /// <param name="appDomain">The CLR application domain.</param>
+        /// <exception cref="System.NotImplementedException">You cannot get CLR variable from Native code type</exception>
+        public override Variable GetClrStaticField(string staticFieldName, CLR.AppDomain appDomain)
+        {
+            throw new NotImplementedException("You cannot get CLR variable from Native code type");
+        }
     }
 
     /// <summary>
@@ -1264,6 +1319,27 @@ namespace CsDebugScript
         /// <c>true</c> if this type is wide string; otherwise, <c>false</c>.
         /// </value>
         public override bool IsWideString { get { return false; } }
+
+        /// <summary>
+        /// Gets the static field from this type.
+        /// </summary>
+        /// <param name="staticFieldName">Name of the static field.</param>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public override Variable GetStaticField(string staticFieldName)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the static field from CLR type.
+        /// </summary>
+        /// <param name="staticFieldName">Name of the static field.</param>
+        /// <param name="appDomain">The CLR application domain.</param>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public override Variable GetClrStaticField(string staticFieldName, CLR.AppDomain appDomain)
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Gets field type and offset from all fields (including all base classes).
@@ -1381,6 +1457,11 @@ namespace CsDebugScript
     internal class ClrCodeType : CodeType
     {
         /// <summary>
+        /// The array code type specializations
+        /// </summary>
+        private DictionaryCache<int, ClrArrayCodeType> arraySpecializations;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ClrCodeType"/> class.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -1389,6 +1470,32 @@ namespace CsDebugScript
             : base(module)
         {
             ClrType = clrType;
+            arraySpecializations = new DictionaryCache<int, ClrArrayCodeType>((elementsCount) => new ClrArrayCodeType(this, elementsCount));
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClrCodeType"/> class.
+        /// </summary>
+        /// <param name="originalClrCodeType">The original CLR code type.</param>
+        public ClrCodeType(ClrCodeType originalClrCodeType)
+            : base(originalClrCodeType)
+        {
+            ClrType = originalClrCodeType.ClrType;
+            arraySpecializations = originalClrCodeType.arraySpecializations;
+        }
+
+        /// <summary>
+        /// Gets the specialized code type.
+        /// </summary>
+        /// <param name="address">The variable address.</param>
+        internal ClrCodeType GetSpecializedCodeType(ulong address)
+        {
+            if (IsArray)
+            {
+                return arraySpecializations[ClrType.GetArrayLength(address)];
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -1490,7 +1597,7 @@ namespace CsDebugScript
         {
             get
             {
-                return ClrType.IsPointer;
+                return ClrType.IsPointer || ClrType.IsObjectReference;
             }
         }
 
@@ -1546,7 +1653,7 @@ namespace CsDebugScript
         {
             get
             {
-                return ClrType.IsString;
+                return ClrType.IsPointer && ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Char;
             }
         }
 
@@ -1591,7 +1698,7 @@ namespace CsDebugScript
         /// <param name="field">The CLR field.</param>
         private Tuple<CodeType, int> GetFieldTypeAndOffset(Microsoft.Diagnostics.Runtime.ClrInstanceField field)
         {
-            return Tuple.Create(Module.FromClrType(field.Type), (int)field.GetAddress(0));
+            return Tuple.Create(Module.FromClrType(field.Type), (int)field.GetAddress(0, ClrType.IsValueClass));
         }
 
         /// <summary>
@@ -1688,7 +1795,90 @@ namespace CsDebugScript
         /// </summary>
         protected override uint GetTypeSize()
         {
+            if (ClrType.HasSimpleValue)
+            {
+                switch (ClrType.ElementType)
+                {
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Boolean:
+                        return 1;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Char:
+                        return 2;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.String:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Object:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Pointer:
+                        return Module.Process.GetPointerSize();
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Float:
+                        return 4;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Double:
+                        return 8;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int8:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt8:
+                        return 1;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int16:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt16:
+                        return 2;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int32:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt32:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.NativeInt:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.NativeUInt:
+                        return 4;
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int64:
+                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt64:
+                        return 8;
+                }
+            }
+
             return (uint)ClrType.BaseSize;
+        }
+
+        /// <summary>
+        /// Gets the static field from this type.
+        /// </summary>
+        /// <param name="staticFieldName">Name of the static field.</param>
+        public override Variable GetStaticField(string staticFieldName)
+        {
+            return Module.GetVariable($"{Name}.{staticFieldName}");
+        }
+
+        /// <summary>
+        /// Gets the static field from CLR type.
+        /// </summary>
+        /// <param name="staticFieldName">Name of the static field.</param>
+        /// <param name="appDomain">The CLR application domain.</param>
+        public override Variable GetClrStaticField(string staticFieldName, CLR.AppDomain appDomain)
+        {
+            return Module.GetClrVariable($"{Name}.{staticFieldName}", appDomain);
+        }
+    }
+
+    /// <summary>
+    /// Specialization code type for CLR array
+    /// </summary>
+    internal class ClrArrayCodeType : ClrCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClrArrayCodeType"/> class.
+        /// </summary>
+        /// <param name="arrayCodeType">Type of the array code.</param>
+        /// <param name="length">The length.</param>
+        internal ClrArrayCodeType(ClrCodeType arrayCodeType, int length)
+            : base(arrayCodeType)
+        {
+            size = SimpleCache.Create(GetTypeSize);
+            Length = length;
+        }
+
+        /// <summary>
+        /// Gets the length.
+        /// </summary>
+        internal int Length { get; private set; }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return (uint)(ClrType.ElementSize * Length);
         }
     }
 }

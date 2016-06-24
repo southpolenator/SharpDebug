@@ -147,11 +147,22 @@ namespace CsDebugScript
             GlobalCache.UserTypeCastedVariables.Add(UserTypeCastedVariables);
             ClrModuleCache = new DictionaryCache<Microsoft.Diagnostics.Runtime.ClrModule, Module>((clrModule) =>
             {
-                Module module = new Module(this, clrModule.ImageBase);
+                // TODO: This needs to change when ClrModule starts to be child of Module
+                Module module = ModulesById[clrModule.ImageBase];
 
                 module.ClrModule = clrModule;
                 module.ImageName = clrModule.Name;
-                module.SymbolFileName = clrModule.Pdb.FileName;
+                try
+                {
+                    if (!module.SymbolFileName.ToLowerInvariant().EndsWith(".pdb"))
+                    {
+                        module.SymbolFileName = clrModule.Pdb.FileName;
+                    }
+                }
+                catch
+                {
+                    module.SymbolFileName = clrModule.Pdb.FileName;
+                }
                 module.Name = Path.GetFileNameWithoutExtension(clrModule.Name);
                 module.LoadedImageName = clrModule.Name;
                 module.Size = clrModule.Size;
@@ -468,6 +479,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"({Id}:{SystemId}) - {ExecutableName}";
+        }
+
+        /// <summary>
         /// Gets the global variable.
         /// </summary>
         /// <param name="name">The name.</param>
@@ -505,7 +527,19 @@ namespace CsDebugScript
         /// <returns>The index of memory region where the specified address is located or -1 if not found.</returns>
         public int FindMemoryRegion(ulong address)
         {
-            return memoryRegionFinder.Value.Find(address);
+            int index = memoryRegionFinder.Value.Find(address);
+
+            if (index >= 0)
+            {
+                MemoryRegion region = MemoryRegions[index];
+
+                if (address < region.MemoryStart || address >= region.MemoryEnd)
+                {
+                    index = -1;
+                }
+            }
+
+            return index;
         }
 
         /// <summary>
@@ -546,7 +580,7 @@ namespace CsDebugScript
         /// <param name="clrType">The CLR type.</param>
         internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
         {
-            return ModulesById[clrType.Module.ImageBase].ClrTypes[clrType];
+            return ClrModuleCache[clrType.Module].ClrTypes[clrType];
         }
 
         /// <summary>

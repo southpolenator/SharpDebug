@@ -1,4 +1,5 @@
-﻿using CsDebugScript.Engine;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
 using System;
@@ -126,6 +127,31 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            try
+            {
+                return string.Format("{0}+0x{1:x}   ({2}:{3})", FunctionName, FunctionDisplacement, SourceFileName, SourceFileLine);
+            }
+            catch
+            {
+                try
+                {
+                    return string.Format("{0}+0x{1:x}", FunctionName, FunctionDisplacement);
+                }
+                catch
+                {
+                    return string.Format("0x{0:x}", Address);
+                }
+            }
+        }
+
+        /// <summary>
         /// Verifies if the specified code type is correct for this class.
         /// </summary>
         /// <param name="codeType">The code type.</param>
@@ -151,6 +177,23 @@ namespace CsDebugScript
             }
             catch (Exception ex)
             {
+                // Try to find function among CLR ones
+                foreach (Runtime runtime in Process.ClrRuntimes)
+                {
+                    try
+                    {
+                        Microsoft.Diagnostics.Runtime.ClrMethod method = runtime.ClrRuntime.GetMethodByAddress(Address);
+
+                        if (method != null)
+                        {
+                            return StackFrame.ReadClrSourceFileNameAndLine(Process.ClrModuleCache[method.Type.Module], method, Address);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
                 throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
             }
         }
@@ -172,6 +215,23 @@ namespace CsDebugScript
             }
             catch (Exception ex)
             {
+                // Try to find function among CLR ones
+                foreach (Runtime runtime in Process.ClrRuntimes)
+                {
+                    try
+                    {
+                        Microsoft.Diagnostics.Runtime.ClrMethod method = runtime.ClrRuntime.GetMethodByAddress(Address);
+
+                        if (method != null)
+                        {
+                            return StackFrame.ReadClrFunctionNameAndDisplacement(Process.ClrModuleCache[method.Type.Module], method, Address);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
                 throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
             }
         }

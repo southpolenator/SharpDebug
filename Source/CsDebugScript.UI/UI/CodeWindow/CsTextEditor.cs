@@ -264,15 +264,21 @@ namespace CsDebugScript.UI.CodeWindow
 
                         if (functionCallPopup == null && parameterDataProvider != null)
                         {
-                            functionCallPopup = new OverloadInsightWindow(TextArea);
-                            functionCallPopup.Provider = parameterDataProvider as ParameterDataProvider;
-                            functionCallPopup.Show();
-                            functionCallPopup.Closed += (o, args) => functionCallPopup = null;
+                            var ppd = parameterDataProvider as ParameterDataProvider;
+
+                            if (ppd.Methods.Length > 0)
+                            {
+                                functionCallPopup = new OverloadInsightWindow(TextArea);
+                                functionCallPopup.Provider = ppd;
+                                functionCallPopup.Show();
+                                functionCallPopup.Closed += (o, args) => functionCallPopup = null;
+                            }
+
                             return;
                         }
                     }
                 }
-                catch (Exception)
+                catch
                 {
                 }
 

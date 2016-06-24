@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copy/pasted from ClrMD tests. We just want to support similar tests...
+
+using System;
 
 class NullRefTest
 {
@@ -45,15 +47,16 @@ class Program
             if (i == 0x42424242)
             {
                 uint ui = 0x42424243;
-                Inner();
+                Inner(i);
             }
         }
     }
 
-    private static void Inner()
+    private static void Inner(object i)
     {
         bool b = true;
         char c = 'c';
+        object d = 43.0;
         Struct st = new Struct(1);
         if (b)
         {

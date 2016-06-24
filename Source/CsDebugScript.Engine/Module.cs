@@ -1,5 +1,4 @@
 ﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using System;
 using System.Linq;
@@ -379,6 +378,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"{Name} (Address = 0x{Address:X}, Version = {ModuleVersion}";
+        }
+
+        /// <summary>
         /// Gets the global or static variable.
         /// </summary>
         /// <param name="name">The variable name.</param>
@@ -415,7 +425,7 @@ namespace CsDebugScript
 
             if (clrType == null)
             {
-                throw new Exception("CLR type not found " + typeName);
+                throw new Exception($"CLR type not found {typeName}");
             }
 
             string variableName = name.Substring(variableNameIndex + 1);
@@ -423,12 +433,13 @@ namespace CsDebugScript
 
             if (staticField == null)
             {
-                throw new Exception("Field " + staticField + " wasn't found in CLR type " + typeName);
+                throw new Exception($"Field {staticField} wasn't found in CLR type {typeName}");
             }
 
             var address = staticField.GetAddress(appDomain.ClrAppDomain);
+            Variable field = Variable.CreateNoCast(FromClrType(clrType), address, variableName);
 
-            return Variable.CreateNoCast(FromClrType(clrType), address, variableName);
+            return Variable.UpcastClrVariable(field);
         }
 
         #region Cache filling functions
@@ -489,15 +500,19 @@ namespace CsDebugScript
                 {
                     uint typeId = Context.SymbolProvider.GetTypeId(this, name);
 
-                    codeType = TypesById[typeId];
+                    if (Context.SymbolProvider.GetTypeTag(this, typeId) != Engine.Native.SymTag.Compiland)
+                    {
+                        codeType = TypesById[typeId];
+                    }
                 }
             }
-            catch (Exception)
+            catch
             {
-                if (ClrModule != null)
-                {
-                    codeType = GetClrTypeByName(name);
-                }
+            }
+
+            if (ClrModule != null)
+            {
+                codeType = GetClrTypeByName(name);
             }
 
             if (codeType == null)
@@ -522,7 +537,7 @@ namespace CsDebugScript
                 if (clrType != null)
                 {
                     // Create a code type
-                    return GetClrCodeType(clrType);
+                    return ClrTypes[clrType];
                 }
             }
             catch (Exception)

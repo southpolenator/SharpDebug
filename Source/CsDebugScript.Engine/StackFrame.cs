@@ -85,10 +85,6 @@ namespace CsDebugScript
                 var m = Process.GetModuleByInnerAddress(InstructionOffset);
 
                 if (m == null && ClrStackFrame != null)
-                    m = Process.Modules.Where(mm => mm.ClrModule == ClrStackFrame.Module).FirstOrDefault();
-                if (m == null && ClrStackFrame != null)
-                    m = Process.Modules.Where(mm => mm.Address == ClrStackFrame.Module.ImageBase).FirstOrDefault();
-                if (m == null && ClrStackFrame != null)
                     m = Process.ClrModuleCache[ClrStackFrame.Module];
                 return m;
             });
@@ -301,11 +297,41 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            try
+            {
+                return string.Format("{4,3}  {0}+0x{1:x}   ({2}:{3})", FunctionName, FunctionDisplacement, SourceFileName, SourceFileLine, FrameNumber);
+            }
+            catch
+            {
+                try
+                {
+                    return string.Format("{2,3}  {0}+0x{1:x}", FunctionName, FunctionDisplacement, FrameNumber);
+                }
+                catch
+                {
+                    return string.Format("{1,3}  0x{0:x}", InstructionOffset, FrameNumber);
+                }
+            }
+        }
+
+        /// <summary>
         /// Reads the name of the source file, line and displacement.
         /// </summary>
         /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
         private Tuple<string, uint, ulong> ReadSourceFileNameAndLine()
         {
+            if (clrStackFrame.Cached && clrStackFrame.Value != null && ClrStackFrame.Method != null)
+            {
+                return ReadClrSourceFileNameAndLine(Module, ClrStackFrame.Method, InstructionOffset);
+            }
+
             try
             {
                 string sourceFileName;
@@ -317,6 +343,11 @@ namespace CsDebugScript
             }
             catch (Exception ex)
             {
+                if (ClrStackFrame != null && ClrStackFrame.Method != null)
+                {
+                    return ReadClrSourceFileNameAndLine(Module, ClrStackFrame.Method, InstructionOffset);
+                }
+
                 throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
             }
         }
@@ -327,9 +358,9 @@ namespace CsDebugScript
         /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
         private Tuple<string, ulong> ReadFunctionNameAndDisplacement()
         {
-            if (clrStackFrame.Cached && clrStackFrame.Value != null)
+            if (clrStackFrame.Cached && clrStackFrame.Value != null && ClrStackFrame.Method != null)
             {
-                return ReadClrFunctionNameAndDisplacement();
+                return ReadClrFunctionNameAndDisplacement(Module, ClrStackFrame.Method, InstructionOffset);
             }
 
             try
@@ -342,9 +373,9 @@ namespace CsDebugScript
             }
             catch (Exception ex)
             {
-                if (ClrStackFrame != null)
+                if (ClrStackFrame != null && ClrStackFrame.Method != null)
                 {
-                    return ReadClrFunctionNameAndDisplacement();
+                    return ReadClrFunctionNameAndDisplacement(Module, ClrStackFrame.Method, InstructionOffset);
                 }
 
                 throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
@@ -390,12 +421,53 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the CLR function name and displacement.
         /// </summary>
-        private Tuple<string, ulong> ReadClrFunctionNameAndDisplacement()
+        /// <param name="module">The module.</param>
+        /// <param name="method">The method.</param>
+        /// <param name="address">The address.</param>
+        internal static Tuple<string, ulong> ReadClrFunctionNameAndDisplacement(Module module, Microsoft.Diagnostics.Runtime.ClrMethod method, ulong address)
         {
-            string moduleName = Module?.Name ?? "???";
-            string functionName = moduleName + "!" + ClrStackFrame.Method;
+            string moduleName = module?.Name ?? "???";
+            string functionName = moduleName + "!" + method;
+            ulong displacement = address - method.NativeCode;
 
-            return Tuple.Create(functionName, ulong.MaxValue);
+            return Tuple.Create(functionName, displacement);
+        }
+
+        /// <summary>
+        /// Reads the CLR source file name, line number and displacement.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="method">The method.</param>
+        /// <param name="address">The address.</param>
+        internal static Tuple<string, uint, ulong> ReadClrSourceFileNameAndLine(Module module, Microsoft.Diagnostics.Runtime.ClrMethod method, ulong address)
+        {
+            Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader pdbReader = module.ClrPdbReader;
+            Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbFunction function = pdbReader.GetFunctionFromToken(method.MetadataToken);
+            uint ilOffset = StackFrame.FindIlOffset(method, address);
+
+            ulong distance = ulong.MaxValue;
+            string sourceFileName = "";
+            uint sourceFileLine = uint.MaxValue;
+
+            foreach (Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSequencePointCollection sequenceCollection in function.SequencePoints)
+            {
+                foreach (Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSequencePoint point in sequenceCollection.Lines)
+                {
+                    if (point.Offset <= ilOffset)
+                    {
+                        ulong dist = ilOffset - point.Offset;
+
+                        if (dist < distance)
+                        {
+                            sourceFileName = sequenceCollection.File.Name;
+                            sourceFileLine = point.LineBegin;
+                            distance = dist;
+                        }
+                    }
+                }
+            }
+
+            return Tuple.Create(sourceFileName, sourceFileLine, distance);
         }
 
         /// <summary>
@@ -522,8 +594,21 @@ namespace CsDebugScript
                     try
                     {
                         var value = values[i];
+                        ulong address = value.Address;
+                        CodeType codeType = Module.FromClrType(value.Type);
+                        Variable variable;
 
-                        variables.Add(Variable.CreateNoCast(Module.FromClrType(value.Type), value.Address, names[i]));
+                        if (codeType.IsPointer)
+                            variable = Variable.CreatePointerNoCast(codeType, address, names[i]);
+                        else
+                        {
+                            // TODO: This address unboxing should be part of ClrMD.
+                            if (value.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Class)
+                                address += Process.GetPointerSize();
+                            variable = Variable.CreateNoCast(codeType, address, names[i]);
+                        }
+
+                        variables.Add(Variable.UpcastClrVariable(variable));
                     }
                     catch (Exception)
                     {
@@ -556,13 +641,14 @@ namespace CsDebugScript
         /// <summary>
         /// Finds the IL offset for the specified frame.
         /// </summary>
-        /// <param name="frame">The frame.</param>
-        private static uint FindIlOffset(Microsoft.Diagnostics.Runtime.ClrStackFrame frame)
+        /// <param name="method">The method.</param>
+        /// <param name="instructionPointer">The instruction pointer.</param>
+        internal static uint FindIlOffset(Microsoft.Diagnostics.Runtime.ClrMethod method, ulong instructionPointer)
         {
-            ulong ip = frame.InstructionPointer;
+            ulong ip = instructionPointer;
             uint last = uint.MaxValue;
 
-            foreach (var item in frame.Method.ILOffsetMap)
+            foreach (var item in method.ILOffsetMap)
             {
                 if (item.StartAddress > ip)
                     return last;
@@ -572,6 +658,15 @@ namespace CsDebugScript
             }
 
             return last;
+        }
+
+        /// <summary>
+        /// Finds the IL offset for the specified frame.
+        /// </summary>
+        /// <param name="frame">The frame.</param>
+        private static uint FindIlOffset(Microsoft.Diagnostics.Runtime.ClrStackFrame frame)
+        {
+            return FindIlOffset(frame.Method, frame.InstructionPointer);
         }
         #endregion
     }

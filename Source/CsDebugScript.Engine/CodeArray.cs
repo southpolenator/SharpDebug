@@ -239,6 +239,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"Length = {Length}, Type = {variable.GetCodeType().ElementType}";
+        }
+
+        /// <summary>
         /// Initializes this instance of the <see cref="CodeArray{T}"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>

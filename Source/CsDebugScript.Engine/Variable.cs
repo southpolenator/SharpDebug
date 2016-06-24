@@ -11,7 +11,7 @@ namespace CsDebugScript
     /// <summary>
     /// Ultimate class for working with variables from process being debugged.
     /// </summary>
-    public class Variable : DynamicObject, IConvertible
+    public class Variable : DynamicObject, IConvertible, IEquatable<Variable>
     {
         /// <summary>
         /// The name of variable when its value is computed
@@ -94,7 +94,7 @@ namespace CsDebugScript
         /// <param name="name">The name.</param>
         /// <param name="path">The path.</param>
         /// <param name="data">The loaded data value (this can be used only with pointers).</param>
-        private Variable(CodeType codeType, ulong address, string name, string path, ulong data)
+        internal Variable(CodeType codeType, ulong address, string name, string path, ulong data)
             : this(codeType, address, name, path)
         {
             if (!codeType.IsPointer)
@@ -468,20 +468,15 @@ namespace CsDebugScript
 
             // TODO: Call custom caster (e.g. std::string, std::wstring)
 
-            // Check if it is pointer
-            if (codeType.IsPointer)
+            // Check pointer size
+            if (codeType.Module.Process.GetPointerSize() == 4)
             {
-                if (codeType.Size == 4)
-                {
-                    return string.Format("0x{0:X4}", Data);
-                }
-                else
-                {
-                    return string.Format("0x{0:X8}", Data);
-                }
+                return string.Format("0x{0:X4} ({1})", GetPointerAddress(), codeType.Name);
             }
-
-            return "{" + codeType.Name + "}";
+            else
+            {
+                return string.Format("0x{0:X8} ({1})", GetPointerAddress(), codeType.Name);
+            }
         }
 
         /// <summary>
@@ -1033,8 +1028,63 @@ namespace CsDebugScript
         {
             CodeType fieldType = codeType.GetFieldType(name);
             ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
+            Variable field = CreateNoCast(fieldType, fieldAddress, name, GenerateNewPath(".{0}", path));
 
-            return CreateNoCast(fieldType, fieldAddress, name, GenerateNewPath(".{0}", name));
+            return UpcastClrVariable(field);
+        }
+
+        /// <summary>
+        /// Upcasts the CLR variable to a runtime type.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        internal static Variable UpcastClrVariable(Variable variable)
+        {
+            // Check if it is CLR variable
+            ClrCodeType clrCodeType = variable.GetCodeType() as ClrCodeType;
+
+            if (clrCodeType != null)
+            {
+                // Get runtime type
+                Microsoft.Diagnostics.Runtime.ClrType newClrType = clrCodeType.ClrType.Heap.GetObjectType(variable.GetPointerAddress());
+                ClrCodeType clrCodeTypeSpecialization = clrCodeType.GetSpecializedCodeType(variable.GetPointerAddress());
+
+                if ((newClrType != clrCodeType.ClrType && newClrType.Module != null) || clrCodeTypeSpecialization != clrCodeType)
+                {
+                    // New code type is correct, use it
+                    ClrCodeType newCodeType = clrCodeTypeSpecialization != clrCodeType ? clrCodeTypeSpecialization : Process.Current.FromClrType(newClrType) as ClrCodeType;
+                    ulong address = variable.GetPointerAddress();
+
+                    // If original filed type was System.Object (pointer) and resulting type is struct or simple type (not pointer)
+                    // Then, we need to move address for a vtable.
+                    if (clrCodeType.IsPointer && !newCodeType.IsPointer)
+                    {
+                        address = variable.Data + clrCodeType.Module.Process.GetPointerSize();
+                    }
+
+                    // Find code type specialization
+                    newCodeType = newCodeType.GetSpecializedCodeType(address);
+
+                    // If it is array, take pointer of the first element
+                    ClrArrayCodeType clrArrayCodeType = newCodeType as ClrArrayCodeType;
+
+                    if (clrArrayCodeType != null)
+                    {
+                        address = clrArrayCodeType.ClrType.GetArrayElementAddress(address, 0);
+                    }
+
+                    // Create new variable
+                    if (newCodeType.IsPointer)
+                    {
+                        return CreatePointerNoCast(newCodeType, address, variable.name, variable.path);
+                    }
+                    else
+                    {
+                        return CreateNoCast(newCodeType, address, variable.name, variable.path);
+                    }
+                }
+            }
+
+            return variable;
         }
 
         /// <summary>
@@ -1247,7 +1297,7 @@ namespace CsDebugScript
             return TryGetMember(indexes[0].ToString(), out result);
         }
 
-#region Forbidden setters/deleters
+        #region Forbidden setters/deleters
         /// <summary>
         /// Tries to delete the member - it is forbidden.
         /// </summary>
@@ -1539,6 +1589,70 @@ namespace CsDebugScript
         {
             return CastAs(conversionType);
         }
-#endregion
+        #endregion
+
+        #region IEquatable<Variable>
+        /// <summary>
+        /// Indicates whether the current object is equal to another object of the same type.
+        /// </summary>
+        /// <param name="other">An object to compare with this object.</param>
+        /// <returns>
+        /// true if the current object is equal to the <paramref name="other" /> parameter; otherwise, false.
+        /// </returns>
+        public bool Equals(Variable other)
+        {
+            if (other == null && IsNullPointer())
+            {
+                return true;
+            }
+
+            if (other == null || GetPointerAddress() != other.GetPointerAddress())
+            {
+                return false;
+            }
+
+            if (codeType == other.codeType)
+            {
+                return true;
+            }
+
+            if (codeType.IsPointer == other.codeType.IsPointer)
+            {
+                return false;
+            }
+
+            if ((codeType.IsPointer && codeType.ElementType == other.codeType)
+                || (other.codeType.IsPointer && other.codeType.ElementType == codeType))
+            {
+                return true;
+            }
+
+            return false;
+        }
+        #endregion
+
+        /// <summary>
+        /// Determines whether the specified <see cref="System.Object" />, is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
+        public override bool Equals(object obj)
+        {
+            if (obj == null && IsNullPointer())
+            {
+                return true;
+            }
+
+            Variable other = obj as Variable;
+
+            if (other != null)
+            {
+                return Equals(other);
+            }
+
+            return base.Equals(obj);
+        }
     }
 }

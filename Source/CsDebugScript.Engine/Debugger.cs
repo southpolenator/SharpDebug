@@ -276,6 +276,39 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Reads the simple data (1 to 8 bytes) for specified type and address to read from.
+        /// </summary>
+        /// <param name="codeType">Type of the code.</param>
+        /// <param name="address">The address.</param>
+        internal static ulong ReadSimpleData(CodeType codeType, ulong address)
+        {
+            Process process = codeType.Module.Process;
+            uint size = codeType.Size;
+
+            if (codeType.IsPointer)
+            {
+                size = process.GetPointerSize();
+            }
+
+            byte[] buffer = ReadMemory(process, address, size).Bytes;
+
+            // TODO: This doesn't work with bit fields
+            switch (size)
+            {
+                case 1:
+                    return buffer[0];
+                case 2:
+                    return BitConverter.ToUInt16(buffer, 0);
+                case 4:
+                    return BitConverter.ToUInt32(buffer, 0);
+                case 8:
+                    return BitConverter.ToUInt64(buffer, 0);
+                default:
+                    throw new Exception("Unexpected data size " + size);
+            }
+        }
+
+        /// <summary>
         /// Finds pattern in memory of the current process and returns all of its occurrences. Unicode encoding will be used.
         /// </summary>
         /// <example><code>

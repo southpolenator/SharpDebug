@@ -480,6 +480,21 @@ namespace CsDebugScript
         {
             return GetDowncast(userType)?.GetType();
         }
+
+        /// <summary>
+        /// Cast Variable to NakedPointer.
+        /// </summary>
+        /// <param name="variable">The Variable.</param>
+        /// <returns>Returns NakePointer to Variable pointer address.</returns>
+        public static NakedPointer ToNakedPointer(this Variable variable)
+        {
+            if (variable == null)
+            {
+                return null;
+            }
+
+            return new NakedPointer(variable.GetCodeType().Module.Process, variable.GetPointerAddress());
+        }
     }
 
     /// <summary>
