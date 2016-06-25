@@ -3,6 +3,7 @@ using CsDebugScript.Engine.Utility;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text;
 using CsDebugScript.Engine;
 
 namespace CsDebugScript
@@ -675,14 +676,54 @@ namespace CsDebugScript
             if (name == className)
                 return true;
 
-            // TODO: Do better matching of generics type
+            // Simple case for template types.
             if (className.EndsWith("<>"))
             {
-                if (name.StartsWith(className.Substring(0, className.Length - 1)))
-                    return true;
+                return name.StartsWith(className.Substring(0, className.Length - 1));
+            }
+
+            // Check nested template types or regular types declared in template type.
+            if (className.Contains("<") || className.Contains(">"))
+            {
+                return (className == GetGeneralizedTypeName(name));
             }
 
             return false;
+        }
+
+        private static string GetGeneralizedTypeName(string typeName)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            int templateArgsCount = 0;
+
+            foreach (char element in typeName)
+            {
+                if (element == '<')
+                {
+                    if (templateArgsCount == 0)
+                    {
+                        sb.Append(element);
+                    }
+
+                    ++templateArgsCount;
+                }
+                else if (element == '>')
+                {
+                    --templateArgsCount;
+
+                    if (templateArgsCount == 0)
+                    {
+                        sb.Append(element);
+                    }
+                }
+                else if (templateArgsCount == 0)
+                {
+                    sb.Append(element);
+                }
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>

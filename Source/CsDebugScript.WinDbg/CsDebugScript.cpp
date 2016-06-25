@@ -21,7 +21,7 @@
     rename("ReportEvent", "InteropServices_ReportEvent")
 
 
-#import "CsDebugScript.UI.tlb" raw_interfaces_only
+//#import "CsDebugScript.UI.tlb" raw_interfaces_only
 
 // Debugging engine headers
 #define KDEXT_64BIT 
@@ -113,6 +113,21 @@ wstring GetWorkingDirectory()
 	return dllpath;
 }
 
+IDebugClient* g_DebugClient;
+
+extern "C"
+{
+	__declspec(dllexport) int IsInterrupted()
+	{
+		CAutoComPtr<IDebugControl> p_DebugControl;
+
+		CHECKCOM(g_DebugClient->QueryInterface(__uuidof(IDebugControl), (void**)&p_DebugControl));
+
+		HRESULT hr = p_DebugControl->GetInterrupt();
+		return hr;
+	}
+};
+
 class ClrInitializator
 {
 public:
@@ -143,7 +158,7 @@ public:
 
 		// Set custom memory manager and start CLR
 		//
-		CHECKCOM(runtimeInfo->BindAsLegacyV2Runtime());
+		//CHECKCOM(runtimeInfo->BindAsLegacyV2Runtime()); // TODO do we need net 2.0 ?
 		CHECKCOM(runtimeInfo->SetDefaultStartupFlags(STARTUP_SERVER_GC, nullptr));
 		CHECKCOM(runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&clrRuntimeHost)));
 		CHECKCOM(clrRuntimeHost->Start());
@@ -178,16 +193,37 @@ public:
 		// Create our extension CLR instance
 		//
 		CAutoComPtr<_Assembly> assembly = (_Assembly*)(IDispatch*)loadFromResult;
-		variant_t variant;
+		
+		CHECKCOM(assembly->CreateInstance(bstr_t("CsDebugScript.Executor"), &extensionInstance));
 
-		CHECKCOM(assembly->CreateInstance_2(bstr_t(L"CsDebugScript.Executor"), true, &variant));
-		CHECKCOM(variant.punkVal->QueryInterface(&instance));
+		CHECKCOM(assembly->GetType_2(bstr_t("CsDebugScript.Executor"), &extensionInstanceType));
+
 		return S_OK;
 	}
 
 	HRESULT InitializeContext(IDebugClient* client)
 	{
-		CHECKCOM(instance->InitializeContext(client));
+		g_DebugClient = client;
+
+		//#fixme reflections
+		//CHECKCOM(extensionInstance->InitializeContext(client));
+
+
+		// Initalize extension.
+		//
+		BSTR typeName;
+		extensionInstanceType->get_name(&typeName);
+
+		SafeArray arguments;
+		arguments.CreateVector(VT_VARIANT, 0, 1);
+		variant_t vtClient(client);
+
+		arguments.PutElement(0, &vtClient);
+		
+		variant_t result;
+
+		CHECKCOM(extensionInstanceType->InvokeMember_3(bstr_t(L"InitializeContext"), (BindingFlags)(BindingFlags_InvokeMethod | BindingFlags_Instance | BindingFlags_Public), nullptr, extensionInstance, arguments, &result));
+
 		return S_OK;
 	}
 
@@ -208,47 +244,65 @@ public:
 
 		// Execute script function
 		//
-		CHECKCOM(instance->ExecuteScript(bstrScriptPath, safeArray));
+		//CHECKCOM(extensionInstanceType->InvokeMember_2(bstr_t(L"ExecuteScript"), (BindingFlags)(BindingFlags_InvokeMethod | BindingFlags_Public | BindingFlags_Static), nullptr, extensionInstanceArg, loadFromArguments, &loadFromResult));
+
+//		CHECKCOM(extensionInstance->ExecuteScript(bstrScriptPath, safeArray));
 		return S_OK;
 	}
 
-	HRESULT ExecuteScript(const wchar_t* arguments)
+	HRESULT ExecuteScript(const wchar_t* scriptArguments)
 	{
 		// Execute script function
 		//
-		bstr_t bstrArguments = arguments;
+		//bstr_t bstrArguments = arguments;
 
-		CHECKCOM(instance->ExecuteScript_2(bstrArguments));
+		// #fixme
+		// CHECKCOM(extensionInstance->ExecuteScript_2(bstrArguments));
+
+		SafeArray arguments;
+		arguments.CreateVector(VT_VARIANT, 0, 1);
+
+		variant_t vtScriptArguments(scriptArguments);
+		arguments.PutElement(0, &vtScriptArguments);
+
+		variant_t result;
+
+		CHECKCOM(extensionInstanceType->InvokeMember_3(bstr_t(L"ExecuteScript"), (BindingFlags)(BindingFlags_InvokeMethod | BindingFlags_Instance | BindingFlags_Public), nullptr, extensionInstance, arguments, &result));
+
 		return S_OK;
 	}
 
+/*
 	HRESULT EnterInteractiveMode(const wchar_t* arguments)
 	{
 		bstr_t bstrArguments = arguments;
 
-		CHECKCOM(instance->EnterInteractiveMode(bstrArguments));
+		CHECKCOM(extensionInstance->EnterInteractiveMode(bstrArguments));
 		return S_OK;
 	}
+
 
 	HRESULT OpenUI(const wchar_t*arguments)
 	{
 		bstr_t bstrArguments = arguments;
 
-		CHECKCOM(instance->OpenUI(bstrArguments));
+		CHECKCOM(extensionInstance->OpenUI(bstrArguments));
 		return S_OK;
 	}
+
 
 	HRESULT Interpret(const wchar_t* arguments)
 	{
 		bstr_t bstrArguments = arguments;
 
-		CHECKCOM(instance->Interpret(bstrArguments));
+		CHECKCOM(extensionInstance->Interpret(bstrArguments));
 		return S_OK;
 	}
+*/
 
 	HRESULT Uninitialize(bool full)
 	{
-		instance = nullptr;
+		extensionInstance.Clear();
 		if (full && corRuntimeHost != nullptr && appDomain != nullptr)
 		{
 			CHECKCOM(corRuntimeHost->UnloadDomain(appDomain));
@@ -291,7 +345,8 @@ private:
 	CAutoComPtr<ICLRRuntimeInfo> runtimeInfo;
 	CAutoComPtr<ICLRRuntimeHost> clrRuntimeHost;
 	CAutoComPtr<ICorRuntimeHost> corRuntimeHost;
-	CAutoComPtr<CsDebugScript_UI::IExecutor> instance;
+	variant_t extensionInstance;
+	CAutoComPtr<_Type> extensionInstanceType;
 	CAutoComPtr<_AppDomain> appDomain;
 } clr;
 
@@ -350,6 +405,7 @@ CSDEBUGSCRIPT_API HRESULT execute(
 	return result;
 }
 
+/*
 CSDEBUGSCRIPT_API HRESULT interactive(
 	_In_     IDebugClient* Client,
 	_In_opt_ PCSTR         Args)
@@ -362,6 +418,7 @@ CSDEBUGSCRIPT_API HRESULT interactive(
 	clr.InitializeContext(nullptr);
 	return result;
 }
+*/
 
 struct OpenUiSecondThreadParameters
 {
@@ -369,6 +426,7 @@ struct OpenUiSecondThreadParameters
 	char* Args;
 };
 
+/*
 DWORD WINAPI OpenUiSecondThread(void* parameter)
 {
 	OpenUiSecondThreadParameters* p = (OpenUiSecondThreadParameters*)parameter;
@@ -404,7 +462,8 @@ CSDEBUGSCRIPT_API HRESULT openui(
 	CloseHandle(thread);
 	return S_OK;
 }
-
+*/
+/*
 CSDEBUGSCRIPT_API HRESULT interpret(
 	_In_     IDebugClient* Client,
 	_In_opt_ PCSTR         Args)
@@ -417,3 +476,4 @@ CSDEBUGSCRIPT_API HRESULT interpret(
 	clr.InitializeContext(nullptr);
 	return result;
 }
+*/

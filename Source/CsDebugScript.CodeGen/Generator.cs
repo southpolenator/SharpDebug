@@ -101,7 +101,7 @@ namespace CsDebugScript.CodeGen
                     if (i < symbolsPerModule[j].Length)
                         allSymbols.Add(symbolsPerModule[j][i]);
 
-            logger.WriteLine(" {0}", sw.Elapsed);
+             logger.WriteLine(" {0}", sw.Elapsed);
 
 #if false
             // Initialize symbol fields and base classes
@@ -363,7 +363,7 @@ namespace CsDebugScript.CodeGen
             }
             else
             {
-                string filename = string.Format(@"{0}\everything.exported.cs", outputDirectory);
+                string filename = string.Format(@"{0}\{1}.exported.cs", outputDirectory, xmlConfig.CommonTypesNamespace);
                 HashSet<string> usings = new HashSet<string>();
                 foreach (var symbolEntry in userTypes)
                     foreach (var u in symbolEntry.Usings)
