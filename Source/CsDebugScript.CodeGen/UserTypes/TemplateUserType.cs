@@ -414,7 +414,15 @@ namespace CsDebugScript.CodeGen.UserTypes
                 TemplateUserType templateParentType = parentType as TemplateUserType;
 
                 if (templateParentType != null)
-                    return templateParentType.TryGetTemplateArgument(typeName, out argumentName);
+                {
+                    // Choose correct parent specialization.
+                    templateParentType = templateParentType.SpecializedTypes.FirstOrDefault(r => Symbol.Name.StartsWith(r.Symbol.Name));
+
+                    if (templateParentType != null)
+                    {
+                        return templateParentType.TryGetTemplateArgument(typeName, out argumentName);
+                    }
+                }
                 parentType = parentType.DeclaredInType;
             }
 
