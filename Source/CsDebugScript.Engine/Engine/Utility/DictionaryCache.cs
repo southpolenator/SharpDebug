@@ -130,5 +130,15 @@ namespace CsDebugScript.Engine.Utility
                 return false;
             }
         }
+
+        /// <summary>
+        /// Removes dictionary entry with given key.
+        /// </summary>
+        /// <param name="key">Key of entry to be removed..</param>
+        /// <param name="value">Value assoiated with the key that is being removed.</param>
+        public bool RemoveEntry(TKey key, out TValue value)
+        {
+            return values.TryRemove(key, out value);
+        }
     }
 }

@@ -511,6 +511,11 @@ namespace CsDebugScript.VS
         {
             throw new NotImplementedException();
         }
+
+        public void Terminate(Process process)
+        {
+            throw new NotImplementedException();
+        }
         #endregion
     }
 }

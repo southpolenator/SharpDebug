@@ -48,7 +48,7 @@ int MyTestClass::staticVariable = 1212121212;
 
 int(*mainAddress)(int, char**) = main;
 
-void DefaultTestCase()
+__declspec(noinline) void DefaultTestCase()
 {
     MyTestClass * p = &globalVariable;
     MyTestClass ** q = &p;
@@ -68,13 +68,13 @@ void DefaultTestCase()
     throw std::bad_exception();
 }
 
-void InfiniteRecursionTestCase(int arg)
+__declspec(noinline) void InfiniteRecursionTestCase(int arg)
 {
     Sleep(100);
     InfiniteRecursionTestCase(arg + 1);
 }
 
-int main(int argc, char** argv)
+__declspec(noinline) int main(int argc, char** argv)
 {
 
     int testCaseToRun = 0;

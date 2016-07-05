@@ -74,7 +74,22 @@ namespace CsDebugScript.Engine.Debuggers
         [ThreadStatic]
         private static IDebugSystemObjects4 systemObjects;
 
-        private static DebugeeFlowControler debugeeFlowControler;
+        /// <summary>
+        /// Dictionary of all debugee flow controlers. Key is process id that is being debugged.
+        /// </summary>
+        private static DictionaryCache<uint, DebugeeFlowControler> debugeeFlowControlers;
+
+        /// <summary>
+        /// Static constructor.
+        /// </summary>
+        static DbgEngDll()
+        {
+            // Populate flow controlers lazely.
+            //
+            debugeeFlowControlers =
+                new DictionaryCache<uint, DebugeeFlowControler>(
+                    (processId) => new DebugeeFlowControler(originalClient));
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbgEngDll"/> class.
@@ -85,11 +100,6 @@ namespace CsDebugScript.Engine.Debuggers
             originalClient = client;
             threadClient = client;
             stateCache = new StateCache(this);
-
-            if (IsLiveDebugging)
-            {
-                debugeeFlowControler = new DebugeeFlowControler(client);
-            }
         }
 
         /// <summary>
@@ -1257,11 +1267,15 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                debugeeFlowControler.DebugStatusBreak.WaitOne();
+                DebugeeFlowControler flowControler = debugeeFlowControlers[process.SystemId];
+                flowControler.DebugStatusBreak.WaitOne();
                 Control.Execute(0, "g", 0);
             }
         }
 
+        /// <summary>
+        /// Continues execution of current process.
+        /// </summary>
         public void ContinueExecution()
         {
             ContinueExecution(Process.Current);
@@ -1274,9 +1288,10 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                debugeeFlowControler.DebugStatusBreak.Reset();
+                DebugeeFlowControler flowControler = debugeeFlowControlers[process.SystemId];
+                flowControler.DebugStatusBreak.Reset();
                 Control.SetInterrupt(0);
-                debugeeFlowControler.DebugStatusBreak.WaitOne();
+                flowControler.DebugStatusBreak.WaitOne();
 
                 // Drop the cache.
                 //
@@ -1284,6 +1299,9 @@ namespace CsDebugScript.Engine.Debuggers
             }
         }
 
+        /// <summary>
+        /// Break execution of current process.
+        /// </summary>
         public void BreakExecution()
         {
             BreakExecution(Process.Current);
@@ -1292,16 +1310,29 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// Terminates the process that is being debugged and ends the session.
         /// </summary>
-        public void Terminate()
+        public void Terminate(Process process)
         {
             Client.EndSession((uint)Defines.DebugEndActiveTerminate);
 
+            DebugeeFlowControler flowControler;
+            debugeeFlowControlers.RemoveEntry(process.SystemId, out flowControler);
+
+            flowControler.DebugStatusBreak.WaitOne();
+
             // Release any threads that are waiting.
             //
-            debugeeFlowControler.DebugStatusGo.Set();
-            debugeeFlowControler.DebugStatusBreak.Set();
+            flowControler.DebugStatusGo.Set();
+            flowControler.DebugStatusBreak.Set();
 
-            debugeeFlowControler.WaitForDebuggerLoopToExit();
+            flowControler.WaitForDebuggerLoopToExit();
+        }
+
+        /// <summary>
+        /// Terminates current process.
+        /// </summary>
+        public void Terminate()
+        {
+            Terminate(Process.Current);
         }
 
         #region Interactive debugger
@@ -1357,7 +1388,7 @@ namespace CsDebugScript.Engine.Debuggers
                 lock (eventCallbacksReady)
                 {
                     debuggerStateLoop = 
-                        new System.Threading.Thread(() => DebuggerStateLoop(client, DebugStatusGo, DebugStatusBreak, this.debuggeeLoopReady)) { IsBackground = true };
+                        new System.Threading.Thread(() => DebuggerStateLoop(client, DebugStatusGo, DebugStatusBreak)) { IsBackground = true };
                     debuggerStateLoop.SetApartmentState(System.Threading.ApartmentState.MTA);
                     debuggerStateLoop.Start();
 
@@ -1374,8 +1405,7 @@ namespace CsDebugScript.Engine.Debuggers
             private static void DebuggerStateLoop(
                 IDebugClient client,
                 System.Threading.AutoResetEvent debugStatusGo,
-                System.Threading.AutoResetEvent debugStatusBreak,
-                System.Threading.AutoResetEvent debuggeeLoopReady)
+                System.Threading.AutoResetEvent debugStatusBreak)
             {
                 bool hasClientExited = false;
                 var loopClient = client.CreateClient();

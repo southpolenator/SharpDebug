@@ -57,7 +57,7 @@ namespace DbgEngTest
 
         public void CurrentThreadContainsNativeDumpTestMainFunction()
         {
-            Assert.IsNotNull(GetFrame($"{DefaultModuleName}!main"));
+            Assert.IsNotNull(GetFrame($"{DefaultModuleName}!DefaultTestCase"));
         }
 
         public void TestModuleExtraction()
@@ -109,10 +109,10 @@ namespace DbgEngTest
             Assert.IsNull(arguments.FirstOrDefault(a => a.GetName() == "p"));
         }
 
-        public void CheckMainLocals()
+        public void CheckDefaultTestCaseLocals()
         {
-            StackFrame mainFrame = GetFrame($"{DefaultModuleName}!main");
-            VariableCollection arguments = mainFrame.Locals;
+            StackFrame frame = GetFrame($"{DefaultModuleName}!DefaultTestCase");
+            VariableCollection arguments = frame.Locals;
             dynamic p = arguments["p"];
             std.wstring string1 = new std.wstring(p.string1);
             Assert.AreEqual("qwerty", string1.Text);
@@ -162,8 +162,8 @@ namespace DbgEngTest
 
         public void CheckCodeArray()
         {
-            StackFrame mainFrame = GetFrame($"{DefaultModuleName}!main");
-            VariableCollection locals = mainFrame.Locals;
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!DefaultTestCase");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
             Variable testArrayVariable = locals["testArray"];
             CodeArray<int> testArray = new CodeArray<int>(testArrayVariable);
 
@@ -178,17 +178,17 @@ namespace DbgEngTest
             //Variable mainAddressVariable = DefaultModule.GetVariable($"{DefaultModuleName}!mainAddress");
             //CodeFunction mainFunction = new CodeFunction(mainAddressVariable);
 
-            StackFrame mainFrame = GetFrame($"{DefaultModuleName}!main");
-            CodeFunction mainFunction = new CodeFunction(mainFrame.InstructionOffset);
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!DefaultTestCase");
+            CodeFunction defaultTestCaseFunction = new CodeFunction(defaultTestCaseFrame.InstructionOffset);
 
-            Assert.AreNotEqual(0, mainFunction.Address);
-            Assert.AreNotEqual(0, mainFunction.FunctionDisplacement);
-            Assert.AreEqual($"{DefaultModuleName}!main", mainFunction.FunctionName);
-            Assert.AreEqual($"main", mainFunction.FunctionNameWithoutModule);
-            Assert.AreEqual(Process.Current, mainFunction.Process);
-            Assert.IsTrue(mainFunction.SourceFileName.Contains(MainSourceFileName));
-            Assert.AreNotEqual(0, mainFunction.SourceFileLine);
-            Console.WriteLine("SourceFileDisplacement: {0}", mainFunction.SourceFileDisplacement);
+            Assert.AreNotEqual(0, defaultTestCaseFunction.Address);
+            Assert.AreNotEqual(0, defaultTestCaseFunction.FunctionDisplacement);
+            Assert.AreEqual($"{DefaultModuleName}!DefaultTestCase", defaultTestCaseFunction.FunctionName);
+            Assert.AreEqual($"DefaultTestCase", defaultTestCaseFunction.FunctionNameWithoutModule);
+            Assert.AreEqual(Process.Current, defaultTestCaseFunction.Process);
+            Assert.IsTrue(defaultTestCaseFunction.SourceFileName.Contains(MainSourceFileName));
+            Assert.AreNotEqual(0, defaultTestCaseFunction.SourceFileLine);
+            Console.WriteLine("SourceFileDisplacement: {0}", defaultTestCaseFunction.SourceFileDisplacement);
         }
 
         public void CheckDebugger()

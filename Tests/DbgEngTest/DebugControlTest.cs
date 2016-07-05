@@ -14,10 +14,10 @@ namespace DbgEngTest
     [TestClass]
     public class DebugControlTest : TestBase
     {
-        // TODO: check in test app.
-        // IDEA: Write a test where variable just gets incremented and insure it trully does get incremented.
-        //
-        private const string TestProcessPath = @"NativeDumpTest.x64.exe";
+        private static string TestProcessPath;
+
+        private const string TestProcessPathx64 = "NativeDumpTest.x64.exe";
+        private const string TestProcessPathx86 = "NativeDumpTest.x86.exe";
 
         private const string DefaultSymbolPath = @".\";
 
@@ -92,12 +92,27 @@ namespace DbgEngTest
             }
         }
 
-        static void MultipleProcessesBody()
+        /// <summary>
+        /// Tests running multiple processes.
+        /// </summary>
+        static void GoBreakMultipleProcessesBody()
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
             var ps = CsDebugScript.Process.All;
+
+            foreach (var process in CsDebugScript.Process.All)
+            {
+                Context.Debugger.ContinueExecution(process);
+            }
+
+            System.Threading.Thread.Sleep(1000);
+
+            foreach (var process in CsDebugScript.Process.All)
+            {
+                Context.Debugger.BreakExecution(process);
+            }
         }
 
         /// <summary>
@@ -107,8 +122,15 @@ namespace DbgEngTest
         /// <param name="test"></param>
         static void ContinousTestExecutionWrapper(Action test)
         {
-            Action cleanup = () => Context.Debugger.Terminate();
+            Action cleanup = () =>
+            {
+                foreach (var process in CsDebugScript.Process.All)
+                    Context.Debugger.Terminate(process);
+            };
+
             var testWithCleanup = test + cleanup;
+
+            TestProcessPath = Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86;
 
             System.Threading.Thread testThread = new System.Threading.Thread(() => testWithCleanup());
             testThread.SetApartmentState(System.Threading.ApartmentState.MTA);
@@ -132,8 +154,8 @@ namespace DbgEngTest
         [TestMethod]
         public void MultipleProcesses()
         {
-
-            ContinousTestExecutionWrapper(MultipleProcessesBody);
+            // Not yet implemented.
+            // ContinousTestExecutionWrapper(GoBreakMultipleProcessesBody);
         }
 
     }

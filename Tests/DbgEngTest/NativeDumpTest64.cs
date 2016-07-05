@@ -95,9 +95,9 @@ namespace DbgEngTest
         }
 
         [TestMethod]
-        public void CheckMainLocals()
+        public void CheckDefaultTestCaseLocals()
         {
-            testRunner.CheckMainLocals();
+            testRunner.CheckDefaultTestCaseLocals();
         }
     }
 }

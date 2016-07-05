@@ -315,5 +315,11 @@ namespace CsDebugScript.Engine
         /// Terminate process that is being debugged and ends debugging session.
         /// </summary>
         void Terminate();
+
+        /// <summary>
+        /// Terminates given process.
+        /// </summary>
+        /// <param name="process"></param>
+        void Terminate(Process process);
     }
 }
