@@ -1267,7 +1267,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                DebugeeFlowControler flowControler = debugeeFlowControlers[process.SystemId];
+                DebugeeFlowControler flowControler = debugeeFlowControlers[process.Id];
                 flowControler.DebugStatusBreak.WaitOne();
                 Control.Execute(0, "g", 0);
             }
@@ -1288,7 +1288,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                DebugeeFlowControler flowControler = debugeeFlowControlers[process.SystemId];
+                DebugeeFlowControler flowControler = debugeeFlowControlers[process.Id];
                 flowControler.DebugStatusBreak.Reset();
                 Control.SetInterrupt(0);
                 flowControler.DebugStatusBreak.WaitOne();
@@ -1315,7 +1315,7 @@ namespace CsDebugScript.Engine.Debuggers
             Client.EndSession((uint)Defines.DebugEndActiveTerminate);
 
             DebugeeFlowControler flowControler;
-            debugeeFlowControlers.RemoveEntry(process.SystemId, out flowControler);
+            debugeeFlowControlers.RemoveEntry(process.Id, out flowControler);
 
             flowControler.DebugStatusBreak.WaitOne();
 

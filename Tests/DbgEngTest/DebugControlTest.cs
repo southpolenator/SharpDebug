@@ -101,6 +101,8 @@ namespace DbgEngTest
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
             var ps = CsDebugScript.Process.All;
+            Context.Debugger.ContinueExecution(ps[1]);
+            Context.Debugger.ContinueExecution(ps[0]);
 
             foreach (var process in CsDebugScript.Process.All)
             {
