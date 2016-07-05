@@ -1328,16 +1328,11 @@ namespace CsDebugScript.Engine.Debuggers
             }
 
             /// <summary>
-            /// Signals that debugee loop is ready.
-            /// </summary>
-            private System.Threading.AutoResetEvent debuggeeLoopReady = new System.Threading.AutoResetEvent(false);
-
-            /// <summary>
             /// Loop responsible for catching debug events and signaling debugee state.
             /// </summary>
             private System.Threading.Thread debuggerStateLoop;
 
-            private static readonly object lockObject = new Object();
+            private static readonly object eventCallbacksReady = new Object();
 
             /// <summary>
             /// Debug client for gbgeng interaction.
@@ -1359,7 +1354,7 @@ namespace CsDebugScript.Engine.Debuggers
 
                 client = originalClient.CreateClient();
 
-                lock (lockObject)
+                lock (eventCallbacksReady)
                 {
                     debuggerStateLoop = 
                         new System.Threading.Thread(() => DebuggerStateLoop(client, DebugStatusGo, DebugStatusBreak, this.debuggeeLoopReady)) { IsBackground = true };
@@ -1368,9 +1363,7 @@ namespace CsDebugScript.Engine.Debuggers
 
                     // Wait for loop thread to become ready.
                     //
-                    System.Threading.Monitor.Wait(lockObject);
-
-                    // debuggeeLoopReady.WaitOne();
+                    System.Threading.Monitor.Wait(eventCallbacksReady);
                 }
             }
 
@@ -1388,10 +1381,9 @@ namespace CsDebugScript.Engine.Debuggers
                 var loopClient = client.CreateClient();
                 var eventCallbacks = new DebugCallbacks(loopClient, debugStatusGo);
 
-                lock (lockObject)
+                lock (eventCallbacksReady)
                 {
-                    System.Threading.Monitor.Pulse(lockObject);
-                    // debuggeeLoopReady.Set();
+                    System.Threading.Monitor.Pulse(eventCallbacksReady);
                 }
 
                 // Default is to start in break mode, wait for release.
