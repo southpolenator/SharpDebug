@@ -34,7 +34,7 @@ namespace DbgEngTest
 
         public void TestSetup()
         {
-            Initialize(DefaultDumpFile, DefaultSymbolPath);
+            InitializeDump(DefaultDumpFile, DefaultSymbolPath);
         }
 
         public void CurrentThreadContainsNativeDumpTestCpp()

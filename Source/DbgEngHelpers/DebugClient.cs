@@ -25,6 +25,19 @@ namespace DbgEngManaged
             return client;
         }
 
+        public static IDebugClient OpenProcess(string processPath, string processArguments, string symbolPath, uint debugEngineOptions)
+        {
+            string processCommandLine = processPath + " " + processArguments;
+
+            IDebugClient client = DebugCreate();
+
+            ((IDebugSymbols5)client).SetSymbolPathWide(symbolPath);
+            ((IDebugControl7)client).SetEngineOptions(debugEngineOptions);
+            client.CreateProcessAndAttach(0, processCommandLine, 2, 0, 0);
+            ((IDebugControl7)client).WaitForEvent(0, uint.MaxValue);
+            return client;
+        }
+
         /// <summary>
         /// The DebugCreate function creates a new client object and returns an interface pointer to it.
         /// </summary>

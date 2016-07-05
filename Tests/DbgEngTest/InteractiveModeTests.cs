@@ -24,7 +24,7 @@ namespace DbgEngTest
         [TestInitialize]
         public void TestInitialize()
         {
-            Initialize(DefaultDumpFile, DefaultSymbolPath);
+            InitializeDump(DefaultDumpFile, DefaultSymbolPath);
         }
 
         [TestMethod]

@@ -116,6 +116,7 @@
     <Compile Include="CLR\ValueTests.cs" />
     <Compile Include="CodedUITests.cs" />
     <Compile Include="CodeGenTests.cs" />
+    <Compile Include="DebugControlTest.cs" />
     <Compile Include="InteractiveModeTests.cs" />
     <Compile Include="NativeDumpTest32.cs" />
     <Compile Include="NativeDumpTest32Release.cs" />

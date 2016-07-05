@@ -223,3 +223,14 @@ ModelManifest.xml
 /Source/CsDebugScript.VS/System.Reflection.Metadata.dll
 /Source/CsDebugScript.VS/Microsoft.CodeAnalysis.dll
 /Source/CsDebugScript.VS/Microsoft.CodeAnalysis.CSharp.dll
+/CsScripts/output.idl
+/CsScripts/output.h
+/CsScripts/DiaHelpers.dll
+/CsScripts/DbgEngManaged.dll
+/CsScripts/CsScriptManagedTest.exe.config
+/CsScripts/CsScriptManagedTest.exe
+/CsScripts/CsScriptManaged.dll
+/CsScripts/CreateDbgEngIdl.exe.config
+/CsScripts/CreateDbgEngIdl.exe
+/CsScripts/CommandLine.xml
+/CsScripts/CommandLine.dll

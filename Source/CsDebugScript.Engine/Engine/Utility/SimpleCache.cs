@@ -70,6 +70,9 @@ namespace CsDebugScript.Engine.Utility
         {
             get
             {
+                // value = populateAction();
+                // return value;
+
                 if (!Cached)
                 {
                     lock(this)
@@ -90,6 +93,14 @@ namespace CsDebugScript.Engine.Utility
                 this.value = value;
                 Cached = true;
             }
+        }
+
+        /// <summary>
+        /// Invalidate cache entry.
+        /// </summary>
+        public void InvalidateCache()
+        {
+            Cached = false;
         }
     }
 
@@ -149,6 +160,14 @@ namespace CsDebugScript.Engine.Utility
                 this.value = value;
                 Cached = true;
             }
+        }
+
+        /// <summary>
+        /// Invalidate cache entry.
+        /// </summary>
+        public void InvalidateCache()
+        {
+            Cached = false;
         }
     }
 }

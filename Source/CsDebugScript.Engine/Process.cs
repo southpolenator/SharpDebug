@@ -543,6 +543,16 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Invalidates cache structures.
+        /// Use when memory state changes (e.g. during live debugging).
+        /// </summary>
+        public void InvalidateProcessCache()
+        {
+            // TODO: Consider using reflection to iterate through all the fields.
+            threads.InvalidateCache();
+        }
+
+        /// <summary>
         /// Updates the cache of modules specified by the name.
         /// </summary>
         /// <param name="module">The module.</param>

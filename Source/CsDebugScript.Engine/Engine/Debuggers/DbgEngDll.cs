@@ -74,6 +74,8 @@ namespace CsDebugScript.Engine.Debuggers
         [ThreadStatic]
         private static IDebugSystemObjects4 systemObjects;
 
+        private static DebugeeFlowControler debugeeFlowControler;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DbgEngDll"/> class.
         /// </summary>
@@ -83,6 +85,11 @@ namespace CsDebugScript.Engine.Debuggers
             originalClient = client;
             threadClient = client;
             stateCache = new StateCache(this);
+
+            if (IsLiveDebugging)
+            {
+                debugeeFlowControler = new DebugeeFlowControler(client);
+            }
         }
 
         /// <summary>
@@ -1243,6 +1250,300 @@ namespace CsDebugScript.Engine.Debuggers
             }
         }
 
+        /// <summary>
+        /// Releases the process that is being debugged.
+        /// </summary>
+        public void ContinueExecution(Process process)
+        {
+            using (var processSwitcher = new ProcessSwitcher(StateCache, process))
+            {
+                debugeeFlowControler.DebugStatusBreak.WaitOne();
+                Control.Execute(0, "g", 0);
+            }
+        }
+
+        public void ContinueExecution()
+        {
+            ContinueExecution(Process.Current);
+        }
+
+        /// <summary>
+        /// Breaks the process that is being debugged.
+        /// </summary>
+        public void BreakExecution(Process process)
+        {
+            using (var processSwitcher = new ProcessSwitcher(StateCache, process))
+            {
+                debugeeFlowControler.DebugStatusBreak.Reset();
+                Control.SetInterrupt(0);
+                debugeeFlowControler.DebugStatusBreak.WaitOne();
+
+                // Drop the cache.
+                //
+                process.InvalidateProcessCache();
+            }
+        }
+
+        public void BreakExecution()
+        {
+            BreakExecution(Process.Current);
+        }
+
+        /// <summary>
+        /// Terminates the process that is being debugged and ends the session.
+        /// </summary>
+        public void Terminate()
+        {
+            Client.EndSession((uint)Defines.DebugEndActiveTerminate);
+
+            // Release any threads that are waiting.
+            //
+            debugeeFlowControler.DebugStatusGo.Set();
+            debugeeFlowControler.DebugStatusBreak.Set();
+
+            debugeeFlowControler.WaitForDebuggerLoopToExit();
+        }
+
+        #region Interactive debugger
+
+        /// <summary>
+        /// Controler for Debugee actions during live debugging.
+        /// </summary>
+        class DebugeeFlowControler
+        {
+            /// <summary>
+            /// Signal fired during interactive process debugging when debugee is released.
+            /// </summary>
+            public System.Threading.AutoResetEvent DebugStatusGo
+            {
+                get; private set;
+            }
+
+            /// <summary>
+            /// Signal fired during interactive process debugging when debugee is interrupted.
+            /// </summary>
+            public System.Threading.AutoResetEvent DebugStatusBreak
+            {
+                get; private set;
+            }
+
+            /// <summary>
+            /// Signals that debugee loop is ready.
+            /// </summary>
+            private System.Threading.AutoResetEvent debuggeeLoopReady = new System.Threading.AutoResetEvent(false);
+
+            /// <summary>
+            /// Loop responsible for catching debug events and signaling debugee state.
+            /// </summary>
+            private System.Threading.Thread debuggerStateLoop;
+
+            private static readonly object lockObject = new Object();
+
+            /// <summary>
+            /// Debug client for gbgeng interaction.
+            /// </summary>
+            private static IDebugClient client;
+
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="originalClient">IDebugClient</param>
+            public DebugeeFlowControler(IDebugClient originalClient)
+            {
+                DebugStatusGo = new System.Threading.AutoResetEvent(false);
+
+                // Default is that we start in break mode.
+                // Needs to be changed when we allow non intrusive attach/start for example.
+                //
+                DebugStatusBreak = new System.Threading.AutoResetEvent(true);
+
+                client = originalClient.CreateClient();
+
+                lock (lockObject)
+                {
+                    debuggerStateLoop = 
+                        new System.Threading.Thread(() => DebuggerStateLoop(client, DebugStatusGo, DebugStatusBreak, this.debuggeeLoopReady)) { IsBackground = true };
+                    debuggerStateLoop.SetApartmentState(System.Threading.ApartmentState.MTA);
+                    debuggerStateLoop.Start();
+
+                    // Wait for loop thread to become ready.
+                    //
+                    System.Threading.Monitor.Wait(lockObject);
+
+                    // debuggeeLoopReady.WaitOne();
+                }
+            }
+
+            /// <summary>
+            /// Loop responsible to wait for debug events.
+            /// Needs to be run in separate thread.
+            /// </summary>
+            private static void DebuggerStateLoop(
+                IDebugClient client,
+                System.Threading.AutoResetEvent debugStatusGo,
+                System.Threading.AutoResetEvent debugStatusBreak,
+                System.Threading.AutoResetEvent debuggeeLoopReady)
+            {
+                bool hasClientExited = false;
+                var loopClient = client.CreateClient();
+                var eventCallbacks = new DebugCallbacks(loopClient, debugStatusGo);
+
+                lock (lockObject)
+                {
+                    System.Threading.Monitor.Pulse(lockObject);
+                    // debuggeeLoopReady.Set();
+                }
+
+                // Default is to start in break mode, wait for release.
+                //
+                debugStatusGo.WaitOne();
+
+                while (!hasClientExited)
+                {
+                    ((IDebugControl7)loopClient).WaitForEvent(0, UInt32.MaxValue);
+                    uint executionStatus = ((IDebugControl7)loopClient).GetExecutionStatus();
+
+                    while (executionStatus == (uint)Defines.DebugStatusBreak)
+                    {
+                        debugStatusBreak.Set();
+                        debugStatusGo.WaitOne();
+
+                        executionStatus = ((IDebugControl7)loopClient).GetExecutionStatus();
+                    }
+
+                    hasClientExited = executionStatus == (uint)Defines.DebugStatusNoDebuggee;
+                }
+            }
+
+            /// <summary>
+            /// Waits for debugger loop thread to finish.
+            /// </summary>
+            public void WaitForDebuggerLoopToExit()
+            {
+                debuggerStateLoop.Join();
+            }
+        }
+
+        /// <summary>
+        /// Debug callbacks called during WaitForEvent callback.
+        /// This class in future can be extended to support callbacks provided
+        /// on certain actions (e.g. breakpoint hit, thread create, module load etc.)
+        /// </summary>
+        class DebugCallbacks : IDebugEventCallbacks
+        {
+            /// <summary>
+            /// IDebugClient.
+            /// </summary>
+            [ThreadStatic]
+            private IDebugClient client;
+
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="client">IDebugClient interface.</param>
+            /// <param name="debugStatusGoEvent">Event used to signal when debuggee switches to release state.</param>
+            public DebugCallbacks(IDebugClient client, System.Threading.AutoResetEvent debugStatusGoEvent)
+            {
+                this.client = client.CreateClient();
+                this.debugStatusGoEvent = debugStatusGoEvent;
+                this.client.SetEventCallbacks(this);
+            }
+
+            /// <summary>
+            /// Event used to signal go state. Used to unblock DebugFlow loop.
+            /// </summary>
+            private System.Threading.AutoResetEvent debugStatusGoEvent;
+
+            public void Breakpoint(IDebugBreakpoint Bp)
+            {
+                throw new NotImplementedException();
+            }
+
+            /// <summary>
+            /// Callback on change debugee state.
+            /// </summary>
+            /// <param name="Flags"></param>
+            /// <param name="Argument"></param>
+            /// <returns></returns>
+            public void ChangeDebuggeeState(uint Flags, ulong Argument)
+            {
+                uint executionStatus = ((IDebugControl7)client).GetExecutionStatus();
+
+                if (executionStatus == (uint)Defines.DebugStatusGo)
+                {
+                    debugStatusGoEvent.Set();
+                }
+
+                return;
+            }
+
+            public void ChangeEngineState(uint Flags, ulong Argument)
+            {
+                return;
+            }
+
+            public void ChangeSymbolState(uint Flags, ulong Argument)
+            {
+                return;
+            }
+
+            public void CreateProcess(ulong ImageFileHandle, ulong Handle, ulong BaseOffset, uint ModuleSize, string ModuleName, string ImageName, uint CheckSum, uint TimeDateStamp, ulong InitialThreadHandle, ulong ThreadDataOffset, ulong StartOffset)
+            {
+                return;
+            }
+
+            public void CreateThread(ulong Handle, ulong DataOffset, ulong StartOffset)
+            {
+                return;
+            }
+
+            public void Exception(ref _EXCEPTION_RECORD64 Exception, uint FirstChance)
+            {
+                return;
+            }
+
+            public void ExitProcess(uint ExitCode)
+            {
+                return;
+            }
+
+            public void ExitThread(uint ExitCode)
+            {
+                return;
+            }
+
+            public uint GetInterestMask()
+            {
+                DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
+                | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
+                | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
+
+                return (uint)captureFlags;
+            }
+
+            public void LoadModule(ulong ImageFileHandle, ulong BaseOffset, uint ModuleSize, string ModuleName, string ImageName, uint CheckSum, uint TimeDateStamp)
+            {
+                return;
+            }
+
+            public void SessionStatus(uint Status)
+            {
+                return;
+            }
+
+            public void SystemError(uint Error, uint Level)
+            {
+                return;
+            }
+
+            public void UnloadModule(string ImageBaseName, ulong BaseOffset)
+            {
+                return;
+            }
+        }
+
+        #endregion
+
         #region Native methods
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.
@@ -1500,14 +1801,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// <param name="MachineType">The architecture type of the computer for which the stack trace is generated.</param>
         /// <param name="hProcess">A handle to the process for which the stack trace is generated. If the caller supplies a valid callback pointer for the ReadMemoryRoutine parameter, then this value does not have to be a valid process handle. It can be a token that is unique and consistently the same for all calls to the StackWalkEx function. If the symbol handler is used with StackWalkEx, use the same process handles for the calls to each function.</param>
         /// <param name="hThread">A handle to the thread for which the stack trace is generated.If the caller supplies a valid callback pointer for the ReadMemoryRoutine parameter, then this value does not have to be a valid thread handle. It can be a token that is unique and consistently the same for all calls to the StackWalkEx function.</param>
-        /// <param name="StackFrame">A pointer to a STACKFRAME_EX structure. This structure receives information for the next frame, if the function call succeeds.</param>
-        /// <param name="ContextRecord">A pointer to a CONTEXT structure.This parameter is required only when the MachineType parameter is not IMAGE_FILE_MACHINE_I386. However, it is recommended that this parameter contain a valid context record. This allows StackWalkEx to handle a greater variety of situations.
-        /// This context may be modified, so do not pass a context record that should not be modified.</param>
-        /// <param name="ReadMemoryRoutine">A callback routine that provides memory read services.When the StackWalkEx function needs to read memory from the process's address space, the ReadProcessMemoryProc64 callback is used.
-        /// If this parameter is NULL, then the function uses a default routine.In this case, the hProcess parameter must be a valid process handle.
-        /// If this parameter is not NULL, the application should implement and register a symbol handler callback function that handles CBA_READ_MEMORY.</param>
-        /// <param name="FunctionTableAccessRoutine">A callback routine that provides access to the run-time function table for the process.This parameter is required because the StackWalkEx function does not have access to the process's run-time function table. For more information, see FunctionTableAccessProc64.
-        /// The symbol handler provides functions that load and access the run-time table. If these functions are used, then SymFunctionTableAccess64 can be passed as a valid parameter.</param>
+        /// <param name="StackFrame">A pointer to a STACKFRAME_EX structure. This structure receives information for the next frame, if the function call succeeds.</param> /// <param name="ContextRecord">A pointer to a CONTEXT structure.This parameter is required only when the MachineType parameter is not IMAGE_FILE_MACHINE_I386. However, it is recommended that this parameter contain a valid context record. This allows StackWalkEx to handle a greater variety of situations.  /// This context may be modified, so do not pass a context record that should not be modified.</param> /// <param name="ReadMemoryRoutine">A callback routine that provides memory read services.When the StackWalkEx function needs to read memory from the process's address space, the ReadProcessMemoryProc64 callback is used.  /// If this parameter is NULL, then the function uses a default routine.In this case, the hProcess parameter must be a valid process handle.  /// If this parameter is not NULL, the application should implement and register a symbol handler callback function that handles CBA_READ_MEMORY.</param> /// <param name="FunctionTableAccessRoutine">A callback routine that provides access to the run-time function table for the process.This parameter is required because the StackWalkEx function does not have access to the process's run-time function table. For more information, see FunctionTableAccessProc64.  /// The symbol handler provides functions that load and access the run-time table. If these functions are used, then SymFunctionTableAccess64 can be passed as a valid parameter.</param>
         /// <param name="GetModuleBaseRoutine">A callback routine that provides a module base for any given virtual address.This parameter is required.For more information, see GetModuleBaseProc64.
         /// The symbol handler provides functions that load and maintain module information. If these functions are used, then SymGetModuleBase64 can be passed as a valid parameter.</param>
         /// <param name="TranslateAddress">A callback routine that provides address translation for 16-bit addresses.For more information, see TranslateAddressProc64.
@@ -1549,4 +1843,4 @@ namespace CsDebugScript.Engine.Debuggers
             GetModuleBaseProc64 GetModuleBaseRoutine);
         #endregion
     }
-}
+} 
