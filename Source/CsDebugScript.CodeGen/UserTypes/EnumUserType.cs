@@ -155,6 +155,21 @@ namespace CsDebugScript.CodeGen.UserTypes
             throw new InvalidDataException("Unknown enum type.");
         }
 
+        public override string ClassName
+        {
+            get
+            {
+                string className = base.ClassName;
+
+                if ((DeclaredInType as NamespaceUserType)?.Namespace == className)
+                {
+                    className += "Enum";
+                }
+
+                return className;
+            }
+        }
+
         /// <summary>
         /// Gets the full name of the class, including namespace and "parent" type it is declared into.
         /// </summary>
