@@ -909,9 +909,10 @@ namespace CsDebugScript
         public T GetBaseClass<T, TParent>(int baseClassIndex, TParent userType)
             where TParent : UserType
         {
-            object instance = GetBaseClass(baseClassIndex).CastAs(UserTypeDelegates<TParent>.Instance.GetMciAuxiliaryClassType<T>());
+            // TODO, disable dynamic UserTypes.
+            object instance = GetBaseClass(baseClassIndex).CastAs<T>();//(UserTypeDelegates<TParent>.Instance.GetMciAuxiliaryClassType<T>());
 
-            ((IMultiClassInheritance)instance).DowncastParent = userType;
+            // ((IMultiClassInheritance)instance).DowncastParent = userType;
             return (T)instance;
         }
 
