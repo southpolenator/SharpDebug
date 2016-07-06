@@ -25,6 +25,14 @@ namespace DbgEngManaged
             return client;
         }
 
+        /// <summary>
+        /// Starts a new process.
+        /// </summary>
+        /// <param name="processPath">Process path.</param>
+        /// <param name="processArguments">Process arguments.</param>
+        /// <param name="symbolPath">Symbol path.</param>
+        /// <param name="debugEngineOptions">Debug engine options.</param>
+        /// <returns></returns>
         public static IDebugClient OpenProcess(string processPath, string processArguments, string symbolPath, uint debugEngineOptions)
         {
             string processCommandLine = processPath + " " + processArguments;

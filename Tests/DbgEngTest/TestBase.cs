@@ -24,11 +24,11 @@ namespace DbgEngTest
         }
 
         /// <summary>
-        /// Creates absolute paths out of givn file path and symbol path.
+        /// Creates absolute paths out of given file path and symbol path.
+        /// <param name="dumpFile">The dump file.</param>
+        /// <param name="symbolPath">The symbol path.</param>
+        /// <param name="addSymbolServer">if set to <c>true</c> symbol server will be added to the symbol path.</param>
         /// </summary>
-        /// <param name="dumpFile"></param>
-        /// <param name="symbolPath"></param>
-        /// <param name="addSymbolServer"></param>
         private static void NormalizeDebugPaths(ref string file, ref string symbolPath, bool addSymbolServer)
         {
             if (!Path.IsPathRooted(file))

@@ -70,9 +70,6 @@ namespace CsDebugScript.Engine.Utility
         {
             get
             {
-                // value = populateAction();
-                // return value;
-
                 if (!Cached)
                 {
                     lock(this)
