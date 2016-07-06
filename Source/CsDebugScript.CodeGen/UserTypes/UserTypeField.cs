@@ -231,6 +231,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 case "public":
                 case "private":
                 case "decimal":
+                case "ref":
                     return string.Format("_{0}", fieldName);
                 default:
                     break;
