@@ -6,6 +6,7 @@ namespace CsDebugScript.Exceptions
     /// Exception that is thrown when variable of unexpected code type has been given as an argument.
     /// </summary>
     /// <seealso cref="System.Exception" />
+    [Serializable]
     public class WrongCodeTypeException : Exception
     {
         /// <summary>

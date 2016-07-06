@@ -6,6 +6,7 @@ namespace CsDebugScript.Exceptions
     /// Thrown when user wants to access address that is not available in the process being debugged.
     /// </summary>
     /// <seealso cref="System.Exception" />
+    [Serializable]
     public class InvalidMemoryAddressException : Exception
     {
         /// <summary>

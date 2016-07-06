@@ -6,6 +6,7 @@ namespace CsDebugScript.Exceptions
     /// Thrown when user wants to read memory that is not fully available in the process being debugged.
     /// </summary>
     /// <seealso cref="System.Exception" />
+    [Serializable]
     public class NotAllMemoryCanBeReadException : Exception
     {
         /// <summary>
