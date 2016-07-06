@@ -134,11 +134,9 @@ namespace DbgEngTest
 
             TestProcessPath = Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86;
 
-            System.Threading.Thread testThread = new System.Threading.Thread(() => testWithCleanup());
-            testThread.SetApartmentState(System.Threading.ApartmentState.MTA);
-
-            testThread.Start();
-            testThread.Join();
+            var testTask = System.Threading.Tasks.Task.Factory.StartNew(testWithCleanup);
+            testTask.Wait();
+            Assert.IsTrue(testTask.Exception == null, "Exception happened while running the test");
         }
 
         [TestMethod]
