@@ -48,7 +48,7 @@ namespace CsDebugScript.Engine
                 //Module = modules[0];
             }
 
-            if (!typeName.EndsWith("<>"))
+            if (!typeName.Contains("<>"))
             {
                 UserType = Module.TypesByName[typeName];
             }
