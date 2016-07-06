@@ -73,8 +73,8 @@ namespace CsDebugScript.CodeGen.UserTypes
                     userField.ConstantValue = string.Empty;
                 }
 
-                userField.FieldName = userField.FieldName.Replace("?", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
-                userField.PropertyName = userField.PropertyName.Replace("?", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
+                userField.FieldName = userField.FieldName.Replace("?", "_").Replace("&", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
+                userField.PropertyName = userField.PropertyName.Replace("?", "_").Replace("&", "_").Replace("$", "_").Replace("@", "_").Replace(":", "_").Replace(" ", "_").Replace("<", "_").Replace(">", "_").Replace("*", "_").Replace(",", "_");
 
                 yield return userField;
                 previousName = field.Name;
