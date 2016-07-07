@@ -11,18 +11,12 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <summary>
         /// Signal fired during interactive process debugging when debugee is released.
         /// </summary>
-        public System.Threading.AutoResetEvent DebugStatusGo
-        {
-            get; private set;
-        }
+        public System.Threading.AutoResetEvent DebugStatusGo { get; private set; }
 
         /// <summary>
         /// Signal fired during interactive process debugging when debugee is interrupted.
         /// </summary>
-        public System.Threading.AutoResetEvent DebugStatusBreak
-        {
-            get; private set;
-        }
+        public System.Threading.AutoResetEvent DebugStatusBreak { get; private set; }
 
         /// <summary>
         /// Loop responsible for catching debug events and signaling debugee state.

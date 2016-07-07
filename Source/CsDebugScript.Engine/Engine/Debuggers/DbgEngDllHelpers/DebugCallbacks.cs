@@ -51,43 +51,34 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
             {
                 debugStatusGoEvent.Set();
             }
-
-            return;
         }
 
         public void ChangeEngineState(uint Flags, ulong Argument)
         {
-            return;
         }
 
         public void ChangeSymbolState(uint Flags, ulong Argument)
         {
-            return;
         }
 
         public void CreateProcess(ulong ImageFileHandle, ulong Handle, ulong BaseOffset, uint ModuleSize, string ModuleName, string ImageName, uint CheckSum, uint TimeDateStamp, ulong InitialThreadHandle, ulong ThreadDataOffset, ulong StartOffset)
         {
-            return;
         }
 
         public void CreateThread(ulong Handle, ulong DataOffset, ulong StartOffset)
         {
-            return;
         }
 
         public void Exception(ref _EXCEPTION_RECORD64 Exception, uint FirstChance)
         {
-            return;
         }
 
         public void ExitProcess(uint ExitCode)
         {
-            return;
         }
 
         public void ExitThread(uint ExitCode)
         {
-            return;
         }
 
         public uint GetInterestMask()
@@ -101,22 +92,18 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 
         public void LoadModule(ulong ImageFileHandle, ulong BaseOffset, uint ModuleSize, string ModuleName, string ImageName, uint CheckSum, uint TimeDateStamp)
         {
-            return;
         }
 
         public void SessionStatus(uint Status)
         {
-            return;
         }
 
         public void SystemError(uint Error, uint Level)
         {
-            return;
         }
 
         public void UnloadModule(string ImageBaseName, ulong BaseOffset)
         {
-            return;
         }
     }
 }
