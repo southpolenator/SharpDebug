@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace CsDebugScript.Exceptions
 {
@@ -20,8 +21,30 @@ namespace CsDebugScript.Exceptions
         }
 
         /// <summary>
+        /// Initializes a new instance of the InvalidMemoryAddressException class with serialized data.
+        /// </summary>
+        /// <param name="info">The System.Runtime.Serialization.SerializationInfo that holds the serialized object data about the exception being thrown</param>
+        /// <param name="context">The System.Runtime.Serialization.StreamingContext that contains contextual information about the source or destination.</param>
+        protected InvalidMemoryAddressException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            Address = info.GetUInt64("Address");
+        }
+
+        /// <summary>
+        /// Sets the System.Runtime.Serialization.SerializationInfo with information about the exception.
+        /// </summary>
+        /// <param name="info">The System.Runtime.Serialization.SerializationInfo that holds the serialized object data about the exception being thrown.</param>
+        /// <param name="context">The System.Runtime.Serialization.StreamingContext that contains contextual information about the source or destination.</param>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("Address", Address);
+        }
+
+        /// <summary>
         /// Gets the accessed address.
         /// </summary>
-        public ulong Address { get; private set; }
+        public ulong Address { get; }
     }
 }
