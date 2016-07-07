@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Reflection = System.Reflection;
 
 namespace CsDebugScript
 {
@@ -548,8 +549,17 @@ namespace CsDebugScript
         /// </summary>
         public void InvalidateProcessCache()
         {
-            // TODO: Consider using reflection to iterate through all the fields.
-            threads.InvalidateCache();
+            // Iterate through all the simple cache fields and invalidate them.
+            //
+            IEnumerable<Reflection.FieldInfo> fieldsToBeCleared =
+                this.GetType().GetFields(Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Public | Reflection.BindingFlags.Instance)
+                .Where(t => t.FieldType.IsGenericType && t.FieldType.GetGenericTypeDefinition() == typeof(SimpleCache<>));
+
+            foreach (Reflection.FieldInfo fi in fieldsToBeCleared)
+            {
+                dynamic cache = fi.GetValue(this);
+                cache.InvalidateCache();
+            }
         }
 
         /// <summary>
