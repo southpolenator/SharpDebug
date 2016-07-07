@@ -86,6 +86,8 @@
     <Compile Include="DebugEventInfo.cs" />
     <Compile Include="Debugger.cs" />
     <Compile Include="CodeType.cs" />
+    <Compile Include="Engine\Debuggers\DbgEngDllHelpers\DebugCallbacks.cs" />
+    <Compile Include="Engine\Debuggers\DbgEngDllHelpers\DebuggeFlowController.cs" />
     <Compile Include="Exceptions\InvalidMemoryAddressException.cs" />
     <Compile Include="Exceptions\NotAllMemoryCanBeReadException.cs" />
     <Compile Include="Exceptions\WrongCodeTypeException.cs" />

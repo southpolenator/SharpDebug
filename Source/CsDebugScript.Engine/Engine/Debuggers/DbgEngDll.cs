@@ -77,7 +77,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// Dictionary of all debugee flow controlers. Key is process id that is being debugged.
         /// </summary>
-        private static DictionaryCache<uint, DebugeeFlowControler> debugeeFlowControlers;
+        private static DictionaryCache<uint, DebuggeeFlowController> debugeeFlowControlers;
 
         /// <summary>
         /// Static constructor.
@@ -87,8 +87,8 @@ namespace CsDebugScript.Engine.Debuggers
             // Populate flow controlers lazely.
             //
             debugeeFlowControlers =
-                new DictionaryCache<uint, DebugeeFlowControler>(
-                    (processId) => new DebugeeFlowControler(originalClient));
+                new DictionaryCache<uint, DebuggeeFlowController>(
+                    (processId) => new DebuggeeFlowController(originalClient));
         }
 
         /// <summary>
@@ -1267,7 +1267,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                DebugeeFlowControler flowControler = debugeeFlowControlers[process.Id];
+                DebuggeeFlowController flowControler = debugeeFlowControlers[process.Id];
                 flowControler.DebugStatusBreak.WaitOne();
                 Control.Execute(0, "g", 0);
             }
@@ -1288,7 +1288,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                DebugeeFlowControler flowControler = debugeeFlowControlers[process.Id];
+                DebuggeeFlowController flowControler = debugeeFlowControlers[process.Id];
                 flowControler.DebugStatusBreak.Reset();
                 Control.SetInterrupt(0);
                 flowControler.DebugStatusBreak.WaitOne();
@@ -1314,7 +1314,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             Client.EndSession((uint)Defines.DebugEndActiveTerminate);
 
-            DebugeeFlowControler flowControler;
+            DebuggeeFlowController flowControler;
             debugeeFlowControlers.RemoveEntry(process.Id, out flowControler);
 
             flowControler.DebugStatusBreak.WaitOne();
@@ -1334,237 +1334,6 @@ namespace CsDebugScript.Engine.Debuggers
         {
             Terminate(Process.Current);
         }
-
-        #region Interactive debugger
-
-        /// <summary>
-        /// Controler for Debugee actions during live debugging.
-        /// </summary>
-        class DebugeeFlowControler
-        {
-            /// <summary>
-            /// Signal fired during interactive process debugging when debugee is released.
-            /// </summary>
-            public System.Threading.AutoResetEvent DebugStatusGo
-            {
-                get; private set;
-            }
-
-            /// <summary>
-            /// Signal fired during interactive process debugging when debugee is interrupted.
-            /// </summary>
-            public System.Threading.AutoResetEvent DebugStatusBreak
-            {
-                get; private set;
-            }
-
-            /// <summary>
-            /// Loop responsible for catching debug events and signaling debugee state.
-            /// </summary>
-            private System.Threading.Thread debuggerStateLoop;
-
-            private static readonly object eventCallbacksReady = new Object();
-
-            /// <summary>
-            /// Debug client for gbgeng interaction.
-            /// </summary>
-            private static IDebugClient client;
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            /// <param name="originalClient">IDebugClient</param>
-            public DebugeeFlowControler(IDebugClient originalClient)
-            {
-                DebugStatusGo = new System.Threading.AutoResetEvent(false);
-
-                // Default is that we start in break mode.
-                // Needs to be changed when we allow non intrusive attach/start for example.
-                //
-                DebugStatusBreak = new System.Threading.AutoResetEvent(true);
-
-                client = originalClient.CreateClient();
-
-                lock (eventCallbacksReady)
-                {
-                    debuggerStateLoop = 
-                        new System.Threading.Thread(() => DebuggerStateLoop(client, DebugStatusGo, DebugStatusBreak)) { IsBackground = true };
-                    debuggerStateLoop.SetApartmentState(System.Threading.ApartmentState.MTA);
-                    debuggerStateLoop.Start();
-
-                    // Wait for loop thread to become ready.
-                    //
-                    System.Threading.Monitor.Wait(eventCallbacksReady);
-                }
-            }
-
-            /// <summary>
-            /// Loop responsible to wait for debug events.
-            /// Needs to be run in separate thread.
-            /// </summary>
-            private static void DebuggerStateLoop(
-                IDebugClient client,
-                System.Threading.AutoResetEvent debugStatusGo,
-                System.Threading.AutoResetEvent debugStatusBreak)
-            {
-                bool hasClientExited = false;
-                var loopClient = client.CreateClient();
-                var eventCallbacks = new DebugCallbacks(loopClient, debugStatusGo);
-
-                lock (eventCallbacksReady)
-                {
-                    System.Threading.Monitor.Pulse(eventCallbacksReady);
-                }
-
-                // Default is to start in break mode, wait for release.
-                //
-                debugStatusGo.WaitOne();
-
-                while (!hasClientExited)
-                {
-                    ((IDebugControl7)loopClient).WaitForEvent(0, UInt32.MaxValue);
-                    uint executionStatus = ((IDebugControl7)loopClient).GetExecutionStatus();
-
-                    while (executionStatus == (uint)Defines.DebugStatusBreak)
-                    {
-                        debugStatusBreak.Set();
-                        debugStatusGo.WaitOne();
-
-                        executionStatus = ((IDebugControl7)loopClient).GetExecutionStatus();
-                    }
-
-                    hasClientExited = executionStatus == (uint)Defines.DebugStatusNoDebuggee;
-                }
-            }
-
-            /// <summary>
-            /// Waits for debugger loop thread to finish.
-            /// </summary>
-            public void WaitForDebuggerLoopToExit()
-            {
-                debuggerStateLoop.Join();
-            }
-        }
-
-        /// <summary>
-        /// Debug callbacks called during WaitForEvent callback.
-        /// This class in future can be extended to support callbacks provided
-        /// on certain actions (e.g. breakpoint hit, thread create, module load etc.)
-        /// </summary>
-        class DebugCallbacks : IDebugEventCallbacks
-        {
-            /// <summary>
-            /// IDebugClient.
-            /// </summary>
-            [ThreadStatic]
-            private IDebugClient client;
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            /// <param name="client">IDebugClient interface.</param>
-            /// <param name="debugStatusGoEvent">Event used to signal when debuggee switches to release state.</param>
-            public DebugCallbacks(IDebugClient client, System.Threading.AutoResetEvent debugStatusGoEvent)
-            {
-                this.client = client.CreateClient();
-                this.debugStatusGoEvent = debugStatusGoEvent;
-                this.client.SetEventCallbacks(this);
-            }
-
-            /// <summary>
-            /// Event used to signal go state. Used to unblock DebugFlow loop.
-            /// </summary>
-            private System.Threading.AutoResetEvent debugStatusGoEvent;
-
-            public void Breakpoint(IDebugBreakpoint Bp)
-            {
-                throw new NotImplementedException();
-            }
-
-            /// <summary>
-            /// Callback on change debugee state.
-            /// </summary>
-            /// <param name="Flags"></param>
-            /// <param name="Argument"></param>
-            /// <returns></returns>
-            public void ChangeDebuggeeState(uint Flags, ulong Argument)
-            {
-                uint executionStatus = ((IDebugControl7)client).GetExecutionStatus();
-
-                if (executionStatus == (uint)Defines.DebugStatusGo)
-                {
-                    debugStatusGoEvent.Set();
-                }
-
-                return;
-            }
-
-            public void ChangeEngineState(uint Flags, ulong Argument)
-            {
-                return;
-            }
-
-            public void ChangeSymbolState(uint Flags, ulong Argument)
-            {
-                return;
-            }
-
-            public void CreateProcess(ulong ImageFileHandle, ulong Handle, ulong BaseOffset, uint ModuleSize, string ModuleName, string ImageName, uint CheckSum, uint TimeDateStamp, ulong InitialThreadHandle, ulong ThreadDataOffset, ulong StartOffset)
-            {
-                return;
-            }
-
-            public void CreateThread(ulong Handle, ulong DataOffset, ulong StartOffset)
-            {
-                return;
-            }
-
-            public void Exception(ref _EXCEPTION_RECORD64 Exception, uint FirstChance)
-            {
-                return;
-            }
-
-            public void ExitProcess(uint ExitCode)
-            {
-                return;
-            }
-
-            public void ExitThread(uint ExitCode)
-            {
-                return;
-            }
-
-            public uint GetInterestMask()
-            {
-                DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
-                | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
-                | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
-
-                return (uint)captureFlags;
-            }
-
-            public void LoadModule(ulong ImageFileHandle, ulong BaseOffset, uint ModuleSize, string ModuleName, string ImageName, uint CheckSum, uint TimeDateStamp)
-            {
-                return;
-            }
-
-            public void SessionStatus(uint Status)
-            {
-                return;
-            }
-
-            public void SystemError(uint Error, uint Level)
-            {
-                return;
-            }
-
-            public void UnloadModule(string ImageBaseName, ulong BaseOffset)
-            {
-                return;
-            }
-        }
-
-        #endregion
 
         #region Native methods
         /// <summary>
