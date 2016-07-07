@@ -13,7 +13,6 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <summary>
         /// IDebugClient.
         /// </summary>
-        [ThreadStatic]
         private IDebugClient client;
 
         /// <summary>
@@ -23,7 +22,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <param name="debugStatusGoEvent">Event used to signal when debuggee switches to release state.</param>
         public DebugCallbacks(IDebugClient client, System.Threading.AutoResetEvent debugStatusGoEvent)
         {
-            this.client = client.CreateClient();
+            this.client = client;
             this.debugStatusGoEvent = debugStatusGoEvent;
             this.client.SetEventCallbacks(this);
         }
