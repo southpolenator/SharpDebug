@@ -41,7 +41,7 @@ namespace DbgEngManaged
 
             ((IDebugSymbols5)client).SetSymbolPathWide(symbolPath);
             ((IDebugControl7)client).SetEngineOptions(debugEngineOptions);
-            client.CreateProcessAndAttach(0, processCommandLine, 2, 0, 0);
+            client.CreateProcessAndAttach(0, processCommandLine, (uint)Defines.DebugProcessOnlyThisProcess, 0, 0);
             ((IDebugControl7)client).WaitForEvent(0, uint.MaxValue);
             return client;
         }

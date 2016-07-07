@@ -40,12 +40,14 @@ namespace DbgEngTest
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
-            Debug.WriteLine("Process {0} started.", TestProcessPath);
+            Debug.WriteLine($"Process {TestProcessPath} started.");
 
             int lastStackDepth = -1;
             for (int i = 0; i < 5; i++)
             {
                 Context.Debugger.ContinueExecution();
+                Debug.WriteLine($"Process continue iteration {i}.");
+
                 System.Threading.Thread.Sleep(1000);
                 Context.Debugger.BreakExecution();
 
@@ -67,11 +69,15 @@ namespace DbgEngTest
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
+            Debug.WriteLine($"Process {TestProcessPath} started.");
+
             int lastArgument = -1;
 
             for (int i = 0; i < 5; i++)
             {
                 Context.Debugger.ContinueExecution();
+                Debug.WriteLine($"Process continue iteration {i}.");
+
                 System.Threading.Thread.Sleep(1000);
                 Context.Debugger.BreakExecution();
 
@@ -88,7 +94,6 @@ namespace DbgEngTest
                 int depthOfMainThread = mainThread.StackTrace.Frames.Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
 
                 Assert.AreEqual(depthOfMainThread, lastArgument + 1);
-
             }
         }
 
@@ -126,6 +131,7 @@ namespace DbgEngTest
         {
             Action cleanup = () =>
             {
+                Debug.WriteLine("Issuing process terminate for all the processes.");
                 foreach (var process in CsDebugScript.Process.All)
                     Context.Debugger.Terminate(process);
             };
@@ -139,13 +145,13 @@ namespace DbgEngTest
             Assert.IsTrue(testTask.Exception == null, "Exception happened while running the test");
         }
 
-        [TestMethod]
+        [TestMethod, Timeout(30000)]
         public void GoBreakContinuosTestDepth()
         {
             ContinousTestExecutionWrapper(GoBreakContinuosTestDepthBody);
         }
 
-        [TestMethod]
+        [TestMethod, Timeout(30000)]
         public void GoBreakContinousVariablesChange()
         {
             ContinousTestExecutionWrapper(GoBreakContinousVariablesChangeBody);
