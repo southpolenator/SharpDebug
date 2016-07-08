@@ -93,6 +93,7 @@ namespace DbgEngTest
 
                 int depthOfMainThread = mainThread.StackTrace.Frames.Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
 
+                Debug.WriteLine($"Depth of main thread is {depthOfMainThread}");
                 Assert.AreEqual(depthOfMainThread, lastArgument + 1);
             }
         }

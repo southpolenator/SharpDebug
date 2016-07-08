@@ -1317,8 +1317,6 @@ namespace CsDebugScript.Engine.Debuggers
             DebuggeeFlowController flowControler;
             debugeeFlowControlers.RemoveEntry(process.Id, out flowControler);
 
-            flowControler.DebugStatusBreak.WaitOne();
-
             // Release any threads that are waiting.
             //
             flowControler.DebugStatusGo.Set();
