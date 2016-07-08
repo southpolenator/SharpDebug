@@ -440,6 +440,11 @@ namespace CsDebugScript
                     return (Data != 0).ToString();
                 }
 
+                if (codeType.Name == "void")
+                {
+                    return codeType.Name;
+                }
+
                 switch (codeType.Size)
                 {
                     case 1:
@@ -462,7 +467,14 @@ namespace CsDebugScript
 
                 if (nativeCodeType != null)
                 {
-                    return Context.SymbolProvider.GetEnumName(codeType.Module, nativeCodeType.TypeId, Data);
+                    try
+                    {
+                        return Context.SymbolProvider.GetEnumName(codeType.Module, nativeCodeType.TypeId, Data);
+                    }
+                    catch (Exception ex)
+                    {
+                        return string.Format("{0}:0x{1:X}", codeType, Data);
+                    }
                 }
             }
 
