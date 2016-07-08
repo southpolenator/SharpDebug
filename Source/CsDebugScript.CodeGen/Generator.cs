@@ -12,6 +12,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Emit;
 
 namespace CsDebugScript.CodeGen
 {
@@ -425,24 +426,33 @@ namespace CsDebugScript.CodeGen
 
                 references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(r.Path)));
 
+                string[] preprocessorSymbols = modules.Select(r => r.Value.Name.ToUpperInvariant()).ToArray();
+
+                CSharpParseOptions parseOptions = new CSharpParseOptions(preprocessorSymbols: preprocessorSymbols);
+
                 foreach (var includedFile in includedFiles)
-                    syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(includedFile.Path), path: includedFile.Path, encoding: System.Text.UTF8Encoding.Default));
+                { 
+                    syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(includedFile.Path), path: includedFile.Path, options: parseOptions, encoding: System.Text.UTF8Encoding.Default));
+                }
 
                 CSharpCompilation compilation = CSharpCompilation.Create(
                     Path.GetFileNameWithoutExtension(xmlConfig.GeneratedAssemblyName),
                     syntaxTrees: syntaxTrees,
                     references: references,
-                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, platform: Platform.AnyCpu));
+                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, platform: Platform.AnyCpu, concurrentBuild: true, optimizationLevel: OptimizationLevel.Release));
+
+                //compilation.WithOptions(CSharpCompilationOptions)
 
                 logger.WriteLine("Syntax trees: {0}", syntaxTrees.Count);
 
                 string dllFilename = Path.Combine(outputDirectory, xmlConfig.GeneratedAssemblyName);
                 string pdbFilename = Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(dllFilename) + ".pdb");
 
+                EmitResult result;
                 using (var dllStream = new FileStream(dllFilename, FileMode.Create))
                 using (var pdbStream = new FileStream(pdbFilename, FileMode.Create))
                 {
-                    var result = compilation.Emit(dllStream, !xmlConfig.DisablePdbGeneration ? pdbStream : null);
+                    result = compilation.Emit(dllStream, !xmlConfig.DisablePdbGeneration ? pdbStream : null);
 
                     if (!result.Success)
                     {
@@ -459,6 +469,13 @@ namespace CsDebugScript.CodeGen
                         logger.WriteLine("DLL size: {0}", dllStream.Position);
                         logger.WriteLine("PDB size: {0}", pdbStream.Position);
                     }
+                }
+
+                if (!result.Success)
+                {
+                    // If we fail to generate debug types, we delete empty file.
+                    File.Delete(dllFilename);
+                    File.Delete(pdbFilename);
                 }
 
                 logger.WriteLine("Compiling: {0}", sw.Elapsed);
