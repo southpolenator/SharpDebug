@@ -9,6 +9,8 @@
 
 using namespace std;
 
+#pragma auto_inline off
+
 int main(int argc, char** argv);
 
 enum MyEnum
