@@ -29,24 +29,17 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         private static readonly object eventCallbacksReady = new Object();
 
         /// <summary>
-        /// Debug client for gbgeng interaction.
+        /// Initializes a new instance of the <see cref="DebuggeeFlowController"/> class.
         /// </summary>
-        private static IDebugClient client;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="originalClient">IDebugClient</param>
-        public DebuggeeFlowController(IDebugClient originalClient)
+        /// <param name="client">The client.</param>
+        public DebuggeeFlowController(IDebugClient client)
         {
             DebugStatusGo = new System.Threading.AutoResetEvent(false);
 
             // Default is that we start in break mode.
-            // Needs to be changed when we allow non intrusive attach/start for example.
+            // TODO: Needs to be changed when we allow non intrusive attach/start for example.
             //
             DebugStatusBreak = new System.Threading.AutoResetEvent(true);
-
-            client = originalClient.CreateClient();
 
             lock (eventCallbacksReady)
             {
@@ -71,8 +64,8 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
             System.Threading.AutoResetEvent debugStatusBreak)
         {
             bool hasClientExited = false;
-            var loopClient = client.CreateClient();
-            var eventCallbacks = new DebugCallbacks(loopClient, debugStatusGo);
+            IDebugControl7 loopControl = (IDebugControl7)client;
+            DebugCallbacks eventCallbacks = new DebugCallbacks(client, debugStatusGo);
 
             lock (eventCallbacksReady)
             {
@@ -85,15 +78,15 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 
             while (!hasClientExited)
             {
-                ((IDebugControl7)loopClient).WaitForEvent(0, UInt32.MaxValue);
-                uint executionStatus = ((IDebugControl7)loopClient).GetExecutionStatus();
+                loopControl.WaitForEvent(0, UInt32.MaxValue);
+                uint executionStatus = loopControl.GetExecutionStatus();
 
                 while (executionStatus == (uint)Defines.DebugStatusBreak)
                 {
                     debugStatusBreak.Set();
                     debugStatusGo.WaitOne();
 
-                    executionStatus = ((IDebugControl7)loopClient).GetExecutionStatus();
+                    executionStatus = loopControl.GetExecutionStatus();
                 }
 
                 hasClientExited = executionStatus == (uint)Defines.DebugStatusNoDebuggee;

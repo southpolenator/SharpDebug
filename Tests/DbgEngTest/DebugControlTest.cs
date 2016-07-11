@@ -2,7 +2,7 @@
 using CsDebugScript.Engine;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Diagnostics;
+using Diagnostics = System.Diagnostics;
 using System.Linq;
 
 namespace DbgEngTest
@@ -40,16 +40,16 @@ namespace DbgEngTest
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
-            Debug.WriteLine($"Process {TestProcessPath} started.");
+            Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
 
             int lastStackDepth = -1;
             for (int i = 0; i < 5; i++)
             {
-                Context.Debugger.ContinueExecution();
-                Debug.WriteLine($"Process continue iteration {i}.");
+                Debugger.ContinueExecution();
+                Diagnostics.Debug.WriteLine($"Process continue iteration {i}.");
 
                 System.Threading.Thread.Sleep(1000);
-                Context.Debugger.BreakExecution();
+                Debugger.BreakExecution();
 
                 int depthOfMainThread = FindThreadHostingMain().StackTrace.Frames.Length;
 
@@ -69,17 +69,17 @@ namespace DbgEngTest
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
-            Debug.WriteLine($"Process {TestProcessPath} started.");
+            Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
 
             int lastArgument = -1;
 
             for (int i = 0; i < 5; i++)
             {
-                Context.Debugger.ContinueExecution();
-                Debug.WriteLine($"Process continue iteration {i}.");
+                Debugger.ContinueExecution();
+                Diagnostics.Debug.WriteLine($"Process continue iteration {i}.");
 
                 System.Threading.Thread.Sleep(1000);
-                Context.Debugger.BreakExecution();
+                Debugger.BreakExecution();
 
                 Thread mainThread = FindThreadHostingMain();
 
@@ -93,7 +93,7 @@ namespace DbgEngTest
 
                 int depthOfMainThread = mainThread.StackTrace.Frames.Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
 
-                Debug.WriteLine($"Depth of main thread is {depthOfMainThread}");
+                Diagnostics.Debug.WriteLine($"Depth of main thread is {depthOfMainThread}");
                 Assert.AreEqual(depthOfMainThread, lastArgument + 1);
             }
         }
@@ -112,14 +112,14 @@ namespace DbgEngTest
 
             foreach (var process in CsDebugScript.Process.All)
             {
-                Context.Debugger.ContinueExecution(process);
+                Debugger.ContinueExecution(process);
             }
 
             System.Threading.Thread.Sleep(1000);
 
             foreach (var process in CsDebugScript.Process.All)
             {
-                Context.Debugger.BreakExecution(process);
+                Debugger.BreakExecution(process);
             }
         }
 
@@ -132,9 +132,9 @@ namespace DbgEngTest
         {
             Action cleanup = () =>
             {
-                Debug.WriteLine("Issuing process terminate for all the processes.");
-                foreach (var process in CsDebugScript.Process.All)
-                    Context.Debugger.Terminate(process);
+                Diagnostics.Debug.WriteLine("Issuing process terminate for all the processes.");
+                foreach (var process in Process.All)
+                    Debugger.Terminate(process);
             };
 
             var testWithCleanup = test + cleanup;

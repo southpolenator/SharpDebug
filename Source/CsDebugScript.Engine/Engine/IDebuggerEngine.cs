@@ -290,36 +290,21 @@ namespace CsDebugScript.Engine
         DebugEventInfo GetLastEventInfo();
 
         /// <summary>
-        /// When doing live process debugging continues debugee execution of the current process.
-        /// </summary>
-        void ContinueExecution();
-
-        /// <summary>
-        /// When doing live process debugging breaks debugee execution of the current process.
-        /// </summary>
-        void BreakExecution();
-
-        /// <summary>
         /// When doing live process debugging continues debugee execution of the specified process.
         /// </summary>
-        /// <param name="process"></param>
+        /// <param name="process">Process to be continued.</param>
         void ContinueExecution(Process process);
 
         /// <summary>
         /// When doing live process debugging breaks debugee execution of the specified process.
         /// </summary>
-        /// <param name="process"></param>
+        /// <param name="process">Process to break.</param>
         void BreakExecution(Process process);
-
-        /// <summary>
-        /// Terminate process that is being debugged and ends debugging session.
-        /// </summary>
-        void Terminate();
 
         /// <summary>
         /// Terminates given process.
         /// </summary>
-        /// <param name="process"></param>
+        /// <param name="process">Process to Terminate.</param>
         void Terminate(Process process);
     }
 }

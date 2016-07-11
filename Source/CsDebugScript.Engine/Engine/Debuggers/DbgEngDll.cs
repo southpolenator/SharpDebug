@@ -86,9 +86,10 @@ namespace CsDebugScript.Engine.Debuggers
         {
             // Populate flow controlers lazely.
             //
+            // NOTE: Client passed needs to be set to process with selected processId.
             debugeeFlowControlers =
                 new DictionaryCache<uint, DebuggeeFlowController>(
-                    (processId) => new DebuggeeFlowController(originalClient));
+                    (processId) => new DebuggeeFlowController(ThreadClient));
         }
 
         /// <summary>
@@ -1274,14 +1275,6 @@ namespace CsDebugScript.Engine.Debuggers
         }
 
         /// <summary>
-        /// Continues execution of current process.
-        /// </summary>
-        public void ContinueExecution()
-        {
-            ContinueExecution(Process.Current);
-        }
-
-        /// <summary>
         /// Breaks the process that is being debugged.
         /// </summary>
         public void BreakExecution(Process process)
@@ -1294,17 +1287,11 @@ namespace CsDebugScript.Engine.Debuggers
                 flowControler.DebugStatusBreak.WaitOne();
 
                 // Drop the cache.
+                // TODO: When support for debugging multiple processes is added.
+                //       this needs to clear the cache of all the processes.
                 //
                 process.InvalidateProcessCache();
             }
-        }
-
-        /// <summary>
-        /// Break execution of current process.
-        /// </summary>
-        public void BreakExecution()
-        {
-            BreakExecution(Process.Current);
         }
 
         /// <summary>
@@ -1323,14 +1310,6 @@ namespace CsDebugScript.Engine.Debuggers
             flowControler.DebugStatusBreak.Set();
 
             flowControler.WaitForDebuggerLoopToExit();
-        }
-
-        /// <summary>
-        /// Terminates current process.
-        /// </summary>
-        public void Terminate()
-        {
-            Terminate(Process.Current);
         }
 
         #region Native methods

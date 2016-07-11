@@ -16,7 +16,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         private IDebugClient client;
 
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of the <see cref="DebugCallbacks"/> class.
         /// </summary>
         /// <param name="client">IDebugClient interface.</param>
         /// <param name="debugStatusGoEvent">Event used to signal when debuggee switches to release state.</param>
