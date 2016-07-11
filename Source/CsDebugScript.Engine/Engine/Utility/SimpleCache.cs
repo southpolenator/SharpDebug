@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 
 namespace CsDebugScript.Engine.Utility
 {
@@ -24,6 +25,17 @@ namespace CsDebugScript.Engine.Utility
         /// Gets or sets the value. The value will be populated if it wasn't cached.
         /// </summary>
         object ValueRaw { get; }
+    }
+
+    /// <summary>
+    /// Interface for all caching collections.
+    /// </summary>
+    public interface ICacheCollection : ICache
+    {
+        /// <summary>
+        /// Returns IEnumerable for all cached values.
+        /// </summary>
+        IEnumerable ValuesRaw { get; }
     }
 
     /// <summary>

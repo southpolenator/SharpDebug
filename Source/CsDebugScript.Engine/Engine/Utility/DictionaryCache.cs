@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
@@ -9,7 +10,7 @@ namespace CsDebugScript.Engine.Utility
     /// </summary>
     /// <typeparam name="TKey">Type of the key.</typeparam>
     /// <typeparam name="TValue">Type of the value.</typeparam>
-    public class DictionaryCache<TKey, TValue>
+    public class DictionaryCache<TKey, TValue> : ICacheCollection
     {
         /// <summary>
         /// The populate action
@@ -19,8 +20,12 @@ namespace CsDebugScript.Engine.Utility
         /// <summary>
         /// The cached values
         /// </summary>
-        //private Dictionary<TKey, TValue> values = new Dictionary<TKey, TValue>();
         private ConcurrentDictionary<TKey, TValue> values = new ConcurrentDictionary<TKey, TValue>();
+
+        /// <summary>
+        /// Indicating whether this collection contains any cached items.
+        /// </summary>
+        private bool isCached;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DictionaryCache{TKey, TValue}"/> class.
@@ -62,6 +67,22 @@ namespace CsDebugScript.Engine.Utility
         }
 
         /// <summary>
+        /// Gets the Cached values.
+        /// </summary>
+        IEnumerable ICacheCollection.ValuesRaw { get { return Values; } }
+
+        /// <summary>
+        /// Gets a value indicating whether there are cached values.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if cached; otherwise, <c>false</c>.
+        /// </value>
+        bool ICache.Cached { get { return isCached; } }
+
+        object ICache.ValueRaw { get { return values.Values; }
+        }
+
+        /// <summary>
         /// Gets or sets the &lt;TValue&gt; with the specified key.
         /// </summary>
         /// <param name="key">The key value.</param>
@@ -79,6 +100,7 @@ namespace CsDebugScript.Engine.Utility
                         {
                             value = populateAction(key);
                             values.TryAdd(key, value);
+                            isCached = true;
                         }
                     }
                 }
@@ -139,6 +161,15 @@ namespace CsDebugScript.Engine.Utility
         public bool RemoveEntry(TKey key, out TValue value)
         {
             return values.TryRemove(key, out value);
+        }
+
+        /// <summary>
+        /// Invalidates this cache.
+        /// </summary>
+        void ICache.InvalidateCache()
+        {
+            isCached = false;
+            Clear();
         }
     }
 }

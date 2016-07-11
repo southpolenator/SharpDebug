@@ -36,10 +36,31 @@ namespace CsDebugScript.Engine.Utility
                 // Clear only fields which are cached.
                 if (cache != null && cache.Cached)
                 {
-                    cache.InvalidateCache();
+                    // If this is cached collection
+                    // invalidate recursively all the fields for every entry..
+                    if (cache is ICacheCollection)
+                    {
+                        ICacheCollection cacheCollection = cache as ICacheCollection;
 
-                    // Recursively invalidate all the cache fields.
-                    InvalidateCaches(cache.ValueRaw);
+                        // Save entire collection since cache invalidate will clear the collection
+                        // and we still need to invalidate all the members.
+                        object[] cacheEntries = cacheCollection.ValuesRaw.OfType<object>().ToArray();
+
+                        cacheCollection.InvalidateCache();
+
+                        // Invalidate inner fields of every collection entry.
+                        foreach (object cachedCollectionEntry in cacheEntries)
+                        {
+                            InvalidateCaches(cachedCollectionEntry);
+                        }
+                    }
+                    else
+                    {
+                        cache.InvalidateCache();
+
+                        // Recursively invalidate all the cache fields.
+                        InvalidateCaches(cache.ValueRaw);
+                    }
                 }
             }
         }
