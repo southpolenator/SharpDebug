@@ -55,55 +55,67 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 
         public void ChangeEngineState(uint Flags, ulong Argument)
         {
+            throw new NotImplementedException();
         }
 
         public void ChangeSymbolState(uint Flags, ulong Argument)
         {
+            throw new NotImplementedException();
         }
 
         public void CreateProcess(ulong ImageFileHandle, ulong Handle, ulong BaseOffset, uint ModuleSize, string ModuleName, string ImageName, uint CheckSum, uint TimeDateStamp, ulong InitialThreadHandle, ulong ThreadDataOffset, ulong StartOffset)
         {
+            throw new NotImplementedException();
         }
 
         public void CreateThread(ulong Handle, ulong DataOffset, ulong StartOffset)
         {
+            throw new NotImplementedException();
         }
 
         public void Exception(ref _EXCEPTION_RECORD64 Exception, uint FirstChance)
         {
+            throw new NotImplementedException();
         }
 
         public void ExitProcess(uint ExitCode)
         {
+            throw new NotImplementedException();
         }
 
         public void ExitThread(uint ExitCode)
         {
-        }
-
-        public uint GetInterestMask()
-        {
-            DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
-            | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
-            | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
-
-            return (uint)captureFlags;
+            throw new NotImplementedException();
         }
 
         public void LoadModule(ulong ImageFileHandle, ulong BaseOffset, uint ModuleSize, string ModuleName, string ImageName, uint CheckSum, uint TimeDateStamp)
         {
+            throw new NotImplementedException();
         }
 
         public void SessionStatus(uint Status)
         {
+            throw new NotImplementedException();
         }
 
         public void SystemError(uint Error, uint Level)
         {
+            throw new NotImplementedException();
         }
 
         public void UnloadModule(string ImageBaseName, ulong BaseOffset)
         {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Interest mask for events for which
+        /// callbacks will be executed.
+        /// </summary>
+        /// <returns></returns>
+        public uint GetInterestMask()
+        {
+            return (uint)Defines.DebugEventChangeDebuggeeState;
         }
     }
 }
