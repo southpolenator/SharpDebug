@@ -549,17 +549,7 @@ namespace CsDebugScript
         /// </summary>
         public void InvalidateProcessCache()
         {
-            // Iterate through all the simple cache fields and invalidate them.
-            //
-            IEnumerable<Reflection.FieldInfo> fieldsToBeCleared =
-                this.GetType().GetFields(Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Public | Reflection.BindingFlags.Instance)
-                .Where(t => t.FieldType.IsGenericType && t.FieldType.GetGenericTypeDefinition() == typeof(SimpleCache<>));
-
-            foreach (Reflection.FieldInfo fi in fieldsToBeCleared)
-            {
-                dynamic cache = fi.GetValue(this);
-                cache.InvalidateCache();
-            }
+            CacheInvalidator.InvalidateCaches(this);
         }
 
         /// <summary>
