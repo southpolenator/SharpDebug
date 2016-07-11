@@ -416,7 +416,7 @@ namespace CsDebugScript.Engine.SymbolProviders
 
             session.findSymbolByRVAEx(address, SymTagEnum.SymTagFunction, out function, out innerDisplacement);
             displacement = (ulong)innerDisplacement;
-            functionName = function.name;
+            functionName = function != null ? function.name : string.Empty;
         }
 
         /// <summary>

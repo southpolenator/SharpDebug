@@ -378,7 +378,7 @@ namespace CsDebugScript
                     return ReadClrFunctionNameAndDisplacement(Module, ClrStackFrame.Method, InstructionOffset);
                 }
 
-                throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
+                return new Tuple<String,UInt64>(string.Empty, 0);
             }
         }
 
