@@ -153,16 +153,19 @@ namespace CsDebugScript
 
                 module.ClrModule = clrModule;
                 module.ImageName = clrModule.Name;
-                try
+                if (clrModule.Pdb != null && !string.IsNullOrEmpty(clrModule.Pdb.FileName))
                 {
-                    if (!module.SymbolFileName.ToLowerInvariant().EndsWith(".pdb"))
+                    try
+                    {
+                        if (!module.SymbolFileName.ToLowerInvariant().EndsWith(".pdb"))
+                        {
+                            module.SymbolFileName = clrModule.Pdb.FileName;
+                        }
+                    }
+                    catch
                     {
                         module.SymbolFileName = clrModule.Pdb.FileName;
                     }
-                }
-                catch
-                {
-                    module.SymbolFileName = clrModule.Pdb.FileName;
                 }
                 module.Name = Path.GetFileNameWithoutExtension(clrModule.Name);
                 module.LoadedImageName = clrModule.Name;

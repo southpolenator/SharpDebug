@@ -617,13 +617,19 @@ namespace CsDebugScript.Engine
 
                 foreach (var method in methods.Where(mm => mm.IsVirtual))
                 {
-                    // TODO: Investigate should we remove Object.Finalize from the list of virtual methods
-                    //if (method.Name == "Finalize" && method.DeclaringType == typeof(object))
-                    //    continue;
+                    // Don't forward System.Object virtual functions
+                    if (method.DeclaringType == typeof(object))
+                        continue;
 
+                    // Don't forward System.Dynamic.DynamicObject virtual functions
+                    if (method.DeclaringType == typeof(System.Dynamic.DynamicObject))
+                        continue;
+
+                    // Ignore methods that are overrides or final
                     if (method.IsFinal || !method.Attributes.HasFlag(MethodAttributes.NewSlot))
                         continue;
 
+                    // Ignore private methods
                     if (!method.IsFamily && !method.IsPublic)
                         continue;
 
