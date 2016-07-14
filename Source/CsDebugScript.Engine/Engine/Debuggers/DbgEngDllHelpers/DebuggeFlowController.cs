@@ -24,6 +24,11 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         private System.Threading.Thread debuggerStateLoop;
 
         /// <summary>
+        /// Reference to debug client taken from DbgEng.
+        /// </summary>
+        private IDebugClient client;
+
+        /// <summary>
         /// Syncronization signaling that debug callbacks are installed.
         /// </summary>
         private static readonly object eventCallbacksReady = new Object();
@@ -34,17 +39,18 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <param name="client">The client.</param>
         public DebuggeeFlowController(IDebugClient client)
         {
-            DebugStatusGo = new System.Threading.AutoResetEvent(false);
-
             // Default is that we start in break mode.
             // TODO: Needs to be changed when we allow non intrusive attach/start for example.
             //
+            DebugStatusGo = new System.Threading.AutoResetEvent(false);
             DebugStatusBreak = new System.Threading.AutoResetEvent(true);
+
+            this.client = client;
 
             lock (eventCallbacksReady)
             {
                 debuggerStateLoop =
-                    new System.Threading.Thread(() => DebuggerStateLoop(client, DebugStatusGo, DebugStatusBreak)) { IsBackground = true };
+                    new System.Threading.Thread(() => DebuggerStateLoop()) { IsBackground = true };
                 debuggerStateLoop.SetApartmentState(System.Threading.ApartmentState.MTA);
                 debuggerStateLoop.Start();
 
@@ -58,14 +64,11 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// Loop responsible to wait for debug events.
         /// Needs to be run in separate thread.
         /// </summary>
-        private static void DebuggerStateLoop(
-            IDebugClient client,
-            System.Threading.AutoResetEvent debugStatusGo,
-            System.Threading.AutoResetEvent debugStatusBreak)
+        private void DebuggerStateLoop()
         {
             bool hasClientExited = false;
             IDebugControl7 loopControl = (IDebugControl7)client;
-            DebugCallbacks eventCallbacks = new DebugCallbacks(client, debugStatusGo);
+            DebugCallbacks eventCallbacks = new DebugCallbacks(client, DebugStatusGo);
 
             lock (eventCallbacksReady)
             {
@@ -74,7 +77,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 
             // Default is to start in break mode, wait for release.
             //
-            debugStatusGo.WaitOne();
+            DebugStatusGo.WaitOne();
 
             while (!hasClientExited)
             {
@@ -83,8 +86,8 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 
                 while (executionStatus == (uint)Defines.DebugStatusBreak)
                 {
-                    debugStatusBreak.Set();
-                    debugStatusGo.WaitOne();
+                    DebugStatusBreak.Set();
+                    DebugStatusGo.WaitOne();
 
                     executionStatus = loopControl.GetExecutionStatus();
                 }

@@ -25,7 +25,7 @@ namespace DbgEngTest
 
         /// <summary>
         /// Creates absolute paths out of given file path and symbol path.
-        /// <param name="dumpFile">The dump file.</param>
+        /// <param name="file">Path to dump or process.</param>
         /// <param name="symbolPath">The symbol path.</param>
         /// <param name="addSymbolServer">if set to <c>true</c> symbol server will be added to the symbol path.</param>
         /// </summary>

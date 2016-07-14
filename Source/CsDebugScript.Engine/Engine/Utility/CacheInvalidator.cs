@@ -56,10 +56,12 @@ namespace CsDebugScript.Engine.Utility
                     }
                     else
                     {
+                        object cachedValue = cache.ValueRaw;
+
                         cache.InvalidateCache();
 
                         // Recursively invalidate all the cache fields.
-                        InvalidateCaches(cache.ValueRaw);
+                        InvalidateCaches(cachedValue);
                     }
                 }
             }

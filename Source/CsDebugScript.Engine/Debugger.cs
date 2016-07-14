@@ -598,7 +598,7 @@ namespace CsDebugScript
         /// <summary>
         /// When doing live process debugging continues debugee execution of the specified process.
         /// </summary>
-        /// <param name="process"></param>
+        /// <param name="process">Process to be continued.</param>
         public static void ContinueExecution(Process process)
         {
             Context.Debugger.ContinueExecution(process);
@@ -607,7 +607,7 @@ namespace CsDebugScript
         /// <summary>
         /// When doing live process debugging breaks debugee execution of the specified process.
         /// </summary>
-        /// <param name="process"></param>
+        /// <param name="process">Process to be stopped.</param>
         public static void BreakExecution(Process process)
         {
             Context.Debugger.BreakExecution(process);
@@ -624,7 +624,7 @@ namespace CsDebugScript
         /// <summary>
         /// Terminates given process.
         /// </summary>
-        /// <param name="process"></param>
+        /// <param name="process">Process to be terminated.</param>
         public static void Terminate(Process process)
         {
             Context.Debugger.Terminate(process);
