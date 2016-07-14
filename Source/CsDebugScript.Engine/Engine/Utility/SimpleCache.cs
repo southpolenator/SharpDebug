@@ -5,37 +5,15 @@ namespace CsDebugScript.Engine.Utility
 {
     /// <summary>
     /// Interface for all caching structures.
+    /// IEnumerable implementation is responsible for returning all
+    /// cached objects in this cache.
     /// </summary>
-    public interface ICache
+    public interface ICache : IEnumerable
     {
-        /// <summary>
-        /// Gets a value indicating whether value is cached.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if cached; otherwise, <c>false</c>.
-        /// </value>
-        bool Cached { get; }
-
         /// <summary>
         /// Invalidates this cache.
         /// </summary>
         void InvalidateCache();
-
-        /// <summary>
-        /// Gets or sets the value. The value will be populated if it wasn't cached.
-        /// </summary>
-        object ValueRaw { get; }
-    }
-
-    /// <summary>
-    /// Interface for all caching collections.
-    /// </summary>
-    public interface ICacheCollection : ICache
-    {
-        /// <summary>
-        /// Returns IEnumerable for all cached values.
-        /// </summary>
-        IEnumerable ValuesRaw { get; }
     }
 
     /// <summary>
@@ -63,21 +41,6 @@ namespace CsDebugScript.Engine.Utility
         public static SimpleCacheStruct<T> CreateStruct<T>(Func<T> populateAction)
         {
             return new SimpleCacheStruct<T>(populateAction);
-        }
-
-        /// <summary>
-        /// Invalidates all the instances of type <see cref="SimpleCacheStruct{T}" /> and
-        /// <see cref="SimpleCache{T}" /> which are fields of class given as root object and any
-        /// fields of the same type in child fields recursively.
-        /// Use it when there are massive changes and all the caches need to be invalidated.
-        /// </summary>
-        /// <typeparam name="T">Type of the root object.</typeparam>
-        /// <param name="rootObject">Root object from which we recursively drop the caches.</param>
-        public static void InvalidateCacheRecursively<T>(T rootObject)
-        {
-            // TODO: Only drop cache on objects which are not cached in
-            // order to avoid infinite recursion.
-
         }
     }
 
@@ -144,10 +107,16 @@ namespace CsDebugScript.Engine.Utility
         }
 
         /// <summary>
-        /// Explicit implementation of ICache interface in order not to bloat up the namespace.
-        /// Prefered way is to use generic Value.
+        /// Gets enumerator for all the cached objects in this cache.
         /// </summary>
-        object ICache.ValueRaw { get { return value; } }
+        /// <returns></returns>
+        public IEnumerator GetEnumerator()
+        {
+            if (Cached)
+            {
+                yield return value;
+            }
+        }
 
         /// <summary>
         /// Invalidate cache entry.
@@ -217,17 +186,23 @@ namespace CsDebugScript.Engine.Utility
         }
 
         /// <summary>
-        /// Explicit implementation of ICache interface in order not to bloat up the namespace.
-        /// Prefered way is to use generic Value.
-        /// </summary>
-        object ICache.ValueRaw { get { return value; } }
-
-        /// <summary>
         /// Invalidate cache entry.
         /// </summary>
         public void InvalidateCache()
         {
             Cached = false;
+        }
+
+        /// <summary>
+        /// Gets enumerator for all the cached objects in this cache.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerator GetEnumerator()
+        {
+            if (Cached)
+            {
+                yield return value;
+            }
         }
     }
 }

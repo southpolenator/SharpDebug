@@ -11,7 +11,7 @@ namespace CsDebugScript.Engine.Utility
     public static class CacheInvalidator
     {
         /// <summary>
-        /// Invalidates all the instances of type <see cref="ICache{T}" /> and
+        /// Invalidates all the instances of type <see cref="ICache" /> and
         /// <see cref="DictionaryCache{TKey, TValue}" /> which are fields of class given as root object and any
         /// fields of the same type in child fields recursively.
         /// Use it when there are massive changes and all the caches need to be invalidated.
@@ -34,34 +34,15 @@ namespace CsDebugScript.Engine.Utility
                 ICache cache = field.GetValue(rootObject) as ICache;
 
                 // Clear only fields which are cached.
-                if (cache != null && cache.Cached)
+                if (cache != null)
                 {
-                    // If this is cached collection
-                    // invalidate recursively all the fields for every entry..
-                    if (cache is ICacheCollection)
+                    object[] cacheEntries = cache.OfType<object>().ToArray();
+                    cache.InvalidateCache();
+
+                    // Invalidate all the cached object if any.
+                    foreach (object cachedCollectionEntry in cacheEntries)
                     {
-                        ICacheCollection cacheCollection = cache as ICacheCollection;
-
-                        // Save entire collection since cache invalidate will clear the collection
-                        // and we still need to invalidate all the members.
-                        object[] cacheEntries = cacheCollection.ValuesRaw.OfType<object>().ToArray();
-
-                        cacheCollection.InvalidateCache();
-
-                        // Invalidate inner fields of every collection entry.
-                        foreach (object cachedCollectionEntry in cacheEntries)
-                        {
-                            InvalidateCaches(cachedCollectionEntry);
-                        }
-                    }
-                    else
-                    {
-                        object cachedValue = cache.ValueRaw;
-
-                        cache.InvalidateCache();
-
-                        // Recursively invalidate all the cache fields.
-                        InvalidateCaches(cachedValue);
+                        InvalidateCaches(cachedCollectionEntry);
                     }
                 }
             }

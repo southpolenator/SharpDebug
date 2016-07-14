@@ -10,7 +10,7 @@ namespace CsDebugScript.Engine.Utility
     /// </summary>
     /// <typeparam name="TKey">Type of the key.</typeparam>
     /// <typeparam name="TValue">Type of the value.</typeparam>
-    public class DictionaryCache<TKey, TValue> : ICacheCollection
+    public class DictionaryCache<TKey, TValue> : ICache
     {
         /// <summary>
         /// The populate action
@@ -58,39 +58,6 @@ namespace CsDebugScript.Engine.Utility
             get
             {
                 return values.Count;
-            }
-        }
-
-        /// <summary>
-        /// Gets the Cached values.
-        /// </summary>
-        IEnumerable ICacheCollection.ValuesRaw
-        {
-            get
-            {
-                return Values;
-            }
-        } 
-
-        /// <summary>
-        /// Gets a value indicating whether there are cached values.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if cached; otherwise, <c>false</c>.
-        /// </value>
-        bool ICache.Cached
-        {
-            get
-            {
-                return Count > 0;
-            }
-        }
-
-        object ICache.ValueRaw
-        {
-            get
-            {
-                return values.Values;
             }
         }
 
@@ -175,11 +142,20 @@ namespace CsDebugScript.Engine.Utility
         }
 
         /// <summary>
+        /// Returns all cached values in this cache.
+        /// </summary>
+        /// <returns>IEnumerator of all the cache values.</returns>
+        public IEnumerator GetEnumerator()
+        {
+            return values.GetEnumerator();
+        }
+
+        /// <summary>
         /// Invalidates this cache.
         /// </summary>
-        void ICache.InvalidateCache()
+        public void InvalidateCache()
         {
-            Clear();
+            Clear(); 
         }
     }
 }
