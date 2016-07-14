@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Reflection = System.Reflection;
 
 namespace CsDebugScript
 {
@@ -543,6 +544,15 @@ namespace CsDebugScript
             }
 
             return index;
+        }
+
+        /// <summary>
+        /// Invalidates cache structures.
+        /// Use when memory state changes (e.g. during live debugging).
+        /// </summary>
+        public void InvalidateProcessCache()
+        {
+            CacheInvalidator.InvalidateCaches(this);
         }
 
         /// <summary>

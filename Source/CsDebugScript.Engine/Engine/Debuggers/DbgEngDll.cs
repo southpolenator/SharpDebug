@@ -75,6 +75,24 @@ namespace CsDebugScript.Engine.Debuggers
         private static IDebugSystemObjects4 systemObjects;
 
         /// <summary>
+        /// Dictionary of all debugee flow controlers. Key is process id that is being debugged.
+        /// </summary>
+        private static DictionaryCache<uint, DebuggeeFlowController> debugeeFlowControlers;
+
+        /// <summary>
+        /// Static constructor.
+        /// </summary>
+        static DbgEngDll()
+        {
+            // Populate flow controlers lazely.
+            //
+            // NOTE: Client passed needs to be set to process with selected processId.
+            debugeeFlowControlers =
+                new DictionaryCache<uint, DebuggeeFlowController>(
+                    (processId) => new DebuggeeFlowController(ThreadClient));
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DbgEngDll"/> class.
         /// </summary>
         /// <param name="client">The debugger client interface.</param>
@@ -1243,6 +1261,57 @@ namespace CsDebugScript.Engine.Debuggers
             }
         }
 
+        /// <summary>
+        /// Releases the process that is being debugged.
+        /// </summary>
+        public void ContinueExecution(Process process)
+        {
+            using (var processSwitcher = new ProcessSwitcher(StateCache, process))
+            {
+                DebuggeeFlowController flowControler = debugeeFlowControlers[process.Id];
+                flowControler.DebugStatusBreak.WaitOne();
+                Control.Execute(0, "g", 0);
+            }
+        }
+
+        /// <summary>
+        /// Breaks the process that is being debugged.
+        /// </summary>
+        public void BreakExecution(Process process)
+        {
+            using (var processSwitcher = new ProcessSwitcher(StateCache, process))
+            {
+                DebuggeeFlowController flowControler = debugeeFlowControlers[process.Id];
+                flowControler.DebugStatusBreak.Reset();
+                Control.SetInterrupt(0);
+                flowControler.DebugStatusBreak.WaitOne();
+
+                // Drop the cache.
+                // TODO: When support for debugging multiple processes is added.
+                //       this needs to clear the cache of all the processes.
+                //
+                process.InvalidateProcessCache();
+            }
+        }
+
+        /// <summary>
+        /// Terminates the process that is being debugged and ends the session.
+        /// </summary>
+        public void Terminate(Process process)
+        {
+            Client.EndSession((uint)Defines.DebugEndActiveTerminate);
+
+            DebuggeeFlowController flowControler;
+            debugeeFlowControlers.RemoveEntry(process.Id, out flowControler);
+
+            // Release any threads that are waiting.
+            //
+            flowControler.DebugStatusGo.Set();
+            flowControler.DebugStatusBreak.Set();
+
+            flowControler.WaitForDebuggerLoopToExit();
+        }
+
         #region Native methods
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.
@@ -1549,4 +1618,4 @@ namespace CsDebugScript.Engine.Debuggers
             GetModuleBaseProc64 GetModuleBaseRoutine);
         #endregion
     }
-}
+} 

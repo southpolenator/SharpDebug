@@ -578,6 +578,59 @@ namespace CsDebugScript
             }
         }
 
+        #region DebuggeeControl
+        /// <summary>
+        /// When doing live process debugging continues debugee execution of the current process.
+        /// </summary>
+        public static void ContinueExecution()
+        {
+            Context.Debugger.ContinueExecution(Process.Current);
+        }
+
+        /// <summary>
+        /// When doing live process debugging breaks debugee execution of the current process.
+        /// </summary>
+        public static void BreakExecution()
+        {
+            Context.Debugger.BreakExecution(Process.Current);
+        }
+
+        /// <summary>
+        /// When doing live process debugging continues debugee execution of the specified process.
+        /// </summary>
+        /// <param name="process">Process to be continued.</param>
+        public static void ContinueExecution(Process process)
+        {
+            Context.Debugger.ContinueExecution(process);
+        }
+
+        /// <summary>
+        /// When doing live process debugging breaks debugee execution of the specified process.
+        /// </summary>
+        /// <param name="process">Process to be stopped.</param>
+        public static void BreakExecution(Process process)
+        {
+            Context.Debugger.BreakExecution(process);
+        }
+
+        /// <summary>
+        /// Terminate process that is being debugged and ends debugging session.
+        /// </summary>
+        public static void Terminate()
+        {
+            Context.Debugger.Terminate(Process.Current);
+        }
+
+        /// <summary>
+        /// Terminates given process.
+        /// </summary>
+        /// <param name="process">Process to be terminated.</param>
+        public static void Terminate(Process process)
+        {
+            Context.Debugger.Terminate(process);
+        }
+        #endregion
+
         /// <summary>
         /// Converts the specified structure to the bytes array.
         /// </summary>
