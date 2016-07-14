@@ -23,11 +23,6 @@ namespace CsDebugScript.Engine.Utility
         private ConcurrentDictionary<TKey, TValue> values = new ConcurrentDictionary<TKey, TValue>();
 
         /// <summary>
-        /// Indicating whether this collection contains any cached items.
-        /// </summary>
-        private bool isCached;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="DictionaryCache{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="populateAction">The populate action.</param>
@@ -69,7 +64,13 @@ namespace CsDebugScript.Engine.Utility
         /// <summary>
         /// Gets the Cached values.
         /// </summary>
-        IEnumerable ICacheCollection.ValuesRaw { get { return Values; } }
+        IEnumerable ICacheCollection.ValuesRaw
+        {
+            get
+            {
+                return Values;
+            }
+        } 
 
         /// <summary>
         /// Gets a value indicating whether there are cached values.
@@ -77,9 +78,20 @@ namespace CsDebugScript.Engine.Utility
         /// <value>
         ///   <c>true</c> if cached; otherwise, <c>false</c>.
         /// </value>
-        bool ICache.Cached { get { return isCached; } }
+        bool ICache.Cached
+        {
+            get
+            {
+                return Count > 0;
+            }
+        }
 
-        object ICache.ValueRaw { get { return values.Values; }
+        object ICache.ValueRaw
+        {
+            get
+            {
+                return values.Values;
+            }
         }
 
         /// <summary>
@@ -100,7 +112,6 @@ namespace CsDebugScript.Engine.Utility
                         {
                             value = populateAction(key);
                             values.TryAdd(key, value);
-                            isCached = true;
                         }
                     }
                 }
@@ -168,7 +179,6 @@ namespace CsDebugScript.Engine.Utility
         /// </summary>
         void ICache.InvalidateCache()
         {
-            isCached = false;
             Clear();
         }
     }
