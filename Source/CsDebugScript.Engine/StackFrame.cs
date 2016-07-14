@@ -409,9 +409,15 @@ namespace CsDebugScript
             {
             }
 
-            if ((arguments == null || arguments.Count == 0) && ClrStackFrame != null && ClrStackFrame.Arguments.Count > 0)
+            try
             {
-                arguments = ConvertClrToVariableCollection(ClrStackFrame.Arguments, GetClrArgumentsNames());
+                if ((arguments == null || arguments.Count == 0) && ClrStackFrame != null && ClrStackFrame.Arguments.Count > 0)
+                {
+                    arguments = ConvertClrToVariableCollection(ClrStackFrame.Arguments, GetClrArgumentsNames());
+                }
+            }
+            catch
+            {
             }
 
             return arguments;

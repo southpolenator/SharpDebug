@@ -1164,18 +1164,13 @@ namespace CsDebugScript
         internal static VariableCollection CastVariableCollectionToUserType(VariableCollection originalCollection)
         {
             Variable[] variables = new Variable[originalCollection?.Count ?? 0];
-            Dictionary<string, Variable> variablesByName = new Dictionary<string, Variable>();
-
+            
             for (int i = 0; i < variables.Length; i++)
             {
                 variables[i] = originalCollection[i].codeType.Module.Process.CastVariableToUserType(originalCollection[i]);
-                if (!string.IsNullOrEmpty(originalCollection[i].name))
-                {
-                    variablesByName.Add(originalCollection[i].name, variables[i]);
-                }
             }
 
-            return new VariableCollection(variables, variablesByName);
+            return new VariableCollection(variables);
         }
 
         /// <summary>

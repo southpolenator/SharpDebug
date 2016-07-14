@@ -13,31 +13,16 @@ namespace CsDebugScript
         /// <summary>
         /// The array of variables
         /// </summary>
-        private Variable[] variables;
+        private readonly Variable[] variables;
 
-        /// <summary>
-        /// The variables indexed by name
-        /// </summary>
-        private Dictionary<string, Variable> variablesByName;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VariableCollection"/> class.
         /// </summary>
         /// <param name="variables">The variables.</param>
         public VariableCollection(Variable[] variables)
-            : this(variables, variables.Where(v => !string.IsNullOrEmpty(v.GetName())).ToDictionary(v => v.GetName()))
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="VariableCollection"/> class.
-        /// </summary>
-        /// <param name="variables">The variables.</param>
-        /// <param name="variablesByName">The variables indexed by name.</param>
-        public VariableCollection(Variable[] variables, Dictionary<string, Variable> variablesByName)
         {
             this.variables = variables;
-            this.variablesByName = variablesByName;
         }
 
         /// <summary>
@@ -48,7 +33,7 @@ namespace CsDebugScript
         {
             get
             {
-                return variablesByName[name];
+                return this.variables.Single(r => r.GetName() == name);
             }
         }
 
@@ -82,7 +67,7 @@ namespace CsDebugScript
         {
             get
             {
-                return variablesByName.Keys;
+                return variables.AsEnumerable().Select(r=>r.GetName());
             }
         }
 
@@ -108,17 +93,7 @@ namespace CsDebugScript
         /// <param name="name">The name.</param>
         public bool ContainsName(string name)
         {
-            return variablesByName.ContainsKey(name);
-        }
-
-        /// <summary>
-        /// Tries to get variable with the specified name.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="value">The value.</param>
-        public bool TryGetValue(string name, out Variable value)
-        {
-            return variablesByName.TryGetValue(name, out value);
+            return Names.Any(r => r == name);
         }
     }
 }
