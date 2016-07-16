@@ -540,11 +540,18 @@ namespace CsDebugScript.CodeGen
         {
             int k = offset;
             int openedTypes = 0;
+            int function = 0;
 
-            while (k < inputType.Length && (openedTypes != 0 || (inputType[k] != ',' && inputType[k] != '>')))
+            while (k < inputType.Length && (function != 0 || (openedTypes != 0 || (inputType[k] != ',' && inputType[k] != '>'))))
             {
                 switch (inputType[k])
                 {
+                    case '(':
+                        function++;
+                        break;
+                    case ')':
+                        function--;
+                        break;
                     case '<':
                         openedTypes++;
                         break;
