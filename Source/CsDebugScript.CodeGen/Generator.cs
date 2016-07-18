@@ -236,7 +236,12 @@ namespace CsDebugScript.CodeGen
             ConcurrentBag<Symbol> simpleSymbols = new ConcurrentBag<Symbol>();
             Dictionary<Tuple<string, string>, List<Symbol>> templateSymbols = new Dictionary<Tuple<string, string>, List<Symbol>>();
 
-            Parallel.ForEach(Partitioner.Create(globalTypes), (symbol) =>
+            Parallel.ForEach(
+                Partitioner.Create(globalTypes),
+#if DEBUG
+                new ParallelOptions {  MaxDegreeOfParallelism = 1},
+#endif
+                symbol =>
             {
                 string symbolName = symbol.Name;
 
@@ -247,18 +252,6 @@ namespace CsDebugScript.CodeGen
                     return;
                 }
 
-                // Do not handle template referenced arguments 
-                if (symbolName.Contains("&"))
-                {
-                    // TODO: Convert this to function pointer
-                    return;
-                }
-
-                // TODO: C# doesn't support lengthy names
-                if (symbolName.Length > 160)
-                {
-                    return;
-                }
 
                 // TODO: For now remove all unnamed-type symbols
                 string scopedClassName = symbol.Namespaces.Last();
@@ -294,6 +287,15 @@ namespace CsDebugScript.CodeGen
 
             logger.WriteLine(" {0}", sw.Elapsed);
 
+            // Specialized class
+            logger.Write("Populating specialized classes...");
+            foreach (Symbol symbol in simpleSymbols)
+            {
+                userTypes.Add(factory.AddSymbol(symbol, null, symbolNamespaces[symbol], generationOptions));
+            }
+
+            logger.WriteLine(" {0}", sw.Elapsed);
+
             // Populate Templates
             logger.Write("Populating templates...");
             foreach (List<Symbol> symbols in templateSymbols.Values)
@@ -307,15 +309,6 @@ namespace CsDebugScript.CodeGen
                 };
 
                 userTypes.AddRange(factory.AddSymbols(symbols, type, symbolNamespaces[symbol], generationOptions));
-            }
-
-            logger.WriteLine(" {0}", sw.Elapsed);
-
-            // Specialized class
-            logger.Write("Populating specialized classes...");
-            foreach (Symbol symbol in simpleSymbols)
-            {
-                userTypes.Add(factory.AddSymbol(symbol, null, symbolNamespaces[symbol], generationOptions));
             }
 
             logger.WriteLine(" {0}", sw.Elapsed);
@@ -387,6 +380,9 @@ namespace CsDebugScript.CodeGen
                     ObjectPool<StringWriter> stringWriterPool = new ObjectPool<StringWriter>(() => new StringWriter());
 
                     Parallel.ForEach(userTypes,
+#if DEBUG
+                        new ParallelOptions() {  MaxDegreeOfParallelism = 1},
+#endif
                         (symbolEntry) =>
                         {
                             var output = stringWriterPool.GetObject();
