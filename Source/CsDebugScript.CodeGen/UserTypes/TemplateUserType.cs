@@ -185,6 +185,19 @@ namespace CsDebugScript.CodeGen.UserTypes
                     // Try to see if argument is number (constants are removed from the template arguments as they cannot be used in C#)
                     double constant;
 
+                    // Function pointers
+                    // TODO add function pointers cracking.
+                    if (extractedType.StartsWith("&"))
+                    {
+                        // find function, get type pointer type from it
+                        extractedType = "void*";
+                    }
+                    else if (extractedType.Contains("(__cdecl*)"))
+                    {
+                        // deal with call convensions
+                        extractedType = "void*";
+                    }
+
                     if (!double.TryParse(extractedType, out constant))
                     {
                         // Check if type is existing type (symbol)
@@ -201,7 +214,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         {
                             if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
                             {
-                                var typeString = GetSymbolTypeTree(symbol, factory).GetTypeString();
+                                string typeString = GetSymbolTypeTreeUserTypeImpl(symbol, factory).GetTypeString();
 
                                 specializationUserType = new TemplateArgumentUserType(typeString, symbol);
                             }
