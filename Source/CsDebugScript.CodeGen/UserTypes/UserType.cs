@@ -760,26 +760,29 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             // Write beginning of the class
             if (generationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
+            {
                 WriteClassComment(output, indentation);
+            }
+
             if (ExportDynamicFields)
             {
                 // If symbol has vtable, we would like to add DerivedClassAttribute to it
                 if (Symbol.HasVTable())
+                {
+
                     foreach (var derivedClass in DerivedClasses)
                     {
-                        string fullClassName;
-
                         try
                         {
-                            fullClassName = derivedClass.SpecializedFullClassName;
+                            string fullClassName = derivedClass.SpecializedFullClassName;
+                            output.WriteLine(indentation, @"[DerivedClass(Type = typeof({0}), Priority = {1}, TypeName = ""{2}"")]", fullClassName, derivedClass.DerivedClasses.Count, derivedClass.Symbol.Name);
                         }
                         catch
                         {
-                            fullClassName = derivedClass.NonSpecializedFullClassName;
+                            // Ignore if unable to get full specialization name
                         }
-
-                        output.WriteLine(indentation, @"[DerivedClass(Type = typeof({0}), Priority = {1}, TypeName = ""{2}"")]", fullClassName, derivedClass.DerivedClasses.Count, derivedClass.Symbol.Name);
                     }
+                }
 
                 // Write all UserTypeAttributes and class header
                 foreach (var moduleName in GlobalCache.GetSymbolModuleNames(Symbol))
@@ -1098,6 +1101,17 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="factory">The user type factory.</param>
         /// <param name="bitLength">Number of bits used for this symbol.</param>
         internal virtual TypeTree GetSymbolTypeTree(Symbol type, UserTypeFactory factory, int bitLength = 0)
+        {
+            return GetSymbolTypeTreeUserTypeImpl(type, factory, bitLength);
+        }
+
+        /// <summary>
+        /// Gets the type tree for the specified type (symbol).
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="factory">The user type factory.</param>
+        /// <param name="bitLength">Number of bits used for this symbol.</param>
+        internal TypeTree GetSymbolTypeTreeUserTypeImpl(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
             switch (type.Tag)
             {
