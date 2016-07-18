@@ -371,7 +371,7 @@ namespace CsDebugScript
                 Context.SymbolProvider.GetStackFrameFunctionName(this, out functionName, out displacement);
                 return Tuple.Create(functionName, displacement);
             }
-            catch (Exception ex)
+            catch
             {
                 if (ClrStackFrame != null && ClrStackFrame.Method != null)
                 {

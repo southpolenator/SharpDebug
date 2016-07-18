@@ -471,7 +471,7 @@ namespace CsDebugScript
                     {
                         return Context.SymbolProvider.GetEnumName(codeType.Module, nativeCodeType.TypeId, Data);
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         return string.Format("{0}:0x{1:X}", codeType, Data);
                     }
