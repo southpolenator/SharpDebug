@@ -68,7 +68,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 if (NamespaceSymbol != null)
                 {
-                    return NormalizeSymbolNamespace(NamespaceSymbol.Replace("::", "."));
+                    return NormalizeSymbolNamespace(NamespaceSymbol.Replace("::", ".").Replace("{ctor}", "ctor"));
                 }
                 else
                 {
@@ -280,7 +280,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </remarks>
         public static string NormalizeSymbolNamespace(string symbolNamespace)
         {
-            return symbolNamespace.Replace("::", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').TrimEnd('_');
+            return symbolNamespace.Replace("::", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').Replace("{ctor}", "ctor").TrimEnd('_');
         }
 
         /// <summary>
@@ -1179,10 +1179,25 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 case SymTagEnum.SymTagPointerType:
                     {
-                        Symbol pointerType = type.ElementType;
                         UserType pointerUserType;
+                        Symbol pointerType = type.ElementType;
 
                         factory.GetUserType(pointerType, out pointerUserType);
+
+                        if (this is TemplateUserType && pointerType.Tag != SymTagEnum.SymTagBaseType && (!(pointerUserType is TemplateArgumentUserType)))
+                        {
+                            UserType userType;
+                            // For template classes, if unable to find type
+                            // search for given pointer type not element type.
+                            // This allows us to match type, when template specialization and field type is pointer type.
+                            // Ignore if pointer is base type, we handle this differently.
+                            factory.GetUserType(type, out userType);
+
+                            if (userType != null && userType != pointerUserType)
+                            {
+                                return UserTypeTree.Create(userType, factory);
+                            }
+                        }
 
                         // When exporting pointer from Global Modules, always export types as code pointer.
                         if (this is GlobalsUserType && pointerUserType != null)
