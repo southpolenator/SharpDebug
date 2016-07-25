@@ -84,11 +84,6 @@ namespace CsDebugScript
         protected internal SimpleCache<string[]> templateArgumentsStrings;
 
         /// <summary>
-        /// CodeTypeNames, when symbols is avaiable in multiple modules.
-        /// </summary>
-        protected string[] CodeTypeNames;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="CodeType" /> class.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -397,52 +392,21 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the type of the class field.
         /// </summary>
-        /// <param name="classType">UserType type where containg field.</param>
+        /// <param name="requestedModule">Module where requested field is located.</param>
         /// <param name="classFieldName">Name of the class field.</param>
         /// <returns>The type of the class field.</returns>
-        public CodeType GetClassFieldType(Type classType, string classFieldName)
+        public CodeType GetClassFieldType(string requestedModule, string classFieldName)
         {
-            Type moduleType = classType;
-
-            // Check if requested type is in the same module as current one.
-            string[] modulesNames = moduleType.GetCustomAttributes(typeof(UserTypeAttribute), false).Cast<UserTypeAttribute>().Select(r => r.ModuleName).ToArray();
-
-            if (moduleType.IsGenericType)
-            {
-                Type templateArgument = moduleType.GetGenericArguments().FirstOrDefault(r => typeof(UserType).IsAssignableFrom(r));
-
-                if (templateArgument != null)
-                {
-                    modulesNames =
-                        modulesNames.Intersect(
-                            moduleType.GetGenericArguments()
-                                .First()
-                                .GetCustomAttributes(typeof (UserTypeAttribute), false)
-                                .Cast<UserTypeAttribute>()
-                                .Select(r => r.ModuleName)).ToArray();
-                }
-            }
-
-            if (CodeTypeNames == null || modulesNames.Contains(this.Module.Name))
+            if (requestedModule == this.Module.Name)
             {
                 // Given type is available in the same module.
                 return GetClassFieldType(classFieldName);
             }
 
-            // Type is not fully declared in current module.
-            // For current type, find the module which has full definition
-            // of current and requested one.
-            foreach (var moduleName in modulesNames)
-            {
-                if (!CodeTypeNames.Any(r => r.StartsWith(moduleName + "!"))) continue;
+            // Create a CodeType where the symbol is located.
+            CodeType codeType = CodeType.Create(requestedModule + "!" + Name);
 
-                // Create a CodeType where the symbol is located.
-                CodeType codeType = CodeType.Create(moduleName + "!" + Name);
-
-                return codeType.GetClassFieldType(classFieldName);
-            }
-
-            return GetClassFieldType(classFieldName);
+            return codeType.GetClassFieldType(classFieldName);
         }
 
         /// <summary>
@@ -571,7 +535,6 @@ namespace CsDebugScript
                 try
                 {
                     CodeType codeType = Create(process, codeTypeName);
-                    codeType.CodeTypeNames = codeTypeNames;
                     // Ingore declarations.
                     if (codeType.Size != 0)
                     {

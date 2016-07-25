@@ -3,6 +3,7 @@ using Dia2Lib;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
@@ -188,7 +189,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 yield return new UserTypeField
                 {
-                    ConstructorText = string.Format("{0}.GetClassFieldType(typeof({1}), \"{2}\")", ClassCodeType, addedType.Item3, addedType.Item1),
+                    ConstructorText = string.Format("{0}.GetClassFieldType(\"{1}\", \"{2}\")", ClassCodeType, addedType.Item3, addedType.Item1),
                     FieldName = addedType.Item2,
                     FieldType = "CodeType",
                     FieldTypeInfoComment = null,
@@ -345,7 +346,33 @@ namespace CsDebugScript.CodeGen.UserTypes
                             }
                             else if (IsTypeUsingStaticCodeType(this))
                             {
-                                fieldCodeType = AddFieldCodeType(fieldName, fieldTypeString);
+                                SymbolField symbolField = null;
+
+                                // If symbol field is null, we should remove it from available modules 
+                                if (field.Type.Size == 0)
+                                {
+                                    var dedupSymbols = GlobalCache.GetDeduplicatedSymbols(Symbol);
+
+                                    foreach (Symbol dedupSymbol in dedupSymbols)
+                                    {
+                                        SymbolField innerSymbolField = dedupSymbol.Fields.FirstOrDefault(r => r.Name == fieldName);
+
+                                        if (innerSymbolField != null && innerSymbolField.Type.Size != 0)
+                                        {
+                                            symbolField = innerSymbolField;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (symbolField == null)
+                                {
+                                    fieldCodeType = AddFieldCodeType(fieldName, field.Module.Name);
+                                }
+                                else
+                                {
+                                    fieldCodeType = AddFieldCodeType(fieldName, symbolField.Module.Name);
+                                }
                             }
 
                             constructorText = string.Format("new {0}(memoryBuffer, memoryBufferOffset + {1}, memoryBufferAddress, {2}, {3}, \"{4}\")", fieldTypeString, field.Offset, fieldCodeType, fieldAddress, fieldName);

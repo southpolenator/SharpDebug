@@ -106,6 +106,19 @@ namespace CsDebugScript.CodeGen
                         }
         }
 
+        internal static IEnumerable<Symbol> GetDeduplicatedSymbols(Symbol symbol)
+        {
+            Symbol[] dedupSymbols;
+
+            if (deduplicatedSymbols.TryGetValue(symbol.Name, out dedupSymbols))
+            {
+                foreach (Symbol dedupSymbol in dedupSymbols)
+                {
+                    yield return dedupSymbol;
+                }
+            }
+        }
+
         internal static IEnumerable<SymbolField> GetSymbolStaticFields(Symbol symbol)
         {
             Symbol[] symbols;
