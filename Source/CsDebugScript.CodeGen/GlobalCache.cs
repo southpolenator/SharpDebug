@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using CsDebugScript.CodeGen.UserTypes;
 using System.Text;
 using Dia2Lib;
@@ -54,19 +55,39 @@ namespace CsDebugScript.CodeGen
             GlobalCache.deduplicatedSymbols = deduplicatedSymbols;
         }
 
+        /// <summary>
+        /// Get list of modules where symbol is located sorted in alphabetical order.
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <returns></returns>
         internal static IEnumerable<string> GetSymbolModuleNames(Symbol symbol)
+        {
+            List<string> result = GetSymbolModuleNamesInternal(symbol).ToList();
+            result.Sort();
+
+            return result;
+        }
+
+        private static IEnumerable<string> GetSymbolModuleNamesInternal(Symbol symbol)
         {
             Symbol[] symbols;
 
             if (deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
-                foreach (var s in symbols)
+            {
+                foreach (Symbol deduplicatedSymbol in symbols)
                 {
-                    if (symbol.Size > 0 && s.Size == 0)
+                    if (symbol.Size != deduplicatedSymbol.Size)
+                    {
                         continue;
-                    yield return s.Module.Name;
+                    }
+
+                    yield return deduplicatedSymbol.Module.Name;
                 }
+            }
             else
+            {
                 yield return symbol.Module.Name;
+            }
         }
 
         internal static IEnumerable<Symbol> GetSymbolStaticFieldsSymbols(Symbol symbol)

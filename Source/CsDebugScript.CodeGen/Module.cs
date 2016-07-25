@@ -36,15 +36,17 @@ namespace CsDebugScript.CodeGen
         /// Initializes a new instance of the <see cref="Module"/> class.
         /// </summary>
         /// <param name="name">The module name.</param>
-        /// <param name="nameSpace">The default namespace.</param>
+        /// <param name="moduleNamespace">The default namespace.</param>
+        /// <param name="commonNamespace">Namespace if type is deduplicated across modules.</param>
         /// <param name="dia">The DIA data source.</param>
         /// <param name="session">The DIA session.</param>
-        private Module(string name, string nameSpace, IDiaDataSource dia, IDiaSession session)
+        private Module(string name, string moduleNamespace, string commonNamespace, IDiaDataSource dia, IDiaSession session)
         {
             this.session = session;
             this.dia = dia;
             Name = name;
-            Namespace = nameSpace;
+            Namespace = moduleNamespace;
+            CommonNamespace = commonNamespace;
             GlobalScope = GetSymbol(session.globalScope);
 
             PublicSymbols = new HashSet<string>(session.globalScope.GetChildren(SymTagEnum.SymTagPublicSymbol).Select((type) =>
@@ -72,7 +74,7 @@ namespace CsDebugScript.CodeGen
             module.Name = moduleName;
             dia.loadDataFromPdb(module.PdbPath);
             dia.openSession(out session);
-            return new Module(module.Name, module.Namespace, dia, session);
+            return new Module(module.Name, module.Namespace, module.CommonNamespace, dia, session);
         }
 
         /// <summary>
@@ -89,6 +91,8 @@ namespace CsDebugScript.CodeGen
         /// Gets the default namespace.
         /// </summary>
         public string Namespace { get; private set; }
+
+        public string CommonNamespace { get; private set; }
 
         /// <summary>
         /// Gets the set of public symbols.

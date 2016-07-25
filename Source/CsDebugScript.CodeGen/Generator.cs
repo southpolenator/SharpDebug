@@ -123,94 +123,103 @@ namespace CsDebugScript.CodeGen
             Dictionary<string, List<Symbol>> symbolsByName = new Dictionary<string, List<Symbol>>();
             Dictionary<Symbol, List<Symbol>> duplicatedSymbols = new Dictionary<Symbol, List<Symbol>>();
 
-            foreach (var symbol in allSymbols)
+            // Group duplicated symbols.
+            // We assume types are equal if they have the same name and size.
+            foreach (Symbol symbol in allSymbols)
             {
-                List<Symbol> symbols;
+                List<Symbol> namedSymbols;
 
-                if (!symbolsByName.TryGetValue(symbol.Name, out symbols))
-                    symbolsByName.Add(symbol.Name, symbols = new List<Symbol>());
+                if (!symbolsByName.TryGetValue(symbol.Name, out namedSymbols))
+                    symbolsByName.Add(symbol.Name, namedSymbols = new List<Symbol>());
 
-                bool found = false;
+                bool foundDuplicate = false;
 
-                foreach (var s in symbols.ToArray())
+                foreach (Symbol namedSymbol in namedSymbols.ToArray())
                 {
-                    if (s.Size != 0 && symbol.Size != 0 && s.Size != symbol.Size)
+                    if (namedSymbol.Size == 0 && symbol.Size != 0)
                     {
-#if DEBUG
-                        logger.WriteLine("{0}!{1} ({2}) {3}!{4} ({5})", s.Module.Name, s.Name, s.Size, symbol.Module.Name, symbol.Name, symbol.Size);
-#endif
-                        continue;
-                    }
-
-                    if (s.Size == 0 && symbol.Size != 0)
-                    {
+                        // Replace declaration with definition.
                         List<Symbol> duplicates;
 
-                        if (!duplicatedSymbols.TryGetValue(s, out duplicates))
-                            duplicatedSymbols.Add(s, duplicates = new List<Symbol>());
+                        if (!duplicatedSymbols.TryGetValue(namedSymbol, out duplicates))
+                            duplicatedSymbols.Add(namedSymbol, duplicates = new List<Symbol>());
 
-                        duplicatedSymbols.Remove(s);
-                        duplicates.Add(s);
+                        duplicatedSymbols.Remove(namedSymbol);
+                        duplicates.Add(namedSymbol);
                         duplicatedSymbols.Add(symbol, duplicates);
-                        symbols.Remove(s);
-                        symbols.Add(symbol);
+                        namedSymbols.Remove(namedSymbol);
+                        namedSymbols.Add(symbol);
+
+                        foundDuplicate = true;
                     }
-                    else
+                    else if (namedSymbol.Size == symbol.Size || symbol.Size == 0)
                     {
                         List<Symbol> duplicates;
 
-                        if (!duplicatedSymbols.TryGetValue(s, out duplicates))
-                            duplicatedSymbols.Add(s, duplicates = new List<Symbol>());
-                        duplicates.Add(symbol);
-                    }
+                        if (!duplicatedSymbols.TryGetValue(namedSymbol, out duplicates))
+                        {
+                            duplicatedSymbols.Add(namedSymbol, duplicates = new List<Symbol>());
+                        }
 
-                    found = true;
-                    break;
+                        duplicates.Add(symbol);
+
+                        foundDuplicate = true;
+                    }
                 }
 
-                if (!found)
-                    symbols.Add(symbol);
-            }
-
-            // Unlink duplicated symbols if two or more are named the same
-            foreach (var symbols in symbolsByName.Values)
-            {
-                if (symbols.Count <= 1)
-                    continue;
-
-                foreach (var s in symbols.ToArray())
+                if (!foundDuplicate)
                 {
-                    List<Symbol> duplicates;
-
-                    if (!duplicatedSymbols.TryGetValue(s, out duplicates))
-                        continue;
-
-                    symbols.AddRange(duplicates);
-                    duplicatedSymbols.Remove(s);
+                    // Add symbol to the process list
+                    namedSymbols.Add(symbol);
                 }
             }
 
             // Extracting deduplicated symbols
-            Dictionary<string, Symbol[]> deduplicatedSymbols = new Dictionary<string, Symbol[]>();
-            Dictionary<Symbol, string> symbolNamespaces = new Dictionary<Symbol, string>();
+            Dictionary<string, Symbol[]> globalDeduplicatedSymbols = new Dictionary<string, Symbol[]>();
+            Dictionary<Symbol, string> globalSymbolNamespaces = new Dictionary<Symbol, string>();
 
             foreach (var symbols in symbolsByName.Values)
             {
                 if (symbols.Count != 1)
-                    foreach (var s in symbols)
-                        symbolNamespaces.Add(s, modules[s.Module].Namespace);
+                {
+                    // Multiple symbols with the same name and different sizes.
+                    // Check if all can be in different module common namespaces.
+                    // If not, to avoid type collision, use module namespace.
+                    bool useCommonNamespace = symbols.Select(r => r.Module.CommonNamespace).Distinct().Count() == symbols.Count;
+
+                    foreach (Symbol symbol in symbols)
+                    {
+                        globalSymbolNamespaces.Add(symbol, useCommonNamespace ? modules[symbol.Module].CommonNamespace : modules[symbol.Module].Namespace);
+                    }
+                }
                 else
                 {
+                    // Symbols are deduplicated into one.
+
                     Symbol symbol = symbols.First();
+
                     List<Symbol> duplicates;
 
                     if (!duplicatedSymbols.TryGetValue(symbol, out duplicates))
+                    {
                         duplicates = new List<Symbol>();
-                    duplicates.Insert(0, symbol);
-                    deduplicatedSymbols.Add(symbol.Name, duplicates.ToArray());
+                    }
 
-                    foreach (var s in duplicates)
-                        symbolNamespaces.Add(s, xmlConfig.CommonTypesNamespace);
+                    // Include current symbol with deduplication symbol list.
+                    duplicates.Insert(0, symbol);
+
+                    globalDeduplicatedSymbols.Add(symbol.Name, duplicates.ToArray());
+
+                    // Chose namespace for deduplicated symbols.
+                    // Ignore modules with declaration only.
+                    // We check if we can put all types into module common namespace.
+                    // If not, use global namespace.
+                    bool useGlobalNamespace = duplicates.Where(r => r.Size != 0).Select(r => r.Module.CommonNamespace).Distinct().Count() != 1;
+
+                    foreach (Symbol dedupSymbol in duplicates)
+                    {
+                        globalSymbolNamespaces.Add(dedupSymbol, useGlobalNamespace ? xmlConfig.CommonTypesNamespace : dedupSymbol.Module.CommonNamespace);
+                    }
                 }
             }
 
@@ -222,7 +231,7 @@ namespace CsDebugScript.CodeGen
             logger.WriteLine("  Dedupedlicated symbols: {0}", globalTypes.Length);
 
             // Initialize GlobalCache with deduplicatedSymbols
-            GlobalCache.Update(deduplicatedSymbols);
+            GlobalCache.Update(globalDeduplicatedSymbols);
 
             // Collecting types
             logger.Write("Collecting types...");
@@ -252,6 +261,11 @@ namespace CsDebugScript.CodeGen
                     return;
                 }
 
+                // Ignore symbols with maximum length
+                if (symbolName.Length == 4096)
+                {
+                    return;
+                }
 
                 // TODO: For now remove all unnamed-type symbols
                 string scopedClassName = symbol.Namespaces.Last();
@@ -264,9 +278,9 @@ namespace CsDebugScript.CodeGen
                 // Check if symbol contains template type.
                 if (SymbolNameHelper.ContainsTemplateType(symbolName) && symbol.Tag == SymTagEnum.SymTagUDT)
                 {
-                    List<string> namespaces = symbol.Namespaces;
-                    string className = namespaces.Last();
-                    var symbolId = Tuple.Create(symbolNamespaces[symbol], SymbolNameHelper.CreateLookupNameForSymbol(symbol));
+                    // TODO 
+                    // remove string.Empty
+                    var symbolId = Tuple.Create(string.Empty, SymbolNameHelper.CreateLookupNameForSymbol(symbol));
 
                     lock (templateSymbols)
                     {
@@ -291,24 +305,65 @@ namespace CsDebugScript.CodeGen
             logger.Write("Populating specialized classes...");
             foreach (Symbol symbol in simpleSymbols)
             {
-                userTypes.Add(factory.AddSymbol(symbol, null, symbolNamespaces[symbol], generationOptions));
+                userTypes.Add(factory.AddSymbol(symbol, null, globalSymbolNamespaces[symbol], generationOptions));
             }
 
             logger.WriteLine(" {0}", sw.Elapsed);
 
+            Dictionary<string , List<Symbol>> deduplicatedGlobalTemplates = new Dictionary<string, List<Symbol>>();
+
             // Populate Templates
+            // Templates have second round of deduplicaton.
+            // TODO, use typedecl for matching the templates.
             logger.Write("Populating templates...");
             foreach (List<Symbol> symbols in templateSymbols.Values)
             {
-                Symbol symbol = symbols.First();
-                string symbolName = SymbolNameHelper.CreateLookupNameForSymbol(symbol);
+                Symbol firstSymbol = symbols.First();
+                string symbolName = SymbolNameHelper.CreateLookupNameForSymbol(firstSymbol);
+                string typeNamespace = globalSymbolNamespaces[firstSymbol];
 
-                XmlType type = new XmlType()
+                // Check if we got deduplicated template symbols located in two different namespaces
+                bool deduplicateToGlobalNamespace = symbols.Where(r=>r.Size != 0).Select(r => globalSymbolNamespaces[r]).Distinct().Count() > 1;
+
+                if (deduplicateToGlobalNamespace)
                 {
-                    Name = symbolName
+                    deduplicatedGlobalTemplates.Add(symbolName, symbols);
+
+                    // Put in common namespace
+                    typeNamespace = xmlConfig.CommonTypesNamespace;
+
+                    foreach (var symbol in symbols)
+                    {
+                        globalSymbolNamespaces.Remove(symbol);
+                        globalSymbolNamespaces.Add(symbol, typeNamespace);
+                    }
+
+                    continue;
+                }
+
+                XmlType type = new XmlType
+                {
+                    // TODO temporary fix, engine needs to handle this
+                    Name = symbolName.Replace(",", string.Empty)
+                };
+               
+                userTypes.AddRange(factory.AddSymbols(symbols, type, typeNamespace, generationOptions));
+            }
+
+            // Populate global templates
+            foreach (var globalTemplates in deduplicatedGlobalTemplates)
+            {
+                string symbolNamespace = xmlConfig.CommonTypesNamespace;
+                string symbolName = globalTemplates.Key;
+                List<Symbol> symbols = globalTemplates.Value;
+
+                XmlType type = new XmlType
+                {
+                    // TODO temporary fix, engine needs to handle this
+                    Name = symbolName.Replace(",", string.Empty)
                 };
 
-                userTypes.AddRange(factory.AddSymbols(symbols, type, symbolNamespaces[symbol], generationOptions));
+                userTypes.AddRange(factory.AddSymbols(symbols, type, symbolNamespace, generationOptions));
             }
 
             logger.WriteLine(" {0}", sw.Elapsed);
@@ -330,7 +385,7 @@ namespace CsDebugScript.CodeGen
 
             // Post processing user types (filling DeclaredInType)
             logger.Write("Post processing user types...");
-            var namespaceTypes = factory.ProcessTypes(userTypes, symbolNamespaces).ToArray();
+            var namespaceTypes = factory.ProcessTypes(userTypes, globalSymbolNamespaces).ToArray();
             userTypes.AddRange(namespaceTypes);
 
             logger.WriteLine(" {0}", sw.Elapsed);

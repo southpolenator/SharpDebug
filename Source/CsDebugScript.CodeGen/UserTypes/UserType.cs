@@ -784,9 +784,27 @@ namespace CsDebugScript.CodeGen.UserTypes
                     }
                 }
 
+                // Get list of module where symbol is located.s
+                List<string> moduleNames = GlobalCache.GetSymbolModuleNames(Symbol).ToList();
+
+                TemplateUserType thisTemplateUserType  = this as TemplateUserType;
+                if (thisTemplateUserType != null)
+                {
+                    // If type is template, include modules from all specializations.
+                    moduleNames.AddRange(thisTemplateUserType.SpecializedTypes.SelectMany(r => GlobalCache.GetSymbolModuleNames(r.Symbol)));
+                    
+                    moduleNames = moduleNames.Distinct().ToList();
+                }
+
+                // Sort modules names.
+                moduleNames.Sort();
+
                 // Write all UserTypeAttributes and class header
-                foreach (var moduleName in GlobalCache.GetSymbolModuleNames(Symbol))
+                foreach (var moduleName in moduleNames)
+                {
                     output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, TypeName);
+                }
+
 
                 // If we have multi class inheritance, generate attribute for getting static field with base class C# types
                 if (baseType is MultiClassInheritanceTypeTree || baseType is SingleClassInheritanceWithInterfacesTypeTree)

@@ -71,7 +71,12 @@ namespace CsDebugScript.CodeGen
 
             if (index > 0)
             {
-                namespaceSymbol = namespaceSymbol.Substring(0, index) + "<>";
+                // Get number of template arguments.
+                int argCount = XmlTypeTransformation.GetTemplateArgCount(namespaceSymbol, index);
+
+                // Include number of template arguments in lookup name.
+                string lookupSymbol = namespaceSymbol.Substring(0, index) + "<" + string.Empty.PadRight(argCount, ',') + ">";
+                return lookupSymbol;
             }
 
             return namespaceSymbol;

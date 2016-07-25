@@ -84,6 +84,11 @@ namespace CsDebugScript
         protected internal SimpleCache<string[]> templateArgumentsStrings;
 
         /// <summary>
+        /// CodeTypeNames, when symbols is avaiable in multiple modules.
+        /// </summary>
+        protected string[] CodeTypeNames;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CodeType" /> class.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -388,6 +393,58 @@ namespace CsDebugScript
             return ClassFields[classFieldName].Item1;
         }
 
+
+        /// <summary>
+        /// Gets the type of the class field.
+        /// </summary>
+        /// <param name="classType">UserType type where containg field.</param>
+        /// <param name="classFieldName">Name of the class field.</param>
+        /// <returns>The type of the class field.</returns>
+        public CodeType GetClassFieldType(Type classType, string classFieldName)
+        {
+            Type moduleType = classType;
+
+            // Check if requested type is in the same module as current one.
+            string[] modulesNames = moduleType.GetCustomAttributes(typeof(UserTypeAttribute), false).Cast<UserTypeAttribute>().Select(r => r.ModuleName).ToArray();
+
+            if (moduleType.IsGenericType)
+            {
+                Type templateArgument = moduleType.GetGenericArguments().FirstOrDefault(r => typeof(UserType).IsAssignableFrom(r));
+
+                if (templateArgument != null)
+                {
+                    modulesNames =
+                        modulesNames.Intersect(
+                            moduleType.GetGenericArguments()
+                                .First()
+                                .GetCustomAttributes(typeof (UserTypeAttribute), false)
+                                .Cast<UserTypeAttribute>()
+                                .Select(r => r.ModuleName)).ToArray();
+                }
+            }
+
+            if (CodeTypeNames == null || modulesNames.Contains(this.Module.Name))
+            {
+                // Given type is available in the same module.
+                return GetClassFieldType(classFieldName);
+            }
+
+            // Type is not fully declared in current module.
+            // For current type, find the module which has full definition
+            // of current and requested one.
+            foreach (var moduleName in modulesNames)
+            {
+                if (!CodeTypeNames.Any(r => r.StartsWith(moduleName + "!"))) continue;
+
+                // Create a CodeType where the symbol is located.
+                CodeType codeType = CodeType.Create(moduleName + "!" + Name);
+
+                return codeType.GetClassFieldType(classFieldName);
+            }
+
+            return GetClassFieldType(classFieldName);
+        }
+
         /// <summary>
         /// Gets the field offset.
         /// </summary>
@@ -509,11 +566,17 @@ namespace CsDebugScript
         /// <returns>CodeType from specified name and module</returns>
         public static CodeType Create(Process process, params string[] codeTypeNames)
         {
-            foreach (var codeType in codeTypeNames)
+            foreach (string codeTypeName in codeTypeNames)
             {
                 try
                 {
-                    return Create(process, codeType);
+                    CodeType codeType = Create(process, codeTypeName);
+                    codeType.CodeTypeNames = codeTypeNames;
+                    // Ingore declarations.
+                    if (codeType.Size != 0)
+                    {
+                        return codeType;
+                    }
                 }
                 catch
                 {
@@ -1710,7 +1773,7 @@ namespace CsDebugScript
         {
             for (var clrType = ClrType; clrType != null; clrType = clrType.BaseType)
             {
-                var field = clrType.Fields.Where(f => f.Name == fieldName).FirstOrDefault();
+                var field = clrType.Fields.FirstOrDefault(f => f.Name == fieldName);
 
                 if (field != null && field.Type != null)
                 {

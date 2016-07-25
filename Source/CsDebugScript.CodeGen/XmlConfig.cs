@@ -288,6 +288,12 @@ namespace CsDebugScript.CodeGen
         /// </summary>
         [XmlAttribute]
         public string Namespace { get; set; }
+
+        /// <summary>
+        /// Gets or sets the common module namespace where all exported user types should be placed.
+        /// </summary>
+        [XmlAttribute]
+        public string CommonNamespace { get; set; }
     }
 
     /// <summary>
@@ -564,6 +570,48 @@ namespace CsDebugScript.CodeGen
             }
 
             return inputType.Substring(offset, k - offset);
+        }
+
+        /// <summary>
+        /// Get number of template arguments..
+        /// </summary>
+        /// <param name="inputType">Type of the input.</param>
+        /// <param name="offset">The offset.</param>
+        internal static int GetTemplateArgCount(string inputType, int offset)
+        {
+            int k = offset;
+            int openedTypes = 0;
+            int function = 0;
+            int argCount = 0;
+
+            while (k < inputType.Length && (function != 0 || (openedTypes != 0 || (inputType[k] != ',' && inputType[k] != '>'))))
+            {
+                switch (inputType[k])
+                {
+                    case '(':
+                        function++;
+                        break;
+                    case ')':
+                        function--;
+                        break;
+                    case '<':
+                        openedTypes++;
+                        break;
+                    case '>':
+                        openedTypes--;
+                        break;
+                    case ',':
+                        if (openedTypes == 1 && function == 0)
+                        {
+                            argCount++;
+                        }
+                        break;
+                }
+
+                k++;
+            }
+
+            return argCount;
         }
 
         private static string ExtractNewCastName(string originalType, int i)

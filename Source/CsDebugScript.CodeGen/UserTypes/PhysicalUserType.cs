@@ -43,7 +43,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// The additionally generated field types (cached for further use and removing querying module cache of code types)
         /// </summary>
-        private readonly Dictionary<string, string> addedFieldTypes = new Dictionary<string, string>();
+        private readonly List<Tuple<string, string, string>> addedFieldTypes = new List<Tuple<string, string, string>>();
 
         /// <summary>
         /// The base class offset
@@ -185,10 +185,11 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
 
             foreach (var addedType in addedFieldTypes)
+            {
                 yield return new UserTypeField
                 {
-                    ConstructorText = string.Format("{0}.GetClassFieldType(\"{1}\")", ClassCodeType, addedType.Key),
-                    FieldName = addedType.Value,
+                    ConstructorText = string.Format("{0}.GetClassFieldType(typeof({1}), \"{2}\")", ClassCodeType, addedType.Item3, addedType.Item1),
+                    FieldName = addedType.Item2,
                     FieldType = "CodeType",
                     FieldTypeInfoComment = null,
                     PropertyName = null,
@@ -196,6 +197,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     UseUserMember = false,
                     CacheResult = true,
                 };
+            }
         }
 
         /// <summary>
@@ -335,7 +337,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         {
                             // If user type is embedded, we can reuse memory buffer that we already have in this class
                             string fieldAddress = string.Format("memoryBufferAddress + (ulong)(memoryBufferOffset + {0})", field.Offset);
-                            string fieldCodeType = string.Format("{0}.GetClassFieldType(\"{1}\")", thisClassCodeType, fieldName);
+                            string fieldCodeType = string.Format("{0}.GetClassFieldType(typeof({1}), \"{2}\")", thisClassCodeType, fieldTypeString, fieldName);
 
                             if (IsTypeUsingStaticCodeType(userType.UserType))
                             {
@@ -343,7 +345,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                             }
                             else if (IsTypeUsingStaticCodeType(this))
                             {
-                                fieldCodeType = AddFieldCodeType(fieldName);
+                                fieldCodeType = AddFieldCodeType(fieldName, fieldTypeString);
                             }
 
                             constructorText = string.Format("new {0}(memoryBuffer, memoryBufferOffset + {1}, memoryBufferAddress, {2}, {3}, \"{4}\")", fieldTypeString, field.Offset, fieldCodeType, fieldAddress, fieldName);
@@ -427,11 +429,11 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </summary>
         /// <param name="fieldName">The field name.</param>
         /// <returns>Generated name for the variable that will cache code type for the field.</returns>
-        private string AddFieldCodeType(string fieldName)
+        private string AddFieldCodeType(string fieldName, string fieldTypeString)
         {
             string newType = fieldName + "ↀ";
 
-            addedFieldTypes.Add(fieldName, newType);
+            addedFieldTypes.Add(new Tuple<string, string, string>(fieldName, newType, fieldTypeString));
             return newType;
         }
     }

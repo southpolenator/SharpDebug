@@ -13,6 +13,8 @@ namespace CsDebugScript.CodeGen.UserTypes
     /// <seealso cref="UserType" />
     internal class TemplateUserType : UserType
     {
+        private List<string> templateArgumentsAsString = new List<string>();
+
         /// <summary>
         /// The list of template arguments stored as symbols
         /// </summary>
@@ -21,7 +23,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// The list of template arguments stored as user types
         /// </summary>
-        private List<UserType> templateArgumentsAsUserTypes = new List<UserType>();
+        private readonly List<UserType> templateArgumentsAsUserTypes = new List<UserType>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TemplateUserType" /> class.
@@ -159,6 +161,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             int templateStart = symbolName.IndexOf('<');
             bool result = true;
 
+            templateArgumentsAsString.Clear();
             templateArgumentsAsSymbols.Clear();
             templateArgumentsAsUserTypes.Clear();
             if (templateStart > 0)
@@ -180,6 +183,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         break;
                     }
 
+                    templateArgumentsAsString.Add(extractedType);
                     arguments.Add(extractedType);
 
                     // Try to see if argument is number (constants are removed from the template arguments as they cannot be used in C#)
@@ -272,6 +276,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (templateStart > 0)
                 {
+                    string interSymbolname = symbolName;
                     symbolName = symbolName.Substring(0, templateStart);
                     if (NumberOfTemplateArguments == 1)
                     {
@@ -285,7 +290,16 @@ namespace CsDebugScript.CodeGen.UserTypes
                     }
                     else
                     {
-                        symbolName += "_T_";
+                        int templateCount = XmlTypeTransformation.GetTemplateArgCount(interSymbolname, templateStart);
+
+                        if (templateCount >= 1)
+                        {
+                            symbolName += string.Format("_T{0}_", templateCount);
+                        }
+                        else
+                        {
+                            symbolName += "_T_";
+                        }
                     }
                 }
 
@@ -293,6 +307,16 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
         }
 
+        /// <summary>
+        /// Gets the number of template arguments.
+        /// </summary>
+        public int TotalNumberOfTemplateArguments
+        {
+            get
+            {
+                return templateArgumentsAsString.Count;
+            }
+        }
         /// <summary>
         /// Gets the number of template arguments.
         /// </summary>
