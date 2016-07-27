@@ -854,7 +854,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                         if (index >= 0)
                         {
-                            int baseClassIndex = Symbol.BaseClasses.OrderBy(s => s.Offset).ToList().IndexOf(baseClass);
+                            int baseClassIndex = Symbol.BaseClasses.OrderBy(s => s.Offset).ThenBy(s => s.Name).ToList().IndexOf(baseClass);
 
                             if (field.ConstructorText.StartsWith("thisClass."))
                                 field.ConstructorText = field.ConstructorText.Replace(baseClassString, baseClassIndex.ToString());
