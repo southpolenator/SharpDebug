@@ -280,7 +280,20 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </remarks>
         public static string NormalizeSymbolNamespace(string symbolNamespace)
         {
-            return symbolNamespace.Replace("::", "_").Replace("*", "").Replace('&', '_').Replace("$", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').Replace("{ctor}", "ctor").TrimEnd('_')
+            return
+                symbolNamespace.Replace("::", "_")
+                    .Replace("*", "")
+                    .Replace('&', '_')
+                    .Replace("$", "")
+                    .Replace('-', '_')
+                    .Replace('<', '_')
+                    .Replace('>', '_')
+                    .Replace(' ', '_')
+                    .Replace(',', '_')
+                    .Replace('(', '_')
+                    .Replace(')', '_')
+                    .Replace("{ctor}", "ctor")
+                    .TrimEnd('_');
         }
 
         /// <summary>
