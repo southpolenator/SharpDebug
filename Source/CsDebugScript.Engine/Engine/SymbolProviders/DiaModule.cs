@@ -613,7 +613,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             var type = GetTypeFromId(typeId);
 
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType || (SymTagEnum)type.symTag == SymTagEnum.SymTagArrayType)
                 type = type.type;
 
             if (CodeType.TypeNameMatches(type.name, className))
