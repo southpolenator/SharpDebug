@@ -1,7 +1,21 @@
 ﻿using System;
+using System.Collections;
 
 namespace CsDebugScript.Engine.Utility
 {
+    /// <summary>
+    /// Interface for all caching structures.
+    /// IEnumerable implementation is responsible for returning all
+    /// cached objects in this cache.
+    /// </summary>
+    public interface ICache : IEnumerable
+    {
+        /// <summary>
+        /// Invalidates this cache.
+        /// </summary>
+        void InvalidateCache();
+    }
+
     /// <summary>
     /// Helper class for caching results - it is being used as lazy evaluation
     /// </summary>
@@ -34,7 +48,7 @@ namespace CsDebugScript.Engine.Utility
     /// Helper class for caching results - it is being used as lazy evaluation
     /// </summary>
     /// <typeparam name="T">Type to be cached</typeparam>
-    public class SimpleCache<T>
+    public class SimpleCache<T> : ICache
     {
         /// <summary>
         /// The populate action
@@ -91,13 +105,33 @@ namespace CsDebugScript.Engine.Utility
                 Cached = true;
             }
         }
+
+        /// <summary>
+        /// Gets enumerator for all the cached objects in this cache.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerator GetEnumerator()
+        {
+            if (Cached)
+            {
+                yield return value;
+            }
+        }
+
+        /// <summary>
+        /// Invalidate cache entry.
+        /// </summary>
+        public void InvalidateCache()
+        {
+            Cached = false;
+        }
     }
 
     /// <summary>
     /// Helper class for caching results - it is being used as lazy evaluation
     /// </summary>
     /// <typeparam name="T">Type to be cached</typeparam>
-    public struct SimpleCacheStruct<T>
+    public struct SimpleCacheStruct<T> : ICache
     {
         /// <summary>
         /// The populate action
@@ -148,6 +182,26 @@ namespace CsDebugScript.Engine.Utility
             {
                 this.value = value;
                 Cached = true;
+            }
+        }
+
+        /// <summary>
+        /// Invalidate cache entry.
+        /// </summary>
+        public void InvalidateCache()
+        {
+            Cached = false;
+        }
+
+        /// <summary>
+        /// Gets enumerator for all the cached objects in this cache.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerator GetEnumerator()
+        {
+            if (Cached)
+            {
+                yield return value;
             }
         }
     }

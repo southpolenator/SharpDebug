@@ -90,7 +90,7 @@ namespace DbgEngTest.CLR
                 ExceptionDumper.Dumper.RunAndDumpOnException(appPath, dumpPath, false);
             }
 
-            Initialize(dumpPath, appDirectory);
+            InitializeDump(dumpPath, appDirectory);
         }
     }
 }

@@ -96,7 +96,7 @@ namespace CsDebugScript
             name = SimpleCache.Create(GetTypeName);
             size = SimpleCache.Create(GetTypeSize);
             directBaseClassesAndOffsets = SimpleCache.Create(GetDirectBaseClassesAndOffsets);
-            directBaseClassesAndOffsetsArraySorted = SimpleCache.Create(() => InheritedClasses.Values.OrderBy(t => t.Item2).ToArray());
+            directBaseClassesAndOffsetsArraySorted = SimpleCache.Create(() => InheritedClasses.Values.OrderBy(t => t.Item2).ThenBy(t => t.Item1.Name).ToArray());
             allFieldNames = SimpleCache.Create(GetTypeAllFieldNames);
             fieldNames = SimpleCache.Create(GetTypeFieldNames);
             allFieldTypesAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>(GetAllFieldTypeAndOffset);

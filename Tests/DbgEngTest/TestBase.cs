@@ -23,18 +23,17 @@ namespace DbgEngTest
             System.Threading.Monitor.Exit(synchronizationObject);
         }
 
-
         /// <summary>
-        /// Initializes the test class with the specified dump file.
-        /// </summary>
-        /// <param name="dumpFile">The dump file.</param>
+        /// Creates absolute paths out of given file path and symbol path.
+        /// <param name="file">Path to dump or process.</param>
         /// <param name="symbolPath">The symbol path.</param>
         /// <param name="addSymbolServer">if set to <c>true</c> symbol server will be added to the symbol path.</param>
-        protected static void Initialize(string dumpFile, string symbolPath, bool addSymbolServer = true)
+        /// </summary>
+        private static void NormalizeDebugPaths(ref string file, ref string symbolPath, bool addSymbolServer)
         {
-            if (!Path.IsPathRooted(dumpFile))
+            if (!Path.IsPathRooted(file))
             {
-                dumpFile = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(TestBase).Assembly.Location), dumpFile));
+                file = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(TestBase).Assembly.Location), file));
             }
 
             if (!Path.IsPathRooted(symbolPath))
@@ -46,8 +45,39 @@ namespace DbgEngTest
             {
                 symbolPath += ";srv*";
             }
+        }
+
+        /// <summary>
+        /// Initializes the test class with the specified dump file.
+        /// </summary>
+        /// <param name="dumpFile">The dump file.</param>
+        /// <param name="symbolPath">The symbol path.</param>
+        /// <param name="addSymbolServer">if set to <c>true</c> symbol server will be added to the symbol path.</param>
+        protected static void InitializeDump(string dumpFile, string symbolPath, bool addSymbolServer = true)
+        {
+            NormalizeDebugPaths(ref dumpFile, ref symbolPath, addSymbolServer);
 
             client = DebugClient.OpenDumpFile(dumpFile, symbolPath);
+            Context.Initalize(client);
+        }
+
+        /// <summary>
+        /// Initializes the test class with the specified process file.
+        /// </summary>
+        /// <param name="processPath">Path to the process to be started.</param>
+        /// <param name="symbolPath">Symbol path.</param>
+        /// <param name="addSymbolServer">if set to <c>true</c> symbol server will be added to the symbol path.</param>
+        /// <param name="debugEngineOptions">Debug create options. Default is to start in break mode, and break on process exit.</param>
+        protected static void InitializeProcess(string processPath, string processArguments, string symbolPath, bool addSymbolServer = true, uint debugEngineOptions = (uint)(Defines.DebugEngoptInitialBreak | Defines.DebugEngoptFinalBreak))
+        {
+            NormalizeDebugPaths(ref processPath, ref symbolPath, addSymbolServer);
+
+            // Disable caching.
+            //
+            Context.EnableUserCastedVariableCaching = false;
+            Context.EnableVariableCaching = false;
+
+            client = DebugClient.OpenProcess(processPath, processArguments, symbolPath, debugEngineOptions);
             Context.Initalize(client);
         }
 

@@ -486,6 +486,34 @@ namespace CsDebugScript.VS
         {
             throw new NotImplementedException(NotImplementedExceptionText);
         }
+
+        /// <summary>
+        /// When doing live process debugging continues debugee execution of the specified process.
+        /// </summary>
+        /// <param name="process">Process to be continued.</param>
+
+        public void ContinueExecution(Process process)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// When doing live process debugging breaks debugee execution of the specified process.
+        /// </summary>
+        /// <param name="process">Process to break.</param>
+        public void BreakExecution(Process process)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Terminates given process.
+        /// </summary>
+        /// <param name="process">Process to Terminate.</param>
+        public void Terminate(Process process)
+        {
+            throw new NotImplementedException();
+        }
         #endregion
     }
 }

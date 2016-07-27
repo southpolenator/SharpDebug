@@ -5,8 +5,11 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <Windows.h>
 
 using namespace std;
+
+#pragma auto_inline off
 
 int main(int argc, char** argv);
 
@@ -47,24 +50,53 @@ int MyTestClass::staticVariable = 1212121212;
 
 int(*mainAddress)(int, char**) = main;
 
-int main(int argc, char** argv)
+__declspec(noinline) void DefaultTestCase()
 {
-	MyTestClass * p = &globalVariable;
-	MyTestClass ** q = &p;
-	MyEnum e = enumEntry3;
+    MyTestClass * p = &globalVariable;
+    MyTestClass ** q = &p;
+    MyEnum e = enumEntry3;
 
-	p->string1 = L"qwerty";
-	p->strings.push_back(L"Foo");
-	p->strings.push_back(L"Bar");
-	p->ansiStrings.push_back("AnsiFoo");
-	p->ansiStrings.push_back("AnsiBar");
+    p->string1 = L"qwerty";
+    p->strings.push_back(L"Foo");
+    p->strings.push_back(L"Bar");
+    p->ansiStrings.push_back("AnsiFoo");
+    p->ansiStrings.push_back("AnsiBar");
 
-	int testArray[10000];
+    int testArray[10000];
 
-	for (int i = 0; i < sizeof(testArray) / sizeof(testArray[0]); i++)
-		testArray[i] = 0x12121212;
+    for (int i = 0; i < sizeof(testArray) / sizeof(testArray[0]); i++)
+        testArray[i] = 0x12121212;
 
-	throw std::bad_exception();
+    throw std::bad_exception();
+}
+
+__declspec(noinline) void InfiniteRecursionTestCase(int arg)
+{
+    Sleep(100);
+    InfiniteRecursionTestCase(arg + 1);
+}
+
+__declspec(noinline) int main(int argc, char** argv)
+{
+
+    int testCaseToRun = 0;
+
+    if (argc == 2)
+    {
+        testCaseToRun = atoi(argv[1]);
+    }
+
+    switch (testCaseToRun)
+    {
+    case 0 : 
+        DefaultTestCase();
+        break;
+    case 1:
+        InfiniteRecursionTestCase(0);
+        break;
+    default:
+        DefaultTestCase();
+    }
 
 	return 0;
 }

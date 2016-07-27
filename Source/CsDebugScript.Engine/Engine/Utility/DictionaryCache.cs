@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
@@ -9,7 +10,7 @@ namespace CsDebugScript.Engine.Utility
     /// </summary>
     /// <typeparam name="TKey">Type of the key.</typeparam>
     /// <typeparam name="TValue">Type of the value.</typeparam>
-    public class DictionaryCache<TKey, TValue>
+    public class DictionaryCache<TKey, TValue> : ICache
     {
         /// <summary>
         /// The populate action
@@ -19,7 +20,6 @@ namespace CsDebugScript.Engine.Utility
         /// <summary>
         /// The cached values
         /// </summary>
-        //private Dictionary<TKey, TValue> values = new Dictionary<TKey, TValue>();
         private ConcurrentDictionary<TKey, TValue> values = new ConcurrentDictionary<TKey, TValue>();
 
         /// <summary>
@@ -129,6 +129,33 @@ namespace CsDebugScript.Engine.Utility
                 userType = default(TValue);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Removes dictionary entry with given key.
+        /// </summary>
+        /// <param name="key">Key of entry to be removed..</param>
+        /// <param name="value">Value assoiated with the key that is being removed.</param>
+        public bool RemoveEntry(TKey key, out TValue value)
+        {
+            return values.TryRemove(key, out value);
+        }
+
+        /// <summary>
+        /// Returns all cached values in this cache.
+        /// </summary>
+        /// <returns>IEnumerator of all the cache values.</returns>
+        public IEnumerator GetEnumerator()
+        {
+            return values.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Invalidates this cache.
+        /// </summary>
+        public void InvalidateCache()
+        {
+            Clear(); 
         }
     }
 }

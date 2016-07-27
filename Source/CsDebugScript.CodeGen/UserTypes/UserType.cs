@@ -280,7 +280,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </remarks>
         public static string NormalizeSymbolNamespace(string symbolNamespace)
         {
-            return symbolNamespace.Replace("::", "_").Replace("*", "").Replace("&", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').Replace("{ctor}", "ctor").TrimEnd('_');
+            return symbolNamespace.Replace("::", "_").Replace("*", "").Replace('&', '_').Replace("$", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').Replace("{ctor}", "ctor").TrimEnd('_')
         }
 
         /// <summary>
@@ -875,7 +875,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                         if (index >= 0)
                         {
-                            int baseClassIndex = Symbol.BaseClasses.OrderBy(s => s.Offset).ToList().IndexOf(baseClass);
+                            int baseClassIndex = Symbol.BaseClasses.OrderBy(s => s.Offset).ThenBy(s => s.Name).ToList().IndexOf(baseClass);
 
                             if (field.ConstructorText.StartsWith("thisClass."))
                                 field.ConstructorText = field.ConstructorText.Replace(baseClassString, baseClassIndex.ToString());
