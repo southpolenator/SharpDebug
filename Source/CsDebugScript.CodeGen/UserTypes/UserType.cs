@@ -812,10 +812,21 @@ namespace CsDebugScript.CodeGen.UserTypes
                 // Sort modules names.
                 moduleNames.Sort();
 
-                // Write all UserTypeAttributes and class header
-                foreach (var moduleName in moduleNames)
+                if (thisTemplateUserType == null)
                 {
-                    output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, TypeName);
+                    // Write all UserTypeAttributes and class header
+                    foreach (var moduleName in moduleNames)
+                    {
+                        output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, TypeName);
+                    }
+                }
+                else
+                {
+                    // Write all UserTypeAttributes and class header
+                    foreach (var moduleName in moduleNames)
+                    {
+                        output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"", TemplateArgumentCount = {2})]", moduleName, TypeName, thisTemplateUserType.TotalNumberOfTemplateArguments);
+                    }
                 }
 
 

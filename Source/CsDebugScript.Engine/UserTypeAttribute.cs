@@ -19,5 +19,7 @@ namespace CsDebugScript
         /// Note: it can be null, then class name where this attribute was set would be used.
         /// </summary>
         public string TypeName { get; set; }
+
+        public int TemplateArgumentCount { get; set; }
     }
 }
