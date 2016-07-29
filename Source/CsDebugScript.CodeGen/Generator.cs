@@ -214,7 +214,7 @@ namespace CsDebugScript.CodeGen
                     // Ignore modules with declaration only.
                     // We check if we can put all types into module common namespace.
                     // If not, use global namespace.
-                    bool useGlobalNamespace = duplicates.Where(r => r.Size != 0).Select(r => r.Module.CommonNamespace).Distinct().Count() != 1;
+                    bool useGlobalNamespace = duplicates.Select(r => r.Module.CommonNamespace).Distinct().Count() != 1;
 
                     foreach (Symbol dedupSymbol in duplicates)
                     {
