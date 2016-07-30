@@ -776,6 +776,12 @@ namespace CsDebugScript
                 return null;
             }
 
+            // Handle Enums
+            if (conversionType.IsEnum)
+            {
+                return Enum.ToObject(conversionType, this.Data);
+            }
+
             Variable activatorParameter = this;
 
             // Check if we should do CastAs

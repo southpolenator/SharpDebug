@@ -44,6 +44,12 @@ namespace CsDebugScript.CodeGen.UserTypes
             if (generationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                 output.WriteLine(indentation, "// {0} (original name: {1})", ClassName, Symbol.Name);
 
+            // Write all UserTypeAttributes and class header
+            foreach (var moduleName in GlobalCache.GetSymbolModuleNames(Symbol))
+            {
+                output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, TypeName);
+            }
+
             if (AreValuesFlags())
                 output.WriteLine(indentation, @"[System.Flags]");
             if (Symbol.Size != 0)

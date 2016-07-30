@@ -5,7 +5,7 @@ namespace CsDebugScript
     /// <summary>
     /// Attribute that gives more info for user defined types in scripts.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum, AllowMultiple = true)]
     public class UserTypeAttribute : Attribute
     {
         /// <summary>
