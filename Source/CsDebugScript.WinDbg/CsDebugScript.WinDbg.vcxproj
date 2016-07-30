@@ -104,8 +104,8 @@
       </Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>copy $(OutDir)\CsDebugScript.WinDbg.dll $(SolutionDir)\bin\$(Configuration)\
-copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Command>
+      <Command>copy "$(OutDir)\CsDebugScript.WinDbg.dll" "$(SolutionDir)\bin\$(Configuration)\"
+copy "$(OutDir)\CsDebugScript.WinDbg.pdb" "$(SolutionDir)\bin\$(Configuration)\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -131,8 +131,8 @@ copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Co
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
     <PostBuildEvent>
-      <Command>copy $(OutDir)\CsDebugScript.WinDbg.dll $(SolutionDir)\bin\$(Configuration)\
-copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Command>
+      <Command>copy "$(OutDir)\CsDebugScript.WinDbg.dll" "$(SolutionDir)\bin\$(Configuration)\"
+copy "$(OutDir)\CsDebugScript.WinDbg.pdb" "$(SolutionDir)\bin\$(Configuration)\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -158,8 +158,8 @@ copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Co
       </Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>copy $(OutDir)\CsDebugScript.WinDbg.dll $(SolutionDir)\bin\$(Configuration)\
-copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Command>
+      <Command>copy "$(OutDir)\CsDebugScript.WinDbg.dll" "$(SolutionDir)\bin\$(Configuration)\"
+copy "$(OutDir)\CsDebugScript.WinDbg.pdb" "$(SolutionDir)\bin\$(Configuration)\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -185,8 +185,8 @@ copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Co
       </Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>copy $(OutDir)\CsDebugScript.WinDbg.dll $(SolutionDir)\bin\$(Configuration)\
-copy $(OutDir)\CsDebugScript.WinDbg.pdb $(SolutionDir)\bin\$(Configuration)\</Command>
+      <Command>copy "$(OutDir)\CsDebugScript.WinDbg.dll" "$(SolutionDir)\bin\$(Configuration)\"
+copy "$(OutDir)\CsDebugScript.WinDbg.pdb" "$(SolutionDir)\bin\$(Configuration)\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

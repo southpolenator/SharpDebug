@@ -257,9 +257,9 @@
   </Target>
   <Import Project="..\..\packages\Microsoft.VSSDK.BuildTools.14.2.25123\build\Microsoft.VSSDK.BuildTools.targets" Condition="Exists('..\..\packages\Microsoft.VSSDK.BuildTools.14.2.25123\build\Microsoft.VSSDK.BuildTools.targets')" />
   <PropertyGroup>
-    <PreBuildEvent>copy $(OutDir)\Microsoft.CodeAnalysis.dll $(ProjectDir)
-copy $(OutDir)\Microsoft.CodeAnalysis.CSharp.dll $(ProjectDir)
-copy $(OutDir)\System.Reflection.Metadata.dll $(ProjectDir)
+    <PreBuildEvent>copy "$(OutDir)\Microsoft.CodeAnalysis.dll" "$(ProjectDir)"
+copy "$(OutDir)\Microsoft.CodeAnalysis.CSharp.dll" "$(ProjectDir)"
+copy "$(OutDir)\System.Reflection.Metadata.dll" "$(ProjectDir)"
 </PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
