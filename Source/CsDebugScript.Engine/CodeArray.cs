@@ -73,10 +73,6 @@ namespace CsDebugScript
         /// <param name="length">The array length.</param>
         public CodeArray(Variable variable, int length)
         {
-            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
-            {
-                throw new WrongCodeTypeException(variable, nameof(variable), "array or pointer");
-            }
 
             Initialize(variable, length);
         }
@@ -88,11 +84,6 @@ namespace CsDebugScript
         /// <param name="length">The array length.</param>
         public CodeArray(Variable variable, uint length)
         {
-            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
-            {
-                throw new WrongCodeTypeException(variable, nameof(variable), "array or pointer");
-            }
-
             if (length > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(length));
@@ -108,11 +99,6 @@ namespace CsDebugScript
         /// <param name="length">The array length.</param>
         public CodeArray(Variable variable, ulong length)
         {
-            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
-            {
-                throw new WrongCodeTypeException(variable, nameof(variable), "array or pointer");
-            }
-
             if (length > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(length));
@@ -128,11 +114,6 @@ namespace CsDebugScript
         /// <param name="length">The array length.</param>
         public CodeArray(Variable variable, long length)
         {
-            if (!variable.GetCodeType().IsArray && !variable.GetCodeType().IsPointer)
-            {
-                throw new WrongCodeTypeException(variable, nameof(variable), "array or pointer");
-            }
-
             if (length > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(length));
