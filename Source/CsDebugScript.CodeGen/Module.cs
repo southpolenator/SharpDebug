@@ -227,7 +227,7 @@ namespace CsDebugScript.CodeGen
             if (!symbolByName.TryGetValue(name, out symbol) || symbol == null)
             {
 #if DEBUG
-                Console.WriteLine("   '{0}' not found", originalName);
+//                Console.WriteLine("   '{0}' not found", originalName);
 #endif
             }
             else
