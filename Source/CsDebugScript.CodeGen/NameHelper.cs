@@ -9,12 +9,22 @@ namespace CsDebugScript.CodeGen
     /// </summary>
     internal static class SymbolNameHelper
     {
+        internal const string UnnamedTypeSymbolName = "<unnamed-type-";
+
         /// <summary>
         /// Determines whether the specified symbol name contains template type.
         /// </summary>
         /// <param name="symbolName">The symbol name.</param>
         public static bool ContainsTemplateType(string symbolName)
         {
+            if (symbolName.Contains(UnnamedTypeSymbolName))
+            {
+                // If symbol contains unnamed type we need to check all namespaces.
+                return GetSymbolNamespaces(symbolName)
+                    .Where(r => !r.StartsWith(UnnamedTypeSymbolName))
+                    .Any(ContainsTemplateType);
+            }
+
             return symbolName.Contains("<") && symbolName.Contains(">") && !symbolName.StartsWith("<");
         }
 
