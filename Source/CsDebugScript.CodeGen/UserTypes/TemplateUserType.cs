@@ -272,6 +272,12 @@ namespace CsDebugScript.CodeGen.UserTypes
                     symbolName = Symbol.Namespaces.Last();
                 }
 
+                if (symbolName.StartsWith("<unnamed-type-") && symbolName.EndsWith(">"))
+                {
+                    // Handle unnamed types.
+                    return NormalizeSymbolNamespace(symbolName);
+                }
+
                 int templateStart = symbolName.IndexOf('<');
 
                 if (templateStart > 0)
