@@ -194,7 +194,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         public static string GetPropertyName(string fieldName, UserType userType)
         {
             // Check if field name is the same as owner type name
-            if (fieldName == userType.Symbol.Name) // TODO: Check if this should be userType.ConstructorName
+            if (fieldName == userType.ClassName) // TODO: Check if this should be userType.ConstructorName
             {
                 // Property name cannot be equal to the class name
                 return string.Format("_{0}", fieldName);
