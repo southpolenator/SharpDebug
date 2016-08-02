@@ -282,6 +282,10 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             return
                 symbolNamespace.Replace("::", "_")
+                    .Replace("<unnamed-type-", "")
+                    .Replace("<unnamed-enum-", "")
+                    .Replace("[", "")
+                    .Replace("]", "")
                     .Replace("*", "")
                     .Replace('&', '_')
                     .Replace("$", "")
@@ -805,7 +809,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 {
                     // If type is template, include modules from all specializations.
                     moduleNames.AddRange(thisTemplateUserType.SpecializedTypes.SelectMany(r => GlobalCache.GetSymbolModuleNames(r.Symbol)));
-                    
+
                     moduleNames = moduleNames.Distinct().ToList();
                 }
 
@@ -815,7 +819,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (thisTemplateUserType == null)
                 {
                     // Write all UserTypeAttributes and class header
-                    foreach (var moduleName in moduleNames)
+                    foreach (string moduleName in moduleNames)
                     {
                         output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"")]", moduleName, TypeName);
                     }
@@ -823,12 +827,11 @@ namespace CsDebugScript.CodeGen.UserTypes
                 else
                 {
                     // Write all UserTypeAttributes and class header
-                    foreach (var moduleName in moduleNames)
+                    foreach (string moduleName in moduleNames)
                     {
                         output.WriteLine(indentation, @"[UserType(ModuleName = ""{0}"", TypeName = ""{1}"", TemplateArgumentCount = {2})]", moduleName, TypeName, thisTemplateUserType.TotalNumberOfTemplateArguments);
                     }
                 }
-
 
                 // If we have multi class inheritance, generate attribute for getting static field with base class C# types
                 if (baseType is MultiClassInheritanceTypeTree || baseType is SingleClassInheritanceWithInterfacesTypeTree)
