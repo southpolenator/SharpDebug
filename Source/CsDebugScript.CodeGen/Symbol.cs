@@ -28,6 +28,11 @@ namespace CsDebugScript.CodeGen
         private SimpleCache<Symbol[]> baseClasses;
 
         /// <summary>
+        /// The cache of typedef classes
+        /// </summary>
+        private readonly SimpleCache<Symbol[]> typedefClasses;
+
+        /// <summary>
         /// The cache of element type
         /// </summary>
         private SimpleCache<Symbol> elementType;
@@ -80,6 +85,8 @@ namespace CsDebugScript.CodeGen
             // Initialize caches
             fields = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagData).Select(s => new SymbolField(this, s)).Where(f => f.Type != null).ToArray());
             baseClasses = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagBaseClass).Select(s => Module.GetSymbol(s)).ToArray());
+            typedefClasses = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagTypedef).Select(s => Module.GetSymbol(s)).ToArray());
+
             elementType = SimpleCache.Create(() =>
             {
                 if (Tag == SymTagEnum.SymTagPointerType || Tag == SymTagEnum.SymTagArrayType)
@@ -224,6 +231,17 @@ namespace CsDebugScript.CodeGen
             get
             {
                 return baseClasses.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the typedef classes.
+        /// </summary>
+        public Symbol[] TypedefClasses
+        {
+            get
+            {
+                return typedefClasses.Value;
             }
         }
 
