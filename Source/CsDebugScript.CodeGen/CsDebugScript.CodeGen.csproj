@@ -108,6 +108,7 @@
     <Compile Include="TypeTrees\UserTypeTree.cs" />
     <Compile Include="TypeTrees\VariableTypeTree.cs" />
     <Compile Include="UserTypeGenerationFlags.cs" />
+    <Compile Include="UserTypes\TypedefUserType.cs" />
     <Compile Include="UserTypes\EnumUserType.cs" />
     <Compile Include="UserTypes\GlobalsUserType.cs" />
     <Compile Include="UserTypes\NamespaceUserType.cs" />

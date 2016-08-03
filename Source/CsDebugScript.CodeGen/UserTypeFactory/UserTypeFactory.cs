@@ -108,6 +108,10 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 userType = new GlobalsUserType(symbol, type, nameSpace);
             }
+            else if (symbol.Tag == SymTagEnum.SymTagTypedef)
+            {
+                userType = new TypedefUserType(symbol, type, nameSpace);
+            }
             else if (generationFlags.HasFlag(UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes))
             {
                 userType = new PhysicalUserType(symbol, type, nameSpace);
