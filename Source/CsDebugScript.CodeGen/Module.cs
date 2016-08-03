@@ -1,5 +1,4 @@
 ﻿using Dia2Lib;
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -20,17 +19,17 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// The DIA session
         /// </summary>
-        private IDiaSession session;
+        private readonly IDiaSession session;
 
         /// <summary>
         /// The dictionary cache of symbols by symbol ID.
         /// </summary>
-        private ConcurrentDictionary<uint, Symbol> symbolById = new ConcurrentDictionary<uint, Symbol>();
+        private readonly ConcurrentDictionary<uint, Symbol> symbolById = new ConcurrentDictionary<uint, Symbol>();
 
         /// <summary>
         /// The dictionary cache of symbols by symbol name.
         /// </summary>
-        private ConcurrentDictionary<string, Symbol> symbolByName = new ConcurrentDictionary<string, Symbol>();
+        private readonly ConcurrentDictionary<string, Symbol> symbolByName = new ConcurrentDictionary<string, Symbol>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Module"/> class.
@@ -105,7 +104,7 @@ namespace CsDebugScript.CodeGen
         /// <param name="nameWildcard">The type name wildcard.</param>
         public Symbol[] FindGlobalTypeWildcard(string nameWildcard)
         {
-            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).ToArray();
+            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(GetSymbol).ToArray();
         }
 
         /// <summary>
@@ -119,20 +118,22 @@ namespace CsDebugScript.CodeGen
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType));
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagPointerType));
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagArrayType));
+            // diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagTypedef));
 
             // Create symbols from types
             var convertedTypes = diaGlobalTypes.Select(s => new Symbol(this, s)).ToList();
-            var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).OrderBy(s => s.Name).ToArray();
+            var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum || t.Tag == SymTagEnum.SymTagTypedef).OrderBy(s => s.Name).ToArray();
             var cacheTypes = convertedTypes.OrderBy(s => s.Tag).ThenBy(s => s.Name).ToArray();
 
             // Remove duplicate symbols by searching for the by name
             var symbols = new List<Symbol>();
-            var previousName = "";
+            string previousSymbolName = string.Empty;
 
-            foreach (var s in resultingTypes)
-                if (s.Name != previousName)
+            foreach (Symbol symbol in resultingTypes)
+            {
+                if (symbol.Name != previousSymbolName)
                 {
-                    IDiaSymbol ss = session.globalScope.GetChild(s.Name, s.Tag);
+                    IDiaSymbol ss = session.globalScope.GetChild(symbol.Name, symbol.Tag);
 
                     if (ss != null)
                     {
@@ -140,11 +141,12 @@ namespace CsDebugScript.CodeGen
                     }
                     else
                     {
-                        symbols.Add(GetSymbol(s.DiaSymbol));
+                        symbols.Add(GetSymbol(symbol.DiaSymbol));
                     }
 
-                    previousName = s.Name;
+                    previousSymbolName = symbol.Name;
                 }
+            }
 
             // Cache symbols inside the module
             foreach (var s in cacheTypes)

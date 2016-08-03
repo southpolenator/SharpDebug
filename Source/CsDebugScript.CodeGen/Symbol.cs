@@ -30,7 +30,7 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// The cache of typedef classes
         /// </summary>
-        private readonly SimpleCache<Symbol[]> typedefClasses;
+        private readonly SimpleCache<Symbol[]> typedefSymbols;
 
         /// <summary>
         /// The cache of element type
@@ -85,7 +85,7 @@ namespace CsDebugScript.CodeGen
             // Initialize caches
             fields = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagData).Select(s => new SymbolField(this, s)).Where(f => f.Type != null).ToArray());
             baseClasses = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagBaseClass).Select(s => Module.GetSymbol(s)).ToArray());
-            typedefClasses = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagTypedef).Select(s => Module.GetSymbol(s)).ToArray());
+            typedefSymbols = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagTypedef).Select(s => Module.GetSymbol(s)).ToArray());
 
             elementType = SimpleCache.Create(() =>
             {
@@ -237,11 +237,11 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Gets the typedef classes.
         /// </summary>
-        public Symbol[] TypedefClasses
+        public Symbol[] TypedefSymbols
         {
             get
             {
-                return typedefClasses.Value;
+                return typedefSymbols.Value;
             }
         }
 
