@@ -208,7 +208,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                         Symbol symbol = GlobalCache.GetSymbol(extractedType, Module);
 
                         if (symbol == null)
+                        {
                             throw new Exception("Wrongly formed template argument");
+                        }
                         templateArgumentsAsSymbols.Add(symbol);
 
                         // Try to get user type for the symbol
