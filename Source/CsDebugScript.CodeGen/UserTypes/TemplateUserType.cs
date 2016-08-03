@@ -13,12 +13,12 @@ namespace CsDebugScript.CodeGen.UserTypes
     /// <seealso cref="UserType" />
     internal class TemplateUserType : UserType
     {
-        private List<string> templateArgumentsAsString = new List<string>();
+        private readonly List<string> templateArgumentsAsString = new List<string>();
 
         /// <summary>
         /// The list of template arguments stored as symbols
         /// </summary>
-        private List<Symbol> templateArgumentsAsSymbols = new List<Symbol>();
+        private readonly List<Symbol> templateArgumentsAsSymbols = new List<Symbol>();
 
         /// <summary>
         /// The list of template arguments stored as user types
