@@ -124,6 +124,9 @@ namespace Dia2Lib
                     case SymTagEnum.SymTagArrayType:
                         return GetTypeString(type.type) + "[]";
 
+                    case SymTagEnum.SymTagTypedef:
+                        return type.name;
+
                     default:
                         throw new Exception("Unexpected type tag " + (SymTagEnum)type.symTag);
                 }
