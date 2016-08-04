@@ -276,13 +276,13 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Gets if we are dealing with mini dump.
+        /// Gets if information if we do support dump direct reads.
         /// </summary>
-        public bool IsMiniDump
+        public bool IsFileMemoryReaderAvailable
         {
             get
             {
-                return DumpFileMemoryReader == null;
+                return DumpFileMemoryReader != null;
             }
         }
 
