@@ -333,15 +333,17 @@ namespace CsDebugScript.Engine.Debuggers
         /// </returns>
         public MemoryBuffer ReadMemory(Process process, ulong address, uint size)
         {
+            IntPtr buffer = IntPtr.Zero;
+
             try
             {
                 using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
                 {
-                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
-                    uint read;
+                    buffer = Marshal.AllocHGlobal((int)size);
 
                     try
                     {
+                        uint read;
                         DataSpaces.ReadVirtual(address, buffer, size, out read);
 
                         byte[] bytes = new byte[size];
@@ -357,6 +359,8 @@ namespace CsDebugScript.Engine.Debuggers
             }
             catch (Exception)
             {
+                buffer = IntPtr.Zero;
+
                 throw new InvalidMemoryAddressException(address);
             }
         }
