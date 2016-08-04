@@ -276,6 +276,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets if we are dealing with mini dump.
+        /// </summary>
+        public bool IsMiniDump
+        {
+            get
+            {
+                return DumpFileMemoryReader == null;
+            }
+        }
+
+        /// <summary>
         /// Gets the identifier.
         /// </summary>
         public uint Id { get; private set; }
