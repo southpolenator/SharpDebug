@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using CsDebugScript.CodeGen.UserTypes;
 using System.Text;
@@ -8,17 +9,88 @@ namespace CsDebugScript.CodeGen
 {
     internal static class GlobalCache
     {
-        private static Dictionary<string, Symbol[]> deduplicatedSymbols = new Dictionary<string, Symbol[]>();
+        private static readonly Dictionary<string, List<Symbol>> DeduplicatedSymbols = new Dictionary<string, List<Symbol>>();
 
-        public static Symbol GetSymbol(string typeName, Module module)
+        private static readonly Dictionary<Tuple<string, Module>, Symbol> SymbolNameModuleCache  = new Dictionary<Tuple<string, Module>, Symbol>();
+
+        public static void UpdateGlobalDeduplicatedSymbols(
+            Dictionary<Symbol, List<Symbol>> duplicatedSymbols,
+            Symbol symbol)
         {
-            Symbol[] symbols;
+            List<Symbol> duplicates;
+            if (!duplicatedSymbols.TryGetValue(symbol, out duplicates))
+            {
+                duplicates = new List<Symbol>();
+            }
 
-            if (deduplicatedSymbols.TryGetValue(typeName, out symbols))
-                return symbols[0];
-            return module.GetSymbol(typeName);
+            // update global list
+            if (DeduplicatedSymbols.ContainsKey(symbol.Name))
+            {
+                UpdateSymbolModulesCache(duplicates);
+
+                DeduplicatedSymbols[symbol.Name].AddRange(duplicates);
+            }
+            else
+            {
+                UpdateSymbolModulesCache(duplicates);
+
+                DeduplicatedSymbols.Add(symbol.Name, duplicates);
+            }
         }
 
+        /// <summary>
+        /// Update Symbol Name, Module Cache.
+        /// </summary>
+        /// <param name="symbols"></param>
+        public static void UpdateSymbolModulesCache(IEnumerable<Symbol> symbols)
+        {
+            Symbol userTypeSymbol = symbols.First();
+            string codeTypeName = userTypeSymbol.Name;
+
+            foreach (Symbol symbol in symbols)
+            {
+                SymbolNameModuleCache.Add(new Tuple<string, Module>(codeTypeName, symbol.Module), userTypeSymbol);
+            }
+        }
+
+        /// <summary>
+        /// Get symbol by name in context of given symbol.
+        /// Search in all modules then context symbol is defined or declared.
+        /// </summary>
+        /// <param name="typeName"></param>
+        /// <param name="contextSymbol"></param>
+        /// <returns></returns>
+        public static Symbol GetSymbol(string typeName, Symbol contextSymbol)
+        {
+            return GetSymbolModules(contextSymbol).Select(declaredInModule => GetSymbol(typeName, declaredInModule)).FirstOrDefault(symbol => symbol != null);
+        }
+
+        /// <summary>
+        /// Get symbol by name for given module.
+        /// </summary>
+        /// <param name="typeName"></param>
+        /// <param name="module"></param>
+        /// <returns></returns>
+        public static Symbol GetSymbol(string typeName, Module module)
+        {
+            Symbol symbol;
+
+            bool hasValue = SymbolNameModuleCache.TryGetValue(new Tuple<string, Module>(typeName, module), out symbol);
+
+            if (hasValue)
+            {
+                return symbol;
+            }
+
+            symbol = module.GetSymbol(typeName);
+
+            // Cache results.
+            SymbolNameModuleCache.Add(new Tuple<string, Module>(typeName, module), symbol);
+
+            return symbol;
+        }
+
+        
         public static UserType GetUserType(string typeName, Module module)
         {
             Symbol symbol = GetSymbol(typeName, module);
@@ -50,9 +122,14 @@ namespace CsDebugScript.CodeGen
             return null;
         }
 
-        internal static void Update(Dictionary<string, Symbol[]> deduplicatedSymbols)
+        /// <summary>
+        /// Get list of modules where symbol is located sorted in alphabetical order.
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <returns></returns>
+        internal static IEnumerable<Module> GetSymbolModules(Symbol symbol)
         {
-            GlobalCache.deduplicatedSymbols = deduplicatedSymbols;
+            return GetSymbolModuleInternal(symbol);
         }
 
         /// <summary>
@@ -62,17 +139,17 @@ namespace CsDebugScript.CodeGen
         /// <returns></returns>
         internal static IEnumerable<string> GetSymbolModuleNames(Symbol symbol)
         {
-            List<string> result = GetSymbolModuleNamesInternal(symbol).ToList();
+            List<string> result = GetSymbolModuleInternal(symbol).Select(r=>r.Name).ToList();
             result.Sort();
 
             return result;
         }
 
-        private static IEnumerable<string> GetSymbolModuleNamesInternal(Symbol symbol)
+        private static IEnumerable<Module> GetSymbolModuleInternal(Symbol symbol)
         {
-            Symbol[] symbols;
+            List<Symbol> symbols;
 
-            if (deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+            if (DeduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
             {
                 foreach (Symbol deduplicatedSymbol in symbols)
                 {
@@ -81,20 +158,20 @@ namespace CsDebugScript.CodeGen
                         continue;
                     }
 
-                    yield return deduplicatedSymbol.Module.Name;
+                    yield return deduplicatedSymbol.Module;
                 }
             }
             else
             {
-                yield return symbol.Module.Name;
+                yield return symbol.Module;
             }
         }
 
         internal static IEnumerable<Symbol> GetSymbolStaticFieldsSymbols(Symbol symbol)
         {
-            Symbol[] symbols;
+            List<Symbol> symbols;
 
-            if (!deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+            if (!DeduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
                 yield return symbol;
             else
                 foreach (var s in symbols)
@@ -108,9 +185,9 @@ namespace CsDebugScript.CodeGen
 
         internal static IEnumerable<Symbol> GetDeduplicatedSymbols(Symbol symbol)
         {
-            Symbol[] dedupSymbols;
+            List<Symbol> dedupSymbols;
 
-            if (deduplicatedSymbols.TryGetValue(symbol.Name, out dedupSymbols))
+            if (DeduplicatedSymbols.TryGetValue(symbol.Name, out dedupSymbols))
             {
                 foreach (Symbol dedupSymbol in dedupSymbols)
                 {
@@ -121,10 +198,10 @@ namespace CsDebugScript.CodeGen
 
         internal static IEnumerable<SymbolField> GetSymbolStaticFields(Symbol symbol)
         {
-            Symbol[] symbols;
+            List<Symbol> symbols;
 
-            if (!deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
-                symbols = new Symbol[] { symbol };
+            if (!DeduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+                symbols = new List<Symbol> { symbol };
 
             foreach (var s in symbols)
                 foreach (var field in s.Fields)

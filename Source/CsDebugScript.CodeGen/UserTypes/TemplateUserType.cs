@@ -205,7 +205,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     if (!double.TryParse(extractedType, out constant))
                     {
                         // Check if type is existing type (symbol)
-                        Symbol symbol = GlobalCache.GetSymbol(extractedType, Module);
+                        Symbol symbol = GlobalCache.GetSymbol(extractedType, Symbol);
 
                         if (symbol == null)
                         {

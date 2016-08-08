@@ -212,9 +212,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                             // Check if all arguments are simple user type
                             bool simpleUserType = true;
 
-                            foreach (var argument in arguments)
+                            foreach (string argument in arguments)
                             {
-                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
+                                Symbol argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Symbol);
 
                                 if (argumentSymbol.Tag != SymTagEnum.SymTagUDT || argumentSymbol.Name.Contains("<"))
                                 {
@@ -232,9 +232,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                             // Check if none of the arguments is template user type
                             bool noneIsTemplate = true;
 
-                            foreach (var argument in arguments)
+                            foreach (string argument in arguments)
                             {
-                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
+                                Symbol argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Symbol);
 
                                 if (argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
                                 {

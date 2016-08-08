@@ -175,10 +175,10 @@ namespace CsDebugScript.CodeGen
             }
 
             // Extracting deduplicated symbols
-            Dictionary<string, Symbol[]> globalDeduplicatedSymbols = new Dictionary<string, Symbol[]>();
             Dictionary<Symbol, string> globalSymbolNamespaces = new Dictionary<Symbol, string>();
 
-            foreach (var symbols in symbolsByName.Values)
+            // Populate GlobalCache with deduplicatedSymbols.
+            foreach (List<Symbol> symbols in symbolsByName.Values)
             {
                 if (symbols.Count != 1)
                 {
@@ -189,26 +189,35 @@ namespace CsDebugScript.CodeGen
 
                     foreach (Symbol symbol in symbols)
                     {
+                        List<Symbol> duplicates;
+                        if (!duplicatedSymbols.TryGetValue(symbol, out duplicates))
+                        {
+                            duplicates = new List<Symbol>();
+                            duplicatedSymbols.Add(symbol, duplicates);
+                        }
+
+                        // Include current symbol with deduplication symbol list.
+                        duplicates.Insert(0, symbol);
+
+                        GlobalCache.UpdateGlobalDeduplicatedSymbols(duplicatedSymbols, symbol);
+
                         globalSymbolNamespaces.Add(symbol, useCommonNamespace ? modules[symbol.Module].CommonNamespace : modules[symbol.Module].Namespace);
                     }
                 }
                 else
                 {
                     // Symbols are deduplicated into one.
-
                     Symbol symbol = symbols.First();
 
                     List<Symbol> duplicates;
-
                     if (!duplicatedSymbols.TryGetValue(symbol, out duplicates))
                     {
                         duplicates = new List<Symbol>();
+                        duplicatedSymbols.Add(symbol, duplicates);
                     }
 
                     // Include current symbol with deduplication symbol list.
                     duplicates.Insert(0, symbol);
-
-                    globalDeduplicatedSymbols.Add(symbol.Name, duplicates.ToArray());
 
                     // Chose namespace for deduplicated symbols.
                     // Ignore modules with declaration only.
@@ -220,6 +229,8 @@ namespace CsDebugScript.CodeGen
                     {
                         globalSymbolNamespaces.Add(dedupSymbol, useGlobalNamespace ? xmlConfig.CommonTypesNamespace : dedupSymbol.Module.CommonNamespace);
                     }
+
+                    GlobalCache.UpdateGlobalDeduplicatedSymbols(duplicatedSymbols, symbol);
                 }
             }
 
@@ -229,9 +240,6 @@ namespace CsDebugScript.CodeGen
             logger.WriteLine("  Total symbols: {0}", globalTypesPerModule.Sum(gt => gt.Value.Length));
             logger.WriteLine("  Unique symbol names: {0}", symbolsByName.Count);
             logger.WriteLine("  Dedupedlicated symbols: {0}", globalTypes.Length);
-
-            // Initialize GlobalCache with deduplicatedSymbols
-            GlobalCache.Update(globalDeduplicatedSymbols);
 
             // Collecting types
             logger.Write("Collecting types...");
@@ -267,10 +275,9 @@ namespace CsDebugScript.CodeGen
                     return;
                 }
 
-                // TODO: For now remove all unnamed-type symbols
+                // Ignore lambda symbols.
                 string scopedClassName = symbol.Namespaces.Last();
-
-                if (scopedClassName.StartsWith("<") || symbolName.Contains("::<"))
+                if (scopedClassName.StartsWith("<lambda"))
                 {
                     return;
                 }
@@ -322,7 +329,7 @@ namespace CsDebugScript.CodeGen
                 string symbolName = SymbolNameHelper.CreateLookupNameForSymbol(firstSymbol);
                 string typeNamespace = globalSymbolNamespaces[firstSymbol];
 
-                // Check if we got deduplicated template symbols located in two different namespaces
+                  // Check if we got deduplicated template symbols located in two different namespaces
                 bool deduplicateToGlobalNamespace = symbols.Where(r=>r.Size != 0).Select(r => globalSymbolNamespaces[r]).Distinct().Count() > 1;
 
                 if (deduplicateToGlobalNamespace)
@@ -346,7 +353,7 @@ namespace CsDebugScript.CodeGen
                     // TODO temporary fix, engine needs to handle this
                     Name = symbolName.Replace(",", string.Empty)
                 };
-               
+
                 userTypes.AddRange(factory.AddSymbols(symbols, type, typeNamespace, generationOptions));
             }
 
@@ -393,24 +400,6 @@ namespace CsDebugScript.CodeGen
             // Code generation and saving it to disk
             logger.Write("Saving code to disk...");
 
-            if (!generationOptions.HasFlag(UserTypeGenerationFlags.SingleFileExport))
-            {
-                // Generate Code
-                Parallel.ForEach(userTypes,
-                    (symbolEntry) =>
-                    {
-                        Tuple<string, string> result = GenerateCode(symbolEntry, factory, outputDirectory, errorLogger, generationOptions, generatedFiles);
-                        string text = result.Item1;
-                        string filename = result.Item2;
-
-                        if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName) && !string.IsNullOrEmpty(text))
-                            lock (syntaxTrees)
-                            {
-                                syntaxTrees.Add(CSharpSyntaxTree.ParseText(text, path: filename, encoding: System.Text.UTF8Encoding.Default));
-                            }
-                    });
-            }
-            else
             {
                 string filename = string.Format(@"{0}\{1}.exported.cs", outputDirectory, xmlConfig.CommonTypesNamespace);
                 HashSet<string> usings = new HashSet<string>();
@@ -513,7 +502,7 @@ namespace CsDebugScript.CodeGen
 
                         errorLogger.WriteLine("Compile errors (top 1000):");
                         foreach (var diagnostic in failures.Take(1000))
-                            errorLogger.WriteLine(diagnostic);
+                           errorLogger.WriteLine(diagnostic);
                     }
                     else
                     {
@@ -532,56 +521,7 @@ namespace CsDebugScript.CodeGen
                 logger.WriteLine("Compiling: {0}", sw.Elapsed);
             }
 
-            // Check whether we should generate assembly
-            if (!xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
-            {
-                var codeProvider = new CSharpCodeProvider();
-                var compilerParameters = new CompilerParameters()
-                {
-                    IncludeDebugInformation = !xmlConfig.DisablePdbGeneration,
-                    OutputAssembly = outputDirectory + xmlConfig.GeneratedAssemblyName,
-                };
-
-                compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
-                //compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies);
-
-                const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
-
-                if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.Contains(MicrosoftCSharpDll)).Any())
-                {
-                    compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
-                }
-
-                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsDebugScript.Engine.dll"));
-                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsDebugScript.CommonUserTypes.dll"));
-
-                var filesToCompile = generatedFiles.Values.Union(includedFiles.Select(f => f.Path)).ToArray();
-                var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);
-
-                if (compileResult.Errors.Count > 0)
-                {
-                    errorLogger.WriteLine("Compile errors (top 1000):");
-                    foreach (CompilerError err in compileResult.Errors.Cast<CompilerError>().Take(1000))
-                        errorLogger.WriteLine(err);
-                }
-
-                logger.WriteLine("Compiling: {0}", sw.Elapsed);
-            }
-
-            // Generating props file
-            if (!string.IsNullOrEmpty(xmlConfig.GeneratedPropsFileName))
-            {
-                using (TextWriter output = new StreamWriter(outputDirectory + xmlConfig.GeneratedPropsFileName, false /* append */, System.Text.Encoding.UTF8, 16 * 1024 * 1024))
-                {
-                    output.WriteLine(@"<?xml version=""1.0"" encoding=""utf-8""?>");
-                    output.WriteLine(@"<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">");
-                    output.WriteLine(@"  <ItemGroup>");
-                    foreach (var file in generatedFiles.Values)
-                        output.WriteLine(@"    <Compile Include=""{0}"" />", file);
-                    output.WriteLine(@" </ItemGroup>");
-                    output.WriteLine(@"</Project>");
-                }
-            }
+ 
 
             logger.WriteLine("Total time: {0}", sw.Elapsed);
         }

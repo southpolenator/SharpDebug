@@ -15,6 +15,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// Initializes a new instance of the <see cref="EnumUserType"/> class.
         /// </summary>
         /// <param name="symbol">The symbol we are generating this user type from.</param>
+        /// <param name="xmlType">The XML description of the type.</param>
         /// <param name="typeNamespace">The namespace it belongs to.</param>
         public TypedefUserType(Symbol symbol, XmlType xmlType, string typeNamespace)
             : base(symbol, xmlType, typeNamespace)

@@ -455,6 +455,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// Add field to the list of additionally generated field types.
         /// </summary>
         /// <param name="fieldName">The field name.</param>
+        /// <param name="fieldTypeString">Field type as string.</param>
         /// <returns>Generated name for the variable that will cache code type for the field.</returns>
         private string AddFieldCodeType(string fieldName, string fieldTypeString)
         {
