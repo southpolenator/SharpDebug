@@ -83,7 +83,18 @@ namespace CreateDbgEngIdl
             };
         static readonly string[] VCBinPaths = new string[]
             {
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 12.0\VC\bin"),
                 Path.Combine(ProgramFiles, @"Microsoft Visual Studio 14.0\VC\bin"),
+            };
+        static readonly string[] VCDiaSdkIdlPaths = new string[]
+            {
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 12.0\DIA SDK\idl"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 14.0\DIA SDK\idl"),
+            };
+        static readonly string[] VCDiaSdkIncludePaths = new string[]
+            {
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 12.0\DIA SDK\include"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 14.0\DIA SDK\include"),
             };
         static readonly string[] TlbImpPaths = new string[]
             {
@@ -138,6 +149,8 @@ namespace CreateDbgEngIdl
             string SharedPath = FindFolder("um", SharedPaths);
             string VCBinPath = FindFolder("VC\\bin", VCBinPaths);
             string TlbImpPath = FindExe("TlbImp.exe", TlbImpPaths);
+            string DiaIncludePath = FindFolder("include", VCDiaSdkIncludePaths);
+            string DiaIdlPath = FindFolder("idl", VCDiaSdkIdlPaths);
 
             // Generate IDL file
             Regex defineDeclarationRegex = new Regex(@"#define\s+([^(]+)\s+((0x|)[0-9a-fA-F]+)$");
@@ -549,6 +562,26 @@ library DbgEngManaged
 
             startInfo = new ProcessStartInfo(TlbImpPath);
             startInfo.Arguments = @"output.tlb /machine:" + tlbimpPlatform;
+            startInfo.UseShellExecute = false;
+            startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
+            using (Process process = Process.Start(startInfo))
+            {
+                process.WaitForExit();
+            }
+
+            // Create Dia2Lib.tlb
+            startInfo = new ProcessStartInfo(MidlPath);
+            startInfo.Arguments = $"/I \"{DiaIncludePath}\" /I \"{DiaIdlPath}\" /I \"{UmPath}\" /I \"{SharedPath}\" dia2.idl /tlb dia2lib.tlb";
+            startInfo.UseShellExecute = false;
+            startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
+            using (Process process = Process.Start(startInfo))
+            {
+                process.WaitForExit();
+            }
+
+            // Create Dia2Lib.dll
+            startInfo = new ProcessStartInfo(TlbImpPath);
+            startInfo.Arguments = "dia2lib.tlb";
             startInfo.UseShellExecute = false;
             startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
             using (Process process = Process.Start(startInfo))
