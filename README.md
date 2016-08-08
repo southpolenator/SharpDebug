@@ -4,7 +4,7 @@ It allows you to automate data querying/processing of both native and managed ap
 It can be also used without WinDbg to open dumps.
 
 ### Latest status
-[![Build status](https://ci.appveyor.com/api/projects/status/d2j4lxglq0tl1x1i/branch/master?svg=true)](https://ci.appveyor.com/project/southpolenator/windbgcs/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/d2j4lxglq0tl1x1i/branch/grlap?svg=true)](https://ci.appveyor.com/project/southpolenator/windbgcs/branch/grlap)
 [![Code coverage](https://img.shields.io/codecov/c/github/southpolenator/WinDbgCs.svg)](https://codecov.io/github/southpolenator/WinDbgCs)
 [![Nuget version](https://img.shields.io/nuget/v/csdebugscript.engine.svg?style=flat)](https://www.nuget.org/packages/csdebugscript.engine/)
 [![GitHub release](https://img.shields.io/github/release/southpolenator/windbgcs.svg?style=flat)](https://github.com/southpolenator/WinDbgCs/releases/latest)
