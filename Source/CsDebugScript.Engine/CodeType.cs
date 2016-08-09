@@ -508,16 +508,32 @@ namespace CsDebugScript
         /// <returns>CodeType from specified name and module</returns>
         public static CodeType Create(Process process, params string[] codeTypeNames)
         {
-            foreach (var codeType in codeTypeNames)
+            CodeType lastDeclaration = null;
+
+            foreach (string codeTypeName in codeTypeNames)
             {
                 try
                 {
-                    return Create(process, codeType);
+                    CodeType codeType = Create(process, codeTypeName);
+
+                    if (codeType.Size > 0)
+                    {
+                        return codeType;
+                    }
+                    else
+                    {
+                        lastDeclaration = codeType;
+                    }
                 }
                 catch
                 {
                     // ignore this module and try another one
                 }
+            }
+
+            if (lastDeclaration != null)
+            {
+                return lastDeclaration;
             }
 
             throw new Exception("Unable to create requested code type");
