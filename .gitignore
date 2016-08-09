@@ -223,3 +223,4 @@ ModelManifest.xml
 /Source/CsDebugScript.VS/System.Reflection.Metadata.dll
 /Source/CsDebugScript.VS/Microsoft.CodeAnalysis.dll
 /Source/CsDebugScript.VS/Microsoft.CodeAnalysis.CSharp.dll
+/Source/DiaHelpers/Dia2Lib.dll
