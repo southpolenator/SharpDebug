@@ -32,7 +32,7 @@ namespace DbgEngTest
             NakedPointer nakedPointer = new NakedPointer(0);
 
             Assert.IsTrue(nakedPointer.IsNull);
-            Assert.IsTrue(nakedPointer.CastAs<int>().IsNull);
+            Assert.IsTrue(nakedPointer.ToCodePointer<int>().IsNull);
         }
 
         [TestMethod]
