@@ -423,7 +423,38 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
             }
 
-            return newTypes;
+            // Merge namespaces when possible
+            foreach (UserType userType in newTypes)
+            {
+                NamespaceUserType nameSpace = userType as NamespaceUserType;
+
+                if (nameSpace == null)
+                {
+                    continue;
+                }
+
+                nameSpace.MergeIfPossible();
+            }
+
+            // Remove empty namespaces after merge
+            List<UserType> removedUserTypes = new List<UserType>();
+
+            foreach (UserType userType in newTypes)
+            {
+                NamespaceUserType nameSpace = userType as NamespaceUserType;
+
+                if (nameSpace == null)
+                {
+                    continue;
+                }
+
+                if (nameSpace.InnerTypes.Count == 0)
+                {
+                    removedUserTypes.Add(nameSpace);
+                }
+            }
+
+            return newTypes.Except(removedUserTypes);
         }
 
         /// <summary>

@@ -87,7 +87,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 return declaredInType;
             }
 
-            private set
+            protected set
             {
                 declaredInType = value;
             }

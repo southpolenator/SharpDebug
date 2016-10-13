@@ -44,7 +44,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 foreach (string innerClass in namespaces)
                 {
-                    output.WriteLine(indentation, "public static class {0}", innerClass);
+                    output.WriteLine(indentation, "public static partial class {0}", innerClass);
                     output.WriteLine(indentation++, @"{{");
                 }
             }
@@ -127,6 +127,26 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
 
                 return string.Format("{0}", Namespace);
+            }
+        }
+
+        /// <summary>
+        /// Merges namespace with "parent" ones if possible (only if all are namespaces).
+        /// </summary>
+        internal void MergeIfPossible()
+        {
+            bool canBeMerged = true;
+
+            for (UserType parentNameSpace = DeclaredInType; parentNameSpace != null && canBeMerged; parentNameSpace = parentNameSpace.DeclaredInType)
+            {
+                canBeMerged = parentNameSpace is NamespaceUserType;
+            }
+
+            if (canBeMerged && DeclaredInType != null)
+            {
+                NamespaceSymbol = FullClassName;
+                DeclaredInType.InnerTypes.Remove(this);
+                DeclaredInType = null;
             }
         }
     }
