@@ -532,7 +532,14 @@ namespace CsDebugScript.CodeGen
                 return Tuple.Create("", "");
             }
 
-            if (userType is NamespaceUserType || (userType.DeclaredInType != null && !(userType.DeclaredInType is NamespaceUserType)))
+            bool allParentsAreNamespaces = true;
+
+            for (UserType parentType = userType.DeclaredInType; parentType != null && allParentsAreNamespaces; parentType = parentType.DeclaredInType)
+            {
+                allParentsAreNamespaces = parentType is NamespaceUserType;
+            }
+
+            if (userType is NamespaceUserType || allParentsAreNamespaces)
             {
                 return Tuple.Create("", "");
             }
@@ -541,7 +548,7 @@ namespace CsDebugScript.CodeGen
             string nameSpace = (userType.DeclaredInType as NamespaceUserType)?.FullClassName ?? userType.Namespace;
 
             if (!string.IsNullOrEmpty(nameSpace))
-                classOutputDirectory = Path.Combine(classOutputDirectory, UserType.NormalizeSymbolName(UserType.NormalizeSymbolName(nameSpace).Replace(".", "\\").Replace(":", ".")));
+                classOutputDirectory = Path.Combine(classOutputDirectory, nameSpace.Replace(".", "\\").Replace(":", "."));
             Directory.CreateDirectory(classOutputDirectory);
 
             bool isEnum = userType is EnumUserType;
