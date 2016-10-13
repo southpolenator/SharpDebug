@@ -143,7 +143,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Gets the class name for this user type. Class name doesn't contain namespace.
         /// </summary>
-        public virtual string ClassName
+        public virtual string OriginalClassName
         {
             get
             {
@@ -174,6 +174,11 @@ namespace CsDebugScript.CodeGen.UserTypes
                 return symbolName;
             }
         }
+
+        /// <summary>
+        /// Gets the class name for this user type. Class name doesn't contain namespace.
+        /// </summary>
+        public string ClassName { get; set; }
 
         /// <summary>
         /// Gets the name of the constructor for this user type.
@@ -280,7 +285,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </remarks>
         public static string NormalizeSymbolNamespace(string symbolNamespace)
         {
-            return symbolNamespace.Replace("::", "_").Replace("*", "").Replace('&', '_').Replace("$", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').TrimEnd('_');
+            return symbolNamespace.Replace("::", "_").Replace("*", "").Replace('&', '_').Replace("$", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_');
         }
 
         /// <summary>

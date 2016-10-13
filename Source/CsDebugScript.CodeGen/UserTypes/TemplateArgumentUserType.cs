@@ -20,12 +20,13 @@
             : base(symbol, null, null)
         {
             this.typeName = typeName;
+            ClassName = typeName;
         }
 
         /// <summary>
         /// Gets the class name for this user type. Class name doesn't contain namespace.
         /// </summary>
-        public override string ClassName
+        public override string OriginalClassName
         {
             get
             {

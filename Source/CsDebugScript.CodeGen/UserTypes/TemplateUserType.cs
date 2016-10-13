@@ -132,7 +132,11 @@ namespace CsDebugScript.CodeGen.UserTypes
                 int templateStart = className.IndexOf('<');
 
                 if (templateStart > 0)
-                    className = className.Substring(0, templateStart) + "<>";
+                {
+                    className = className.Substring(0, templateStart) + "<"
+                        + string.Join(", ", TemplateArgumentsAsSymbols.Select(s => s.UserType != null ? s.UserType.SpecializedFullClassName : "Variable"))
+                        + ">";
+                }
 
                 if (DeclaredInType != null)
                 {
@@ -148,19 +152,10 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
         }
 
-        /// <summary>
-        /// Updates the template arguments (symbols and user types).
-        /// </summary>
-        /// <param name="factory">The user type factory.</param>
-        /// <returns><c>true</c> if all template arguments are resolved as user types.</returns>
-        public bool UpdateTemplateArguments(UserTypeFactory factory)
+        private static IEnumerable<Symbol> ParseTemplateArguments(UserTypeFactory factory, Module module, string symbolName)
         {
-            string symbolName = Symbol.Namespaces.Last();
             int templateStart = symbolName.IndexOf('<');
-            bool result = true;
 
-            templateArgumentsAsSymbols.Clear();
-            templateArgumentsAsUserTypes.Clear();
             if (templateStart > 0)
             {
                 // Parse template arguments
@@ -188,30 +183,55 @@ namespace CsDebugScript.CodeGen.UserTypes
                     if (!double.TryParse(extractedType, out constant))
                     {
                         // Check if type is existing type (symbol)
-                        Symbol symbol = GlobalCache.GetSymbol(extractedType, Module);
+                        Symbol symbol = GlobalCache.GetSymbol(extractedType, module);
 
                         if (symbol == null)
                             throw new Exception("Wrongly formed template argument");
-                        templateArgumentsAsSymbols.Add(symbol);
-
-                        // Try to get user type for the symbol
-                        UserType specializationUserType = null;
-
-                        if (!factory.GetUserType(symbol, out specializationUserType))
-                        {
-                            if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
-                            {
-                                var typeString = GetSymbolTypeTree(symbol, factory).GetTypeString();
-
-                                specializationUserType = new TemplateArgumentUserType(typeString, symbol);
-                            }
-                        }
-
-                        templateArgumentsAsUserTypes.Add(specializationUserType);
-                        result = result && specializationUserType != null;
+                        yield return symbol;
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Updates the template arguments (symbols and user types).
+        /// </summary>
+        /// <param name="factory">The user type factory.</param>
+        /// <returns><c>true</c> if all template arguments are resolved as user types.</returns>
+        public bool UpdateTemplateArguments(UserTypeFactory factory)
+        {
+            bool result = true;
+
+            templateArgumentsAsSymbols = ParseTemplateArguments(factory, Module, Symbol.Namespaces.Last()).ToList();
+            templateArgumentsAsUserTypes.Clear();
+            foreach (Symbol symbol in templateArgumentsAsSymbols)
+            {
+                // Try to get user type for the symbol
+                UserType specializationUserType = null;
+
+                if (!factory.GetUserType(symbol, out specializationUserType))
+                {
+                    if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
+                    {
+                        var typeString = GetSymbolTypeTree(symbol, factory).GetTypeString();
+
+                        specializationUserType = new TemplateArgumentUserType(typeString, symbol);
+                    }
+                }
+
+                templateArgumentsAsUserTypes.Add(specializationUserType);
+                result = result && specializationUserType != null;
+            }
+
+            // Enumerate all template arguments as strings
+            IEnumerable<Symbol> allTemplateArguments = Enumerable.Empty<Symbol>();
+
+            foreach (string symbolName in Symbol.Namespaces)
+            {
+                allTemplateArguments = allTemplateArguments.Concat(ParseTemplateArguments(factory, Module, symbolName));
+            }
+
+            AllTemplateArguments = allTemplateArguments.Select(s => s.Name).ToList();
 
             // TODO: Unused types should be removed
             return result;
@@ -244,7 +264,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Gets the class name for this user type. Class name doesn't contain namespace.
         /// </summary>
-        public override string ClassName
+        public override string OriginalClassName
         {
             get
             {
@@ -286,6 +306,8 @@ namespace CsDebugScript.CodeGen.UserTypes
                 return templateArgumentsAsSymbols.Count;
             }
         }
+
+        public List<string> AllTemplateArguments { get; private set; }
 
         /// <summary>
         /// Gets the template arguments as parsed strings.

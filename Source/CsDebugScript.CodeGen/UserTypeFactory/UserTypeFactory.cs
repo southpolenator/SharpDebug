@@ -157,7 +157,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         TemplateUserType templateType = new TemplateUserType(symbol, type, nameSpace, this);
 
 #if false // TODO: Verify if we want to use simple user type instead of template user type
-                        if (templateType.NumberOfTemplateArguments == 0)
+                        if (templateType.AllTemplateArguments.Count == 0)
                         {
                             // Template does not have arguments that can be used by generic 
                             // Make it specialized type
@@ -169,8 +169,8 @@ namespace CsDebugScript.CodeGen.UserTypes
                             List<TemplateUserType> templates;
 
                             symbol.UserType = templateType;
-                            if (!buckets.TryGetValue(templateType.NumberOfTemplateArguments, out templates))
-                                buckets.Add(templateType.NumberOfTemplateArguments, templates = new List<TemplateUserType>());
+                            if (!buckets.TryGetValue(templateType.AllTemplateArguments.Count, out templates))
+                                buckets.Add(templateType.AllTemplateArguments.Count, templates = new List<TemplateUserType>());
                             templates.Add(templateType);
                         }
                     }
@@ -186,21 +186,23 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
 
                 // Add newly generated types
-                foreach (var templates in buckets.Values)
+                foreach (List<TemplateUserType> templatesInBucket in buckets.Values)
                 {
                     // TODO: Verify that all templates in the list can be described by the same class (also do check for inner-types)
 
                     // Sort Templates by Class Name.
                     // This removes ambiguity caused by parallel type processing.
                     //
-                    templates.Sort((a, b) => string.Compare(a.Symbol.Name, b.Symbol.Name, StringComparison.InvariantCulture));
+                    List<TemplateUserType> templates = templatesInBucket.OrderBy(t => t.Symbol.Name.Count(c => c == '*'))
+                        .ThenBy(t => t.Symbol.Name.Count(c => c == '<'))
+                        .ThenBy(t => t.Symbol.Name).ToList();
 
                     // Select best suited type for template
                     TemplateUserType template = templates.First();
 
                     foreach (var specializedTemplate in templates)
                     {
-                        var arguments = specializedTemplate.TemplateArguments;
+                        var arguments = specializedTemplate.AllTemplateArguments;
 
                         // Check if all arguments are different
                         if (arguments.Distinct().Count() == arguments.Count())
@@ -246,7 +248,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                             }
                         }
 
-                        // This one is good as any...
+                        // This one is as good as any...
                     }
 
                     // Move all types under the selected type
@@ -351,6 +353,26 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
 
                 userType.UpdateDeclaredInType(previousNamespaceUserType);
+            }
+
+            // Update Class Name if it has duplicate with the namespace it is declared in
+            foreach (UserType userType in newTypes.Concat(userTypes))
+            {
+                userType.ClassName = userType.OriginalClassName;
+                if (userType.DeclaredInType != null && userType.OriginalClassName == userType.DeclaredInType.ClassName)
+                {
+                    userType.ClassName += "_";
+                }
+
+                TemplateUserType templateUserType = userType as TemplateUserType;
+
+                if (templateUserType != null)
+                {
+                    foreach (UserType specializedUserType in templateUserType.SpecializedTypes)
+                    {
+                        specializedUserType.ClassName = userType.ClassName;
+                    }
+                }
             }
 
             // Remove duplicate types from exported template types (TODO: Remove this when template types start checking subtypes)
