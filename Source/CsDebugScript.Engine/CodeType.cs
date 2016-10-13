@@ -688,10 +688,14 @@ namespace CsDebugScript
                 return true;
 
             // TODO: Do better matching of generics type
-            if (className.EndsWith("<>"))
+            if (className.Contains("<>"))
             {
-                if (name.StartsWith(className.Substring(0, className.Length - 1)))
-                    return true;
+                string[] partials = className.Split(new string[] { "<>" }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (string p in partials)
+                    if (!name.Contains(p))
+                        return false;
+                return true;
             }
 
             return false;
