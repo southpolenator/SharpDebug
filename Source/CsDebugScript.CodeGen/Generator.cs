@@ -253,12 +253,6 @@ namespace CsDebugScript.CodeGen
                     return;
                 }
 
-                // TODO: C# doesn't support lengthy names
-                if (symbolName.Length > 160)
-                {
-                    return;
-                }
-
                 // TODO: For now remove all unnamed-type symbols
                 string scopedClassName = symbol.Namespaces.Last();
 
