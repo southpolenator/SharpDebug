@@ -539,7 +539,7 @@ namespace CsDebugScript.CodeGen
                 allParentsAreNamespaces = parentType is NamespaceUserType;
             }
 
-            if (userType is NamespaceUserType || allParentsAreNamespaces)
+            if (userType is NamespaceUserType || !allParentsAreNamespaces)
             {
                 return Tuple.Create("", "");
             }
