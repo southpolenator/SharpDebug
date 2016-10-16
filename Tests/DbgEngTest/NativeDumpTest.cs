@@ -112,8 +112,8 @@ namespace DbgEngTest
         public void CheckDefaultTestCaseLocals()
         {
             StackFrame frame = GetFrame($"{DefaultModuleName}!DefaultTestCase");
-            VariableCollection arguments = frame.Locals;
-            dynamic p = arguments["p"];
+            VariableCollection locals = frame.Locals;
+            dynamic p = locals["p"];
             std.wstring string1 = new std.wstring(p.string1);
             Assert.AreEqual("qwerty", string1.Text);
             std.list<std.wstring> strings = new std.list<std.wstring>(p.strings);
@@ -130,10 +130,46 @@ namespace DbgEngTest
             for (int i = 0; i < ansiStrings.Length; i++)
                 Assert.IsTrue(ansiStrings[i].Length <= ansiStrings[i].Reserved);
 
-            dynamic e = arguments["e"];
+            // Verify enum value
+            dynamic e = locals["e"];
 
             Assert.AreEqual("enumEntry3", e.ToString());
             Assert.AreEqual(3, (int)e);
+
+            // Verify shared/weak pointers
+            std.shared_ptr<int> sptr1 = new std.shared_ptr<int>(locals["sptr1"]);
+            std.shared_ptr<int> esptr1 = new std.shared_ptr<int>(locals["esptr1"]);
+            std.shared_ptr<int> esptr2 = new std.shared_ptr<int>(locals["esptr2"]);
+            std.weak_ptr<int> wptr1 = new std.weak_ptr<int>(locals["wptr1"]);
+            std.weak_ptr<int> ewptr1 = new std.weak_ptr<int>(locals["ewptr1"]);
+            std.weak_ptr<int> ewptr2 = new std.weak_ptr<int>(locals["ewptr2"]);
+
+            Assert.IsFalse(sptr1.IsEmpty);
+            Assert.AreEqual(1, sptr1.SharedCount);
+            Assert.AreEqual(2, sptr1.WeakCount);
+            Assert.AreEqual(5, sptr1.Element);
+            Assert.IsTrue(sptr1.IsCreatedWithMakeShared);
+
+            Assert.IsFalse(wptr1.IsEmpty);
+            Assert.AreEqual(1, wptr1.SharedCount);
+            Assert.AreEqual(2, wptr1.WeakCount);
+            Assert.AreEqual(5, wptr1.Element);
+            Assert.IsTrue(wptr1.IsCreatedWithMakeShared);
+
+            Assert.IsTrue(esptr1.IsEmpty);
+
+            Assert.IsTrue(ewptr1.IsEmpty);
+            Assert.AreEqual(0, ewptr1.SharedCount);
+            Assert.AreEqual(1, ewptr1.WeakCount);
+            Assert.AreEqual(42, ewptr1.UnsafeElement);
+            Assert.IsTrue(ewptr1.IsCreatedWithMakeShared);
+
+            Assert.IsTrue(esptr2.IsEmpty);
+
+            Assert.IsTrue(ewptr2.IsEmpty);
+            Assert.AreEqual(0, ewptr2.SharedCount);
+            Assert.AreEqual(1, ewptr2.WeakCount);
+            Assert.IsFalse(ewptr2.IsCreatedWithMakeShared);
         }
 
         public void CheckProcess()
