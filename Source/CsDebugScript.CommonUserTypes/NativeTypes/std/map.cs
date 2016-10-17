@@ -14,130 +14,130 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     public class map<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>
     {
         /// <summary>
-        /// std::map item
-        /// </summary>
-        private class item
-        {
-            /// <summary>
-            /// Flag that indicates that we have reached end of the tree
-            /// </summary>
-            private UserMember<bool> isnil;
-
-            /// <summary>
-            /// The left item
-            /// </summary>
-            private UserMember<item> left;
-
-            /// <summary>
-            /// The right item
-            /// </summary>
-            private UserMember<item> right;
-
-            /// <summary>
-            /// The parent item
-            /// </summary>
-            private UserMember<item> parent;
-
-            /// <summary>
-            /// The key
-            /// </summary>
-            private UserMember<TKey> key;
-
-            /// <summary>
-            /// The value
-            /// </summary>
-            private UserMember<TValue> value;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="item"/> class.
-            /// </summary>
-            /// <param name="variable">The variable.</param>
-            public item(Variable variable)
-            {
-                isnil = UserMember.Create(() => (bool)variable.GetField("_Isnil"));
-                left = UserMember.Create(() => new item(variable.GetField("_Left")));
-                right = UserMember.Create(() => new item(variable.GetField("_Right")));
-                parent = UserMember.Create(() => new item(variable.GetField("_Parent")));
-                key = UserMember.Create(() => variable.GetField("_Myval").GetField("first").CastAs<TKey>());
-                value = UserMember.Create(() => variable.GetField("_Myval").GetField("second").CastAs<TValue>());
-            }
-
-            /// <summary>
-            /// Gets a value indicating whether we have reached end of the tree.
-            /// </summary>
-            /// <value>
-            ///   <c>true</c> if this instance has reached end of the tree; otherwise, <c>false</c>.
-            /// </value>
-            public bool IsNil
-            {
-                get
-                {
-                    return isnil.Value;
-                }
-            }
-
-            /// <summary>
-            /// Gets the left child item in the tree.
-            /// </summary>
-            public item Left
-            {
-                get
-                {
-                    return left.Value;
-                }
-            }
-
-            /// <summary>
-            /// Gets the right child item in the tree.
-            /// </summary>
-            public item Right
-            {
-                get
-                {
-                    return right.Value;
-                }
-            }
-
-            /// <summary>
-            /// Gets the parent item in the tree.
-            /// </summary>
-            public item Parent
-            {
-                get
-                {
-                    return parent.Value;
-                }
-            }
-
-            /// <summary>
-            /// Gets the key stored in the item.
-            /// </summary>
-            public TKey Key
-            {
-                get
-                {
-                    return key.Value;
-                }
-            }
-
-            /// <summary>
-            /// Gets the value stored in the item.
-            /// </summary>
-            public TValue Value
-            {
-                get
-                {
-                    return value.Value;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Microsoft Visual Studio 2015 implementation of std::map
+        /// Common code for Microsoft Visual Studio implementations of std::map
         /// </summary>
         /// <seealso cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}" />
-        public class VisualStudio2015 : IReadOnlyDictionary<TKey, TValue>
+        public class VisualStudio : IReadOnlyDictionary<TKey, TValue>
         {
+            /// <summary>
+            /// std::map item
+            /// </summary>
+            protected class item
+            {
+                /// <summary>
+                /// Flag that indicates that we have reached end of the tree
+                /// </summary>
+                private UserMember<bool> isnil;
+
+                /// <summary>
+                /// The left item
+                /// </summary>
+                private UserMember<item> left;
+
+                /// <summary>
+                /// The right item
+                /// </summary>
+                private UserMember<item> right;
+
+                /// <summary>
+                /// The parent item
+                /// </summary>
+                private UserMember<item> parent;
+
+                /// <summary>
+                /// The key
+                /// </summary>
+                private UserMember<TKey> key;
+
+                /// <summary>
+                /// The value
+                /// </summary>
+                private UserMember<TValue> value;
+
+                /// <summary>
+                /// Initializes a new instance of the <see cref="item"/> class.
+                /// </summary>
+                /// <param name="variable">The variable.</param>
+                public item(Variable variable)
+                {
+                    isnil = UserMember.Create(() => (bool)variable.GetField("_Isnil"));
+                    left = UserMember.Create(() => new item(variable.GetField("_Left")));
+                    right = UserMember.Create(() => new item(variable.GetField("_Right")));
+                    parent = UserMember.Create(() => new item(variable.GetField("_Parent")));
+                    key = UserMember.Create(() => variable.GetField("_Myval").GetField("first").CastAs<TKey>());
+                    value = UserMember.Create(() => variable.GetField("_Myval").GetField("second").CastAs<TValue>());
+                }
+
+                /// <summary>
+                /// Gets a value indicating whether we have reached end of the tree.
+                /// </summary>
+                /// <value>
+                ///   <c>true</c> if this instance has reached end of the tree; otherwise, <c>false</c>.
+                /// </value>
+                public bool IsNil
+                {
+                    get
+                    {
+                        return isnil.Value;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the left child item in the tree.
+                /// </summary>
+                public item Left
+                {
+                    get
+                    {
+                        return left.Value;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the right child item in the tree.
+                /// </summary>
+                public item Right
+                {
+                    get
+                    {
+                        return right.Value;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the parent item in the tree.
+                /// </summary>
+                public item Parent
+                {
+                    get
+                    {
+                        return parent.Value;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the key stored in the item.
+                /// </summary>
+                public TKey Key
+                {
+                    get
+                    {
+                        return key.Value;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the value stored in the item.
+                /// </summary>
+                public TValue Value
+                {
+                    get
+                    {
+                        return value.Value;
+                    }
+                }
+            }
+
             /// <summary>
             /// The internal value field inside the std::map
             /// </summary>
@@ -154,12 +154,12 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             private UserMember<item> root;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="VisualStudio2015"/> class.
+            /// Initializes a new instance of the <see cref="VisualStudio"/> class.
             /// </summary>
-            /// <param name="variable">The variable.</param>
-            public VisualStudio2015(Variable variable)
+            /// <param name="value">The value variable.</param>
+            public VisualStudio(UserMember<Variable> value)
             {
-                value = UserMember.Create(() => variable.GetField("_Mypair").GetField("_Myval2").GetField("_Myval2"));
+                this.value = value;
                 size = UserMember.Create(() => (int)Value.GetField("_Mysize"));
                 root = UserMember.Create(() => new item(Value.GetField("_Myhead")).Parent);
             }
@@ -323,6 +323,72 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Microsoft Visual Studio 2013 implementation of std::map
+        /// </summary>
+        /// <seealso cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}" />
+        public class VisualStudio2013 : VisualStudio
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="VisualStudio2013"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public VisualStudio2013(Variable variable)
+                : base(UserMember.Create(() => variable))
+            {
+            }
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // _Myhead
+                // | _Parent
+                // | _Left
+                // | _Right
+                // | _Isnil
+                // | _Myval
+                //   | first
+                //   | second
+                // _Mysize
+                CodeType _Myhead, _Parent, _Left, _Right, _Myval, _Mysize, _Isnil, first, second;
+                var fields = codeType.GetFieldTypes();
+
+                if (!fields.TryGetValue("_Myhead", out _Myhead) || !fields.TryGetValue("_Mysize", out _Mysize))
+                    return false;
+
+                var _MyheadFields = _Myhead.GetFieldTypes();
+
+                if (!_MyheadFields.TryGetValue("_Parent", out _Parent) || !_MyheadFields.TryGetValue("_Left", out _Left) || !_MyheadFields.TryGetValue("_Right", out _Right) || !_MyheadFields.TryGetValue("_Myval", out _Myval) || !_MyheadFields.TryGetValue("_Isnil", out _Isnil))
+                    return false;
+
+                // TODO: When we add std::pair support, use it...
+                if (!_Myval.GetFieldTypes().TryGetValue("first", out first) || !_Myval.GetFieldTypes().TryGetValue("second", out second))
+                    return false;
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Microsoft Visual Studio 2015 implementation of std::map
+        /// </summary>
+        /// <seealso cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}" />
+        public class VisualStudio2015 : VisualStudio
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="VisualStudio2015"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public VisualStudio2015(Variable variable)
+                : base(UserMember.Create(() => variable.GetField("_Mypair").GetField("_Myval2").GetField("_Myval2")))
+            {
+            }
 
             /// <summary>
             /// Verifies if the specified code type is correct for this class.
@@ -375,6 +441,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// </summary>
         private static TypeSelector<IReadOnlyDictionary<TKey, TValue>> typeSelector = new TypeSelector<IReadOnlyDictionary<TKey, TValue>>(new[]
         {
+            new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2013), VisualStudio2013.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2015), VisualStudio2015.VerifyCodeType),
         });
 
