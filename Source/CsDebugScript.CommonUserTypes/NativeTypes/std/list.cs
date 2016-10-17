@@ -9,7 +9,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Microsoft implementation of std::list
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class list<T> : IEnumerable<T>
+    public class list<T> : IReadOnlyCollection<T>
     {
         /// <summary>
         /// std::list item
@@ -139,6 +139,17 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             get
             {
                 return value.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the number of elements in the collection.
+        /// </summary>
+        public int Count
+        {
+            get
+            {
+                return Length;
             }
         }
 

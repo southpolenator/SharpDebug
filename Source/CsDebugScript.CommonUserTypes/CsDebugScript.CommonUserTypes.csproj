@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="DynamicSelf.cs" />
     <Compile Include="InvalidSymbolsException.cs" />
+    <Compile Include="NativeTypes\std\map.cs" />
     <Compile Include="NativeTypes\std\shared_ptr.cs" />
     <Compile Include="NativeTypes\std\weak_ptr.cs" />
     <Compile Include="NativeTypes\Windows\Heap.cs" />

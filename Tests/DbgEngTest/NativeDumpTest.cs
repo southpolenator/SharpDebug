@@ -3,6 +3,7 @@ using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace DbgEngTest
 {
@@ -118,6 +119,7 @@ namespace DbgEngTest
             Assert.AreEqual("qwerty", string1.Text);
             std.list<std.wstring> strings = new std.list<std.wstring>(p.strings);
             std.vector<std.@string> ansiStrings = new std.vector<std.@string>(p.ansiStrings);
+            std.map<std.wstring, std.@string> stringMap = new std.map<std.wstring, std.@string>(p.stringMap);
 
             string[] stringsConverted = strings.Select(s => s.Text).ToArray();
             string[] ansiStringsConverted = ansiStrings.Select(s => s.Text).ToArray();
@@ -129,6 +131,31 @@ namespace DbgEngTest
                 Assert.IsTrue(s.Length <= s.Reserved);
             for (int i = 0; i < ansiStrings.Length; i++)
                 Assert.IsTrue(ansiStrings[i].Length <= ansiStrings[i].Reserved);
+
+            string[] mapKeys = stringMap.Keys.Select(s => s.Text).ToArray();
+            string[] mapValues = stringMap.Values.Select(s => s.Text).ToArray();
+            Dictionary<string, string> stringMapExpected = new Dictionary<string, string>()
+            {
+                { "foo", "ansiFoo" },
+                { "bar", "ansiBar" },
+            };
+
+            Assert.AreEqual(2, stringMap.Count);
+            CompareArrays(new[] { "foo", "bar" }, mapKeys);
+            CompareArrays(new[] { "ansiFoo", "ansiBar" }, mapValues);
+            foreach (KeyValuePair<std.wstring, std.@string> kvp in stringMap)
+            {
+                std.@string value;
+
+                Assert.IsTrue(stringMap.ContainsKey(kvp.Key));
+                Assert.IsTrue(stringMap.TryGetValue(kvp.Key, out value));
+                Assert.AreEqual(kvp.Value.Text, value.Text);
+                value = stringMap[kvp.Key];
+                Assert.AreEqual(kvp.Value.Text, value.Text);
+                Assert.AreEqual(stringMapExpected[kvp.Key.Text], kvp.Value.Text);
+            }
+
+            Assert.AreEqual(2, stringMap.ToStringDictionary().ToStringStringDictionary().Count);
 
             // Verify enum value
             dynamic e = locals["e"];

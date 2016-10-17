@@ -6,6 +6,7 @@
 #include <vector>
 #include <list>
 #include <memory>
+#include <map>
 #include <Windows.h>
 
 using namespace std;
@@ -41,6 +42,7 @@ public:
 	list<wstring> strings;
 	wstring stringArray[100];
 	vector<string> ansiStrings;
+	map<wstring, string> stringMap;
 	MyEnum enumeration;
 	MyEnumInner innerEnumeration;
 
@@ -62,6 +64,8 @@ __declspec(noinline) void DefaultTestCase()
 	p->strings.push_back(L"Bar");
 	p->ansiStrings.push_back("AnsiFoo");
 	p->ansiStrings.push_back("AnsiBar");
+	p->stringMap.insert(make_pair(L"foo", "ansiFoo"));
+	p->stringMap.insert(make_pair(L"bar", "ansiBar"));
 
 	int testArray[10000];
 
