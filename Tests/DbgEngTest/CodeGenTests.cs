@@ -94,6 +94,12 @@ namespace DbgEngTest
                         NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.list<${T}>",
                         OriginalType = "std::list<${T},${allocator}>",
                     },
+                    new XmlTypeTransformation()
+                    {
+                        Constructor = "${new}",
+                        NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.map<${TKey},${TValue}>",
+                        OriginalType = "std::map<${TKey},${TValue},${comparator},${allocator}>",
+                    },
                 },
             };
         }
