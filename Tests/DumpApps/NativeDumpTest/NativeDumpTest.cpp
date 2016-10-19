@@ -84,7 +84,9 @@ __declspec(noinline) void DefaultTestCase()
 	esptr2 = nullptr;
 
 	// Generate the dump
-	throw std::bad_exception();
+	//throw std::bad_exception();
+	int* a = nullptr;
+	*a = 4;
 }
 
 __declspec(noinline) void InfiniteRecursionTestCase(int arg)
