@@ -234,7 +234,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// Initializes a new instance of the <see cref="basic_string"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
-        /// <exception cref="WrongCodeTypeException">std::map</exception>
+        /// <exception cref="WrongCodeTypeException">std::basic_string</exception>
         public basic_string(Variable variable)
         {
             instance = typeSelector.SelectType(variable);
