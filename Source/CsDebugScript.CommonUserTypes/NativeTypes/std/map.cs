@@ -45,14 +45,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 private UserMember<item> parent;
 
                 /// <summary>
-                /// The key
+                /// The key/value pair
                 /// </summary>
-                private UserMember<TKey> key;
-
-                /// <summary>
-                /// The value
-                /// </summary>
-                private UserMember<TValue> value;
+                private UserMember<pair<TKey, TValue>> pair;
 
                 /// <summary>
                 /// Initializes a new instance of the <see cref="item"/> class.
@@ -64,8 +59,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     left = UserMember.Create(() => new item(variable.GetField("_Left")));
                     right = UserMember.Create(() => new item(variable.GetField("_Right")));
                     parent = UserMember.Create(() => new item(variable.GetField("_Parent")));
-                    key = UserMember.Create(() => variable.GetField("_Myval").GetField("first").CastAs<TKey>());
-                    value = UserMember.Create(() => variable.GetField("_Myval").GetField("second").CastAs<TValue>());
+                    pair = UserMember.Create(() => new pair<TKey, TValue>(variable.GetField("_Myval")));
                 }
 
                 /// <summary>
@@ -122,7 +116,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 {
                     get
                     {
-                        return key.Value;
+                        return pair.Value.First;
                     }
                 }
 
@@ -133,7 +127,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 {
                     get
                     {
-                        return value.Value;
+                        return pair.Value.Second;
                     }
                 }
             }
@@ -367,8 +361,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 if (!_MyheadFields.TryGetValue("_Parent", out _Parent) || !_MyheadFields.TryGetValue("_Left", out _Left) || !_MyheadFields.TryGetValue("_Right", out _Right) || !_MyheadFields.TryGetValue("_Myval", out _Myval) || !_MyheadFields.TryGetValue("_Isnil", out _Isnil))
                     return false;
 
-                // TODO: When we add std::pair support, use it...
-                if (!_Myval.GetFieldTypes().TryGetValue("first", out first) || !_Myval.GetFieldTypes().TryGetValue("second", out second))
+                if (!pair<TKey, TValue>.VerifyCodeType(_Myval))
                     return false;
 
                 return true;
@@ -428,8 +421,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 if (!_MyheadFields.TryGetValue("_Parent", out _Parent) || !_MyheadFields.TryGetValue("_Left", out _Left) || !_MyheadFields.TryGetValue("_Right", out _Right) || !_MyheadFields.TryGetValue("_Myval", out _Myval) || !_MyheadFields.TryGetValue("_Isnil", out _Isnil))
                     return false;
 
-                // TODO: When we add std::pair support, use it...
-                if (!_Myval.GetFieldTypes().TryGetValue("first", out first) || !_Myval.GetFieldTypes().TryGetValue("second", out second))
+                if (!pair<TKey, TValue>.VerifyCodeType(_Myval))
                     return false;
 
                 return true;
