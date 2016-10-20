@@ -13,9 +13,11 @@
 #include <chrono>
 #include <thread>
 
+#include <stdlib.h>
 
 
 #ifdef _WIN32
+  #include <Windows.h>
   #define NO_INLINE __declspec(noinline)
 #else
   #define NO_INLINE

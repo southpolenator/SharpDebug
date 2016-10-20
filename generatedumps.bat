@@ -13,7 +13,7 @@ xcopy /D /Y %gccpath%\libstdc++-6.dll %~dp0\dumps\
 popd
 
 pushd %~dp0\bin\Debug\Tests
-%~dp0\bin\Debug\Tests\ExceptionDumper.exe -a %~dp0\dumps\NativeDumpTest.gcc.exe -d %~dp0\dumps\NativeDumpTest.gcc.mdmp
+%~dp0\bin\Debug\Tests\ExceptionDumper32.exe -a %~dp0\dumps\NativeDumpTest.gcc.exe -d %~dp0\dumps\NativeDumpTest.gcc.mdmp
 del %~dp0\dumps\libgcc_s_dw2-1.dll
 del %~dp0\dumps\libstdc++-6.dll
 popd
@@ -28,5 +28,5 @@ del %~dp0\dumps\NativeDumpTest.VS2013.ilk
 popd
 
 pushd %~dp0\bin\Debug\Tests
-%~dp0\bin\Debug\Tests\ExceptionDumper.exe -a %~dp0\dumps\NativeDumpTest.VS2013.exe -d %~dp0\dumps\NativeDumpTest.VS2013.mdmp
+%~dp0\bin\Debug\Tests\ExceptionDumper32.exe -a %~dp0\dumps\NativeDumpTest.VS2013.exe -d %~dp0\dumps\NativeDumpTest.VS2013.mdmp
 popd

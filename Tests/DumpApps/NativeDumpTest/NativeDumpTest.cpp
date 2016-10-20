@@ -85,7 +85,11 @@ NO_INLINE void DefaultTestCase()
 
 NO_INLINE void InfiniteRecursionTestCase(int arg)
 {
+#ifdef _WIN32
+	Sleep(100);
+#else
 	this_thread::sleep_for(chrono::milliseconds(100));
+#endif
 	InfiniteRecursionTestCase(arg + 1);
 }
 

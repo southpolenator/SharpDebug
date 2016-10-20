@@ -249,7 +249,7 @@ namespace DbgEngTest
             Assert.AreEqual($"{DefaultModuleName}!DefaultTestCase", defaultTestCaseFunction.FunctionName);
             Assert.AreEqual($"DefaultTestCase", defaultTestCaseFunction.FunctionNameWithoutModule);
             Assert.AreEqual(Process.Current, defaultTestCaseFunction.Process);
-            Assert.IsTrue(defaultTestCaseFunction.SourceFileName.Contains(MainSourceFileName));
+            Assert.IsTrue(defaultTestCaseFunction.SourceFileName.ToLower().Contains(MainSourceFileName));
             Assert.AreNotEqual(0, defaultTestCaseFunction.SourceFileLine);
             Console.WriteLine("SourceFileDisplacement: {0}", defaultTestCaseFunction.SourceFileDisplacement);
         }

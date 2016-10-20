@@ -119,7 +119,9 @@
     <Compile Include="DebugControlTest.cs" />
     <Compile Include="InteractiveModeTests.cs" />
     <Compile Include="NativeDumpTest32.cs" />
+    <Compile Include="NativeDumpTest32GCC.cs" />
     <Compile Include="NativeDumpTest32Release.cs" />
+    <Compile Include="NativeDumpTest32VS2013.cs" />
     <Compile Include="NativeDumpTest64.cs" />
     <Compile Include="NativeDumpTest64Release.cs" />
     <Compile Include="ScriptExecutionTests.cs" />
