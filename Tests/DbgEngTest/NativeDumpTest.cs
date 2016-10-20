@@ -129,7 +129,7 @@ namespace DbgEngTest
 
             foreach (std.wstring s in strings)
                 Assert.IsTrue(s.Length <= s.Reserved);
-            for (int i = 0; i < ansiStrings.Length; i++)
+            for (int i = 0; i < ansiStrings.Count; i++)
                 Assert.IsTrue(ansiStrings[i].Length <= ansiStrings[i].Reserved);
 
             string[] mapKeys = stringMap.Keys.Select(s => s.Text).ToArray();
