@@ -120,6 +120,7 @@ namespace DbgEngTest
             std.list<std.wstring> strings = new std.list<std.wstring>(p.strings);
             std.vector<std.@string> ansiStrings = new std.vector<std.@string>(p.ansiStrings);
             std.map<std.wstring, std.@string> stringMap = new std.map<std.wstring, std.@string>(p.stringMap);
+            std.unordered_map<std.wstring, std.@string> stringUMap = new std.unordered_map<std.wstring, std.@string>(p.stringUMap);
 
             string[] stringsConverted = strings.Select(s => s.Text).ToArray();
             string[] ansiStringsConverted = ansiStrings.Select(s => s.Text).ToArray();
@@ -132,30 +133,8 @@ namespace DbgEngTest
             for (int i = 0; i < ansiStrings.Count; i++)
                 Assert.IsTrue(ansiStrings[i].Length <= ansiStrings[i].Reserved);
 
-            string[] mapKeys = stringMap.Keys.Select(s => s.Text).ToArray();
-            string[] mapValues = stringMap.Values.Select(s => s.Text).ToArray();
-            Dictionary<string, string> stringMapExpected = new Dictionary<string, string>()
-            {
-                { "foo", "ansiFoo" },
-                { "bar", "ansiBar" },
-            };
-
-            Assert.AreEqual(2, stringMap.Count);
-            CompareArrays(new[] { "foo", "bar" }, mapKeys);
-            CompareArrays(new[] { "ansiFoo", "ansiBar" }, mapValues);
-            foreach (KeyValuePair<std.wstring, std.@string> kvp in stringMap)
-            {
-                std.@string value;
-
-                Assert.IsTrue(stringMap.ContainsKey(kvp.Key));
-                Assert.IsTrue(stringMap.TryGetValue(kvp.Key, out value));
-                Assert.AreEqual(kvp.Value.Text, value.Text);
-                value = stringMap[kvp.Key];
-                Assert.AreEqual(kvp.Value.Text, value.Text);
-                Assert.AreEqual(stringMapExpected[kvp.Key.Text], kvp.Value.Text);
-            }
-
-            Assert.AreEqual(2, stringMap.ToStringDictionary().ToStringStringDictionary().Count);
+            VerifyMap(stringMap);
+            VerifyMap(stringUMap);
 
             // Verify enum value
             dynamic e = locals["e"];
@@ -197,6 +176,34 @@ namespace DbgEngTest
             Assert.AreEqual(0, ewptr2.SharedCount);
             Assert.AreEqual(1, ewptr2.WeakCount);
             Assert.IsFalse(ewptr2.IsCreatedWithMakeShared);
+        }
+
+        private void VerifyMap(IReadOnlyDictionary<std.wstring, std.@string> stringMap)
+        {
+            string[] mapKeys = stringMap.Keys.Select(s => s.Text).ToArray();
+            string[] mapValues = stringMap.Values.Select(s => s.Text).ToArray();
+            Dictionary<string, string> stringMapExpected = new Dictionary<string, string>()
+            {
+                { "foo", "ansiFoo" },
+                { "bar", "ansiBar" },
+            };
+
+            Assert.AreEqual(2, stringMap.Count);
+            CompareArrays(new[] { "foo", "bar" }, mapKeys);
+            CompareArrays(new[] { "ansiFoo", "ansiBar" }, mapValues);
+            foreach (KeyValuePair<std.wstring, std.@string> kvp in stringMap)
+            {
+                std.@string value;
+
+                Assert.IsTrue(stringMap.ContainsKey(kvp.Key));
+                Assert.IsTrue(stringMap.TryGetValue(kvp.Key, out value));
+                Assert.AreEqual(kvp.Value.Text, value.Text);
+                value = stringMap[kvp.Key];
+                Assert.AreEqual(kvp.Value.Text, value.Text);
+                Assert.AreEqual(stringMapExpected[kvp.Key.Text], kvp.Value.Text);
+            }
+
+            Assert.AreEqual(2, stringMap.ToStringDictionary().ToStringStringDictionary().Count);
         }
 
         public void CheckProcess()

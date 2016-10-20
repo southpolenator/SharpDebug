@@ -350,7 +350,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 //   | first
                 //   | second
                 // _Mysize
-                CodeType _Myhead, _Parent, _Left, _Right, _Myval, _Mysize, _Isnil, first, second;
+                CodeType _Myhead, _Parent, _Left, _Right, _Myval, _Mysize, _Isnil;
                 var fields = codeType.GetFieldTypes();
 
                 if (!fields.TryGetValue("_Myhead", out _Myhead) || !fields.TryGetValue("_Mysize", out _Mysize))
@@ -402,7 +402,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 //         | first
                 //         | second
                 //     | _Mysize
-                CodeType _Mypair, _Myval2, _Myval22, _Myhead, _Parent, _Left, _Right, _Myval, _Mysize, _Isnil, first, second;
+                CodeType _Mypair, _Myval2, _Myval22, _Myhead, _Parent, _Left, _Right, _Myval, _Mysize, _Isnil;
 
                 if (!codeType.GetFieldTypes().TryGetValue("_Mypair", out _Mypair))
                     return false;

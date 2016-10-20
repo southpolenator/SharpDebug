@@ -54,6 +54,7 @@
     <Compile Include="NativeTypes\std\map.cs" />
     <Compile Include="NativeTypes\std\pair.cs" />
     <Compile Include="NativeTypes\std\shared_ptr.cs" />
+    <Compile Include="NativeTypes\std\unordered_map.cs" />
     <Compile Include="NativeTypes\std\weak_ptr.cs" />
     <Compile Include="NativeTypes\Windows\Heap.cs" />
     <Compile Include="NativeTypes\Windows\ProcessEnvironmentBlock.cs" />

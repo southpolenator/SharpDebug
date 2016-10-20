@@ -37,6 +37,7 @@ public:
 	wstring stringArray[100];
 	vector<string> ansiStrings;
 	map<wstring, string> stringMap;
+	unordered_map<wstring, string> stringUMap;
 	MyEnum enumeration;
 	MyEnumInner innerEnumeration;
 
@@ -60,6 +61,8 @@ NO_INLINE void DefaultTestCase()
 	p->ansiStrings.push_back("AnsiBar");
 	p->stringMap.insert(make_pair(L"foo", "ansiFoo"));
 	p->stringMap.insert(make_pair(L"bar", "ansiBar"));
+	p->stringUMap.insert(make_pair(L"foo", "ansiFoo"));
+	p->stringUMap.insert(make_pair(L"bar", "ansiBar"));
 
 	int testArray[10000];
 

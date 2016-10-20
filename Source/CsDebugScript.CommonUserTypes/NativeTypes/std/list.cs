@@ -276,7 +276,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         private IReadOnlyCollection<T> instance;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="list"/> class.
+        /// Initializes a new instance of the <see cref="list{T}"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <exception cref="WrongCodeTypeException">std::list</exception>
@@ -320,6 +320,15 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         IEnumerator IEnumerable.GetEnumerator()
         {
             return instance.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Verifies if the specified code type is correct for this class.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        internal static bool VerifyCodeType(CodeType codeType)
+        {
+            return typeSelector.VerifyCodeType(codeType);
         }
     }
 }

@@ -38,6 +38,28 @@ namespace CsDebugScript.CommonUserTypes
         public T SelectType(Variable variable)
         {
             CodeType codeType = variable.GetCodeType();
+            IUserTypeDelegates delegates = GetUserTypeDelegates(codeType);
+
+            return (T)delegates?.SymbolicConstructor(variable);
+        }
+
+        /// <summary>
+        /// Verifies that type selector can work with the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if type selector can work with the specified code type; <c>false</c> otherwise</returns>
+        public bool VerifyCodeType(CodeType codeType)
+        {
+            return GetUserTypeDelegates(codeType) != null;
+        }
+
+        /// <summary>
+        /// Gets the user type delegates for the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns>User type delegates</returns>
+        private IUserTypeDelegates GetUserTypeDelegates(CodeType codeType)
+        {
             IUserTypeDelegates delegates;
 
             if (!verifiedTypes.TryGetValue(codeType, out delegates))
@@ -54,7 +76,7 @@ namespace CsDebugScript.CommonUserTypes
                 verifiedTypes.TryAdd(codeType, delegates);
             }
 
-            return (T)delegates?.SymbolicConstructor(variable);
+            return delegates;
         }
     }
 }
