@@ -5,11 +5,18 @@
 
 #pragma once
 
-#include "targetver.h"
+#include <string>
+#include <vector>
+#include <list>
+#include <memory>
+#include <map>
+#include <chrono>
+#include <thread>
 
-#include <stdio.h>
-#include <tchar.h>
 
 
-
-// TODO: reference additional headers your program requires here
+#ifdef _WIN32
+  #define NO_INLINE __declspec(noinline)
+#else
+  #define NO_INLINE
+#endif

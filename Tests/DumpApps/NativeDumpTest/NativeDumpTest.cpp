@@ -2,16 +2,10 @@
 //
 
 #include "stdafx.h"
-#include <string>
-#include <vector>
-#include <list>
-#include <memory>
-#include <map>
-#include <Windows.h>
 
 using namespace std;
 
-#pragma auto_inline off
+#pragma auto_inline(off)
 
 int main(int argc, char** argv);
 
@@ -53,7 +47,7 @@ int MyTestClass::staticVariable = 1212121212;
 
 int(*mainAddress)(int, char**) = main;
 
-__declspec(noinline) void DefaultTestCase()
+NO_INLINE void DefaultTestCase()
 {
 	MyTestClass * p = &globalVariable;
 	MyTestClass ** q = &p;
@@ -89,13 +83,13 @@ __declspec(noinline) void DefaultTestCase()
 	*a = 4;
 }
 
-__declspec(noinline) void InfiniteRecursionTestCase(int arg)
+NO_INLINE void InfiniteRecursionTestCase(int arg)
 {
-	Sleep(100);
+	this_thread::sleep_for(chrono::milliseconds(100));
 	InfiniteRecursionTestCase(arg + 1);
 }
 
-__declspec(noinline) int main(int argc, char** argv)
+NO_INLINE int main(int argc, char** argv)
 {
 
 	int testCaseToRun = 0;
