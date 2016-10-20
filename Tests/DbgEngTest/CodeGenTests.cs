@@ -100,6 +100,12 @@ namespace DbgEngTest
                         NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.map<${TKey},${TValue}>",
                         OriginalType = "std::map<${TKey},${TValue},${comparator},${allocator}>",
                     },
+                    new XmlTypeTransformation()
+                    {
+                        Constructor = "${new}",
+                        NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
+                        OriginalType = "std::map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
+                    },
                 },
             };
         }
@@ -134,6 +140,22 @@ namespace DbgEngTest
             DoCodeGen("NativeDumpTest.x86.Release.pdb");
             DoCodeGen("NativeDumpTest.x86.Release.pdb", singleFileExport: false);
             DoCodeGen("NativeDumpTest.x86.Release.pdb", compileWithRoslyn: false);
+        }
+
+        [TestMethod]
+        public void NativeDumpTest_gcc()
+        {
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb");
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb", singleFileExport: false);
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb", compileWithRoslyn: false);
+        }
+
+        [TestMethod]
+        public void NativeDumpTest_VS2013()
+        {
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.VS2013.pdb");
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.VS2013.pdb", singleFileExport: false);
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.VS2013.pdb", compileWithRoslyn: false);
         }
 
         private void DoCodeGen(string pdbFile, bool singleFileExport = true, bool compileWithRoslyn = true)
