@@ -210,13 +210,27 @@ namespace CsDebugScript.CodeGen
         /// </summary>
         /// <param name="xmlConfigPath">The XML configuration path.</param>
         /// <returns>Read XML configuration.</returns>
-        internal static XmlConfig Read(string xmlConfigPath)
+        public static XmlConfig Read(string xmlConfigPath)
         {
             var serializer = CreateSerializer();
 
             using (var reader = new StreamReader(xmlConfigPath))
             {
                 return (XmlConfig)serializer.Deserialize(reader);
+            }
+        }
+
+        /// <summary>
+        /// Writes the XML configuration to the specified path.
+        /// </summary>
+        /// <param name="xmlConfigPath">The XML configuration path.</param>
+        public void Write(string xmlConfigPath)
+        {
+            var serializer = CreateSerializer();
+
+            using (var writer = new StreamWriter(xmlConfigPath))
+            {
+                serializer.Serialize(writer, this);
             }
         }
 
