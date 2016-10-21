@@ -106,6 +106,12 @@ namespace DbgEngTest
                         NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
                         OriginalType = "std::map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
                     },
+                    new XmlTypeTransformation()
+                    {
+                        Constructor = "${new}",
+                        NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
+                        OriginalType = "std::pair<${TFirst},${TSecond}>",
+                    },
                 },
             };
         }

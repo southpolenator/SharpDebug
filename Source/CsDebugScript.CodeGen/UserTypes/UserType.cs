@@ -1122,6 +1122,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         case BasicType.BSTR:
                             return new BasicTypeTree("string");
                         case BasicType.Void:
+                        case BasicType.NoType:
                             return new BasicTypeTree("VoidType");
                         case BasicType.Float:
                             return new BasicTypeTree(type.Size <= 4 ? "float" : "double");

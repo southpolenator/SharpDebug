@@ -127,14 +127,14 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             get
             {
-                string className = ClassName;
+                string className = ClassName ?? OriginalClassName;
 
                 int templateStart = className.IndexOf('<');
 
                 if (templateStart > 0)
                 {
                     className = className.Substring(0, templateStart) + "<"
-                        + string.Join(", ", TemplateArgumentsAsSymbols.Select(s => s.UserType != null ? s.UserType.SpecializedFullClassName : "Variable"))
+                        + string.Join(", ", TemplateArgumentsAsSymbols.Select(s => s.UserType != null ? s.UserType.NonSpecializedFullClassName : "Variable"))
                         + ">";
                 }
 

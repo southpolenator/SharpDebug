@@ -1074,6 +1074,17 @@ namespace CsDebugScript
             return (char)ReadByte(buffer, offset);
         }
 
+        /// <summary>
+        /// Returns a single character.
+        /// </summary>
+        /// <param name="buffer">The array of bytes.</param>
+        /// <param name="offset">The starting position within value.</param>
+        /// <param name="bits">The number of bits to interpret.</param>
+        /// <param name="bitsOffset">The offset in bits.</param>
+        public static char ReadChar(MemoryBuffer buffer, int offset, int bits, int bitsOffset)
+        {
+            return (char)ReadByte(buffer, offset, bits, bitsOffset);
+        }
 
         /// <summary>
         /// Returns a 64-bit unsigned integer converted from four/eight bytes at a specified position in a byte array.

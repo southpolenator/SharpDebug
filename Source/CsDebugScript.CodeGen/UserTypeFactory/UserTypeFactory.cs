@@ -509,7 +509,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (GetUserType(type.Module, inputType, out userType))
                 {
-                    return userType.SpecializedFullClassName;
+                    return userType.NonSpecializedFullClassName;
                 }
 
                 return "Variable";
