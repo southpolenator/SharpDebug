@@ -516,6 +516,12 @@ namespace CsDebugScript.CodeGen
         {
             int i = 0, j = 0;
 
+            inputType = inputType.Trim();
+            if (inputType.EndsWith(" const"))
+            {
+                inputType = inputType.Substring(0, inputType.Length - 6);
+            }
+
             while (i < originalType.Length && j < inputType.Length)
             {
                 if (originalType[i] != '$')
