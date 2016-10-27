@@ -168,19 +168,30 @@ namespace CsDebugScript
         /// <param name="args">The arguments.</param>
         internal static void Execute(string path, params string[] args)
         {
-            var scriptBase = new ScriptBase();
-            var scriptOptions = ScriptOptions.Default.WithImports(ScriptCompiler.DefaultUsings).WithReferences(ScriptCompiler.DefaultAssemblyReferences);
-            var originalSourceResolver = scriptOptions.SourceResolver;
-            var originalMetadataResolver = scriptOptions.MetadataResolver;
+            try
+            {
+                var scriptBase = new ScriptBase();
+                var scriptOptions = ScriptOptions.Default.WithImports(ScriptCompiler.DefaultUsings).WithReferences(ScriptCompiler.DefaultAssemblyReferences);
+                var originalSourceResolver = scriptOptions.SourceResolver;
+                var originalMetadataResolver = scriptOptions.MetadataResolver;
 
-            scriptOptions = scriptOptions.WithMetadataResolver(new MetadataResolver(originalMetadataResolver));
-            scriptOptions = scriptOptions.WithSourceResolver(new SourceResolver(originalSourceResolver));
+                scriptOptions = scriptOptions.WithMetadataResolver(new MetadataResolver(originalMetadataResolver));
+                scriptOptions = scriptOptions.WithSourceResolver(new SourceResolver(originalSourceResolver));
 
-            var argsCode = Convert(args);
-            var scriptState = CSharpScript.RunAsync(argsCode, scriptOptions, scriptBase).Result;
+                var argsCode = Convert(args);
+                var scriptState = CSharpScript.RunAsync(argsCode, scriptOptions, scriptBase).Result;
 
-            // TODO: What about loading and clearing metadata?
-            scriptState = scriptState.ContinueWithAsync(string.Format(@"#load ""{0}""", path)).Result;
+                // TODO: What about loading and clearing metadata?
+                scriptState = scriptState.ContinueWithAsync(string.Format(@"#load ""{0}""", path)).Result;
+            }
+            catch (CompilationErrorException ex)
+            {
+                Console.Error.WriteLine("Compile errors:");
+                foreach (var error in ex.Diagnostics)
+                {
+                    Console.Error.WriteLine($"  {error}");
+                }
+            }
         }
 
         /// <summary>

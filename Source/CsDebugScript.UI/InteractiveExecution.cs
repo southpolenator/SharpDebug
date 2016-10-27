@@ -113,7 +113,7 @@ namespace CsDebugScript
                 Console.Error.WriteLine("Compile errors:");
                 foreach (var error in ex.Diagnostics)
                 {
-                    Console.Error.WriteLine(error);
+                    Console.Error.WriteLine($"  {error}");
                 }
             }
         }
