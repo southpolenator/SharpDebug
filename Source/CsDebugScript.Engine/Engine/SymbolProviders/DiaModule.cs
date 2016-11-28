@@ -433,7 +433,39 @@ namespace CsDebugScript.Engine.SymbolProviders
             List<Variable> variables = new List<Variable>();
 
             session.findSymbolByRVAEx(relativeAddress, SymTagEnum.SymTagFunction, out function, out displacement);
-            foreach (var symbol in function.GetChildren(SymTagEnum.SymTagData))
+            GetFrameLocals(function, variables, frame, module, arguments);
+            if (!arguments)
+            {
+                IDiaSymbol block;
+
+                // Locate locals using block.
+                session.findSymbolByRVAEx(relativeAddress, SymTagEnum.SymTagBlock, out block, out displacement);
+
+                if (block != null)
+                {
+                    // Traverse blocks till we reach function.
+                    while ((SymTagEnum)block.symTag != SymTagEnum.SymTagFunction)
+                    {
+                        GetFrameLocals(block, variables, frame, module, arguments);
+                        block = block.lexicalParent;
+                    }
+                }
+            }
+
+            return new VariableCollection(variables.ToArray());
+        }
+
+        /// <summary>
+        /// Gets the stack frame locals.
+        /// </summary>
+        /// <param name="block">The block.</param>
+        /// <param name="variables">The variables.</param>
+        /// <param name="frame">The frame.</param>
+        /// <param name="module">The module.</param>
+        /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
+        private static void GetFrameLocals(IDiaSymbol block, List<Variable> variables, StackFrame frame, Module module, bool arguments)
+        {
+            foreach (var symbol in block.GetChildren(SymTagEnum.SymTagData))
             {
                 DataKind symbolDataKind = (DataKind)symbol.dataKind;
 
@@ -448,8 +480,6 @@ namespace CsDebugScript.Engine.SymbolProviders
 
                 variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
             }
-
-            return new VariableCollection(variables.ToArray());
         }
 
         /// <summary>
