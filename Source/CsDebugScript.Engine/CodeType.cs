@@ -1016,7 +1016,11 @@ namespace CsDebugScript
                     uint elementTypeId = Context.SymbolProvider.GetTypeElementTypeId(Module, TypeId);
                     CodeType elementType = Module.TypesById[elementTypeId];
 
-                    elementType.pointerToType.Value = this;
+                    if (!IsArray)
+                    {
+                        elementType.pointerToType.Value = this;
+                    }
+
                     return elementType;
                 }
                 catch (Exception)
