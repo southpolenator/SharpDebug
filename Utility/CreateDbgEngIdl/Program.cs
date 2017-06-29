@@ -58,6 +58,8 @@ namespace CreateDbgEngIdl
         static readonly string ProgramFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
         static readonly string[] HeaderFiles = new string[]
             {
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.15063.0\um\dbgeng.h"),
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.14393.0\um\dbgeng.h"),
                 Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10586.0\um\dbgeng.h"),
                 Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10240.0\um\dbgeng.h"),
                 Path.Combine(ProgramFiles, @"Windows Kits\8.1\Include\um\DbgEng.h"),
@@ -71,33 +73,47 @@ namespace CreateDbgEngIdl
             };
         static readonly string[] UmPaths = new string[]
             {
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.15063.0\um"),
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.14393.0\um"),
                 Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10586.0\um"),
                 Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10240.0\um"),
                 Path.Combine(ProgramFiles, @"Windows Kits\8.1\Include\um"),
             };
         static readonly string[] SharedPaths = new string[]
             {
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.15063.0\shared"),
+                Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.14393.0\shared"),
                 Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10586.0\shared"),
                 Path.Combine(ProgramFiles, @"Windows Kits\10\Include\10.0.10240.0\shared"),
                 Path.Combine(ProgramFiles, @"Windows Kits\8.1\Include\shared"),
             };
         static readonly string[] VCBinPaths = new string[]
             {
-                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 12.0\VC\bin"),
                 Path.Combine(ProgramFiles, @"Microsoft Visual Studio 14.0\VC\bin"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 12.0\VC\bin"),
             };
         static readonly string[] VCDiaSdkIdlPaths = new string[]
             {
-                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 12.0\DIA SDK\idl"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio\2017\Enterprise\DIA SDK\idl"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio\2017\Professional\DIA SDK\idl"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio\2017\Community\DIA SDK\idl"),
                 Path.Combine(ProgramFiles, @"Microsoft Visual Studio 14.0\DIA SDK\idl"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 12.0\DIA SDK\idl"),
             };
         static readonly string[] VCDiaSdkIncludePaths = new string[]
             {
-                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 12.0\DIA SDK\include"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio\2017\Enterprise\DIA SDK\include"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio\2017\Professional\DIA SDK\include"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio\2017\Community\DIA SDK\include"),
                 Path.Combine(ProgramFiles, @"Microsoft Visual Studio 14.0\DIA SDK\include"),
+                Path.Combine(ProgramFiles, @"Microsoft Visual Studio 12.0\DIA SDK\include"),
             };
         static readonly string[] TlbImpPaths = new string[]
             {
+                Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7 Tools\x64\TlbImp.exe"),
+                Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7 Tools\TlbImp.exe"),
+                Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.2 Tools\x64\TlbImp.exe"),
+                Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.2 Tools\TlbImp.exe"),
                 Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools\x64\TlbImp.exe"),
                 Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools\TlbImp.exe"),
                 Path.Combine(ProgramFiles, @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\x64\TlbImp.exe"),
