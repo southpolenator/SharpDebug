@@ -27,7 +27,14 @@ namespace CsDebugScript.VS
         {
             get
             {
-                return DTE.Debugger.CurrentMode;
+                if (DTE != null)
+                {
+                    return DTE.Debugger.CurrentMode;
+                }
+                else
+                {
+                    return dbgDebugMode.dbgDesignMode;
+                }
             }
         }
 
@@ -61,6 +68,14 @@ namespace CsDebugScript.VS
         /// </summary>
         static VSContext()
         {
+            InitializeDTE();
+        }
+
+        /// <summary>
+        /// Initializes the DTE.
+        /// </summary>
+        private static void InitializeDTE()
+        {
             SetDTE(GetDTE());
         }
 
@@ -71,13 +86,28 @@ namespace CsDebugScript.VS
         internal static void SetDTE(DTE dte)
         {
             DTE = dte;
-            debuggerEvents = DTE.Events.DebuggerEvents;
-            debuggerEvents.OnEnterBreakMode += DebuggerEvents_OnEnterBreakMode;
-            debuggerEvents.OnEnterDesignMode += DebuggerEvents_OnEnterDesignMode;
-            debuggerEvents.OnEnterRunMode += DebuggerEvents_OnEnterRunMode;
-            debuggerProxy = (VSDebuggerProxy)AppDomain.CurrentDomain.GetData(VSDebuggerProxy.AppDomainDataName) ?? new VSDebuggerProxy();
-            VSDebugger = new VSDebugger(debuggerProxy);
-            Engine.Context.InitializeDebugger(VSDebugger);
+            if (dte != null)
+            {
+                debuggerEvents = DTE.Events.DebuggerEvents;
+                debuggerEvents.OnEnterBreakMode += DebuggerEvents_OnEnterBreakMode;
+                debuggerEvents.OnEnterDesignMode += DebuggerEvents_OnEnterDesignMode;
+                debuggerEvents.OnEnterRunMode += DebuggerEvents_OnEnterRunMode;
+                debuggerProxy = (VSDebuggerProxy)AppDomain.CurrentDomain.GetData(VSDebuggerProxy.AppDomainDataName) ?? new VSDebuggerProxy();
+                VSDebugger = new VSDebugger(debuggerProxy);
+                Engine.Context.InitializeDebugger(VSDebugger);
+            }
+            else
+            {
+                // 90s all over again :)
+                var timer = new System.Windows.Threading.DispatcherTimer();
+                timer.Tick += (a, b) =>
+                {
+                    timer.Stop();
+                    InitializeDTE();
+                };
+                timer.Interval = TimeSpan.FromSeconds(0.1);
+                timer.Start();
+            }
         }
 
         /// <summary>
