@@ -84,7 +84,9 @@ namespace CsDebugScript.VS
                 {
                     try
                     {
+#if USE_APP_DOMAIN
                         proxy?.ShutdownControl();
+#endif
                         AppDomain.Unload(domain);
                     }
                     catch (Exception ex)
@@ -109,9 +111,13 @@ namespace CsDebugScript.VS
                         ApplicationBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
                         PrivateBinPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
                     };
-                    scriptDomain = AppDomain.CreateDomain(DomainName, null, setup);
+                    scriptDomain = AppDomain.CreateDomain(DomainName, AppDomain.CurrentDomain.Evidence, setup);
                     VSContext.InitializeAppDomain(scriptDomain);
+#if USE_APP_DOMAIN
                     proxy = (VSInteractiveWindowProxy)scriptDomain.CreateInstanceAndUnwrap(typeof(VSInteractiveWindowProxy).Assembly.FullName, typeof(VSInteractiveWindowProxy).FullName);
+#else
+                    proxy = new VSInteractiveWindowProxy();
+#endif
                     var control = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl());
 
                     grid.Children.Clear();
