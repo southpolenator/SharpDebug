@@ -301,6 +301,9 @@ namespace CsDebugScript.UI
                     };
                 string[] versions = new string[]
                     {
+                        @"v4.7",
+                        @"v4.6.2",
+                        @"v4.6.1",
                         @"v4.6",
                         @"v4.5.2",
                         @"v4.5.1",
