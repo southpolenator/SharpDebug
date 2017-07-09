@@ -1,6 +1,7 @@
 ﻿using CsDebugScript.Engine;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -51,6 +52,15 @@ namespace CsDebugScript
             assemblyReferences.Add(typeof(System.Linq.Enumerable).Assembly.Location);
             assemblyReferences.Add(typeof(CsDebugScript.Variable).Assembly.Location);
             assemblyReferences.Add(typeof(CsDebugScript.InteractiveScriptBase).Assembly.Location);
+
+            // Try to find CsDebugScript.CommonUserTypes.dll
+            string defaultPath = typeof(CsDebugScript.Variable).Assembly.Location;
+            string commonUserTypes = Path.Combine(Path.GetDirectoryName(defaultPath), "CsDebugScript.CommonUserTypes.dll");
+
+            if (File.Exists(commonUserTypes))
+            {
+                assemblyReferences.Add(commonUserTypes);
+            }
 
             // Add support for System.Dynamic
             assemblyReferences.Add("Microsoft.CSharp");
