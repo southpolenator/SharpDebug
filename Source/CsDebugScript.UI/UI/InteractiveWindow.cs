@@ -22,6 +22,7 @@ namespace CsDebugScript.UI
         private StackPanel resultsPanel;
         private TextBlock promptBlock;
         private StatusBarItem statusBarStatusText;
+        private ScrollViewer scrollViewer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindow"/> class.
@@ -44,10 +45,11 @@ namespace CsDebugScript.UI
             Content = dockPanel;
 
             // Add results panel
-            ScrollViewer scrollViewer = new ScrollViewer();
+            scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
             scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-            scrollViewer.Margin = new Thickness(5);
+            scrollViewer.Margin = new Thickness(0);
+            scrollViewer.Padding = new Thickness(5);
             dockPanel.Children.Add(scrollViewer);
             resultsPanel = new StackPanel();
             resultsPanel.Orientation = Orientation.Vertical;
@@ -56,18 +58,21 @@ namespace CsDebugScript.UI
             scrollViewer.Content = resultsPanel;
 
             // Add prompt for text editor
-            var panel = new DockPanel();
+            var panel = new Grid();
             resultsPanel.Children.Add(panel);
 
             promptBlock = new TextBlock();
+            promptBlock.HorizontalAlignment = HorizontalAlignment.Left;
+            promptBlock.VerticalAlignment = VerticalAlignment.Top;
             promptBlock.FontFamily = new FontFamily("Consolas");
             promptBlock.FontSize = 14;
             promptBlock.Text = ExecutingPrompt;
-            DockPanel.SetDock(promptBlock, Dock.Left);
+            promptBlock.SizeChanged += PromptBlock_SizeChanged;
             panel.Children.Add(promptBlock);
 
             // Add text editor
             textEditor = new InteractiveCodeEditor();
+            textEditor.HorizontalAlignment = HorizontalAlignment.Stretch;
             textEditor.Background = Brushes.Transparent;
             textEditor.CommandExecuted += TextEditor_CommandExecuted;
             textEditor.CommandFailed += TextEditor_CommandFailed;
@@ -76,7 +81,18 @@ namespace CsDebugScript.UI
             textEditor.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
             textEditor.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
             textEditor.TextArea.PreviewKeyDown += TextEditor_PreviewKeyDown;
+            textEditor.TextArea.SizeChanged += TextArea_SizeChanged;
             panel.Children.Add(textEditor);
+        }
+
+        private void PromptBlock_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            textEditor.Padding = new Thickness(promptBlock.ActualWidth, 0, 0, 0);
+        }
+
+        private void TextArea_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            scrollViewer.ScrollToEnd();
         }
 
         private void TextEditor_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -104,7 +120,9 @@ namespace CsDebugScript.UI
         {
             textOutput = textOutput.Replace("\r\n", "\n");
             if (textOutput.EndsWith("\n"))
+            {
                 textOutput = textOutput.Substring(0, textOutput.Length - 1);
+            }
 
             var textBox = new TextBox();
             textBox.FontFamily = new FontFamily("Consolas");
@@ -114,7 +132,10 @@ namespace CsDebugScript.UI
             textBox.Background = Brushes.Transparent;
             textBox.BorderBrush = Brushes.Transparent;
             if (error)
+            {
                 textBox.Foreground = Brushes.Red;
+            }
+
             return textBox;
         }
 
@@ -140,7 +161,7 @@ namespace CsDebugScript.UI
             panel.Children.Add(textBlock);
 
             var codeControl = new CsTextEditor();
-            codeControl.IsEnabled = false;
+            codeControl.IsReadOnly = true;
             codeControl.Text = code;
             codeControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
             codeControl.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
@@ -166,25 +187,38 @@ namespace CsDebugScript.UI
             int textEditorIndex = initialLength - 1;
 
             foreach (var objectOutput in objectsOutput.Reverse())
+            {
                 if (objectOutput != null)
                 {
                     UIElement elementOutput = objectOutput as UIElement;
                     LazyUIResult lazyUI = objectOutput as LazyUIResult;
 
                     if (elementOutput != null)
+                    {
                         resultsPanel.Children.Insert(textEditorIndex, elementOutput);
+                    }
                     else if (lazyUI != null)
+                    {
                         resultsPanel.Children.Insert(textEditorIndex, lazyUI.UIElement);
+                    }
                     else
+                    {
                         resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(objectOutput.ToString()));
+                    }
                 }
+            }
 
             if (!string.IsNullOrEmpty(textOutput))
+            {
                 resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
+            }
+
             resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(textEditor.Text) : CreateDbgCode(textEditor.Text));
             AddSpacing(resultsPanel.Children[textEditorIndex]);
             if (resultsPanel.Children.Count - initialLength > 1)
+            {
                 AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
+            }
         }
 
         private void TextEditor_CommandFailed(bool csharpCode, string textOutput, string errorOutput)
@@ -194,7 +228,10 @@ namespace CsDebugScript.UI
 
             resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(errorOutput, error: true));
             if (!string.IsNullOrEmpty(textOutput))
+            {
                 resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
+            }
+
             resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(textEditor.Text) : CreateDbgCode(textEditor.Text));
             AddSpacing(resultsPanel.Children[textEditorIndex]);
             AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);

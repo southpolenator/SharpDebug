@@ -19,7 +19,9 @@ namespace CsDebugScript
             InteractiveScriptBase interactiveScript = InteractiveScriptBase.Current;
 
             if (interactiveScript == null)
+            {
                 throw new NotImplementedException("Calling Dump() is only supported while using interactive scripting");
+            }
 
             interactiveScript.Dump(obj);
         }
@@ -104,7 +106,10 @@ namespace CsDebugScript
             foreach (var method in methods)
             {
                 if (method.DeclaringType != type || method.IsSpecialName)
+                {
                     continue;
+                }
+
                 if (string.IsNullOrEmpty(nameFilter) || method.Name.ToLower().Contains(nameFilter))
                 {
                     yield return method.ToString();
@@ -124,7 +129,9 @@ namespace CsDebugScript
             while (type != null)
             {
                 foreach (var command in GetCommands(type, type == GetType() ? System.Reflection.BindingFlags.NonPublic : System.Reflection.BindingFlags.Default, nameFilter))
+                {
                     yield return command;
+                }
 
                 type = type.BaseType;
             }
@@ -168,7 +175,10 @@ namespace CsDebugScript
                 foreach (var method in methods)
                 {
                     if (method.DeclaringType != type)
+                    {
                         continue;
+                    }
+
                     if (string.IsNullOrEmpty(nameFilter) || method.Name.ToLower().Contains(nameFilter))
                     {
                         yield return method.ToString();

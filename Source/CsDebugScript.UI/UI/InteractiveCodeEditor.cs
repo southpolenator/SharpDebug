@@ -205,7 +205,9 @@ namespace CsDebugScript.UI
 
             IsEnabled = false;
             if (Executing != null)
+            {
                 Executing(true);
+            }
             Task.Run(() =>
             {
                 try
@@ -219,18 +221,24 @@ namespace CsDebugScript.UI
                         if (!string.IsNullOrEmpty(errorOutput))
                         {
                             if (CommandFailed != null)
+                            {
                                 CommandFailed(csharpCode, textOutput, errorOutput);
+                            }
                         }
                         else
                         {
                             if (CommandExecuted != null)
+                            {
                                 CommandExecuted(csharpCode, textOutput, objectOutput);
+                            }
                             Document.Text = "";
                         }
 
                         IsEnabled = true;
                         if (Executing != null)
+                        {
                             Executing(false);
+                        }
                     });
                 }
                 catch (ExitRequestedException)
@@ -238,7 +246,9 @@ namespace CsDebugScript.UI
                     Dispatcher.InvokeAsync(() =>
                     {
                         if (CloseRequested != null)
+                        {
                             CloseRequested();
+                        }
                     });
                 }
                 catch (Exception ex)

@@ -99,7 +99,9 @@ namespace CsDebugScript.UI.CodeWindow
 
             completionData = cce.GetCompletionData(startPosition, true).Cast<CompletionData>();
             if (wordLength > 0)
+            {
                 word = document.GetText(offset - wordLength, wordLength);
+            }
 
             var parameterCompletionDataFactory = new ParameterCompletionDataFactory();
             var pce = new ICSharpCode.NRefactory.CSharp.Completion.CSharpParameterCompletionEngine(
@@ -248,7 +250,9 @@ namespace CsDebugScript.UI.CodeWindow
                     }
 
                     if (wordLength > 0)
+                    {
                         word = document.GetText(offset - wordLength, wordLength);
+                    }
 
                     if (functionCallPopup == null)
                     {
