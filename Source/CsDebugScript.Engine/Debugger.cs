@@ -578,6 +578,59 @@ namespace CsDebugScript
             }
         }
 
+        /// <summary>
+        /// Reads the memory from the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="size">The size.</param>
+        /// <returns>Buffer containing read memory</returns>
+        public static MemoryBuffer ReadMemory(Process process, Variable pointer, uint size)
+        {
+            if (pointer.GetCodeType().IsPointer)
+            {
+                return ReadMemory(process, pointer.GetPointerAddress(), size);
+            }
+            else
+            {
+                return ReadMemory(process, (ulong)pointer, size);
+            }
+        }
+
+        /// <summary>
+        /// Reads the memory from current process.
+        /// </summary>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="size">The size.</param>
+        /// <returns>Buffer containing read memory</returns>
+        public static MemoryBuffer ReadMemory(Variable pointer, uint size)
+        {
+            return ReadMemory(Process.Current, pointer, size);
+        }
+
+        /// <summary>
+        /// Reads the memory from the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="size">The size.</param>
+        /// <returns>Buffer containing read memory</returns>
+        public static MemoryBuffer ReadMemory(Process process, NakedPointer pointer, uint size)
+        {
+            return ReadMemory(process, pointer.GetPointerAddress(), size);
+        }
+
+        /// <summary>
+        /// Reads the memory from current process.
+        /// </summary>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="size">The size.</param>
+        /// <returns>Buffer containing read memory</returns>
+        public static MemoryBuffer ReadMemory(NakedPointer pointer, uint size)
+        {
+            return ReadMemory(Process.Current, pointer, size);
+        }
+
         #region DebuggeeControl
         /// <summary>
         /// When doing live process debugging continues debugee execution of the current process.
