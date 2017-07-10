@@ -326,7 +326,7 @@ namespace CsDebugScript.VS
             stackTrace.Frames = frames;
             for (int i = 0; i < frames.Length; i++)
             {
-                ulong instructionOffset = framesData[i].Item1, stackOffset = framesData[i].Item2, frameOffset = framesData[i].Item2;
+                ulong instructionOffset = framesData[i].Item1, stackOffset = framesData[i].Item2, frameOffset = framesData[i].Item3;
 
                 ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset);
                 frames[i] = new StackFrame(stackTrace, threadContext)

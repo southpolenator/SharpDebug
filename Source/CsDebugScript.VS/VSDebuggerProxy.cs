@@ -345,8 +345,9 @@ namespace CsDebugScript.VS
             ExecuteOnDkmInitializedThread(() =>
             {
                 DkmThread thread = GetThread(threadId);
+                int flags = 0x1f;
 
-                thread.GetContext(-1, contextBufferPointer.ToPointer(), contextBufferSize);
+                thread.GetContext(flags, contextBufferPointer.ToPointer(), contextBufferSize);
             });
         }
 
@@ -438,7 +439,9 @@ namespace CsDebugScript.VS
                         }
                     }
 
-                    if (instructionOffset != frames[i].InstructionAddress.CPUInstructionPart.InstructionPointer)
+                    if (frames[i].InstructionAddress != null
+                        && frames[i].InstructionAddress.CPUInstructionPart != null
+                        && instructionOffset != frames[i].InstructionAddress.CPUInstructionPart.InstructionPointer)
                     {
                         throw new Exception("Instruction offset is not the same?");
                     }
