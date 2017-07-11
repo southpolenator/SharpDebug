@@ -43,6 +43,7 @@ namespace CsDebugScript.UI
         private InteractiveExecution interactiveExecution;
         private Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
         private List<object> results = new List<object>();
+        private System.Threading.ManualResetEvent initializedEvent = new System.Threading.ManualResetEvent(false);
 
         private void AddResult(object obj)
         {
@@ -64,20 +65,22 @@ namespace CsDebugScript.UI
             {
                 try
                 {
-                    Initialize();
                     Dispatcher.InvokeAsync(() =>
                     {
                         IsEnabled = true;
-                        if (Executing != null)
-                            Executing(false);
+                        Executing?.Invoke(false);
+                    });
+                    Initialize();
+                    Dispatcher.InvokeAsync(() =>
+                    {
+                        InitializationFinished?.Invoke();
                     });
                 }
                 catch (ExitRequestedException)
                 {
                     Dispatcher.InvokeAsync(() =>
                     {
-                        if (CloseRequested != null)
-                            CloseRequested();
+                        CloseRequested?.Invoke();
                     });
                 }
                 catch (Exception ex)
@@ -93,6 +96,8 @@ namespace CsDebugScript.UI
 
         public event ExecutingHandler Executing;
 
+        public event Action InitializationFinished;
+
         public event Action CloseRequested;
 
         protected new void Initialize()
@@ -100,6 +105,7 @@ namespace CsDebugScript.UI
             UpdateScriptCode();
             base.Initialize();
             interactiveExecution.UnsafeInterpret("null");
+            initializedEvent.Set();
         }
 
         protected override void OnExecuteCSharpScript()
@@ -210,6 +216,8 @@ namespace CsDebugScript.UI
             }
             Task.Run(() =>
             {
+                initializedEvent.WaitOne();
+
                 try
                 {
                     string textOutput, errorOutput;

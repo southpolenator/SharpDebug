@@ -155,6 +155,7 @@
     <Compile Include="ScriptExecution.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
+    <Compile Include="UI\InteractiveWindowContent.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
