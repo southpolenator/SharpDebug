@@ -42,8 +42,23 @@ namespace CsDebugScript
         /// </summary>
         public IObjectWriter ObjectWriter { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether interactive commands/scripts will be executed in STA thread.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if force STA thread execution; otherwise, <c>false</c>.
+        /// </value>
+        public bool ForceStaExecution { get; set; }
+
+        /// <summary>
         /// Gets or sets the internal object writer. It is used for writing objects to host window.
+        /// </summary>
         internal IObjectWriter _InternalObjectWriter_ { get; set; }
+
+        /// <summary>
+        /// Gets or sets the UI dispatcher.
+        /// </summary>
+        internal System.Windows.Threading.Dispatcher _Dispatcher_ { get; set; }
 
         /// <summary>
         /// Stops interactive scripting execution. You can use this simply by entering it as command in interactive scripting mode.
@@ -270,6 +285,22 @@ namespace CsDebugScript
             else
             {
                 throw new ArgumentException(nameof(newBaseClassType));
+            }
+        }
+
+        /// <summary>
+        /// Executes the specified action in UI thread.
+        /// </summary>
+        /// <param name="action">The action.</param>
+        public void ExecuteInUiThread(Action action)
+        {
+            if (_Dispatcher_ != null)
+            {
+                _Dispatcher_.Invoke(action);
+            }
+            else
+            {
+                action();
             }
         }
     }

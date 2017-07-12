@@ -118,77 +118,107 @@ namespace CsDebugScript.UI
 
         protected override void OnExecuteCSharpScript()
         {
-            BackgroundExecute((string documentText, out string textOutput, out string errorOutput, out IEnumerable<object> result) =>
+            BackgroundExecute((string _documentText, out string _textOutput, out string _errorOutput, out IEnumerable<object> _result) =>
             {
-                // Setting results
-                textOutput = "";
-                errorOutput = "";
-
-                // Execution code
-                var oldOut = Console.Out;
-                var oldError = Console.Error;
-
-                try
+                BackgroundExecuteDelegate scriptExecution = (string documentText, out string textOutput, out string errorOutput, out IEnumerable<object> result) =>
                 {
-                    using (StringWriter writer = new StringWriter())
+                    // Setting results
+                    textOutput = "";
+                    errorOutput = "";
+
+                    // Execution code
+                    var oldOut = Console.Out;
+                    var oldError = Console.Error;
+
+                    try
                     {
-                        Console.SetOut(writer);
-                        Console.SetError(writer);
-
-                        DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
-                            | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
-                            | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
-                        var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
-
-                        using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
+                        using (StringWriter writer = new StringWriter())
                         {
-                            interactiveExecution.UnsafeInterpret(documentText);
-                            writer.Flush();
-                            textOutput = writer.GetStringBuilder().ToString();
+                            Console.SetOut(writer);
+                            Console.SetError(writer);
+
+                            DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
+                                | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
+                                | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
+                            var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
+
+                            interactiveExecution.scriptBase._Dispatcher_ = Dispatcher;
+                            using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
+                            {
+                                interactiveExecution.UnsafeInterpret(documentText);
+                                writer.Flush();
+                                textOutput = writer.GetStringBuilder().ToString();
+                            }
                         }
+
+                        UpdateScriptCode();
                     }
-
-                    UpdateScriptCode();
-                }
-                catch (Microsoft.CodeAnalysis.Scripting.CompilationErrorException ex)
-                {
-                    StringBuilder sb = new StringBuilder();
-
-                    sb.AppendLine("Compile errors:");
-                    foreach (var error in ex.Diagnostics)
+                    catch (Microsoft.CodeAnalysis.Scripting.CompilationErrorException ex)
                     {
-                        sb.AppendLine(error.ToString());
-                    }
+                        StringBuilder sb = new StringBuilder();
 
-                    errorOutput = sb.ToString();
-                }
-                catch (ExitRequestedException)
+                        sb.AppendLine("Compile errors:");
+                        foreach (var error in ex.Diagnostics)
+                        {
+                            sb.AppendLine(error.ToString());
+                        }
+
+                        errorOutput = sb.ToString();
+                    }
+                    catch (ExitRequestedException)
+                    {
+                        throw;
+                    }
+                    catch (AggregateException ex)
+                    {
+                        if (ex.InnerException is ExitRequestedException)
+                        {
+                            throw ex.InnerException;
+                        }
+                        errorOutput = ex.ToString();
+                    }
+                    catch (TargetInvocationException ex)
+                    {
+                        if (ex.InnerException is ExitRequestedException)
+                        {
+                            throw ex.InnerException;
+                        }
+                        errorOutput = ex.InnerException.ToString();
+                    }
+                    catch (Exception ex)
+                    {
+                        errorOutput = ex.ToString();
+                    }
+                    finally
+                    {
+                        Console.SetError(oldError);
+                        Console.SetOut(oldOut);
+                        result = results;
+                        results = new List<object>();
+                        interactiveExecution.scriptBase._Dispatcher_ = null;
+                    }
+                };
+
+                // Check if we should execute script code in STA thread
+                if (interactiveExecution.scriptBase.ForceStaExecution)
                 {
-                    throw;
+                    string tempTextOutput = null;
+                    string tempErrorOutput = null;
+                    IEnumerable<object> tempResult = null;
+
+                    InteractiveWindow.ExecuteInSTA(() =>
+                    {
+                        scriptExecution(_documentText, out tempTextOutput, out tempErrorOutput, out tempResult);
+                    });
+                    _textOutput = tempTextOutput;
+                    _errorOutput = tempErrorOutput;
+                    _result = tempResult;
                 }
-                catch (AggregateException ex)
+                else
                 {
-                    if (ex.InnerException is ExitRequestedException)
-                        throw ex.InnerException;
-                    errorOutput = ex.ToString();
+                    scriptExecution(_documentText, out _textOutput, out _errorOutput, out _result);
                 }
-                catch (TargetInvocationException ex)
-                {
-                    if (ex.InnerException is ExitRequestedException)
-                        throw ex.InnerException;
-                    errorOutput = ex.InnerException.ToString();
-                }
-                catch (Exception ex)
-                {
-                    errorOutput = ex.ToString();
-                }
-                finally
-                {
-                    Console.SetError(oldError);
-                    Console.SetOut(oldOut);
-                    result = results;
-                    results = new List<object>();
-                }
+
             }, true);
         }
 

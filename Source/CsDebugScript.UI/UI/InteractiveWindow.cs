@@ -82,7 +82,7 @@ namespace CsDebugScript.UI
             }, waitForExecution: false);
         }
 
-        private static void ExecuteInSTA(Action action, bool waitForExecution = true)
+        internal static void ExecuteInSTA(Action action, bool waitForExecution = true)
         {
             System.Threading.Thread thread = new System.Threading.Thread(() => { action(); });
             thread.SetApartmentState(System.Threading.ApartmentState.STA);
