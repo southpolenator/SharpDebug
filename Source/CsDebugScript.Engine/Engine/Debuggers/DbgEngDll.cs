@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using Dia2Lib;
 
 namespace CsDebugScript.Engine.Debuggers
 {
@@ -398,6 +399,18 @@ namespace CsDebugScript.Engine.Debuggers
         public string GetModuleSymbolFile(Module module)
         {
             return GetModuleName(module, DebugModname.SymbolFile);
+        }
+
+        /// <summary>
+        /// Gets the DIA session for the specified module.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <returns>
+        ///   <see cref="IDiaSession" /> if available, null otherwise.
+        /// </returns>
+        public IDiaSession GetModuleDiaSession(Module module)
+        {
+            return null;
         }
 
         /// <summary>
@@ -1187,7 +1200,7 @@ namespace CsDebugScript.Engine.Debuggers
             uint extraInfoUsed;
             uint descriptionSize;
 
-            //  Collect EventSize 
+            //  Collect EventSize
             StringBuilder description = new StringBuilder();
 
             Control.GetLastEventInformation(
@@ -1209,7 +1222,7 @@ namespace CsDebugScript.Engine.Debuggers
             GCHandle handle = GCHandle.Alloc(debugLastEventInfo, GCHandleType.Pinned);
 
             byte[] eventExtraInfo = new byte[extraInfoUsed];
-          
+
             try
             {
                 Control.GetLastEventInformation(
@@ -1618,4 +1631,4 @@ namespace CsDebugScript.Engine.Debuggers
             GetModuleBaseProc64 GetModuleBaseRoutine);
         #endregion
     }
-} 
+}

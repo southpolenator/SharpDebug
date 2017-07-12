@@ -60,10 +60,33 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="module">The module.</param>
         public DiaModule(string pdbPath, Module module)
         {
-            Module = module;
+            IDiaSession diaSession;
+
             dia = new DiaSource();
             dia.loadDataFromPdb(pdbPath);
-            dia.openSession(out session);
+            dia.openSession(out diaSession);
+            Initialize(diaSession, module);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DiaModule"/> class.
+        /// </summary>
+        /// <param name="diaSession">The DIA session.</param>
+        /// <param name="module">The module.</param>
+        public DiaModule(IDiaSession diaSession, Module module)
+        {
+            Initialize(diaSession, module);
+        }
+
+        /// <summary>
+        /// Initializes this instance of the <see cref="DiaModule"/> class.
+        /// </summary>
+        /// <param name="diaSession">The DIA session.</param>
+        /// <param name="module">The module.</param>
+        private void Initialize(IDiaSession diaSession, Module module)
+        {
+            Module = module;
+            session = diaSession;
             globalScope = session.globalScope;
             typeAllFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeAllFields);
             typeFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);

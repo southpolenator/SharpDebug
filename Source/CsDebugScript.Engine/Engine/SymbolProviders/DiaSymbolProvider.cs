@@ -36,6 +36,15 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="module">The module.</param>
         private static ISymbolProviderModule LoadModule(Module module)
         {
+            // Try to get debugger DIA session
+            IDiaSession diaSession = Context.Debugger.GetModuleDiaSession(module);
+
+            if (diaSession != null)
+            {
+                return new DiaModule(diaSession, module);
+            }
+
+            // Try to load PDB file into our own DIA session
             string pdb = module.SymbolFileName;
 
             if (!string.IsNullOrEmpty(pdb) && Path.GetExtension(pdb).ToLower() == ".pdb")
@@ -49,6 +58,7 @@ namespace CsDebugScript.Engine.SymbolProviders
                 }
             }
 
+            // Fallback to debugger symbol provider
             return Context.Debugger.CreateDefaultSymbolProviderModule();
         }
 

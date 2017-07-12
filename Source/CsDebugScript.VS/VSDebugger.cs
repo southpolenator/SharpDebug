@@ -2,6 +2,7 @@
 using CsDebugScript.Engine.Utility;
 using System;
 using System.Linq;
+using Dia2Lib;
 
 namespace CsDebugScript.VS
 {
@@ -171,6 +172,18 @@ namespace CsDebugScript.VS
         public string GetModuleSymbolFile(Module module)
         {
             return proxy.GetModuleSymbolName(module.Id);
+        }
+
+        /// <summary>
+        /// Gets the DIA session for the specified module.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <returns>
+        ///   <see cref="IDiaSession" /> if available, null otherwise.
+        /// </returns>
+        public IDiaSession GetModuleDiaSession(Module module)
+        {
+            return proxy.GetModuleDiaSession(module.Id) as IDiaSession;
         }
 
         /// <summary>

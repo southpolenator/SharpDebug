@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Debugger.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dia2Lib;
 
 namespace CsDebugScript.VS
 {
@@ -169,6 +170,16 @@ namespace CsDebugScript.VS
                 }
 
                 return module.FullName;
+            });
+        }
+
+        public object GetModuleDiaSession(uint moduleId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmModuleInstance module = GetModule(moduleId);
+
+                return module.Module.GetSymbolInterface(typeof(IDiaSession).GUID);
             });
         }
 
