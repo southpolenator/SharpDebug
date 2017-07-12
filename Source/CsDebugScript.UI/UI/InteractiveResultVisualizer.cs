@@ -205,7 +205,9 @@ namespace CsDebugScript.UI
         {
             // We don't visualize null
             if (obj == null)
+            {
                 return null;
+            }
 
             // Primitive types and strings are visualized as ToString
             if (obj.GetType().IsPrimitive || obj is string)
@@ -213,6 +215,13 @@ namespace CsDebugScript.UI
                 return obj.ToString();
             }
 
+            // UI elements should be resurfaced back.
+            if (obj is UIElement)
+            {
+                return obj;
+            }
+
+            // All other should be visualized in a table
             return new LazyUIResult(() => Visualize(obj));
         }
 
