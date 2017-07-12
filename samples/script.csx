@@ -35,16 +35,16 @@ writeln(p.GetField("string1"));
 var s1 = new std.wstring(p.GetField("string1"));
 writeln("std::wstring: {0}", s1);
 var ansiStrings = new std.vector<std.@string>(p.GetField("ansiStrings"));
-writeln("std::vector.Length = {0} / {1}", ansiStrings.Length, ansiStrings.Reserved);
-for (int i = 0; i < ansiStrings.Length; i++)
+writeln("std::vector.Count = {0} / {1}", ansiStrings.Count, ansiStrings.Reserved);
+for (int i = 0; i < ansiStrings.Count; i++)
     writeln("ansiStrings[{0}] = {1}", i, ansiStrings[i]);
 var strings = new std.list<Variable>(p.GetField("strings"));
-writeln("std::list.Length = {0}", strings.Length);
+writeln("std::list.Count = {0}", strings.Count);
 foreach (var ss in strings)
     writeln("strings[??] = {0}", new std.wstring(ss));
 
 var strings2 = new std.list<std.wstring>(p.GetField("strings"));
-writeln("std::list.Length = {0}", strings2.Length);
+writeln("std::list.Count = {0}", strings2.Count);
 foreach (var ss in strings2)
     writeln("strings[??] = {0}", ss);
 

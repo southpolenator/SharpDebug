@@ -12,9 +12,21 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     public class vector<T> : IReadOnlyList<T>
     {
         /// <summary>
+        /// Interface that describes vector instance abilities.
+        /// </summary>
+        /// <seealso cref="System.Collections.Generic.IReadOnlyList{T}" />
+        private interface IVector : IReadOnlyList<T>
+        {
+            /// <summary>
+            /// Gets the reserved space in buffer (number of elements).
+            /// </summary>
+            int Reserved { get; }
+        }
+
+        /// <summary>
         /// Common code for Microsoft Visual Studio implementations of std::vector
         /// </summary>
-        public class VisualStudio : IReadOnlyList<T>
+        public class VisualStudio : IVector
         {
             /// <summary>
             /// The internal value field inside the std::vector
@@ -274,7 +286,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// The type selector
         /// </summary>
-        private static TypeSelector<IReadOnlyList<T>> typeSelector = new TypeSelector<IReadOnlyList<T>>(new[]
+        private static TypeSelector<IVector> typeSelector = new TypeSelector<IVector>(new[]
         {
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2013), VisualStudio2013.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2015), VisualStudio2015.VerifyCodeType),
@@ -283,7 +295,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// The instance used to read variable data
         /// </summary>
-        private IReadOnlyList<T> instance;
+        private IVector instance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="vector"/> class.
@@ -319,6 +331,17 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             get
             {
                 return instance.Count;
+            }
+        }
+
+        /// <summary>
+        /// Gets the reserved space in buffer (number of elements).
+        /// </summary>
+        public int Reserved
+        {
+            get
+            {
+                return instance.Reserved;
             }
         }
 
