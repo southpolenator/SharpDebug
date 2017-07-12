@@ -15,12 +15,34 @@ namespace CsDebugScript.UI
         private StackPanel resultsPanel;
         private TextBlock promptBlock;
         private ScrollViewer scrollViewer;
+        private ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors;
+        private string fontFamily;
+        private double fontSize;
+        private int indentationSize;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InteractiveWindowContent" /> class.
+        /// </summary>
+        /// <param name="highlightingColors">The highlighting colors.</param>
+        public InteractiveWindowContent(params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+            : this("Consolas", 14, 4, highlightingColors)
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindowContent"/> class.
         /// </summary>
-        public InteractiveWindowContent()
+        /// <param name="fontFamily">The font family.</param>
+        /// <param name="fontSize">Size of the font.</param>
+        /// <param name="indentationSize">Size of the indentation.</param>
+        /// <param name="highlightingColors">The highlighting colors.</param>
+        public InteractiveWindowContent(string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
         {
+            this.fontFamily = fontFamily;
+            this.fontSize = fontSize;
+            this.indentationSize = indentationSize;
+            this.highlightingColors = highlightingColors;
+
             // Add results panel
             scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
@@ -47,7 +69,7 @@ namespace CsDebugScript.UI
             panel.Children.Add(promptBlock);
 
             // Add text editor
-            textEditor = new InteractiveCodeEditor();
+            textEditor = new InteractiveCodeEditor(fontFamily, fontSize, indentationSize, highlightingColors);
             textEditor.HorizontalAlignment = HorizontalAlignment.Stretch;
             textEditor.Background = Brushes.Transparent;
             textEditor.CommandExecuted += TextEditor_CommandExecuted;
@@ -115,10 +137,16 @@ namespace CsDebugScript.UI
             textBox.Text = textOutput;
             textBox.IsReadOnly = true;
             textBox.Background = Brushes.Transparent;
+            textBox.BorderThickness = new Thickness(0);
             textBox.BorderBrush = Brushes.Transparent;
+            textBox.IsInactiveSelectionHighlightEnabled = false;
             if (error)
             {
                 textBox.Foreground = Brushes.Red;
+            }
+            else
+            {
+                textBox.Foreground = textEditor.Foreground;
             }
 
             return textBox;
@@ -145,7 +173,7 @@ namespace CsDebugScript.UI
             textBlock.Text = InteractiveExecution.DefaultPrompt;
             panel.Children.Add(textBlock);
 
-            var codeControl = new CsTextEditor();
+            var codeControl = new CsTextEditor(fontFamily, fontSize, indentationSize, highlightingColors);
             codeControl.IsReadOnly = true;
             codeControl.Text = code;
             codeControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Windows.Media;
 
 namespace CsDebugScript.UI.CodeWindow
 {
@@ -18,14 +19,15 @@ namespace CsDebugScript.UI.CodeWindow
         private int currentParameter = 0;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ParameterDataProvider"/> class.
+        /// Initializes a new instance of the <see cref="ParameterDataProvider" /> class.
         /// </summary>
         /// <param name="startOffset">The start offset.</param>
         /// <param name="methods">The methods.</param>
-        public ParameterDataProvider(int startOffset, IEnumerable<ICSharpCode.NRefactory.TypeSystem.IMethod> methods)
+        /// <param name="textColor">Color of the text.</param>
+        public ParameterDataProvider(int startOffset, IEnumerable<ICSharpCode.NRefactory.TypeSystem.IMethod> methods, Brush textColor)
         {
             StartOffset = startOffset;
-            Methods = methods.Select(m => new EntityWrapper<ICSharpCode.NRefactory.TypeSystem.IMethod>(m)).OrderBy(m => m.Entity.Parameters.Count).ThenBy(m => m.AmbienceDescription).ToArray();
+            Methods = methods.Select(m => new EntityWrapper<ICSharpCode.NRefactory.TypeSystem.IMethod>(m, textColor)).OrderBy(m => m.Entity.Parameters.Count).ThenBy(m => m.AmbienceDescription).ToArray();
         }
 
         /// <summary>

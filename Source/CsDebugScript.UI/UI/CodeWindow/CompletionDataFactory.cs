@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Windows.Media;
 using ICSharpCode.NRefactory.Completion;
 using ICSharpCode.NRefactory.CSharp;
 using ICSharpCode.NRefactory.TypeSystem;
@@ -10,6 +11,12 @@ namespace CsDebugScript.UI.CodeWindow
     internal class CompletionDataFactory : ICompletionDataFactory
     {
         CSharpAmbience ambience = new CSharpAmbience();
+        Brush textColor;
+
+        public CompletionDataFactory(Brush textColor)
+        {
+            this.textColor = textColor;
+        }
 
         public IEnumerable<ICompletionData> CreateCodeTemplateCompletionData()
         {
@@ -19,7 +26,7 @@ namespace CsDebugScript.UI.CodeWindow
 
         public ICompletionData CreateEntityCompletionData(IEntity entity)
         {
-            EntityWrapper<IEntity> entityWrapper = new EntityWrapper<IEntity>(entity);
+            EntityWrapper<IEntity> entityWrapper = new EntityWrapper<IEntity>(entity, textColor);
 
             return new CompletionData(entityWrapper.CompletionDataType, entity.Name, priority: 2, description: entityWrapper.EntityDescription)
             {
@@ -50,7 +57,7 @@ namespace CsDebugScript.UI.CodeWindow
 
         public ICompletionData CreateLiteralCompletionData(string title, string description = null, string insertText = null)
         {
-            return new CompletionData(CompletionDataType.Keyword, insertText ?? title, priority: 2, description: EntityWrapper<IEntity>.CreateEntityDescription(title, "<summary>" + (description ?? (insertText ?? title) + " Keyword") + "</summary>"));
+            return new CompletionData(CompletionDataType.Keyword, insertText ?? title, priority: 2, description: EntityWrapper<IEntity>.CreateEntityDescription(textColor, title, "<summary>" + (description ?? (insertText ?? title) + " Keyword") + "</summary>"));
         }
 
         public ICompletionData CreateMemberCompletionData(IType type, IEntity member)
@@ -60,7 +67,7 @@ namespace CsDebugScript.UI.CodeWindow
 
         public ICompletionData CreateNamespaceCompletionData(INamespace name)
         {
-            return new CompletionData(CompletionDataType.Namespace, name.Name, description: EntityWrapper<IEntity>.CreateEntityDescription("namespace " + name.Name));
+            return new CompletionData(CompletionDataType.Namespace, name.Name, description: EntityWrapper<IEntity>.CreateEntityDescription(textColor, "namespace " + name.Name));
         }
 
         public ICompletionData CreateNewOverrideCompletionData(int declarationBegin, IUnresolvedTypeDefinition type, IMember m)
@@ -96,12 +103,12 @@ namespace CsDebugScript.UI.CodeWindow
 
         public ICompletionData CreateVariableCompletionData(ITypeParameter parameter)
         {
-            return new CompletionData(CompletionDataType.Variable, parameter.Name, description: EntityWrapper<IEntity>.CreateEntityDescription(parameter));
+            return new CompletionData(CompletionDataType.Variable, parameter.Name, description: EntityWrapper<IEntity>.CreateEntityDescription(textColor, parameter));
         }
 
         public ICompletionData CreateVariableCompletionData(IVariable variable)
         {
-            return new CompletionData(CompletionDataType.Variable, variable.Name, description: EntityWrapper<IEntity>.CreateEntityDescription(variable));
+            return new CompletionData(CompletionDataType.Variable, variable.Name, description: EntityWrapper<IEntity>.CreateEntityDescription(textColor, variable));
         }
 
         public ICompletionData CreateXmlDocCompletionData(string tag, string description = null, string tagInsertionText = null)

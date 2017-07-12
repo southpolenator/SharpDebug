@@ -115,10 +115,10 @@ namespace CsDebugScript.VS
                     VSContext.InitializeAppDomain(scriptDomain);
 #if USE_APP_DOMAIN
                     proxy = (VSInteractiveWindowProxy)scriptDomain.CreateInstanceAndUnwrap(typeof(VSInteractiveWindowProxy).Assembly.FullName, typeof(VSInteractiveWindowProxy).FullName);
-#else
-                    proxy = new VSInteractiveWindowProxy();
-#endif
                     var control = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl());
+#else
+                    var control = new VSInteractiveWindowControl();
+#endif
 
                     grid.Children.Clear();
                     grid.Children.Add(control);

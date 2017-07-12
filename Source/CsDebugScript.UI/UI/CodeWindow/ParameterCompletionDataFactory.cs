@@ -5,11 +5,19 @@ using ICSharpCode.NRefactory.TypeSystem;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Media;
 
 namespace CsDebugScript.UI.CodeWindow
 {
     internal class ParameterCompletionDataFactory : IParameterCompletionDataFactory
     {
+        private Brush textColor;
+
+        public ParameterCompletionDataFactory(Brush textColor)
+        {
+            this.textColor = textColor;
+        }
+
         public IParameterDataProvider CreateConstructorProvider(int startOffset, IType type)
         {
             return CreateMethodDataProvider(startOffset, type.GetConstructors());
@@ -32,7 +40,7 @@ namespace CsDebugScript.UI.CodeWindow
 
         public IParameterDataProvider CreateMethodDataProvider(int startOffset, IEnumerable<IMethod> methods)
         {
-            return new ParameterDataProvider(startOffset, methods);
+            return new ParameterDataProvider(startOffset, methods, textColor);
         }
 
         public IParameterDataProvider CreateTypeParameterDataProvider(int startOffset, IEnumerable<IMethod> methods)

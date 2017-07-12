@@ -50,7 +50,15 @@ namespace CsDebugScript.UI
             results.Add(obj);
         }
 
-        public InteractiveCodeEditor()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InteractiveCodeEditor" /> class.
+        /// </summary>
+        /// <param name="fontFamily">The font family.</param>
+        /// <param name="fontSize">Size of the font.</param>
+        /// <param name="indentationSize">Size of the indentation.</param>
+        /// <param name="highlightingColors">The highlighting colors.</param>
+        public InteractiveCodeEditor(string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+            : base(fontFamily, fontSize, indentationSize, highlightingColors)
         {
             interactiveExecution = new InteractiveExecution();
             interactiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
