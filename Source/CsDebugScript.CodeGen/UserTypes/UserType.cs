@@ -13,6 +13,11 @@ namespace CsDebugScript.CodeGen.UserTypes
     /// </summary>
     internal class UserType
     {
+        private static string[] Keywords = new string[]
+            {
+                "lock", "base", "params", "enum", "in", "object", "event", "string", "private", "public", "internal",
+            };
+
         /// <summary>
         /// Flag that saves if thisClass variable was used during generation and should be exported.
         /// </summary>
@@ -156,19 +161,9 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 symbolName = NormalizeSymbolName(symbolName);
 
-                switch (symbolName)
+                if (Keywords.Contains(symbolName))
                 {
-                    case "lock":
-                    case "base":
-                    case "params":
-                    case "enum":
-                    case "in":
-                    case "object":
-                    case "event":
-                    case "string":
-                        return string.Format("@{0}", symbolName);
-                    default:
-                        break;
+                    return string.Format("@{0}", symbolName);
                 }
 
                 return symbolName;
@@ -285,7 +280,14 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </remarks>
         public static string NormalizeSymbolNamespace(string symbolNamespace)
         {
-            return symbolNamespace.Replace("::", "_").Replace("*", "").Replace('&', '_').Replace("$", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').Replace('[', '_').Replace(']', '_');
+            string normalized = symbolNamespace.Replace("::", "_").Replace("*", "").Replace('&', '_').Replace("$", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').Replace('[', '_').Replace(']', '_').Replace('`', '_').Replace('\'', '_');
+
+            if (Keywords.Contains(normalized))
+            {
+                return string.Format("@{0}", normalized);
+            }
+
+            return normalized;
         }
 
         /// <summary>

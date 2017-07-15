@@ -195,7 +195,7 @@ namespace CsDebugScript.CodeGen
 
             foreach (var symbols in symbolsByName.Values)
             {
-                if (symbols.Count != 1)
+                if (symbols.Count != 1 || modules.Count == 1)
                     foreach (var s in symbols)
                         symbolNamespaces.Add(s, modules[s.Module].Namespace);
                 else
@@ -246,7 +246,7 @@ namespace CsDebugScript.CodeGen
                     return;
                 }
 
-                // Do not handle template referenced arguments 
+                // Do not handle template referenced arguments
                 if (symbolName.Contains("&"))
                 {
                     // TODO: Convert this to function pointer
@@ -414,7 +414,9 @@ namespace CsDebugScript.CodeGen
                 List<MetadataReference> references = new List<MetadataReference>
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                    MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location)
+                    MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
+                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.Engine.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.CommonUserTypes.dll")),
                 };
 
                 references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(r.Path)));
