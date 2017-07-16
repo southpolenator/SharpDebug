@@ -32,7 +32,7 @@ namespace DbgEngTest
             return new XmlConfig()
             {
                 UseDiaSymbolProvider = true,
-                SingleFileExport = true,
+                MultiFileExport = false,
                 GeneratedAssemblyName = "NativeDumpTestExported.dll",
                 GeneratedPropsFileName = "NativeDumpTestExported.props",
                 GenerateAssemblyWithRoslyn = true,
@@ -264,7 +264,7 @@ namespace DbgEngTest
         {
             XmlConfig xmlConfig = GetXmlConfig(pdbFile);
 
-            xmlConfig.SingleFileExport = singleFileExport;
+            xmlConfig.MultiFileExport = !singleFileExport;
             xmlConfig.GenerateAssemblyWithRoslyn = compileWithRoslyn;
             if (!transformations)
                 xmlConfig.Transformations = new XmlTypeTransformation[0];
