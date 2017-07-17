@@ -5,9 +5,9 @@
         <Type Name="MyTestClass" />
     </Types>
     <Transformations>
-        <Transformation OriginalType="std::basic_string&lt;char,${char_traits},${allocator}&gt;" NewType="CsScripts.CommonUserTypes.NativeTypes.std.@string" Constructor="${new}" />
-        <Transformation OriginalType="std::basic_string&lt;wchar_t,${char_traits},${allocator}&gt;" NewType="CsScripts.CommonUserTypes.NativeTypes.std.wstring" Constructor="${new}" />
-        <Transformation OriginalType="std::vector&lt;${T},${allocator}&gt;" NewType="CsScripts.CommonUserTypes.NativeTypes.std.vector&lt;${T}&gt;" Constructor="${new}" />
-        <Transformation OriginalType="std::list&lt;${T},${allocator}&gt;" NewType="CsScripts.CommonUserTypes.NativeTypes.std.list&lt;${T}&gt;" Constructor="${new}" />
+        <Transformation OriginalType="std::basic_string&lt;char,${char_traits},${allocator}&gt;" NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.@string" Constructor="${new}" />
+        <Transformation OriginalType="std::basic_string&lt;wchar_t,${char_traits},${allocator}&gt;" NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.wstring" Constructor="${new}" />
+        <Transformation OriginalType="std::vector&lt;${T},${allocator}&gt;" NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.vector&lt;${T}&gt;" Constructor="${new}" />
+        <Transformation OriginalType="std::list&lt;${T},${allocator}&gt;" NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.list&lt;${T}&gt;" Constructor="${new}" />
     </Transformations>
 </XmlConfig>
