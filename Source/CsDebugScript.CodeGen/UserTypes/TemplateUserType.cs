@@ -213,9 +213,15 @@ namespace CsDebugScript.CodeGen.UserTypes
                 {
                     if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
                     {
-                        var typeString = GetSymbolTypeTree(symbol, factory).GetTypeString();
+                        try
+                        {
+                            var typeString = GetSymbolTypeTree(symbol, factory).GetTypeString();
 
-                        specializationUserType = new TemplateArgumentUserType(typeString, symbol);
+                            specializationUserType = new TemplateArgumentUserType(typeString, symbol);
+                        }
+                        catch
+                        {
+                        }
                     }
                 }
 

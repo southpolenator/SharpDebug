@@ -350,6 +350,15 @@ namespace CsDebugScript.CodeGen
         public HashSet<string> IncludedFields { get; set; } = new HashSet<string>();
 
         /// <summary>
+        /// Gets or sets a value indicating whether type should export dependent types.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if type should export dependent types; otherwise, <c>false</c>.
+        /// </value>
+        [XmlAttribute]
+        public bool ExportDependentTypes { get; set; }
+
+        /// <summary>
         /// Gets a value indicating whether this user type is template.
         /// </summary>
         /// <value>

@@ -1249,6 +1249,13 @@ namespace CsDebugScript.CodeGen.UserTypes
                 case SymTagEnum.SymTagFunctionType:
                     return new FunctionTypeTree();
 
+                case SymTagEnum.SymTagBaseClass:
+                    {
+                        Symbol symbol = Symbol.Module.FindGlobalTypeWildcard(Symbol.Name).Single();
+
+                        return GetSymbolTypeTree(symbol, factory, bitLength);
+                    }
+
                 default:
                     throw new Exception("Unexpected type tag " + type.Tag);
             }

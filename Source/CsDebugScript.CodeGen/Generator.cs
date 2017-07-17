@@ -41,18 +41,29 @@ namespace CsDebugScript.CodeGen
 
             // Check logger and error logger
             if (errorLogger == null)
+            {
                 errorLogger = Console.Error;
+            }
+
             if (logger == null)
+            {
                 logger = Console.Out;
+            }
 
             // Create output directory
             Directory.CreateDirectory(outputDirectory);
 
             // Verify that included files exist
             if (!string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
+            {
                 foreach (var file in includedFiles)
+                {
                     if (!File.Exists(file.Path))
+                    {
                         throw new FileNotFoundException("", file.Path);
+                    }
+                }
+            }
 
             // Loading modules
             ConcurrentDictionary<Module, XmlModule> modules = new ConcurrentDictionary<Module, XmlModule>();
@@ -76,20 +87,44 @@ namespace CsDebugScript.CodeGen
                 Module module = mm.Key;
                 string moduleName = xmlModule.Name;
                 string nameSpace = xmlModule.Namespace;
-                List<Symbol> symbols = new List<Symbol>();
+                HashSet<Symbol> symbols = new HashSet<Symbol>();
 
                 foreach (var type in typeNames)
                 {
                     Symbol[] foundSymbols = module.FindGlobalTypeWildcard(type.NameWildcard);
 
                     if (foundSymbols.Length == 0)
+                    {
                         errorLogger.WriteLine("Symbol not found: {0}", type.Name);
+                    }
                     else
-                        symbols.AddRange(foundSymbols);
+                    {
+                        foreach (Symbol symbol in foundSymbols)
+                        {
+                            symbols.Add(symbol);
+                        }
+                    }
+
+                    if (type.ExportDependentTypes)
+                    {
+                        foreach (Symbol symbol in foundSymbols)
+                        {
+                            symbol.ExtractDependantSymbols(symbols, xmlConfig.Transformations);
+                        }
+                    }
                 }
 
-                symbols.AddRange(module.GetAllTypes());
-                globalTypesPerModule.TryAdd(xmlModule, symbols.ToArray());
+                if (symbols.Count == 0)
+                {
+                    foreach (Symbol symbol in module.GetAllTypes())
+                    {
+                        symbols.Add(symbol);
+                    }
+                }
+
+                globalTypesPerModule.TryAdd(
+                    xmlModule,
+                    symbols.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).ToArray());
             });
 
             List<Symbol> allSymbols = new List<Symbol>();
@@ -97,9 +132,15 @@ namespace CsDebugScript.CodeGen
             int maxSymbols = symbolsPerModule.Max(ss => ss.Length);
 
             for (int i = 0; i < maxSymbols; i++)
+            {
                 for (int j = 0; j < symbolsPerModule.Length; j++)
+                {
                     if (i < symbolsPerModule[j].Length)
+                    {
                         allSymbols.Add(symbolsPerModule[j][i]);
+                    }
+                }
+            }
 
             logger.WriteLine(" {0}", sw.Elapsed);
 

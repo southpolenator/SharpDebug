@@ -283,6 +283,42 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
+        /// Extracts the dependant symbols into extractedSymbols if they are not recognized as transformations.
+        /// </summary>
+        /// <param name="extractedSymbols">The extracted symbols.</param>
+        /// <param name="transformations">The transformations.</param>
+        internal void ExtractDependantSymbols(HashSet<Symbol> extractedSymbols, XmlTypeTransformation[] transformations)
+        {
+            List<Symbol> symbols = Fields.Select(f => f.Type)
+                .Union(BaseClasses).ToList();
+
+            if (ElementType != null)
+            {
+                symbols.Add(ElementType);
+            }
+
+            foreach (Symbol symbol in symbols)
+            {
+                if (transformations.Any(t => t.Matches(symbol.Name)))
+                {
+                    continue;
+                }
+
+                Symbol s = symbol;
+
+                if (s.Tag == SymTagEnum.SymTagBaseClass)
+                {
+                    s = s.Module.FindGlobalTypeWildcard(s.Name).Single();
+                }
+
+                if (extractedSymbols.Add(s))
+                {
+                    s.ExtractDependantSymbols(extractedSymbols, transformations);
+                }
+            }
+        }
+
+        /// <summary>
         /// Links the symbols.
         /// </summary>
         internal void LinkSymbols(Symbol s)

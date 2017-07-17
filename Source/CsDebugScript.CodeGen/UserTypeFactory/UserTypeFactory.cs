@@ -159,7 +159,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 #if false // TODO: Verify if we want to use simple user type instead of template user type
                         if (templateType.AllTemplateArguments.Count == 0)
                         {
-                            // Template does not have arguments that can be used by generic 
+                            // Template does not have arguments that can be used by generic
                             // Make it specialized type
                             userType = this.AddSymbol(symbol, null, moduleName, generationOptions);
                         }
@@ -510,6 +510,18 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (GetUserType(type.Module, inputType, out userType))
                 {
                     return userType.NonSpecializedFullClassName;
+                }
+
+                Symbol symbol = type.Module.GetSymbol(inputType);
+
+                if (symbol != null)
+                {
+                    if ((symbol.Tag == SymTagEnum.SymTagBaseType)
+                        || (symbol.Tag == SymTagEnum.SymTagPointerType && symbol.ElementType.Tag == SymTagEnum.SymTagBaseType)
+                        || (symbol.Tag == SymTagEnum.SymTagArrayType && symbol.ElementType.Tag == SymTagEnum.SymTagBaseType))
+                    {
+                        return ownerUserType.GetSymbolTypeTree(symbol, null).GetTypeString();
+                    }
                 }
 
                 return "Variable";

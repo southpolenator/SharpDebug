@@ -43,6 +43,7 @@ namespace CsDebugScript.CodeGen
                 {
                     symbol = GetSymbol(symbol.ElementType.Name, symbol.Module);
                 }
+
                 return symbol.UserType;
             }
 
