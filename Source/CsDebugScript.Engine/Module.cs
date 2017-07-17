@@ -385,7 +385,14 @@ namespace CsDebugScript
         /// </returns>
         public override string ToString()
         {
-            return $"{Name} (Address = 0x{Address:X}, Version = {ModuleVersion}";
+            try
+            {
+                return $"{Name} (Address = 0x{Address:X}, Version = {ModuleVersion}";
+            }
+            catch
+            {
+                return $"{Name} (Address = 0x{Address:X}";
+            }
         }
 
         /// <summary>
