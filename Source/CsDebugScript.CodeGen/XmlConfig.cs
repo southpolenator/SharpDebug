@@ -95,6 +95,14 @@ namespace CsDebugScript.CodeGen
         public string GeneratedPropsFileName { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether namespace should be generated as static class.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if namespace should be generated as static class; otherwise, <c>false</c>.
+        /// </value>
+        public bool GenerateNamespaceAsStaticClass { get; set; }
+
+        /// <summary>
         /// Gets or sets the namespace name for types found in multiple modules.
         /// </summary>
         /// <value>
@@ -249,25 +257,49 @@ namespace CsDebugScript.CodeGen
             }
 
             if (!DontGenerateFieldTypeInfoComment)
+            {
                 generationFlags |= UserTypeGenerationFlags.GenerateFieldTypeInfoComment;
+            }
             if (!MultiLineProperties)
+            {
                 generationFlags |= UserTypeGenerationFlags.SingleLineProperty;
+            }
             if (UseDiaSymbolProvider)
+            {
                 generationFlags |= UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
+            }
             if (ForceUserTypesToNewInsteadOfCasting)
+            {
                 generationFlags |= UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting;
+            }
             if (CacheUserTypeFields)
+            {
                 generationFlags |= UserTypeGenerationFlags.CacheUserTypeFields;
+            }
             if (CacheStaticUserTypeFields)
+            {
                 generationFlags |= UserTypeGenerationFlags.CacheStaticUserTypeFields;
+            }
             if (LazyCacheUserTypeFields)
+            {
                 generationFlags |= UserTypeGenerationFlags.LazyCacheUserTypeFields;
+            }
             if (GeneratePhysicalMappingOfUserTypes)
+            {
                 generationFlags |= UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes;
+            }
             if (!MultiFileExport)
+            {
                 generationFlags |= UserTypeGenerationFlags.SingleFileExport;
+            }
             if (UseHungarianNotation)
+            {
                 generationFlags |= UserTypeGenerationFlags.UseHungarianNotation;
+            }
+            if (GenerateNamespaceAsStaticClass)
+            {
+                generationFlags |= UserTypeGenerationFlags.GenerateNamespaceAsStaticClass;
+            }
             return generationFlags;
         }
 

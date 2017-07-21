@@ -104,6 +104,26 @@ namespace CsDebugScript
         internal ScriptState<object> _ScriptState_;
 
         /// <summary>
+        /// The list of CodeGen generated code.
+        /// </summary>
+        internal List<ImportUserTypeCode> _CodeGenCode_;
+
+        /// <summary>
+        /// The list of CodeGen generated assemblies.
+        /// </summary>
+        internal List<ImportUserTypeAssembly> _CodeGenAssemblies_;
+
+        /// <summary>
+        /// The code resolver used for generating code with CodeGen.
+        /// </summary>
+        internal ScriptExecution.SourceResolver _CodeResolver_;
+
+        /// <summary>
+        /// The assembly resolver used for generating assemblies with CodeGen.
+        /// </summary>
+        internal ScriptExecution.MetadataResolver _AssemblyResolver_;
+
+        /// <summary>
         /// Outputs the specified object using ObjectWriter.
         /// </summary>
         /// <param name="obj">The object.</param>
@@ -301,6 +321,27 @@ namespace CsDebugScript
             else
             {
                 action();
+            }
+        }
+
+        /// <summary>
+        /// Imports user types from modules using the specified importing options.
+        /// </summary>
+        /// <param name="options">The importing options.</param>
+        /// <param name="asAssembly">If set to <c>true</c> user types will be imported as assembly. If set to <c>false</c> user types will be imported as script code.</param>
+        public void ImportUserTypes(ImportUserTypeOptions options, bool asAssembly = false)
+        {
+            if (asAssembly)
+            {
+                ImportUserTypeAssembly assembly = _AssemblyResolver_.GenerateAssembly(options);
+
+                _CodeGenAssemblies_.Add(assembly);
+            }
+            else
+            {
+                ImportUserTypeCode code = _CodeResolver_.GenerateCode(options);
+
+                _CodeGenCode_.Add(code);
             }
         }
     }

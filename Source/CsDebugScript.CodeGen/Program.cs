@@ -97,7 +97,7 @@ namespace CsDebugScript.CodeGen
                     };
             }
 
-            Generator.Generate(config);
+            new Generator().Generate(config);
         }
     }
 }

@@ -67,5 +67,10 @@ namespace CsDebugScript.CodeGen
         /// Generated code should be compressed.
         /// </summary>
         CompressedOutput = 1024,
+
+        /// <summary>
+        /// The namespace should be generated as static class
+        /// </summary>
+        GenerateNamespaceAsStaticClass = 2048,
     }
 }

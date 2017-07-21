@@ -40,7 +40,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         public override void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags generationFlags, int indentation = 0)
         {
             // Declared In Type with namespace
-            if (DeclaredInType != null)
+            if (DeclaredInType != null || generationFlags.HasFlag(UserTypeGenerationFlags.GenerateNamespaceAsStaticClass))
             {
                 foreach (string innerClass in namespaces)
                 {

@@ -283,7 +283,7 @@ namespace DbgEngTest
 
                     Task mtaTask = new Task(() =>
                     {
-                        Generator.Generate(xmlConfig);
+                        new Generator().Generate(xmlConfig);
                     });
 
                     mtaTask.Start();

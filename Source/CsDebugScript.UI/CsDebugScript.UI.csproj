@@ -39,6 +39,10 @@
     <DocumentationFile>$(SolutionDir)\bin\Release\CsDebugScript.UI.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj">
+      <Project>{283a0331-2ead-4dd2-a3fe-20d229e2d277}</Project>
+      <Name>CsDebugScript.CodeGen</Name>
+    </ProjectReference>
     <Reference Include="DbgEngManaged">
       <HintPath>$(OutputPath)\DbgEngManaged.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
@@ -127,6 +131,7 @@
       <HintPath>$(SolutionDir)\packages\System.Reflection.Metadata.1.2.0\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
