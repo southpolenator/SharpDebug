@@ -177,9 +177,16 @@ namespace CsDebugScript.VS
         {
             return ExecuteOnDkmInitializedThread(() =>
             {
-                DkmModuleInstance module = GetModule(moduleId);
+                try
+                {
+                    DkmModuleInstance module = GetModule(moduleId);
 
-                return module.Module.GetSymbolInterface(typeof(IDiaSession).GUID);
+                    return module.Module.GetSymbolInterface(typeof(IDiaSession).GUID);
+                }
+                catch
+                {
+                    return null;
+                }
             });
         }
 
