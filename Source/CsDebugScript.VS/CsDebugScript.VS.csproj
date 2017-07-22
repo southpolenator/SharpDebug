@@ -56,6 +56,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
     <Compile Include="VSContext.cs" />
     <Compile Include="VSDebugger.cs" />
     <Compile Include="VSDebuggerProxy.cs" />
