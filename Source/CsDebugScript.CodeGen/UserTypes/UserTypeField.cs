@@ -188,11 +188,18 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Gets the name of the property based on the field name.
         /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="field">The field.</param>
         /// <param name="userType">The user type owning the field.</param>
         /// <returns>The name of the property.</returns>
-        public static string GetPropertyName(string fieldName, UserType userType)
+        public static string GetPropertyName(SymbolField field, UserType userType)
         {
+            if (!string.IsNullOrEmpty(field.PropertyName))
+            {
+                return field.PropertyName;
+            }
+
+            string fieldName = field.Name;
+
             // Check if field name is the same as owner type name
             if (fieldName == userType.Symbol.Name) // TODO: Check if this should be userType.ConstructorName
             {

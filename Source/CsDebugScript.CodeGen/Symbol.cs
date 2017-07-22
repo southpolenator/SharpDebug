@@ -536,7 +536,12 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Gets the name.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; internal set; }
+
+        /// <summary>
+        /// Gets the name of the property.
+        /// </summary>
+        public string PropertyName { get; internal set; }
 
         /// <summary>
         /// Gets the size.

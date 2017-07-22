@@ -390,7 +390,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         FieldName = "_" + fieldName,
                         FieldType = fieldTypeString,
                         FieldTypeInfoComment = string.Format("// {0} {1};", field.Type.Name, fieldName),
-                        PropertyName = UserTypeField.GetPropertyName(fieldName, this),
+                        PropertyName = UserTypeField.GetPropertyName(field, this),
                         Static = isStatic,
                         UseUserMember = lazyCacheUserTypeFields,
                         CacheResult = cacheUserTypeFields || (isStatic && cacheStaticUserTypeFields),

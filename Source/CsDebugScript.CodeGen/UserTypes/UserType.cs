@@ -467,7 +467,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 constructorText += ".DowncastObject()";
 
             // TODO: More extensive checks are needed for property name. We must not create duplicate after adding '_'. For example: class has 'in' and '_in' fields.
-            fieldName = UserTypeField.GetPropertyName(fieldName, this);
+            fieldName = UserTypeField.GetPropertyName(field, this);
 
             // When creating property for BaseClass use our generated type and name to avoid specializations
             if (extractingBaseClass && !(fieldType is VariableTypeTree))
