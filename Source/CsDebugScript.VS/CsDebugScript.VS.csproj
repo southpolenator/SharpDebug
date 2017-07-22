@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="$(SolutionDir)\Key.snk" />
+    <None Include="app.config" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -87,6 +88,14 @@
     </Content>
     <Content Include="Resources\VSInteractiveWindowCommand.png" />
     <Content Include="Resources\VSInteractiveWindowPackage.ico" />
+    <Content Include="System.Collections.Immutable.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="System.IO.FileSystem.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="System.Reflection.Metadata.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -269,6 +278,8 @@
     <PreBuildEvent>copy "$(OutDir)\Microsoft.CodeAnalysis.dll" "$(ProjectDir)"
 copy "$(OutDir)\Microsoft.CodeAnalysis.CSharp.dll" "$(ProjectDir)"
 copy "$(OutDir)\System.Reflection.Metadata.dll" "$(ProjectDir)"
+copy "$(OutDir)\System.Collections.Immutable.dll" "$(ProjectDir)"
+copy "$(OutDir)\System.IO.FileSystem.dll" "$(ProjectDir)"
 </PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
