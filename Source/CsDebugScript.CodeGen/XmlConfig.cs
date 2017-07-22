@@ -300,6 +300,10 @@ namespace CsDebugScript.CodeGen
             {
                 generationFlags |= UserTypeGenerationFlags.GenerateNamespaceAsStaticClass;
             }
+            if (DontSaveGeneratedCodeFiles && GenerateAssemblyWithRoslyn)
+            {
+                generationFlags |= UserTypeGenerationFlags.DontSaveGeneratedCodeFiles;
+            }
             return generationFlags;
         }
 

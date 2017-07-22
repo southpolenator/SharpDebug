@@ -266,6 +266,7 @@ namespace DbgEngTest
 
             xmlConfig.MultiFileExport = !singleFileExport;
             xmlConfig.GenerateAssemblyWithRoslyn = compileWithRoslyn;
+            xmlConfig.DontSaveGeneratedCodeFiles = true;
             if (!transformations)
                 xmlConfig.Transformations = new XmlTypeTransformation[0];
             DoCodeGen(xmlConfig);

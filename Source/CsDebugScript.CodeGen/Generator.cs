@@ -195,7 +195,7 @@ namespace CsDebugScript.CodeGen
                 string code = GenerateSingleFile();
 
                 generatedFiles.TryAdd(filename.ToLowerInvariant(), filename);
-                if (!xmlConfig.DontSaveGeneratedCodeFiles)
+                if (!generationOptions.HasFlag(UserTypeGenerationFlags.DontSaveGeneratedCodeFiles))
                 {
                     File.WriteAllText(filename, code);
                 }
@@ -799,8 +799,13 @@ namespace CsDebugScript.CodeGen
             string nameSpace = (userType.DeclaredInType as NamespaceUserType)?.FullClassName ?? userType.Namespace;
 
             if (!string.IsNullOrEmpty(nameSpace))
+            {
                 classOutputDirectory = Path.Combine(classOutputDirectory, nameSpace.Replace(".", "\\").Replace(":", "."));
-            Directory.CreateDirectory(classOutputDirectory);
+            }
+            if (!generationFlags.HasFlag(UserTypeGenerationFlags.DontSaveGeneratedCodeFiles))
+            {
+                Directory.CreateDirectory(classOutputDirectory);
+            }
 
             bool isEnum = userType is EnumUserType;
 
@@ -817,12 +822,14 @@ namespace CsDebugScript.CodeGen
                 filename = string.Format(@"{0}\{1}{2}_{3}.exported.cs", classOutputDirectory, userType.ConstructorName, isEnum ? "_enum" : "", index++);
             }
 
-            using (TextWriter output = new StreamWriter(filename))
             using (StringWriter stringOutput = new StringWriter())
             {
                 userType.WriteCode(new IndentedWriter(stringOutput, generationFlags.HasFlag(UserTypeGenerationFlags.CompressedOutput)), errorOutput, factory, generationFlags);
                 string text = stringOutput.ToString();
-                output.WriteLine(text);
+                if (!generationFlags.HasFlag(UserTypeGenerationFlags.DontSaveGeneratedCodeFiles))
+                {
+                    File.WriteAllText(filename, text);
+                }
                 return Tuple.Create(text, filename);
             }
         }
