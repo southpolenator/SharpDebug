@@ -19,6 +19,7 @@
       <dependency id="AvalonEdit" version="5.0.2" />
       <dependency id="CsDebugScript.DbgEng" version="$version$" />
       <dependency id="CsDebugScript.Engine" version="$version$" />
+      <dependency id="CsDebugScript.CodeGen" version="$version$-beta" />
       <dependency id="ICSharpCode.NRefactory" version="5.5.1" />
       <dependency id="Microsoft.CodeAnalysis.CSharp" version="1.2.1" />
       <dependency id="Microsoft.CodeAnalysis.CSharp.Scripting" version="1.2.1" />

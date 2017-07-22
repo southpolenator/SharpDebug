@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>CsDebugScript.CodeGen</id>
-    <version>$version$</version>
+    <version>$version$-beta</version>
     <title>CsDebugScript.CodeGen</title>
     <authors>$authors$</authors>
     <owners>$owners$</owners>
