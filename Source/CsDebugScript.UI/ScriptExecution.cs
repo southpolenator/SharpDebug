@@ -480,8 +480,6 @@ namespace CsDebugScript
                 // Execute code generation
                 string code = new Generator().GenerateScriptCode(codeGenConfig);
 
-                File.WriteAllText(@"C:\Users\vujova\Source\Repos\WinDbgCs\bin\Debug\Tests\output\code.cs", code);
-
                 // Add generated code to be loaded after execution
                 return new ImportUserTypeCode()
                 {
