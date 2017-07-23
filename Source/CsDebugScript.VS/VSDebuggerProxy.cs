@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dia2Lib;
+using System.Runtime.InteropServices;
 
 namespace CsDebugScript.VS
 {
@@ -181,7 +182,7 @@ namespace CsDebugScript.VS
                 {
                     DkmModuleInstance module = GetModule(moduleId);
 
-                    return module.Module.GetSymbolInterface(typeof(IDiaSession).GUID);
+                    return module.Module.GetSymbolInterface(Marshal.GenerateGuidForType(typeof(IDiaSession)));
                 }
                 catch
                 {
