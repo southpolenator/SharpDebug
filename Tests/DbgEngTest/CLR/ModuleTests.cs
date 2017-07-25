@@ -6,6 +6,8 @@ using System.Linq;
 namespace DbgEngTest.CLR
 {
     [TestClass]
+    [DeploymentItem(@"CLR\Apps\Types.cs", @"CLR\Apps")]
+    [DeploymentItem(@"CLR\Apps\SharedLibrary.cs", @"CLR\Apps")]
     public class ModuleTests : ClrTestBase
     {
         [ClassInitialize]

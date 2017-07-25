@@ -12,6 +12,8 @@ namespace DbgEngTest
     /// Note that every test has to run in a MTA initialized thread.
     /// </summary>
     [TestClass]
+    [DeploymentItem(TestProcessPathx64)]
+    [DeploymentItem(TestProcessPathx86)]
     public class DebugControlTest : TestBase
     {
         private static string TestProcessPath;

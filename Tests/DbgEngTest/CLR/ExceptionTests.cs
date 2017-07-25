@@ -6,6 +6,8 @@ using System.IO;
 namespace DbgEngTest.CLR
 {
     [TestClass]
+    [DeploymentItem(@"CLR\Apps\NestedException.cs", @"CLR\Apps")]
+    [DeploymentItem(@"CLR\Apps\SharedLibrary.cs", @"CLR\Apps")]
     public class ExceptionTests : ClrTestBase
     {
         [ClassInitialize]

@@ -8,6 +8,10 @@ using System.Threading.Tasks;
 namespace DbgEngTest
 {
     [TestClass]
+    [DeploymentItem("NativeDumpTest.x64.pdb")]
+    [DeploymentItem("NativeDumpTest.x64.Release.pdb")]
+    [DeploymentItem("NativeDumpTest.x86.pdb")]
+    [DeploymentItem("NativeDumpTest.x86.Release.pdb")]
     public class CodeGenTests : TestBase
     {
         [ClassInitialize]
@@ -268,7 +272,9 @@ namespace DbgEngTest
             xmlConfig.GenerateAssemblyWithRoslyn = compileWithRoslyn;
             xmlConfig.DontSaveGeneratedCodeFiles = true;
             if (!transformations)
+            {
                 xmlConfig.Transformations = new XmlTypeTransformation[0];
+            }
             DoCodeGen(xmlConfig);
         }
 
@@ -281,20 +287,14 @@ namespace DbgEngTest
                 using (StringWriter writer = new StringWriter())
                 {
                     Console.SetError(writer);
-
-                    Task mtaTask = new Task(() =>
-                    {
-                        new Generator().Generate(xmlConfig);
-                    });
-
-                    mtaTask.Start();
-                    mtaTask.Wait();
-
+                    new Generator().Generate(xmlConfig);
                     writer.Flush();
                     string errorText = writer.GetStringBuilder().ToString();
 
                     if (!string.IsNullOrEmpty(errorText))
+                    {
                         throw new Exception(errorText);
+                    }
                 }
             }
             finally

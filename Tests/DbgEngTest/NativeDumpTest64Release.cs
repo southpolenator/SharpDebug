@@ -6,6 +6,7 @@ namespace DbgEngTest
     /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.x64.exe.
     /// </summary>
     [TestClass]
+    [DeploymentItem(DefaultDumpFile)]
     public class NativeDumpTest64Release : TestBase
     {
         private const string DefaultDumpFile = "NativeDumpTest.x64.Release.dmp";
@@ -68,6 +69,12 @@ namespace DbgEngTest
         public void CheckDebugger()
         {
             testRunner.CheckDebugger();
+        }
+
+        [TestMethod]
+        public void TestBasicTemplateType()
+        {
+            testRunner.TestBasicTemplateType();
         }
     }
 }

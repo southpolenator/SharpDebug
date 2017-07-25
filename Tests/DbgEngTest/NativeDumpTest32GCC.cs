@@ -7,6 +7,7 @@ namespace DbgEngTest
     /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.VS2013.exe.
     /// </summary>
     [TestClass]
+    [DeploymentItem(DefaultDumpFile)]
     public class NativeDumpTest32GCC : TestBase
     {
         private const string DefaultDumpFile = @"..\..\..\dumps\NativeDumpTest.gcc.mdmp";
