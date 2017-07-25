@@ -848,12 +848,20 @@ namespace CsDebugScript.CodeGen.UserTypes
             // Try to get type tree
             TypeTree result = GetSymbolTypeTree(field.Type, factory, bitLength);
 
-            if (result is BasicTypeTree)
+            return FixTypeTree(result, field.Type, factory);
+        }
+
+        private TypeTree FixTypeTree(TypeTree typeTree, Symbol type, UserTypeFactory factory)
+        {
+            // Check basic type
+            BasicTypeTree basicTypeTree = typeTree as BasicTypeTree;
+
+            if (basicTypeTree != null)
             {
                 // Basic type tree is not challenged against template arguments, so try to do that.
                 UserType basicUserType;
 
-                if (CreateFactory(factory).GetUserType(field.Type, out basicUserType))
+                if (CreateFactory(factory).GetUserType(type, out basicUserType))
                 {
                     TypeTree tree = UserTypeTree.Create(basicUserType, factory);
 
@@ -868,7 +876,37 @@ namespace CsDebugScript.CodeGen.UserTypes
                 return new VariableTypeTree();
             }
 
-            return result;
+            // Check array type
+            ArrayTypeTree arrayTypeTree = typeTree as ArrayTypeTree;
+
+            if (arrayTypeTree != null)
+            {
+                TypeTree elementTypeTree = FixTypeTree(arrayTypeTree.ElementType, type.ElementType, factory);
+
+                if (elementTypeTree != arrayTypeTree.ElementType)
+                {
+                    return new ArrayTypeTree(elementTypeTree);
+                }
+
+                return arrayTypeTree;
+            }
+
+            // Check pointer type
+            PointerTypeTree pointerTypeTree = typeTree as PointerTypeTree;
+
+            if (pointerTypeTree != null)
+            {
+                TypeTree elementTypeTree = FixTypeTree(pointerTypeTree.ElementType, type.ElementType, factory);
+
+                if (elementTypeTree != pointerTypeTree.ElementType)
+                {
+                    return new PointerTypeTree(elementTypeTree);
+                }
+
+                return pointerTypeTree;
+            }
+
+            return typeTree;
         }
     }
 }
