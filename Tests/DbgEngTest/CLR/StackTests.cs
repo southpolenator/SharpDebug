@@ -28,6 +28,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ObjectArgumentAndLocalTest()
         {
             ClrThread clrThread = Thread.Current.FindClrThread();

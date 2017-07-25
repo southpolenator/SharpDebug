@@ -24,6 +24,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ExceptionPropertyTest()
         {
             ClrThread thread = Thread.Current.FindClrThread();

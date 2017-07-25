@@ -28,6 +28,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ModuleDomainTest()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
@@ -49,6 +50,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void AppDomainPropertyTest()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
@@ -71,6 +73,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void SystemAndSharedLibraryModulesTest()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
@@ -86,6 +89,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ModuleAppDomainEqualityTest()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();

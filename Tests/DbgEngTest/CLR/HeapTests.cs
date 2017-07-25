@@ -25,6 +25,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void HeapSize()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
@@ -40,6 +41,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void HeapEnumeration()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
@@ -57,6 +59,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ServerSegmentTests()
         {
             Environment.SetEnvironmentVariable("COMPlus_BuildFlavor", "svr");
@@ -67,6 +70,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void WorkstationSegmentTests()
         {
             Environment.SetEnvironmentVariable("COMPlus_BuildFlavor", "");

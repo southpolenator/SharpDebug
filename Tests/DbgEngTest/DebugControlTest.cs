@@ -149,18 +149,21 @@ namespace DbgEngTest
         }
 
         [TestMethod, Timeout(30000)]
+        [TestCategory("LiveTests")]
         public void GoBreakContinuosTestDepth()
         {
             ContinousTestExecutionWrapper(GoBreakContinuosTestDepthBody);
         }
 
         [TestMethod, Timeout(30000)]
+        [TestCategory("LiveTests")]
         public void GoBreakContinousVariablesChange()
         {
             ContinousTestExecutionWrapper(GoBreakContinousVariablesChangeBody);
         }
 
         [TestMethod]
+        [TestCategory("LiveTests")]
         public void MultipleProcesses()
         {
             // Not yet implemented.

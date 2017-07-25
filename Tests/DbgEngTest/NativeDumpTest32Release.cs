@@ -30,48 +30,56 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("NativeDumpTests")]
         public void TestModuleExtraction()
         {
             testRunner.TestModuleExtraction();
         }
 
         [TestMethod]
+        [TestCategory("NativeDumpTests")]
         public void CheckProcess()
         {
             testRunner.CheckProcess();
         }
 
         [TestMethod]
+        [TestCategory("NativeDumpTests")]
         public void CheckDebugger()
         {
             testRunner.CheckDebugger();
         }
 
         [TestMethod]
+        [TestCategory("NativeDumpTests")]
         public void CurrentThreadContainsNativeDumpTestCpp()
         {
             testRunner.CurrentThreadContainsNativeDumpTestCpp();
         }
 
         [TestMethod]
+        [TestCategory("NativeDumpTests")]
         public void CurrentThreadContainsNativeDumpTestMainFunction()
         {
             testRunner.CurrentThreadContainsNativeDumpTestMainFunction();
         }
 
         [TestMethod]
+        [TestCategory("NativeDumpTests")]
         public void CheckThread()
         {
             testRunner.CheckThread();
         }
 
         [TestMethod]
+        [TestCategory("NativeDumpTests")]
         public void CheckCodeFunction()
         {
             testRunner.CheckCodeFunction();
         }
 
         [TestMethod]
+        [TestCategory("NativeDumpTests")]
         public void TestBasicTemplateType()
         {
             testRunner.TestBasicTemplateType();

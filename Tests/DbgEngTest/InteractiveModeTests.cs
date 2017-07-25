@@ -28,6 +28,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("Scripting")]
         public void DynamicTest()
         {
             Executor.InterpretInteractive("dynamic a = 5");
@@ -37,6 +38,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("Scripting")]
         public void ScriptBaseTest()
         {
             Executor.InterpretInteractive("ListCommands();");
@@ -47,6 +49,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("Scripting")]
         public void DebuggerCommand()
         {
             new Executor().Interpret("#dbg k");

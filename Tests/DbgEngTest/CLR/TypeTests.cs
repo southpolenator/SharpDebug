@@ -28,6 +28,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void IntegerObjectClrType()
         {
             Heap heap = Process.Current.ClrRuntimes.Single().Heap;
@@ -39,6 +40,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void FieldNameAndValueTests()
         {
             Heap heap = Process.Current.ClrRuntimes.Single().Heap;
@@ -56,6 +58,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ArrayTests()
         {
             Module typesModule = Module.All.Single(m => m.Name == "Types");
