@@ -26,7 +26,9 @@ namespace CsDebugScript.CodeGen.UserTypes
             this.namespaces = namespaces.Select(s => NormalizeSymbolNamespace(s)).ToArray();
             NamespaceSymbol = string.Join(".", this.namespaces);
             if (!string.IsNullOrEmpty(nameSpace))
+            {
                 NamespaceSymbol = nameSpace + "." + NamespaceSymbol;
+            }
         }
 
         /// <summary>
@@ -39,6 +41,13 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="indentation">The current indentation.</param>
         public override void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags generationFlags, int indentation = 0)
         {
+            string[] namespaces = this.namespaces;
+
+            if (generationFlags.HasFlag(UserTypeGenerationFlags.GenerateNamespaceAsStaticClass))
+            {
+                namespaces = NamespaceSymbol.Split(".".ToCharArray());
+            }
+
             // Declared In Type with namespace
             if (DeclaredInType != null || generationFlags.HasFlag(UserTypeGenerationFlags.GenerateNamespaceAsStaticClass))
             {
@@ -62,11 +71,17 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
 
             // Declared In Type with namespace
-            if (DeclaredInType != null)
+            if (DeclaredInType != null || generationFlags.HasFlag(UserTypeGenerationFlags.GenerateNamespaceAsStaticClass))
+            {
                 foreach (string innerClass in namespaces)
+                {
                     output.WriteLine(--indentation, "}}");
+                }
+            }
             else
+            {
                 output.WriteLine(--indentation, "}}");
+            }
         }
 
         /// <summary>
