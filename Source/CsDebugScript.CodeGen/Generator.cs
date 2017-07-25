@@ -221,7 +221,7 @@ namespace CsDebugScript.CodeGen
                     MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.CommonUserTypes.dll")),
                 };
 
-                references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(r.Path)));
+                references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(Path.IsPathRooted(r.Path) ? r.Path : Path.Combine(binFolder, r.Path))));
 
                 foreach (var includedFile in includedFiles)
                     syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(includedFile.Path), path: includedFile.Path, encoding: System.Text.UTF8Encoding.Default));
