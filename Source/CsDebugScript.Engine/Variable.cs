@@ -756,6 +756,10 @@ namespace CsDebugScript
                     return (long)this;
                 else if (conversionType == typeof(ulong))
                     return (ulong)this;
+                else if (conversionType == typeof(float))
+                    return (float)this;
+                else if (conversionType == typeof(double))
+                    return (double)this;
             }
 
             // Check if it is null
