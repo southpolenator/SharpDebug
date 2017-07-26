@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CsDebugScript;
 using Microsoft.VisualStudio.TestTools.UITesting.WpfControls;
 using System.Windows.Input;
+using System;
 
 namespace DbgEngTest
 {
@@ -33,6 +34,8 @@ namespace DbgEngTest
             WaitForExecutionState();
             WaitForReadyState();
             UIMap.AssertInteractiveWindowReady();
+
+            CloseInteractiveWindow();
         }
 
         [TestMethod, Timeout(60000)]
@@ -46,6 +49,8 @@ namespace DbgEngTest
             WaitForExecutionState();
             WaitForReadyState();
             UIMap.AssertInteractiveWindowReady();
+
+            CloseInteractiveWindow();
         }
 
         [TestMethod, Timeout(60000)]
@@ -74,11 +79,7 @@ namespace DbgEngTest
             WaitForReadyState();
             UIMap.AssertInteractiveWindowReady();
 
-            SendInput("for {(}int i = 0; i < 5; i{+}{+}{)}{Enter}Console.WriteLine{(}i{)};{Enter}");
-
-            WaitForExecutionState();
-            WaitForReadyState();
-            UIMap.AssertInteractiveWindowReady();
+            CloseInteractiveWindow();
         }
 
         /// <summary>
@@ -126,15 +127,23 @@ namespace DbgEngTest
             UIMap.AssertInteractiveWindowReady();
         }
 
+        private void CloseInteractiveWindow(int millisecondsTimeout = 5000)
+        {
+            SendInput("q{Space}{Enter}");
+            UIMap.InteractiveWindow.WaitForControlNotExist(millisecondsTimeout);
+        }
+
         private void WaitForReadyState(int millisecondsTimeout = 5000)
         {
             PromptLabel label = UIMap.InteractiveWindow.InteractiveWindowContent.ResultContainer.PromptLabel;
             bool happened = label.WaitForControlCondition(c => c.GetProperty(WpfText.PropertyNames.DisplayText).ToString() == "C#> ", millisecondsTimeout);
 
+#if false
             if (!happened)
             {
                 System.Windows.Forms.MessageBox.Show($"'{label.DisplayText}'");
             }
+#endif
             Assert.IsTrue(happened);
         }
 
@@ -143,10 +152,12 @@ namespace DbgEngTest
             PromptLabel label = UIMap.InteractiveWindow.InteractiveWindowContent.ResultContainer.PromptLabel;
             bool happened = label.WaitForControlCondition(c => c.GetProperty(WpfText.PropertyNames.DisplayText).ToString() == "...> ", millisecondsTimeout);
 
+#if false
             if (!happened)
             {
                 System.Windows.Forms.MessageBox.Show($"'{label.DisplayText}'");
             }
+#endif
             Assert.IsTrue(happened);
         }
 
