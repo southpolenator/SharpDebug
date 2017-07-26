@@ -41,15 +41,23 @@
   </Configuration>
   <InitializeActions />
   <ExecuteActions>
-    <AssertAction UIObjectName="UIMap.UICInteractiveWindowWindow.UITypehelptogetstartedText.UITypehelptogetstartedText1">
+    <AssertAction UIObjectName="UIMap.InteractiveWindow.InteractiveWindowContent.ResultContainer.PromptLabel">
       <ParameterName />
-      <PropertyName>ControlType</PropertyName>
-      <ExpectedValue>Text</ExpectedValue>
-      <MessageOnValidationFailure>bla bla bla</MessageOnValidationFailure>
+      <PropertyName>Name</PropertyName>
+      <ExpectedValue>C#&gt; </ExpectedValue>
+      <MessageOnValidationFailure>Wrong prompt text</MessageOnValidationFailure>
       <Type>String</Type>
       <PropertyCondition>AreEqual</PropertyCondition>
     </AssertAction>
-    <TestStepMarkerAction Comment="" MarkerInformation="AssertMethod1">
+    <AssertAction UIObjectName="UIMap.InteractiveWindow.UIItemPane">
+      <ParameterName />
+      <PropertyName>Enabled</PropertyName>
+      <ExpectedValue>True</ExpectedValue>
+      <MessageOnValidationFailure>Editor is not active</MessageOnValidationFailure>
+      <Type>String</Type>
+      <PropertyCondition>AreEqual</PropertyCondition>
+    </AssertAction>
+    <TestStepMarkerAction Comment="" MarkerInformation="AssertInteractiveWindowReady">
       <ParameterName />
       <StepId>-1</StepId>
       <Direction>Start</Direction>
@@ -58,76 +66,13 @@
       <WorkItemId>0</WorkItemId>
       <MarkerRegionType>Assertion</MarkerRegionType>
     </TestStepMarkerAction>
-    <MouseAction UIObjectName="UIMap.UICInteractiveWindowWindow1.UICInteractiveWindowTitleBar">
-      <ParameterName />
-      <ModifierKeys>None</ModifierKeys>
-      <IsGlobalHotkey>false</IsGlobalHotkey>
-      <Location X="628" Y="15" />
-      <WheelDirection>0</WheelDirection>
-      <ActionType>Click</ActionType>
-      <MouseButton>Left</MouseButton>
-    </MouseAction>
-    <MouseAction UIObjectName="UIMap.UICInteractiveWindowWindow.UIItemPane.UICText.UIItemCustom">
-      <ParameterName />
-      <ModifierKeys>None</ModifierKeys>
-      <IsGlobalHotkey>false</IsGlobalHotkey>
-      <Location X="792" Y="9" />
-      <WheelDirection>0</WheelDirection>
-      <ActionType>Click</ActionType>
-      <MouseButton>Left</MouseButton>
-    </MouseAction>
-    <SendKeysAction UIObjectName="UIMap.UICInteractiveWindowWindow1">
-      <ParameterName />
-      <ModifierKeys>None</ModifierKeys>
-      <IsGlobalHotkey>false</IsGlobalHotkey>
-      <Text Encoded="false">{#}dbg{Space}k{Enter}var</Text>
-    </SendKeysAction>
-    <SendKeysAction UIObjectName="UIMap.UICInteractiveWindowWindow1">
-      <ParameterName />
-      <ModifierKeys>None</ModifierKeys>
-      <IsGlobalHotkey>false</IsGlobalHotkey>
-      <Text Encoded="false">{Space}a{Space}={Space}new{Space}{[}{]}{Space}{RShiftKey}{{}</Text>
-    </SendKeysAction>
-    <SendKeysAction UIObjectName="UIMap.UICInteractiveWindowWindow1">
-      <ParameterName />
-      <ModifierKeys>Shift</ModifierKeys>
-      <IsGlobalHotkey>false</IsGlobalHotkey>
-      <Text Encoded="false">{Space}</Text>
-    </SendKeysAction>
-    <SendKeysAction UIObjectName="UIMap.UICInteractiveWindowWindow1">
-      <ParameterName />
-      <ModifierKeys>None</ModifierKeys>
-      <IsGlobalHotkey>false</IsGlobalHotkey>
-      <Text Encoded="false">1,{Space}2,{Space}3,{Space}4,{Space}5,{Space}6,{Space}7,{Space}{RShiftKey}{}};{Enter}write</Text>
-    </SendKeysAction>
-    <SendKeysAction UIObjectName="UIMap.UICInteractiveWindowWindow1">
-      <ParameterName />
-      <ModifierKeys>None</ModifierKeys>
-      <IsGlobalHotkey>false</IsGlobalHotkey>
-      <Text Encoded="false">ln{RShiftKey}{(}a.{RShiftKey}Len{Enter}{RShiftKey}{)};{Enter}q</Text>
-    </SendKeysAction>
-    <SendKeysAction UIObjectName="UIMap.UICInteractiveWindowWindow1">
-      <ParameterName />
-      <ModifierKeys>None</ModifierKeys>
-      <IsGlobalHotkey>false</IsGlobalHotkey>
-      <Text Encoded="false">{Enter}{Enter}</Text>
-    </SendKeysAction>
-    <TestStepMarkerAction Comment="" MarkerInformation="RecordedMethod1">
-      <ParameterName />
-      <StepId>-1</StepId>
-      <Direction>Start</Direction>
-      <Outcome />
-      <Disabled>false</Disabled>
-      <WorkItemId>0</WorkItemId>
-      <MarkerRegionType>Action</MarkerRegionType>
-    </TestStepMarkerAction>
   </ExecuteActions>
   <CleanupActions />
   <OnErrorActions />
   <Maps>
     <UIMap Id="UIMap">
       <TopLevelWindows>
-        <TopLevelWindow ControlType="Window" Id="UICInteractiveWindowWindow" FriendlyName="C# Interactive Window" SpecialControlType="None" SessionId="6948954">
+        <TopLevelWindow ControlType="Window" Id="InteractiveWindow" FriendlyName="C# Interactive Window" SpecialControlType="None" SessionId="5838652">
           <TechnologyName>UIA</TechnologyName>
           <WindowTitles>
             <WindowTitle>C# Interactive Window</WindowTitle>
@@ -140,33 +85,61 @@
           </AndCondition>
           <SupportLevel>0</SupportLevel>
           <Descendants>
-            <UIObject ControlType="Text" Id="UITypehelptogetstartedText" FriendlyName="Type 'help' to get started :)" SpecialControlType="None">
+            <UIObject ControlType="Custom" Id="InteractiveWindowContent" FriendlyName="" SpecialControlType="None">
               <TechnologyName>UIA</TechnologyName>
               <WindowTitles>
                 <WindowTitle>C# Interactive Window</WindowTitle>
               </WindowTitles>
               <AndCondition>
                 <PropertyCondition Name="FrameworkId">WPF</PropertyCondition>
-                <PropertyCondition Name="ControlType">Text</PropertyCondition>
-                <PropertyCondition Name="Name">Type 'help' to get started :)</PropertyCondition>
+                <PropertyCondition Name="ControlType">Custom</PropertyCondition>
+                <PropertyCondition Name="ClassName">Uia.InteractiveWindowContent</PropertyCondition>
               </AndCondition>
               <SupportLevel>0</SupportLevel>
               <Descendants>
-                <UIObject ControlType="Text" Id="UITypehelptogetstartedText1" FriendlyName="Type 'help' to get started :)" SpecialControlType="None">
+                <UIObject ControlType="Pane" Id="ResultContainer" FriendlyName="" SpecialControlType="None">
                   <TechnologyName>UIA</TechnologyName>
                   <WindowTitles>
                     <WindowTitle>C# Interactive Window</WindowTitle>
                   </WindowTitles>
-                  <SearchConfigurations>
-                    <SearchConfiguration>Distinct</SearchConfiguration>
-                  </SearchConfigurations>
                   <AndCondition>
                     <PropertyCondition Name="FrameworkId">WPF</PropertyCondition>
-                    <PropertyCondition Name="ControlType">Text</PropertyCondition>
-                    <PropertyCondition Name="Name">Type 'help' to get started :)</PropertyCondition>
+                    <PropertyCondition Name="ControlType">Pane</PropertyCondition>
+                    <PropertyCondition Name="ClassName">Uia.ScrollViewer</PropertyCondition>
                   </AndCondition>
                   <SupportLevel>0</SupportLevel>
-                  <Descendants />
+                  <Descendants>
+                    <UIObject ControlType="Text" Id="PromptLabel" FriendlyName="C#&gt; " SpecialControlType="None">
+                      <TechnologyName>UIA</TechnologyName>
+                      <WindowTitles>
+                        <WindowTitle>C# Interactive Window</WindowTitle>
+                      </WindowTitles>
+                      <AndCondition>
+                        <PropertyCondition Name="FrameworkId">WPF</PropertyCondition>
+                        <PropertyCondition Name="ControlType">Text</PropertyCondition>
+                        <PropertyCondition Name="Name">C#&gt; </PropertyCondition>
+                      </AndCondition>
+                      <SupportLevel>0</SupportLevel>
+                      <Descendants>
+                        <UIObject ControlType="Custom" Id="CodeInput" FriendlyName="" SpecialControlType="None">
+                          <TechnologyName>UIA</TechnologyName>
+                          <WindowTitles>
+                            <WindowTitle>C# Interactive Window</WindowTitle>
+                          </WindowTitles>
+                          <SearchConfigurations>
+                            <SearchConfiguration>NextTo</SearchConfiguration>
+                          </SearchConfigurations>
+                          <AndCondition>
+                            <PropertyCondition Name="FrameworkId">WPF</PropertyCondition>
+                            <PropertyCondition Name="ControlType">Custom</PropertyCondition>
+                            <PropertyCondition Name="ClassName" />
+                          </AndCondition>
+                          <SupportLevel>0</SupportLevel>
+                          <Descendants />
+                        </UIObject>
+                      </Descendants>
+                    </UIObject>
+                  </Descendants>
                 </UIObject>
               </Descendants>
             </UIObject>
@@ -179,68 +152,6 @@
                 <PropertyCondition Name="FrameworkId">WPF</PropertyCondition>
                 <PropertyCondition Name="ControlType">Pane</PropertyCondition>
                 <PropertyCondition Name="ClassName">Uia.ScrollViewer</PropertyCondition>
-              </AndCondition>
-              <SupportLevel>0</SupportLevel>
-              <Descendants>
-                <UIObject ControlType="Text" Id="UICText" FriendlyName="C#&gt; " SpecialControlType="None">
-                  <TechnologyName>UIA</TechnologyName>
-                  <WindowTitles>
-                    <WindowTitle>C# Interactive Window</WindowTitle>
-                  </WindowTitles>
-                  <AndCondition>
-                    <PropertyCondition Name="FrameworkId">WPF</PropertyCondition>
-                    <PropertyCondition Name="ControlType">Text</PropertyCondition>
-                    <PropertyCondition Name="Name">C#&gt; </PropertyCondition>
-                  </AndCondition>
-                  <SupportLevel>0</SupportLevel>
-                  <Descendants>
-                    <UIObject ControlType="Custom" Id="UIItemCustom" FriendlyName="" SpecialControlType="None">
-                      <TechnologyName>UIA</TechnologyName>
-                      <WindowTitles>
-                        <WindowTitle>C# Interactive Window</WindowTitle>
-                      </WindowTitles>
-                      <SearchConfigurations>
-                        <SearchConfiguration>NextTo</SearchConfiguration>
-                      </SearchConfigurations>
-                      <AndCondition>
-                        <PropertyCondition Name="FrameworkId">WPF</PropertyCondition>
-                        <PropertyCondition Name="ControlType">Custom</PropertyCondition>
-                        <PropertyCondition Name="ClassName" />
-                      </AndCondition>
-                      <SupportLevel>0</SupportLevel>
-                      <Descendants />
-                    </UIObject>
-                  </Descendants>
-                </UIObject>
-              </Descendants>
-            </UIObject>
-          </Descendants>
-        </TopLevelWindow>
-        <TopLevelWindow ControlType="Window" Id="UICInteractiveWindowWindow1" FriendlyName="C# Interactive Window" SpecialControlType="None" SessionId="6948954">
-          <TechnologyName>MSAA</TechnologyName>
-          <WindowTitles>
-            <WindowTitle>C# Interactive Window</WindowTitle>
-          </WindowTitles>
-          <SearchConfigurations>
-            <SearchConfiguration>VisibleOnly</SearchConfiguration>
-          </SearchConfigurations>
-          <AndCondition Id="SearchCondition">
-            <PropertyCondition Name="Name">C# Interactive Window</PropertyCondition>
-            <PropertyCondition Name="ClassName" Operator="Contains">HwndWrapper</PropertyCondition>
-            <PropertyCondition Name="ControlType">Window</PropertyCondition>
-          </AndCondition>
-          <SupportLevel>0</SupportLevel>
-          <Descendants>
-            <UIObject ControlType="TitleBar" Id="UICInteractiveWindowTitleBar" FriendlyName="C# Interactive Window" SpecialControlType="None">
-              <TechnologyName>MSAA</TechnologyName>
-              <WindowTitles>
-                <WindowTitle>C# Interactive Window</WindowTitle>
-              </WindowTitles>
-              <SearchConfigurations>
-                <SearchConfiguration>VisibleOnly</SearchConfiguration>
-              </SearchConfigurations>
-              <AndCondition Id="SearchCondition">
-                <PropertyCondition Name="ControlType">TitleBar</PropertyCondition>
               </AndCondition>
               <SupportLevel>0</SupportLevel>
               <Descendants />

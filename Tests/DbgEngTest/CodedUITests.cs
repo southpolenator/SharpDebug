@@ -1,8 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UITesting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CsDebugScript;
-using DbgEngManaged;
-using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UITesting.WpfControls;
+using System.Windows.Input;
 
 namespace DbgEngTest
 {
@@ -11,6 +11,7 @@ namespace DbgEngTest
     {
         private const string DefaultDumpFile = NativeDumpTest64.DefaultDumpFile;
         private const string DefaultSymbolPath = NativeDumpTest64.DefaultSymbolPath;
+        private UIMap map;
 
         public CodedUITests()
         {
@@ -19,25 +20,65 @@ namespace DbgEngTest
         [TestInitialize()]
         public void TestInitialize()
         {
-            Task mtaTask = new Task(() =>
-            {
-                //Initialize(DefaultDumpFile, DefaultSymbolPath);
-                new Executor().InitializeContext(DebugClient.DebugCreateEx(0));
-            });
+            InitializeDump(DefaultDumpFile, DefaultSymbolPath);
+        }
 
-            mtaTask.Start();
-            mtaTask.Wait();
+        [TestMethod, Timeout(30000)]
+        [TestCategory("UI")]
+        public void ExecuteDebuggerCommand()
+        {
+            OpenInteractiveWindow();
+
+            SendInput("{#}dbg{Space}k{Enter}");
+            WaitForExecutionState();
+            WaitForReadyState();
+            UIMap.AssertInteractiveWindowReady();
+        }
+
+        [TestMethod, Timeout(60000)]
+        [TestCategory("UI")]
+        public void MultiLineCode()
+        {
+            OpenInteractiveWindow();
+
+            SendInput("for {(}int i = 0; i < 5; i{+}{+}{)}{Enter}Console.WriteLine{(}i{)};{Enter}");
+
+            WaitForExecutionState();
+            WaitForReadyState();
+            UIMap.AssertInteractiveWindowReady();
         }
 
         [TestMethod, Timeout(60000)]
         [TestCategory("UI")]
         public void SimpleEndToEnd()
         {
-            // To generate code for this test, select "Generate Code for Coded UI Test" from the shortcut menu and select one of the menu items.
-            Executor.ShowInteractiveWindow(false);
-            UIMap.AssertMethod1();
-            UIMap.RecordedMethod1();
-            System.Threading.Thread.Sleep(1000);
+            OpenInteractiveWindow();
+
+            SendInput("var{Space}a{Space}={Space}new{Space}{[}{]}{Space}{RShiftKey}{{}");
+            SendInput("{Space}", ModifierKeys.Shift);
+            SendInput("1,{Space}2,{Space}3,{Space}4,{Space}5,{Space}6,{Space}7,{Space}{RShiftKey}{}};{Enter}");
+
+            WaitForExecutionState();
+            WaitForReadyState();
+            UIMap.AssertInteractiveWindowReady();
+
+            SendInput("writeln{RShiftKey}{(}a.{RShiftKey}Len{Enter}{RShiftKey}{)};{Enter}");
+
+            WaitForExecutionState();
+            WaitForReadyState();
+            UIMap.AssertInteractiveWindowReady();
+
+            SendInput("a{Enter}{Enter}");
+
+            WaitForExecutionState();
+            WaitForReadyState();
+            UIMap.AssertInteractiveWindowReady();
+
+            SendInput("for {(}int i = 0; i < 5; i{+}{+}{)}{Enter}Console.WriteLine{(}i{)};{Enter}");
+
+            WaitForExecutionState();
+            WaitForReadyState();
+            UIMap.AssertInteractiveWindowReady();
         }
 
         /// <summary>
@@ -69,6 +110,49 @@ namespace DbgEngTest
             }
         }
 
-        private UIMap map;
+        public WpfCustom CodeInput
+        {
+            get
+            {
+                return UIMap.InteractiveWindow.InteractiveWindowContent.ResultContainer.PromptLabel.CodeInput;
+            }
+        }
+
+        private void OpenInteractiveWindow()
+        {
+            Executor.ShowInteractiveWindow(false);
+
+            WaitForReadyState(10000);
+            UIMap.AssertInteractiveWindowReady();
+        }
+
+        private void WaitForReadyState(int millisecondsTimeout = 5000)
+        {
+            PromptLabel label = UIMap.InteractiveWindow.InteractiveWindowContent.ResultContainer.PromptLabel;
+            bool happened = label.WaitForControlCondition(c => c.GetProperty(WpfText.PropertyNames.DisplayText).ToString() == "C#> ", millisecondsTimeout);
+
+            if (!happened)
+            {
+                System.Windows.Forms.MessageBox.Show($"'{label.DisplayText}'");
+            }
+            Assert.IsTrue(happened);
+        }
+
+        private void WaitForExecutionState(int millisecondsTimeout = 5000)
+        {
+            PromptLabel label = UIMap.InteractiveWindow.InteractiveWindowContent.ResultContainer.PromptLabel;
+            bool happened = label.WaitForControlCondition(c => c.GetProperty(WpfText.PropertyNames.DisplayText).ToString() == "...> ", millisecondsTimeout);
+
+            if (!happened)
+            {
+                System.Windows.Forms.MessageBox.Show($"'{label.DisplayText}'");
+            }
+            Assert.IsTrue(happened);
+        }
+
+        private void SendInput(string input, ModifierKeys modifierKeys = ModifierKeys.None)
+        {
+            Keyboard.SendKeys(UIMap.InteractiveWindow, input, modifierKeys);
+        }
     }
 }

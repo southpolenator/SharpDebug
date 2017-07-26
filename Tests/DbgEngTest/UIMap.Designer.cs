@@ -18,7 +18,6 @@ namespace DbgEngTest
     using System.Windows.Input;
     using Microsoft.VisualStudio.TestTools.UITest.Extension;
     using Microsoft.VisualStudio.TestTools.UITesting;
-    using Microsoft.VisualStudio.TestTools.UITesting.WinControls;
     using Microsoft.VisualStudio.TestTools.UITesting.WpfControls;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Keyboard = Microsoft.VisualStudio.TestTools.UITesting.Keyboard;
@@ -31,200 +30,80 @@ namespace DbgEngTest
     {
         
         /// <summary>
-        /// AssertMethod1 - Use 'AssertMethod1ExpectedValues' to pass parameters into this method.
+        /// AssertInteractiveWindowReady - Use 'AssertInteractiveWindowReadyExpectedValues' to pass parameters into this method.
         /// </summary>
-        public void AssertMethod1()
+        public void AssertInteractiveWindowReady()
         {
             #region Variable Declarations
-            WpfText uITypehelptogetstartedText1 = this.UICInteractiveWindowWindow.UITypehelptogetstartedText.UITypehelptogetstartedText1;
+            WpfText promptLabel = this.InteractiveWindow.InteractiveWindowContent.ResultContainer.PromptLabel;
+            WpfPane uIItemPane = this.InteractiveWindow.UIItemPane;
             #endregion
 
-            // Verify that the 'ControlType' property of 'Type 'help' to get started :)' label equals 'Text'
-            Assert.AreEqual(this.AssertMethod1ExpectedValues.UITypehelptogetstartedText1ControlType, uITypehelptogetstartedText1.ControlType.ToString(), "Type 'help' to get started :)");
+            // Verify that the 'Name' property of 'C#>' label equals 'C#> '
+            Assert.AreEqual(this.AssertInteractiveWindowReadyExpectedValues.PromptLabelName, promptLabel.Name, "Wrong prompt text");
+
+            // Verify that the 'Enabled' property of pane equals 'True'
+            Assert.AreEqual(this.AssertInteractiveWindowReadyExpectedValues.UIItemPaneEnabled, uIItemPane.Enabled, "Editor is not active");
         }
         
-        /// <summary>
-        /// RecordedMethod1 - Use 'RecordedMethod1Params' to pass parameters into this method.
-        /// </summary>
-        public void RecordedMethod1()
-        {
-            #region Variable Declarations
-            WinTitleBar uICInteractiveWindowTitleBar = this.UICInteractiveWindowWindow1.UICInteractiveWindowTitleBar;
-            WpfCustom uIItemCustom = this.UICInteractiveWindowWindow.UIItemPane.UICText.UIItemCustom;
-            WinWindow uICInteractiveWindowWindow1 = this.UICInteractiveWindowWindow1;
-            #endregion
-
-            WaitForReadyState();
-
-            // Type '{#}dbg{Space}k{Enter}' in 'C# Interactive Window' window
-            //Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys, ModifierKeys.None);
-
-            //WaitForExecutionState();
-            //WaitForReadyState();
-
-            // Type 'var{Space}a{Space}={Space}new{Space}{[}{]}{Space}{RShiftKey}{{}' in 'C# Interactive Window' window
-            Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys1, ModifierKeys.None);
-
-            // Type 'Shift + {Space}' in 'C# Interactive Window' window
-            Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys2, ModifierKeys.Shift);
-
-            // Type '1,{Space}2,{Space}3,{Space}4,{Space}5,{Space}6,{Space}7,{Space}{RShiftKey}{}};{Enter}' in 'C# Interactive Window' window
-            Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys3, ModifierKeys.None);
-
-            WaitForExecutionState();
-            WaitForReadyState();
-
-            // Type 'writeln{RShiftKey}{(}a.{RShiftKey}Len{Enter}{RShiftKey}{)};{Enter}' in 'C# Interactive Window' window
-            Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys4, ModifierKeys.None);
-
-            WaitForExecutionState();
-            WaitForReadyState();
-
-            // Type 'writeln{RShiftKey}{(}a.{RShiftKey}Len{Enter}{RShiftKey}{)};{Enter}' in 'C# Interactive Window' window
-            Keyboard.SendKeys(uICInteractiveWindowWindow1, "a{Enter}{Enter}", ModifierKeys.None);
-
-            WaitForExecutionState();
-            WaitForReadyState();
-
-            // Type 'q{Enter}{Enter}' in 'C# Interactive Window' window
-            Keyboard.SendKeys(uICInteractiveWindowWindow1, this.RecordedMethod1Params.UICInteractiveWindowWindow1SendKeys5, ModifierKeys.None);
-        }
-
-        private void WaitForReadyState()
-        {
-            WpfText uITypehelptogetstartedText1 = this.UICInteractiveWindowWindow.UITypehelptogetstartedText.UITypehelptogetstartedText1;
-
-            uITypehelptogetstartedText1.WaitForControlCondition(c => c.GetProperty(WpfText.PropertyNames.Name).ToString() == "Type 'help' to get started :)", 5000);
-        }
-
-        private void WaitForExecutionState()
-        {
-            WpfText uITypehelptogetstartedText1 = this.UICInteractiveWindowWindow.UITypehelptogetstartedText.UITypehelptogetstartedText1;
-
-            uITypehelptogetstartedText1.WaitForControlCondition(c => c.GetProperty(WpfText.PropertyNames.Name).ToString() == "Executing...", 500);
-        }
-
         #region Properties
-        public virtual AssertMethod1ExpectedValues AssertMethod1ExpectedValues
+        public virtual AssertInteractiveWindowReadyExpectedValues AssertInteractiveWindowReadyExpectedValues
         {
             get
             {
-                if ((this.mAssertMethod1ExpectedValues == null))
+                if ((this.mAssertInteractiveWindowReadyExpectedValues == null))
                 {
-                    this.mAssertMethod1ExpectedValues = new AssertMethod1ExpectedValues();
+                    this.mAssertInteractiveWindowReadyExpectedValues = new AssertInteractiveWindowReadyExpectedValues();
                 }
-                return this.mAssertMethod1ExpectedValues;
+                return this.mAssertInteractiveWindowReadyExpectedValues;
             }
         }
         
-        public virtual RecordedMethod1Params RecordedMethod1Params
+        public InteractiveWindow InteractiveWindow
         {
             get
             {
-                if ((this.mRecordedMethod1Params == null))
+                if ((this.mInteractiveWindow == null))
                 {
-                    this.mRecordedMethod1Params = new RecordedMethod1Params();
+                    this.mInteractiveWindow = new InteractiveWindow();
                 }
-                return this.mRecordedMethod1Params;
-            }
-        }
-        
-        public UICInteractiveWindowWindow UICInteractiveWindowWindow
-        {
-            get
-            {
-                if ((this.mUICInteractiveWindowWindow == null))
-                {
-                    this.mUICInteractiveWindowWindow = new UICInteractiveWindowWindow();
-                }
-                return this.mUICInteractiveWindowWindow;
-            }
-        }
-        
-        public UICInteractiveWindowWindow1 UICInteractiveWindowWindow1
-        {
-            get
-            {
-                if ((this.mUICInteractiveWindowWindow1 == null))
-                {
-                    this.mUICInteractiveWindowWindow1 = new UICInteractiveWindowWindow1();
-                }
-                return this.mUICInteractiveWindowWindow1;
+                return this.mInteractiveWindow;
             }
         }
         #endregion
         
         #region Fields
-        private AssertMethod1ExpectedValues mAssertMethod1ExpectedValues;
+        private AssertInteractiveWindowReadyExpectedValues mAssertInteractiveWindowReadyExpectedValues;
         
-        private RecordedMethod1Params mRecordedMethod1Params;
-        
-        private UICInteractiveWindowWindow mUICInteractiveWindowWindow;
-        
-        private UICInteractiveWindowWindow1 mUICInteractiveWindowWindow1;
+        private InteractiveWindow mInteractiveWindow;
         #endregion
     }
     
     /// <summary>
-    /// Parameters to be passed into 'AssertMethod1'
+    /// Parameters to be passed into 'AssertInteractiveWindowReady'
     /// </summary>
     [GeneratedCode("Coded UITest Builder", "14.0.23107.0")]
-    public class AssertMethod1ExpectedValues
+    public class AssertInteractiveWindowReadyExpectedValues
     {
         
         #region Fields
         /// <summary>
-        /// Verify that the 'ControlType' property of 'Type 'help' to get started :)' label equals 'Text'
+        /// Verify that the 'Name' property of 'C#>' label equals 'C#> '
         /// </summary>
-        public string UITypehelptogetstartedText1ControlType = "Text";
-        #endregion
-    }
-    
-    /// <summary>
-    /// Parameters to be passed into 'RecordedMethod1'
-    /// </summary>
-    [GeneratedCode("Coded UITest Builder", "14.0.23107.0")]
-    public class RecordedMethod1Params
-    {
-        
-        #region Fields
-        /// <summary>
-        /// Type '{#}dbg{Space}k{Enter}' in 'C# Interactive Window' window
-        /// </summary>
-        public string UICInteractiveWindowWindow1SendKeys = "{#}dbg{Space}k{Enter}";
-
-        /// <summary>
-        /// Type 'var{Space}a{Space}={Space}new{Space}{[}{]}{Space}{RShiftKey}{{}' in 'C# Interactive Window' window
-        /// </summary>
-        public string UICInteractiveWindowWindow1SendKeys1 = "var{Space}a{Space}={Space}new{Space}{[}{]}{Space}{RShiftKey}{{}";
+        public string PromptLabelName = "C#> ";
         
         /// <summary>
-        /// Type 'Shift + {Space}' in 'C# Interactive Window' window
+        /// Verify that the 'Enabled' property of pane equals 'True'
         /// </summary>
-        public string UICInteractiveWindowWindow1SendKeys2 = "{Space}";
-
-        /// <summary>
-        /// Type '1,{Space}2,{Space}3,{Space}4,{Space}5,{Space}6,{Space}7,{Space}{RShiftKey}{}};{Enter}' in 'C# Interactive Window' window
-        /// </summary>
-        public string UICInteractiveWindowWindow1SendKeys3 = "1,{Space}2,{Space}3,{Space}4,{Space}5,{Space}6,{Space}7,{Space}{RShiftKey}{}};{Enter}";
-
-        /// <summary>
-        /// Type 'writeln{RShiftKey}{(}a.{RShiftKey}Len{Enter}{RShiftKey}{)};{Enter}q' in 'C# Interactive Window' window
-        /// </summary>
-        public string UICInteractiveWindowWindow1SendKeys4 = "writeln{RShiftKey}{(}a.{RShiftKey}Length{RShiftKey}{)};{Enter}";
-
-        /// <summary>
-        /// Type 'q{Enter}{Enter}' in 'C# Interactive Window' window
-        /// </summary>
-        public string UICInteractiveWindowWindow1SendKeys5 = "q{Enter}{Enter}";
+        public bool UIItemPaneEnabled = true;
         #endregion
     }
     
     [GeneratedCode("Coded UITest Builder", "14.0.23107.0")]
-    public class UICInteractiveWindowWindow : WpfWindow
+    public class InteractiveWindow : WpfWindow
     {
         
-        public UICInteractiveWindowWindow()
+        public InteractiveWindow()
         {
             #region Search Criteria
             this.SearchProperties[WpfWindow.PropertyNames.Name] = "C# Interactive Window";
@@ -234,25 +113,29 @@ namespace DbgEngTest
         }
         
         #region Properties
-        public UITypehelptogetstartedText UITypehelptogetstartedText
+        public InteractiveWindowContent InteractiveWindowContent
         {
             get
             {
-                if ((this.mUITypehelptogetstartedText == null))
+                if ((this.mInteractiveWindowContent == null))
                 {
-                    this.mUITypehelptogetstartedText = new UITypehelptogetstartedText(this);
+                    this.mInteractiveWindowContent = new InteractiveWindowContent(this);
                 }
-                return this.mUITypehelptogetstartedText;
+                return this.mInteractiveWindowContent;
             }
         }
         
-        public UIItemPane UIItemPane
+        public WpfPane UIItemPane
         {
             get
             {
                 if ((this.mUIItemPane == null))
                 {
-                    this.mUIItemPane = new UIItemPane(this);
+                    this.mUIItemPane = new WpfPane(this);
+                    #region Search Criteria
+                    this.mUIItemPane.SearchProperties[WpfPane.PropertyNames.ClassName] = "Uia.ScrollViewer";
+                    this.mUIItemPane.WindowTitles.Add("C# Interactive Window");
+                    #endregion
                 }
                 return this.mUIItemPane;
             }
@@ -260,54 +143,49 @@ namespace DbgEngTest
         #endregion
         
         #region Fields
-        private UITypehelptogetstartedText mUITypehelptogetstartedText;
+        private InteractiveWindowContent mInteractiveWindowContent;
         
-        private UIItemPane mUIItemPane;
+        private WpfPane mUIItemPane;
         #endregion
     }
     
     [GeneratedCode("Coded UITest Builder", "14.0.23107.0")]
-    public class UITypehelptogetstartedText : WpfText
+    public class InteractiveWindowContent : WpfCustom
     {
         
-        public UITypehelptogetstartedText(UITestControl searchLimitContainer) : 
+        public InteractiveWindowContent(UITestControl searchLimitContainer) : 
                 base(searchLimitContainer)
         {
             #region Search Criteria
-            this.SearchProperties[WpfText.PropertyNames.Name] = "Type \'help\' to get started :)";
+            this.SearchProperties[WpfControl.PropertyNames.ClassName] = "Uia.InteractiveWindowContent";
             this.WindowTitles.Add("C# Interactive Window");
             #endregion
         }
         
         #region Properties
-        public WpfText UITypehelptogetstartedText1
+        public ResultContainer ResultContainer
         {
             get
             {
-                if ((this.mUITypehelptogetstartedText1 == null))
+                if ((this.mResultContainer == null))
                 {
-                    this.mUITypehelptogetstartedText1 = new WpfText(this);
-                    #region Search Criteria
-                    this.mUITypehelptogetstartedText1.SearchProperties[WpfText.PropertyNames.Name] = "Type \'help\' to get started :)";
-                    this.mUITypehelptogetstartedText1.SearchConfigurations.Add(SearchConfiguration.DisambiguateChild);
-                    this.mUITypehelptogetstartedText1.WindowTitles.Add("C# Interactive Window");
-                    #endregion
+                    this.mResultContainer = new ResultContainer(this);
                 }
-                return this.mUITypehelptogetstartedText1;
+                return this.mResultContainer;
             }
         }
         #endregion
         
         #region Fields
-        private WpfText mUITypehelptogetstartedText1;
+        private ResultContainer mResultContainer;
         #endregion
     }
     
     [GeneratedCode("Coded UITest Builder", "14.0.23107.0")]
-    public class UIItemPane : WpfPane
+    public class ResultContainer : WpfPane
     {
         
-        public UIItemPane(UITestControl searchLimitContainer) : 
+        public ResultContainer(UITestControl searchLimitContainer) : 
                 base(searchLimitContainer)
         {
             #region Search Criteria
@@ -317,29 +195,29 @@ namespace DbgEngTest
         }
         
         #region Properties
-        public UICText UICText
+        public PromptLabel PromptLabel
         {
             get
             {
-                if ((this.mUICText == null))
+                if ((this.mPromptLabel == null))
                 {
-                    this.mUICText = new UICText(this);
+                    this.mPromptLabel = new PromptLabel(this);
                 }
-                return this.mUICText;
+                return this.mPromptLabel;
             }
         }
         #endregion
         
         #region Fields
-        private UICText mUICText;
+        private PromptLabel mPromptLabel;
         #endregion
     }
     
     [GeneratedCode("Coded UITest Builder", "14.0.23107.0")]
-    public class UICText : WpfText
+    public class PromptLabel : WpfText
     {
         
-        public UICText(UITestControl searchLimitContainer) : 
+        public PromptLabel(UITestControl searchLimitContainer) : 
                 base(searchLimitContainer)
         {
             #region Search Criteria
@@ -349,61 +227,26 @@ namespace DbgEngTest
         }
         
         #region Properties
-        public WpfCustom UIItemCustom
+        public WpfCustom CodeInput
         {
             get
             {
-                if ((this.mUIItemCustom == null))
+                if ((this.mCodeInput == null))
                 {
-                    this.mUIItemCustom = new WpfCustom(this);
+                    this.mCodeInput = new WpfCustom(this);
                     #region Search Criteria
-                    this.mUIItemCustom.SearchProperties[WpfControl.PropertyNames.ClassName] = null;
-                    this.mUIItemCustom.SearchConfigurations.Add(SearchConfiguration.NextSibling);
-                    this.mUIItemCustom.WindowTitles.Add("C# Interactive Window");
+                    this.mCodeInput.SearchProperties[WpfControl.PropertyNames.ClassName] = null;
+                    this.mCodeInput.SearchConfigurations.Add(SearchConfiguration.NextSibling);
+                    this.mCodeInput.WindowTitles.Add("C# Interactive Window");
                     #endregion
                 }
-                return this.mUIItemCustom;
+                return this.mCodeInput;
             }
         }
         #endregion
         
         #region Fields
-        private WpfCustom mUIItemCustom;
-        #endregion
-    }
-    
-    [GeneratedCode("Coded UITest Builder", "14.0.23107.0")]
-    public class UICInteractiveWindowWindow1 : WinWindow
-    {
-        
-        public UICInteractiveWindowWindow1()
-        {
-            #region Search Criteria
-            this.SearchProperties[WinWindow.PropertyNames.Name] = "C# Interactive Window";
-            this.SearchProperties.Add(new PropertyExpression(WinWindow.PropertyNames.ClassName, "HwndWrapper", PropertyExpressionOperator.Contains));
-            this.WindowTitles.Add("C# Interactive Window");
-            #endregion
-        }
-        
-        #region Properties
-        public WinTitleBar UICInteractiveWindowTitleBar
-        {
-            get
-            {
-                if ((this.mUICInteractiveWindowTitleBar == null))
-                {
-                    this.mUICInteractiveWindowTitleBar = new WinTitleBar(this);
-                    #region Search Criteria
-                    this.mUICInteractiveWindowTitleBar.WindowTitles.Add("C# Interactive Window");
-                    #endregion
-                }
-                return this.mUICInteractiveWindowTitleBar;
-            }
-        }
-        #endregion
-        
-        #region Fields
-        private WinTitleBar mUICInteractiveWindowTitleBar;
+        private WpfCustom mCodeInput;
         #endregion
     }
 }
