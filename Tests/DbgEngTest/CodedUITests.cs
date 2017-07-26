@@ -24,35 +24,6 @@ namespace DbgEngTest
             InitializeDump(DefaultDumpFile, DefaultSymbolPath);
         }
 
-        [TestMethod, Timeout(30000)]
-        [TestCategory("UI")]
-        public void ExecuteDebuggerCommand()
-        {
-            OpenInteractiveWindow();
-
-            SendInput("{#}dbg{Space}k{Enter}");
-            WaitForExecutionState();
-            WaitForReadyState();
-            UIMap.AssertInteractiveWindowReady();
-
-            CloseInteractiveWindow();
-        }
-
-        [TestMethod, Timeout(60000)]
-        [TestCategory("UI")]
-        public void MultiLineCode()
-        {
-            OpenInteractiveWindow();
-
-            SendInput("for {(}int i = 0; i < 5; i{+}{+}{)}{Enter}Console.WriteLine{(}i{)};{Enter}");
-
-            WaitForExecutionState();
-            WaitForReadyState();
-            UIMap.AssertInteractiveWindowReady();
-
-            CloseInteractiveWindow();
-        }
-
         [TestMethod, Timeout(60000)]
         [TestCategory("UI")]
         public void SimpleEndToEnd()
@@ -74,6 +45,35 @@ namespace DbgEngTest
             UIMap.AssertInteractiveWindowReady();
 
             SendInput("a{Enter}{Enter}");
+
+            WaitForExecutionState();
+            WaitForReadyState();
+            UIMap.AssertInteractiveWindowReady();
+
+            CloseInteractiveWindow();
+        }
+
+        [TestMethod, Timeout(30000)]
+        [TestCategory("UI")]
+        public void ExecuteDebuggerCommand()
+        {
+            OpenInteractiveWindow();
+
+            SendInput("{#}dbg{Space}k{Enter}");
+            WaitForExecutionState();
+            WaitForReadyState();
+            UIMap.AssertInteractiveWindowReady();
+
+            CloseInteractiveWindow();
+        }
+
+        [TestMethod, Timeout(60000)]
+        [TestCategory("UI")]
+        public void MultiLineCode()
+        {
+            OpenInteractiveWindow();
+
+            SendInput("for {(}int i = 0; i < 5; i{+}{+}{)}{Enter}Console.WriteLine{(}i{)};{Enter}");
 
             WaitForExecutionState();
             WaitForReadyState();
