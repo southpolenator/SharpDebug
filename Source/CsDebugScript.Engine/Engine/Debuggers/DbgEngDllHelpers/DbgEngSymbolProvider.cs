@@ -446,7 +446,21 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <param name="typeId">The type identifier.</param>
         public BasicType GetTypeBasicType(Module module, uint typeId)
         {
-            // TODO: This is currently unsupported
+            // TODO: Find better way to fetch basic type from DbgEng
+            if (GetTypeTag(module, typeId) == SymTag.BaseType)
+            {
+                string name = GetTypeName(module, typeId);
+
+                switch (name)
+                {
+                    case "float":
+                    case "double":
+                        return BasicType.Float;
+                    default:
+                        return BasicType.NoType;
+                }
+            }
+
             return BasicType.NoType;
         }
 
@@ -516,7 +530,30 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <param name="vtableAddress">The vtable address.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress)
         {
-            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, process))
+            {
+                uint nameSize;
+                ulong displacement;
+                StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+
+                dbgEngDll.Symbols.GetNameByOffset(vtableAddress, sb, (uint)sb.Capacity, out nameSize, out displacement);
+
+                // Fully undecorated name should be in form: "DerivedClass::`vftable'"
+                string fullyUndecoratedName = sb.ToString();
+                const string vftableString = "::`vftable'";
+
+                if (string.IsNullOrEmpty(fullyUndecoratedName) || !fullyUndecoratedName.EndsWith(vftableString))
+                {
+                    // Pointer is not vtable.
+                    return null;
+                }
+
+                string codeTypeName = fullyUndecoratedName.Substring(0, fullyUndecoratedName.Length - vftableString.Length);
+                CodeType codeType = CodeType.Create(process, codeTypeName);
+
+                // TODO: We need to be able to get partially undecorated name in order to find offset (See DiaModule.cs for more info)
+                return Tuple.Create(codeType, 0);
+            }
         }
 
         /// <summary>
@@ -527,10 +564,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <param name="distance">The distance within the module.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance)
         {
-            // Not Implemented, this is not supported using DbgEng.dll. Please use DIA symbol provider. 
-            // We return null to avoiding throwing exception.
-
-            return null;
+            return GetRuntimeCodeTypeAndOffset(process, vtableAddress);
         }
     }
 }
