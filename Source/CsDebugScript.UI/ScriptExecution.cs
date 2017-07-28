@@ -1,4 +1,6 @@
 ﻿using CsDebugScript.CodeGen;
+using CsDebugScript.Engine;
+using CsDebugScript.Engine.SymbolProviders;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
@@ -104,48 +106,80 @@ namespace CsDebugScript
             }
 
             // Transformations
-            List<XmlTypeTransformation> transformations = new List<XmlTypeTransformation>();
+            XmlTypeTransformation[] transformations = new[]
+            {
+                new XmlTypeTransformation()
+                {
+                    OriginalType = "std::basic_string<char,${char_traits},${allocator}>",
+                    NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
+                    Constructor = "${new}",
+                    HasPhysicalConstructor = false,
+                },
+                new XmlTypeTransformation()
+                {
+                    OriginalType = "std::basic_string<wchar_t,${char_traits},${allocator}>",
+                    NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                    Constructor = "${new}",
+                    HasPhysicalConstructor = false,
+                },
+                new XmlTypeTransformation()
+                {
+                    OriginalType = "std::basic_string<unsigned short,${char_traits},${allocator}>",
+                    NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                    Constructor = "${new}",
+                    HasPhysicalConstructor = false,
+                },
+                new XmlTypeTransformation()
+                {
+                    OriginalType = "std::vector<${T},${allocator}>",
+                    NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
+                    Constructor = "${new}",
+                    HasPhysicalConstructor = false,
+                },
+                new XmlTypeTransformation()
+                {
+                    OriginalType = "std::list<${T},${allocator}>",
+                    NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.list<${T}>",
+                    Constructor = "${new}",
+                    HasPhysicalConstructor = false,
+                },
+                new XmlTypeTransformation()
+                {
+                    OriginalType = "std::map<${TKey},${TValue},${comparator},${allocator}>",
+                    NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.map<${TKey},${TValue}>",
+                    Constructor = "${new}",
+                    HasPhysicalConstructor = false,
+                },
+                new XmlTypeTransformation()
+                {
+                    OriginalType = "std::map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
+                    NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
+                    Constructor = "${new}",
+                    HasPhysicalConstructor = false,
+                },
+                new XmlTypeTransformation()
+                {
+                    OriginalType = "std::pair<${TFirst},${TSecond}>",
+                    NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
+                    Constructor = "${new}",
+                    HasPhysicalConstructor = false,
+                },
+            };
 
-            transformations.Add(new XmlTypeTransformation()
-            {
-                OriginalType = "std::basic_string<char,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            });
-            transformations.Add(new XmlTypeTransformation()
-            {
-                OriginalType = "std::basic_string<wchar_t,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            });
-            transformations.Add(new XmlTypeTransformation()
-            {
-                OriginalType = "std::vector<${T},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            });
-            transformations.Add(new XmlTypeTransformation()
-            {
-                OriginalType = "std::list<${T},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.list<${T}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            });
+            // Check if we are using DIA as symbol provider
+            bool useDia = Context.SymbolProvider is DiaSymbolProvider;
 
             // Create configuration
             return new XmlConfig()
             {
                 Types = types.ToArray(),
                 Modules = modules.ToArray(),
-                UseDiaSymbolProvider = true,
+                UseDiaSymbolProvider = useDia,
                 CompressedOutput = true,
                 ForceUserTypesToNewInsteadOfCasting = true,
-                GeneratePhysicalMappingOfUserTypes = true,
+                GeneratePhysicalMappingOfUserTypes = useDia,
                 MultiFileExport = false,
-                Transformations = transformations.ToArray(),
+                Transformations = transformations,
             };
         }
 
