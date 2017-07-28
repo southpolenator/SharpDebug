@@ -1,6 +1,8 @@
 ﻿using CsDebugScript;
 using CsDebugScript.CLR;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections;
 using System.IO;
 
 namespace DbgEngTest.CLR
@@ -49,6 +51,20 @@ namespace DbgEngTest.CLR
             Assert.AreEqual("Program.Main(System.String[])", stackTrace[3].FunctionNameWithoutModule);
             Assert.AreEqual((uint)11, stackTrace[3].SourceFileLine);
             Assert.AreEqual("nestedexception.cs", Path.GetFileName(stackTrace[3].SourceFileName).ToLowerInvariant());
+
+            Assert.AreEqual(0x80131509, (uint)exception.HResult);
+            Assert.IsNull(exception.HelpLink);
+            Assert.IsNull(exception.Source);
+            Assert.IsNull(exception.StackTraceString);
+
+            try
+            {
+                IDictionary data = exception.Data;
+                Assert.Fail();
+            }
+            catch (NotImplementedException)
+            {
+            }
         }
     }
 }

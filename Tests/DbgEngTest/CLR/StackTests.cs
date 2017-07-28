@@ -35,6 +35,8 @@ namespace DbgEngTest.CLR
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable args = frame.Arguments.Single();
 
+            Assert.IsNotNull(clrThread.Runtime);
+            Assert.IsNotNull(clrThread.AppDomain);
             Assert.IsNotNull(args);
             Assert.AreEqual("System.String[]", args.GetCodeType().Name);
             Assert.AreEqual("args", args.GetName());

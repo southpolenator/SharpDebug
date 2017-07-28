@@ -14,6 +14,11 @@ namespace CsDebugScript
     /// </summary>
     public static class Debugger
     {
+        /// <summary>
+        /// If set to <c>true</c> don't use dump reader.
+        /// </summary>
+        internal static bool DontUseDumpReader = false;
+
 #region Executing native commands
         /// <summary>
         /// Executes the specified command and captures its output.
@@ -568,7 +573,7 @@ namespace CsDebugScript
         {
             var dumpReader = process.DumpFileMemoryReader;
 
-            if (dumpReader != null)
+            if (dumpReader != null && !DontUseDumpReader)
             {
                 return dumpReader.ReadMemory(address, (int)size);
             }
@@ -605,7 +610,7 @@ namespace CsDebugScript
         /// <returns>Buffer containing read memory</returns>
         public static MemoryBuffer ReadMemory(Variable pointer, uint size)
         {
-            return ReadMemory(Process.Current, pointer, size);
+            return ReadMemory(pointer.GetCodeType().Module.Process, pointer, size);
         }
 
         /// <summary>

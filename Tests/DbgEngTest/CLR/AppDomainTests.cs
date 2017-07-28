@@ -61,6 +61,10 @@ namespace DbgEngTest.CLR
             AppDomain sharedDomain = runtime.SharedDomain;
             Assert.AreEqual("Shared Domain", sharedDomain.Name);
 
+            Assert.AreEqual(null, systemDomain.ApplicationBase);
+            Assert.AreEqual("", systemDomain.ConfigurationFile);
+            Assert.AreEqual("0: System Domain", systemDomain.ToString());
+
             Assert.AreEqual(2, runtime.AppDomains.Length);
 
             AppDomain AppDomainsExe = runtime.AppDomains[0];
@@ -120,20 +124,26 @@ namespace DbgEngTest.CLR
             Dictionary<string, Module> result = new Dictionary<string, Module>(System.StringComparer.OrdinalIgnoreCase);
 
             foreach (Module module in domain.Modules)
+            {
                 result.Add(Path.GetFileName(module.ImageName), module);
+            }
             return result;
         }
 
         private static void AssertModuleDoesntContainDomains(Module module, params AppDomain[] domainList)
         {
             foreach (AppDomain domain in domainList)
+            {
                 Assert.IsFalse(domain.Modules.Contains(module));
+            }
         }
 
         private static void AssertModuleContainsDomains(Module module, params AppDomain[] domainList)
         {
             foreach (AppDomain domain in domainList)
+            {
                 Assert.IsTrue(domain.Modules.Contains(module));
+            }
             Assert.AreEqual(domainList.Length, domainList[0].Runtime.AllAppDomains.Count(ad => ad.Modules.Contains(module)));
         }
     }

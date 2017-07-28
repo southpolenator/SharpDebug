@@ -48,6 +48,10 @@ namespace DbgEngTest.CLR
             Heap heap = runtime.Heap;
             int count = 0;
 
+            Assert.IsNotNull(heap);
+            Assert.IsNotNull(runtime.GCThreads);
+            Assert.IsTrue(runtime.HeapCount > 0);
+            Assert.IsNotNull(runtime.ToString());
             Assert.IsTrue(heap.CanWalkHeap);
             foreach (Variable variable in heap.EnumerateObjects())
             {
