@@ -88,6 +88,7 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="PresentationCore" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -156,7 +157,7 @@
     <None Include="packages.config" />
     <None Include="$(SolutionDir)\Key.snk" />
     <None Include="UIMap.uitest" />
-    <None Include="WinDbgCs_x64.testsettings"/>
+    <None Include="WinDbgCs_x64.testsettings" />
     <None Include="WinDbgCs_x86.testsettings" />
   </ItemGroup>
   <ItemGroup>
