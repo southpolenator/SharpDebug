@@ -62,7 +62,7 @@ namespace DbgEngTest.CLR
             Assert.AreEqual("Shared Domain", sharedDomain.Name);
 
             Assert.AreEqual(null, systemDomain.ApplicationBase);
-            Assert.AreEqual("", systemDomain.ConfigurationFile);
+            Assert.IsTrue(string.IsNullOrEmpty(systemDomain.ConfigurationFile));
             Assert.AreEqual("0: System Domain", systemDomain.ToString());
 
             Assert.AreEqual(2, runtime.AppDomains.Length);
