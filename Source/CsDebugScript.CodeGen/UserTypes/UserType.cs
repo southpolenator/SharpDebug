@@ -366,6 +366,11 @@ namespace CsDebugScript.CodeGen.UserTypes
                 usedThisClass = true;
             }
 
+            if (!usesThisClass)
+            {
+                userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("variable.GetField", "GetField");
+            }
+
             // If we are generating field for getting base class, we need to "transform" code to do so.
             if (extractingBaseClass)
             {
@@ -379,7 +384,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                     usedThisClass = true;
                 }
                 else
+                {
                     userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("variable.GetField", "GetBaseClass");
+                }
             }
 
             return userTypeField;
