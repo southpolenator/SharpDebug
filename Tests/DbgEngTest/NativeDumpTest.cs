@@ -1,4 +1,5 @@
 ﻿using CsDebugScript;
+using CsDebugScript.Engine;
 using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -33,9 +34,13 @@ namespace DbgEngTest
             }
         }
 
-        public void TestSetup()
+        public void TestSetup(bool useDia = true)
         {
             InitializeDump(DefaultDumpFile, DefaultSymbolPath);
+            if (!useDia)
+            {
+                Context.InitializeDebugger(Context.Debugger, Context.Debugger.CreateDefaultSymbolProvider());
+            }
             InterpretInteractive($@"
 var options = new ImportUserTypeOptions();
 options.Modules.Add(""{DefaultModuleName}"");
@@ -289,10 +294,10 @@ ImportUserTypes(options, true);
             {
                 Variable value = variable.GetField("value");
                 Variable values = variable.GetField("values");
-                Assert.AreEqual(value.ToString(), "42");
+                Assert.AreEqual("42", value.ToString());
                 for (int i = 0, n = values.GetArrayLength(); i < n; i++)
                 {
-                    Assert.AreEqual(values.GetArrayElement(i).ToString(), i.ToString());
+                    Assert.AreEqual(i.ToString(), values.GetArrayElement(i).ToString());
                 }
             }
 
@@ -300,20 +305,20 @@ ImportUserTypes(options, true);
 StackFrame frame = GetFrame(""{DefaultModuleName}!DefaultTestCase"");
 VariableCollection locals = frame.Locals;
 
-//var floatTemplate = new BasicTemplateType<float>(locals[""floatTemplate""]);
-//AreEqual(floatTemplate.value, 42);
-//for (int i = 0; i < floatTemplate.values.Length; i++)
-//    AreEqual(floatTemplate.values[i], i);
+var floatTemplate = new BasicTemplateType<float>(locals[""floatTemplate""]);
+AreEqual(42, floatTemplate.value);
+for (int i = 0; i < floatTemplate.values.Length; i++)
+    AreEqual(i, floatTemplate.values[i]);
 
-//var doubleTemplate = new BasicTemplateType<double>(locals[""doubleTemplate""]);
-//AreEqual(doubleTemplate.value, 42);
-//for (int i = 0; i < doubleTemplate.values.Length; i++)
-//    AreEqual(doubleTemplate.values[i], i);
+var doubleTemplate = new BasicTemplateType<double>(locals[""doubleTemplate""]);
+AreEqual(42, doubleTemplate.value);
+for (int i = 0; i < doubleTemplate.values.Length; i++)
+    AreEqual(i, doubleTemplate.values[i]);
 
-//var intTemplate = new BasicTemplateType<int>(locals[""intTemplate""]);
-//AreEqual(intTemplate.value, 42);
-//for (int i = 0; i < intTemplate.values.Length; i++)
-//    AreEqual(intTemplate.values[i], i);
+var intTemplate = new BasicTemplateType<int>(locals[""intTemplate""]);
+AreEqual(42, intTemplate.value);
+for (int i = 0; i < intTemplate.values.Length; i++)
+    AreEqual(i, intTemplate.values[i]);
                 ");
         }
     }
