@@ -35,6 +35,33 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Resolves the function address if the specified address points to function type public symbol
+        /// or returns specified address otherwise.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>Resolved function address.</returns>
+        public static ulong ResolveFunctionAddress(Process process, ulong address)
+        {
+            if (Context.SymbolProvider.IsFunctionAddressPublicSymbol(process, address))
+            {
+                const uint length = 5;
+                MemoryBuffer buffer = Debugger.ReadMemory(process, address, length);
+                byte jmpByte = UserType.ReadByte(buffer, 0);
+                uint relativeAddress = UserType.ReadUint(buffer, 1);
+
+                if (jmpByte != 0xe9)
+                {
+                    throw new Exception("Unsupported jump instruction while resolving function address.");
+                }
+
+                return address + relativeAddress + length;
+            }
+
+            return address;
+        }
+
+        /// <summary>
         /// Executes the specified command and captures its output.
         /// </summary>
         /// <param name="captureFlags">The capture flags.</param>

@@ -253,6 +253,23 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
+        /// Determines whether the specified process address is function type public symbol.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsFunctionAddressPublicSymbol(Process process, ulong address)
+        {
+            ulong distance;
+            Module module;
+            ISymbolProviderModule diaModule = GetDiaModule(process, address, out distance, out module);
+
+            return diaModule.IsFunctionAddressPublicSymbol(process, address, (uint)distance);
+        }
+
+        /// <summary>
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="stackFrame">The stack frame.</param>

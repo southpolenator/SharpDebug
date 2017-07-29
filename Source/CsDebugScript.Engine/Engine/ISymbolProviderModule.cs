@@ -133,6 +133,17 @@ namespace CsDebugScript.Engine
         void GetFunctionNameAndDisplacement(Process process, ulong processAddress, uint address, out string functionName, out ulong displacement);
 
         /// <summary>
+        /// Determines whether the specified process address is function type public symbol.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="processAddress">The process address.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
+        /// </returns>
+        bool IsFunctionAddressPublicSymbol(Process process, ulong processAddress, uint address);
+
+        /// <summary>
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="frame">The frame.</param>

@@ -295,6 +295,40 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         }
 
         /// <summary>
+        /// Determines whether the specified process address is function type public symbol.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsFunctionAddressPublicSymbol(Process process, ulong address)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, process))
+            {
+                ulong moduleAddress;
+                uint typeId;
+
+                dbgEngDll.Symbols.GetOffsetTypeId(address, out typeId, out moduleAddress);
+                return typeId == 0;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified process address is function type public symbol.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="processAddress">The process address.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsFunctionAddressPublicSymbol(Process process, ulong processAddress, uint address)
+        {
+            return IsFunctionAddressPublicSymbol(process, processAddress);
+        }
+
+        /// <summary>
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="stackFrame">The stack frame.</param>

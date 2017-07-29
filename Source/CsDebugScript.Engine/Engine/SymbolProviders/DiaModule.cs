@@ -443,6 +443,24 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
+        /// Determines whether the specified process address is function type public symbol.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="processAddress">The process address.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsFunctionAddressPublicSymbol(Process process, ulong processAddress, uint address)
+        {
+            int innerDisplacement;
+            IDiaSymbol function;
+
+            session.findSymbolByRVAEx(address, SymTagEnum.SymTagNull, out function, out innerDisplacement);
+            return function != null && (SymTagEnum)function.symTag == SymTagEnum.SymTagPublicSymbol;
+        }
+
+        /// <summary>
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="frame">The frame.</param>
