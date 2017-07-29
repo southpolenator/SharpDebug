@@ -11,52 +11,73 @@ namespace CsDebugScript
     /// <summary>
     /// Indicates the kind of debug event.
     /// </summary>
+    [Flags]
     public enum DebugEvent
     {
         /// <summary>
         /// A breakpoint exception occurred in the target.
         /// </summary>
-        Breakpoint,
+        Breakpoint = 0x00000001,
 
         /// <summary>
         /// An exception debugging event occurred in the target.
         /// </summary>
-        Exception,
+        Exception = 0x00000002,
 
         /// <summary>
         /// A create-thread debugging event occurred in the target.
         /// </summary>
-        CreateThread,
+        CreateThread = 0x00000004,
 
         /// <summary>
         /// An exit-thread debugging event occurred in the target.
         /// </summary>
-        ExitThread,
+        ExitThread = 0x00000008,
 
         /// <summary>
         /// A create-process debugging event occurred in the target.
         /// </summary>
-        CreateProcess,
+        CreateProcess = 0x00000010,
 
         /// <summary>
         /// An exit-process debugging event occurred in the target.
         /// </summary>
-        ExitProcess,
+        ExitProcess = 0x00000020,
 
         /// <summary>
         /// A module-load debugging event occurred in the target.
         /// </summary>
-        LoadModule,
+        LoadModule = 0x00000040,
 
         /// <summary>
         /// A module-unload debugging event occurred in the target.
         /// </summary>
-        UnloadModule,
+        UnloadModule = 0x00000080,
 
         /// <summary>
         /// A system error occurred in the target.
         /// </summary>
-        SystemError,
+        SystemError = 0x00000100,
+
+        /// <summary>
+        /// A change has occurred in the session status.
+        /// </summary>
+        SessionStatus = 0x00000200,
+
+        /// <summary>
+        /// The engine has made or detected a change in the target status.
+        /// </summary>
+        ChangeDebugeeState = 0x00000400,
+
+        /// <summary>
+        /// The engine state has changed.
+        /// </summary>
+        ChangeEngineState = 0x00000800,
+
+        /// <summary>
+        /// The symbol state has changed.
+        /// </summary>
+        ChangeSymbolState = 0x00001000,
     }
 
     /// <summary>
@@ -90,7 +111,7 @@ namespace CsDebugScript
         public byte[] EventExtraInfo;
 
         /// <summary>
-        /// Get Last occurent Event or Exception.
+        /// Get Last occurred Event or Exception.
         /// </summary>
         public static DebugEventInfo LastEvent => Engine.Context.Debugger.GetLastEventInfo();
     }
