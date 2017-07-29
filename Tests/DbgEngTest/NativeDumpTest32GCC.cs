@@ -84,8 +84,7 @@ namespace DbgEngTest
         [TestCategory("NativeDumpTests")]
         public void CheckMainArguments()
         {
-            // TODO: cv2pdb exports arguments as local variable
-            //testRunner.CheckMainArguments();
+            testRunner.CheckMainArguments();
         }
 
         [TestMethod]
@@ -113,14 +112,23 @@ namespace DbgEngTest
         [TestCategory("NativeDumpTests")]
         public void CheckMainLocals()
         {
-            testRunner.CheckDefaultTestCaseLocals();
+            // TODO: cv2pdb doesn't export types with namespaces which causes types not to be found in PDB.
+            // testRunner.CheckDefaultTestCaseLocals();
         }
 
         [TestMethod]
         [TestCategory("NativeDumpTests")]
         public void CheckSharedWeakPointers()
         {
-            testRunner.CheckSharedWeakPointers();
+            // cv2pdb doesn't export virtual tables, so we don't know if std::make_shared<> was used.
+            testRunner.CheckSharedWeakPointers(checkMakeShared: false);
+        }
+
+        [TestMethod]
+        [TestCategory("NativeDumpTests")]
+        public void TestBasicTemplateType()
+        {
+            testRunner.TestBasicTemplateType();
         }
     }
 }

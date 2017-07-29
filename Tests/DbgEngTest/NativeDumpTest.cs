@@ -117,9 +117,24 @@ ImportUserTypes(options, true);
             Console.WriteLine("SourceFileDisplacement: {0}", defaultTestCaseFunction.SourceFileDisplacement);
 
             Variable codeFunctionVariable = DefaultModule.GetVariable($"{DefaultModuleName}!defaultTestCaseAddress");
-            CodePointer<CodeFunction> functionPointer = new CodePointer<CodeFunction>(codeFunctionVariable);
+            CodeFunction codeFunction;
 
-            Assert.AreEqual($"{DefaultModuleName}!DefaultTestCase", functionPointer.Element.FunctionName);
+            Assert.IsTrue(codeFunctionVariable.GetCodeType().IsPointer);
+
+            // Check if cv2pdb was used to generate PDB.
+            if (codeFunctionVariable.GetCodeType().ElementType.IsFunction)
+            {
+                CodePointer<CodeFunction> functionPointer = new CodePointer<CodeFunction>(new NakedPointer(codeFunctionVariable));
+
+                codeFunction = functionPointer.Element;
+            }
+            else
+            {
+                // cv2pdb doesn't export correct function type, but uses int**. Ignore variable type and just take pointer value for function address.
+                codeFunction = new CodeFunction(codeFunctionVariable.GetPointerAddress(), codeFunctionVariable.GetCodeType().Module.Process);
+            }
+
+            Assert.AreEqual($"{DefaultModuleName}!DefaultTestCase", codeFunction.FunctionName);
         }
 
         public void CheckDebugger()
@@ -156,13 +171,17 @@ ImportUserTypes(options, true);
         public void CheckMainArguments()
         {
             StackFrame mainFrame = GetFrame($"{DefaultModuleName}!main");
-            VariableCollection arguments = mainFrame.Arguments;
+            VariableCollection arguments = mainFrame.Arguments.Count > 0 ? mainFrame.Arguments : mainFrame.Locals;
 
             Assert.IsTrue(arguments.ContainsName("argc"));
             Assert.IsTrue(arguments.ContainsName("argv"));
             Assert.AreEqual(1, (int)arguments["argc"]);
 
-            Assert.AreEqual(2, arguments.Count);
+            if (mainFrame.Arguments.Count > 0)
+            {
+                Assert.AreEqual(2, arguments.Count);
+            }
+
             for (int i = 0; i < arguments.Count; i++)
             {
                 Variable argument = arguments[i];
@@ -209,7 +228,7 @@ ImportUserTypes(options, true);
             Assert.AreEqual(3, (int)e);
         }
 
-        public void CheckSharedWeakPointers()
+        public void CheckSharedWeakPointers(bool checkMakeShared = true)
         {
             StackFrame frame = GetFrame($"{DefaultModuleName}!TestSharedWeakPointers");
             VariableCollection locals = frame.Locals;
@@ -226,13 +245,19 @@ ImportUserTypes(options, true);
             Assert.AreEqual(1, sptr1.SharedCount);
             Assert.AreEqual(2, sptr1.WeakCount);
             Assert.AreEqual(5, sptr1.Element);
-            Assert.IsTrue(sptr1.IsCreatedWithMakeShared);
+            if (checkMakeShared)
+            {
+                Assert.IsTrue(sptr1.IsCreatedWithMakeShared);
+            }
 
             Assert.IsFalse(wptr1.IsEmpty);
             Assert.AreEqual(1, wptr1.SharedCount);
             Assert.AreEqual(2, wptr1.WeakCount);
             Assert.AreEqual(5, wptr1.Element);
-            Assert.IsTrue(wptr1.IsCreatedWithMakeShared);
+            if (checkMakeShared)
+            {
+                Assert.IsTrue(wptr1.IsCreatedWithMakeShared);
+            }
 
             Assert.IsTrue(esptr1.IsEmpty);
 
@@ -240,14 +265,20 @@ ImportUserTypes(options, true);
             Assert.AreEqual(0, ewptr1.SharedCount);
             Assert.AreEqual(1, ewptr1.WeakCount);
             Assert.AreEqual(42, ewptr1.UnsafeElement);
-            Assert.IsTrue(ewptr1.IsCreatedWithMakeShared);
+            if (checkMakeShared)
+            {
+                Assert.IsTrue(ewptr1.IsCreatedWithMakeShared);
+            }
 
             Assert.IsTrue(esptr2.IsEmpty);
 
             Assert.IsTrue(ewptr2.IsEmpty);
             Assert.AreEqual(0, ewptr2.SharedCount);
             Assert.AreEqual(1, ewptr2.WeakCount);
-            Assert.IsFalse(ewptr2.IsCreatedWithMakeShared);
+            if (checkMakeShared)
+            {
+                Assert.IsFalse(ewptr2.IsCreatedWithMakeShared);
+            }
         }
 
         public void CheckCodeArray()

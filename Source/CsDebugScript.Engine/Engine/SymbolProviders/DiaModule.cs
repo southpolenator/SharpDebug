@@ -473,6 +473,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             int displacement;
             List<Variable> variables = new List<Variable>();
 
+            // TODO: For Clang PDB this doesn't work correctly. Investigate.
             session.findSymbolByRVAEx(relativeAddress, SymTagEnum.SymTagFunction, out function, out displacement);
             GetFrameLocals(function, variables, frame, module, arguments);
             if (!arguments)

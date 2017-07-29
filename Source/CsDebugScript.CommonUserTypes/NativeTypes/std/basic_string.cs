@@ -4,7 +4,7 @@ using System;
 namespace CsDebugScript.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
-    /// Microsoft implementation of std::basic_string
+    /// Implementation of std::basic_string
     /// </summary>
     public class basic_string
     {
@@ -217,12 +217,135 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
+        /// libstdc++ 6 implementations of std::basic_string
+        /// </summary>
+        public class LibStdCpp6 : IBasicString
+        {
+            /// <summary>
+            /// The text inside the string buffer
+            /// </summary>
+            private UserMember<Variable> text;
+
+            /// <summary>
+            /// The length of the string
+            /// </summary>
+            private UserMember<Variable> length;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="LibStdCpp6"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public LibStdCpp6(Variable variable)
+            {
+                length = UserMember.Create(() => variable.GetField("_M_string_length"));
+                text = UserMember.Create(() => variable.GetField("_M_dataplus").GetField("_M_p"));
+            }
+
+            /// <summary>
+            /// Gets the string length.
+            /// </summary>
+            public int Length
+            {
+                get
+                {
+                    return (int)length.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the reserved space in buffer (number of characters).
+            /// </summary>
+            public int Reserved
+            {
+                get
+                {
+                    if (IsLocalData)
+                    {
+                        return (int)(15 / text.Value.GetCodeType().ElementType.Size);
+                    }
+                    else
+                    {
+                        Variable stringLength = length.Value;
+                        Variable capacity = Variable.Create(stringLength.GetCodeType(), LocalBufferAddress);
+
+                        return (int)capacity;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Gets the string text.
+            /// </summary>
+            public string Text
+            {
+                get
+                {
+                    return text.Value.ToString();
+                }
+            }
+
+            /// <summary>
+            /// Gets the local buffer address.
+            /// Since cv2pdb doesn't export unnamed unions, we must do calculations manually.
+            /// </summary>
+            private ulong LocalBufferAddress
+            {
+                get
+                {
+                    Variable stringLength = length.Value;
+
+                    return stringLength.GetPointerAddress() + stringLength.GetCodeType().Size;
+                }
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether basic_string is using local data.
+            /// </summary>
+            /// <value>
+            /// <c>true</c> if basic_string is using local data; otherwise, <c>false</c>.
+            /// </value>
+            private bool IsLocalData
+            {
+                get
+                {
+                    return LocalBufferAddress == text.Value.GetPointerAddress();
+                }
+            }
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // _M_dataplus
+                // | _M_p
+                // _M_string_length
+                // {
+                //   ?_M_local_buf
+                //   ?_M_allocated_capacity
+                // }
+                CodeType _M_dataplus, _M_p, _M_string_length;
+
+                if (!codeType.GetFieldTypes().TryGetValue("_M_dataplus", out _M_dataplus))
+                    return false;
+                if (!codeType.GetFieldTypes().TryGetValue("_M_string_length", out _M_string_length))
+                    return false;
+                if (!_M_dataplus.GetFieldTypes().TryGetValue("_M_p", out _M_p))
+                    return false;
+                return true;
+            }
+        }
+
+        /// <summary>
         /// The type selector
         /// </summary>
         private static TypeSelector<IBasicString> typeSelector = new TypeSelector<IBasicString>(new[]
         {
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2013), VisualStudio2013.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2015), VisualStudio2015.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
         });
 
         /// <summary>
