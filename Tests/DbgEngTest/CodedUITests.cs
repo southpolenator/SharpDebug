@@ -58,7 +58,7 @@ namespace DbgEngTest
     Console.WriteLine(i);");
         }
 
-        [TestMethod, Timeout(60000)]
+        [TestMethod, Timeout(180000)]
         [TestCategory("UI")]
         public void SimpleEndToEnd()
         {
