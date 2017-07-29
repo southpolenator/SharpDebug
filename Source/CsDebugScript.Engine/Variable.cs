@@ -205,7 +205,7 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator byte (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
+            if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 1)
             {
                 return byte.Parse(v.ToString());
             }
@@ -222,7 +222,7 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator sbyte (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
+            if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 1)
             {
                 return sbyte.Parse(v.ToString());
             }
@@ -239,7 +239,7 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator char (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
+            if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 2)
             {
                 return char.Parse(v.ToString());
             }
@@ -256,7 +256,7 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator short (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
+            if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 2)
             {
                 return short.Parse(v.ToString());
             }
@@ -273,7 +273,7 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator ushort (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
+            if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 2)
             {
                 return ushort.Parse(v.ToString());
             }
@@ -290,7 +290,7 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator int (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
+            if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 4)
             {
                 return int.Parse(v.ToString());
             }
@@ -307,7 +307,7 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator uint (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
+            if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 4)
             {
                 return uint.Parse(v.ToString());
             }
@@ -324,7 +324,7 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator long (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
+            if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 8)
             {
                 return long.Parse(v.ToString());
             }
@@ -341,7 +341,7 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator ulong (Variable v)
         {
-            if (!v.codeType.IsSimple && !v.codeType.IsEnum)
+            if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 8)
             {
                 return ulong.Parse(v.ToString());
             }
