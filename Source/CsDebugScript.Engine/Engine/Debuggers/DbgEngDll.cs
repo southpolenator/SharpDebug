@@ -545,6 +545,7 @@ namespace CsDebugScript.Engine.Debuggers
             }
         }
 
+#if false
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.
         /// </summary>
@@ -655,6 +656,7 @@ namespace CsDebugScript.Engine.Debuggers
             }
             return new StackTrace(thread, frames.ToArray(), contexts.ToArray());
         }
+#endif
 
         /// <summary>
         /// Gets the stack trace from the specified context.
@@ -1325,7 +1327,7 @@ namespace CsDebugScript.Engine.Debuggers
             flowControler.WaitForDebuggerLoopToExit();
         }
 
-        #region Native methods
+#region Native methods
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.
         /// </summary>
@@ -1629,6 +1631,6 @@ namespace CsDebugScript.Engine.Debuggers
             ulong AddrBase,
             ReadProcessMemoryProc64 ReadMemoryRoutine,
             GetModuleBaseProc64 GetModuleBaseRoutine);
-        #endregion
+#endregion
     }
 }

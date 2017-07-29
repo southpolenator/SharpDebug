@@ -113,5 +113,12 @@ namespace DbgEngTest
         {
             testRunner.CheckDefaultTestCaseLocals();
         }
+
+        [TestMethod]
+        [TestCategory("NativeDumpTests")]
+        public void CheckSharedWeakPointers()
+        {
+            testRunner.CheckSharedWeakPointers();
+        }
     }
 }

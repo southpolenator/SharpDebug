@@ -7,7 +7,7 @@ using namespace std;
 
 #pragma auto_inline(off)
 
-int main(int argc, char** argv);
+void DefaultTestCase();
 
 enum MyEnum
 {
@@ -46,7 +46,7 @@ public:
 
 int MyTestClass::staticVariable = 1212121212;
 
-int(*mainAddress)(int, char**) = main;
+void(*defaultTestCaseAddress)() = &DefaultTestCase;
 
 template <typename Type>
 struct BasicTemplateType
@@ -65,6 +65,61 @@ struct BasicTemplateType
 };
 
 #pragma optimize("", off)
+NO_INLINE void CauseDump()
+{
+    // Generate the dump
+    //throw std::bad_exception();
+    int* a = nullptr;
+    *a = 4;
+}
+
+NO_INLINE void TestDbgEngDll()
+{
+    const char* testString = "Testing...";
+    const wchar_t* testWString = L"Testing...";
+    CONTEXT context;
+
+    GetThreadContext(GetCurrentThread(), &context);
+
+    CauseDump();
+}
+
+NO_INLINE void TestBasicTemplateType()
+{
+    // Basic type template classes
+    BasicTemplateType<float> floatTemplate;
+    BasicTemplateType<double> doubleTemplate;
+    BasicTemplateType<int> intTemplate;
+
+    TestDbgEngDll();
+}
+
+NO_INLINE void TestSharedWeakPointers()
+{
+    // Test shared/weak pointers
+    shared_ptr<int> sptr1 = make_shared<int>(5);
+    weak_ptr<int> wptr1 = sptr1;
+    shared_ptr<int> esptr1 = make_shared<int>(42);
+    weak_ptr<int> ewptr1 = esptr1;
+    shared_ptr<int> esptr2(new int);
+    weak_ptr<int> ewptr2 = esptr2;
+
+    esptr1 = nullptr;
+    esptr2 = nullptr;
+
+    TestBasicTemplateType();
+}
+
+NO_INLINE void TestArray()
+{
+    int testArray[10000];
+
+    for (int i = 0; i < sizeof(testArray) / sizeof(testArray[0]); i++)
+        testArray[i] = 0x12121212;
+
+    TestSharedWeakPointers();
+}
+
 NO_INLINE void DefaultTestCase()
 {
     MyTestClass * p = &globalVariable;
@@ -81,31 +136,7 @@ NO_INLINE void DefaultTestCase()
     p->stringUMap.insert(make_pair(L"foo", "ansiFoo"));
     p->stringUMap.insert(make_pair(L"bar", "ansiBar"));
 
-    int testArray[10000];
-
-    for (int i = 0; i < sizeof(testArray) / sizeof(testArray[0]); i++)
-        testArray[i] = 0x12121212;
-
-    // Test shared/weak pointers
-    shared_ptr<int> sptr1 = make_shared<int>(5);
-    weak_ptr<int> wptr1 = sptr1;
-    shared_ptr<int> esptr1 = make_shared<int>(42);
-    weak_ptr<int> ewptr1 = esptr1;
-    shared_ptr<int> esptr2(new int);
-    weak_ptr<int> ewptr2 = esptr2;
-
-    esptr1 = nullptr;
-    esptr2 = nullptr;
-
-    // Basic type template classes
-    BasicTemplateType<float> floatTemplate;
-    BasicTemplateType<double> doubleTemplate;
-    BasicTemplateType<int> intTemplate;
-
-    // Generate the dump
-    //throw std::bad_exception();
-    int* a = nullptr;
-    *a = 4;
+    TestArray();
 }
 #pragma optimize("", on)
 
@@ -121,7 +152,6 @@ NO_INLINE void InfiniteRecursionTestCase(int arg)
 
 NO_INLINE int main(int argc, char** argv)
 {
-
     int testCaseToRun = 0;
 
     if (argc == 2)
@@ -132,13 +162,13 @@ NO_INLINE int main(int argc, char** argv)
     switch (testCaseToRun)
     {
     case 0 :
-        DefaultTestCase();
+        defaultTestCaseAddress();
         break;
     case 1:
         InfiniteRecursionTestCase(0);
         break;
     default:
-        DefaultTestCase();
+        defaultTestCaseAddress();
     }
 
     return 0;

@@ -116,6 +116,13 @@ namespace DbgEngTest
 
         [TestMethod]
         [TestCategory("NativeDumpTests")]
+        public void CheckSharedWeakPointers()
+        {
+            testRunner.CheckSharedWeakPointers();
+        }
+
+        [TestMethod]
+        [TestCategory("NativeDumpTests")]
         public void TestBasicTemplateType()
         {
             testRunner.TestBasicTemplateType();
