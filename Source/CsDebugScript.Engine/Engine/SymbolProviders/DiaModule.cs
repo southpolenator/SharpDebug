@@ -473,9 +473,8 @@ namespace CsDebugScript.Engine.SymbolProviders
             int displacement;
             List<Variable> variables = new List<Variable>();
 
-            // TODO: For Clang PDB this doesn't work correctly. Investigate.
             session.findSymbolByRVAEx(relativeAddress, SymTagEnum.SymTagFunction, out function, out displacement);
-            GetFrameLocals(function, variables, frame, module, arguments);
+            GetFrameLocals(function, relativeAddress, variables, frame, module, arguments);
             if (!arguments)
             {
                 IDiaSymbol block;
@@ -488,7 +487,7 @@ namespace CsDebugScript.Engine.SymbolProviders
                     // Traverse blocks till we reach function.
                     while ((SymTagEnum)block.symTag != SymTagEnum.SymTagFunction)
                     {
-                        GetFrameLocals(block, variables, frame, module, arguments);
+                        GetFrameLocals(block, uint.MaxValue, variables, frame, module, arguments);
                         block = block.lexicalParent;
                     }
                 }
@@ -501,17 +500,40 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="block">The block.</param>
+        /// <param name="relativeAddress">The relative address or uint.MaxValue if only first children are desired.</param>
         /// <param name="variables">The variables.</param>
         /// <param name="frame">The frame.</param>
         /// <param name="module">The module.</param>
         /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
-        private static void GetFrameLocals(IDiaSymbol block, List<Variable> variables, StackFrame frame, Module module, bool arguments)
+        private static void GetFrameLocals(IDiaSymbol block, uint relativeAddress, List<Variable> variables, StackFrame frame, Module module, bool arguments)
         {
-            foreach (var symbol in block.GetChildren(SymTagEnum.SymTagData))
-            {
-                DataKind symbolDataKind = (DataKind)symbol.dataKind;
+            IEnumerable<IDiaSymbol> symbols;
 
-                if (arguments && symbolDataKind != DataKind.Param)
+            if (relativeAddress != uint.MaxValue)
+            {
+                IDiaEnumSymbols symbolsEnum;
+                block.findChildrenExByRVA(SymTagEnum.SymTagNull, null, 0, relativeAddress, out symbolsEnum);
+                symbols = symbolsEnum.Enum();
+            }
+            else
+            {
+                symbols = block.GetChildren(SymTagEnum.SymTagData);
+            }
+
+            foreach (var symbol in symbols)
+            {
+                SymTagEnum tag = (SymTagEnum)symbol.symTag;
+
+                if (tag == SymTagEnum.SymTagData)
+                {
+                    DataKind symbolDataKind = (DataKind)symbol.dataKind;
+
+                    if ((arguments && symbolDataKind != DataKind.Param) || (LocationType)symbol.locationType == LocationType.Null)
+                    {
+                        continue;
+                    }
+                }
+                else if (tag != SymTagEnum.SymTagFunctionArgType || !arguments)
                 {
                     continue;
                 }

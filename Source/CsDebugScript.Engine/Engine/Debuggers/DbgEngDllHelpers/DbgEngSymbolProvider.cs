@@ -1,10 +1,10 @@
 ﻿using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using DbgEngManaged;
 using Dia2Lib;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
@@ -343,21 +343,34 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
                 dbgEngDll.Symbols.GetScopeSymbolGroup2((uint)scopeGroup, null, out symbolGroup);
                 uint localsCount = symbolGroup.GetNumberSymbols();
                 Variable[] variables = new Variable[localsCount];
+                bool doCleanup = false;
+
                 for (uint i = 0; i < localsCount; i++)
                 {
-                    StringBuilder name = new StringBuilder(Constants.MaxSymbolName);
-                    uint nameSize;
+                    try
+                    {
+                        StringBuilder name = new StringBuilder(Constants.MaxSymbolName);
+                        uint nameSize;
 
-                    symbolGroup.GetSymbolName(i, name, (uint)name.Capacity, out nameSize);
-                    var entry = symbolGroup.GetSymbolEntryInformation(i);
-                    var module = stackFrame.Process.ModulesById[entry.ModuleBase];
-                    var codeType = module.TypesById[entry.TypeId];
-                    var address = entry.Offset;
-                    var variableName = name.ToString();
+                        symbolGroup.GetSymbolName(i, name, (uint)name.Capacity, out nameSize);
+                        var entry = symbolGroup.GetSymbolEntryInformation(i);
+                        var module = stackFrame.Process.ModulesById[entry.ModuleBase];
+                        var codeType = module.TypesById[entry.TypeId];
+                        var address = entry.Offset;
+                        var variableName = name.ToString();
 
-                    variables[i] = Variable.CreateNoCast(codeType, address, variableName, variableName);
+                        variables[i] = Variable.CreateNoCast(codeType, address, variableName, variableName);
+                    }
+                    catch
+                    {
+                        // This variable is not available, don't store it in a collection
+                        doCleanup = true;
+                    }
                 }
-
+                if (doCleanup)
+                {
+                    variables = variables.Where(v => v != null).ToArray();
+                }
                 return new VariableCollection(variables);
             }
         }
