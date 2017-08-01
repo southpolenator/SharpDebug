@@ -88,6 +88,8 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.0, Culture=neutral, PublicKeyToken=ad64f17865634a67" />
+    <Reference Include="PresentationCore" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -108,6 +110,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="CLR\AppDomainTests.cs" />
+    <Compile Include="CLR\DataReaderTests.cs" />
     <Compile Include="CLR\ExceptionTests.cs" />
     <Compile Include="CLR\HeapTests.cs" />
     <Compile Include="CLR\ModuleTests.cs" />
@@ -116,6 +119,7 @@
     <Compile Include="CLR\ValueTests.cs" />
     <Compile Include="CodedUITests.cs" />
     <Compile Include="CodeGenTests.cs" />
+    <Compile Include="DbgEngDllTests.cs" />
     <Compile Include="DebugControlTest.cs" />
     <Compile Include="InteractiveModeTests.cs" />
     <Compile Include="NativeDumpTest32.cs" />
@@ -123,6 +127,9 @@
     <Compile Include="NativeDumpTest32Release.cs" />
     <Compile Include="NativeDumpTest32VS2013.cs" />
     <Compile Include="NativeDumpTest64.cs" />
+    <Compile Include="NativeDumpTest64Clang.cs" />
+    <Compile Include="NativeDumpTest64GCC.cs" />
+    <Compile Include="NativeDumpTest64NoDia.cs" />
     <Compile Include="NativeDumpTest64Release.cs" />
     <Compile Include="ScriptExecutionTests.cs" />
     <Compile Include="TestBase.cs" />
@@ -133,6 +140,7 @@
       <DependentUpon>UIMap.uitest</DependentUpon>
     </Compile>
     <Compile Include="UserTypeTests.cs" />
+    <None Include="app.config" />
     <None Include="CLR\Apps\AppDomains.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -155,6 +163,8 @@
     <None Include="packages.config" />
     <None Include="$(SolutionDir)\Key.snk" />
     <None Include="UIMap.uitest" />
+    <None Include="WinDbgCs_x64.testsettings" />
+    <None Include="WinDbgCs_x86.testsettings" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj">
@@ -221,7 +231,7 @@
   </Choose>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

@@ -22,14 +22,20 @@ namespace CsDebugScript
         private SimpleCache<Tuple<string, ulong>> functionNameAndDisplacement;
 
         /// <summary>
+        /// The function address
+        /// </summary>
+        private SimpleCache<ulong> functionAddress;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CodeFunction" /> class.
         /// </summary>
         /// <param name="address">The function address.</param>
         /// <param name="process">The process.</param>
         public CodeFunction(ulong address, Process process = null)
         {
-            Address = address;
+            OriginalAddress = address;
             Process = process ?? Process.Current;
+            functionAddress = SimpleCache.Create(() => Debugger.ResolveFunctionAddress(Process, OriginalAddress));
             sourceFileNameAndLine = SimpleCache.Create(ReadSourceFileNameAndLine);
             functionNameAndDisplacement = SimpleCache.Create(ReadFunctionNameAndDisplacement);
         }
@@ -49,14 +55,26 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// The function pointer address.
+        /// Gets the original address which was supplied to the constructor.
         /// </summary>
-        public ulong Address { get; private set; }
+        public ulong OriginalAddress { get; private set; }
 
         /// <summary>
         /// The process where this function is located.
         /// </summary>
         public Process Process { get; private set; }
+
+        /// <summary>
+        /// The resolved function pointer address.
+        /// It is the same as OriginalAddress if it is not public symbol.
+        /// </summary>
+        public ulong Address
+        {
+            get
+            {
+                return functionAddress.Value;
+            }
+        }
 
         /// <summary>
         /// Gets the name of the source file.

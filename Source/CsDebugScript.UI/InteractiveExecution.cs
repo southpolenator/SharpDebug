@@ -52,11 +52,29 @@ namespace CsDebugScript
         private HashSet<string> references = new HashSet<string>(ScriptCompiler.DefaultAssemblyReferences);
 
         /// <summary>
+        /// The metadata resolver
+        /// </summary>
+        private ScriptExecution.MetadataResolver metadataResolver;
+
+        /// <summary>
+        /// The source resolver
+        /// </summary>
+        private ScriptExecution.SourceResolver sourceResolver;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveExecution"/> class.
         /// </summary>
         public InteractiveExecution()
         {
-            var scriptOptions = ScriptOptions.Default.WithImports(ScriptCompiler.DefaultUsings).WithReferences(ScriptCompiler.DefaultAssemblyReferences);
+            var scriptOptions = ScriptOptions.Default.WithImports(ScriptCompiler.DefaultUsings).AddReferences(ScriptCompiler.DefaultAssemblyReferences);
+
+            var originalSourceResolver = scriptOptions.SourceResolver;
+            var originalMetadataResolver = scriptOptions.MetadataResolver;
+
+            metadataResolver = new ScriptExecution.MetadataResolver(originalMetadataResolver);
+            sourceResolver = new ScriptExecution.SourceResolver(originalSourceResolver);
+            scriptOptions = scriptOptions.WithMetadataResolver(metadataResolver);
+            scriptOptions = scriptOptions.WithSourceResolver(sourceResolver);
 
             scriptState = CSharpScript.RunAsync("", scriptOptions, scriptBase).Result;
             scriptBase.ObjectWriter = new DefaultObjectWriter();
@@ -185,6 +203,10 @@ namespace CsDebugScript
             {
                 InteractiveScriptBase.Current = scriptBase;
                 scriptBase._ScriptState_ = scriptState;
+                scriptBase._CodeGenCode_ = scriptBase._CodeGenCode_ ?? new List<ImportUserTypeCode>();
+                scriptBase._CodeResolver_ = sourceResolver;
+                scriptBase._CodeGenAssemblies_ = scriptBase._CodeGenAssemblies_ ?? new List<ImportUserTypeAssembly>();
+                scriptBase._AssemblyResolver_ = metadataResolver;
                 scriptState = scriptState.ContinueWithAsync(code).Result;
                 importedCode = ExtractImportedCode(scriptState.Script, importedCode);
                 UpdateUsings(scriptState.Script, usings);
@@ -201,6 +223,39 @@ namespace CsDebugScript
 
                     // TODO: Changing globals, but we need to store previous variables
                     scriptState = CSharpScript.RunAsync("", scriptState.Script.Options, scriptBase).Result;
+                }
+
+                if (scriptBase._CodeGenCode_.Count > 0)
+                {
+                    foreach (ImportUserTypeCode codeGenCode in scriptBase._CodeGenCode_)
+                    {
+                        scriptState = scriptState.ContinueWithAsync(codeGenCode.Code).Result;
+                        sourceResolver.AddCode(codeGenCode);
+                    }
+
+                    importedCode = ExtractImportedCode(scriptState.Script, importedCode);
+                    UpdateUsings(scriptState.Script, usings);
+                    UpdateReferences(scriptState.Script, references);
+                    scriptBase._CodeGenCode_.Clear();
+                }
+
+                if (scriptBase._CodeGenAssemblies_.Count > 0)
+                {
+                    foreach (ImportUserTypeAssembly assembly in scriptBase._CodeGenAssemblies_)
+                    {
+                        metadataResolver.AddAssembly(assembly);
+                    }
+
+                    List<MetadataReference> originalReferences = scriptState.Script.Options.MetadataReferences.ToList();
+                    ScriptOptions options = scriptState.Script.Options
+                        .WithReferences(originalReferences)
+                        .AddReferences(scriptBase._CodeGenAssemblies_.Select(a => a.AssemblyPath));
+
+                    scriptState = scriptState.Script.ContinueWith("", options).RunFromAsync(scriptState).Result;
+                    importedCode = ExtractImportedCode(scriptState.Script, importedCode);
+                    UpdateUsings(scriptState.Script, usings);
+                    UpdateReferences(scriptState.Script, references);
+                    scriptBase._CodeGenAssemblies_.Clear();
                 }
             }
             finally
@@ -251,9 +306,13 @@ namespace CsDebugScript
                 var ur = reference as UnresolvedMetadataReference;
 
                 if (ur != null)
+                {
                     references.Add(ur.Reference);
+                }
                 else
+                {
                     references.Add(reference.Display);
+                }
             }
         }
 

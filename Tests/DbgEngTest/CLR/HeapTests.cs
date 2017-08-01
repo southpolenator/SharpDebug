@@ -7,6 +7,8 @@ using System.Linq;
 namespace DbgEngTest.CLR
 {
     [TestClass]
+    [DeploymentItem(@"CLR\Apps\Types.cs", @"CLR\Apps")]
+    [DeploymentItem(@"CLR\Apps\SharedLibrary.cs", @"CLR\Apps")]
     public class HeapTests : ClrTestBase
     {
         [ClassInitialize]
@@ -23,6 +25,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void HeapSize()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
@@ -38,12 +41,17 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void HeapEnumeration()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
             Heap heap = runtime.Heap;
             int count = 0;
 
+            Assert.IsNotNull(heap);
+            Assert.IsNotNull(runtime.GCThreads);
+            Assert.IsTrue(runtime.HeapCount > 0);
+            Assert.IsNotNull(runtime.ToString());
             Assert.IsTrue(heap.CanWalkHeap);
             foreach (Variable variable in heap.EnumerateObjects())
             {
@@ -55,6 +63,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ServerSegmentTests()
         {
             Environment.SetEnvironmentVariable("COMPlus_BuildFlavor", "svr");
@@ -65,6 +74,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void WorkstationSegmentTests()
         {
             Environment.SetEnvironmentVariable("COMPlus_BuildFlavor", "");

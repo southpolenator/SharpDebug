@@ -6,6 +6,8 @@ using Microsoft.VisualStudio.Debugger.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dia2Lib;
+using System.Runtime.InteropServices;
 
 namespace CsDebugScript.VS
 {
@@ -169,6 +171,23 @@ namespace CsDebugScript.VS
                 }
 
                 return module.FullName;
+            });
+        }
+
+        public object GetModuleDiaSession(uint moduleId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                try
+                {
+                    DkmModuleInstance module = GetModule(moduleId);
+
+                    return module.Module.GetSymbolInterface(Marshal.GenerateGuidForType(typeof(IDiaSession)));
+                }
+                catch
+                {
+                    return null;
+                }
             });
         }
 
@@ -345,8 +364,9 @@ namespace CsDebugScript.VS
             ExecuteOnDkmInitializedThread(() =>
             {
                 DkmThread thread = GetThread(threadId);
+                int flags = 0x1f;
 
-                thread.GetContext(-1, contextBufferPointer.ToPointer(), contextBufferSize);
+                thread.GetContext(flags, contextBufferPointer.ToPointer(), contextBufferSize);
             });
         }
 
@@ -438,7 +458,9 @@ namespace CsDebugScript.VS
                         }
                     }
 
-                    if (instructionOffset != frames[i].InstructionAddress.CPUInstructionPart.InstructionPointer)
+                    if (frames[i].InstructionAddress != null
+                        && frames[i].InstructionAddress.CPUInstructionPart != null
+                        && instructionOffset != frames[i].InstructionAddress.CPUInstructionPart.InstructionPointer)
                     {
                         throw new Exception("Instruction offset is not the same?");
                     }

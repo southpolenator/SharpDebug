@@ -36,6 +36,15 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="module">The module.</param>
         private static ISymbolProviderModule LoadModule(Module module)
         {
+            // Try to get debugger DIA session
+            IDiaSession diaSession = Context.Debugger.GetModuleDiaSession(module);
+
+            if (diaSession != null)
+            {
+                return new DiaModule(diaSession, module);
+            }
+
+            // Try to load PDB file into our own DIA session
             string pdb = module.SymbolFileName;
 
             if (!string.IsNullOrEmpty(pdb) && Path.GetExtension(pdb).ToLower() == ".pdb")
@@ -49,6 +58,7 @@ namespace CsDebugScript.Engine.SymbolProviders
                 }
             }
 
+            // Fallback to debugger symbol provider
             return Context.Debugger.CreateDefaultSymbolProviderModule();
         }
 
@@ -240,6 +250,23 @@ namespace CsDebugScript.Engine.SymbolProviders
 
             diaModule.GetFunctionNameAndDisplacement(process, address, (uint)distance, out functionName, out displacement);
             functionName = module.Name + "!" + functionName;
+        }
+
+        /// <summary>
+        /// Determines whether the specified process address is function type public symbol.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsFunctionAddressPublicSymbol(Process process, ulong address)
+        {
+            ulong distance;
+            Module module;
+            ISymbolProviderModule diaModule = GetDiaModule(process, address, out distance, out module);
+
+            return diaModule.IsFunctionAddressPublicSymbol(process, address, (uint)distance);
         }
 
         /// <summary>

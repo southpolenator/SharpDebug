@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>CsDebugScript.UI</id>
-    <version>$version$</version>
+    <version>$version$-beta</version>
     <title>CsDebugScript.UI</title>
     <authors>$authors$</authors>
     <owners>$owners$</owners>
@@ -19,9 +19,10 @@
       <dependency id="AvalonEdit" version="5.0.2" />
       <dependency id="CsDebugScript.DbgEng" version="$version$" />
       <dependency id="CsDebugScript.Engine" version="$version$" />
+      <dependency id="CsDebugScript.CodeGen" version="$version$-beta" />
       <dependency id="ICSharpCode.NRefactory" version="5.5.1" />
-      <dependency id="Microsoft.CodeAnalysis.CSharp" version="1.2.1" />
-      <dependency id="Microsoft.CodeAnalysis.CSharp.Scripting" version="1.2.1" />
+      <dependency id="Microsoft.CodeAnalysis.CSharp" version="2.3.1" />
+      <dependency id="Microsoft.CodeAnalysis.CSharp.Scripting" version="2.3.1" />
     </dependencies>
     <tags>$tags$</tags>
   </metadata>

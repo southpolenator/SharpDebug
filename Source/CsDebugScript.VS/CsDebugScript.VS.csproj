@@ -56,6 +56,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
     <Compile Include="VSContext.cs" />
     <Compile Include="VSDebugger.cs" />
     <Compile Include="VSDebuggerProxy.cs" />
@@ -68,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="$(SolutionDir)\Key.snk" />
+    <None Include="app.config" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -86,6 +88,14 @@
     </Content>
     <Content Include="Resources\VSInteractiveWindowCommand.png" />
     <Content Include="Resources\VSInteractiveWindowPackage.ico" />
+    <Content Include="System.Collections.Immutable.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="System.IO.FileSystem.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="System.Reflection.Metadata.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -96,6 +106,10 @@
     </VSCTCompile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj">
+      <Project>{21a929ea-b96b-4523-9d0f-853ea771058d}</Project>
+      <Name>CsDebugScript.CommonUserTypes</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CsDebugScript.Engine\CsDebugScript.Engine.csproj">
       <Project>{2a7f1646-9b5a-433c-8a84-2215194f59b9}</Project>
       <Name>CsDebugScript.Engine</Name>
@@ -116,6 +130,10 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Dia2Lib">
+      <HintPath>$(SolutionDir)\Source\DiaHelpers\Dia2Lib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="EnvDTE, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
@@ -260,6 +278,8 @@
     <PreBuildEvent>copy "$(OutDir)\Microsoft.CodeAnalysis.dll" "$(ProjectDir)"
 copy "$(OutDir)\Microsoft.CodeAnalysis.CSharp.dll" "$(ProjectDir)"
 copy "$(OutDir)\System.Reflection.Metadata.dll" "$(ProjectDir)"
+copy "$(OutDir)\System.Collections.Immutable.dll" "$(ProjectDir)"
+copy "$(OutDir)\System.IO.FileSystem.dll" "$(ProjectDir)"
 </PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

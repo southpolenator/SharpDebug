@@ -6,6 +6,8 @@ using System.Linq;
 namespace DbgEngTest.CLR
 {
     [TestClass]
+    [DeploymentItem(@"CLR\Apps\LocalVariables.cs", @"CLR\Apps")]
+    [DeploymentItem(@"CLR\Apps\SharedLibrary.cs", @"CLR\Apps")]
     public class ValueTests : ClrTestBase
     {
         [ClassInitialize]
@@ -22,6 +24,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void CheckObjectArgsAndLocals()
         {
             ClrThread clrThread = Thread.Current.FindClrThread();
@@ -34,6 +37,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void NullValueOkTest()
         {
             ClrThread clrThread = Thread.Current.FindClrThread();
@@ -46,6 +50,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void PrimitiveVariableConversionTest()
         {
             ClrThread clrThread = Thread.Current.FindClrThread();
@@ -81,6 +86,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ObjectFieldTest()
         {
             ClrThread clrThread = Thread.Current.FindClrThread();
@@ -104,6 +110,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ObjectLocalVariableTest()
         {
             ClrThread clrThread = Thread.Current.FindClrThread();
@@ -116,6 +123,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void GetFieldTests()
         {
             ClrThread clrThread = Thread.Current.FindClrThread();
@@ -130,6 +138,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void StructVariableTest()
         {
             ClrThread clrThread = Thread.Current.FindClrThread();
@@ -151,6 +160,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void InteriorStructTest()
         {
             ClrThread clrThread = Thread.Current.FindClrThread();

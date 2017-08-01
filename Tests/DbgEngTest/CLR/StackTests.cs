@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 namespace DbgEngTest.CLR
 {
     [TestClass]
+    [DeploymentItem(@"CLR\Apps\NestedException.cs", @"CLR\Apps")]
+    [DeploymentItem(@"CLR\Apps\SharedLibrary.cs", @"CLR\Apps")]
     public class StackTests : ClrTestBase
     {
         [ClassInitialize]
@@ -26,12 +28,15 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ObjectArgumentAndLocalTest()
         {
             ClrThread clrThread = Thread.Current.FindClrThread();
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable args = frame.Arguments.Single();
 
+            Assert.IsNotNull(clrThread.Runtime);
+            Assert.IsNotNull(clrThread.AppDomain);
             Assert.IsNotNull(args);
             Assert.AreEqual("System.String[]", args.GetCodeType().Name);
             Assert.AreEqual("args", args.GetName());

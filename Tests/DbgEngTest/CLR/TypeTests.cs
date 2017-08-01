@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 namespace DbgEngTest.CLR
 {
     [TestClass]
+    [DeploymentItem(@"CLR\Apps\Types.cs", @"CLR\Apps")]
+    [DeploymentItem(@"CLR\Apps\SharedLibrary.cs", @"CLR\Apps")]
     public class TypeTests : ClrTestBase
     {
         [ClassInitialize]
@@ -26,6 +28,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void IntegerObjectClrType()
         {
             Heap heap = Process.Current.ClrRuntimes.Single().Heap;
@@ -37,6 +40,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void FieldNameAndValueTests()
         {
             Heap heap = Process.Current.ClrRuntimes.Single().Heap;
@@ -54,6 +58,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ArrayTests()
         {
             Module typesModule = Module.All.Single(m => m.Name == "Types");

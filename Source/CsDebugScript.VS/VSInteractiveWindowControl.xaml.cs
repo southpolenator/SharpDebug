@@ -1,19 +1,10 @@
-﻿//------------------------------------------------------------------------------
-// <copyright file="VSInteractiveWindowControl.xaml.cs" company="Company">
-//     Copyright (c) Company.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
-
-using CsDebugScript.UI;
-using CsDebugScript.UI.CodeWindow;
+﻿using CsDebugScript.UI;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
 using System.Windows.Media;
+using ICSharpCode.AvalonEdit.Highlighting;
 
 namespace CsDebugScript.VS
 {
@@ -22,16 +13,7 @@ namespace CsDebugScript.VS
     /// </summary>
     public partial class VSInteractiveWindowControl : UserControl
     {
-        private const string DefaultStatusText = "Type 'help' to get started :)";
-        private const string ExecutingStatusText = "Executing...";
-        private const string InitializingStatusText = "Initializing...";
-        private const string ExecutingPrompt = "...> ";
-        private static readonly Brush ExecutingBackground = Brushes.LightGray;
-        private static readonly Brush NormalBackground = Brushes.White;
-        private InteractiveCodeEditor textEditor;
-        private StackPanel resultsPanel;
-        private TextBlock promptBlock;
-        private StatusBarItem statusBarStatusText;
+        private InteractiveWindowContent contentControl;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VSInteractiveWindowControl"/> class.
@@ -40,53 +22,10 @@ namespace CsDebugScript.VS
         {
             this.InitializeComponent();
 
-            // Set window look
-            Background = ExecutingBackground;
-
-            // Add dock panel and status bar
-            DockPanel dockPanel = new DockPanel();
-            StatusBar statusBar = new StatusBar();
-            statusBarStatusText = new StatusBarItem();
-            statusBarStatusText.Content = InitializingStatusText;
-            statusBar.Items.Add(statusBarStatusText);
-            DockPanel.SetDock(statusBar, Dock.Bottom);
-            dockPanel.Children.Add(statusBar);
-            Content = dockPanel;
-
-            // Add results panel
-            ScrollViewer scrollViewer = new ScrollViewer();
-            scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
-            scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-            scrollViewer.Margin = new Thickness(5);
-            dockPanel.Children.Add(scrollViewer);
-            resultsPanel = new StackPanel();
-            resultsPanel.Orientation = Orientation.Vertical;
-            resultsPanel.CanVerticallyScroll = true;
-            resultsPanel.CanHorizontallyScroll = true;
-            scrollViewer.Content = resultsPanel;
-
-            // Add prompt for text editor
-            var panel = new DockPanel();
-            resultsPanel.Children.Add(panel);
-
-            promptBlock = new TextBlock();
-            promptBlock.FontFamily = new FontFamily("Consolas");
-            promptBlock.FontSize = 14;
-            promptBlock.Text = ExecutingPrompt;
-            DockPanel.SetDock(promptBlock, Dock.Left);
-            panel.Children.Add(promptBlock);
-
-            // Add text editor
-            textEditor = new InteractiveCodeEditor();
-            textEditor.Background = Brushes.Transparent;
-            textEditor.CommandExecuted += TextEditor_CommandExecuted;
-            textEditor.CommandFailed += TextEditor_CommandFailed;
-            textEditor.Executing += TextEditor_Executing;
-            textEditor.CloseRequested += TextEditor_CloseRequested;
-            textEditor.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
-            textEditor.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
-            textEditor.TextArea.PreviewKeyDown += TextEditor_PreviewKeyDown;
-            panel.Children.Add(textEditor);
+            Grid grid = new Grid();
+            contentControl = CreateInteractiveWindowContent();
+            grid.Children.Add(contentControl);
+            this.Content = grid;
 
             MakeEnabled(VSContext.CurrentDebugMode == EnvDTE.dbgDebugMode.dbgBreakMode);
             VSContext.DebuggerEnteredBreakMode += () => MakeEnabled(true);
@@ -94,166 +33,115 @@ namespace CsDebugScript.VS
             VSContext.DebuggerEnteredRunMode += () => MakeEnabled(false);
         }
 
-        private void TextEditor_PreviewKeyDown(object sender, KeyEventArgs e)
+        private static InteractiveWindowContent CreateInteractiveWindowContent()
         {
-            if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+            var result = new List<HighlightingColor>();
+            var properties = VSContext.DTE.Properties["FontsAndColors", "TextEditor"];
+            var colors = properties.Item("FontsAndColorsItems").Object as EnvDTE.FontsAndColorsItems;
+            string fontFamily = properties.Item("FontFamily").Value.ToString();
+            double fontSize = double.Parse(properties.Item("FontSize").Value.ToString());
+            int indentationSize = 4; // TODO:
+
+            result.Add(CreateColor("#RegularText#", colors.Item("Plain Text")));
+            result.Add(CreateColor("#CurrentLine#", colors.Item("CurrentLineActiveFormat")));
+            result.Add(CreateColor("#TooltipText#", colors.Item("Plain Text"), colors.Item("Peek Highlighted Text Unfocused")));
+            result.Add(CreateColor("#CompletionText#", colors.Item("Plain Text"), colors.Item("Peek Background Unfocused")));
+
+            Dictionary<string, string> colorMap = new Dictionary<string, string>()
             {
-                if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == 1)
+                { "Comment", "Comment" },
+                { "String", "String" },
+                { "StringInterpolation", "Plain Text" },
+                { "Char", "String" },
+                { "Preprocessor", "Preprocessor Keyword" },
+                { "Punctuation", "Punctuation" },
+                { "ValueTypeKeywords", "Keyword" },
+                { "ReferenceTypeKeywords", "Keyword" },
+                { "MethodCall", "Plain Text" },
+                { "NumberLiteral", "Number" },
+                { "ThisOrBaseReference", "Keyword" },
+                { "NullOrValueKeywords", "Keyword" },
+                { "Keywords", "Keyword" },
+                { "GotoKeywords", "Keyword" },
+                { "ContextKeywords", "Keyword" },
+                { "ExceptionKeywords", "Keyword" },
+                { "CheckedKeyword", "Keyword" },
+                { "UnsafeKeywords", "Keyword" },
+                { "OperatorKeywords", "Keyword" },
+                { "ParameterModifiers", "Keyword" },
+                { "Modifiers", "Keyword" },
+                { "Visibility", "Keyword" },
+                { "NamespaceKeywords", "Keyword" },
+                { "GetSetAddRemove", "Keyword" },
+                { "TrueFalse", "Keyword" },
+                { "TypeKeywords", "Keyword" },
+                { "SemanticKeywords", "Keyword" },
+            };
+
+            foreach (var kvp in colorMap)
+            {
+                var color = CreateColor(kvp.Key, colors.Item(kvp.Value));
+
+                color.Background = null;
+                result.Add(color);
+            }
+
+#if false
+            System.Drawing.Color cc = System.Drawing.Color.FromArgb(37, 37, 38);
+
+            IEnumerable<EnvDTE.ColorableItems> sorted = colors.Cast<EnvDTE.ColorableItems>()
+                .OrderBy(color =>
                 {
-                    e.Handled = true;
-                    MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
-                    textEditor.MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
-                }
-            }
-            else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+                    var c = System.Drawing.ColorTranslator.FromOle((int)color.Background);
+
+                    return System.Math.Abs(c.B - cc.B) + System.Math.Abs(c.G - cc.G) + System.Math.Abs(c.R - cc.R);
+                });
+
+            var sb = new System.Text.StringBuilder();
+
+            foreach (var color in sorted.Take(10))
             {
-                if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == textEditor.LineCount)
-                {
-                    e.Handled = true;
-                    MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
-                }
+                var c = System.Drawing.ColorTranslator.FromOle((int)color.Background);
+                int diff = System.Math.Abs(c.B - cc.B) + System.Math.Abs(c.G - cc.G) + System.Math.Abs(c.R - cc.R);
+
+                sb.AppendLine($"({diff}) [{c.R}, {c.G}, {c.B}] '{color.Name}'");
             }
+
+            MessageBox.Show(sb.ToString());
+#endif
+
+            return new InteractiveWindowContent(fontFamily, fontSize * 1.4, indentationSize, result.ToArray());
         }
 
-        private UIElement CreateTextOutput(string textOutput, bool error = false)
+        private static HighlightingColor CreateColor(string name, EnvDTE.ColorableItems colorableItems)
         {
-            textOutput = textOutput.Replace("\r\n", "\n");
-            if (textOutput.EndsWith("\n"))
-                textOutput = textOutput.Substring(0, textOutput.Length - 1);
-
-            var textBox = new TextBox();
-            textBox.FontFamily = new FontFamily("Consolas");
-            textBox.FontSize = 14;
-            textBox.Text = textOutput;
-            textBox.IsReadOnly = true;
-            textBox.Background = Brushes.Transparent;
-            textBox.BorderBrush = Brushes.Transparent;
-            if (error)
-                textBox.Foreground = Brushes.Red;
-            return textBox;
+            return CreateColor(name, colorableItems, colorableItems);
         }
 
-        private UIElement CreateDbgCode(string text)
+        private static HighlightingColor CreateColor(string name, EnvDTE.ColorableItems foreground, EnvDTE.ColorableItems background)
         {
-            var textBlock = new TextBlock();
-            textBlock.FontFamily = new FontFamily("Consolas");
-            textBlock.FontSize = 14;
-            textBlock.Text = "#dbg> " + text;
-            textBlock.Background = Brushes.Transparent;
-            return textBlock;
-        }
-
-        private UIElement CreateCSharpCode(string code)
-        {
-            var panel = new StackPanel();
-            panel.Orientation = Orientation.Horizontal;
-
-            var textBlock = new TextBlock();
-            textBlock.FontFamily = new FontFamily("Consolas");
-            textBlock.FontSize = 14;
-            textBlock.Text = InteractiveExecution.DefaultPrompt;
-            panel.Children.Add(textBlock);
-
-            var codeControl = new CsTextEditor();
-            codeControl.IsEnabled = false;
-            codeControl.Text = code;
-            codeControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
-            codeControl.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
-            codeControl.Background = Brushes.Transparent;
-            panel.Children.Add(codeControl);
-
-            return panel;
-        }
-
-        private void AddSpacing(UIElement uiElement)
-        {
-            AddSpacing((FrameworkElement)uiElement);
-        }
-
-        private void AddSpacing(FrameworkElement element)
-        {
-            element.Margin = new Thickness(0, 0, 0, 10);
-        }
-
-        private void TextEditor_CommandExecuted(bool csharpCode, string textOutput, IEnumerable<object> objectsOutput)
-        {
-            int initialLength = resultsPanel.Children.Count;
-            int textEditorIndex = initialLength - 1;
-
-            foreach (var objectOutput in objectsOutput.Reverse())
-                if (objectOutput != null)
-                {
-                    UIElement elementOutput = objectOutput as UIElement;
-                    LazyUIResult lazyUI = objectOutput as LazyUIResult;
-
-                    if (elementOutput != null)
-                        resultsPanel.Children.Insert(textEditorIndex, elementOutput);
-                    else if (lazyUI != null)
-                        resultsPanel.Children.Insert(textEditorIndex, lazyUI.UIElement);
-                    else
-                        resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(objectOutput.ToString()));
-                }
-
-            if (!string.IsNullOrEmpty(textOutput))
-                resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
-            resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(textEditor.Text) : CreateDbgCode(textEditor.Text));
-            AddSpacing(resultsPanel.Children[textEditorIndex]);
-            if (resultsPanel.Children.Count - initialLength > 1)
-                AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
-        }
-
-        private void TextEditor_CommandFailed(bool csharpCode, string textOutput, string errorOutput)
-        {
-            int initialLength = resultsPanel.Children.Count;
-            int textEditorIndex = initialLength - 1;
-
-            resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(errorOutput, error: true));
-            if (!string.IsNullOrEmpty(textOutput))
-                resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
-            resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(textEditor.Text) : CreateDbgCode(textEditor.Text));
-            AddSpacing(resultsPanel.Children[textEditorIndex]);
-            AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
-        }
-
-        private void TextEditor_Executing(bool started)
-        {
-            if (!started)
+            return new HighlightingColor()
             {
-                textEditor.TextArea.Focus();
-                statusBarStatusText.Content = DefaultStatusText;
-                Background = NormalBackground;
-                promptBlock.Text = InteractiveExecution.DefaultPrompt;
-            }
-            else
-            {
-                statusBarStatusText.Content = ExecutingStatusText;
-                Background = ExecutingBackground;
-                promptBlock.Text = ExecutingPrompt;
-            }
+                Name = name,
+                Background = ConvertDTEColor(background.Background),
+                Foreground = ConvertDTEColor(foreground.Foreground),
+                FontStyle = FontStyles.Normal,
+                FontWeight = foreground.Bold ? FontWeights.Bold : FontWeights.Normal,
+                Underline = false,
+            };
         }
 
-        private void TextEditor_CloseRequested()
+        private static SimpleHighlightingBrush ConvertDTEColor(uint oleColor)
         {
-        }
+            var sdColor = System.Drawing.ColorTranslator.FromOle((int)oleColor);
+            Color color = Color.FromArgb(sdColor.A, sdColor.R, sdColor.G, sdColor.B);
 
+            return new SimpleHighlightingBrush(color);
+        }
 
         private void MakeEnabled(bool enabled)
         {
-            this.IsEnabled = enabled;
-        }
-
-        /// <summary>
-        /// Handles click on the button by displaying a message box.
-        /// </summary>
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event args.</param>
-        [SuppressMessage("Microsoft.Globalization", "CA1300:SpecifyMessageBoxOptions", Justification = "Sample code")]
-        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:ElementMustBeginWithUpperCaseLetter", Justification = "Default event handler naming pattern")]
-        private void button1_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show(
-                string.Format(System.Globalization.CultureInfo.CurrentUICulture, "Invoked '{0}'", this.ToString()),
-                "VSInteractiveWindow");
+            contentControl.IsEnabled = enabled;
         }
     }
 }

@@ -19,7 +19,9 @@ namespace CsDebugScript
             InteractiveScriptBase interactiveScript = InteractiveScriptBase.Current;
 
             if (interactiveScript == null)
+            {
                 throw new NotImplementedException("Calling Dump() is only supported while using interactive scripting");
+            }
 
             interactiveScript.Dump(obj);
         }
@@ -40,8 +42,23 @@ namespace CsDebugScript
         /// </summary>
         public IObjectWriter ObjectWriter { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether interactive commands/scripts will be executed in STA thread.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if force STA thread execution; otherwise, <c>false</c>.
+        /// </value>
+        public bool ForceStaExecution { get; set; }
+
+        /// <summary>
         /// Gets or sets the internal object writer. It is used for writing objects to host window.
+        /// </summary>
         internal IObjectWriter _InternalObjectWriter_ { get; set; }
+
+        /// <summary>
+        /// Gets or sets the UI dispatcher.
+        /// </summary>
+        internal System.Windows.Threading.Dispatcher _Dispatcher_ { get; set; }
 
         /// <summary>
         /// Stops interactive scripting execution. You can use this simply by entering it as command in interactive scripting mode.
@@ -87,6 +104,26 @@ namespace CsDebugScript
         internal ScriptState<object> _ScriptState_;
 
         /// <summary>
+        /// The list of CodeGen generated code.
+        /// </summary>
+        internal List<ImportUserTypeCode> _CodeGenCode_;
+
+        /// <summary>
+        /// The list of CodeGen generated assemblies.
+        /// </summary>
+        internal List<ImportUserTypeAssembly> _CodeGenAssemblies_;
+
+        /// <summary>
+        /// The code resolver used for generating code with CodeGen.
+        /// </summary>
+        internal ScriptExecution.SourceResolver _CodeResolver_;
+
+        /// <summary>
+        /// The assembly resolver used for generating assemblies with CodeGen.
+        /// </summary>
+        internal ScriptExecution.MetadataResolver _AssemblyResolver_;
+
+        /// <summary>
         /// Outputs the specified object using ObjectWriter.
         /// </summary>
         /// <param name="obj">The object.</param>
@@ -104,7 +141,10 @@ namespace CsDebugScript
             foreach (var method in methods)
             {
                 if (method.DeclaringType != type || method.IsSpecialName)
+                {
                     continue;
+                }
+
                 if (string.IsNullOrEmpty(nameFilter) || method.Name.ToLower().Contains(nameFilter))
                 {
                     yield return method.ToString();
@@ -124,7 +164,9 @@ namespace CsDebugScript
             while (type != null)
             {
                 foreach (var command in GetCommands(type, type == GetType() ? System.Reflection.BindingFlags.NonPublic : System.Reflection.BindingFlags.Default, nameFilter))
+                {
                     yield return command;
+                }
 
                 type = type.BaseType;
             }
@@ -168,7 +210,10 @@ namespace CsDebugScript
                 foreach (var method in methods)
                 {
                     if (method.DeclaringType != type)
+                    {
                         continue;
+                    }
+
                     if (string.IsNullOrEmpty(nameFilter) || method.Name.ToLower().Contains(nameFilter))
                     {
                         yield return method.ToString();
@@ -260,6 +305,43 @@ namespace CsDebugScript
             else
             {
                 throw new ArgumentException(nameof(newBaseClassType));
+            }
+        }
+
+        /// <summary>
+        /// Executes the specified action in UI thread.
+        /// </summary>
+        /// <param name="action">The action.</param>
+        public void ExecuteInUiThread(Action action)
+        {
+            if (_Dispatcher_ != null)
+            {
+                _Dispatcher_.Invoke(action);
+            }
+            else
+            {
+                action();
+            }
+        }
+
+        /// <summary>
+        /// Imports user types from modules using the specified importing options.
+        /// </summary>
+        /// <param name="options">The importing options.</param>
+        /// <param name="asAssembly">If set to <c>true</c> user types will be imported as assembly. If set to <c>false</c> user types will be imported as script code.</param>
+        public void ImportUserTypes(ImportUserTypeOptions options, bool asAssembly = false)
+        {
+            if (asAssembly)
+            {
+                ImportUserTypeAssembly assembly = _AssemblyResolver_.GenerateAssembly(options);
+
+                _CodeGenAssemblies_.Add(assembly);
+            }
+            else
+            {
+                ImportUserTypeCode code = _CodeResolver_.GenerateCode(options);
+
+                _CodeGenCode_.Add(code);
             }
         }
     }

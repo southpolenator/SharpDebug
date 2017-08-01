@@ -1,4 +1,5 @@
 ﻿using CsDebugScript;
+using CsDebugScript.Engine;
 using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -33,9 +34,18 @@ namespace DbgEngTest
             }
         }
 
-        public void TestSetup()
+        public void TestSetup(bool useDia = true)
         {
             InitializeDump(DefaultDumpFile, DefaultSymbolPath);
+            if (!useDia)
+            {
+                Context.InitializeDebugger(Context.Debugger, Context.Debugger.CreateDefaultSymbolProvider());
+            }
+            InterpretInteractive($@"
+var options = new ImportUserTypeOptions();
+options.Modules.Add(""{DefaultModuleName}"");
+ImportUserTypes(options, true);
+                ");
         }
 
         public void CurrentThreadContainsNativeDumpTestCpp()
@@ -45,7 +55,9 @@ namespace DbgEngTest
                 try
                 {
                     if (frame.SourceFileName.ToLower().EndsWith(MainSourceFileName))
+                    {
                         return;
+                    }
                 }
                 catch (Exception)
                 {
@@ -64,6 +76,75 @@ namespace DbgEngTest
         public void TestModuleExtraction()
         {
             Assert.IsTrue(Module.All.Any(module => module.Name == DefaultModuleName));
+        }
+
+        public void CheckProcess()
+        {
+            Process process = Process.Current;
+
+            Console.WriteLine("Actual processor type: {0}", process.ActualProcessorType);
+            Console.WriteLine("SystemId: {0}", process.SystemId);
+            Assert.AreNotSame(0, process.SystemId);
+            Assert.AreNotSame(0, Process.All.Length);
+            Assert.AreNotEqual(-1, process.FindMemoryRegion(DefaultModule.Address));
+            Assert.AreEqual(DefaultModule.ImageName, process.ExecutableName);
+            Assert.IsNotNull(process.PEB);
+            Assert.IsNull(process.CurrentCLRAppDomain);
+        }
+
+        public void CheckThread()
+        {
+            Thread thread = Thread.Current;
+
+            Assert.AreNotSame(0, Thread.All.Length);
+            Assert.IsNotNull(thread.Locals);
+            Assert.IsNotNull(thread.TEB);
+            Assert.IsNotNull(thread.ThreadContext);
+        }
+
+        public void CheckCodeFunction()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!DefaultTestCase");
+            CodeFunction defaultTestCaseFunction = new CodeFunction(defaultTestCaseFrame.InstructionOffset);
+
+            Assert.AreNotEqual(0, defaultTestCaseFunction.Address);
+            Assert.AreNotEqual(0, defaultTestCaseFunction.FunctionDisplacement);
+            Assert.AreEqual($"{DefaultModuleName}!DefaultTestCase", defaultTestCaseFunction.FunctionName);
+            Assert.AreEqual($"DefaultTestCase", defaultTestCaseFunction.FunctionNameWithoutModule);
+            Assert.AreEqual(Process.Current, defaultTestCaseFunction.Process);
+            Assert.IsTrue(defaultTestCaseFunction.SourceFileName.ToLower().Contains(MainSourceFileName));
+            Assert.AreNotEqual(0, defaultTestCaseFunction.SourceFileLine);
+            Console.WriteLine("SourceFileDisplacement: {0}", defaultTestCaseFunction.SourceFileDisplacement);
+
+            Variable codeFunctionVariable = DefaultModule.GetVariable($"{DefaultModuleName}!defaultTestCaseAddress");
+            CodeFunction codeFunction;
+
+            Assert.IsTrue(codeFunctionVariable.GetCodeType().IsPointer);
+
+            // Check if cv2pdb was used to generate PDB.
+            if (codeFunctionVariable.GetCodeType().ElementType.IsFunction)
+            {
+                CodePointer<CodeFunction> functionPointer = new CodePointer<CodeFunction>(new NakedPointer(codeFunctionVariable));
+
+                codeFunction = functionPointer.Element;
+            }
+            else
+            {
+                // cv2pdb doesn't export correct function type, but uses int**. Ignore variable type and just take pointer value for function address.
+                codeFunction = new CodeFunction(codeFunctionVariable.GetPointerAddress(), codeFunctionVariable.GetCodeType().Module.Process);
+            }
+
+            Assert.AreEqual($"{DefaultModuleName}!DefaultTestCase", codeFunction.FunctionName);
+        }
+
+        public void CheckDebugger()
+        {
+            string version = Debugger.ExecuteAndCapture("version");
+
+            Console.WriteLine("Debugger version: {0}", version);
+            Assert.IsTrue(Debugger.FindAllPatternInMemory(0x1212121212121212).Any());
+            Assert.IsTrue(Debugger.FindAllBytePatternInMemory(new byte[] { 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12 }).Any());
+            Assert.IsTrue(Debugger.FindAllTextPatternInMemory("qwerty").Any());
         }
 
         public void ReadingFloatPointTypes()
@@ -90,13 +171,17 @@ namespace DbgEngTest
         public void CheckMainArguments()
         {
             StackFrame mainFrame = GetFrame($"{DefaultModuleName}!main");
-            VariableCollection arguments = mainFrame.Arguments;
+            VariableCollection arguments = mainFrame.Arguments.Count > 0 ? mainFrame.Arguments : mainFrame.Locals;
 
             Assert.IsTrue(arguments.ContainsName("argc"));
             Assert.IsTrue(arguments.ContainsName("argv"));
             Assert.AreEqual(1, (int)arguments["argc"]);
 
-            Assert.AreEqual(2, arguments.Count);
+            if (mainFrame.Arguments.Count > 0)
+            {
+                Assert.AreEqual(2, arguments.Count);
+            }
+
             for (int i = 0; i < arguments.Count; i++)
             {
                 Variable argument = arguments[i];
@@ -141,6 +226,12 @@ namespace DbgEngTest
 
             Assert.AreEqual("enumEntry3", e.ToString());
             Assert.AreEqual(3, (int)e);
+        }
+
+        public void CheckSharedWeakPointers(bool checkMakeShared = true)
+        {
+            StackFrame frame = GetFrame($"{DefaultModuleName}!TestSharedWeakPointers");
+            VariableCollection locals = frame.Locals;
 
             // Verify shared/weak pointers
             std.shared_ptr<int> sptr1 = new std.shared_ptr<int>(locals["sptr1"]);
@@ -154,13 +245,19 @@ namespace DbgEngTest
             Assert.AreEqual(1, sptr1.SharedCount);
             Assert.AreEqual(2, sptr1.WeakCount);
             Assert.AreEqual(5, sptr1.Element);
-            Assert.IsTrue(sptr1.IsCreatedWithMakeShared);
+            if (checkMakeShared)
+            {
+                Assert.IsTrue(sptr1.IsCreatedWithMakeShared);
+            }
 
             Assert.IsFalse(wptr1.IsEmpty);
             Assert.AreEqual(1, wptr1.SharedCount);
             Assert.AreEqual(2, wptr1.WeakCount);
             Assert.AreEqual(5, wptr1.Element);
-            Assert.IsTrue(wptr1.IsCreatedWithMakeShared);
+            if (checkMakeShared)
+            {
+                Assert.IsTrue(wptr1.IsCreatedWithMakeShared);
+            }
 
             Assert.IsTrue(esptr1.IsEmpty);
 
@@ -168,14 +265,73 @@ namespace DbgEngTest
             Assert.AreEqual(0, ewptr1.SharedCount);
             Assert.AreEqual(1, ewptr1.WeakCount);
             Assert.AreEqual(42, ewptr1.UnsafeElement);
-            Assert.IsTrue(ewptr1.IsCreatedWithMakeShared);
+            if (checkMakeShared)
+            {
+                Assert.IsTrue(ewptr1.IsCreatedWithMakeShared);
+            }
 
             Assert.IsTrue(esptr2.IsEmpty);
 
             Assert.IsTrue(ewptr2.IsEmpty);
             Assert.AreEqual(0, ewptr2.SharedCount);
             Assert.AreEqual(1, ewptr2.WeakCount);
-            Assert.IsFalse(ewptr2.IsCreatedWithMakeShared);
+            if (checkMakeShared)
+            {
+                Assert.IsFalse(ewptr2.IsCreatedWithMakeShared);
+            }
+        }
+
+        public void CheckCodeArray()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestArray");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
+            Variable testArrayVariable = locals["testArray"];
+            CodeArray<int> testArray = new CodeArray<int>(testArrayVariable);
+
+            Assert.AreEqual(10000, testArray.Length);
+            foreach (int value in testArray)
+                Assert.AreEqual(0x12121212, value);
+        }
+
+        public void TestBasicTemplateType()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestBasicTemplateType");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
+            Variable floatTemplate = locals["floatTemplate"];
+            Variable doubleTemplate = locals["doubleTemplate"];
+            Variable intTemplate = locals["intTemplate"];
+            Variable[] templateVariables = new Variable[] { floatTemplate, doubleTemplate, intTemplate };
+
+            foreach (Variable variable in templateVariables)
+            {
+                Variable value = variable.GetField("value");
+                Variable values = variable.GetField("values");
+                Assert.AreEqual("42", value.ToString());
+                for (int i = 0, n = values.GetArrayLength(); i < n; i++)
+                {
+                    Assert.AreEqual(i.ToString(), values.GetArrayElement(i).ToString());
+                }
+            }
+
+            InterpretInteractive($@"
+StackFrame frame = GetFrame(""{DefaultModuleName}!TestBasicTemplateType"");
+VariableCollection locals = frame.Locals;
+
+var floatTemplate = new BasicTemplateType<float>(locals[""floatTemplate""]);
+AreEqual(42, floatTemplate.value);
+for (int i = 0; i < floatTemplate.values.Length; i++)
+    AreEqual(i, floatTemplate.values[i]);
+
+var doubleTemplate = new BasicTemplateType<double>(locals[""doubleTemplate""]);
+AreEqual(42, doubleTemplate.value);
+for (int i = 0; i < doubleTemplate.values.Length; i++)
+    AreEqual(i, doubleTemplate.values[i]);
+
+var intTemplate = new BasicTemplateType<int>(locals[""intTemplate""]);
+AreEqual(42, intTemplate.value);
+for (int i = 0; i < intTemplate.values.Length; i++)
+    AreEqual(i, intTemplate.values[i]);
+                ");
         }
 
         private void VerifyMap(IReadOnlyDictionary<std.wstring, std.@string> stringMap)
@@ -204,71 +360,6 @@ namespace DbgEngTest
             }
 
             Assert.AreEqual(2, stringMap.ToStringDictionary().ToStringStringDictionary().Count);
-        }
-
-        public void CheckProcess()
-        {
-            Process process = Process.Current;
-
-            Console.WriteLine("Actual processor type: {0}", process.ActualProcessorType);
-            Console.WriteLine("SystemId: {0}", process.SystemId);
-            Assert.AreNotSame(0, process.SystemId);
-            Assert.AreNotSame(0, Process.All.Length);
-            Assert.AreNotEqual(-1, process.FindMemoryRegion(DefaultModule.Address));
-            Assert.AreEqual(DefaultModule.ImageName, process.ExecutableName);
-            Assert.IsNotNull(process.PEB);
-            Assert.IsNull(process.CurrentCLRAppDomain);
-        }
-
-        public void CheckThread()
-        {
-            Thread thread = Thread.Current;
-
-            Assert.AreNotSame(0, Thread.All.Length);
-            Assert.IsNotNull(thread.Locals);
-            Assert.IsNotNull(thread.TEB);
-            Assert.IsNotNull(thread.ThreadContext);
-        }
-
-        public void CheckCodeArray()
-        {
-            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!DefaultTestCase");
-            VariableCollection locals = defaultTestCaseFrame.Locals;
-            Variable testArrayVariable = locals["testArray"];
-            CodeArray<int> testArray = new CodeArray<int>(testArrayVariable);
-
-            Assert.AreEqual(10000, testArray.Length);
-            foreach (int value in testArray)
-                Assert.AreEqual(0x12121212, value);
-        }
-
-        public void CheckCodeFunction()
-        {
-            // TODO: Investigate why this is not working
-            //Variable mainAddressVariable = DefaultModule.GetVariable($"{DefaultModuleName}!mainAddress");
-            //CodeFunction mainFunction = new CodeFunction(mainAddressVariable);
-
-            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!DefaultTestCase");
-            CodeFunction defaultTestCaseFunction = new CodeFunction(defaultTestCaseFrame.InstructionOffset);
-
-            Assert.AreNotEqual(0, defaultTestCaseFunction.Address);
-            Assert.AreNotEqual(0, defaultTestCaseFunction.FunctionDisplacement);
-            Assert.AreEqual($"{DefaultModuleName}!DefaultTestCase", defaultTestCaseFunction.FunctionName);
-            Assert.AreEqual($"DefaultTestCase", defaultTestCaseFunction.FunctionNameWithoutModule);
-            Assert.AreEqual(Process.Current, defaultTestCaseFunction.Process);
-            Assert.IsTrue(defaultTestCaseFunction.SourceFileName.ToLower().Contains(MainSourceFileName));
-            Assert.AreNotEqual(0, defaultTestCaseFunction.SourceFileLine);
-            Console.WriteLine("SourceFileDisplacement: {0}", defaultTestCaseFunction.SourceFileDisplacement);
-        }
-
-        public void CheckDebugger()
-        {
-            string version = Debugger.ExecuteAndCapture("version");
-
-            Console.WriteLine("Debugger version: {0}", version);
-            Assert.IsTrue(Debugger.FindAllPatternInMemory(0x1212121212121212).Any());
-            Assert.IsTrue(Debugger.FindAllBytePatternInMemory(new byte[] { 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12 }).Any());
-            Assert.IsTrue(Debugger.FindAllTextPatternInMemory("qwerty").Any());
         }
     }
 }

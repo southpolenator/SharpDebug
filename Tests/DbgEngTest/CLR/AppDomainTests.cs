@@ -8,6 +8,9 @@ using System.Linq;
 namespace DbgEngTest.CLR
 {
     [TestClass]
+    [DeploymentItem(@"CLR\Apps\NestedException.cs", @"CLR\Apps")]
+    [DeploymentItem(@"CLR\Apps\AppDomains.cs", @"CLR\Apps")]
+    [DeploymentItem(@"CLR\Apps\SharedLibrary.cs", @"CLR\Apps")]
     public class AppDomainTests : ClrTestBase
     {
         [ClassInitialize]
@@ -25,6 +28,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ModuleDomainTest()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
@@ -46,6 +50,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void AppDomainPropertyTest()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
@@ -55,6 +60,10 @@ namespace DbgEngTest.CLR
 
             AppDomain sharedDomain = runtime.SharedDomain;
             Assert.AreEqual("Shared Domain", sharedDomain.Name);
+
+            Assert.AreEqual(null, systemDomain.ApplicationBase);
+            Assert.IsTrue(string.IsNullOrEmpty(systemDomain.ConfigurationFile));
+            Assert.AreEqual("0: System Domain", systemDomain.ToString());
 
             Assert.AreEqual(2, runtime.AppDomains.Length);
 
@@ -68,6 +77,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void SystemAndSharedLibraryModulesTest()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
@@ -83,6 +93,7 @@ namespace DbgEngTest.CLR
         }
 
         [TestMethod]
+        [TestCategory("CLR")]
         public void ModuleAppDomainEqualityTest()
         {
             Runtime runtime = Process.Current.ClrRuntimes.Single();
@@ -113,20 +124,26 @@ namespace DbgEngTest.CLR
             Dictionary<string, Module> result = new Dictionary<string, Module>(System.StringComparer.OrdinalIgnoreCase);
 
             foreach (Module module in domain.Modules)
+            {
                 result.Add(Path.GetFileName(module.ImageName), module);
+            }
             return result;
         }
 
         private static void AssertModuleDoesntContainDomains(Module module, params AppDomain[] domainList)
         {
             foreach (AppDomain domain in domainList)
+            {
                 Assert.IsFalse(domain.Modules.Contains(module));
+            }
         }
 
         private static void AssertModuleContainsDomains(Module module, params AppDomain[] domainList)
         {
             foreach (AppDomain domain in domainList)
+            {
                 Assert.IsTrue(domain.Modules.Contains(module));
+            }
             Assert.AreEqual(domainList.Length, domainList[0].Runtime.AllAppDomains.Count(ad => ad.Modules.Contains(module)));
         }
     }

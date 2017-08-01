@@ -1,10 +1,10 @@
 ﻿using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using DbgEngManaged;
 using Dia2Lib;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
@@ -295,6 +295,40 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         }
 
         /// <summary>
+        /// Determines whether the specified process address is function type public symbol.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsFunctionAddressPublicSymbol(Process process, ulong address)
+        {
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, process))
+            {
+                ulong moduleAddress;
+                uint typeId;
+
+                dbgEngDll.Symbols.GetOffsetTypeId(address, out typeId, out moduleAddress);
+                return typeId == 0;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified process address is function type public symbol.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="processAddress">The process address.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsFunctionAddressPublicSymbol(Process process, ulong processAddress, uint address)
+        {
+            return IsFunctionAddressPublicSymbol(process, processAddress);
+        }
+
+        /// <summary>
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="stackFrame">The stack frame.</param>
@@ -309,21 +343,34 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
                 dbgEngDll.Symbols.GetScopeSymbolGroup2((uint)scopeGroup, null, out symbolGroup);
                 uint localsCount = symbolGroup.GetNumberSymbols();
                 Variable[] variables = new Variable[localsCount];
+                bool doCleanup = false;
+
                 for (uint i = 0; i < localsCount; i++)
                 {
-                    StringBuilder name = new StringBuilder(Constants.MaxSymbolName);
-                    uint nameSize;
+                    try
+                    {
+                        StringBuilder name = new StringBuilder(Constants.MaxSymbolName);
+                        uint nameSize;
 
-                    symbolGroup.GetSymbolName(i, name, (uint)name.Capacity, out nameSize);
-                    var entry = symbolGroup.GetSymbolEntryInformation(i);
-                    var module = stackFrame.Process.ModulesById[entry.ModuleBase];
-                    var codeType = module.TypesById[entry.TypeId];
-                    var address = entry.Offset;
-                    var variableName = name.ToString();
+                        symbolGroup.GetSymbolName(i, name, (uint)name.Capacity, out nameSize);
+                        var entry = symbolGroup.GetSymbolEntryInformation(i);
+                        var module = stackFrame.Process.ModulesById[entry.ModuleBase];
+                        var codeType = module.TypesById[entry.TypeId];
+                        var address = entry.Offset;
+                        var variableName = name.ToString();
 
-                    variables[i] = Variable.CreateNoCast(codeType, address, variableName, variableName);
+                        variables[i] = Variable.CreateNoCast(codeType, address, variableName, variableName);
+                    }
+                    catch
+                    {
+                        // This variable is not available, don't store it in a collection
+                        doCleanup = true;
+                    }
                 }
-
+                if (doCleanup)
+                {
+                    variables = variables.Where(v => v != null).ToArray();
+                }
                 return new VariableCollection(variables);
             }
         }
@@ -446,7 +493,21 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <param name="typeId">The type identifier.</param>
         public BasicType GetTypeBasicType(Module module, uint typeId)
         {
-            // TODO: This is currently unsupported
+            // TODO: Find better way to fetch basic type from DbgEng
+            if (GetTypeTag(module, typeId) == SymTag.BaseType)
+            {
+                string name = GetTypeName(module, typeId);
+
+                switch (name)
+                {
+                    case "float":
+                    case "double":
+                        return BasicType.Float;
+                    default:
+                        return BasicType.NoType;
+                }
+            }
+
             return BasicType.NoType;
         }
 
@@ -516,7 +577,30 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <param name="vtableAddress">The vtable address.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress)
         {
-            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+            using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, process))
+            {
+                uint nameSize;
+                ulong displacement;
+                StringBuilder sb = new StringBuilder(Constants.MaxSymbolName);
+
+                dbgEngDll.Symbols.GetNameByOffset(vtableAddress, sb, (uint)sb.Capacity, out nameSize, out displacement);
+
+                // Fully undecorated name should be in form: "DerivedClass::`vftable'"
+                string fullyUndecoratedName = sb.ToString();
+                const string vftableString = "::`vftable'";
+
+                if (string.IsNullOrEmpty(fullyUndecoratedName) || !fullyUndecoratedName.EndsWith(vftableString))
+                {
+                    // Pointer is not vtable.
+                    return null;
+                }
+
+                string codeTypeName = fullyUndecoratedName.Substring(0, fullyUndecoratedName.Length - vftableString.Length);
+                CodeType codeType = CodeType.Create(process, codeTypeName);
+
+                // TODO: We need to be able to get partially undecorated name in order to find offset (See DiaModule.cs for more info)
+                return Tuple.Create(codeType, 0);
+            }
         }
 
         /// <summary>
@@ -527,10 +611,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <param name="distance">The distance within the module.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance)
         {
-            // Not Implemented, this is not supported using DbgEng.dll. Please use DIA symbol provider. 
-            // We return null to avoiding throwing exception.
-
-            return null;
+            return GetRuntimeCodeTypeAndOffset(process, vtableAddress);
         }
     }
 }

@@ -60,10 +60,33 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="module">The module.</param>
         public DiaModule(string pdbPath, Module module)
         {
-            Module = module;
+            IDiaSession diaSession;
+
             dia = new DiaSource();
             dia.loadDataFromPdb(pdbPath);
-            dia.openSession(out session);
+            dia.openSession(out diaSession);
+            Initialize(diaSession, module);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DiaModule"/> class.
+        /// </summary>
+        /// <param name="diaSession">The DIA session.</param>
+        /// <param name="module">The module.</param>
+        public DiaModule(IDiaSession diaSession, Module module)
+        {
+            Initialize(diaSession, module);
+        }
+
+        /// <summary>
+        /// Initializes this instance of the <see cref="DiaModule"/> class.
+        /// </summary>
+        /// <param name="diaSession">The DIA session.</param>
+        /// <param name="module">The module.</param>
+        private void Initialize(IDiaSession diaSession, Module module)
+        {
+            Module = module;
+            session = diaSession;
             globalScope = session.globalScope;
             typeAllFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeAllFields);
             typeFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);
@@ -420,6 +443,24 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
+        /// Determines whether the specified process address is function type public symbol.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="processAddress">The process address.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsFunctionAddressPublicSymbol(Process process, ulong processAddress, uint address)
+        {
+            int innerDisplacement;
+            IDiaSymbol function;
+
+            session.findSymbolByRVAEx(address, SymTagEnum.SymTagNull, out function, out innerDisplacement);
+            return function != null && (SymTagEnum)function.symTag == SymTagEnum.SymTagPublicSymbol;
+        }
+
+        /// <summary>
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="frame">The frame.</param>
@@ -433,7 +474,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             List<Variable> variables = new List<Variable>();
 
             session.findSymbolByRVAEx(relativeAddress, SymTagEnum.SymTagFunction, out function, out displacement);
-            GetFrameLocals(function, variables, frame, module, arguments);
+            GetFrameLocals(function, relativeAddress, variables, frame, module, arguments);
             if (!arguments)
             {
                 IDiaSymbol block;
@@ -446,7 +487,7 @@ namespace CsDebugScript.Engine.SymbolProviders
                     // Traverse blocks till we reach function.
                     while ((SymTagEnum)block.symTag != SymTagEnum.SymTagFunction)
                     {
-                        GetFrameLocals(block, variables, frame, module, arguments);
+                        GetFrameLocals(block, uint.MaxValue, variables, frame, module, arguments);
                         block = block.lexicalParent;
                     }
                 }
@@ -459,17 +500,40 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="block">The block.</param>
+        /// <param name="relativeAddress">The relative address or uint.MaxValue if only first children are desired.</param>
         /// <param name="variables">The variables.</param>
         /// <param name="frame">The frame.</param>
         /// <param name="module">The module.</param>
         /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
-        private static void GetFrameLocals(IDiaSymbol block, List<Variable> variables, StackFrame frame, Module module, bool arguments)
+        private static void GetFrameLocals(IDiaSymbol block, uint relativeAddress, List<Variable> variables, StackFrame frame, Module module, bool arguments)
         {
-            foreach (var symbol in block.GetChildren(SymTagEnum.SymTagData))
-            {
-                DataKind symbolDataKind = (DataKind)symbol.dataKind;
+            IEnumerable<IDiaSymbol> symbols;
 
-                if (arguments && symbolDataKind != DataKind.Param)
+            if (relativeAddress != uint.MaxValue)
+            {
+                IDiaEnumSymbols symbolsEnum;
+                block.findChildrenExByRVA(SymTagEnum.SymTagNull, null, 0, relativeAddress, out symbolsEnum);
+                symbols = symbolsEnum.Enum();
+            }
+            else
+            {
+                symbols = block.GetChildren(SymTagEnum.SymTagData);
+            }
+
+            foreach (var symbol in symbols)
+            {
+                SymTagEnum tag = (SymTagEnum)symbol.symTag;
+
+                if (tag == SymTagEnum.SymTagData)
+                {
+                    DataKind symbolDataKind = (DataKind)symbol.dataKind;
+
+                    if ((arguments && symbolDataKind != DataKind.Param) || (LocationType)symbol.locationType == LocationType.Null)
+                    {
+                        continue;
+                    }
+                }
+                else if (tag != SymTagEnum.SymTagFunctionArgType || !arguments)
                 {
                     continue;
                 }

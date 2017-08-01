@@ -29,6 +29,16 @@ namespace CsDebugScript
                 return new string(codeArray.ToArray());
             }
         }
+
+        /// <summary>
+        /// Reads the memory buffer from CodeArray.
+        /// </summary>
+        /// <param name="codeArray">The code array.</param>
+        /// <returns>Read memory buffer from CodeArray.</returns>
+        public static MemoryBuffer ReadMemory(this CodeArray<byte> codeArray)
+        {
+            return Debugger.ReadMemory(codeArray.variable, (uint)codeArray.Length);
+        }
     }
 
     /// <summary>

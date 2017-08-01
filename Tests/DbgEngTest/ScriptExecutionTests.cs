@@ -26,6 +26,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("Scripting")]
         public void TestExecutor()
         {
             ExecuteScript((fileName, arguments) => new Executor().ExecuteScript(fileName),
@@ -35,6 +36,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("Scripting")]
         public void SimpleScript()
         {
             string[] lines = ExecuteScript(@"writeln(1 + 2);");
@@ -43,6 +45,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("Scripting")]
         public void ScriptArguments()
         {
             string[] arguments = new[] { "First argument", "Second \" argument" };
@@ -52,6 +55,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("Scripting")]
         public void DynamicTest()
         {
             string[] lines = ExecuteScript(@"dynamic a = new [] { 1, 2, 3, 4, 5, 6, 7 }; writeln(a.Length);");
@@ -60,6 +64,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("Scripting")]
         public void ScriptBase()
         {
             string[] lines = ExecuteScript($@"

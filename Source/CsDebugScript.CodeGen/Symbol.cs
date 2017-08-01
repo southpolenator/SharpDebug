@@ -1,5 +1,4 @@
 ﻿using CsDebugScript.CodeGen.UserTypes;
-using CsDebugScript.Engine.Utility;
 using Dia2Lib;
 using System;
 using System.Collections.Generic;
@@ -284,6 +283,42 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
+        /// Extracts the dependant symbols into extractedSymbols if they are not recognized as transformations.
+        /// </summary>
+        /// <param name="extractedSymbols">The extracted symbols.</param>
+        /// <param name="transformations">The transformations.</param>
+        internal void ExtractDependantSymbols(HashSet<Symbol> extractedSymbols, XmlTypeTransformation[] transformations)
+        {
+            List<Symbol> symbols = Fields.Select(f => f.Type)
+                .Union(BaseClasses).ToList();
+
+            if (ElementType != null)
+            {
+                symbols.Add(ElementType);
+            }
+
+            foreach (Symbol symbol in symbols)
+            {
+                if (transformations.Any(t => t.Matches(symbol.Name)))
+                {
+                    continue;
+                }
+
+                Symbol s = symbol;
+
+                if (s.Tag == SymTagEnum.SymTagBaseClass)
+                {
+                    s = s.Module.FindGlobalTypeWildcard(s.Name).Single();
+                }
+
+                if (extractedSymbols.Add(s))
+                {
+                    s.ExtractDependantSymbols(extractedSymbols, transformations);
+                }
+            }
+        }
+
+        /// <summary>
         /// Links the symbols.
         /// </summary>
         internal void LinkSymbols(Symbol s)
@@ -324,6 +359,86 @@ namespace CsDebugScript.CodeGen
                 {
                     yield return symbol;
                     unprocessed.AddRange(symbol.BaseClasses);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Helper class for caching results - it is being used as lazy evaluation
+        /// </summary>
+        internal static class SimpleCache
+        {
+            /// <summary>
+            /// Creates a new instance of the <see cref="SimpleCache{T}" /> class.
+            /// </summary>
+            /// <typeparam name="T">Type to be cached</typeparam>
+            /// <param name="populateAction">The function that populates the cache on demand.</param>
+            /// <returns>Simple cache of &lt;T&gt;</returns>
+            public static SimpleCache<T> Create<T>(Func<T> populateAction)
+            {
+                return new SimpleCache<T>(populateAction);
+            }
+        }
+
+        /// <summary>
+        /// Helper class for caching results - it is being used as lazy evaluation
+        /// </summary>
+        /// <typeparam name="T">Type to be cached</typeparam>
+        internal class SimpleCache<T>
+        {
+            /// <summary>
+            /// The populate action
+            /// </summary>
+            private Func<T> populateAction;
+
+            /// <summary>
+            /// The value that is cached
+            /// </summary>
+            private T value;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="SimpleCache{T}"/> class.
+            /// </summary>
+            /// <param name="populateAction">The function that populates the cache on demand.</param>
+            public SimpleCache(Func<T> populateAction)
+            {
+                this.populateAction = populateAction;
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether value is cached.
+            /// </summary>
+            /// <value>
+            ///   <c>true</c> if cached; otherwise, <c>false</c>.
+            /// </value>
+            public bool Cached { get; internal set; }
+
+            /// <summary>
+            /// Gets or sets the value. The value will be populated if it wasn't cached.
+            /// </summary>
+            public T Value
+            {
+                get
+                {
+                    if (!Cached)
+                    {
+                        lock (this)
+                        {
+                            if (!Cached)
+                            {
+                                value = populateAction();
+                                Cached = true;
+                            }
+                        }
+                    }
+
+                    return value;
+                }
+
+                set
+                {
+                    this.value = value;
+                    Cached = true;
                 }
             }
         }
@@ -421,7 +536,12 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Gets the name.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; internal set; }
+
+        /// <summary>
+        /// Gets the name of the property.
+        /// </summary>
+        public string PropertyName { get; internal set; }
 
         /// <summary>
         /// Gets the size.

@@ -43,13 +43,22 @@ namespace CsDebugScript.UI
         private InteractiveExecution interactiveExecution;
         private Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
         private List<object> results = new List<object>();
+        private System.Threading.ManualResetEvent initializedEvent = new System.Threading.ManualResetEvent(false);
 
         private void AddResult(object obj)
         {
             results.Add(obj);
         }
 
-        public InteractiveCodeEditor()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InteractiveCodeEditor" /> class.
+        /// </summary>
+        /// <param name="fontFamily">The font family.</param>
+        /// <param name="fontSize">Size of the font.</param>
+        /// <param name="indentationSize">Size of the indentation.</param>
+        /// <param name="highlightingColors">The highlighting colors.</param>
+        public InteractiveCodeEditor(string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+            : base(fontFamily, fontSize, indentationSize, highlightingColors)
         {
             interactiveExecution = new InteractiveExecution();
             interactiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
@@ -64,20 +73,22 @@ namespace CsDebugScript.UI
             {
                 try
                 {
-                    Initialize();
                     Dispatcher.InvokeAsync(() =>
                     {
                         IsEnabled = true;
-                        if (Executing != null)
-                            Executing(false);
+                        Executing?.Invoke(false);
+                    });
+                    Initialize();
+                    Dispatcher.InvokeAsync(() =>
+                    {
+                        InitializationFinished?.Invoke();
                     });
                 }
                 catch (ExitRequestedException)
                 {
                     Dispatcher.InvokeAsync(() =>
                     {
-                        if (CloseRequested != null)
-                            CloseRequested();
+                        CloseRequested?.Invoke();
                     });
                 }
                 catch (Exception ex)
@@ -93,6 +104,8 @@ namespace CsDebugScript.UI
 
         public event ExecutingHandler Executing;
 
+        public event Action InitializationFinished;
+
         public event Action CloseRequested;
 
         protected new void Initialize()
@@ -100,81 +113,112 @@ namespace CsDebugScript.UI
             UpdateScriptCode();
             base.Initialize();
             interactiveExecution.UnsafeInterpret("null");
+            initializedEvent.Set();
         }
 
         protected override void OnExecuteCSharpScript()
         {
-            BackgroundExecute((string documentText, out string textOutput, out string errorOutput, out IEnumerable<object> result) =>
+            BackgroundExecute((string _documentText, out string _textOutput, out string _errorOutput, out IEnumerable<object> _result) =>
             {
-                // Setting results
-                textOutput = "";
-                errorOutput = "";
-
-                // Execution code
-                var oldOut = Console.Out;
-                var oldError = Console.Error;
-
-                try
+                BackgroundExecuteDelegate scriptExecution = (string documentText, out string textOutput, out string errorOutput, out IEnumerable<object> result) =>
                 {
-                    using (StringWriter writer = new StringWriter())
+                    // Setting results
+                    textOutput = "";
+                    errorOutput = "";
+
+                    // Execution code
+                    var oldOut = Console.Out;
+                    var oldError = Console.Error;
+
+                    try
                     {
-                        Console.SetOut(writer);
-                        Console.SetError(writer);
-
-                        DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
-                            | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
-                            | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
-                        var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
-
-                        using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
+                        using (StringWriter writer = new StringWriter())
                         {
-                            interactiveExecution.UnsafeInterpret(documentText);
-                            writer.Flush();
-                            textOutput = writer.GetStringBuilder().ToString();
+                            Console.SetOut(writer);
+                            Console.SetError(writer);
+
+                            DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
+                                | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
+                                | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
+                            var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
+
+                            interactiveExecution.scriptBase._Dispatcher_ = Dispatcher;
+                            using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
+                            {
+                                interactiveExecution.UnsafeInterpret(documentText);
+                                writer.Flush();
+                                textOutput = writer.GetStringBuilder().ToString();
+                            }
                         }
+
+                        UpdateScriptCode();
                     }
-
-                    UpdateScriptCode();
-                }
-                catch (Microsoft.CodeAnalysis.Scripting.CompilationErrorException ex)
-                {
-                    StringBuilder sb = new StringBuilder();
-
-                    sb.AppendLine("Compile errors:");
-                    foreach (var error in ex.Diagnostics)
+                    catch (Microsoft.CodeAnalysis.Scripting.CompilationErrorException ex)
                     {
-                        sb.AppendLine(error.ToString());
-                    }
+                        StringBuilder sb = new StringBuilder();
 
-                    errorOutput = sb.ToString();
-                }
-                catch (ExitRequestedException)
+                        sb.AppendLine("Compile errors:");
+                        foreach (var error in ex.Diagnostics)
+                        {
+                            sb.AppendLine(error.ToString());
+                        }
+
+                        errorOutput = sb.ToString();
+                    }
+                    catch (ExitRequestedException)
+                    {
+                        throw;
+                    }
+                    catch (AggregateException ex)
+                    {
+                        if (ex.InnerException is ExitRequestedException)
+                        {
+                            throw ex.InnerException;
+                        }
+                        errorOutput = ex.ToString();
+                    }
+                    catch (TargetInvocationException ex)
+                    {
+                        if (ex.InnerException is ExitRequestedException)
+                        {
+                            throw ex.InnerException;
+                        }
+                        errorOutput = ex.InnerException.ToString();
+                    }
+                    catch (Exception ex)
+                    {
+                        errorOutput = ex.ToString();
+                    }
+                    finally
+                    {
+                        Console.SetError(oldError);
+                        Console.SetOut(oldOut);
+                        result = results;
+                        results = new List<object>();
+                        interactiveExecution.scriptBase._Dispatcher_ = null;
+                    }
+                };
+
+                // Check if we should execute script code in STA thread
+                if (interactiveExecution.scriptBase.ForceStaExecution)
                 {
-                    throw;
+                    string tempTextOutput = null;
+                    string tempErrorOutput = null;
+                    IEnumerable<object> tempResult = null;
+
+                    InteractiveWindow.ExecuteInSTA(() =>
+                    {
+                        scriptExecution(_documentText, out tempTextOutput, out tempErrorOutput, out tempResult);
+                    });
+                    _textOutput = tempTextOutput;
+                    _errorOutput = tempErrorOutput;
+                    _result = tempResult;
                 }
-                catch (AggregateException ex)
+                else
                 {
-                    if (ex.InnerException is ExitRequestedException)
-                        throw ex.InnerException;
-                    errorOutput = ex.ToString();
+                    scriptExecution(_documentText, out _textOutput, out _errorOutput, out _result);
                 }
-                catch (TargetInvocationException ex)
-                {
-                    if (ex.InnerException is ExitRequestedException)
-                        throw ex.InnerException;
-                    errorOutput = ex.InnerException.ToString();
-                }
-                catch (Exception ex)
-                {
-                    errorOutput = ex.ToString();
-                }
-                finally
-                {
-                    Console.SetError(oldError);
-                    Console.SetOut(oldOut);
-                    result = results;
-                    results = new List<object>();
-                }
+
             }, true);
         }
 
@@ -205,9 +249,13 @@ namespace CsDebugScript.UI
 
             IsEnabled = false;
             if (Executing != null)
+            {
                 Executing(true);
+            }
             Task.Run(() =>
             {
+                initializedEvent.WaitOne();
+
                 try
                 {
                     string textOutput, errorOutput;
@@ -219,18 +267,24 @@ namespace CsDebugScript.UI
                         if (!string.IsNullOrEmpty(errorOutput))
                         {
                             if (CommandFailed != null)
+                            {
                                 CommandFailed(csharpCode, textOutput, errorOutput);
+                            }
                         }
                         else
                         {
                             if (CommandExecuted != null)
+                            {
                                 CommandExecuted(csharpCode, textOutput, objectOutput);
+                            }
                             Document.Text = "";
                         }
 
                         IsEnabled = true;
                         if (Executing != null)
+                        {
                             Executing(false);
+                        }
                     });
                 }
                 catch (ExitRequestedException)
@@ -238,7 +292,9 @@ namespace CsDebugScript.UI
                     Dispatcher.InvokeAsync(() =>
                     {
                         if (CloseRequested != null)
+                        {
                             CloseRequested();
+                        }
                     });
                 }
                 catch (Exception ex)
@@ -301,6 +357,9 @@ namespace CsDebugScript.UI
                     };
                 string[] versions = new string[]
                     {
+                        @"v4.7",
+                        @"v4.6.2",
+                        @"v4.6.1",
                         @"v4.6",
                         @"v4.5.2",
                         @"v4.5.1",

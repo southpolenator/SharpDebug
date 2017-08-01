@@ -1,5 +1,6 @@
 ﻿using CommandLine;
 using System.Collections.Generic;
+using System.IO;
 
 namespace CsDebugScript.CodeGen
 {
@@ -78,7 +79,15 @@ namespace CsDebugScript.CodeGen
                     LazyCacheUserTypeFields = options.LazyCacheUserTypeFields,
                     GeneratePhysicalMappingOfUserTypes = options.GeneratePhysicalMappingOfUserTypes,
                     Types = new XmlType[options.Types.Count],
-                    Modules = new XmlModule[] { new XmlModule { PdbPath = options.PdbPath } },
+                    Modules = new XmlModule[]
+                    {
+                        new XmlModule
+                        {
+                            PdbPath = options.PdbPath,
+                            Name = Path.GetFileNameWithoutExtension(options.PdbPath),
+                            Namespace = Path.GetFileNameWithoutExtension(options.PdbPath),
+                        }
+                    },
                 };
 
                 for (int i = 0; i < options.Types.Count; i++)
@@ -88,7 +97,7 @@ namespace CsDebugScript.CodeGen
                     };
             }
 
-            Generator.Generate(config);
+            new Generator().Generate(config);
         }
     }
 }

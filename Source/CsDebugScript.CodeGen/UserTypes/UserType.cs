@@ -13,6 +13,11 @@ namespace CsDebugScript.CodeGen.UserTypes
     /// </summary>
     internal class UserType
     {
+        private static string[] Keywords = new string[]
+            {
+                "lock", "base", "params", "enum", "in", "object", "event", "string", "private", "public", "internal",
+            };
+
         /// <summary>
         /// Flag that saves if thisClass variable was used during generation and should be exported.
         /// </summary>
@@ -156,19 +161,9 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 symbolName = NormalizeSymbolName(symbolName);
 
-                switch (symbolName)
+                if (Keywords.Contains(symbolName))
                 {
-                    case "lock":
-                    case "base":
-                    case "params":
-                    case "enum":
-                    case "in":
-                    case "object":
-                    case "event":
-                    case "string":
-                        return string.Format("@{0}", symbolName);
-                    default:
-                        break;
+                    return string.Format("@{0}", symbolName);
                 }
 
                 return symbolName;
@@ -285,7 +280,14 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </remarks>
         public static string NormalizeSymbolNamespace(string symbolNamespace)
         {
-            return symbolNamespace.Replace("::", "_").Replace("*", "").Replace('&', '_').Replace("$", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').Replace('[', '_').Replace(']', '_');
+            string normalized = symbolNamespace.Replace("::", "_").Replace("*", "").Replace('&', '_').Replace("$", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').Replace('[', '_').Replace(']', '_').Replace('`', '_').Replace('\'', '_');
+
+            if (Keywords.Contains(normalized))
+            {
+                return string.Format("@{0}", normalized);
+            }
+
+            return normalized;
         }
 
         /// <summary>
@@ -364,6 +366,11 @@ namespace CsDebugScript.CodeGen.UserTypes
                 usedThisClass = true;
             }
 
+            if (!usesThisClass)
+            {
+                userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("variable.GetField", "GetField");
+            }
+
             // If we are generating field for getting base class, we need to "transform" code to do so.
             if (extractingBaseClass)
             {
@@ -377,7 +384,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                     usedThisClass = true;
                 }
                 else
+                {
                     userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("variable.GetField", "GetBaseClass");
+                }
             }
 
             return userTypeField;
@@ -465,7 +474,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 constructorText += ".DowncastObject()";
 
             // TODO: More extensive checks are needed for property name. We must not create duplicate after adding '_'. For example: class has 'in' and '_in' fields.
-            fieldName = UserTypeField.GetPropertyName(fieldName, this);
+            fieldName = UserTypeField.GetPropertyName(field, this);
 
             // When creating property for BaseClass use our generated type and name to avoid specializations
             if (extractingBaseClass && !(fieldType is VariableTypeTree))
@@ -1246,6 +1255,13 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 case SymTagEnum.SymTagFunctionType:
                     return new FunctionTypeTree();
+
+                case SymTagEnum.SymTagBaseClass:
+                    {
+                        Symbol symbol = Symbol.Module.FindGlobalTypeWildcard(Symbol.Name).Single();
+
+                        return GetSymbolTypeTree(symbol, factory, bitLength);
+                    }
 
                 default:
                     throw new Exception("Unexpected type tag " + type.Tag);

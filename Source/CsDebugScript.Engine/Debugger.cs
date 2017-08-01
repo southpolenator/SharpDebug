@@ -14,6 +14,11 @@ namespace CsDebugScript
     /// </summary>
     public static class Debugger
     {
+        /// <summary>
+        /// If set to <c>true</c> don't use dump reader.
+        /// </summary>
+        internal static bool DontUseDumpReader = false;
+
 #region Executing native commands
         /// <summary>
         /// Executes the specified command and captures its output.
@@ -27,6 +32,38 @@ namespace CsDebugScript
                 | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
                 | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
             return ExecuteAndCapture(captureFlags, command, parameters);
+        }
+
+        /// <summary>
+        /// Resolves the function address if the specified address points to function type public symbol
+        /// or returns specified address otherwise.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>Resolved function address.</returns>
+        public static ulong ResolveFunctionAddress(Process process, ulong address)
+        {
+            if (Context.SymbolProvider.IsFunctionAddressPublicSymbol(process, address))
+            {
+                Module module = process.GetModuleByInnerAddress(address);
+
+                if (module != null && module.ClrModule == null)
+                {
+                    const uint length = 5;
+                    MemoryBuffer buffer = Debugger.ReadMemory(process, address, length);
+                    byte jmpByte = UserType.ReadByte(buffer, 0);
+                    uint relativeAddress = UserType.ReadUint(buffer, 1);
+
+                    if (jmpByte != 0xe9)
+                    {
+                        throw new Exception("Unsupported jump instruction while resolving function address.");
+                    }
+
+                    return address + relativeAddress + length;
+                }
+            }
+
+            return address;
         }
 
         /// <summary>
@@ -568,7 +605,7 @@ namespace CsDebugScript
         {
             var dumpReader = process.DumpFileMemoryReader;
 
-            if (dumpReader != null)
+            if (dumpReader != null && !DontUseDumpReader)
             {
                 return dumpReader.ReadMemory(address, (int)size);
             }
@@ -576,6 +613,59 @@ namespace CsDebugScript
             {
                 return Context.Debugger.ReadMemory(process, address, size);
             }
+        }
+
+        /// <summary>
+        /// Reads the memory from the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="size">The size.</param>
+        /// <returns>Buffer containing read memory</returns>
+        public static MemoryBuffer ReadMemory(Process process, Variable pointer, uint size)
+        {
+            if (pointer.GetCodeType().IsPointer)
+            {
+                return ReadMemory(process, pointer.GetPointerAddress(), size);
+            }
+            else
+            {
+                return ReadMemory(process, (ulong)pointer, size);
+            }
+        }
+
+        /// <summary>
+        /// Reads the memory from current process.
+        /// </summary>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="size">The size.</param>
+        /// <returns>Buffer containing read memory</returns>
+        public static MemoryBuffer ReadMemory(Variable pointer, uint size)
+        {
+            return ReadMemory(pointer.GetCodeType().Module.Process, pointer, size);
+        }
+
+        /// <summary>
+        /// Reads the memory from the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="size">The size.</param>
+        /// <returns>Buffer containing read memory</returns>
+        public static MemoryBuffer ReadMemory(Process process, NakedPointer pointer, uint size)
+        {
+            return ReadMemory(process, pointer.GetPointerAddress(), size);
+        }
+
+        /// <summary>
+        /// Reads the memory from current process.
+        /// </summary>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="size">The size.</param>
+        /// <returns>Buffer containing read memory</returns>
+        public static MemoryBuffer ReadMemory(NakedPointer pointer, uint size)
+        {
+            return ReadMemory(Process.Current, pointer, size);
         }
 
         #region DebuggeeControl

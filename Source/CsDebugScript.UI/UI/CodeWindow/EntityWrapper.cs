@@ -16,10 +16,12 @@ namespace CsDebugScript.UI.CodeWindow
         where T : IEntity
     {
         private CSharpAmbience ambience = new CSharpAmbience();
+        private Brush textColor;
 
-        public EntityWrapper(T entity)
+        public EntityWrapper(T entity, Brush textColor)
         {
             Entity = entity;
+            this.textColor = textColor;
             ambience.ConversionFlags = ConversionFlags.StandardConversionFlags;
         }
 
@@ -119,46 +121,35 @@ namespace CsDebugScript.UI.CodeWindow
         {
             get
             {
-                return CreateEntityDescription(AmbienceDescription, Entity.Documentation?.Xml?.Text);
+                return CreateEntityDescription(textColor, AmbienceDescription, Entity.Documentation?.Xml?.Text);
             }
         }
 
-        public static object CreateEntityDescription(ISymbol symbol, string xmlDocumentation = null)
+        public static object CreateEntityDescription(Brush textColor, ISymbol symbol, string xmlDocumentation = null)
         {
             CSharpAmbience ambience = new CSharpAmbience();
             ambience.ConversionFlags = ConversionFlags.StandardConversionFlags;
 
-            return CreateEntityDescription(ambience.ConvertSymbol(symbol), xmlDocumentation);
+            return CreateEntityDescription(textColor, ambience.ConvertSymbol(symbol), xmlDocumentation);
         }
 
         public object GetSyntaxWithParameterHighlighted(int currentParameter)
         {
-            var codeControl = new CsTextEditor();
-            codeControl.IsEnabled = false;
-            codeControl.Text = AmbienceDescription;
-            codeControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
-            codeControl.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
-            codeControl.Background = Brushes.Transparent;
-
+            var codeControl = CreateReadonlyCsTextEditor(AmbienceDescription);
             var finder = new FindParameterTokenWriter(currentParameter);
             ambience.ConvertSymbol(Entity, finder, FormattingOptionsFactory.CreateSharpDevelop());
             codeControl.Select(finder.ParameterStart, finder.ParameterEnd - finder.ParameterStart);
             return codeControl;
         }
 
-        public static object CreateEntityDescription(string ambienceDescription, string xmlDocumentation = null)
+        public static object CreateEntityDescription(Brush textColor, string ambienceDescription, string xmlDocumentation = null)
         {
             try
             {
                 var panel = new StackPanel();
                 panel.Orientation = Orientation.Vertical;
 
-                var codeControl = new CsTextEditor();
-                codeControl.IsEnabled = false;
-                codeControl.Text = ambienceDescription;
-                codeControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
-                codeControl.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
-                codeControl.Background = Brushes.Transparent;
+                var codeControl = CreateReadonlyCsTextEditor(ambienceDescription);
                 panel.Children.Add(codeControl);
 
                 if (xmlDocumentation != null)
@@ -168,6 +159,10 @@ namespace CsDebugScript.UI.CodeWindow
                     var summary = xml.SelectSingleNode("//my_custom_xml_wrapper/summary");
 
                     documentationBlock.Text = FixupXmlText(summary.InnerText);
+                    if (textColor != null)
+                    {
+                        documentationBlock.Foreground = textColor;
+                    }
                     panel.Children.Add(documentationBlock);
                 }
 
@@ -177,6 +172,20 @@ namespace CsDebugScript.UI.CodeWindow
             {
                 return ambienceDescription;
             }
+        }
+
+        private static CsTextEditor CreateReadonlyCsTextEditor(string text)
+        {
+            var codeControl = new CsTextEditor("Consolas", 14, 4);
+
+            codeControl.IsEnabled = false;
+            codeControl.Text = text;
+            codeControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            codeControl.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            codeControl.Background = Brushes.Transparent;
+            codeControl.Options.HighlightCurrentLine = false;
+            codeControl.Options.HideCursorWhileTyping = true;
+            return codeControl;
         }
 
         private static XmlDocument ParseXml(string xml)

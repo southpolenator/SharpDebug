@@ -147,6 +147,8 @@ namespace CsDebugScript.CodeGen.UserTypes
                             break;
                     }
                     break;
+                case BasicType.Char:
+                    return "sbyte";
 
                 default:
                     break;

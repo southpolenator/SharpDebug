@@ -3,24 +3,38 @@ using CsDebugScript.Engine;
 using DbgEngManaged;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.ComponentModel;
 using System.IO;
-using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace DbgEngTest
 {
     public class TestBase
     {
         private static IDebugClient client;
-        private static object synchronizationObject = new object();
+        private InteractiveExecution interactiveExecution = new InteractiveExecution();
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, int dwFlags);
+        private const int LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100;
+
+        static TestBase()
+        {
+            var sysdir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+            var res = LoadLibraryEx(Path.Combine(sysdir, "dbgeng.dll"), IntPtr.Zero, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
+            if (res == IntPtr.Zero)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+        }
 
         internal static void SyncStart()
         {
-            System.Threading.Monitor.Enter(synchronizationObject);
         }
 
         internal static void SyncStop()
         {
-            System.Threading.Monitor.Exit(synchronizationObject);
         }
 
         /// <summary>
@@ -81,7 +95,7 @@ namespace DbgEngTest
             Context.Initalize(client);
         }
 
-        protected StackFrame GetFrame(string functionName)
+        protected static StackFrame GetFrame(string functionName)
         {
             foreach (var frame in Thread.Current.StackTrace.Frames)
             {
@@ -107,6 +121,42 @@ namespace DbgEngTest
             Assert.AreEqual(array1.Length, array2.Length);
             for (int i = 0; i < array1.Length; i++)
                 Assert.AreEqual(array1[i], array2[i]);
+        }
+
+        public void InterpretInteractive(string code)
+        {
+            code = @"
+StackFrame GetFrame(string functionName)
+{
+    foreach (var frame in Thread.Current.StackTrace.Frames)
+    {
+        try
+        {
+            if (frame.FunctionName == functionName)
+            {
+                return frame;
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore exception for getting source file name for frames where we don't have PDBs
+        }
+    }
+
+    throw new Exception($""Frame not found '{functionName}'"");
+}
+
+void AreEqual<T>(T value1, T value2)
+    where T : IEquatable<T>
+{
+    if (!value1.Equals(value2))
+    {
+        throw new Exception($""Not equal. value1 = {value1}, value2 = {value2}"");
+    }
+}
+                " + code;
+
+            interactiveExecution.UnsafeInterpret(code);
         }
     }
 }

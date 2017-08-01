@@ -28,6 +28,9 @@ namespace CsDebugScript.Engine.Test
 
             Context.Initalize(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
 
+            Executor.ShowInteractiveWindow(true);
+            return;
+
             Console.WriteLine("Threads: {0}", Thread.All.Length);
             Console.WriteLine("Current thread: {0}", Thread.Current.Id);
             var frames = Thread.Current.StackTrace.Frames;

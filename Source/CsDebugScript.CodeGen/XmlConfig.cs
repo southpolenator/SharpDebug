@@ -67,7 +67,7 @@ namespace CsDebugScript.CodeGen
         /// <value>
         /// <c>true</c> if generated assembly should be compiled with Roslyn; otherwise, <c>false</c>.
         /// </value>
-        public bool GenerateAssemblyWithRoslyn { get; set; }
+        public bool GenerateAssemblyWithRoslyn { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether generated assembly won't have PDB generated.
@@ -93,6 +93,14 @@ namespace CsDebugScript.CodeGen
         /// The name of the generated props file.
         /// </value>
         public string GeneratedPropsFileName { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether namespace should be generated as static class.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if namespace should be generated as static class; otherwise, <c>false</c>.
+        /// </value>
+        public bool GenerateNamespaceAsStaticClass { get; set; }
 
         /// <summary>
         /// Gets or sets the namespace name for types found in multiple modules.
@@ -141,13 +149,13 @@ namespace CsDebugScript.CodeGen
         public bool GeneratePhysicalMappingOfUserTypes { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether generated code should be saved in single file.
-        /// If set to <c>false</c>, every generated class/enum will be saved in separate file and every namespace will be separate folder.
+        /// Gets or sets a value indicating whether generated code should be saved in multiple files.
+        /// If set to <c>true</c>, every generated class/enum will be saved in separate file and every namespace will be separate folder.
         /// </summary>
         /// <value>
-        ///   <c>true</c> if generated code should be saved in single file; otherwise, <c>false</c>.
+        ///   <c>true</c> if generated code should be saved in multiple files; otherwise, <c>false</c>.
         /// </value>
-        public bool SingleFileExport { get; set; }
+        public bool MultiFileExport { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether generator should try to match use of Hungarian notation.
@@ -176,19 +184,19 @@ namespace CsDebugScript.CodeGen
         /// For example, if you have container class, you can add include file to implement IEnumerable interface for that type.
         /// </summary>
         [XmlArrayItem("IncludedFile")]
-        public XmlIncludedFile[] IncludedFiles { get; set; }
+        public XmlIncludedFile[] IncludedFiles { get; set; } = new XmlIncludedFile[0];
 
         /// <summary>
         /// Gets or sets the list of referenced assemblies when generating assembly.
         /// </summary>
         [XmlArrayItem("ReferencedAssembly")]
-        public XmlReferencedAssembly[] ReferencedAssemblies { get; set; }
+        public XmlReferencedAssembly[] ReferencedAssemblies { get; set; } = new XmlReferencedAssembly[0];
 
         /// <summary>
         /// Gets or sets the list of transformations that will be applied on generated user types.
         /// </summary>
         [XmlArrayItem("Transformation")]
-        public XmlTypeTransformation[] Transformations { get; set; }
+        public XmlTypeTransformation[] Transformations { get; set; } = new XmlTypeTransformation[0];
 
         /// <summary>
         /// Reads the XML configuration from the specified stream.
@@ -249,25 +257,53 @@ namespace CsDebugScript.CodeGen
             }
 
             if (!DontGenerateFieldTypeInfoComment)
+            {
                 generationFlags |= UserTypeGenerationFlags.GenerateFieldTypeInfoComment;
+            }
             if (!MultiLineProperties)
+            {
                 generationFlags |= UserTypeGenerationFlags.SingleLineProperty;
+            }
             if (UseDiaSymbolProvider)
+            {
                 generationFlags |= UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
+            }
             if (ForceUserTypesToNewInsteadOfCasting)
+            {
                 generationFlags |= UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting;
+            }
             if (CacheUserTypeFields)
+            {
                 generationFlags |= UserTypeGenerationFlags.CacheUserTypeFields;
+            }
             if (CacheStaticUserTypeFields)
+            {
                 generationFlags |= UserTypeGenerationFlags.CacheStaticUserTypeFields;
+            }
             if (LazyCacheUserTypeFields)
+            {
                 generationFlags |= UserTypeGenerationFlags.LazyCacheUserTypeFields;
+            }
             if (GeneratePhysicalMappingOfUserTypes)
+            {
                 generationFlags |= UserTypeGenerationFlags.GeneratePhysicalMappingOfUserTypes;
-            if (SingleFileExport)
+            }
+            if (!MultiFileExport)
+            {
                 generationFlags |= UserTypeGenerationFlags.SingleFileExport;
+            }
             if (UseHungarianNotation)
+            {
                 generationFlags |= UserTypeGenerationFlags.UseHungarianNotation;
+            }
+            if (GenerateNamespaceAsStaticClass)
+            {
+                generationFlags |= UserTypeGenerationFlags.GenerateNamespaceAsStaticClass;
+            }
+            if (DontSaveGeneratedCodeFiles && GenerateAssemblyWithRoslyn)
+            {
+                generationFlags |= UserTypeGenerationFlags.DontSaveGeneratedCodeFiles;
+            }
             return generationFlags;
         }
 
@@ -348,6 +384,15 @@ namespace CsDebugScript.CodeGen
         /// Gets or sets the list of included fields.
         /// </summary>
         public HashSet<string> IncludedFields { get; set; } = new HashSet<string>();
+
+        /// <summary>
+        /// Gets or sets a value indicating whether type should export dependent types.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if type should export dependent types; otherwise, <c>false</c>.
+        /// </value>
+        [XmlAttribute]
+        public bool ExportDependentTypes { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether this user type is template.

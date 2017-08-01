@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using Dia2Lib;
 
 namespace CsDebugScript.Engine.Debuggers
 {
@@ -401,6 +402,18 @@ namespace CsDebugScript.Engine.Debuggers
         }
 
         /// <summary>
+        /// Gets the DIA session for the specified module.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <returns>
+        ///   <see cref="IDiaSession" /> if available, null otherwise.
+        /// </returns>
+        public IDiaSession GetModuleDiaSession(Module module)
+        {
+            return null;
+        }
+
+        /// <summary>
         /// Gets the name of the mapped image. In most cases, this is null. If the debugger is mapping an image file
         /// (for example, during minidump debugging), this is the name of the mapped image.
         /// </summary>
@@ -532,6 +545,7 @@ namespace CsDebugScript.Engine.Debuggers
             }
         }
 
+#if false
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.
         /// </summary>
@@ -642,6 +656,7 @@ namespace CsDebugScript.Engine.Debuggers
             }
             return new StackTrace(thread, frames.ToArray(), contexts.ToArray());
         }
+#endif
 
         /// <summary>
         /// Gets the stack trace from the specified context.
@@ -1187,7 +1202,7 @@ namespace CsDebugScript.Engine.Debuggers
             uint extraInfoUsed;
             uint descriptionSize;
 
-            //  Collect EventSize 
+            //  Collect EventSize
             StringBuilder description = new StringBuilder();
 
             Control.GetLastEventInformation(
@@ -1209,7 +1224,7 @@ namespace CsDebugScript.Engine.Debuggers
             GCHandle handle = GCHandle.Alloc(debugLastEventInfo, GCHandleType.Pinned);
 
             byte[] eventExtraInfo = new byte[extraInfoUsed];
-          
+
             try
             {
                 Control.GetLastEventInformation(
@@ -1312,7 +1327,7 @@ namespace CsDebugScript.Engine.Debuggers
             flowControler.WaitForDebuggerLoopToExit();
         }
 
-        #region Native methods
+#region Native methods
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.
         /// </summary>
@@ -1616,6 +1631,6 @@ namespace CsDebugScript.Engine.Debuggers
             ulong AddrBase,
             ReadProcessMemoryProc64 ReadMemoryRoutine,
             GetModuleBaseProc64 GetModuleBaseRoutine);
-        #endregion
+#endregion
     }
-} 
+}

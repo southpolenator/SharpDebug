@@ -8,6 +8,10 @@ using System.Threading.Tasks;
 namespace DbgEngTest
 {
     [TestClass]
+    [DeploymentItem("NativeDumpTest.x64.pdb")]
+    [DeploymentItem("NativeDumpTest.x64.Release.pdb")]
+    [DeploymentItem("NativeDumpTest.x86.pdb")]
+    [DeploymentItem("NativeDumpTest.x86.Release.pdb")]
     public class CodeGenTests : TestBase
     {
         [ClassInitialize]
@@ -32,7 +36,7 @@ namespace DbgEngTest
             return new XmlConfig()
             {
                 UseDiaSymbolProvider = true,
-                SingleFileExport = true,
+                MultiFileExport = false,
                 GeneratedAssemblyName = "NativeDumpTestExported.dll",
                 GeneratedPropsFileName = "NativeDumpTestExported.props",
                 GenerateAssemblyWithRoslyn = true,
@@ -117,144 +121,168 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x64()
         {
             DoCodeGen("NativeDumpTest.x64.pdb");
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x64_NoTransformations()
         {
             DoCodeGen("NativeDumpTest.x64.pdb", transformations: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x64_NoSingle()
         {
             DoCodeGen("NativeDumpTest.x64.pdb", singleFileExport: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x64_NoRoslyn()
         {
             DoCodeGen("NativeDumpTest.x64.pdb", compileWithRoslyn: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x64_Release()
         {
             DoCodeGen("NativeDumpTest.x64.Release.pdb");
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x64_Release_NoTransformations()
         {
             DoCodeGen("NativeDumpTest.x64.Release.pdb", transformations: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x64_Release_NoSingle()
         {
             DoCodeGen("NativeDumpTest.x64.Release.pdb", singleFileExport: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x64_Release_NoRoslyn()
         {
             DoCodeGen("NativeDumpTest.x64.Release.pdb", compileWithRoslyn: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x86()
         {
             DoCodeGen("NativeDumpTest.x86.pdb");
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x86_NoTransformations()
         {
             DoCodeGen("NativeDumpTest.x86.pdb", transformations: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x86_NoSingle()
         {
             DoCodeGen("NativeDumpTest.x86.pdb", singleFileExport: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x86_NoRoslyn()
         {
             DoCodeGen("NativeDumpTest.x86.pdb", compileWithRoslyn: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x86_Release()
         {
             DoCodeGen("NativeDumpTest.x86.Release.pdb");
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x86_Release_NoTransformations()
         {
             DoCodeGen("NativeDumpTest.x86.Release.pdb", transformations: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x86_Release_NoSingle()
         {
             DoCodeGen("NativeDumpTest.x86.Release.pdb", singleFileExport: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_x86_Release_NoRoslyn()
         {
             DoCodeGen("NativeDumpTest.x86.Release.pdb", compileWithRoslyn: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_gcc()
         {
             DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb");
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_gcc_NoTransformations()
         {
             DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb", transformations: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_gcc_NoSingle()
         {
             DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb", singleFileExport: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_gcc_NoRoslyn()
         {
             DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb", compileWithRoslyn: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_VS2013()
         {
             DoCodeGen(@"..\..\..\dumps\NativeDumpTest.VS2013.pdb");
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_VS2013_NoTransformations()
         {
             DoCodeGen(@"..\..\..\dumps\NativeDumpTest.VS2013.pdb", transformations: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_VS2013_NoSingle()
         {
             DoCodeGen(@"..\..\..\dumps\NativeDumpTest.VS2013.pdb", singleFileExport: false);
         }
 
         [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_VS2013_NoRoslyn()
         {
             DoCodeGen(@"..\..\..\dumps\NativeDumpTest.VS2013.pdb", compileWithRoslyn: false);
@@ -264,10 +292,13 @@ namespace DbgEngTest
         {
             XmlConfig xmlConfig = GetXmlConfig(pdbFile);
 
-            xmlConfig.SingleFileExport = singleFileExport;
+            xmlConfig.MultiFileExport = !singleFileExport;
             xmlConfig.GenerateAssemblyWithRoslyn = compileWithRoslyn;
+            xmlConfig.DontSaveGeneratedCodeFiles = true;
             if (!transformations)
+            {
                 xmlConfig.Transformations = new XmlTypeTransformation[0];
+            }
             DoCodeGen(xmlConfig);
         }
 
@@ -280,20 +311,14 @@ namespace DbgEngTest
                 using (StringWriter writer = new StringWriter())
                 {
                     Console.SetError(writer);
-
-                    Task mtaTask = new Task(() =>
-                    {
-                        Generator.Generate(xmlConfig);
-                    });
-
-                    mtaTask.Start();
-                    mtaTask.Wait();
-
+                    new Generator().Generate(xmlConfig);
                     writer.Flush();
                     string errorText = writer.GetStringBuilder().ToString();
 
                     if (!string.IsNullOrEmpty(errorText))
+                    {
                         throw new Exception(errorText);
+                    }
                 }
             }
             finally

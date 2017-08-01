@@ -27,6 +27,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("CommonUserTypes")]
         public void TestNakedPointer()
         {
             NakedPointer nakedPointer = new NakedPointer(0);
@@ -36,6 +37,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("CommonUserTypes")]
         public void TestPEB()
         {
             ProcessEnvironmentBlock peb = new ProcessEnvironmentBlock();
@@ -96,6 +98,7 @@ namespace DbgEngTest
         }
 
         [TestMethod]
+        [TestCategory("CommonUserTypes")]
         public void TestTEB()
         {
             ThreadEnvironmentBlock teb = new ThreadEnvironmentBlock(Thread.Current.TEB);
