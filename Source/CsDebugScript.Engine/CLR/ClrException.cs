@@ -137,7 +137,7 @@ namespace CsDebugScript.CLR
                 // Get field containing the stack trace
                 Variable field = GetField("_stackTrace");
 
-                if (field == null)
+                if (field == null || field.IsNullPointer())
                 {
                     return null;
                 }
