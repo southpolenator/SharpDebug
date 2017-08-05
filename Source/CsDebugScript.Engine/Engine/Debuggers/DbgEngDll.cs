@@ -437,6 +437,33 @@ namespace CsDebugScript.Engine.Debuggers
                 StringBuilder sb = new StringBuilder(Constants.MaxFileName);
 
                 Symbols.GetModuleNameStringWide((uint)modname, 0xffffffff, module.Address, sb, (uint)sb.Capacity, out nameSize);
+                if (modname == DebugModname.MappedImage && !File.Exists(sb.ToString()))
+                {
+                    uint imagePathSize;
+                    Symbols.GetImagePathWide(null, 0, out imagePathSize);
+                    StringBuilder imagePath = new StringBuilder((int)imagePathSize + 1);
+                    Symbols.GetImagePathWide(imagePath, (uint)imagePath.Capacity, out imagePathSize);
+
+                    uint symbolPathSize;
+                    Symbols.GetSymbolPathWide(null, 0, out symbolPathSize);
+                    StringBuilder symbolPath = new StringBuilder((int)symbolPathSize + 1);
+                    Symbols.GetSymbolPathWide(symbolPath, (uint)symbolPath.Capacity, out symbolPathSize);
+
+                    List<string> folders = new List<string>();
+
+                    folders.AddRange(imagePath.ToString().Split(";".ToCharArray()));
+                    folders.AddRange(symbolPath.ToString().Split(";".ToCharArray()));
+
+                    foreach (string folder in folders)
+                    {
+                        string path = Path.Combine(folder, module.LoadedImageName);
+
+                        if (File.Exists(path))
+                        {
+                            return path;
+                        }
+                    }
+                }
                 return sb.ToString();
             }
         }

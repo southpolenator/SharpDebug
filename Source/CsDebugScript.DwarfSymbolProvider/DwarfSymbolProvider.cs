@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using CsDebugScript.Engine.SymbolProviders;
 using System;
+using System.IO;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
@@ -24,22 +25,25 @@ namespace CsDebugScript.DwarfSymbolProvider
         public override ISymbolProviderModule LoadModule(Module module)
         {
             // Try to load PDB file into our own DIA session
-            string location = module.ImageName;
+            string location = File.Exists(module.MappedImageName) ? module.MappedImageName : module.ImageName;
 
-            try
+            if (File.Exists(location))
             {
-                IDwarfImage image = new PeImage(location);
-                var debugStrings = ParseDebugStrings(image.DebugDataStrings);
-                var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, debugStrings, image.CodeSegmentOffset);
-                var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.CodeSegmentOffset);
-                var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.Is64bit);
+                try
+                {
+                    IDwarfImage image = new PeImage(location);
+                    var debugStrings = ParseDebugStrings(image.DebugDataStrings);
+                    var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, debugStrings, image.CodeSegmentOffset);
+                    var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.CodeSegmentOffset);
+                    var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.Is64bit);
 
-                return new DwarfSymbolProviderModule(module, compilationUnits, lineNumberPrograms, commonInformationEntries, debugStrings, image.CodeSegmentOffset, image.Is64bit);
+                    return new DwarfSymbolProviderModule(module, compilationUnits, lineNumberPrograms, commonInformationEntries, debugStrings, image.CodeSegmentOffset, image.Is64bit);
+                }
+                catch
+                {
+                }
             }
-            catch
-            {
-                return null;
-            }
+            return null;
         }
 
         private Dictionary<int, string> ParseDebugStrings(byte[] debugDataStrings)
