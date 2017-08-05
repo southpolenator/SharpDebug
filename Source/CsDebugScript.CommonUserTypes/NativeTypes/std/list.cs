@@ -399,8 +399,8 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 item item = Head;
                 for (int i = 0; i < Count; i++)
                 {
-                    item = item.Next;
                     yield return item.Value;
+                    item = item.Next;
                 }
             }
 

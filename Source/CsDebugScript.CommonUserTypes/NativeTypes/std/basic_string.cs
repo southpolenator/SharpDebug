@@ -229,7 +229,17 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// <summary>
             /// The length of the string
             /// </summary>
-            private UserMember<Variable> length;
+            private UserMember<int> length;
+
+            /// <summary>
+            /// The local buffer that can be used for the string
+            /// </summary>
+            private UserMember<Variable> localBuffer;
+
+            /// <summary>
+            /// The string buffer capacity
+            /// </summary>
+            private UserMember<int> capacity;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="LibStdCpp6"/> class.
@@ -237,8 +247,10 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// <param name="variable">The variable.</param>
             public LibStdCpp6(Variable variable)
             {
-                length = UserMember.Create(() => variable.GetField("_M_string_length"));
+                length = UserMember.Create(() => (int)variable.GetField("_M_string_length"));
                 text = UserMember.Create(() => variable.GetField("_M_dataplus").GetField("_M_p"));
+                localBuffer = UserMember.Create(() => variable.GetField("_M_local_buf"));
+                capacity = UserMember.Create(() => (int)variable.GetField("_M_allocated_capacity"));
             }
 
             /// <summary>
@@ -248,7 +260,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 get
                 {
-                    return (int)length.Value;
+                    return length.Value;
                 }
             }
 
@@ -265,10 +277,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     }
                     else
                     {
-                        Variable stringLength = length.Value;
-                        Variable capacity = Variable.Create(stringLength.GetCodeType(), LocalBufferAddress);
-
-                        return (int)capacity;
+                        return capacity.Value;
                     }
                 }
             }
@@ -285,20 +294,6 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             }
 
             /// <summary>
-            /// Gets the local buffer address.
-            /// Since cv2pdb doesn't export unnamed unions, we must do calculations manually.
-            /// </summary>
-            private ulong LocalBufferAddress
-            {
-                get
-                {
-                    Variable stringLength = length.Value;
-
-                    return stringLength.GetPointerAddress() + stringLength.GetCodeType().Size;
-                }
-            }
-
-            /// <summary>
             /// Gets a value indicating whether basic_string is using local data.
             /// </summary>
             /// <value>
@@ -308,7 +303,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 get
                 {
-                    return LocalBufferAddress == text.Value.GetPointerAddress();
+                    return localBuffer.Value.GetPointerAddress() == text.Value.GetPointerAddress();
                 }
             }
 
@@ -322,17 +317,22 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 // _M_dataplus
                 // | _M_p
                 // _M_string_length
-                // {
-                //   ?_M_local_buf
-                //   ?_M_allocated_capacity
-                // }
-                CodeType _M_dataplus, _M_p, _M_string_length;
+                // @unnamed_union
+                // | _M_local_buf
+                // | _M_allocated_capacity
+                CodeType _M_dataplus, _M_p, _M_string_length, _M_local_buf, _M_allocated_capacity;
 
                 if (!codeType.GetFieldTypes().TryGetValue("_M_dataplus", out _M_dataplus))
                     return false;
                 if (!codeType.GetFieldTypes().TryGetValue("_M_string_length", out _M_string_length))
                     return false;
                 if (!_M_dataplus.GetFieldTypes().TryGetValue("_M_p", out _M_p))
+                    return false;
+
+                // These should be part of unnamed union
+                if (!codeType.GetFieldTypes().TryGetValue("_M_local_buf", out _M_local_buf))
+                    return false;
+                if (!codeType.GetFieldTypes().TryGetValue("_M_allocated_capacity", out _M_allocated_capacity))
                     return false;
                 return true;
             }
@@ -406,6 +406,31 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         public override string ToString()
         {
             return Text;
+        }
+
+        /// <summary>
+        /// Determines whether the specified <see cref="System.Object" />, is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
+        public override bool Equals(object obj)
+        {
+            var other = obj as basic_string;
+
+            return other != null && Text == other.Text;
+        }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode()
+        {
+            return Text.GetHashCode();
         }
     }
 }
