@@ -1,23 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
     internal class DwarfCompilationUnit
     {
+        private Dictionary<int, DwarfSymbol> symbolsByOffset = new Dictionary<int, DwarfSymbol>();
+
         public DwarfCompilationUnit(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, Dictionary<int, string> debugStrings, ulong codeSegmentOffset)
         {
-            InfoDataByOffset = new Dictionary<int, DwarfInfoData>();
             ReadData(debugData, debugDataDescription, debugStrings, codeSegmentOffset);
         }
 
-        public DwarfInfoData[] InfoDataTree { get; private set; }
+        public DwarfSymbol[] SymbolsTree { get; private set; }
 
-        public Dictionary<int, DwarfInfoData> InfoDataByOffset { get; private set; }
+        public IEnumerable<DwarfSymbol> Symbols
+        {
+            get
+            {
+                return symbolsByOffset.Values;
+            }
+        }
 
         private void ReadData(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, Dictionary<int, string> debugStrings, ulong codeSegmentOffset)
         {
@@ -29,10 +32,11 @@ namespace CsDebugScript.DwarfSymbolProvider
             ushort version = debugData.ReadUshort();
             int debugDataDescriptionOffset = debugData.ReadOffset(is64bit);
             byte addressSize = debugData.ReadByte();
+            DataDescriptionReader dataDescriptionReader = new DataDescriptionReader(debugDataDescription, debugDataDescriptionOffset);
 
             // Read data
-            List<DwarfInfoData> infoData = new List<DwarfInfoData>();
-            Stack<DwarfInfoData> parents = new Stack<DwarfInfoData>();
+            List<DwarfSymbol> symbols = new List<DwarfSymbol>();
+            Stack<DwarfSymbol> parents = new Stack<DwarfSymbol>();
 
             while (debugData.Position < endPosition)
             {
@@ -45,26 +49,13 @@ namespace CsDebugScript.DwarfSymbolProvider
                     continue;
                 }
 
-                FindDebugDataDescriptionPosition(debugDataDescription, debugDataDescriptionOffset, code);
-                DwarfTag tag = (DwarfTag)debugDataDescription.LEB128();
-                bool hasChildren = debugDataDescription.ReadByte() != 0;
+                DataDescription description = dataDescriptionReader.FindDebugDataDescription(code);
                 Dictionary<DwarfAttribute, DwarfAttributeValue> attributes = new Dictionary<DwarfAttribute, DwarfAttributeValue>();
 
-                while (true)
+                foreach (DataDescriptionAttribute descriptionAttribute in description.Attributes)
                 {
-                    DwarfAttribute attribute = (DwarfAttribute)debugDataDescription.LEB128();
-                    DwarfFormat format = (DwarfFormat)debugDataDescription.LEB128();
-
-                    while (format == DwarfFormat.Indirect)
-                    {
-                        format = (DwarfFormat)debugDataDescription.LEB128();
-                    }
-
-                    if (attribute == DwarfAttribute.None && format == DwarfFormat.None)
-                    {
-                        break;
-                    }
-
+                    DwarfAttribute attribute = descriptionAttribute.Attribute;
+                    DwarfFormat format = descriptionAttribute.Format;
                     DwarfAttributeValue attributeValue = new DwarfAttributeValue();
 
                     switch (format)
@@ -182,46 +173,46 @@ namespace CsDebugScript.DwarfSymbolProvider
                     }
                 }
 
-                DwarfInfoData element = new DwarfInfoData()
+                DwarfSymbol symbol = new DwarfSymbol()
                 {
-                    Tag = tag,
+                    Tag = description.Tag,
                     Attributes = attributes,
                     Offset = dataPosition,
                 };
 
-                InfoDataByOffset.Add(element.Offset, element);
+                symbolsByOffset.Add(symbol.Offset, symbol);
 
                 if (parents.Count > 0)
                 {
-                    parents.Peek().Children.Add(element);
-                    element.Parent = parents.Peek();
+                    parents.Peek().Children.Add(symbol);
+                    symbol.Parent = parents.Peek();
                 }
                 else
                 {
-                    infoData.Add(element);
+                    symbols.Add(symbol);
                 }
 
-                if (hasChildren)
+                if (description.HasChildren)
                 {
-                    element.Children = new List<DwarfInfoData>();
-                    parents.Push(element);
+                    symbol.Children = new List<DwarfSymbol>();
+                    parents.Push(symbol);
                 }
             }
 
-            InfoDataTree = infoData.ToArray();
+            SymbolsTree = symbols.ToArray();
 
-            // Post process all elements
-            foreach (DwarfInfoData element in InfoDataByOffset.Values)
+            // Post process all symbols
+            foreach (DwarfSymbol symbol in Symbols)
             {
-                Dictionary<DwarfAttribute, DwarfAttributeValue> attributes = element.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
+                Dictionary<DwarfAttribute, DwarfAttributeValue> attributes = symbol.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
 
                 foreach (DwarfAttributeValue value in attributes.Values)
                 {
                     if (value.Type == DwarfAttributeValueType.Reference)
                     {
-                        DwarfInfoData reference;
+                        DwarfSymbol reference;
 
-                        if (InfoDataByOffset.TryGetValue((int)value.Address, out reference))
+                        if (symbolsByOffset.TryGetValue((int)value.Address, out reference))
                         {
                             value.Type = DwarfAttributeValueType.ResolvedReference;
                             value.Value = reference;
@@ -235,14 +226,14 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             // Merge specifications
-            foreach (DwarfInfoData element in InfoDataByOffset.Values)
+            foreach (DwarfSymbol symbol in Symbols)
             {
-                Dictionary<DwarfAttribute, DwarfAttributeValue> attributes = element.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
+                Dictionary<DwarfAttribute, DwarfAttributeValue> attributes = symbol.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
                 DwarfAttributeValue specificationValue;
 
                 if (attributes.TryGetValue(DwarfAttribute.Specification, out specificationValue) && specificationValue.Type == DwarfAttributeValueType.ResolvedReference)
                 {
-                    DwarfInfoData reference = specificationValue.Reference;
+                    DwarfSymbol reference = specificationValue.Reference;
                     Dictionary<DwarfAttribute, DwarfAttributeValue> referenceAttributes = reference.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
 
                     foreach (KeyValuePair<DwarfAttribute, DwarfAttributeValue> kvp in attributes)
@@ -256,32 +247,89 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
         }
 
-        private static void FindDebugDataDescriptionPosition(DwarfMemoryReader debugDataDescription, int startingPosition, uint findCode)
+        private struct DataDescription
         {
-            // TODO: We can traverse only once through whole debugDataDescription stream and find positions for all codes and later just fetch from dictionary.
-            debugDataDescription.Position = startingPosition;
-            while (true)
+            public DwarfTag Tag { get; set; }
+
+            public bool HasChildren { get; set; }
+
+            public List<DataDescriptionAttribute> Attributes { get; set; }
+        }
+
+        private struct DataDescriptionAttribute
+        {
+            public DwarfAttribute Attribute { get; set; }
+
+            public DwarfFormat Format { get; set; }
+        }
+
+        private class DataDescriptionReader
+        {
+            DwarfMemoryReader debugDataDescription;
+            Dictionary<uint, DataDescription> readDescriptions;
+            int lastReadPosition;
+
+            public DataDescriptionReader(DwarfMemoryReader debugDataDescription, int startingPosition)
             {
-                uint code = debugDataDescription.LEB128();
+                readDescriptions = new Dictionary<uint, DataDescription>();
+                lastReadPosition = startingPosition;
+                this.debugDataDescription = debugDataDescription;
+            }
 
-                if (code == findCode)
+            public DataDescription FindDebugDataDescription(uint findCode)
+            {
+                DataDescription result;
+
+                if (readDescriptions.TryGetValue(findCode, out result))
                 {
-                    break;
+                    return result;
                 }
 
-                uint tag = debugDataDescription.LEB128();
-                bool hasChild = debugDataDescription.ReadByte() != 0;
-
-                // Skip attributes
-                DwarfAttribute attribute;
-                DwarfFormat format;
-
-                do
+                debugDataDescription.Position = lastReadPosition;
+                while (!debugDataDescription.IsEnd)
                 {
-                    attribute = (DwarfAttribute)debugDataDescription.LEB128();
-                    format = (DwarfFormat)debugDataDescription.LEB128();
+                    uint code = debugDataDescription.LEB128();
+                    DwarfTag tag = (DwarfTag)debugDataDescription.LEB128();
+                    bool hasChildren = debugDataDescription.ReadByte() != 0;
+                    List<DataDescriptionAttribute> attributes = new List<DataDescriptionAttribute>();
+
+                    while (!debugDataDescription.IsEnd)
+                    {
+                        DwarfAttribute attribute = (DwarfAttribute)debugDataDescription.LEB128();
+                        DwarfFormat format = (DwarfFormat)debugDataDescription.LEB128();
+
+                        while (format == DwarfFormat.Indirect)
+                        {
+                            format = (DwarfFormat)debugDataDescription.LEB128();
+                        }
+
+                        if (attribute == DwarfAttribute.None && format == DwarfFormat.None)
+                        {
+                            break;
+                        }
+
+                        attributes.Add(new DataDescriptionAttribute()
+                        {
+                            Attribute = attribute,
+                            Format = format,
+                        });
+                    }
+
+                    result = new DataDescription()
+                    {
+                        Tag = tag,
+                        HasChildren = hasChildren,
+                        Attributes = attributes,
+                    };
+                    readDescriptions.Add(code, result);
+                    if (code == findCode)
+                    {
+                        lastReadPosition = debugDataDescription.Position;
+                        return result;
+                    }
                 }
-                while ((attribute != DwarfAttribute.None) || (format != DwarfFormat.None));
+
+                throw new NotImplementedException();
             }
         }
     }

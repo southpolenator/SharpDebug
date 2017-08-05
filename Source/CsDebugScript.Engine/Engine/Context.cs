@@ -93,7 +93,7 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="debuggerEngine">The debugger engine interface.</param>
         /// <param name="symbolProvider">The symbol provider interface.</param>
-        internal static void InitializeDebugger(IDebuggerEngine debuggerEngine, ISymbolProvider symbolProvider)
+        public static void InitializeDebugger(IDebuggerEngine debuggerEngine, ISymbolProvider symbolProvider)
         {
             Debugger = debuggerEngine;
             SymbolProvider = symbolProvider;

@@ -260,7 +260,11 @@ namespace CsDebugScript.Engine.SymbolProviders
             }
 
             symbolProviderModule.GetFunctionNameAndDisplacement(stackFrame.Process, stackFrame.InstructionOffset, (uint)distance, out functionName, out displacement);
-            if (!functionName.Contains("!"))
+            if (string.IsNullOrEmpty(functionName))
+            {
+                functionName = $"{module.Name}!???";
+            }
+            else if (!functionName.Contains("!"))
             {
                 functionName = module.Name + "!" + functionName;
             }

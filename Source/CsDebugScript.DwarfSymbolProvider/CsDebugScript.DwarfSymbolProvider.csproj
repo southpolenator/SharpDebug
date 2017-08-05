@@ -51,7 +51,7 @@
     <Compile Include="DwarfCommonInformationEntry.cs" />
     <Compile Include="DwarfCompilationUnit.cs" />
     <Compile Include="DwarfFrameDescriptionEntry.cs" />
-    <Compile Include="DwarfInfoData.cs" />
+    <Compile Include="DwarfSymbol.cs" />
     <Compile Include="DwarfLineNumberProgram.cs" />
     <Compile Include="DwarfMemoryReader.cs" />
     <Compile Include="DwarfSymbolProviderModule.cs" />

@@ -3,15 +3,15 @@ using System.Collections.Generic;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
-    internal class DwarfInfoData
+    internal class DwarfSymbol
     {
         public DwarfTag Tag { get; internal set; }
 
         public IReadOnlyDictionary<DwarfAttribute, DwarfAttributeValue> Attributes { get; internal set; }
 
-        public List<DwarfInfoData> Children { get; internal set; }
+        public List<DwarfSymbol> Children { get; internal set; }
 
-        public DwarfInfoData Parent { get; internal set; }
+        public DwarfSymbol Parent { get; internal set; }
 
         public int Offset { get; set; }
 

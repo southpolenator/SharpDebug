@@ -62,11 +62,11 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
         }
 
-        public DwarfInfoData Reference
+        public DwarfSymbol Reference
         {
             get
             {
-                return (DwarfInfoData)Value;
+                return (DwarfSymbol)Value;
             }
         }
 

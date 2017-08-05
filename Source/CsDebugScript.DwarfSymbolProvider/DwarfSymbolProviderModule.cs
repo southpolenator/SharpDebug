@@ -17,7 +17,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         private Dictionary<int, string> debugStrings;
         private ulong codeSegmentOffset;
         private bool is64bit;
-        private DictionaryCache<string, DwarfInfoData> globalVariables;
+        private DictionaryCache<string, DwarfSymbol> globalVariables;
 
         public DwarfSymbolProviderModule(Module module, DwarfCompilationUnit[] compilationUnits, DwarfLineNumberProgram[] programs, DwarfCommonInformationEntry[] commonInformationEntries, Dictionary<int, string> debugStrings, ulong codeSegmentOffset, bool is64bit)
         {
@@ -28,16 +28,16 @@ namespace CsDebugScript.DwarfSymbolProvider
             this.debugStrings = debugStrings;
             this.codeSegmentOffset = codeSegmentOffset;
             this.is64bit = is64bit;
-            globalVariables = new DictionaryCache<string, DwarfInfoData>(FindGlobalVariable);
+            globalVariables = new DictionaryCache<string, DwarfSymbol>(FindGlobalVariable);
         }
 
         internal Module Module { get; private set; }
 
         public string GetEnumName(Module module, uint enumTypeId, ulong enumValue)
         {
-            DwarfInfoData enumType = GetType(enumTypeId);
+            DwarfSymbol enumType = GetType(enumTypeId);
 
-            foreach (DwarfInfoData child in enumType.Children)
+            foreach (DwarfSymbol child in enumType.Children)
             {
                 if (child.Tag == DwarfTag.Enumerator && child.GetConstantAttribute(DwarfAttribute.ConstValue) == enumValue)
                 {
@@ -51,18 +51,18 @@ namespace CsDebugScript.DwarfSymbolProvider
         public VariableCollection GetFrameLocals(StackFrame frame, Module module, uint relativeAddress, bool arguments)
         {
             ulong displacement;
-            DwarfInfoData function = FindFunction(relativeAddress, out displacement);
+            DwarfSymbol function = FindFunction(relativeAddress, out displacement);
             List<Variable> variables = new List<Variable>();
 
             if (function.Children != null)
             {
                 if (arguments)
                 {
-                    foreach (DwarfInfoData parameter in function.Children)
+                    foreach (DwarfSymbol parameter in function.Children)
                     {
                         if (parameter.Tag == DwarfTag.FormalParameter && !string.IsNullOrEmpty(parameter.Name))
                         {
-                            DwarfInfoData parameterType = GetType(parameter);
+                            DwarfSymbol parameterType = GetType(parameter);
                             uint parameterTypeId = GetTypeId(parameterType);
                             CodeType codeType = module.TypesById[parameterTypeId];
                             ulong address = ResolveAddress(module.Process, function, parameter, frame.FrameContext);
@@ -74,18 +74,18 @@ namespace CsDebugScript.DwarfSymbolProvider
                 }
                 else
                 {
-                    Queue<List<DwarfInfoData>> childrenQueue = new Queue<List<DwarfInfoData>>();
+                    Queue<List<DwarfSymbol>> childrenQueue = new Queue<List<DwarfSymbol>>();
 
                     childrenQueue.Enqueue(function.Children);
                     while (childrenQueue.Count > 0)
                     {
-                        List<DwarfInfoData> children = childrenQueue.Dequeue();
+                        List<DwarfSymbol> children = childrenQueue.Dequeue();
 
-                        foreach (DwarfInfoData data in children)
+                        foreach (DwarfSymbol data in children)
                         {
                             if (data.Tag == DwarfTag.Variable && !string.IsNullOrEmpty(data.Name))
                             {
-                                DwarfInfoData parameterType = GetType(data);
+                                DwarfSymbol parameterType = GetType(data);
                                 uint parameterTypeId = GetTypeId(parameterType);
                                 CodeType codeType = module.TypesById[parameterTypeId];
                                 ulong address = ResolveAddress(module.Process, function, data, frame.FrameContext);
@@ -280,7 +280,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="process">The process.</param>
         /// <param name="symbol">The symbol.</param>
         /// <param name="frameContext">The frame context.</param>
-        private ulong ResolveAddress(Process process, DwarfInfoData function, DwarfInfoData symbol, ThreadContext frameContext)
+        private ulong ResolveAddress(Process process, DwarfSymbol function, DwarfSymbol symbol, ThreadContext frameContext)
         {
             Location frameBase = ResolveFrameBaseLocation(function.Attributes[DwarfAttribute.FrameBase]);
             Location canonicalFrameAddress = ResolveCanonicalFrameAddress(function.Attributes[DwarfAttribute.LowPc], function.Attributes[DwarfAttribute.HighPc]);
@@ -340,14 +340,14 @@ namespace CsDebugScript.DwarfSymbolProvider
 
         public void GetFunctionNameAndDisplacement(Process process, ulong processAddress, uint address, out string functionName, out ulong displacement)
         {
-            DwarfInfoData function = FindFunction(address, out displacement);
+            DwarfSymbol function = FindFunction(address, out displacement);
 
             functionName = function?.FullName;
         }
 
         public ulong GetGlobalVariableAddress(Module module, string globalVariableName)
         {
-            DwarfInfoData globalVariable = globalVariables[globalVariableName];
+            DwarfSymbol globalVariable = globalVariables[globalVariableName];
             Location location = DecodeLocation(globalVariable.Attributes[DwarfAttribute.Location]);
 
             return location.Address + module.Address;
@@ -590,7 +590,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
         public uint GetGlobalVariableTypeId(Module module, string globalVariableName)
         {
-            DwarfInfoData globalVariable = globalVariables[globalVariableName];
+            DwarfSymbol globalVariable = globalVariables[globalVariableName];
 
             return GetTypeId(GetType(globalVariable));
         }
@@ -603,10 +603,10 @@ namespace CsDebugScript.DwarfSymbolProvider
                 MemoryBuffer memoryBuffer =  Debugger.ReadMemory(process, vtableAddress, process.GetPointerSize());
                 ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)process.GetPointerSize());
                 ulong displacement;
-                DwarfInfoData firstFunction = FindFunction(firstFunctionAddress - Module.Address, out displacement);
-                DwarfInfoData implicitArgument = firstFunction.Attributes[DwarfAttribute.ObjectPointer].Reference;
-                DwarfInfoData abstractOrigin = implicitArgument.Attributes.ContainsKey(DwarfAttribute.AbstractOrigin) ? implicitArgument.Attributes[DwarfAttribute.AbstractOrigin].Reference : implicitArgument;
-                DwarfInfoData type = GetType(abstractOrigin);
+                DwarfSymbol firstFunction = FindFunction(firstFunctionAddress - Module.Address, out displacement);
+                DwarfSymbol implicitArgument = firstFunction.Attributes[DwarfAttribute.ObjectPointer].Reference;
+                DwarfSymbol abstractOrigin = implicitArgument.Attributes.ContainsKey(DwarfAttribute.AbstractOrigin) ? implicitArgument.Attributes[DwarfAttribute.AbstractOrigin].Reference : implicitArgument;
+                DwarfSymbol type = GetType(abstractOrigin);
 
                 if (type.Tag == DwarfTag.PointerType)
                 {
@@ -664,7 +664,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
         public string[] GetTypeAllFieldNames(Module module, uint typeId)
         {
-            DwarfInfoData type = GetType(typeId);
+            DwarfSymbol type = GetType(typeId);
             List<string> names = new List<string>();
 
             if (type.Tag == DwarfTag.PointerType)
@@ -672,7 +672,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                 type = GetType(type);
             }
 
-            Queue<DwarfInfoData> baseClasses = new Queue<DwarfInfoData>();
+            Queue<DwarfSymbol> baseClasses = new Queue<DwarfSymbol>();
 
             baseClasses.Enqueue(type);
             while (baseClasses.Count > 0)
@@ -696,7 +696,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                         else if (child.Tag == DwarfTag.Member && string.IsNullOrEmpty(child.Name))
                         {
                             // We want to add unnamed unions
-                            DwarfInfoData unionType = GetType(child);
+                            DwarfSymbol unionType = GetType(child);
 
                             if (unionType.Tag == DwarfTag.UnionType)
                             {
@@ -712,19 +712,19 @@ namespace CsDebugScript.DwarfSymbolProvider
 
         public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
-            DwarfInfoData type = GetType(typeId);
+            DwarfSymbol type = GetType(typeId);
 
             if (type.Tag == DwarfTag.PointerType)
             {
                 type = GetType(type);
             }
 
-            Queue<Tuple<DwarfInfoData, int>> baseClasses = new Queue<Tuple<DwarfInfoData, int>>();
+            Queue<Tuple<DwarfSymbol, int>> baseClasses = new Queue<Tuple<DwarfSymbol, int>>();
 
             baseClasses.Enqueue(Tuple.Create(type, 0));
             while (baseClasses.Count > 0)
             {
-                Tuple<DwarfInfoData, int> typeAndOffset = baseClasses.Dequeue();
+                Tuple<DwarfSymbol, int> typeAndOffset = baseClasses.Dequeue();
                 int typeOffset = typeAndOffset.Item2;
 
                 type = typeAndOffset.Item1;
@@ -748,7 +748,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                         else if (child.Tag == DwarfTag.Member && string.IsNullOrEmpty(child.Name))
                         {
                             // We want to add unnamed unions
-                            DwarfInfoData unionType = GetType(child);
+                            DwarfSymbol unionType = GetType(child);
 
                             if (unionType.Tag == DwarfTag.UnionType)
                             {
@@ -771,7 +771,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
         public BasicType GetTypeBasicType(Module module, uint typeId)
         {
-            DwarfInfoData type = GetType(typeId);
+            DwarfSymbol type = GetType(typeId);
 
             switch (type.Tag)
             {
@@ -806,7 +806,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
         public uint GetTypeElementTypeId(Module module, uint typeId)
         {
-            DwarfInfoData type = GetType(typeId);
+            DwarfSymbol type = GetType(typeId);
 
             if (!type.Attributes.ContainsKey(DwarfAttribute.Type))
             {
@@ -828,13 +828,13 @@ namespace CsDebugScript.DwarfSymbolProvider
 
         public uint GetTypeId(Module module, string typeName)
         {
-            foreach (var cu in compilationUnits)
+            foreach (DwarfCompilationUnit compilationUnit in compilationUnits)
             {
-                foreach (var data in cu.InfoDataByOffset.Values)
+                foreach (DwarfSymbol symbol in compilationUnit.Symbols)
                 {
-                    if (data.FullName == typeName)
+                    if (symbol.FullName == typeName)
                     {
-                        return GetTypeId(data);
+                        return GetTypeId(symbol);
                     }
                 }
             }
@@ -844,7 +844,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
         public string GetTypeName(Module module, uint typeId)
         {
-            DwarfInfoData type = GetType(typeId);
+            DwarfSymbol type = GetType(typeId);
 
             if (type.Tag == DwarfTag.PointerType)
             {
@@ -861,11 +861,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         public uint GetTypePointerToTypeId(Module module, uint typeId)
         {
             // TODO: Don't do linear search
-            DwarfInfoData type = GetType(typeId);
+            DwarfSymbol type = GetType(typeId);
 
-            foreach (var compilationUnit in compilationUnits)
+            foreach (DwarfCompilationUnit compilationUnit in compilationUnits)
             {
-                foreach (var symbol in compilationUnit.InfoDataByOffset.Values)
+                foreach (DwarfSymbol symbol in compilationUnit.Symbols)
                 {
                     if (symbol.Tag == DwarfTag.PointerType && GetType(symbol) == type)
                     {
@@ -879,7 +879,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
         public uint GetTypeSize(Module module, uint typeId)
         {
-            DwarfInfoData type = GetType(typeId);
+            DwarfSymbol type = GetType(typeId);
 
             if (!type.Attributes.ContainsKey(DwarfAttribute.ByteSize))
             {
@@ -889,7 +889,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                 }
                 else if (type.Tag == DwarfTag.ArrayType)
                 {
-                    DwarfInfoData subrangetype = type.Children.FirstOrDefault();
+                    DwarfSymbol subrangetype = type.Children.FirstOrDefault();
 
                     if (subrangetype.Tag == DwarfTag.SubrangeType)
                     {
@@ -905,7 +905,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
         public SymTag GetTypeTag(Module module, uint typeId)
         {
-            DwarfInfoData type = GetType(typeId);
+            DwarfSymbol type = GetType(typeId);
 
             switch (type.Tag)
             {
@@ -938,36 +938,40 @@ namespace CsDebugScript.DwarfSymbolProvider
             return Debugger.ReadSimpleData(codeType, address);
         }
 
-        private DwarfInfoData FindFunction(ulong address, out ulong displacement)
+        private DwarfSymbol FindFunction(ulong address, out ulong displacement)
         {
             // TODO: Not linear search
             ulong minDistance = ulong.MaxValue;
-            DwarfInfoData bestMatch = null;
+            DwarfSymbol bestMatch = null;
 
-            foreach (var compilationUnit in compilationUnits)
+            foreach (DwarfCompilationUnit compilationUnit in compilationUnits)
             {
-                foreach (var data in compilationUnit.InfoDataByOffset.Values)
+                foreach (DwarfSymbol symbol in compilationUnit.Symbols)
                 {
-                    if (data.Tag == DwarfTag.Subprogram)
+                    if (symbol.Tag == DwarfTag.Subprogram)
                     {
                         DwarfAttributeValue addressValue;
 
-                        if (data.Attributes.TryGetValue(DwarfAttribute.LowPc, out addressValue))
+                        if (symbol.Attributes.TryGetValue(DwarfAttribute.LowPc, out addressValue))
                         {
                             ulong functionAddress = addressValue.Address;
-                            ulong distance = address - functionAddress;
 
-                            if (distance < minDistance)
+                            if (functionAddress < address)
                             {
-                                minDistance = distance;
-                                bestMatch = data;
+                                ulong distance = address - functionAddress;
+
+                                if (distance < minDistance)
+                                {
+                                    minDistance = distance;
+                                    bestMatch = symbol;
+                                }
                             }
                         }
                     }
                 }
             }
 
-            if (bestMatch == null || minDistance > 0x10000)
+            if (bestMatch == null)
             {
                 displacement = address;
                 return null;
@@ -977,26 +981,26 @@ namespace CsDebugScript.DwarfSymbolProvider
             return bestMatch;
         }
 
-        private DwarfInfoData FindGlobalVariable(string globalVariableName)
+        private DwarfSymbol FindGlobalVariable(string globalVariableName)
         {
             // TODO: Not linear search
-            foreach (var compilationUnit in compilationUnits)
+            foreach (DwarfCompilationUnit compilationUnit in compilationUnits)
             {
-                foreach (var data in compilationUnit.InfoDataByOffset.Values)
+                foreach (DwarfSymbol symbol in compilationUnit.Symbols)
                 {
-                    if (data.Tag == DwarfTag.Variable && data.FullName == globalVariableName)
+                    if (symbol.Tag == DwarfTag.Variable && symbol.FullName == globalVariableName)
                     {
-                        Location location = DecodeLocation(data.Attributes[DwarfAttribute.Location]);
+                        Location location = DecodeLocation(symbol.Attributes[DwarfAttribute.Location]);
 
                         if (location.Type == LocationType.AbsoluteAddress)
                         {
-                            return data;
+                            return symbol;
                         }
                     }
-                    else if (data.Tag == DwarfTag.Member && data.Attributes.ContainsKey(DwarfAttribute.External)
-                        && data.Attributes[DwarfAttribute.External].Flag && data.FullName == globalVariableName)
+                    else if (symbol.Tag == DwarfTag.Member && symbol.Attributes.ContainsKey(DwarfAttribute.External)
+                        && symbol.Attributes[DwarfAttribute.External].Flag && symbol.FullName == globalVariableName)
                     {
-                        return data;
+                        return symbol;
                     }
                 }
             }
@@ -1004,11 +1008,11 @@ namespace CsDebugScript.DwarfSymbolProvider
             throw new NotImplementedException();
         }
 
-        private ConcurrentDictionary<uint, DwarfInfoData> typeIdToType = new ConcurrentDictionary<uint, DwarfInfoData>();
+        private ConcurrentDictionary<uint, DwarfSymbol> typeIdToType = new ConcurrentDictionary<uint, DwarfSymbol>();
         private ConcurrentDictionary<int, uint> typeOffsetToTypeId = new ConcurrentDictionary<int, uint>();
         private uint nextTypeId = 0;
 
-        private uint GetTypeId(DwarfInfoData type)
+        private uint GetTypeId(DwarfSymbol type)
         {
             uint typeId;
 
@@ -1026,17 +1030,17 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
         }
 
-        private DwarfInfoData GetType(uint typeId)
+        private DwarfSymbol GetType(uint typeId)
         {
-            DwarfInfoData type;
+            DwarfSymbol type;
 
             typeIdToType.TryGetValue(typeId, out type);
             return type;
         }
 
-        private DwarfInfoData GetType(DwarfInfoData symbol)
+        private DwarfSymbol GetType(DwarfSymbol symbol)
         {
-            DwarfInfoData type = symbol.Attributes[DwarfAttribute.Type].Reference;
+            DwarfSymbol type = symbol.Attributes[DwarfAttribute.Type].Reference;
 
             while (type.Tag == DwarfTag.Typedef || type.Tag == DwarfTag.ConstType)
             {
