@@ -21,7 +21,7 @@ namespace DbgEngTest
         {
             SyncStart();
             testRunner = new NativeDumpTest(DefaultDumpFile, DefaultModuleName, DefaultSymbolPath);
-            testRunner.TestSetup();
+            testRunner.TestSetup(useDia: false, useDwarf: true, executeCodeGen: false);
         }
 
         [ClassCleanup]
@@ -48,8 +48,7 @@ namespace DbgEngTest
         [TestCategory("NativeDumpTests")]
         public void GettingClassStaticMember()
         {
-            // TODO: cv2pdb doesn't export static members
-            // testRunner.GettingClassStaticMember();
+            testRunner.GettingClassStaticMember();
         }
 
         [TestMethod]
@@ -112,16 +111,14 @@ namespace DbgEngTest
         [TestCategory("NativeDumpTests")]
         public void CheckMainLocals()
         {
-            // TODO: cv2pdb doesn't export types with namespaces which causes types not to be found in PDB.
-            // testRunner.CheckDefaultTestCaseLocals();
+            testRunner.CheckDefaultTestCaseLocals();
         }
 
         [TestMethod]
         [TestCategory("NativeDumpTests")]
         public void CheckSharedWeakPointers()
         {
-            // cv2pdb doesn't export virtual tables, so we don't know if std::make_shared<> was used.
-            testRunner.CheckSharedWeakPointers(checkMakeShared:false);
+            testRunner.CheckSharedWeakPointers();
         }
 
         [TestMethod]

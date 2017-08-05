@@ -16,7 +16,6 @@ REM Compile and generate dump using MingW GCC compiler
 REM
 pushd %gccpath64%
 %gccpath64%\g++ "%~dp0\Tests\DumpApps\NativeDumpTest\NativeDumpTest.cpp" -o "%~dp0\dumps\NativeDumpTest.x64.gcc.exe" -std=c++11 -g
-%gccpath%\cv2pdb -C "%~dp0\dumps\NativeDumpTest.x64.gcc.exe"
 xcopy /D /Y %gccpath64%\libgcc_s_seh-1.dll "%~dp0\dumps\"
 xcopy /D /Y %gccpath64%\libstdc++-6.dll "%~dp0\dumps\"
 popd
@@ -48,7 +47,6 @@ REM Compile and generate dump using MingW GCC compiler
 REM
 pushd %gccpath%
 %gccpath%\g++ "%~dp0\Tests\DumpApps\NativeDumpTest\NativeDumpTest.cpp" -o "%~dp0\dumps\NativeDumpTest.gcc.exe" -std=c++11 -g
-%gccpath%\cv2pdb -C "%~dp0\dumps\NativeDumpTest.gcc.exe"
 xcopy /D /Y %gccpath%\libgcc_s_dw2-1.dll "%~dp0\dumps\"
 xcopy /D /Y %gccpath%\libstdc++-6.dll "%~dp0\dumps\"
 popd

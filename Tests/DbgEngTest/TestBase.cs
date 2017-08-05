@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -120,7 +121,9 @@ namespace DbgEngTest
         {
             Assert.AreEqual(array1.Length, array2.Length);
             for (int i = 0; i < array1.Length; i++)
-                Assert.AreEqual(array1[i], array2[i]);
+            {
+                Assert.IsTrue(array2.Contains(array1[i]));
+            }
         }
 
         public void InterpretInteractive(string code)

@@ -135,6 +135,8 @@ NO_INLINE void DefaultTestCase()
     p->stringMap.insert(make_pair(L"bar", "ansiBar"));
     p->stringUMap.insert(make_pair(L"foo", "ansiFoo"));
     p->stringUMap.insert(make_pair(L"bar", "ansiBar"));
+    p->enumeration = enumEntry2;
+    p->innerEnumeration = MyTestClass::simple4;
 
     TestArray();
 }
