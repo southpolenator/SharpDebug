@@ -12,6 +12,9 @@ namespace CsDebugScript.Engine.Test
 
         [Option('p', "symbol-path", Default = @"srv*;.\", HelpText = "Symbol path to be set in debugger")]
         public string SymbolPath { get; set; }
+
+        [Option("use-dwarf", Default = false, HelpText = "Use DWARF symbol provider")]
+        public bool UseDwarfSymbolProvider { get; set; }
     }
 
     class Program
@@ -27,9 +30,10 @@ namespace CsDebugScript.Engine.Test
                 return;
 
             Context.Initalize(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
-
-            Executor.ShowInteractiveWindow(true);
-            return;
+            if (options.UseDwarfSymbolProvider)
+            {
+                Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider.DwarfSymbolProvider());
+            }
 
             Console.WriteLine("Threads: {0}", Thread.All.Length);
             Console.WriteLine("Current thread: {0}", Thread.Current.Id);
