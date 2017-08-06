@@ -64,7 +64,7 @@ namespace CsDebugScript.Engine.Utility
                         ranges[++newEnd] = ranges[i];
                 newEnd++;
                 Array.Resize(ref ranges, newEnd);
-                finder = new MemoryRegionFinder(ranges.Select(r => new MemoryRegion { BaseAddress = r.MemoryStart, MemoryEnd = r.MemoryEnd }).ToArray());
+                finder = new MemoryRegionFinder(ranges.Select(r => new MemoryRegion { BaseAddress = r.MemoryStart, MemoryEnd = r.MemoryEnd }).ToList());
                 dispose = false;
             }
             finally

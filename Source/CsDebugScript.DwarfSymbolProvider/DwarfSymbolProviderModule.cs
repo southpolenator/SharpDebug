@@ -16,19 +16,59 @@ namespace CsDebugScript.DwarfSymbolProvider
     internal class DwarfSymbolProviderModule : ISymbolProviderModule
     {
         /// <summary>
-        /// The compilation units
+        /// The enumerator of all symbols in all compilation units.
         /// </summary>
-        private DwarfCompilationUnit[] compilationUnits;
+        private IEnumerator<DwarfSymbol> symbolEnumerator;
 
         /// <summary>
-        /// The line number programs
+        /// Flag indicating if all symbols were enumerated.
         /// </summary>
-        private DwarfLineNumberProgram[] programs;
+        private volatile bool allSymbolsEnumerated = false;
 
         /// <summary>
-        /// The common information entries
+        /// Mapping from type name to type.
         /// </summary>
-        private DwarfCommonInformationEntry[] commonInformationEntries;
+        private ConcurrentDictionary<string, DwarfSymbol> typeNameToType = new ConcurrentDictionary<string, DwarfSymbol>();
+
+        /// <summary>
+        /// Mapping from type offset to its pointer type.
+        /// </summary>
+        private ConcurrentDictionary<int, DwarfSymbol> typeOffsetToPointerType = new ConcurrentDictionary<int, DwarfSymbol>();
+
+        /// <summary>
+        /// Mapping from global variable name to global variable symbol.
+        /// </summary>
+        private ConcurrentDictionary<string, DwarfSymbol> globalVariables = new ConcurrentDictionary<string, DwarfSymbol>();
+
+        /// <summary>
+        /// The list of function symbols.
+        /// </summary>
+        private List<DwarfSymbol> functionsCache = new List<DwarfSymbol>();
+
+        /// <summary>
+        /// The list of function addresses.
+        /// </summary>
+        private List<ulong> functionAddressesCache;
+
+        /// <summary>
+        /// The list of line information.
+        /// </summary>
+        private SimpleCache<List<DwarfLineInformation>> lineInformationCache;
+
+        /// <summary>
+        /// The list of line information addresses.
+        /// </summary>
+        private SimpleCache<List<uint>> lineInformationAddressesCache;
+
+        /// <summary>
+        /// The list of frame description entries
+        /// </summary>
+        private SimpleCache<List<DwarfFrameDescriptionEntry>> frameDescriptionEntries;
+
+        /// <summary>
+        /// The frame description entry finder
+        /// </summary>
+        private SimpleCache<MemoryRegionFinder> frameDescriptionEntryFinder;
 
         /// <summary>
         /// The code segment offset (read from the image)
@@ -39,11 +79,6 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Flag indicating if image is 64 bit.
         /// </summary>
         private bool is64bit;
-
-        /// <summary>
-        /// The cache of global variables
-        /// </summary>
-        private DictionaryCache<string, DwarfSymbol> globalVariables;
 
         /// <summary>
         /// Mapping from type ID to type.
@@ -72,12 +107,25 @@ namespace CsDebugScript.DwarfSymbolProvider
         public DwarfSymbolProviderModule(Module module, DwarfCompilationUnit[] compilationUnits, DwarfLineNumberProgram[] programs, DwarfCommonInformationEntry[] commonInformationEntries, ulong codeSegmentOffset, bool is64bit)
         {
             Module = module;
-            this.compilationUnits = compilationUnits;
-            this.programs = programs;
-            this.commonInformationEntries = commonInformationEntries;
+            symbolEnumerator = compilationUnits.SelectMany(cu => cu.Symbols).GetEnumerator();
+            lineInformationCache = SimpleCache.Create(() =>
+            {
+                List<DwarfLineInformation> result = programs.SelectMany(p => p.Files).SelectMany(f => f.Lines).ToList();
+
+                result.Sort((l1, l2) => (int)l1.Address - (int)l2.Address);
+                return result;
+            });
+            lineInformationAddressesCache = SimpleCache.Create(() => lineInformationCache.Value.Select(l => l.Address).ToList());
+            frameDescriptionEntries = SimpleCache.Create(() =>
+            {
+                List<DwarfFrameDescriptionEntry> result = commonInformationEntries.SelectMany(e => e.FrameDescriptionEntries).ToList();
+
+                result.Sort((f1, f2) => (int)f1.InitialLocation - (int)f2.InitialLocation);
+                return result;
+            });
+            frameDescriptionEntryFinder = SimpleCache.Create(() => new MemoryRegionFinder(frameDescriptionEntries.Value.Select(f => new MemoryRegion { BaseAddress = f.InitialLocation, RegionSize = f.AddressRange }).ToList()));
             this.codeSegmentOffset = codeSegmentOffset;
             this.is64bit = is64bit;
-            globalVariables = new DictionaryCache<string, DwarfSymbol>(FindGlobalVariable);
         }
 
         /// <summary>
@@ -204,7 +252,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="globalVariableName">Name of the global variable.</param>
         public ulong GetGlobalVariableAddress(Module module, string globalVariableName)
         {
-            DwarfSymbol globalVariable = globalVariables[globalVariableName];
+            DwarfSymbol globalVariable = FindGlobalVariable(globalVariableName);
             Location location = DecodeLocation(globalVariable.Attributes[DwarfAttribute.Location]);
 
             return location.Address + module.Address;
@@ -217,7 +265,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="globalVariableName">Name of the global variable.</param>
         public uint GetGlobalVariableTypeId(Module module, string globalVariableName)
         {
-            DwarfSymbol globalVariable = globalVariables[globalVariableName];
+            DwarfSymbol globalVariable = FindGlobalVariable(globalVariableName);
 
             return GetTypeId(GetType(globalVariable));
         }
@@ -260,35 +308,29 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="displacement">The displacement.</param>
         public void GetSourceFileNameAndLine(Process process, ulong processAddress, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
-            // TODO: Not linear search
-            ulong minDistance = ulong.MaxValue;
-            DwarfLineInformation bestMatch = null;
+            int index = lineInformationAddressesCache.Value.BinarySearch(address);
 
-            foreach (DwarfLineNumberProgram program in programs)
+            if (index < 0)
             {
-                foreach (DwarfFileInformation file in program.Files)
-                {
-                    foreach (DwarfLineInformation line in file.Lines)
-                    {
-                        ulong distance = address - line.Address;
-
-                        if (distance < minDistance)
-                        {
-                            minDistance = distance;
-                            bestMatch = line;
-                        }
-                    }
-                }
+                index = ~index;
+            }
+            if (index >= lineInformationCache.Value.Count)
+            {
+                index = lineInformationCache.Value.Count - 1;
+            }
+            if (lineInformationAddressesCache.Value[index] > address && index > 0)
+            {
+                index--;
             }
 
-            if (bestMatch == null || minDistance > 0x10000)
+            if (lineInformationAddressesCache.Value[index] > address)
             {
                 throw new KeyNotFoundException();
             }
 
-            sourceFileName = bestMatch.File.Path;
-            sourceFileLine = bestMatch.Line;
-            displacement = minDistance;
+            sourceFileName = lineInformationCache.Value[index].File.Path;
+            sourceFileLine = lineInformationCache.Value[index].Line;
+            displacement = address - lineInformationAddressesCache.Value[index];
         }
 
         /// <summary>
@@ -448,16 +490,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             DwarfSymbol type = GetType(typeId);
 
-            if (type.Tag == DwarfTag.PointerType)
-            {
-                return GetTypeName(module, GetTypeId(GetType(type))) + "*";
-            }
-            if (type.Tag == DwarfTag.ArrayType)
-            {
-                return GetTypeName(module, GetTypeId(GetType(type))) + "[]";
-            }
-
-            return type.FullName;
+            return GetTypeName(type);
         }
 
         /// <summary>
@@ -467,21 +500,25 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypePointerToTypeId(Module module, uint typeId)
         {
-            // TODO: Don't do linear search
             DwarfSymbol type = GetType(typeId);
+            DwarfSymbol pointerType;
 
-            foreach (DwarfCompilationUnit compilationUnit in compilationUnits)
+            if (typeOffsetToPointerType.TryGetValue(type.Offset, out pointerType))
             {
-                foreach (DwarfSymbol symbol in compilationUnit.Symbols)
-                {
-                    if (symbol.Tag == DwarfTag.PointerType && GetType(symbol) == type)
-                    {
-                        return GetTypeId(symbol);
-                    }
-                }
+                return GetTypeId(pointerType);
             }
 
-            throw new NotImplementedException();
+            pointerType = ContinueSymbolSearch((symbol) =>
+            {
+                return symbol.Tag == DwarfTag.PointerType && GetType(symbol) == type;
+            });
+
+            if (pointerType != null)
+            {
+                return GetTypeId(pointerType);
+            }
+
+            throw new Exception("There is no pointer type to the specified type ID");
         }
 
         /// <summary>
@@ -641,18 +678,116 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="typeName">Name of the type.</param>
         public uint GetTypeId(Module module, string typeName)
         {
-            foreach (DwarfCompilationUnit compilationUnit in compilationUnits)
+            DwarfSymbol type;
+
+            if (typeNameToType.TryGetValue(typeName, out type))
             {
-                foreach (DwarfSymbol symbol in compilationUnit.Symbols)
+                return GetTypeId(type);
+            }
+
+            type = ContinueSymbolSearch((symbol) =>
                 {
-                    if (symbol.FullName == typeName)
+                    return GetTypeName(symbol) == typeName;
+                });
+
+            if (type != null)
+            {
+                return GetTypeId(type);
+            }
+
+            throw new Exception("Type name not found");
+        }
+
+        /// <summary>
+        /// Continues the symbol search with populating caches.
+        /// </summary>
+        /// <param name="predicate">The found symbol predicate.</param>
+        /// <returns>Symbol that satisfied the predicate.</returns>
+        private DwarfSymbol ContinueSymbolSearch(Func<DwarfSymbol, bool> predicate)
+        {
+            if (!allSymbolsEnumerated)
+            {
+                lock (symbolEnumerator)
+                {
+                    if (!allSymbolsEnumerated)
                     {
-                        return GetTypeId(symbol);
+                        while (symbolEnumerator.MoveNext())
+                        {
+                            DwarfSymbol symbol = symbolEnumerator.Current;
+
+                            // If it is type, add it to collection
+                            string typeName = GetTypeName(symbol);
+
+                            if (!string.IsNullOrEmpty(typeName))
+                            {
+                                typeNameToType.TryAdd(typeName, symbol);
+                            }
+
+                            // If it is pointer type, add it to collection
+                            if (symbol.Tag == DwarfTag.PointerType)
+                            {
+                                DwarfSymbol type = GetType(symbol);
+
+                                if (type != null)
+                                {
+                                    typeOffsetToPointerType.TryAdd(type.Offset, symbol);
+                                }
+                            }
+
+                            // If it is function, add it to cache
+                            if (symbol.Tag == DwarfTag.Subprogram)
+                            {
+                                DwarfAttributeValue addressValue;
+
+                                if (symbol.Attributes.TryGetValue(DwarfAttribute.LowPc, out addressValue))
+                                {
+                                    functionsCache.Add(symbol);
+                                }
+                            }
+
+                            // If it is global variable, add it to collection
+
+                            if (symbol.Tag == DwarfTag.Variable)
+                            {
+                                DwarfAttributeValue locationAttributeValue;
+                                string fullName = symbol.FullName;
+
+                                if (!string.IsNullOrEmpty(fullName) && symbol.Attributes.TryGetValue(DwarfAttribute.Location, out locationAttributeValue))
+                                {
+                                    Location location = DecodeLocation(locationAttributeValue);
+
+                                    if (location.Type == LocationType.AbsoluteAddress)
+                                    {
+                                        globalVariables.TryAdd(fullName, symbol);
+                                    }
+                                }
+                            }
+                            else if (symbol.Tag == DwarfTag.Member && symbol.Attributes.ContainsKey(DwarfAttribute.External)
+                                && symbol.Attributes[DwarfAttribute.External].Flag)
+                            {
+                                string fullName = symbol.FullName;
+
+                                if (!string.IsNullOrEmpty(fullName))
+                                {
+                                    globalVariables.TryAdd(fullName, symbol);
+                                }
+                            }
+
+                            // Check predicate if we should stop search
+                            if (predicate(symbol))
+                            {
+                                return symbol;
+                            }
+                        }
+
+                        functionsCache.Sort((f1, f2) => (int)f1.GetConstantAttribute(DwarfAttribute.LowPc) - (int)f2.GetConstantAttribute(DwarfAttribute.LowPc));
+                        functionAddressesCache = functionsCache.Select(f => f.GetConstantAttribute(DwarfAttribute.LowPc)).ToList();
+                        allSymbolsEnumerated = true;
                     }
                 }
             }
 
-            throw new Exception("Type name not found");
+            return null;
         }
 
         /// <summary>
@@ -721,7 +856,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             /// <summary>
-            /// Gets the canonical frame address locaiton.
+            /// Gets the canonical frame address location.
             /// </summary>
             public static Location CanonicalFrameAddress
             {
@@ -1112,20 +1247,24 @@ namespace CsDebugScript.DwarfSymbolProvider
             ulong endAddress = endAddressValue.Type == DwarfAttributeValueType.Address ? endAddressValue.Address + codeSegmentOffset : startAddress + endAddressValue.Constant;
             Location ebp = Location.RegisterRelative(is64bit ? 6 : 5, is64bit ? 16 : 8);
 
-            // TODO: Don't do linear search
-            foreach (DwarfCommonInformationEntry entry in commonInformationEntries)
-            {
-                foreach (DwarfFrameDescriptionEntry description in entry.FrameDescriptionEntries)
-                {
-                    if (description.InitialLocation <= startAddress && description.InitialLocation + description.AddressRange >= endAddress)
-                    {
-                        Location result = Location.CanonicalFrameAddress;
-                        ulong location = startAddress;
+            int index = frameDescriptionEntryFinder.Value.Find(startAddress);
 
-                        ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, description.CommonInformationEntry.InitialInstructions, ref location, ref result);
-                        ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, description.Instructions, ref location, ref result, stopBeforeRestore: true);
-                        return result;
-                    }
+            if (index >= 0)
+            {
+                DwarfFrameDescriptionEntry description = frameDescriptionEntries.Value[index];
+
+                if (description.InitialLocation <= startAddress && description.InitialLocation + description.AddressRange >= endAddress)
+                {
+                    Location result = Location.CanonicalFrameAddress;
+                    ulong location = startAddress;
+
+                    ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, description.CommonInformationEntry.InitialInstructions, ref location, ref result);
+                    ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, description.Instructions, ref location, ref result, stopBeforeRestore: true);
+                    return result;
+                }
+                else
+                {
+                    throw new Exception("MemoryRangeFinder found wrong DwarfFrameDescriptionEntry");
                 }
             }
 
@@ -1203,45 +1342,58 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="displacement">The displacement.</param>
         private DwarfSymbol FindFunction(ulong address, out ulong displacement)
         {
-            // TODO: Not linear search
-            ulong minDistance = ulong.MaxValue;
-            DwarfSymbol bestMatch = null;
+            DwarfSymbol function;
 
-            foreach (DwarfCompilationUnit compilationUnit in compilationUnits)
+            if (!allSymbolsEnumerated)
             {
-                foreach (DwarfSymbol symbol in compilationUnit.Symbols)
+                function = ContinueSymbolSearch(symbol =>
                 {
                     if (symbol.Tag == DwarfTag.Subprogram)
                     {
-                        DwarfAttributeValue addressValue;
+                        DwarfAttributeValue startAddressValue, endAddressValue;
 
-                        if (symbol.Attributes.TryGetValue(DwarfAttribute.LowPc, out addressValue))
+                        if (symbol.Attributes.TryGetValue(DwarfAttribute.LowPc, out startAddressValue) && symbol.Attributes.TryGetValue(DwarfAttribute.HighPc, out endAddressValue))
                         {
-                            ulong functionAddress = addressValue.Address;
+                            ulong startAddress = startAddressValue.Address;
+                            ulong endAddress = endAddressValue.Type == DwarfAttributeValueType.Constant ? startAddress + endAddressValue.Constant : endAddressValue.Address;
 
-                            if (functionAddress < address)
-                            {
-                                ulong distance = address - functionAddress;
-
-                                if (distance < minDistance)
-                                {
-                                    minDistance = distance;
-                                    bestMatch = symbol;
-                                }
-                            }
+                            return startAddress <= address && address < endAddress;
                         }
                     }
+
+                    return false;
+                });
+
+                if (function != null)
+                {
+                    displacement = address - function.GetConstantAttribute(DwarfAttribute.LowPc);
+                    return function;
                 }
             }
 
-            if (bestMatch == null)
+            int index = functionAddressesCache.BinarySearch(address);
+
+            if (index < 0)
+            {
+                index = ~index;
+            }
+            if (index >= functionsCache.Count)
+            {
+                index = functionsCache.Count - 1;
+            }
+            if (functionAddressesCache[index] > address && index > 0)
+            {
+                index--;
+            }
+
+            if (functionAddressesCache[index] > address)
             {
                 displacement = address;
                 return null;
             }
 
-            displacement = minDistance;
-            return bestMatch;
+            displacement = address - functionAddressesCache[index];
+            return functionsCache[index];
         }
 
         /// <summary>
@@ -1250,29 +1402,39 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="globalVariableName">Name of the global variable.</param>
         private DwarfSymbol FindGlobalVariable(string globalVariableName)
         {
-            // TODO: Not linear search
-            foreach (DwarfCompilationUnit compilationUnit in compilationUnits)
-            {
-                foreach (DwarfSymbol symbol in compilationUnit.Symbols)
-                {
-                    if (symbol.Tag == DwarfTag.Variable && symbol.FullName == globalVariableName)
-                    {
-                        Location location = DecodeLocation(symbol.Attributes[DwarfAttribute.Location]);
+            DwarfSymbol globalVariable;
 
-                        if (location.Type == LocationType.AbsoluteAddress)
-                        {
-                            return symbol;
-                        }
-                    }
-                    else if (symbol.Tag == DwarfTag.Member && symbol.Attributes.ContainsKey(DwarfAttribute.External)
-                        && symbol.Attributes[DwarfAttribute.External].Flag && symbol.FullName == globalVariableName)
-                    {
-                        return symbol;
-                    }
-                }
+            if (globalVariables.TryGetValue(globalVariableName, out globalVariable))
+            {
+                return globalVariable;
             }
 
-            throw new NotImplementedException();
+            globalVariable = ContinueSymbolSearch(symbol =>
+            {
+                if (symbol.Tag == DwarfTag.Variable && symbol.FullName == globalVariableName)
+                {
+                    Location location = DecodeLocation(symbol.Attributes[DwarfAttribute.Location]);
+
+                    if (location.Type == LocationType.AbsoluteAddress)
+                    {
+                        return true;
+                    }
+                }
+                else if (symbol.Tag == DwarfTag.Member && symbol.Attributes.ContainsKey(DwarfAttribute.External)
+                    && symbol.Attributes[DwarfAttribute.External].Flag && symbol.FullName == globalVariableName)
+                {
+                    return true;
+                }
+
+                return false;
+            });
+
+            if (globalVariable != null)
+            {
+                return globalVariable;
+            }
+
+            throw new Exception($"Unable to find global variable: {globalVariableName}");
         }
 
         /// <summary>
@@ -1313,15 +1475,66 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Gets the type associated with the specified symbol.
         /// </summary>
         /// <param name="symbol">The symbol.</param>
-        private DwarfSymbol GetType(DwarfSymbol symbol)
+        private static DwarfSymbol GetType(DwarfSymbol symbol)
         {
-            DwarfSymbol type = symbol.Attributes[DwarfAttribute.Type].Reference;
+            DwarfAttributeValue typeAttributeValue;
 
-            while (type.Tag == DwarfTag.Typedef || type.Tag == DwarfTag.ConstType)
+            if (!symbol.Attributes.TryGetValue(DwarfAttribute.Type, out typeAttributeValue))
             {
-                type = type.Attributes[DwarfAttribute.Type].Reference;
+                return null;
+            }
+
+            DwarfSymbol type = typeAttributeValue.Reference;
+
+            while (type.Tag == DwarfTag.Typedef || type.Tag == DwarfTag.ConstType || type.Tag == DwarfTag.VolatileType)
+            {
+                if (!type.Attributes.TryGetValue(DwarfAttribute.Type, out typeAttributeValue))
+                {
+                    return null;
+                }
+
+                type = typeAttributeValue.Reference;
             }
             return type;
+        }
+
+        /// <summary>
+        /// Gets the name of the specified type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        private static string GetTypeName(DwarfSymbol type)
+        {
+            if (type == null)
+            {
+                return "void";
+            }
+
+            if (type.Tag == DwarfTag.PointerType)
+            {
+                return GetTypeName(GetType(type)) + "*";
+            }
+            if (type.Tag == DwarfTag.ReferenceType)
+            {
+                return GetTypeName(GetType(type)) + "&";
+            }
+            if (type.Tag == DwarfTag.ArrayType)
+            {
+                return GetTypeName(GetType(type)) + $"[{type.GetConstantAttribute(DwarfAttribute.UpperBound) + 1}]";
+            }
+
+            switch (type.Tag)
+            {
+                case DwarfTag.ClassType:
+                case DwarfTag.StructureType:
+                case DwarfTag.BaseType:
+                case DwarfTag.EnumerationType:
+                case DwarfTag.InterfaceType:
+                case DwarfTag.SubroutineType:
+                case DwarfTag.UnionType:
+                    return type.FullName;
+                default:
+                    return null;
+            }
         }
     }
 }

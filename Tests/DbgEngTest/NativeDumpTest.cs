@@ -131,22 +131,10 @@ ImportUserTypes(options, true);
             Console.WriteLine("SourceFileDisplacement: {0}", defaultTestCaseFunction.SourceFileDisplacement);
 
             Variable codeFunctionVariable = DefaultModule.GetVariable($"{DefaultModuleName}!defaultTestCaseAddress");
-            CodeFunction codeFunction;
 
             Assert.IsTrue(codeFunctionVariable.GetCodeType().IsPointer);
 
-            // Check if cv2pdb was used to generate PDB.
-            if (codeFunctionVariable.GetCodeType().ElementType.IsFunction)
-            {
-                CodePointer<CodeFunction> functionPointer = new CodePointer<CodeFunction>(new NakedPointer(codeFunctionVariable));
-
-                codeFunction = functionPointer.Element;
-            }
-            else
-            {
-                // cv2pdb doesn't export correct function type, but uses int**. Ignore variable type and just take pointer value for function address.
-                codeFunction = new CodeFunction(codeFunctionVariable.GetPointerAddress(), codeFunctionVariable.GetCodeType().Module.Process);
-            }
+            CodeFunction codeFunction = new CodePointer<CodeFunction>(new NakedPointer(codeFunctionVariable)).Element;
 
             Assert.AreEqual($"{DefaultModuleName}!DefaultTestCase", codeFunction.FunctionName);
         }
