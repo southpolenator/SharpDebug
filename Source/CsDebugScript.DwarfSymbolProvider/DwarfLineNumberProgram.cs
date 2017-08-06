@@ -2,105 +2,134 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
+    /// <summary>
+    /// Helper class that parses debug line data stream and returns list of file/line information.
+    /// </summary>
     internal class DwarfLineNumberProgram
     {
-        // TODO: Remove reading using structure
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct LineNumberProgramHeader
-        {
-            public const int MaximumOperationsPerInstruction = 1;
+        /// <summary>
+        /// The maximum operations per instruction
+        /// </summary>
+        private const int MaximumOperationsPerInstruction = 1;
 
-            public uint UnitLength; // 12 byte in DWARF-64
-            public ushort Version;
-            public uint HeaderLength; // 8 byte in DWARF-64
-            public byte MinimumInstructionLength;
-            // byte MaximumOperationsPerInstruction; (// not in DWARF 2
-            public byte DefaultIsStatement;
-            public sbyte LineBase;
-            public byte LineRange;
-            public byte OperationCodeBase;
-            // LEB128 StandardOperationCodeLengths[OperationCodeBase];
-            // string IncludeDirectories[] // zero byte terminated
-            // FileInfo Files[] // zero byte terminated
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DwarfLineNumberProgram"/> class.
+        /// </summary>
+        /// <param name="debugLine">The debug line data stream.</param>
+        /// <param name="codeSegmentOffset">The code segment offset.</param>
+        public DwarfLineNumberProgram(DwarfMemoryReader debugLine, ulong codeSegmentOffset)
+        {
+            Files = ReadData(debugLine, (uint)codeSegmentOffset);
         }
 
-        internal class DwarfFile
+        /// <summary>
+        /// Gets the list of files.
+        /// </summary>
+        public List<DwarfFileInformation> Files { get; private set; }
+
+        /// <summary>
+        /// Helper class that stores current parsing state information.
+        /// </summary>
+        private class ParsingState
         {
-            public string Name { get; set; }
-
-            public string Directory { get; set; }
-
-            public string Path { get; set; }
-
-            public uint LastModification { get; set; }
-
-            public uint Length { get; set; }
-
-            public List<LineInfo> Lines { get; set; } = new List<LineInfo>();
-
-            public override string ToString()
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ParsingState"/> class.
+            /// </summary>
+            /// <param name="defaultFile">The default file.</param>
+            /// <param name="defaultIsStatement">if set to <c>true</c> defaulting to statement during reset.</param>
+            /// <param name="minimumInstructionLength">Minimum length of the instruction.</param>
+            public ParsingState(DwarfFileInformation defaultFile, bool defaultIsStatement, byte minimumInstructionLength)
             {
-                return Name;
-            }
-        }
-
-        internal class LineInfo
-        {
-            public DwarfFile File { get; set; }
-
-            public uint Address { get; set; }
-
-            public uint Line { get; set; }
-
-            public uint Column { get; set; }
-        }
-
-        internal class DwarfLineParsingState
-        {
-            public DwarfFile File { get; set; }
-
-            public uint Address { get; set; }
-
-            public uint OperationIndex { get; set; }
-
-            public uint Line { get; set; }
-
-            public uint Column { get; set; }
-
-            public bool IsStatement { get; set; }
-
-            public bool IsBasicBlock { get; set; }
-
-            public bool IsSequenceEnd { get; set; }
-
-            public bool IsPrologueEnd { get; set; }
-
-            public bool IsEpilogueEnd { get; set; }
-
-            public uint Isa { get; set; }
-
-            public uint Discriminator { get; set; }
-
-            public LineNumberProgramHeader Header { get; private set; }
-
-            public DwarfLineParsingState(LineNumberProgramHeader header, DwarfFile defaultFile)
-            {
-                Header = header;
+                DefaultIsStatement = defaultIsStatement;
+                MinimumInstructionLength = minimumInstructionLength;
                 Reset(defaultFile);
             }
 
-            public void Reset(DwarfFile defaultFile)
+            /// <summary>
+            /// Gets or sets the file.
+            /// </summary>
+            public DwarfFileInformation File { get; set; }
+
+            /// <summary>
+            /// Gets or sets the address.
+            /// </summary>
+            public uint Address { get; set; }
+
+            /// <summary>
+            /// Gets or sets the index of the operation.
+            /// </summary>
+            public uint OperationIndex { get; set; }
+
+            /// <summary>
+            /// Gets or sets the line.
+            /// </summary>
+            public uint Line { get; set; }
+
+            /// <summary>
+            /// Gets or sets the column.
+            /// </summary>
+            public uint Column { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether we are at statement.
+            /// </summary>
+            public bool IsStatement { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether we are inside the basic block.
+            /// </summary>
+            public bool IsBasicBlock { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether sequence has ended.
+            /// </summary>
+            public bool IsSequenceEnd { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether prologue has ended.
+            /// </summary>
+            public bool IsPrologueEnd { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether epilogue has ended.
+            /// </summary>
+            public bool IsEpilogueEnd { get; set; }
+
+            /// <summary>
+            /// Gets or sets the ISA.
+            /// </summary>
+            public uint Isa { get; set; }
+
+            /// <summary>
+            /// Gets or sets the discriminator.
+            /// </summary>
+            public uint Discriminator { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether reset is defaulting to statement.
+            /// </summary>
+            internal bool DefaultIsStatement { get; private set; }
+
+            /// <summary>
+            /// Gets or sets the minimum length of the instruction.
+            /// </summary>
+            internal byte MinimumInstructionLength { get; private set; }
+
+            /// <summary>
+            /// Resets the parse state and default to the specified file.
+            /// </summary>
+            /// <param name="defaultFile">The default file.</param>
+            public void Reset(DwarfFileInformation defaultFile)
             {
                 Address = 0;
                 OperationIndex = 0;
                 File = defaultFile;
                 Line = 1;
                 Column = 0;
-                IsStatement = Header.DefaultIsStatement != 0;
+                IsStatement = DefaultIsStatement;
                 IsBasicBlock = false;
                 IsSequenceEnd = false;
                 IsPrologueEnd = false;
@@ -109,17 +138,24 @@ namespace CsDebugScript.DwarfSymbolProvider
                 Discriminator = 0;
             }
 
+            /// <summary>
+            /// Advances the address.
+            /// </summary>
+            /// <param name="operationAdvance">The operation advance.</param>
             public void AdvanceAddress(int operationAdvance)
             {
-                int addressAdvance = Header.MinimumInstructionLength * (((int)OperationIndex + operationAdvance) / LineNumberProgramHeader.MaximumOperationsPerInstruction);
+                int addressAdvance = MinimumInstructionLength * (((int)OperationIndex + operationAdvance) / MaximumOperationsPerInstruction);
 
                 Address += (uint)addressAdvance;
-                OperationIndex = (OperationIndex + (uint)operationAdvance) % LineNumberProgramHeader.MaximumOperationsPerInstruction;
+                OperationIndex = (OperationIndex + (uint)operationAdvance) % MaximumOperationsPerInstruction;
             }
 
+            /// <summary>
+            /// Adds the current line information.
+            /// </summary>
             public void AddCurrentLineInfo()
             {
-                File.Lines.Add(new LineInfo()
+                File.Lines.Add(new DwarfLineInformation()
                 {
                     File = File,
                     Address = Address,
@@ -129,31 +165,30 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
         }
 
-        public DwarfLineNumberProgram(DwarfMemoryReader debugLine, ulong codeSegmentOffset)
+        /// <summary>
+        /// Reads the data for single instance.
+        /// </summary>
+        /// <param name="debugLine">The debug line data stream.</param>
+        /// <param name="codeSegmentOffset">The code segment offset.</param>
+        /// <returns>List of file information.</returns>
+        private static List<DwarfFileInformation> ReadData(DwarfMemoryReader debugLine, uint codeSegmentOffset)
         {
-            Header = debugLine.ReadStructure<LineNumberProgramHeader>(debugLine.Position);
-            Files = ReadData(debugLine, (uint)codeSegmentOffset);
-        }
-
-        public List<DwarfFile> Files { get; private set; }
-
-        internal LineNumberProgramHeader Header { get; private set; }
-
-        internal int Length
-        {
-            get
-            {
-                return (int)Header.UnitLength + Marshal.SizeOf(Header.UnitLength.GetType());
-            }
-        }
-
-        private List<DwarfFile> ReadData(DwarfMemoryReader debugLine, uint codeSegmentOffset)
-        {
+            // Read header
+            bool is64bit;
             int beginPosition = debugLine.Position;
-            int endPosition = debugLine.Position + Length;
-            uint[] operationCodeLengths = new uint[Header.OperationCodeBase];
+            ulong length = debugLine.ReadLength(out is64bit);
+            int endPosition = debugLine.Position + (int)length;
+            ushort version = debugLine.ReadUshort();
+            int headerLength = debugLine.ReadOffset(is64bit);
+            byte minimumInstructionLength = debugLine.ReadByte();
+            bool defaultIsStatement = debugLine.ReadByte() != 0;
+            sbyte lineBase = (sbyte)debugLine.ReadByte();
+            byte lineRange = debugLine.ReadByte();
+            byte operationCodeBase = debugLine.ReadByte();
 
-            debugLine.Position = beginPosition + Marshal.SizeOf<LineNumberProgramHeader>();
+            // Read operation code lengths
+            uint[] operationCodeLengths = new uint[operationCodeBase];
+
             operationCodeLengths[0] = 0;
             for (int i = 1; i < operationCodeLengths.Length && debugLine.Position < endPosition; i++)
             {
@@ -165,7 +200,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
             while (debugLine.Position < endPosition && debugLine.Peek() != 0)
             {
-                string directory = debugLine.ReadAnsiString();
+                string directory = debugLine.ReadString();
 
                 directory = directory.Replace('/', Path.DirectorySeparatorChar);
                 directories.Add(directory);
@@ -173,7 +208,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             debugLine.ReadByte(); // Skip zero termination byte
 
             // Read files
-            List<DwarfFile> files = new List<DwarfFile>();
+            List<DwarfFileInformation> files = new List<DwarfFileInformation>();
 
             while (debugLine.Position < endPosition && debugLine.Peek() != 0)
             {
@@ -182,7 +217,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             debugLine.ReadByte(); // Skip zero termination byte
 
             // Parse lines
-            DwarfLineParsingState state = new DwarfLineParsingState(Header, files.FirstOrDefault());
+            ParsingState state = new ParsingState(files.FirstOrDefault(), defaultIsStatement, minimumInstructionLength);
             uint lastAddress = 0;
 
             while (debugLine.Position < endPosition)
@@ -192,10 +227,10 @@ namespace CsDebugScript.DwarfSymbolProvider
                 if (operationCode >= operationCodeLengths.Length)
                 {
                     // Special operation code
-                    int adjustedOperationCode = operationCode - Header.OperationCodeBase;
-                    int operationAdvance = adjustedOperationCode / Header.LineRange;
+                    int adjustedOperationCode = operationCode - operationCodeBase;
+                    int operationAdvance = adjustedOperationCode / lineRange;
                     state.AdvanceAddress(operationAdvance);
-                    int lineAdvance = Header.LineBase + (adjustedOperationCode % Header.LineRange);
+                    int lineAdvance = lineBase + (adjustedOperationCode % lineRange);
                     state.Line += (uint)lineAdvance;
                     state.AddCurrentLineInfo();
                     state.IsBasicBlock = false;
@@ -270,7 +305,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                             state.IsBasicBlock = true;
                             break;
                         case DwarfLineNumberStandardOpcode.ConstAddPc:
-                            state.AdvanceAddress((255 - Header.OperationCodeBase) / Header.LineRange);
+                            state.AdvanceAddress((255 - operationCodeBase) / lineRange);
                             break;
                         case DwarfLineNumberStandardOpcode.FixedAdvancePc:
                             state.Address += debugLine.ReadUshort();
@@ -292,7 +327,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             // Fix lines in files...
-            foreach (DwarfFile file in files)
+            foreach (DwarfFileInformation file in files)
             {
                 file.Lines = file.Lines.Where(l => l.Address >= codeSegmentOffset).ToList();
                 for (int i = 0; i < file.Lines.Count; i++)
@@ -303,9 +338,14 @@ namespace CsDebugScript.DwarfSymbolProvider
             return files;
         }
 
-        private static DwarfFile ReadFile(DwarfMemoryReader debugLine, List<string> directories)
+        /// <summary>
+        /// Reads the file information from the specified stream.
+        /// </summary>
+        /// <param name="debugLine">The debug line data stream.</param>
+        /// <param name="directories">The list of existing directories.</param>
+        private static DwarfFileInformation ReadFile(DwarfMemoryReader debugLine, List<string> directories)
         {
-            string name = debugLine.ReadAnsiString();
+            string name = debugLine.ReadString();
             int directoryIndex = (int)debugLine.LEB128();
             uint lastModification = debugLine.LEB128();
             uint length = debugLine.LEB128();
@@ -320,7 +360,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
             }
 
-            return new DwarfFile()
+            return new DwarfFileInformation()
             {
                 Name = name,
                 Directory = directory,

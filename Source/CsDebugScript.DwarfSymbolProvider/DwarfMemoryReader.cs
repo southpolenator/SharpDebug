@@ -3,11 +3,26 @@ using System.Runtime.InteropServices;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
+    /// <summary>
+    /// Simple memory reader that provides specific functionality to read DWARF streams.
+    /// </summary>
+    /// <seealso cref="System.IDisposable" />
     internal class DwarfMemoryReader : IDisposable
     {
+        /// <summary>
+        /// The pinned data
+        /// </summary>
         private GCHandle pinnedData;
+
+        /// <summary>
+        /// The pointer of pinned data
+        /// </summary>
         private IntPtr pointer;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DwarfMemoryReader"/> class.
+        /// </summary>
+        /// <param name="data">The data.</param>
         public DwarfMemoryReader(byte[] data)
         {
             Data = data;
@@ -16,10 +31,22 @@ namespace CsDebugScript.DwarfSymbolProvider
             pointer = pinnedData.AddrOfPinnedObject();
         }
 
+        /// <summary>
+        /// Gets the data buffer.
+        /// </summary>
         public byte[] Data { get; private set; }
 
+        /// <summary>
+        /// Gets or sets the current position in the stream.
+        /// </summary>
         public int Position { get; set; }
 
+        /// <summary>
+        /// Gets a value indicating whether stream has reached the end.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if stream reached the end; otherwise, <c>false</c>.
+        /// </value>
         public bool IsEnd
         {
             get
@@ -28,17 +55,27 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
         }
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
         public void Dispose()
         {
             pinnedData.Free();
             pointer = IntPtr.Zero;
         }
 
+        /// <summary>
+        /// Peeks next byte in the stream.
+        /// </summary>
         public byte Peek()
         {
             return Data[Position];
         }
 
+        /// <summary>
+        /// Reads the specified structure from the current position in the stream.
+        /// </summary>
+        /// <typeparam name="T">Type of the structure to be read</typeparam>
         public T ReadStructure<T>()
         {
             T result = Marshal.PtrToStructure<T>(pointer + Position);
@@ -47,11 +84,19 @@ namespace CsDebugScript.DwarfSymbolProvider
             return result;
         }
 
+        /// <summary>
+        /// Reads the offset from the current position in the stream.
+        /// </summary>
+        /// <param name="is64bit">if set to <c>true</c> offset is 64 bit.</param>
         public int ReadOffset(bool is64bit)
         {
             return is64bit ? (int)ReadUlong() : (int)ReadUint();
         }
 
+        /// <summary>
+        /// Reads the unit length from the current position in the stream.
+        /// </summary>
+        /// <param name="is64bit">if set to <c>true</c> length was 64 bit.</param>
         public ulong ReadLength(out bool is64bit)
         {
             ulong length = ReadUint();
@@ -69,7 +114,10 @@ namespace CsDebugScript.DwarfSymbolProvider
             return length;
         }
 
-        public string ReadAnsiString()
+        /// <summary>
+        /// Reads the string from the current position in the stream.
+        /// </summary>
+        public string ReadString()
         {
             string result = Marshal.PtrToStringAnsi(pointer + Position);
 
@@ -77,11 +125,17 @@ namespace CsDebugScript.DwarfSymbolProvider
             return result;
         }
 
+        /// <summary>
+        /// Reads the byte from the current position in the stream.
+        /// </summary>
         public byte ReadByte()
         {
             return Data[Position++];
         }
 
+        /// <summary>
+        /// Reads the unsigned short from the current position in the stream.
+        /// </summary>
         public ushort ReadUshort()
         {
             ushort result = (ushort)Marshal.ReadInt16(pointer, Position);
@@ -90,6 +144,9 @@ namespace CsDebugScript.DwarfSymbolProvider
             return result;
         }
 
+        /// <summary>
+        /// Reads the unsigned int from the current position in the stream.
+        /// </summary>
         public uint ReadUint()
         {
             uint result = (uint)Marshal.ReadInt32(pointer, Position);
@@ -98,6 +155,9 @@ namespace CsDebugScript.DwarfSymbolProvider
             return result;
         }
 
+        /// <summary>
+        /// Reads the unsigned long from the current position in the stream.
+        /// </summary>
         public ulong ReadUlong()
         {
             ulong result = (ulong)Marshal.ReadInt64(pointer, Position);
@@ -106,6 +166,10 @@ namespace CsDebugScript.DwarfSymbolProvider
             return result;
         }
 
+        /// <summary>
+        /// Reads the unsigned long of the specified size from the current position in the stream.
+        /// </summary>
+        /// <param name="size">The size.</param>
         public ulong ReadUlong(uint size)
         {
             switch (size)
@@ -123,6 +187,9 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
         }
 
+        /// <summary>
+        /// Reads unsigned LEB 128 value from the current position in the stream.
+        /// </summary>
         public uint LEB128()
         {
             uint x = 0;
@@ -139,6 +206,9 @@ namespace CsDebugScript.DwarfSymbolProvider
             return x;
         }
 
+        /// <summary>
+        /// Reads signed LEB 128 value from the current position in the stream.
+        /// </summary>
         public uint SLEB128()
         {
             int x = 0;
@@ -159,6 +229,10 @@ namespace CsDebugScript.DwarfSymbolProvider
             return (uint)x;
         }
 
+        /// <summary>
+        /// Reads the byte block of the specified size from the current position in the stream.
+        /// </summary>
+        /// <param name="size">The size of block.</param>
         public byte[] ReadBlock(uint size)
         {
             byte[] block = new byte[size];
@@ -168,6 +242,11 @@ namespace CsDebugScript.DwarfSymbolProvider
             return block;
         }
 
+        /// <summary>
+        /// Reads the byte block of the specified size from the specified position in the stream.
+        /// </summary>
+        /// <param name="size">The size.</param>
+        /// <param name="position">The position.</param>
         public byte[] ReadBlock(uint size, int position)
         {
             int originalPosition = Position;
@@ -177,15 +256,23 @@ namespace CsDebugScript.DwarfSymbolProvider
             return result;
         }
 
-        public string ReadAnsiString(int position)
+        /// <summary>
+        /// Reads the string from the specified position in the stream.
+        /// </summary>
+        /// <param name="position">The position.</param>
+        public string ReadString(int position)
         {
             int originalPosition = Position;
             Position = position;
-            string result = ReadAnsiString();
+            string result = ReadString();
             Position = originalPosition;
             return result;
         }
 
+        /// <summary>
+        /// Reads the unsigned int from the specified position in the stream.
+        /// </summary>
+        /// <param name="position">The position.</param>
         public uint ReadUint(int position)
         {
             int originalPosition = Position;
@@ -195,6 +282,11 @@ namespace CsDebugScript.DwarfSymbolProvider
             return result;
         }
 
+        /// <summary>
+        /// Reads the specified structure from the specified position in the stream.
+        /// </summary>
+        /// <typeparam name="T">Type of the structure to be read.</typeparam>
+        /// <param name="position">The position.</param>
         public T ReadStructure<T>(int position)
         {
             int originalPosition = Position;

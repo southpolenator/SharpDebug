@@ -3,17 +3,36 @@ using System.Collections.Generic;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
+    /// <summary>
+    /// DWARF compilation unit instance.
+    /// </summary>
     internal class DwarfCompilationUnit
     {
+        /// <summary>
+        /// The dictionary of symbols located by offset in the debug data stream.
+        /// </summary>
         private Dictionary<int, DwarfSymbol> symbolsByOffset = new Dictionary<int, DwarfSymbol>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DwarfCompilationUnit"/> class.
+        /// </summary>
+        /// <param name="debugData">The debug data stream.</param>
+        /// <param name="debugDataDescription">The debug data description stream.</param>
+        /// <param name="debugStrings">The debug strings.</param>
+        /// <param name="codeSegmentOffset">The code segment offset.</param>
         public DwarfCompilationUnit(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, Dictionary<int, string> debugStrings, ulong codeSegmentOffset)
         {
             ReadData(debugData, debugDataDescription, debugStrings, codeSegmentOffset);
         }
 
+        /// <summary>
+        /// Gets the symbols tree of all top level symbols defined in this compilation unit.
+        /// </summary>
         public DwarfSymbol[] SymbolsTree { get; private set; }
 
+        /// <summary>
+        /// Gets all symbols defined in this compilation unit.
+        /// </summary>
         public IEnumerable<DwarfSymbol> Symbols
         {
             get
@@ -22,6 +41,13 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
         }
 
+        /// <summary>
+        /// Reads the data for this instance.
+        /// </summary>
+        /// <param name="debugData">The debug data.</param>
+        /// <param name="debugDataDescription">The debug data description.</param>
+        /// <param name="debugStrings">The debug strings.</param>
+        /// <param name="codeSegmentOffset">The code segment offset.</param>
         private void ReadData(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, Dictionary<int, string> debugStrings, ulong codeSegmentOffset)
         {
             // Read header
@@ -49,7 +75,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                     continue;
                 }
 
-                DataDescription description = dataDescriptionReader.FindDebugDataDescription(code);
+                DataDescription description = dataDescriptionReader.GetDebugDataDescription(code);
                 Dictionary<DwarfAttribute, DwarfAttributeValue> attributes = new Dictionary<DwarfAttribute, DwarfAttributeValue>();
 
                 foreach (DataDescriptionAttribute descriptionAttribute in description.Attributes)
@@ -106,7 +132,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                             break;
                         case DwarfFormat.String:
                             attributeValue.Type = DwarfAttributeValueType.String;
-                            attributeValue.Value = debugData.ReadAnsiString();
+                            attributeValue.Value = debugData.ReadString();
                             break;
                         case DwarfFormat.Strp:
                             attributeValue.Type = DwarfAttributeValueType.String;
@@ -247,28 +273,71 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
         }
 
+        /// <summary>
+        /// Symbol data description
+        /// </summary>
         private struct DataDescription
         {
+            /// <summary>
+            /// Gets or sets the symbol tag.
+            /// </summary>
             public DwarfTag Tag { get; set; }
 
+            /// <summary>
+            /// Gets or sets a value indicating whether symbol has children.
+            /// </summary>
+            /// <value>
+            ///   <c>true</c> if symbol has children; otherwise, <c>false</c>.
+            /// </value>
             public bool HasChildren { get; set; }
 
+            /// <summary>
+            /// Gets or sets the symbol data description attributes list.
+            /// </summary>
             public List<DataDescriptionAttribute> Attributes { get; set; }
         }
 
+        /// <summary>
+        /// Symbol data description attribute.
+        /// </summary>
         private struct DataDescriptionAttribute
         {
+            /// <summary>
+            /// Gets or sets the attribute.
+            /// </summary>
             public DwarfAttribute Attribute { get; set; }
 
+            /// <summary>
+            /// Gets or sets the format.
+            /// </summary>
             public DwarfFormat Format { get; set; }
         }
 
+        /// <summary>
+        /// Data description reader helper
+        /// </summary>
         private class DataDescriptionReader
         {
+            /// <summary>
+            /// The debug data description stream
+            /// </summary>
             DwarfMemoryReader debugDataDescription;
+
+            /// <summary>
+            /// The dictionary of already read symbol data descriptions located by code.
+            /// </summary>
             Dictionary<uint, DataDescription> readDescriptions;
+
+            /// <summary>
+            /// The last read position.
+            /// </summary>
             int lastReadPosition;
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="DataDescriptionReader"/> class.
+            /// </summary>
+            /// <param name="debugDataDescription">The debug data description.</param>
+            /// <param name="startingPosition">The starting position.</param>
             public DataDescriptionReader(DwarfMemoryReader debugDataDescription, int startingPosition)
             {
                 readDescriptions = new Dictionary<uint, DataDescription>();
@@ -276,7 +345,11 @@ namespace CsDebugScript.DwarfSymbolProvider
                 this.debugDataDescription = debugDataDescription;
             }
 
-            public DataDescription FindDebugDataDescription(uint findCode)
+            /// <summary>
+            /// Gets the debug data description for the specified code.
+            /// </summary>
+            /// <param name="findCode">The code to be found.</param>
+            public DataDescription GetDebugDataDescription(uint findCode)
             {
                 DataDescription result;
 

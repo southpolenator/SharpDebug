@@ -1,5 +1,8 @@
 ﻿namespace CsDebugScript.DwarfSymbolProvider
 {
+    /// <summary>
+    /// DWARF symbol tag.
+    /// </summary>
     internal enum DwarfTag
     {
         None = 0,
@@ -103,6 +106,9 @@
         HiUser = 0xffff,
     }
 
+    /// <summary>
+    /// DWARF attribute value data format
+    /// </summary>
     internal enum DwarfFormat
     {
         None = 0,
@@ -133,6 +139,9 @@
         RefSig8 = 0x20,
     }
 
+    /// <summary>
+    /// DWARF attribute.
+    /// </summary>
     internal enum DwarfAttribute
     {
         None = 0,
@@ -360,6 +369,9 @@
         HiUser = 0x3fff,
     }
 
+    /// <summary>
+    /// DWARF line number standard operation codes
+    /// </summary>
     internal enum DwarfLineNumberStandardOpcode
     {
         Extended = 0,
@@ -377,6 +389,9 @@
         SetIsa = 0x0c,
     }
 
+    /// <summary>
+    /// DWARF line number extended operation codes.
+    /// </summary>
     internal enum DwarfLineNumberExtendedOpcode
     {
         EndSequence = 0x01,
@@ -398,6 +413,9 @@
         HiUser = 0xff,
     }
 
+    /// <summary>
+    /// DWARF expression operation.
+    /// </summary>
     internal enum DwarfOperation
     {
         None = 0,
@@ -574,6 +592,9 @@
         hi_user = 0xff,
     }
 
+    /// <summary>
+    /// DWARF canonical frame address instructions
+    /// </summary>
     internal enum DwarfCanonicalFrameAddressInstruction
     {
         advance_loc = 0x40,

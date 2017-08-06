@@ -4,6 +4,10 @@ using System.Runtime.InteropServices;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
+    /// <summary>
+    /// Simple Portable Executable image reader.
+    /// </summary>
+    /// <seealso cref="CsDebugScript.DwarfSymbolProvider.IDwarfImage" />
     internal class PeImage : IDwarfImage
     {
         /// <summary>
@@ -46,24 +50,52 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="data">The image data.</param>
         public PeImage(byte[] data)
         {
-            Initialize(data);
+            ParseData(data);
         }
 
+        /// <summary>
+        /// Gets the debug data.
+        /// </summary>
         public byte[] DebugData { get; private set; }
 
+        /// <summary>
+        /// Gets the debug data description.
+        /// </summary>
         public byte[] DebugDataDescription { get; private set; }
 
+        /// <summary>
+        /// Gets the debug data strings.
+        /// </summary>
         public byte[] DebugDataStrings { get; private set; }
 
+        /// <summary>
+        /// Gets the debug line.
+        /// </summary>
         public byte[] DebugLine { get; private set; }
 
+        /// <summary>
+        /// Gets the debug frame.
+        /// </summary>
         public byte[] DebugFrame { get; private set; }
 
+        /// <summary>
+        /// Gets the code segment offset.
+        /// </summary>
         public ulong CodeSegmentOffset { get; private set; }
 
+        /// <summary>
+        /// Gets a value indicating whether this <see cref="IDwarfImage" /> is 64 bit image.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if is 64 bit image; otherwise, <c>false</c>.
+        /// </value>
         public bool Is64bit { get; private set; }
 
-        private void Initialize(byte[] data)
+        /// <summary>
+        /// Parses the specified data.
+        /// </summary>
+        /// <param name="data">The PE image data.</param>
+        private void ParseData(byte[] data)
         {
             using (DwarfMemoryReader reader = new DwarfMemoryReader(data))
             {
@@ -110,7 +142,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                     {
                         uint position = stringTablePosition + uint.Parse(imageSectionHeader.Section.Substring(1));
 
-                        name = reader.ReadAnsiString((int)position);
+                        name = reader.ReadString((int)position);
                     }
 
                     switch (name)
