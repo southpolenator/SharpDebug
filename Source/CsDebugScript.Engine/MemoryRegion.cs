@@ -98,6 +98,10 @@ namespace CsDebugScript
             TriesElement element = new TriesElement(regionsTuple, triesStartMask, triesStartBits);
 
             buckets = element.buckets;
+            if (buckets == null)
+            {
+                buckets = new TriesElement[] { element };
+            }
         }
 
         /// <summary>
@@ -110,19 +114,22 @@ namespace CsDebugScript
             ulong mask = triesStartMask;
             int offset = triesStartBits;
             ulong bucketIndex = (address & mask) >> offset;
-            TriesElement bucket = buckets[bucketIndex];
-
-            while (bucket != null && bucket.buckets != null)
+            if (bucketIndex < (ulong)buckets.LongLength)
             {
-                mask >>= BucketSizeBits;
-                offset -= BucketSizeBits;
-                bucketIndex = (address & mask) >> offset;
-                bucket = bucket.buckets[bucketIndex];
-            }
+                TriesElement bucket = buckets[bucketIndex];
 
-            if (bucket != null)
-            {
-                return bucket.location;
+                while (bucket != null && bucket.buckets != null)
+                {
+                    mask >>= BucketSizeBits;
+                    offset -= BucketSizeBits;
+                    bucketIndex = (address & mask) >> offset;
+                    bucket = bucket.buckets[bucketIndex];
+                }
+
+                if (bucket != null)
+                {
+                    return bucket.location;
+                }
             }
 
             return -1;
