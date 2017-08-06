@@ -5,6 +5,8 @@ using Dia2Lib;
 
 namespace CsDebugScript.CodeGen
 {
+    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+
     internal static class GlobalCache
     {
         private static Dictionary<string, Symbol[]> deduplicatedSymbols = new Dictionary<string, Symbol[]>();

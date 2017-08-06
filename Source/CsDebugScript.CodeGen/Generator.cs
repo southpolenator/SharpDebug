@@ -15,6 +15,8 @@ using System.Threading.Tasks;
 
 namespace CsDebugScript.CodeGen
 {
+    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+
     /// <summary>
     /// Starting point for generating user types from PDBs.
     /// </summary>

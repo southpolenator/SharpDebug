@@ -19,6 +19,7 @@
       <dependency id="CommandLineParser" version="2.0.275-beta" />
       <dependency id="Microsoft.CodeAnalysis.CSharp" version="2.3.1" />
       <dependency id="CsDebugScript.DiaHelpers" version="$version$" />
+      <dependency id="CsDebugScript.Engine" version="$version$" />
     </dependencies>
     <tags>$tags$</tags>
   </metadata>

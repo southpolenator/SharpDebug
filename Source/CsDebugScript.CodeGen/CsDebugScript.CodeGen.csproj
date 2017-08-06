@@ -211,6 +211,10 @@
       <Project>{3ca2d1d6-136f-4032-901e-043fa25b6255}</Project>
       <Name>DiaHelpers</Name>
     </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj">
+      <Project>{2a7f1646-9b5a-433c-8a84-2215194f59b9}</Project>
+      <Name>CsDebugScript.Engine</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="$(SolutionDir)\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />

@@ -62,6 +62,9 @@
     <None Include="nuspec\CsDebugScript.DiaHelpers.nuspec">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="nuspec\CsDebugScript.DwarfSymbolProvider.nuspec">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="nuspec\CsDebugScript.Engine.nuspec">
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
