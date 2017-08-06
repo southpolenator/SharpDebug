@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace CsDebugScript.CodeGen
+namespace CsDebugScript.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Class represents module during debugging. It is being described by PDB.
     /// </summary>
-    internal class Module
+    internal class DiaModule : IModule
     {
         /// <summary>
         /// The DIA data source
@@ -25,21 +25,21 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// The dictionary cache of symbols by symbol ID.
         /// </summary>
-        private ConcurrentDictionary<uint, Symbol> symbolById = new ConcurrentDictionary<uint, Symbol>();
+        private ConcurrentDictionary<uint, DiaSymbol> symbolById = new ConcurrentDictionary<uint, DiaSymbol>();
 
         /// <summary>
         /// The dictionary cache of symbols by symbol name.
         /// </summary>
-        private ConcurrentDictionary<string, Symbol> symbolByName = new ConcurrentDictionary<string, Symbol>();
+        private ConcurrentDictionary<string, DiaSymbol> symbolByName = new ConcurrentDictionary<string, DiaSymbol>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Module"/> class.
+        /// Initializes a new instance of the <see cref="DiaModule"/> class.
         /// </summary>
         /// <param name="name">The module name.</param>
         /// <param name="nameSpace">The default namespace.</param>
         /// <param name="dia">The DIA data source.</param>
         /// <param name="session">The DIA session.</param>
-        private Module(string name, string nameSpace, IDiaDataSource dia, IDiaSession session)
+        private DiaModule(string name, string nameSpace, IDiaDataSource dia, IDiaSession session)
         {
             this.session = session;
             this.dia = dia;
@@ -63,7 +63,7 @@ namespace CsDebugScript.CodeGen
         /// Opens the module for the specified XML module description.
         /// </summary>
         /// <param name="module">The XML module description.</param>
-        public static Module Open(XmlModule module)
+        public static IModule Open(XmlModule module)
         {
             IDiaDataSource dia = new DiaSource();
             IDiaSession session;
@@ -72,13 +72,13 @@ namespace CsDebugScript.CodeGen
             module.Name = moduleName;
             dia.loadDataFromPdb(module.PdbPath);
             dia.openSession(out session);
-            return new Module(module.Name, module.Namespace, dia, session);
+            return new DiaModule(module.Name, module.Namespace, dia, session);
         }
 
         /// <summary>
         /// Gets the global scope symbol.
         /// </summary>
-        public Symbol GlobalScope { get; private set; }
+        public ISymbol GlobalScope { get; private set; }
 
         /// <summary>
         /// Gets the module name.
@@ -99,15 +99,15 @@ namespace CsDebugScript.CodeGen
         /// Finds the list of global types specified by the wildcard.
         /// </summary>
         /// <param name="nameWildcard">The type name wildcard.</param>
-        public Symbol[] FindGlobalTypeWildcard(string nameWildcard)
+        public ISymbol[] FindGlobalTypeWildcard(string nameWildcard)
         {
-            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).ToArray();
+            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).Cast<ISymbol>().ToArray();
         }
 
         /// <summary>
         /// Gets all types defined in the symbol.
         /// </summary>
-        public IEnumerable<Symbol> GetAllTypes()
+        public IEnumerable<ISymbol> GetAllTypes()
         {
             // Get all types defined in the symbol
             var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
@@ -117,15 +117,16 @@ namespace CsDebugScript.CodeGen
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagArrayType));
 
             // Create symbols from types
-            var convertedTypes = diaGlobalTypes.Select(s => new Symbol(this, s)).ToList();
+            var convertedTypes = diaGlobalTypes.Select(s => new DiaSymbol(this, s)).ToList();
             var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).OrderBy(s => s.Name).ToArray();
             var cacheTypes = convertedTypes.OrderBy(s => s.Tag).ThenBy(s => s.Name).ToArray();
 
             // Remove duplicate symbols by searching for the by name
-            var symbols = new List<Symbol>();
+            var symbols = new List<ISymbol>();
             var previousName = "";
 
-            foreach (var s in resultingTypes)
+            foreach (DiaSymbol s in resultingTypes)
+            {
                 if (s.Name != previousName)
                 {
                     IDiaSymbol ss = session.globalScope.GetChild(s.Name, s.Tag);
@@ -136,16 +137,17 @@ namespace CsDebugScript.CodeGen
                     }
                     else
                     {
-                        symbols.Add(GetSymbol(s.DiaSymbol));
+                        symbols.Add(GetSymbol(s.symbol));
                     }
 
                     previousName = s.Name;
                 }
+            }
 
             // Cache symbols inside the module
-            foreach (var s in cacheTypes)
+            foreach (DiaSymbol s in cacheTypes)
             {
-                var symbolCache = GetSymbol(s.DiaSymbol);
+                var symbolCache = GetSymbol(s.symbol);
             }
 
             return symbols;
@@ -155,23 +157,26 @@ namespace CsDebugScript.CodeGen
         /// Gets the symbol from the cache or adds new entry in the cache if symbol wasn't previously found.
         /// </summary>
         /// <param name="symbol">The symbol.</param>
-        internal Symbol GetSymbol(IDiaSymbol symbol)
+        internal DiaSymbol GetSymbol(IDiaSymbol symbol)
         {
             if (symbol == null)
+            {
                 return null;
+            }
 
-            Symbol s;
+            DiaSymbol s;
             uint symbolId = symbol.symIndexId;
 
             if (!symbolById.TryGetValue(symbolId, out s))
             {
-                s = new Symbol(this, symbol);
+                s = new DiaSymbol(this, symbol);
                 lock (this)
                 {
-                    Symbol previousSymbol = null;
+                    DiaSymbol previousSymbol = null;
 
                     symbolById.TryAdd(symbolId, s);
                     if (s.Tag != SymTagEnum.SymTagExe)
+                    {
                         if (!symbolByName.TryGetValue(s.Name, out previousSymbol))
                         {
                             symbolByName.TryAdd(s.Name, s);
@@ -180,6 +185,7 @@ namespace CsDebugScript.CodeGen
                         {
                             previousSymbol.LinkSymbols(s);
                         }
+                    }
                 }
 
                 s.InitializeCache();
@@ -193,9 +199,9 @@ namespace CsDebugScript.CodeGen
         /// </summary>
         /// <param name="name">The symbol name.</param>
         /// <returns>Symbol if found; otherwise null.</returns>
-        public Symbol GetSymbol(string name)
+        public ISymbol GetSymbol(string name)
         {
-            Symbol symbol;
+            DiaSymbol symbol;
             string originalName = name;
             int pointer = 0;
 
@@ -227,8 +233,12 @@ namespace CsDebugScript.CodeGen
 #endif
             }
             else
+            {
                 for (int i = 0; i < pointer; i++)
-                    symbol = symbol.PointerType;
+                {
+                    symbol = (DiaSymbol)symbol.PointerType;
+                }
+            }
             return symbol;
         }
 

@@ -1,4 +1,5 @@
-﻿using Dia2Lib;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using Dia2Lib;
 using System.IO;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </summary>
         /// <param name="symbol">The symbol we are generating this user type from.</param>
         /// <param name="nameSpace">The namespace it belongs to.</param>
-        public EnumUserType(Symbol symbol, string nameSpace)
+        public EnumUserType(ISymbol symbol, string nameSpace)
             : base(symbol, null, nameSpace)
         {
         }
@@ -42,14 +43,22 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             // Write beginning of the enumeration
             if (generationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
+            {
                 output.WriteLine(indentation, "// {0} (original name: {1})", ClassName, Symbol.Name);
+            }
 
             if (AreValuesFlags())
+            {
                 output.WriteLine(indentation, @"[System.Flags]");
+            }
             if (Symbol.Size != 0)
+            {
                 output.WriteLine(indentation, @"public enum {0} : {1}", ClassName, GetEnumBasicType(Symbol));
+            }
             else
+            {
                 output.WriteLine(indentation, @"public enum {0}", ClassName);
+            }
             output.WriteLine(indentation++, @"{{");
 
             // Write values
@@ -85,14 +94,22 @@ namespace CsDebugScript.CodeGen.UserTypes
                 SortedSet<long> values = new SortedSet<long>();
 
                 foreach (var enumValue in Symbol.GetEnumValues())
+                {
                     values.Add(long.Parse(enumValue.Item2));
+                }
 
                 foreach (var value in values)
+                {
                     if (!IsPowerOfTwo(value))
+                    {
                         return false;
+                    }
+                }
                 if (values.Count < 2 || (values.Contains(0) && values.Contains(1) && values.Count == 2)
                     || (values.Contains(0) && values.Contains(1) && values.Contains(2) && values.Count == 3))
+                {
                     return false;
+                }
                 return true;
             }
             catch (Exception)
@@ -106,7 +123,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// Gets the basic type string for the specified enumeration symbol.
         /// </summary>
         /// <param name="symbol">The enumeration symbol.</param>
-        internal static string GetEnumBasicType(Symbol symbol)
+        internal static string GetEnumBasicType(ISymbol symbol)
         {
             switch (symbol.BasicType)
             {

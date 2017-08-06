@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -82,7 +83,7 @@ namespace CsDebugScript.CodeGen
         /// This helps grouping template symbols together.
         /// </summary>
         /// <param name="symbol">The symbol.</param>
-        public static string CreateLookupNameForSymbol(Symbol symbol)
+        public static string CreateLookupNameForSymbol(ISymbol symbol)
         {
             return string.Join("::", symbol.Namespaces.Select(r => SymbolNameHelper.CreateLookupForNamespace(r)));
         }

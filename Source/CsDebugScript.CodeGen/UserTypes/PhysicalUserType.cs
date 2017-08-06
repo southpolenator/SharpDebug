@@ -1,4 +1,5 @@
-﻿using CsDebugScript.CodeGen.TypeTrees;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using CsDebugScript.CodeGen.TypeTrees;
 using Dia2Lib;
 using System;
 using System.Collections.Generic;
@@ -56,7 +57,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="symbol">The symbol we are generating this user type from.</param>
         /// <param name="xmlType">The XML description of the type.</param>
         /// <param name="nameSpace">The namespace it belongs to.</param>
-        public PhysicalUserType(Symbol symbol, XmlType xmlType, string nameSpace)
+        public PhysicalUserType(ISymbol symbol, XmlType xmlType, string nameSpace)
             : base(symbol, xmlType, nameSpace)
         {
         }
@@ -69,7 +70,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type for which we are getting base class.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="baseClassOffset">The base class offset.</param>
-        protected override TypeTree GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected override TypeTree GetBaseClassTypeTree(TextWriter error, ISymbol type, UserTypeFactory factory, out int baseClassOffset)
         {
             TypeTree baseType = base.GetBaseClassTypeTree(error, type, factory, out baseClassOffset);
 
@@ -247,7 +248,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="isStatic">if set to <c>true</c> generated field should be static.</param>
         /// <param name="generationFlags">The user type generation flags.</param>
         /// <param name="extractingBaseClass">if set to <c>true</c> user type field is being generated for getting base class.</param>
-        protected override UserTypeField ExtractFieldInternal(SymbolField field, TypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags generationFlags, bool extractingBaseClass)
+        protected override UserTypeField ExtractFieldInternal(ISymbolField field, TypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags generationFlags, bool extractingBaseClass)
         {
             // Physical code generation make sense only for non-static fields
             if (!isStatic)

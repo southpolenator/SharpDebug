@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 
 namespace CsDebugScript.CodeGen
 {
+    using SymbolProviders;
     using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
 
     /// <summary>
@@ -357,13 +358,13 @@ namespace CsDebugScript.CodeGen
             }
 
             // Loading modules
-            ConcurrentDictionary<Module, XmlModule> modules = new ConcurrentDictionary<Module, XmlModule>();
-            ConcurrentDictionary<XmlModule, Symbol[]> globalTypesPerModule = new ConcurrentDictionary<XmlModule, Symbol[]>();
+            ConcurrentDictionary<IModule, XmlModule> modules = new ConcurrentDictionary<IModule, XmlModule>();
+            ConcurrentDictionary<XmlModule, ISymbol[]> globalTypesPerModule = new ConcurrentDictionary<XmlModule, ISymbol[]>();
 
             logger.Write("Loading modules...");
             Parallel.ForEach(xmlModules, (xmlModule) =>
             {
-                Module module = Module.Open(xmlModule);
+                IModule module = DiaModule.Open(xmlModule);
 
                 modules.TryAdd(module, xmlModule);
             });
@@ -375,14 +376,14 @@ namespace CsDebugScript.CodeGen
             Parallel.ForEach(modules, (mm) =>
             {
                 XmlModule xmlModule = mm.Value;
-                Module module = mm.Key;
+                IModule module = mm.Key;
                 string moduleName = xmlModule.Name;
                 string nameSpace = xmlModule.Namespace;
-                HashSet<Symbol> symbols = new HashSet<Symbol>();
+                HashSet<ISymbol> symbols = new HashSet<ISymbol>();
 
                 foreach (var type in typeNames)
                 {
-                    Symbol[] foundSymbols = module.FindGlobalTypeWildcard(type.NameWildcard);
+                    ISymbol[] foundSymbols = module.FindGlobalTypeWildcard(type.NameWildcard);
 
                     if (foundSymbols.Length == 0)
                     {
@@ -390,7 +391,7 @@ namespace CsDebugScript.CodeGen
                     }
                     else
                     {
-                        foreach (Symbol symbol in foundSymbols)
+                        foreach (ISymbol symbol in foundSymbols)
                         {
                             symbols.Add(symbol);
                         }
@@ -398,7 +399,7 @@ namespace CsDebugScript.CodeGen
 
                     if (type.ExportDependentTypes)
                     {
-                        foreach (Symbol symbol in foundSymbols)
+                        foreach (ISymbol symbol in foundSymbols)
                         {
                             symbol.ExtractDependantSymbols(symbols, xmlConfig.Transformations);
                         }
@@ -407,7 +408,7 @@ namespace CsDebugScript.CodeGen
 
                 if (symbols.Count == 0)
                 {
-                    foreach (Symbol symbol in module.GetAllTypes())
+                    foreach (ISymbol symbol in module.GetAllTypes())
                     {
                         symbols.Add(symbol);
                     }
@@ -418,8 +419,8 @@ namespace CsDebugScript.CodeGen
                     symbols.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).ToArray());
             });
 
-            List<Symbol> allSymbols = new List<Symbol>();
-            Symbol[][] symbolsPerModule = globalTypesPerModule.Select(ss => ss.Value).ToArray();
+            List<ISymbol> allSymbols = new List<ISymbol>();
+            ISymbol[][] symbolsPerModule = globalTypesPerModule.Select(ss => ss.Value).ToArray();
             int maxSymbols = symbolsPerModule.Max(ss => ss.Length);
 
             for (int i = 0; i < maxSymbols; i++)
@@ -451,15 +452,15 @@ namespace CsDebugScript.CodeGen
             logger.Write("Deduplicating symbols...");
 
             // Group duplicated symbols
-            Dictionary<string, List<Symbol>> symbolsByName = new Dictionary<string, List<Symbol>>();
-            Dictionary<Symbol, List<Symbol>> duplicatedSymbols = new Dictionary<Symbol, List<Symbol>>();
+            Dictionary<string, List<ISymbol>> symbolsByName = new Dictionary<string, List<ISymbol>>();
+            Dictionary<ISymbol, List<ISymbol>> duplicatedSymbols = new Dictionary<ISymbol, List<ISymbol>>();
 
             foreach (var symbol in allSymbols)
             {
-                List<Symbol> symbols;
+                List<ISymbol> symbols;
 
                 if (!symbolsByName.TryGetValue(symbol.Name, out symbols))
-                    symbolsByName.Add(symbol.Name, symbols = new List<Symbol>());
+                    symbolsByName.Add(symbol.Name, symbols = new List<ISymbol>());
 
                 bool found = false;
 
@@ -475,10 +476,10 @@ namespace CsDebugScript.CodeGen
 
                     if (s.Size == 0 && symbol.Size != 0)
                     {
-                        List<Symbol> duplicates;
+                        List<ISymbol> duplicates;
 
                         if (!duplicatedSymbols.TryGetValue(s, out duplicates))
-                            duplicatedSymbols.Add(s, duplicates = new List<Symbol>());
+                            duplicatedSymbols.Add(s, duplicates = new List<ISymbol>());
 
                         duplicatedSymbols.Remove(s);
                         duplicates.Add(s);
@@ -488,10 +489,10 @@ namespace CsDebugScript.CodeGen
                     }
                     else
                     {
-                        List<Symbol> duplicates;
+                        List<ISymbol> duplicates;
 
                         if (!duplicatedSymbols.TryGetValue(s, out duplicates))
-                            duplicatedSymbols.Add(s, duplicates = new List<Symbol>());
+                            duplicatedSymbols.Add(s, duplicates = new List<ISymbol>());
                         duplicates.Add(symbol);
                     }
 
@@ -511,7 +512,7 @@ namespace CsDebugScript.CodeGen
 
                 foreach (var s in symbols.ToArray())
                 {
-                    List<Symbol> duplicates;
+                    List<ISymbol> duplicates;
 
                     if (!duplicatedSymbols.TryGetValue(s, out duplicates))
                         continue;
@@ -522,8 +523,8 @@ namespace CsDebugScript.CodeGen
             }
 
             // Extracting deduplicated symbols
-            Dictionary<string, Symbol[]> deduplicatedSymbols = new Dictionary<string, Symbol[]>();
-            Dictionary<Symbol, string> symbolNamespaces = new Dictionary<Symbol, string>();
+            Dictionary<string, ISymbol[]> deduplicatedSymbols = new Dictionary<string, ISymbol[]>();
+            Dictionary<ISymbol, string> symbolNamespaces = new Dictionary<ISymbol, string>();
 
             foreach (var symbols in symbolsByName.Values)
             {
@@ -532,11 +533,11 @@ namespace CsDebugScript.CodeGen
                         symbolNamespaces.Add(s, modules[s.Module].Namespace);
                 else
                 {
-                    Symbol symbol = symbols.First();
-                    List<Symbol> duplicates;
+                    ISymbol symbol = symbols.First();
+                    List<ISymbol> duplicates;
 
                     if (!duplicatedSymbols.TryGetValue(symbol, out duplicates))
-                        duplicates = new List<Symbol>();
+                        duplicates = new List<ISymbol>();
                     duplicates.Insert(0, symbol);
                     deduplicatedSymbols.Add(symbol.Name, duplicates.ToArray());
 
@@ -561,8 +562,8 @@ namespace CsDebugScript.CodeGen
             foreach (var module in modules.Keys)
                 userTypes.Add(userTypeFactory.AddSymbol(module.GlobalScope, new XmlType() { Name = "ModuleGlobals" }, modules[module].Namespace, generationOptions));
 
-            ConcurrentBag<Symbol> simpleSymbols = new ConcurrentBag<Symbol>();
-            Dictionary<Tuple<string, string>, List<Symbol>> templateSymbols = new Dictionary<Tuple<string, string>, List<Symbol>>();
+            ConcurrentBag<ISymbol> simpleSymbols = new ConcurrentBag<ISymbol>();
+            Dictionary<Tuple<string, string>, List<ISymbol>> templateSymbols = new Dictionary<Tuple<string, string>, List<ISymbol>>();
 
             Parallel.ForEach(Partitioner.Create(globalTypes), (symbol) =>
             {
@@ -600,7 +601,7 @@ namespace CsDebugScript.CodeGen
                     lock (templateSymbols)
                     {
                         if (templateSymbols.ContainsKey(symbolId) == false)
-                            templateSymbols[symbolId] = new List<Symbol>() { symbol };
+                            templateSymbols[symbolId] = new List<ISymbol>() { symbol };
                         else
                             templateSymbols[symbolId].Add(symbol);
                     }
@@ -618,9 +619,9 @@ namespace CsDebugScript.CodeGen
 
             // Populate Templates
             logger.Write("Populating templates...");
-            foreach (List<Symbol> symbols in templateSymbols.Values)
+            foreach (List<ISymbol> symbols in templateSymbols.Values)
             {
-                Symbol symbol = symbols.First();
+                ISymbol symbol = symbols.First();
                 string symbolName = SymbolNameHelper.CreateLookupNameForSymbol(symbol);
 
                 XmlType type = new XmlType()
@@ -635,7 +636,7 @@ namespace CsDebugScript.CodeGen
 
             // Specialized class
             logger.Write("Populating specialized classes...");
-            foreach (Symbol symbol in simpleSymbols)
+            foreach (ISymbol symbol in simpleSymbols)
             {
                 userTypes.Add(userTypeFactory.AddSymbol(symbol, null, symbolNamespaces[symbol], generationOptions));
             }
@@ -777,7 +778,7 @@ namespace CsDebugScript.CodeGen
         /// <returns>Tuple of generated code and filename</returns>
         private static Tuple<string, string> GenerateCode(UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationFlags, ConcurrentDictionary<string, string> generatedFiles)
         {
-            Symbol symbol = userType.Symbol;
+            ISymbol symbol = userType.Symbol;
 
             if (symbol != null && symbol.Tag == SymTagEnum.SymTagBaseType)
             {
@@ -847,7 +848,7 @@ namespace CsDebugScript.CodeGen
         /// <returns><c>true</c> if code was generated for the type; otherwise <c>false</c></returns>
         private static bool GenerateCodeInSingleFile(TextWriter output, UserType userType, UserTypeFactory factory, TextWriter errorOutput, UserTypeGenerationFlags generationFlags)
         {
-            Symbol symbol = userType.Symbol;
+            ISymbol symbol = userType.Symbol;
 
             if (symbol != null && symbol.Tag == SymTagEnum.SymTagBaseType)
             {

@@ -4,39 +4,39 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript.CodeGen
+namespace CsDebugScript.CodeGen.SymbolProviders
 {
     using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
 
     /// <summary>
-    /// Class reperesents symbol during debugging.
+    /// Class represents symbol during debugging.
     /// </summary>
-    internal class Symbol
+    internal class DiaSymbol : ISymbol
     {
         /// <summary>
         /// The DIA symbol
         /// </summary>
-        private IDiaSymbol symbol;
+        internal IDiaSymbol symbol;
 
         /// <summary>
         /// The cache of fields
         /// </summary>
-        private SimpleCache<SymbolField[]> fields;
+        private SimpleCache<ISymbolField[]> fields;
 
         /// <summary>
         /// The cache of base classes
         /// </summary>
-        private SimpleCache<Symbol[]> baseClasses;
+        private SimpleCache<ISymbol[]> baseClasses;
 
         /// <summary>
         /// The cache of element type
         /// </summary>
-        private SimpleCache<Symbol> elementType;
+        private SimpleCache<ISymbol> elementType;
 
         /// <summary>
         /// The cache of pointer type
         /// </summary>
-        private SimpleCache<Symbol> pointerType;
+        private SimpleCache<ISymbol> pointerType;
 
         /// <summary>
         /// The cache of user type
@@ -54,11 +54,11 @@ namespace CsDebugScript.CodeGen
         private SimpleCache<List<string>> namespaces;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Symbol"/> class.
+        /// Initializes a new instance of the <see cref="DiaSymbol"/> class.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="symbol">The DIA symbol.</param>
-        public Symbol(Module module, IDiaSymbol symbol)
+        public DiaSymbol(DiaModule module, IDiaSymbol symbol)
         {
             this.symbol = symbol;
             Module = module;
@@ -66,21 +66,28 @@ namespace CsDebugScript.CodeGen
             BasicType = (BasicType)symbol.baseType;
             Id = symbol.symIndexId;
             if (Tag != SymTagEnum.SymTagExe)
+            {
                 Name = TypeToString.GetTypeString(symbol);
+            }
             else
+            {
                 Name = "";
+            }
 
             Name = Name.Replace("<enum ", "<").Replace(",enum ", ",");
             Offset = symbol.offset;
 
-            var size = symbol.length;
+            ulong size = symbol.length;
+
             if (size > int.MaxValue)
+            {
                 throw new ArgumentException("Symbol size is unexpected");
+            }
             Size = (int)size;
 
             // Initialize caches
-            fields = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagData).Select(s => new SymbolField(this, s)).Where(f => f.Type != null).ToArray());
-            baseClasses = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagBaseClass).Select(s => Module.GetSymbol(s)).ToArray());
+            fields = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagData).Select(s => new DiaSymbolField(this, s)).Where(f => f.Type != null).Cast<ISymbolField>().ToArray());
+            baseClasses = SimpleCache.Create(() => symbol.GetChildren(SymTagEnum.SymTagBaseClass).Select(s => ((DiaModule)Module).GetSymbol(s)).Cast<ISymbol>().ToArray());
             elementType = SimpleCache.Create(() =>
             {
                 if (Tag == SymTagEnum.SymTagPointerType || Tag == SymTagEnum.SymTagArrayType)
@@ -89,10 +96,12 @@ namespace CsDebugScript.CodeGen
 
                     if (type != null)
                     {
-                        var result = Module.GetSymbol(type);
+                        DiaSymbol result = ((DiaModule)Module).GetSymbol(type);
                         if (Tag == SymTagEnum.SymTagPointerType)
+                        {
                             result.pointerType.Value = this;
-                        return result;
+                        }
+                        return (ISymbol)result;
                     }
                 }
 
@@ -100,9 +109,9 @@ namespace CsDebugScript.CodeGen
             });
             pointerType = SimpleCache.Create(() =>
             {
-                var result = Module.GetSymbol(symbol.objectPointerType);
+                DiaSymbol result = ((DiaModule)Module).GetSymbol(symbol.objectPointerType);
                 result.elementType.Value = this;
-                return result;
+                return (ISymbol)result;
             });
             userType = SimpleCache.Create(() => (UserType)null);
             enumValues = SimpleCache.Create(() =>
@@ -135,7 +144,7 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Gets the module.
         /// </summary>
-        public Module Module { get; private set; }
+        public IModule Module { get; private set; }
 
         /// <summary>
         /// Gets the size.
@@ -187,7 +196,7 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Gets the element type.
         /// </summary>
-        public Symbol ElementType
+        public ISymbol ElementType
         {
             get
             {
@@ -198,7 +207,7 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Gets the fields.
         /// </summary>
-        public SymbolField[] Fields
+        public ISymbolField[] Fields
         {
             get
             {
@@ -207,20 +216,9 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
-        /// Gets the DIA symbol.
-        /// </summary>
-        internal IDiaSymbol DiaSymbol
-        {
-            get
-            {
-                return symbol;
-            }
-        }
-
-        /// <summary>
         /// Gets the base classes.
         /// </summary>
-        public Symbol[] BaseClasses
+        public ISymbol[] BaseClasses
         {
             get
             {
@@ -231,7 +229,7 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Gets the pointer type.
         /// </summary>
-        public Symbol PointerType
+        public ISymbol PointerType
         {
             get
             {
@@ -268,15 +266,15 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Casts as symbol field.
         /// </summary>
-        public SymbolField CastAsSymbolField()
+        public ISymbolField CastAsSymbolField()
         {
-            return new SymbolField(this, symbol);
+            return new DiaSymbolField(this, symbol);
         }
 
         /// <summary>
         /// Initializes the cache.
         /// </summary>
-        internal void InitializeCache()
+        public void InitializeCache()
         {
             if (Tag != SymTagEnum.SymTagExe)
             {
@@ -289,24 +287,23 @@ namespace CsDebugScript.CodeGen
         /// </summary>
         /// <param name="extractedSymbols">The extracted symbols.</param>
         /// <param name="transformations">The transformations.</param>
-        internal void ExtractDependantSymbols(HashSet<Symbol> extractedSymbols, XmlTypeTransformation[] transformations)
+        public void ExtractDependantSymbols(HashSet<ISymbol> extractedSymbols, XmlTypeTransformation[] transformations)
         {
-            List<Symbol> symbols = Fields.Select(f => f.Type)
-                .Union(BaseClasses).ToList();
+            List<ISymbol> symbols = Fields.Select(f => f.Type).Union(BaseClasses).ToList();
 
             if (ElementType != null)
             {
                 symbols.Add(ElementType);
             }
 
-            foreach (Symbol symbol in symbols)
+            foreach (ISymbol symbol in symbols)
             {
                 if (transformations.Any(t => t.Matches(symbol.Name)))
                 {
                     continue;
                 }
 
-                Symbol s = symbol;
+                ISymbol s = symbol;
 
                 if (s.Tag == SymTagEnum.SymTagBaseClass)
                 {
@@ -323,8 +320,10 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Links the symbols.
         /// </summary>
-        internal void LinkSymbols(Symbol s)
+        public void LinkSymbols(ISymbol symbol)
         {
+            DiaSymbol s = (DiaSymbol)symbol;
+
             s.baseClasses = baseClasses;
             s.elementType = elementType;
             s.fields = fields;
@@ -335,164 +334,40 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Determines whether symbol has virtual table of functions.
         /// </summary>
-        internal bool HasVTable()
+        public bool HasVTable()
         {
             if (symbol.GetChildren(SymTagEnum.SymTagVTable).Any())
+            {
                 return true;
-            foreach (Symbol baseClass in BaseClasses)
+            }
+            foreach (ISymbol baseClass in BaseClasses)
+            {
                 if (baseClass.Offset == 0 && baseClass.HasVTable())
+                {
                     return true;
+                }
+            }
             return false;
         }
 
         /// <summary>
         /// Gets all base classes (including base classes of base classes).
         /// </summary>
-        internal IEnumerable<Symbol> GetAllBaseClasses()
+        public IEnumerable<ISymbol> GetAllBaseClasses()
         {
-            List<Symbol> unprocessed = BaseClasses.ToList();
+            List<ISymbol> unprocessed = BaseClasses.ToList();
 
             while (unprocessed.Count > 0)
             {
-                List<Symbol> symbols = unprocessed;
+                List<ISymbol> symbols = unprocessed;
 
-                unprocessed = new List<Symbol>();
-                foreach (var symbol in symbols)
+                unprocessed = new List<ISymbol>();
+                foreach (ISymbol symbol in symbols)
                 {
                     yield return symbol;
                     unprocessed.AddRange(symbol.BaseClasses);
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Class represents symbol field during debugging.
-    /// </summary>
-    internal class SymbolField
-    {
-        /// <summary>
-        /// The DIA symbol
-        /// </summary>
-        private IDiaSymbol symbol;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SymbolField"/> class.
-        /// </summary>
-        /// <param name="parentType">The parent type.</param>
-        /// <param name="symbol">The DIA symbol.</param>
-        public SymbolField(Symbol parentType, IDiaSymbol symbol)
-        {
-            this.symbol = symbol;
-            ParentType = parentType;
-            Name = symbol.name;
-            LocationType = (LocationType)symbol.locationType;
-            DataKind = (DataKind)symbol.dataKind;
-            Offset = symbol.offset;
-            Value = symbol.value;
-
-            var size = symbol.length;
-            if (size > int.MaxValue)
-                throw new ArgumentException("Symbol size is unexpected");
-            Size = (int)size;
-
-            var bitPosition = symbol.bitPosition;
-            if (bitPosition > int.MaxValue)
-                throw new ArgumentException("Symbol bit position is unexpected");
-            BitPosition = (int)bitPosition;
-
-            IDiaSymbol type = symbol.type;
-            if (type != null)
-                Type = Module.GetSymbol(type);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this instance is valid static field.
-        /// </summary>
-        /// <value>
-        /// <c>true</c> if this instance is valid static field; otherwise, <c>false</c>.
-        /// </value>
-        public bool IsValidStatic
-        {
-            get
-            {
-                return IsStatic && Module.PublicSymbols.Contains(ParentType.Name + "::" + Name);
-            }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this field is static.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if this field is static; otherwise, <c>false</c>.
-        /// </value>
-        public bool IsStatic
-        {
-            get
-            {
-                return LocationType == LocationType.Static;
-            }
-        }
-
-        /// <summary>
-        /// Gets the module.
-        /// </summary>
-        public Module Module
-        {
-            get
-            {
-                return ParentType.Module;
-            }
-        }
-
-        /// <summary>
-        /// Gets the parent type.
-        /// </summary>
-        public Symbol ParentType { get; private set; }
-
-        /// <summary>
-        /// Gets the field type.
-        /// </summary>
-        public Symbol Type { get; private set; }
-
-        /// <summary>
-        /// Gets the name.
-        /// </summary>
-        public string Name { get; internal set; }
-
-        /// <summary>
-        /// Gets the name of the property.
-        /// </summary>
-        public string PropertyName { get; internal set; }
-
-        /// <summary>
-        /// Gets the size.
-        /// </summary>
-        public int Size { get; private set; }
-
-        /// <summary>
-        /// Gets the offset.
-        /// </summary>
-        public int Offset { get; private set; }
-
-        /// <summary>
-        /// Gets the bit position.
-        /// </summary>
-        public int BitPosition { get; private set; }
-
-        /// <summary>
-        /// Gets the type of the location.
-        /// </summary>
-        public LocationType LocationType { get; private set; }
-
-        /// <summary>
-        /// Gets the data kind.
-        /// </summary>
-        public DataKind DataKind { get; private set; }
-
-        /// <summary>
-        /// Gets the value.
-        /// </summary>
-        public dynamic Value { get; private set; }
     }
 }

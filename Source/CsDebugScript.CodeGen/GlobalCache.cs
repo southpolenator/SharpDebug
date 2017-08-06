@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using CsDebugScript.CodeGen.UserTypes;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using System.Collections.Generic;
 using System.Text;
 using Dia2Lib;
 
@@ -9,25 +9,27 @@ namespace CsDebugScript.CodeGen
 
     internal static class GlobalCache
     {
-        private static Dictionary<string, Symbol[]> deduplicatedSymbols = new Dictionary<string, Symbol[]>();
+        private static Dictionary<string, ISymbol[]> deduplicatedSymbols = new Dictionary<string, ISymbol[]>();
 
-        public static Symbol GetSymbol(string typeName, Module module)
+        public static ISymbol GetSymbol(string typeName, IModule module)
         {
-            Symbol[] symbols;
+            ISymbol[] symbols;
 
             if (deduplicatedSymbols.TryGetValue(typeName, out symbols))
+            {
                 return symbols[0];
+            }
             return module.GetSymbol(typeName);
         }
 
-        public static UserType GetUserType(string typeName, Module module)
+        public static UserType GetUserType(string typeName, IModule module)
         {
-            Symbol symbol = GetSymbol(typeName, module);
+            ISymbol symbol = GetSymbol(typeName, module);
 
             return GetUserType(symbol);
         }
 
-        public static UserType GetUserType(Symbol symbol)
+        public static UserType GetUserType(ISymbol symbol)
         {
             if (symbol != null)
             {
@@ -52,56 +54,78 @@ namespace CsDebugScript.CodeGen
             return null;
         }
 
-        internal static void Update(Dictionary<string, Symbol[]> deduplicatedSymbols)
+        internal static void Update(Dictionary<string, ISymbol[]> deduplicatedSymbols)
         {
             GlobalCache.deduplicatedSymbols = deduplicatedSymbols;
         }
 
-        internal static IEnumerable<string> GetSymbolModuleNames(Symbol symbol)
+        internal static IEnumerable<string> GetSymbolModuleNames(ISymbol symbol)
         {
-            Symbol[] symbols;
+            ISymbol[] symbols;
 
             if (deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+            {
                 foreach (var s in symbols)
                 {
                     if (symbol.Size > 0 && s.Size == 0)
+                    {
                         continue;
+                    }
                     yield return s.Module.Name;
                 }
+            }
             else
+            {
                 yield return symbol.Module.Name;
+            }
         }
 
-        internal static IEnumerable<Symbol> GetSymbolStaticFieldsSymbols(Symbol symbol)
+        internal static IEnumerable<ISymbol> GetSymbolStaticFieldsSymbols(ISymbol symbol)
         {
-            Symbol[] symbols;
+            ISymbol[] symbols;
 
             if (!deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+            {
                 yield return symbol;
+            }
             else
+            {
                 foreach (var s in symbols)
+                {
                     foreach (var field in s.Fields)
+                    {
                         if (field.DataKind == DataKind.StaticMember && field.IsValidStatic)
                         {
                             yield return s;
                             break;
                         }
+                    }
+                }
+            }
         }
 
-        internal static IEnumerable<SymbolField> GetSymbolStaticFields(Symbol symbol)
+        internal static IEnumerable<ISymbolField> GetSymbolStaticFields(ISymbol symbol)
         {
-            Symbol[] symbols;
+            ISymbol[] symbols;
 
             if (!deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
-                symbols = new Symbol[] { symbol };
+            {
+                symbols = new ISymbol[] { symbol };
+            }
 
             foreach (var s in symbols)
+            {
                 foreach (var field in s.Fields)
+                {
                     if (field.DataKind == DataKind.StaticMember && field.IsValidStatic)
+                    {
                         yield return field;
+                    }
+                }
+            }
         }
 
-        public static string GenerateClassCodeTypeInfo(Symbol symbol, string typeName)
+        public static string GenerateClassCodeTypeInfo(ISymbol symbol, string typeName)
         {
             StringBuilder sb = new StringBuilder();
 
