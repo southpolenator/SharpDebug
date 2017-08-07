@@ -6,7 +6,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
     /// <summary>
     /// Class represents symbol field during debugging.
     /// </summary>
-    internal class DiaSymbolField : ISymbolField
+    internal class DiaSymbolField : SymbolField
     {
         /// <summary>
         /// The DIA symbol
@@ -19,9 +19,9 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <param name="parentType">The parent type.</param>
         /// <param name="symbol">The DIA symbol.</param>
         public DiaSymbolField(DiaSymbol parentType, IDiaSymbol symbol)
+            : base(parentType)
         {
             this.symbol = symbol;
-            ParentType = parentType;
             Name = symbol.name;
             LocationType = (LocationType)symbol.locationType;
             DataKind = (DataKind)symbol.dataKind;
@@ -55,87 +55,12 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <value>
         /// <c>true</c> if this instance is valid static field; otherwise, <c>false</c>.
         /// </value>
-        public bool IsValidStatic
+        public override bool IsValidStatic
         {
             get
             {
                 return IsStatic && Module.PublicSymbols.Contains(ParentType.Name + "::" + Name);
             }
         }
-
-        /// <summary>
-        /// Gets a value indicating whether this field is static.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if this field is static; otherwise, <c>false</c>.
-        /// </value>
-        public bool IsStatic
-        {
-            get
-            {
-                return LocationType == LocationType.Static;
-            }
-        }
-
-        /// <summary>
-        /// Gets the module.
-        /// </summary>
-        public IModule Module
-        {
-            get
-            {
-                return ParentType.Module;
-            }
-        }
-
-        /// <summary>
-        /// Gets the parent type.
-        /// </summary>
-        public ISymbol ParentType { get; private set; }
-
-        /// <summary>
-        /// Gets the field type.
-        /// </summary>
-        public ISymbol Type { get; private set; }
-
-        /// <summary>
-        /// Gets the name.
-        /// </summary>
-        public string Name { get; internal set; }
-
-        /// <summary>
-        /// Gets the name of the property.
-        /// </summary>
-        public string PropertyName { get; set; }
-
-        /// <summary>
-        /// Gets the size.
-        /// </summary>
-        public int Size { get; private set; }
-
-        /// <summary>
-        /// Gets the offset.
-        /// </summary>
-        public int Offset { get; private set; }
-
-        /// <summary>
-        /// Gets the bit position.
-        /// </summary>
-        public int BitPosition { get; private set; }
-
-        /// <summary>
-        /// Gets the type of the location.
-        /// </summary>
-        public LocationType LocationType { get; private set; }
-
-        /// <summary>
-        /// Gets the data kind.
-        /// </summary>
-        public DataKind DataKind { get; private set; }
-
-        /// <summary>
-        /// Gets the value.
-        /// </summary>
-        public dynamic Value { get; private set; }
     }
 }

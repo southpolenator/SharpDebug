@@ -48,7 +48,7 @@ namespace CsDebugScript.CodeGen.TypeTrees
                     continue;
 
                 // Try to find specialized arguments for template type
-                IReadOnlyList<ISymbol> arguments = templateType.TemplateArgumentsAsSymbols;
+                IReadOnlyList<Symbol> arguments = templateType.TemplateArgumentsAsSymbols;
                 TypeTree[] specializedArguments = new TypeTree[arguments.Count];
 
                 for (int i = 0; i < arguments.Count; i++)
@@ -67,7 +67,7 @@ namespace CsDebugScript.CodeGen.TypeTrees
                     else
                     {
                         // TODO: Check why do we go one more round trip through module for getting argument symbol
-                        ISymbol symbol = templateSpecialization.Symbol.Module.GetSymbol(arguments[i].Name);
+                        Symbol symbol = templateSpecialization.Symbol.Module.GetSymbol(arguments[i].Name);
 
                         if (symbol.Tag != SymTagEnum.SymTagBaseType)
                         {

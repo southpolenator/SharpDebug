@@ -21,7 +21,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// The type that should be transformed to user type.
         /// </summary>
-        private ISymbol type;
+        private Symbol type;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserTypeTransformation"/> class.
@@ -30,7 +30,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="typeConverter">The type converter.</param>
         /// <param name="ownerUserType">The owner user type.</param>
         /// <param name="type">The type that should be transformed to user type.</param>
-        public UserTypeTransformation(XmlTypeTransformation transformation, Func<string, string> typeConverter, UserType ownerUserType, ISymbol type)
+        public UserTypeTransformation(XmlTypeTransformation transformation, Func<string, string> typeConverter, UserType ownerUserType, Symbol type)
         {
             Transformation = transformation;
             this.typeConverter = typeConverter;

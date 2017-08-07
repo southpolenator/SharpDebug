@@ -18,7 +18,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="symbol">The symbol we are generating this user type from.</param>
         /// <param name="xmlType">The XML description of the type.</param>
         /// <param name="nameSpace">The namespace it belongs to.</param>
-        public GlobalsUserType(ISymbol symbol, XmlType xmlType, string nameSpace)
+        public GlobalsUserType(Symbol symbol, XmlType xmlType, string nameSpace)
             : base(symbol, xmlType, nameSpace)
         {
         }
@@ -72,7 +72,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
 
                 // Skip fields that are actual values of enum values
-                if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagEnum && field.Type.GetEnumValues().Any(t => t.Item1 == field.Name))
+                if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagEnum && field.Type.EnumValues.Any(t => t.Item1 == field.Name))
                 {
                     continue;
                 }
@@ -108,7 +108,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type for which we are getting base class.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="baseClassOffset">The base class offset.</param>
-        protected override TypeTree GetBaseClassTypeTree(TextWriter error, ISymbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected override TypeTree GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
             baseClassOffset = 0;
             return new StaticClassTypeTree();

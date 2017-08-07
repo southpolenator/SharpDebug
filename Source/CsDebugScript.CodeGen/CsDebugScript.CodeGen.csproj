@@ -166,11 +166,13 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
     <Compile Include="SymbolProviders\DiaModule.cs" />
+    <Compile Include="SymbolProviders\DiaModuleProvider.cs" />
     <Compile Include="SymbolProviders\DiaSymbol.cs" />
     <Compile Include="SymbolProviders\DiaSymbolField.cs" />
-    <Compile Include="SymbolProviders\IModule.cs" />
-    <Compile Include="SymbolProviders\ISymbol.cs" />
-    <Compile Include="SymbolProviders\ISymbolField.cs" />
+    <Compile Include="SymbolProviders\Module.cs" />
+    <Compile Include="SymbolProviders\IModuleProvider.cs" />
+    <Compile Include="SymbolProviders\Symbol.cs" />
+    <Compile Include="SymbolProviders\SymbolField.cs" />
     <Compile Include="TypeTrees\ArrayTypeTree.cs" />
     <Compile Include="TypeTrees\BasicTypeTree.cs" />
     <Compile Include="TypeTrees\EnumTreeType.cs" />

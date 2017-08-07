@@ -8,6 +8,8 @@ using System.Text;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
+    using Module = CsDebugScript.CodeGen.SymbolProviders.Module;
+
     /// <summary>
     /// User type that represents template user type. For example: MyType&lt;T&gt;
     /// </summary>
@@ -17,7 +19,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// The list of template arguments stored as symbols
         /// </summary>
-        private List<ISymbol> templateArgumentsAsSymbols = new List<ISymbol>();
+        private List<Symbol> templateArgumentsAsSymbols = new List<Symbol>();
 
         /// <summary>
         /// The list of template arguments stored as user types
@@ -31,7 +33,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="xmlType">The XML description of the type.</param>
         /// <param name="nameSpace">The namespace it belongs to.</param>
         /// <param name="factory">The user type factory.</param>
-        public TemplateUserType(ISymbol symbol, XmlType xmlType, string nameSpace, UserTypeFactory factory)
+        public TemplateUserType(Symbol symbol, XmlType xmlType, string nameSpace, UserTypeFactory factory)
             : base(symbol, xmlType, nameSpace)
         {
             UpdateTemplateArguments(factory);
@@ -153,7 +155,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
         }
 
-        private static IEnumerable<ISymbol> ParseTemplateArguments(UserTypeFactory factory, IModule module, string symbolName)
+        private static IEnumerable<Symbol> ParseTemplateArguments(UserTypeFactory factory, SymbolProviders.Module module, string symbolName)
         {
             int templateStart = symbolName.IndexOf('<');
 
@@ -184,7 +186,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     if (!double.TryParse(extractedType, out constant))
                     {
                         // Check if type is existing type (symbol)
-                        ISymbol symbol = GlobalCache.GetSymbol(extractedType, module);
+                        Symbol symbol = GlobalCache.GetSymbol(extractedType, module);
 
                         if (symbol == null)
                         {
@@ -207,7 +209,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             templateArgumentsAsSymbols = ParseTemplateArguments(factory, Module, Symbol.Namespaces.Last()).ToList();
             templateArgumentsAsUserTypes.Clear();
-            foreach (ISymbol symbol in templateArgumentsAsSymbols)
+            foreach (Symbol symbol in templateArgumentsAsSymbols)
             {
                 // Try to get user type for the symbol
                 UserType specializationUserType = null;
@@ -233,7 +235,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
 
             // Enumerate all template arguments as strings
-            IEnumerable<ISymbol> allTemplateArguments = Enumerable.Empty<ISymbol>();
+            IEnumerable<Symbol> allTemplateArguments = Enumerable.Empty<Symbol>();
 
             foreach (string symbolName in Symbol.Namespaces)
             {
@@ -249,7 +251,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Gets the module where symbol is located.
         /// </summary>
-        public IModule Module
+        public Module Module
         {
             get
             {
@@ -334,7 +336,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Gets the template arguments as symbols.
         /// </summary>
-        public IReadOnlyList<ISymbol> TemplateArgumentsAsSymbols
+        public IReadOnlyList<Symbol> TemplateArgumentsAsSymbols
         {
             get
             {
@@ -462,7 +464,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="bitLength">Number of bits used for this symbol.</param>
-        internal override TypeTree GetSymbolTypeTree(ISymbol type, UserTypeFactory factory, int bitLength = 0)
+        internal override TypeTree GetSymbolTypeTree(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
             return base.GetSymbolTypeTree(type, CreateFactory(factory), bitLength);
         }
@@ -475,7 +477,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type for which we are getting base class.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="baseClassOffset">The base class offset.</param>
-        protected override TypeTree GetBaseClassTypeTree(TextWriter error, ISymbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected override TypeTree GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
             TypeTree baseType = base.GetBaseClassTypeTree(error, type, CreateFactory(factory), out baseClassOffset);
 
@@ -558,11 +560,11 @@ namespace CsDebugScript.CodeGen.UserTypes
             for (int i = 0; i < NumberOfTemplateArguments; i++)
             {
                 // Get all specializations for current template argument
-                ISymbol[] specializedSymbols = SpecializedTypes.Select(r => r.templateArgumentsAsSymbols[i]).ToArray();
+                Symbol[] specializedSymbols = SpecializedTypes.Select(r => r.templateArgumentsAsSymbols[i]).ToArray();
                 TypeOfSpecializationType specializationType = TypeOfSpecializationType.Unmatched;
                 UserType commonType = null;
 
-                foreach (ISymbol type in specializedSymbols)
+                foreach (Symbol type in specializedSymbols)
                 {
                     // Check base type
                     if (type.Tag == Dia2Lib.SymTagEnum.SymTagBaseType || type.Tag == Dia2Lib.SymTagEnum.SymTagEnum)
@@ -691,7 +693,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                                 {
                                     // Find base class that we should continue with
                                     UserType nextBaseClass = null;
-                                    ISymbol symbol = templateCommonType.Symbol;
+                                    Symbol symbol = templateCommonType.Symbol;
 
                                     while (nextBaseClass == null)
                                     {
@@ -758,7 +760,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         private static List<UserType> ExtractAllBaseClasses(UserType userType)
         {
             var userTypes = new List<UserType>();
-            ISymbol symbol = userType.Symbol;
+            Symbol symbol = userType.Symbol;
 
             userTypes.Add(userType);
             while (symbol != null)
@@ -833,14 +835,14 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="factory">The user type factory.</param>
         /// <param name="extractingBaseClass">if set to <c>true</c> user type field is being generated for getting base class.</param>
         /// <param name="bitLength">Number of bits used for this symbol.</param>
-        protected override TypeTree GetFieldTypeTree(ISymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
+        protected override TypeTree GetFieldTypeTree(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
         {
             // Do not match specializations when getting type for base class.
             if (extractingBaseClass || NumberOfTemplateArguments == 0)
                 return GetSymbolTypeTree(field.Type, factory, bitLength);
 
             // Check field in all specializations
-            var specializedFields = SpecializedTypes.Select(r => new Tuple<TemplateUserType, ISymbolField>(r, r.Symbol.Fields.FirstOrDefault(q => q.Name == field.Name))).ToArray();
+            var specializedFields = SpecializedTypes.Select(r => new Tuple<TemplateUserType, SymbolField>(r, r.Symbol.Fields.FirstOrDefault(q => q.Name == field.Name))).ToArray();
 
             if (specializedFields.Any(r => r.Item2 == null))
             {
@@ -860,7 +862,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             return FixTypeTree(result, field.Type, factory);
         }
 
-        private TypeTree FixTypeTree(TypeTree typeTree, ISymbol type, UserTypeFactory factory)
+        private TypeTree FixTypeTree(TypeTree typeTree, Symbol type, UserTypeFactory factory)
         {
             // Check basic type
             BasicTypeTree basicTypeTree = typeTree as BasicTypeTree;

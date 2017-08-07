@@ -5,15 +5,24 @@ namespace CsDebugScript.CodeGen.SymbolProviders
     /// <summary>
     /// Interface represents symbol field during debugging.
     /// </summary>
-    internal interface ISymbolField
+    public abstract class SymbolField
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SymbolField"/> class.
+        /// </summary>
+        /// <param name="parentType">The parent type.</param>
+        public SymbolField(Symbol parentType)
+        {
+            ParentType = parentType;
+        }
+
         /// <summary>
         /// Gets a value indicating whether this instance is valid static field.
         /// </summary>
         /// <value>
         /// <c>true</c> if this instance is valid static field; otherwise, <c>false</c>.
         /// </value>
-        bool IsValidStatic { get; }
+        public abstract bool IsValidStatic { get; }
 
         /// <summary>
         /// Gets a value indicating whether this field is static.
@@ -21,61 +30,73 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <value>
         ///   <c>true</c> if this field is static; otherwise, <c>false</c>.
         /// </value>
-        bool IsStatic { get; }
+        public virtual bool IsStatic
+        {
+            get
+            {
+                return LocationType == LocationType.Static;
+            }
+        }
 
         /// <summary>
         /// Gets the module.
         /// </summary>
-        IModule Module { get; }
+        public Module Module
+        {
+            get
+            {
+                return ParentType.Module;
+            }
+        }
 
         /// <summary>
         /// Gets the parent type.
         /// </summary>
-        ISymbol ParentType { get; }
+        public Symbol ParentType { get; private set; }
 
         /// <summary>
         /// Gets the field type.
         /// </summary>
-        ISymbol Type { get; }
+        public Symbol Type { get; protected set; }
 
         /// <summary>
         /// Gets the name.
         /// </summary>
-        string Name { get; }
-
-        /// <summary>
-        /// Gets the name of the property.
-        /// </summary>
-        string PropertyName { get; set; }
+        public string Name { get; protected set; }
 
         /// <summary>
         /// Gets the size.
         /// </summary>
-        int Size { get; }
+        public int Size { get; protected set; }
 
         /// <summary>
         /// Gets the offset.
         /// </summary>
-        int Offset { get; }
+        public int Offset { get; protected set; }
 
         /// <summary>
         /// Gets the bit position.
         /// </summary>
-        int BitPosition { get; }
+        public int BitPosition { get; protected set; }
 
         /// <summary>
         /// Gets the type of the location.
         /// </summary>
-        LocationType LocationType { get; }
+        public LocationType LocationType { get; protected set; }
 
         /// <summary>
         /// Gets the data kind.
         /// </summary>
-        DataKind DataKind { get; }
+        public DataKind DataKind { get; protected set; }
 
         /// <summary>
         /// Gets the value.
         /// </summary>
-        dynamic Value { get; }
+        public dynamic Value { get; protected set; }
+
+        /// <summary>
+        /// Gets the name of the property.
+        /// </summary>
+        internal string PropertyName { get; set; }
     }
 }

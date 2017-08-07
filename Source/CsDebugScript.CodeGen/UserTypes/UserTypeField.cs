@@ -192,7 +192,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="field">The field.</param>
         /// <param name="userType">The user type owning the field.</param>
         /// <returns>The name of the property.</returns>
-        public static string GetPropertyName(ISymbolField field, UserType userType)
+        public static string GetPropertyName(SymbolField field, UserType userType)
         {
             if (!string.IsNullOrEmpty(field.PropertyName))
             {

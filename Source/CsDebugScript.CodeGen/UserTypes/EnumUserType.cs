@@ -1,8 +1,8 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
 using Dia2Lib;
-using System.IO;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
@@ -17,7 +17,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </summary>
         /// <param name="symbol">The symbol we are generating this user type from.</param>
         /// <param name="nameSpace">The namespace it belongs to.</param>
-        public EnumUserType(ISymbol symbol, string nameSpace)
+        public EnumUserType(Symbol symbol, string nameSpace)
             : base(symbol, null, nameSpace)
         {
         }
@@ -62,7 +62,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             output.WriteLine(indentation++, @"{{");
 
             // Write values
-            foreach (var enumValue in Symbol.GetEnumValues())
+            foreach (var enumValue in Symbol.EnumValues)
             {
                 output.WriteLine(indentation, "{0} = {1},", enumValue.Item1, enumValue.Item2);
             }
@@ -93,7 +93,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 SortedSet<long> values = new SortedSet<long>();
 
-                foreach (var enumValue in Symbol.GetEnumValues())
+                foreach (var enumValue in Symbol.EnumValues)
                 {
                     values.Add(long.Parse(enumValue.Item2));
                 }
@@ -123,7 +123,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// Gets the basic type string for the specified enumeration symbol.
         /// </summary>
         /// <param name="symbol">The enumeration symbol.</param>
-        internal static string GetEnumBasicType(ISymbol symbol)
+        internal static string GetEnumBasicType(Symbol symbol)
         {
             switch (symbol.BasicType)
             {

@@ -35,7 +35,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="symbol">The symbol we are generating this user type from.</param>
         /// <param name="xmlType">The XML description of the type.</param>
         /// <param name="nameSpace">The namespace it belongs to.</param>
-        public UserType(ISymbol symbol, XmlType xmlType, string nameSpace)
+        public UserType(Symbol symbol, XmlType xmlType, string nameSpace)
         {
             Symbol = symbol;
             XmlType = xmlType;
@@ -47,7 +47,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// Gets the symbol we are generating this user type from..
         /// </summary>
-        public ISymbol Symbol { get; private set; }
+        public Symbol Symbol { get; private set; }
 
         /// <summary>
         /// Gets the original name of this user type.
@@ -309,7 +309,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="generationFlags">The user type generation flags.</param>
         /// <param name="extractingBaseClass">if set to <c>true</c> user type field is being generated for getting base class.</param>
         /// <param name="forceIsStatic">if set to <c>true</c> user type field is generated as static.</param>
-        protected virtual UserTypeField ExtractField(ISymbolField field, UserTypeFactory factory, UserTypeGenerationFlags generationFlags, bool extractingBaseClass = false, bool forceIsStatic = false)
+        protected virtual UserTypeField ExtractField(SymbolField field, UserTypeFactory factory, UserTypeGenerationFlags generationFlags, bool extractingBaseClass = false, bool forceIsStatic = false)
         {
             // Prepare data for ExtractFieldInternal
             bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
@@ -405,7 +405,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="isStatic">if set to <c>true</c> generated field should be static.</param>
         /// <param name="generationFlags">The user type generation flags.</param>
         /// <param name="extractingBaseClass">if set to <c>true</c> user type field is being generated for getting base class.</param>
-        protected virtual UserTypeField ExtractFieldInternal(ISymbolField field, TypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags generationFlags, bool extractingBaseClass)
+        protected virtual UserTypeField ExtractFieldInternal(SymbolField field, TypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags generationFlags, bool extractingBaseClass)
         {
             // Non-template user type must use template that can be instantiated.
             TemplateTypeTree fieldTypeAsTemplate = fieldType as TemplateTypeTree;
@@ -580,11 +580,11 @@ namespace CsDebugScript.CodeGen.UserTypes
             const string CounterPrefix = "m_c";
             const string PointerPrefix = "m_p";
             const string ArrayPrefix = "m_rg";
-            ISymbolField[] fields = Symbol.Fields;
-            IEnumerable<ISymbolField> counterFields = fields.Where(r => r.Name.StartsWith(CounterPrefix));
-            Dictionary<ISymbolField, ISymbolField> userTypesArrays = new Dictionary<ISymbolField, ISymbolField>();
+            SymbolField[] fields = Symbol.Fields;
+            IEnumerable<SymbolField> counterFields = fields.Where(r => r.Name.StartsWith(CounterPrefix));
+            Dictionary<SymbolField, SymbolField> userTypesArrays = new Dictionary<SymbolField, SymbolField>();
 
-            foreach (ISymbolField counterField in counterFields)
+            foreach (SymbolField counterField in counterFields)
             {
                 if (counterField.Type.BasicType != BasicType.UInt &&
                     counterField.Type.BasicType != BasicType.Int &&
@@ -602,7 +602,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (string.IsNullOrEmpty(counterNameSurfix))
                     continue;
 
-                foreach (ISymbolField pointerField in fields.Where(r => (r.Name.StartsWith(PointerPrefix) || r.Name.StartsWith(ArrayPrefix)) && r.Name.EndsWith(counterNameSurfix)))
+                foreach (SymbolField pointerField in fields.Where(r => (r.Name.StartsWith(PointerPrefix) || r.Name.StartsWith(ArrayPrefix)) && r.Name.EndsWith(counterNameSurfix)))
                 {
                     if ((counterField.IsStatic) != (pointerField.IsStatic))
                         continue;
@@ -719,7 +719,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="indentation">The current indentation.</param>
         protected virtual void WriteClassComment(IndentedWriter output, int indentation)
         {
-            ISymbol[] baseClasses = Symbol.BaseClasses;
+            Symbol[] baseClasses = Symbol.BaseClasses;
 
             if (baseClasses.Length > 0)
                 output.WriteLine(indentation, "// {0} (original name: {1}) is inherited from:", FullClassName, Symbol.Name);
@@ -748,8 +748,8 @@ namespace CsDebugScript.CodeGen.UserTypes
             int baseClassOffset = 0;
             string nameSpace = null;
             TypeTree baseType = ExportDynamicFields ? GetBaseClassTypeTree(error, Symbol, factory, out baseClassOffset) : null;
-            ISymbol[] baseClasses = Symbol.BaseClasses;
-            ISymbol[] baseClassesForProperties = baseType is SingleClassInheritanceWithInterfacesTypeTree ? baseClasses.Where(b => b.IsEmpty).ToArray() : baseClasses;
+            Symbol[] baseClasses = Symbol.BaseClasses;
+            Symbol[] baseClassesForProperties = baseType is SingleClassInheritanceWithInterfacesTypeTree ? baseClasses.Where(b => b.IsEmpty).ToArray() : baseClasses;
             UserTypeField[] baseClassesForPropertiesAsFields = baseClassesForProperties.Select(type => ExtractField(type.CastAsSymbolField(), factory, generationFlags, true)).ToArray();
             var fields = ExtractFields(factory, generationFlags).OrderBy(f => !f.Static).ThenBy(f => f.FieldName != "ClassCodeType").ThenBy(f => f.GetType().Name).ThenBy(f => f.FieldName).ToArray();
             bool hasStatic = fields.Any(f => f.Static), hasNonStatic = fields.Any(f => !f.Static);
@@ -856,7 +856,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 for (int i = 0; i < baseClassesForProperties.Length; i++)
                 {
-                    ISymbol type = baseClassesForProperties[i];
+                    Symbol type = baseClassesForProperties[i];
                     UserTypeField field = baseClassesForPropertiesAsFields[i];
                     string singleLineDefinition = string.Empty;
 
@@ -985,7 +985,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// Determines whether the specified field should be filtered.
         /// </summary>
         /// <param name="field">The field.</param>
-        protected bool IsFieldFiltered(ISymbolField field)
+        protected bool IsFieldFiltered(SymbolField field)
         {
             return XmlType != null && ((XmlType.IncludedFields.Count > 0 && !XmlType.IncludedFields.Contains(field.Name))
                 || XmlType.ExcludedFields.Contains(field.Name));
@@ -1028,7 +1028,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type for which we are getting base class.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="baseClassOffset">The base class offset.</param>
-        protected virtual TypeTree GetBaseClassTypeTree(TextWriter error, ISymbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected virtual TypeTree GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
             // Check if it is multi class inheritance
             var baseClasses = type.BaseClasses;
@@ -1040,7 +1040,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (emptyTypes == baseClasses.Length - 1)
                 {
                     UserType userType;
-                    ISymbol baseClassSymbol = baseClasses.First(t => !t.IsEmpty);
+                    Symbol baseClassSymbol = baseClasses.First(t => !t.IsEmpty);
 
                     if (factory.GetUserType(baseClassSymbol, out userType) && !(userType is TemplateArgumentUserType))
                     {
@@ -1057,7 +1057,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             if (baseClasses.Length == 1)
             {
                 // Check if base class type should be transformed
-                ISymbol baseClassType = baseClasses[0];
+                Symbol baseClassType = baseClasses[0];
                 UserTypeTransformation transformation = factory.FindTransformation(baseClassType, this);
 
                 if (transformation != null)
@@ -1101,7 +1101,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="factory">The user type factory.</param>
         /// <param name="extractingBaseClass">if set to <c>true</c> user type field is being generated for getting base class.</param>
         /// <param name="bitLength">Number of bits used for this symbol.</param>
-        protected virtual TypeTree GetFieldTypeTree(ISymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
+        protected virtual TypeTree GetFieldTypeTree(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
         {
             return GetSymbolTypeTree(field.Type, factory, bitLength);
         }
@@ -1112,7 +1112,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="bitLength">Number of bits used for this symbol.</param>
-        internal virtual TypeTree GetSymbolTypeTree(ISymbol type, UserTypeFactory factory, int bitLength = 0)
+        internal virtual TypeTree GetSymbolTypeTree(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
             switch (type.Tag)
             {
@@ -1181,7 +1181,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 case SymTagEnum.SymTagPointerType:
                     {
-                        ISymbol pointerType = type.ElementType;
+                        Symbol pointerType = type.ElementType;
                         UserType pointerUserType;
 
                         factory.GetUserType(pointerType, out pointerUserType);
@@ -1259,7 +1259,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 case SymTagEnum.SymTagBaseClass:
                     {
-                        ISymbol symbol = Symbol.Module.FindGlobalTypeWildcard(Symbol.Name).Single();
+                        Symbol symbol = Symbol.Module.FindGlobalTypeWildcard(Symbol.Name).Single();
 
                         return GetSymbolTypeTree(symbol, factory, bitLength);
                     }

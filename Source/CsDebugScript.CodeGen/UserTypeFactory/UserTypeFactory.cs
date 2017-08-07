@@ -44,7 +44,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="typeString">The type string.</param>
         /// <param name="userType">The found user type.</param>
         /// <returns><c>true</c> if user type was found.</returns>
-        internal virtual bool GetUserType(IModule module, string typeString, out UserType userType)
+        internal virtual bool GetUserType(SymbolProviders.Module module, string typeString, out UserType userType)
         {
             userType = GlobalCache.GetUserType(typeString, module);
             return userType != null;
@@ -56,7 +56,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The symbol.</param>
         /// <param name="userType">The found user type.</param>
         /// <returns><c>true</c> if user type was found.</returns>
-        internal virtual bool GetUserType(ISymbol type, out UserType userType)
+        internal virtual bool GetUserType(Symbol type, out UserType userType)
         {
             userType = GlobalCache.GetUserType(type);
             if (!(userType is TemplateUserType))
@@ -82,7 +82,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="module">The module.</param>
         /// <param name="typeString">The type string.</param>
         /// <returns><c>true</c> if user type was found.</returns>
-        internal bool ContainsSymbol(IModule module, string typeString)
+        internal bool ContainsSymbol(SymbolProviders.Module module, string typeString)
         {
             UserType userType;
 
@@ -97,7 +97,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="nameSpace">The namespace.</param>
         /// <param name="generationFlags">The user type generation flags.</param>
         /// <returns>Generated user type for the specified symbol.</returns>
-        internal UserType AddSymbol(ISymbol symbol, XmlType type, string nameSpace, UserTypeGenerationFlags generationFlags)
+        internal UserType AddSymbol(Symbol symbol, XmlType type, string nameSpace, UserTypeGenerationFlags generationFlags)
         {
             UserType userType;
 
@@ -130,7 +130,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="nameSpace">The namespace.</param>
         /// <param name="generationFlags">The user type generation flags.</param>
         /// <returns>Generated user types for the specified symbols.</returns>
-        internal IEnumerable<UserType> AddSymbols(IEnumerable<ISymbol> symbols, XmlType type, string nameSpace, UserTypeGenerationFlags generationFlags)
+        internal IEnumerable<UserType> AddSymbols(IEnumerable<Symbol> symbols, XmlType type, string nameSpace, UserTypeGenerationFlags generationFlags)
         {
             if (!type.IsTemplate && symbols.Count() > 1)
                 throw new Exception("Type has more than one symbol for " + type.Name);
@@ -144,7 +144,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 // Bucketize template user types based on number of template arguments
                 var buckets = new Dictionary<int, List<TemplateUserType>>();
 
-                foreach (ISymbol symbol in symbols)
+                foreach (Symbol symbol in symbols)
                 {
                     UserType userType = null;
 
@@ -213,7 +213,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                             foreach (var argument in arguments)
                             {
-                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
+                                var argumentSymbol = GlobalCache.GetSymbol(argument, (SymbolProviders.Module)specializedTemplate.Module);
 
                                 if (argumentSymbol.Tag != SymTagEnum.SymTagUDT || argumentSymbol.Name.Contains("<"))
                                 {
@@ -233,7 +233,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                             foreach (var argument in arguments)
                             {
-                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
+                                var argumentSymbol = GlobalCache.GetSymbol(argument, (SymbolProviders.Module)specializedTemplate.Module);
 
                                 if (argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
                                 {
@@ -272,7 +272,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="userTypes">The list of user types.</param>
         /// <param name="symbolNamespaces">The symbol namespaces.</param>
         /// <returns>Newly generated user types.</returns>
-        internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, Dictionary<ISymbol, string> symbolNamespaces)
+        internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, Dictionary<Symbol, string> symbolNamespaces)
         {
             ConcurrentBag<UserType> newTypes = new ConcurrentBag<UserType>();
 
@@ -282,7 +282,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (!userType.ExportStaticFields)
                     return;
 
-                ISymbol[] symbols = GlobalCache.GetSymbolStaticFieldsSymbols(userType.Symbol).ToArray();
+                Symbol[] symbols = GlobalCache.GetSymbolStaticFieldsSymbols(userType.Symbol).ToArray();
 
                 if (symbols.Length == 1)
                     return;
@@ -307,7 +307,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             foreach (UserType userType in userTypes)
             {
-                ISymbol symbol = userType.Symbol;
+                Symbol symbol = userType.Symbol;
 
                 if (symbol.Tag != SymTagEnum.SymTagUDT && symbol.Tag != SymTagEnum.SymTagEnum)
                     continue;
@@ -464,9 +464,9 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="userType">The user type.</param>
         private void AddDerivedClassToBaseClasses(UserType userType)
         {
-            IEnumerable<ISymbol> allBaseClasses = userType.Symbol.GetAllBaseClasses();
+            IEnumerable<Symbol> allBaseClasses = userType.Symbol.GetAllBaseClasses();
 
-            foreach (ISymbol baseClass in allBaseClasses)
+            foreach (Symbol baseClass in allBaseClasses)
             {
                 UserType baseClassUserType = GlobalCache.GetUserType(baseClass);
                 TemplateUserType templateUserType = baseClassUserType as TemplateUserType;
@@ -485,7 +485,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type.</param>
         /// <param name="ownerUserType">The owner user type.</param>
         /// <returns>Transformation if matched one is found; otherwise null.</returns>
-        internal UserTypeTransformation FindTransformation(ISymbol type, UserType ownerUserType)
+        internal UserTypeTransformation FindTransformation(Symbol type, UserType ownerUserType)
         {
             // Find first transformation that matches the specified type
             string originalFieldTypeString = type.Name;
@@ -513,7 +513,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     return userType.NonSpecializedFullClassName;
                 }
 
-                ISymbol symbol = type.Module.GetSymbol(inputType);
+                Symbol symbol = type.Module.GetSymbol(inputType);
 
                 if (symbol != null)
                 {

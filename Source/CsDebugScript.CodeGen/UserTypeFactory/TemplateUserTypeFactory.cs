@@ -36,7 +36,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The symbol.</param>
         /// <param name="userType">The found user type.</param>
         /// <returns><c>true</c> if user type was found.</returns>
-        internal override bool GetUserType(ISymbol type, out UserType userType)
+        internal override bool GetUserType(Symbol type, out UserType userType)
         {
             string argumentName;
             string typeString = type.Name;
@@ -58,7 +58,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="typeString">The type string.</param>
         /// <param name="userType">The found user type.</param>
         /// <returns><c>true</c> if user type was found.</returns>
-        internal override bool GetUserType(IModule module, string typeString, out UserType userType)
+        internal override bool GetUserType(SymbolProviders.Module module, string typeString, out UserType userType)
         {
             string argumentName;
 

@@ -83,7 +83,7 @@ namespace CsDebugScript.CodeGen
         /// This helps grouping template symbols together.
         /// </summary>
         /// <param name="symbol">The symbol.</param>
-        public static string CreateLookupNameForSymbol(ISymbol symbol)
+        public static string CreateLookupNameForSymbol(Symbol symbol)
         {
             return string.Join("::", symbol.Namespaces.Select(r => SymbolNameHelper.CreateLookupForNamespace(r)));
         }

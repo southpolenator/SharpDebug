@@ -18,7 +18,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </summary>
         /// <param name="typeName">The template argument type name.</param>
         /// <param name="symbol">The symbol we are generating this user type from.</param>
-        public TemplateArgumentUserType(string typeName, ISymbol symbol)
+        public TemplateArgumentUserType(string typeName, Symbol symbol)
             : base(symbol, null, null)
         {
             this.typeName = typeName;
