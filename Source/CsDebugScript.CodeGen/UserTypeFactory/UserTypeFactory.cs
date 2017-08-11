@@ -213,7 +213,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                             foreach (var argument in arguments)
                             {
-                                var argumentSymbol = GlobalCache.GetSymbol(argument, (SymbolProviders.Module)specializedTemplate.Module);
+                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
 
                                 if (argumentSymbol.Tag != SymTagEnum.SymTagUDT || argumentSymbol.Name.Contains("<"))
                                 {
@@ -233,9 +233,9 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                             foreach (var argument in arguments)
                             {
-                                var argumentSymbol = GlobalCache.GetSymbol(argument, (SymbolProviders.Module)specializedTemplate.Module);
+                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
 
-                                if (argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
+                                if (argumentSymbol != null && argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
                                 {
                                     noneIsTemplate = false;
                                     break;
