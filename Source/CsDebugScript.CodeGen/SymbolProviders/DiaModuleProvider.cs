@@ -1,6 +1,10 @@
 ﻿namespace CsDebugScript.CodeGen.SymbolProviders
 {
-    internal class DiaModuleProvider : IModuleProvider
+    /// <summary>
+    /// Implementation of <see cref="IModuleProvider"/> that uses DIA for opening modules.
+    /// </summary>
+    /// <seealso cref="CsDebugScript.CodeGen.SymbolProviders.IModuleProvider" />
+    public class DiaModuleProvider : IModuleProvider
     {
         /// <summary>
         /// Opens the module for the specified XML module description.

@@ -247,6 +247,27 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             IDiaSymbol type;
 
+            if (typeName == "unsigned __int64")
+            {
+                typeName = "unsigned long long";
+            }
+            else if (typeName == "__int64")
+            {
+                typeName = "long long";
+            }
+            else if (typeName == "long")
+            {
+                typeName = "int";
+            }
+            else if (typeName == "unsigned long")
+            {
+                typeName = "unsigned int";
+            }
+            else if (typeName == "signed char")
+            {
+                typeName = "char";
+            }
+
             if (basicTypes.Cached)
             {
                 if (!BasicTypes.TryGetValue(typeName, out type))
@@ -880,6 +901,93 @@ namespace CsDebugScript.Engine.SymbolProviders
             Marshal.FinalReleaseComObject(globalScope);
             Marshal.FinalReleaseComObject(session);
             Marshal.FinalReleaseComObject(dia);
+        }
+
+        /// <summary>
+        /// Gets all available types from the module.
+        /// </summary>
+        /// <returns>Enumeration of type identifiers.</returns>
+        public IEnumerable<uint> GetAllTypes()
+        {
+            // Get all types defined in the symbol
+            List<IDiaSymbol> diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
+            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagEnum));
+
+            // Remove duplicate symbols by searching for the by name
+            HashSet<string> usedNames = new HashSet<string>();
+
+            foreach (IDiaSymbol s in diaGlobalTypes)
+            {
+                string name = s.name;
+
+                if (!usedNames.Contains(name))
+                {
+                    IDiaSymbol ss = session.globalScope.GetChild(name, (SymTagEnum)s.symTag);
+
+                    if (ss != null)
+                    {
+                        yield return GetTypeId(ss);
+                    }
+                    else
+                    {
+                        yield return GetTypeId(s);
+                    }
+
+                    usedNames.Add(name);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the name and value of all enumeration values.
+        /// </summary>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        /// <returns>
+        /// Enumeration of tuples of name and value for all enumeration values.
+        /// </returns>
+        public IEnumerable<Tuple<string, string>> GetEnumValues(uint enumTypeId)
+        {
+            var type = GetTypeFromId(enumTypeId);
+
+            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagEnum)
+            {
+                foreach (var enumValue in type.GetChildren(SymTagEnum.SymTagNull))
+                {
+                    yield return Tuple.Create(enumValue.name, enumValue.value.ToString());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified type has virtual table of functions.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public bool HasTypeVTable(uint typeId)
+        {
+            var type = GetTypeFromId(typeId);
+
+            if (type.GetChildren(SymTagEnum.SymTagVTable).Any())
+            {
+                return true;
+            }
+            var bases = type.GetBaseClasses();
+
+            foreach (var baseClass in bases)
+            {
+                if (baseClass.offset == 0 && HasTypeVTable(GetTypeId(baseClass)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the global scope.
+        /// </summary>
+        public uint GetGlobalScope()
+        {
+            return GetTypeId(session.globalScope);
         }
     }
 }

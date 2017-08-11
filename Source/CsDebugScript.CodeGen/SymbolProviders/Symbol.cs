@@ -234,6 +234,70 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         }
 
         /// <summary>
+        /// Extracts the dependent symbols into extractedSymbols if they are not recognized as transformations.
+        /// </summary>
+        /// <param name="extractedSymbols">The extracted symbols.</param>
+        /// <param name="transformations">The transformations.</param>
+        public void ExtractDependentSymbols(HashSet<Symbol> extractedSymbols, XmlTypeTransformation[] transformations)
+        {
+            List<Symbol> symbols = Fields.Select(f => f.Type).Union(BaseClasses).ToList();
+
+            if (ElementType != null)
+            {
+                symbols.Add(ElementType);
+            }
+
+            foreach (Symbol symbol in symbols)
+            {
+                if (transformations.Any(t => t.Matches(symbol.Name)))
+                {
+                    continue;
+                }
+
+                Symbol s = symbol;
+
+                if (s.Tag == SymTagEnum.SymTagBaseClass)
+                {
+                    s = s.Module.FindGlobalTypeWildcard(s.Name).Single();
+                }
+
+                if (extractedSymbols.Add(s))
+                {
+                    s.ExtractDependentSymbols(extractedSymbols, transformations);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
+        /// </returns>
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode();
+        }
+
+        /// <summary>
+        /// Determines whether the specified <see cref="System.Object" />, is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
+        public override bool Equals(object obj)
+        {
+            Symbol other = obj as Symbol;
+
+            if (other == null)
+            {
+                return false;
+            }
+            return Id == other.Id;
+        }
+
+        /// <summary>
         /// Casts as symbol field.
         /// </summary>
         public abstract SymbolField CastAsSymbolField();
@@ -242,13 +306,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// Initializes the cache.
         /// </summary>
         public abstract void InitializeCache();
-
-        /// <summary>
-        /// Extracts the dependent symbols into extractedSymbols if they are not recognized as transformations.
-        /// </summary>
-        /// <param name="extractedSymbols">The extracted symbols.</param>
-        /// <param name="transformations">The transformations.</param>
-        public abstract void ExtractDependantSymbols(HashSet<Symbol> extractedSymbols, XmlTypeTransformation[] transformations);
 
         /// <summary>
         /// Determines whether symbol has virtual table of functions.

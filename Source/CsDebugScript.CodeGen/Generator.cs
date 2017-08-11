@@ -423,7 +423,7 @@ namespace CsDebugScript.CodeGen
                     {
                         foreach (Symbol symbol in foundSymbols)
                         {
-                            symbol.ExtractDependantSymbols(symbols, xmlConfig.Transformations);
+                            symbol.ExtractDependentSymbols(symbols, xmlConfig.Transformations);
                         }
                     }
                 }

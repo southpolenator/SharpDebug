@@ -455,29 +455,45 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             DwarfSymbol type = GetType(typeId);
 
-            switch (type.Tag)
+            while (true)
             {
-                case DwarfTag.BaseType:
-                    switch (type.Name)
-                    {
-                        case "double":
-                        case "float":
-                        case "long double":
-                            return BasicType.Float;
-                        case "int":
-                            return BasicType.Int;
-                        case "unsigned int":
-                            return BasicType.UInt;
-                        case "long long unsigned int":
-                            return BasicType.ULong;
-                        case "wchar_t":
-                            return BasicType.WChar;
-                        case "char":
-                            return BasicType.Char;
-                    }
-                    throw new NotImplementedException();
-                default:
-                    return BasicType.NoType;
+                switch (type.Tag)
+                {
+                    case DwarfTag.BaseType:
+                        switch (type.Name)
+                        {
+                            case "double":
+                            case "float":
+                            case "long double":
+                                return BasicType.Float;
+                            case "int":
+                            case "long int":
+                                return BasicType.Int;
+                            case "short unsigned int":
+                            case "unsigned int":
+                            case "long unsigned int":
+                            case "unsigned char":
+                                return BasicType.UInt;
+                            case "long long int":
+                                return BasicType.Long;
+                            case "long long unsigned int":
+                                return BasicType.ULong;
+                            case "wchar_t":
+                                return BasicType.WChar;
+                            case "char":
+                                return BasicType.Char;
+                            case "bool":
+                                return BasicType.Bool;
+                            case "void":
+                                return BasicType.Void;
+                        }
+                        throw new Exception($"Unknown BasicType name: {type.Name}");
+                    case DwarfTag.EnumerationType:
+                        type = GetType(type);
+                        continue;
+                    default:
+                        return BasicType.NoType;
+                }
             }
         }
 
@@ -545,8 +561,11 @@ namespace CsDebugScript.DwarfSymbolProvider
                         return (uint)(subrangetype.GetConstantAttribute(DwarfAttribute.UpperBound) + 1) * GetTypeSize(module, GetTypeId(GetType(type)));
                     }
                 }
-
-                throw new NotImplementedException();
+                else
+                {
+                    // TODO: throw new NotImplementedException();
+                    return 0;
+                }
             }
 
             return (uint)type.Attributes[DwarfAttribute.ByteSize].Constant;
@@ -563,12 +582,14 @@ namespace CsDebugScript.DwarfSymbolProvider
 
             switch (type.Tag)
             {
+                case DwarfTag.ReferenceType:
                 case DwarfTag.PointerType:
                     return SymTag.PointerType;
                 case DwarfTag.SubroutineType:
                     return SymTag.FunctionType;
                 case DwarfTag.StructureType:
                 case DwarfTag.ClassType:
+                case DwarfTag.UnionType:
                     return SymTag.UDT;
                 case DwarfTag.BaseType:
                     return SymTag.BaseType;
@@ -625,6 +646,21 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="className">Name of the class.</param>
         public Tuple<uint, int> GetTypeBaseClass(Module module, uint typeId, string className)
         {
+            DwarfSymbol type = GetType(typeId);
+
+            if (type.Children != null)
+            {
+                foreach (DwarfSymbol child in type.Children)
+                {
+                    if (child.Tag == DwarfTag.Inheritance && child.Name == className)
+                    {
+                        int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+
+                        return Tuple.Create(GetTypeId(child), offset);
+                    }
+                }
+            }
+
             throw new NotImplementedException();
         }
 
@@ -635,7 +671,23 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="typeId">The type identifier.</param>
         public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId)
         {
-            throw new NotImplementedException();
+            DwarfSymbol type = GetType(typeId);
+            Dictionary<string, Tuple<uint, int>> result = new Dictionary<string, Tuple<uint, int>>();
+
+            if (type.Children != null)
+            {
+                foreach (DwarfSymbol child in type.Children)
+                {
+                    if (child.Tag == DwarfTag.Inheritance && !string.IsNullOrEmpty(child.Name))
+                    {
+                        int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+
+                        result.Add(child.FullName, Tuple.Create(GetTypeId(child), offset));
+                    }
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -645,7 +697,46 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="typeId">The type identifier.</param>
         public string[] GetTypeFieldNames(Module module, uint typeId)
         {
-            throw new NotImplementedException();
+            DwarfSymbol type = GetType(typeId);
+            List<string> names = new List<string>();
+
+            if (type.Tag == DwarfTag.PointerType)
+            {
+                type = GetType(type);
+            }
+
+            Queue<DwarfSymbol> baseClasses = new Queue<DwarfSymbol>();
+
+            baseClasses.Enqueue(type);
+            while (baseClasses.Count > 0)
+            {
+                type = baseClasses.Dequeue();
+                if (type.Children != null)
+                {
+                    foreach (DwarfSymbol child in type.Children)
+                    {
+                        if (child.Tag == DwarfTag.Member && !string.IsNullOrEmpty(child.Name))
+                        {
+                            if (!child.Attributes.ContainsKey(DwarfAttribute.Artifical) && (!child.Attributes.ContainsKey(DwarfAttribute.External) || !child.Attributes[DwarfAttribute.External].Flag))
+                            {
+                                names.Add(child.Name);
+                            }
+                        }
+                        else if (child.Tag == DwarfTag.Member && string.IsNullOrEmpty(child.Name))
+                        {
+                            // We want to add unnamed unions
+                            DwarfSymbol unionType = GetType(child);
+
+                            if (unionType.Tag == DwarfTag.UnionType)
+                            {
+                                baseClasses.Enqueue(unionType);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return names.ToArray();
         }
 
         /// <summary>
@@ -656,7 +747,50 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="fieldName">Name of the field.</param>
         public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
         {
-            throw new NotImplementedException();
+            DwarfSymbol type = GetType(typeId);
+
+            if (type.Tag == DwarfTag.PointerType)
+            {
+                type = GetType(type);
+            }
+
+            Queue<Tuple<DwarfSymbol, int>> baseClasses = new Queue<Tuple<DwarfSymbol, int>>();
+
+            baseClasses.Enqueue(Tuple.Create(type, 0));
+            while (baseClasses.Count > 0)
+            {
+                Tuple<DwarfSymbol, int> typeAndOffset = baseClasses.Dequeue();
+                int typeOffset = typeAndOffset.Item2;
+
+                type = typeAndOffset.Item1;
+                if (type.Children != null)
+                {
+                    foreach (DwarfSymbol child in type.Children)
+                    {
+                        if (child.Tag == DwarfTag.Member && child.Name == fieldName)
+                        {
+                            uint fieldTypeId = GetTypeId(GetType(child));
+                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+
+                            return Tuple.Create(fieldTypeId, typeOffset + offset);
+                        }
+                        else if (child.Tag == DwarfTag.Member && string.IsNullOrEmpty(child.Name))
+                        {
+                            // We want to add unnamed unions
+                            DwarfSymbol unionType = GetType(child);
+
+                            if (unionType.Tag == DwarfTag.UnionType)
+                            {
+                                int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+
+                                baseClasses.Enqueue(Tuple.Create(unionType, typeOffset + offset));
+                            }
+                        }
+                    }
+                }
+            }
+
+            throw new Exception("Field name not found");
         }
 
         /// <summary>
@@ -678,6 +812,15 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="typeName">Name of the type.</param>
         public uint GetTypeId(Module module, string typeName)
         {
+            if (typeName.StartsWith("const "))
+            {
+                typeName = typeName.Substring(6);
+            }
+            if (typeName.EndsWith(" const*"))
+            {
+                typeName = typeName.Substring(0, typeName.Length - 7) + "*";
+            }
+
             DwarfSymbol type;
 
             if (typeNameToType.TryGetValue(typeName, out type))
@@ -696,6 +839,90 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             throw new Exception("Type name not found");
+        }
+
+        /// <summary>
+        /// Gets all available types from the module.
+        /// </summary>
+        /// <returns>Enumeration of type identifiers.</returns>
+        public IEnumerable<uint> GetAllTypes()
+        {
+            if (!allSymbolsEnumerated)
+            {
+                ContinueSymbolSearch(s => false);
+            }
+
+            foreach (DwarfSymbol type in typeNameToType.Values)
+            {
+                if (type.Tag == DwarfTag.ClassType || type.Tag == DwarfTag.StructureType || type.Tag == DwarfTag.EnumerationType
+                    || type.Tag == DwarfTag.InterfaceType || type.Tag == DwarfTag.UnionType)
+                {
+                    yield return GetTypeId(type);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the name and value of all enumeration values.
+        /// </summary>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        /// <returns>
+        /// Enumeration of tuples of name and value for all enumeration values.
+        /// </returns>
+        public IEnumerable<Tuple<string, string>> GetEnumValues(uint enumTypeId)
+        {
+            DwarfSymbol enumType = GetType(enumTypeId);
+
+            foreach (DwarfSymbol child in enumType.Children)
+            {
+                if (child.Tag == DwarfTag.Enumerator)
+                {
+                    string svalue = child.GetConstantAttribute(DwarfAttribute.ConstValue).ToString();
+
+                    yield return Tuple.Create(child.Name, svalue);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified type has virtual table of functions.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public bool HasTypeVTable(uint typeId)
+        {
+            DwarfSymbol type = GetType(typeId);
+            Queue<DwarfSymbol> baseClasses = new Queue<DwarfSymbol>();
+
+            baseClasses.Enqueue(type);
+            while (baseClasses.Count > 0)
+            {
+                type = baseClasses.Dequeue();
+                if (type.Children != null)
+                {
+                    foreach (DwarfSymbol symbol in type.Children)
+                    {
+                        if (symbol.Tag == DwarfTag.Inheritance)
+                        {
+                            baseClasses.Enqueue(GetType(symbol));
+                        }
+                        else if (symbol.Tag == DwarfTag.Subprogram && symbol.Attributes.ContainsKey(DwarfAttribute.Virtuality))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the global scope.
+        /// </summary>
+        public uint GetGlobalScope()
+        {
+            // Symbol that has all info about globals (global variables)
+            // TODO: throw new NotImplementedException();
+            return 0;
         }
 
         /// <summary>
@@ -1040,6 +1267,69 @@ namespace CsDebugScript.DwarfSymbolProvider
                                 location.Offset += (int)reader.LEB128();
                                 stack.Push(location);
                             }
+                            break;
+                        case DwarfOperation.lit0:
+                        case DwarfOperation.lit1:
+                        case DwarfOperation.lit2:
+                        case DwarfOperation.lit3:
+                        case DwarfOperation.lit4:
+                        case DwarfOperation.lit5:
+                        case DwarfOperation.lit6:
+                        case DwarfOperation.lit7:
+                        case DwarfOperation.lit8:
+                        case DwarfOperation.lit9:
+                        case DwarfOperation.lit10:
+                        case DwarfOperation.lit11:
+                        case DwarfOperation.lit12:
+                        case DwarfOperation.lit13:
+                        case DwarfOperation.lit14:
+                        case DwarfOperation.lit15:
+                        case DwarfOperation.lit16:
+                        case DwarfOperation.lit17:
+                        case DwarfOperation.lit18:
+                        case DwarfOperation.lit19:
+                        case DwarfOperation.lit20:
+                        case DwarfOperation.lit21:
+                        case DwarfOperation.lit22:
+                        case DwarfOperation.lit23:
+                            stack.Push(Location.Absolute((ulong)(operation - DwarfOperation.lit0)));
+                            break;
+                        case DwarfOperation.breg0:
+                        case DwarfOperation.breg1:
+                        case DwarfOperation.breg2:
+                        case DwarfOperation.breg3:
+                        case DwarfOperation.breg4:
+                        case DwarfOperation.breg5:
+                        case DwarfOperation.breg6:
+                        case DwarfOperation.breg7:
+                        case DwarfOperation.breg8:
+                        case DwarfOperation.breg9:
+                        case DwarfOperation.breg10:
+                        case DwarfOperation.breg11:
+                        case DwarfOperation.breg12:
+                        case DwarfOperation.breg13:
+                        case DwarfOperation.breg14:
+                        case DwarfOperation.breg15:
+                        case DwarfOperation.breg16:
+                        case DwarfOperation.breg17:
+                        case DwarfOperation.breg18:
+                        case DwarfOperation.breg19:
+                        case DwarfOperation.breg20:
+                        case DwarfOperation.breg21:
+                        case DwarfOperation.breg22:
+                        case DwarfOperation.breg23:
+                        case DwarfOperation.breg24:
+                        case DwarfOperation.breg25:
+                        case DwarfOperation.breg26:
+                        case DwarfOperation.breg27:
+                        case DwarfOperation.breg28:
+                        case DwarfOperation.breg29:
+                        case DwarfOperation.breg30:
+                        case DwarfOperation.breg31:
+                            stack.Push(Location.RegisterRelative(operation - DwarfOperation.reg0, (int)reader.SLEB128()));
+                            break;
+                        case DwarfOperation.bregx:
+                            stack.Push(Location.RegisterRelative((int)reader.LEB128(), (int)reader.SLEB128()));
                             break;
                         case DwarfOperation.addr:
                             stack.Push(Location.Absolute(reader.ReadUint()));
@@ -1443,6 +1733,33 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="type">The type.</param>
         private uint GetTypeId(DwarfSymbol type)
         {
+            if (type == null)
+            {
+                type = type;
+            }
+
+            if (type != null && type.Tag == DwarfTag.Inheritance)
+            {
+                type = type;
+            }
+
+            if (type != null && type.Tag == DwarfTag.PointerType)
+            {
+                DwarfSymbol ptype = GetType(type);
+
+                if (ptype != null)
+                {
+                    if (ptype.Tag == DwarfTag.SubroutineType)
+                    {
+                        type = type;
+                    }
+                }
+                else
+                {
+                    type = type;
+                }
+            }
+
             uint typeId;
 
             if (typeOffsetToTypeId.TryGetValue(type.Offset, out typeId))

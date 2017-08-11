@@ -169,6 +169,10 @@
     <Compile Include="SymbolProviders\DiaModuleProvider.cs" />
     <Compile Include="SymbolProviders\DiaSymbol.cs" />
     <Compile Include="SymbolProviders\DiaSymbolField.cs" />
+    <Compile Include="SymbolProviders\EngineSymbolProviderModule.cs" />
+    <Compile Include="SymbolProviders\EngineSymbolProviderModuleProvider.cs" />
+    <Compile Include="SymbolProviders\EngineSymbolProviderSymbol.cs" />
+    <Compile Include="SymbolProviders\EngineSymbolProviderSymbolField.cs" />
     <Compile Include="SymbolProviders\Module.cs" />
     <Compile Include="SymbolProviders\IModuleProvider.cs" />
     <Compile Include="SymbolProviders\Symbol.cs" />

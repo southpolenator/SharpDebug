@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.CodeGen;
+using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.Engine;
 using CsDebugScript.Engine.SymbolProviders;
 using Microsoft.CodeAnalysis;
@@ -350,7 +351,9 @@ namespace CsDebugScript
                 codeGenConfig.GeneratedAssemblyName = assemblyPath;
 
                 // Execute code generation
-                byte[] assemblyBytes = new Generator().GenerateAssembly(codeGenConfig);
+                IModuleProvider moduleProvider = new EngineSymbolProviderModuleProvider(Process.Current);
+                Generator generator = new Generator(moduleProvider);
+                byte[] assemblyBytes = generator.GenerateAssembly(codeGenConfig);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(assemblyPath));
                 File.WriteAllBytes(assemblyPath, assemblyBytes);
@@ -512,7 +515,9 @@ namespace CsDebugScript
                 codeGenConfig.GenerateNamespaceAsStaticClass = true;
 
                 // Execute code generation
-                string code = new Generator().GenerateScriptCode(codeGenConfig);
+                IModuleProvider moduleProvider = new EngineSymbolProviderModuleProvider(Process.Current);
+                Generator generator = new Generator(moduleProvider);
+                string code = generator.GenerateScriptCode(codeGenConfig);
 
                 // Add generated code to be loaded after execution
                 return new ImportUserTypeCode()

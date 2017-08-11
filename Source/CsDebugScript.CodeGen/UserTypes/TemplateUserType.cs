@@ -181,9 +181,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     arguments.Add(extractedType);
 
                     // Try to see if argument is number (constants are removed from the template arguments as they cannot be used in C#)
-                    double constant;
-
-                    if (!double.TryParse(extractedType, out constant))
+                    if (!module.IsConstant(extractedType))
                     {
                         // Check if type is existing type (symbol)
                         Symbol symbol = GlobalCache.GetSymbol(extractedType, module);
@@ -384,7 +382,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             // TODO: Consider using ConstructorName instead of ClassName
             // TODO: Why is this function using ClassName and one with no arguments is using FullClassName?
-            string className = ClassName;
+            string className = ClassName ?? OriginalClassName;
             string symbolName = className;
             int templateStart = symbolName.IndexOf('<');
 

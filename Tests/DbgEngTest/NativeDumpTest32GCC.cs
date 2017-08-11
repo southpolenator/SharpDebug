@@ -21,7 +21,7 @@ namespace DbgEngTest
         {
             SyncStart();
             testRunner = new NativeDumpTest(DefaultDumpFile, DefaultModuleName, DefaultSymbolPath);
-            testRunner.TestSetup(useDia: false, useDwarf: true, executeCodeGen: false);
+            testRunner.TestSetup(useDia: false, useDwarf: true);
         }
 
         [ClassCleanup]

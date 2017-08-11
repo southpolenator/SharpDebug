@@ -92,7 +92,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <summary>
         /// Gets the value.
         /// </summary>
-        public dynamic Value { get; protected set; }
+        public object Value { get; protected set; }
 
         /// <summary>
         /// Gets the name of the property.

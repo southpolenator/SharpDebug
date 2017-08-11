@@ -10,7 +10,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
     /// <summary>
     /// Class represents module during debugging. It is being described by PDB.
     /// </summary>
-    internal class DiaModule : Module
+    public class DiaModule : Module
     {
         /// <summary>
         /// The DIA data source

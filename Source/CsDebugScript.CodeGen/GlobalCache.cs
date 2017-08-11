@@ -31,21 +31,21 @@ namespace CsDebugScript.CodeGen
 
         public static UserType GetUserType(Symbol symbol)
         {
-            if (symbol != null)
+            if (symbol != null && (symbol.Tag == SymTagEnum.SymTagEnum || symbol.Tag == SymTagEnum.SymTagUDT || symbol.Tag == SymTagEnum.SymTagBaseClass))
             {
                 if (symbol.UserType == null)
                 {
-                    symbol = GetSymbol(symbol.Name, symbol.Module);
+                    symbol = GetSymbol(symbol.Name, symbol.Module) ?? symbol;
                 }
 
                 if (symbol.UserType == null && symbol.Name.EndsWith("*"))
                 {
                     // Try to use Pointer
-                    symbol = GetSymbol(symbol.Name.Substring(0, symbol.Name.Length - 1), symbol.Module);
+                    symbol = GetSymbol(symbol.Name.Substring(0, symbol.Name.Length - 1), symbol.Module) ?? symbol;
                 }
                 else if (symbol.UserType == null && symbol.Tag == SymTagEnum.SymTagArrayType)
                 {
-                    symbol = GetSymbol(symbol.ElementType.Name, symbol.Module);
+                    symbol = GetSymbol(symbol.ElementType.Name, symbol.Module) ?? symbol;
                 }
 
                 return symbol.UserType;

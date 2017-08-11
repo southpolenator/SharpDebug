@@ -227,46 +227,77 @@ namespace CsDebugScript.DwarfSymbolProvider
 
             SymbolsTree = symbols.ToArray();
 
-            // Post process all symbols
-            foreach (DwarfSymbol symbol in Symbols)
+            if (SymbolsTree.Length > 0)
             {
-                Dictionary<DwarfAttribute, DwarfAttributeValue> attributes = symbol.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
-
-                foreach (DwarfAttributeValue value in attributes.Values)
+                // Add void type symbol
+                DwarfSymbol voidSymbol = new DwarfSymbol()
                 {
-                    if (value.Type == DwarfAttributeValueType.Reference)
+                    Tag = DwarfTag.BaseType,
+                    Offset = -1,
+                    Parent = SymbolsTree[0],
+                    Attributes = new Dictionary<DwarfAttribute, DwarfAttributeValue>()
                     {
-                        DwarfSymbol reference;
+                        { DwarfAttribute.Name, new DwarfAttributeValue() { Type = DwarfAttributeValueType.String, Value = "void" } },
+                        { DwarfAttribute.ByteSize, new DwarfAttributeValue() { Type = DwarfAttributeValueType.Constant, Value = (ulong)0 } },
+                    },
+                };
+                if (SymbolsTree[0].Children == null)
+                {
+                    SymbolsTree[0].Children = new List<DwarfSymbol>();
+                }
+                SymbolsTree[0].Children.Insert(0, voidSymbol);
+                symbolsByOffset.Add(voidSymbol.Offset, voidSymbol);
 
-                        if (symbolsByOffset.TryGetValue((int)value.Address, out reference))
+                // Post process all symbols
+                foreach (DwarfSymbol symbol in Symbols)
+                {
+                    Dictionary<DwarfAttribute, DwarfAttributeValue> attributes = symbol.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
+
+                    foreach (DwarfAttributeValue value in attributes.Values)
+                    {
+                        if (value.Type == DwarfAttributeValueType.Reference)
                         {
-                            value.Type = DwarfAttributeValueType.ResolvedReference;
-                            value.Value = reference;
+                            DwarfSymbol reference;
+
+                            if (symbolsByOffset.TryGetValue((int)value.Address, out reference))
+                            {
+                                value.Type = DwarfAttributeValueType.ResolvedReference;
+                                value.Value = reference;
+                            }
+                        }
+                        else if (value.Type == DwarfAttributeValueType.Address)
+                        {
+                            value.Value = value.Address - codeSegmentOffset;
                         }
                     }
-                    else if (value.Type == DwarfAttributeValueType.Address)
+
+                    if (symbol.Tag == DwarfTag.PointerType && !attributes.ContainsKey(DwarfAttribute.Type))
                     {
-                        value.Value = value.Address - codeSegmentOffset;
+                        attributes.Add(DwarfAttribute.Type, new DwarfAttributeValue()
+                        {
+                            Type = DwarfAttributeValueType.ResolvedReference,
+                            Value = voidSymbol,
+                        });
                     }
                 }
-            }
 
-            // Merge specifications
-            foreach (DwarfSymbol symbol in Symbols)
-            {
-                Dictionary<DwarfAttribute, DwarfAttributeValue> attributes = symbol.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
-                DwarfAttributeValue specificationValue;
-
-                if (attributes.TryGetValue(DwarfAttribute.Specification, out specificationValue) && specificationValue.Type == DwarfAttributeValueType.ResolvedReference)
+                // Merge specifications
+                foreach (DwarfSymbol symbol in Symbols)
                 {
-                    DwarfSymbol reference = specificationValue.Reference;
-                    Dictionary<DwarfAttribute, DwarfAttributeValue> referenceAttributes = reference.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
+                    Dictionary<DwarfAttribute, DwarfAttributeValue> attributes = symbol.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
+                    DwarfAttributeValue specificationValue;
 
-                    foreach (KeyValuePair<DwarfAttribute, DwarfAttributeValue> kvp in attributes)
+                    if (attributes.TryGetValue(DwarfAttribute.Specification, out specificationValue) && specificationValue.Type == DwarfAttributeValueType.ResolvedReference)
                     {
-                        if (kvp.Key != DwarfAttribute.Specification)
+                        DwarfSymbol reference = specificationValue.Reference;
+                        Dictionary<DwarfAttribute, DwarfAttributeValue> referenceAttributes = reference.Attributes as Dictionary<DwarfAttribute, DwarfAttributeValue>;
+
+                        foreach (KeyValuePair<DwarfAttribute, DwarfAttributeValue> kvp in attributes)
                         {
-                            referenceAttributes[kvp.Key] = kvp.Value;
+                            if (kvp.Key != DwarfAttribute.Specification)
+                            {
+                                referenceAttributes[kvp.Key] = kvp.Value;
+                            }
                         }
                     }
                 }

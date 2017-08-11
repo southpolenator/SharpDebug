@@ -11,6 +11,12 @@ namespace CsDebugScript.Engine
     public interface ISymbolProvider
     {
         /// <summary>
+        /// Gets the <see cref="ISymbolProviderModule"/> interface for the specified module.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        ISymbolProviderModule GetSymbolProviderModule(Module module);
+
+        /// <summary>
         /// Gets the symbol tag of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>

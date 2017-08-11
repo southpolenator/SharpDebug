@@ -189,5 +189,31 @@ namespace CsDebugScript.Engine
         /// <param name="vtableAddress">The vtable address.</param>
         /// <param name="distance">The distance within the module.</param>
         Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance);
+
+        #region CodeGen needed functionality
+        /// <summary>
+        /// Gets all available types from the module.
+        /// </summary>
+        /// <returns>Enumeration of type identifiers.</returns>
+        IEnumerable<uint> GetAllTypes();
+
+        /// <summary>
+        /// Gets the name and value of all enumeration values.
+        /// </summary>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        /// <returns>Enumeration of tuples of name and value for all enumeration values.</returns>
+        IEnumerable<Tuple<string, string>> GetEnumValues(uint enumTypeId);
+
+        /// <summary>
+        /// Determines whether the specified type has virtual table of functions.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        bool HasTypeVTable(uint typeId);
+
+        /// <summary>
+        /// Gets the global scope.
+        /// </summary>
+        uint GetGlobalScope();
+        #endregion
     }
 }

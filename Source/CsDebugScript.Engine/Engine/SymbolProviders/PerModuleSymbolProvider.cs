@@ -49,6 +49,30 @@ namespace CsDebugScript.Engine.SymbolProviders
         public abstract ISymbolProviderModule LoadModule(Module module);
 
         /// <summary>
+        /// Gets the <see cref="ISymbolProviderModule" /> interface for the specified module.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public ISymbolProviderModule GetSymbolProviderModule(Module module)
+        {
+            if (module == null)
+            {
+                return null;
+            }
+
+            if (module.SymbolProvider == null)
+            {
+                module.SymbolProvider = modules[module];
+            }
+
+            if (module.SymbolProvider == null && FallbackSymbolProvider != null)
+            {
+                module.SymbolProvider = FallbackSymbolProvider.GetSymbolProviderModule(module);
+            }
+
+            return module.SymbolProvider;
+        }
+
+        /// <summary>
         /// Gets the global variable address.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -528,25 +552,6 @@ namespace CsDebugScript.Engine.SymbolProviders
             }
 
             return symbolProviderModule?.GetRuntimeCodeTypeAndOffset(process, vtableAddress, (uint)distance);
-        }
-
-        /// <summary>
-        /// Gets the symbol provider module interface.
-        /// </summary>
-        /// <param name="module">The module.</param>
-        private ISymbolProviderModule GetSymbolProviderModule(Module module)
-        {
-            if (module == null)
-            {
-                return null;
-            }
-
-            if (module.SymbolProvider == null)
-            {
-                module.SymbolProvider = modules[module];
-            }
-
-            return module.SymbolProvider;
         }
 
         /// <summary>

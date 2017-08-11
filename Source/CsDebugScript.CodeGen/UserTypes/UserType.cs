@@ -1259,7 +1259,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 case SymTagEnum.SymTagBaseClass:
                     {
-                        Symbol symbol = Symbol.Module.FindGlobalTypeWildcard(Symbol.Name).Single();
+                        Symbol symbol = Symbol.Module.FindGlobalTypeWildcard(type.Name).Single();
 
                         return GetSymbolTypeTree(symbol, factory, bitLength);
                     }

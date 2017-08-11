@@ -6,7 +6,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
     /// <summary>
     /// Class represents symbol field during debugging.
     /// </summary>
-    internal class DiaSymbolField : SymbolField
+    public class DiaSymbolField : SymbolField
     {
         /// <summary>
         /// The DIA symbol
