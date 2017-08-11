@@ -26,6 +26,17 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <param name="module">The engine module.</param>
         /// <param name="xmlModule">The XML module description.</param>
         public EngineSymbolProviderModule(CsDebugScript.Module module, XmlModule xmlModule)
+            : this(module, xmlModule, Context.SymbolProvider)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EngineSymbolProviderModule" /> class.
+        /// </summary>
+        /// <param name="module">The engine module.</param>
+        /// <param name="xmlModule">The XML module description.</param>
+        /// <param name="symbolProvider">The engine symbol provider.</param>
+        public EngineSymbolProviderModule(CsDebugScript.Module module, XmlModule xmlModule, ISymbolProvider symbolProvider)
         {
             if (string.IsNullOrEmpty(xmlModule.Name))
             {
@@ -34,7 +45,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             Name = xmlModule.Name;
             Namespace = xmlModule.Namespace;
             EngineModule = module;
-            EngineModuleProvider = Context.SymbolProvider.GetSymbolProviderModule(module);
+            EngineModuleProvider = symbolProvider.GetSymbolProviderModule(module);
             symbolsById = new DictionaryCache<uint, Symbol>(CreateSymbol);
             symbolsByName = new DictionaryCache<string, Symbol>(FindSymbol);
         }

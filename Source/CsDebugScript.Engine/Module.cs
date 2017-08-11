@@ -93,6 +93,11 @@ namespace CsDebugScript
         private SimpleCache<Tuple<DateTime, ulong>> timestampAndSize;
 
         /// <summary>
+        /// The pointer size
+        /// </summary>
+        private SimpleCache<uint> pointerSize;
+
+        /// <summary>
         /// The next fake code type identifier
         /// </summary>
         private int nextFakeCodeTypeId = -1;
@@ -148,6 +153,7 @@ namespace CsDebugScript
 
                 return null;
             });
+            pointerSize = SimpleCache.Create(() => Process.GetPointerSize());
             TypesByName = new DictionaryCache<string, CodeType>(GetTypeByName);
             TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
             ClrTypes = new DictionaryCache<Microsoft.Diagnostics.Runtime.ClrType, CodeType>(GetClrCodeType);
@@ -315,6 +321,11 @@ namespace CsDebugScript
             {
                 return mappedImageName.Value;
             }
+
+            internal set
+            {
+                mappedImageName.Value = value;
+            }
         }
 
         /// <summary>
@@ -374,6 +385,22 @@ namespace CsDebugScript
             get
             {
                 return clrPdbReader.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the size of the pointer in this module.
+        /// </summary>
+        public uint PointerSize
+        {
+            get
+            {
+                return pointerSize.Value;
+            }
+
+            internal set
+            {
+                pointerSize.Value = value;
             }
         }
 

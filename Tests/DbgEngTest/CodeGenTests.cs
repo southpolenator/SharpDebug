@@ -1,9 +1,9 @@
 ﻿using CsDebugScript.CodeGen;
+using CsDebugScript.DwarfSymbolProvider;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace DbgEngTest
 {
@@ -236,28 +236,56 @@ namespace DbgEngTest
         [TestCategory("CodeGen")]
         public void NativeDumpTest_gcc()
         {
-            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb");
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.exe", useDwarf: true);
         }
 
         [TestMethod]
         [TestCategory("CodeGen")]
         public void NativeDumpTest_gcc_NoTransformations()
         {
-            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb", transformations: false);
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.exe", transformations: false, useDwarf: true);
         }
 
         [TestMethod]
         [TestCategory("CodeGen")]
         public void NativeDumpTest_gcc_NoSingle()
         {
-            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb", singleFileExport: false);
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.exe", singleFileExport: false, useDwarf: true);
         }
 
         [TestMethod]
         [TestCategory("CodeGen")]
         public void NativeDumpTest_gcc_NoRoslyn()
         {
-            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.pdb", compileWithRoslyn: false);
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.gcc.exe", compileWithRoslyn: false, useDwarf: true);
+        }
+
+        [TestMethod]
+        [TestCategory("CodeGen")]
+        public void NativeDumpTest_gcc_x64()
+        {
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.x64.gcc.exe", useDwarf: true);
+        }
+
+        [TestMethod]
+        [TestCategory("CodeGen")]
+        public void NativeDumpTest_gcc_x64_NoTransformations()
+        {
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.x64.gcc.exe", transformations: false, useDwarf: true);
+        }
+
+        [TestMethod]
+        [TestCategory("CodeGen")]
+        public void NativeDumpTest_gcc_x64_NoSingle()
+        {
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.x64.gcc.exe", singleFileExport: false, useDwarf: true);
+        }
+
+        [TestMethod]
+        [TestCategory("CodeGen")]
+        public void NativeDumpTest_gcc_x64_NoRoslyn()
+        {
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.x64.gcc.exe", compileWithRoslyn: false, useDwarf: true);
         }
 
         [TestMethod]
@@ -288,7 +316,7 @@ namespace DbgEngTest
             DoCodeGen(@"..\..\..\dumps\NativeDumpTest.VS2013.pdb", compileWithRoslyn: false);
         }
 
-        private void DoCodeGen(string pdbFile, bool singleFileExport = true, bool compileWithRoslyn = true, bool transformations = true)
+        private void DoCodeGen(string pdbFile, bool singleFileExport = true, bool compileWithRoslyn = true, bool transformations = true, bool useDwarf = false)
         {
             XmlConfig xmlConfig = GetXmlConfig(pdbFile);
 
@@ -299,10 +327,10 @@ namespace DbgEngTest
             {
                 xmlConfig.Transformations = new XmlTypeTransformation[0];
             }
-            DoCodeGen(xmlConfig);
+            DoCodeGen(xmlConfig, useDwarf);
         }
 
-        private void DoCodeGen(XmlConfig xmlConfig)
+        private void DoCodeGen(XmlConfig xmlConfig, bool useDwarf)
         {
             TextWriter error = Console.Error;
 
@@ -310,8 +338,19 @@ namespace DbgEngTest
             {
                 using (StringWriter writer = new StringWriter())
                 {
+                    Generator generator;
+
+                    if (!useDwarf)
+                    {
+                        generator = new Generator();
+                    }
+                    else
+                    {
+                        generator = new Generator(new DwarfCodeGenModuleProvider());
+                    }
+
                     Console.SetError(writer);
-                    new Generator().Generate(xmlConfig);
+                    generator.Generate(xmlConfig);
                     writer.Flush();
                     string errorText = writer.GetStringBuilder().ToString();
 

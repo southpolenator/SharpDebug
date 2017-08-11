@@ -76,11 +76,6 @@ namespace CsDebugScript.DwarfSymbolProvider
         private ulong codeSegmentOffset;
 
         /// <summary>
-        /// Flag indicating if image is 64 bit.
-        /// </summary>
-        private bool is64bit;
-
-        /// <summary>
         /// Mapping from type ID to type.
         /// </summary>
         private ConcurrentDictionary<uint, DwarfSymbol> typeIdToType = new ConcurrentDictionary<uint, DwarfSymbol>();
@@ -107,6 +102,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         public DwarfSymbolProviderModule(Module module, DwarfCompilationUnit[] compilationUnits, DwarfLineNumberProgram[] programs, DwarfCommonInformationEntry[] commonInformationEntries, ulong codeSegmentOffset, bool is64bit)
         {
             Module = module;
+            Is64bit = is64bit;
             symbolEnumerator = compilationUnits.SelectMany(cu => cu.Symbols).GetEnumerator();
             lineInformationCache = SimpleCache.Create(() =>
             {
@@ -125,13 +121,17 @@ namespace CsDebugScript.DwarfSymbolProvider
             });
             frameDescriptionEntryFinder = SimpleCache.Create(() => new MemoryRegionFinder(frameDescriptionEntries.Value.Select(f => new MemoryRegion { BaseAddress = f.InitialLocation, RegionSize = f.AddressRange }).ToList()));
             this.codeSegmentOffset = codeSegmentOffset;
-            this.is64bit = is64bit;
         }
 
         /// <summary>
         /// Gets the module.
         /// </summary>
         public Module Module { get; private set; }
+
+        /// <summary>
+        /// Flag indicating if image is 64 bit.
+        /// </summary>
+        internal bool Is64bit { get; private set; }
 
         /// <summary>
         /// Gets the name of the enumeration value.
@@ -550,7 +550,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 if (type.Tag == DwarfTag.SubroutineType)
                 {
-                    return module.Process.GetPointerSize();
+                    return module.PointerSize;
                 }
                 else if (type.Tag == DwarfTag.ArrayType)
                 {
@@ -1535,7 +1535,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             ulong startAddress = startAddressValue.Address + codeSegmentOffset;
             ulong endAddress = endAddressValue.Type == DwarfAttributeValueType.Address ? endAddressValue.Address + codeSegmentOffset : startAddress + endAddressValue.Constant;
-            Location ebp = Location.RegisterRelative(is64bit ? 6 : 5, is64bit ? 16 : 8);
+            Location ebp = Location.RegisterRelative(Is64bit ? 6 : 5, Is64bit ? 16 : 8);
 
             int index = frameDescriptionEntryFinder.Value.Find(startAddress);
 
@@ -1587,7 +1587,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                 ulong address;
 
-                if (is64bit)
+                if (Is64bit)
                 {
                     switch (location.Register)
                     {

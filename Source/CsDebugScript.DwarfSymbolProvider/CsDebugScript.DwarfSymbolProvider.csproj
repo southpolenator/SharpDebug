@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DwarfCodeGenModuleProvider.cs" />
     <Compile Include="DwarfAttributeValue.cs" />
     <Compile Include="DwarfCommonInformationEntry.cs" />
     <Compile Include="DwarfCompilationUnit.cs" />
@@ -78,11 +79,16 @@
       <Project>{3ca2d1d6-136f-4032-901e-043fa25b6255}</Project>
       <Name>DiaHelpers</Name>
     </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj">
+      <Project>{283a0331-2ead-4dd2-a3fe-20d229e2d277}</Project>
+      <Name>CsDebugScript.CodeGen</Name>
+    </ProjectReference>
     <Reference Include="Dia2Lib">
       <HintPath>$(SolutionDir)\Source\DiaHelpers\Dia2Lib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
