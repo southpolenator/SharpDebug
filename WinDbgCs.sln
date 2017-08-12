@@ -94,6 +94,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExceptionDumper32", "Utilit
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.DwarfSymbolProvider", "Source\CsDebugScript.DwarfSymbolProvider\CsDebugScript.DwarfSymbolProvider.csproj", "{7DA23F60-F5BC-4F59-B00E-072CC464AD64}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.CodeGen.App", "Source\CsDebugScript.CodeGen.App\CsDebugScript.CodeGen.App.csproj", "{F0826881-E3F3-47B3-9716-18001DE8333A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -362,6 +364,18 @@ Global
 		{7DA23F60-F5BC-4F59-B00E-072CC464AD64}.Release|x64.Build.0 = Release|Any CPU
 		{7DA23F60-F5BC-4F59-B00E-072CC464AD64}.Release|x86.ActiveCfg = Release|Any CPU
 		{7DA23F60-F5BC-4F59-B00E-072CC464AD64}.Release|x86.Build.0 = Release|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Debug|x64.Build.0 = Debug|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Debug|x86.Build.0 = Debug|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Release|x64.ActiveCfg = Release|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Release|x64.Build.0 = Release|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Release|x86.ActiveCfg = Release|Any CPU
+		{F0826881-E3F3-47B3-9716-18001DE8333A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -390,5 +404,6 @@ Global
 		{0D07F796-AA21-4D3E-B0B0-2BFB02E2BF47} = {7DB77B56-F42E-484B-B85D-F274136CF96B}
 		{3147597A-BDB9-4543-B1A7-33B529C3F4AB} = {EF2FD4E0-777D-4E92-A036-4604D0D14868}
 		{7DA23F60-F5BC-4F59-B00E-072CC464AD64} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
+		{F0826881-E3F3-47B3-9716-18001DE8333A} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 	EndGlobalSection
 EndGlobal

@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{283A0331-2EAD-4DD2-A3FE-20D229E2D277}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CsDebugScript.CodeGen</RootNamespace>
     <AssemblyName>CsDebugScript.CodeGen</AssemblyName>
@@ -49,10 +49,6 @@
     <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CommandLine, Version=2.0.275.0, Culture=neutral, PublicKeyToken=de6f01bd326f8c32, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\CommandLineParser.2.0.275-beta\lib\net45\CommandLine.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Dia2Lib">
       <HintPath>$(SolutionDir)\Source\DiaHelpers\Dia2Lib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
@@ -162,7 +158,6 @@
     <Compile Include="IndentedWriter.cs" />
     <Compile Include="NameHelper.cs" />
     <Compile Include="NamespaceDoc.cs" />
-    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
     <Compile Include="SymbolProviders\DiaModule.cs" />

@@ -4,11 +4,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("CsScriptManagedTest")]
+[assembly: AssemblyTitle("CsDebugScript.CodeGen.App")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("CsScriptManagedTest")]
+[assembly: AssemblyProduct("CsDebugScript.CodeGen.App")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -18,4 +18,4 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("b683d8dd-6759-4301-a54a-faefe1105416")]
+[assembly: Guid("f0826881-e3f3-47b3-9716-18001de8333a")]

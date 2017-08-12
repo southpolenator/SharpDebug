@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>CsDebugScript.DwarfSymbolProvider</id>
-    <version>$version$-beta</version>
+    <version>$version$</version>
     <title>CsDebugScript.DwarfSymbolProvider</title>
     <authors>$authors$</authors>
     <owners>$owners$</owners>
@@ -17,7 +17,7 @@
     <copyright>$copyright$</copyright>
     <dependencies>
       <dependency id="CsDebugScript.Engine" version="$version$" />
-      <dependency id="CsDebugScript.CodeGen" version="$version$-beta" />
+      <dependency id="CsDebugScript.CodeGen" version="$version$" />
       <dependency id="ELFSharp" version="1.0.4" />
       <dependency id="JonSkeet.MiscUtil" version="0.1" />
     </dependencies>
@@ -25,6 +25,7 @@
   </metadata>
   <files>
     <file src="CsDebugScript.DwarfSymbolProvider.dll" target="lib\dotnet" />
+    <file src="CsDebugScript.DwarfSymbolProvider.dll.config" target="lib\dotnet" />
     <file src="CsDebugScript.DwarfSymbolProvider.xml" target="lib\dotnet" />
     <file src="CsDebugScript.DwarfSymbolProvider.pdb" target="lib\dotnet" />
   </files>
