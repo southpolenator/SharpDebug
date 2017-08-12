@@ -77,9 +77,11 @@ NO_INLINE void TestDbgEngDll()
 {
     const char* testString = "Testing...";
     const wchar_t* testWString = L"Testing...";
+#ifdef WIN32
     CONTEXT context;
 
     GetThreadContext(GetCurrentThread(), &context);
+#endif
 
     CauseDump();
 }

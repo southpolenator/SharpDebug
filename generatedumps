@@ -1,0 +1,6 @@
+#!/bin/bash
+g++ ./Tests/DumpApps/NativeDumpTest/NativeDumpTest.cpp -o ./dumps/NativeDumpTest.linux.x64.gcc -std=c++11 -g
+pushd ./dumps/
+./NativeDumpTest.linux.x64.gcc
+popd
+
