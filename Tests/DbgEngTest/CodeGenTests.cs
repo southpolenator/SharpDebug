@@ -290,6 +290,34 @@ namespace DbgEngTest
 
         [TestMethod]
         [TestCategory("CodeGen")]
+        public void NativeDumpTest_linux_gcc_x64()
+        {
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.linux.x64.gcc", useDwarf: true);
+        }
+
+        [TestMethod]
+        [TestCategory("CodeGen")]
+        public void NativeDumpTest_linux_gcc_x64_NoTransformations()
+        {
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.linux.x64.gcc", transformations: false, useDwarf: true);
+        }
+
+        [TestMethod]
+        [TestCategory("CodeGen")]
+        public void NativeDumpTest_linux_gcc_x64_NoSingle()
+        {
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.linux.x64.gcc", singleFileExport: false, useDwarf: true);
+        }
+
+        [TestMethod]
+        [TestCategory("CodeGen")]
+        public void NativeDumpTest_linux_gcc_x64_NoRoslyn()
+        {
+            DoCodeGen(@"..\..\..\dumps\NativeDumpTest.linux.x64.gcc", compileWithRoslyn: false, useDwarf: true);
+        }
+
+        [TestMethod]
+        [TestCategory("CodeGen")]
         public void NativeDumpTest_VS2013()
         {
             DoCodeGen(@"..\..\..\dumps\NativeDumpTest.VS2013.pdb");

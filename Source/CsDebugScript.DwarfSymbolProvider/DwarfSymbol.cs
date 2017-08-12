@@ -57,12 +57,14 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             get
             {
-                if (Parent != null && Parent.Tag != DwarfTag.CompileUnit)
+                string name = Name;
+
+                if (Parent != null && Parent.Tag != DwarfTag.CompileUnit && name != null)
                 {
-                    return Parent.FullName + "::" + Name;
+                    return Parent.FullName + "::" + name;
                 }
 
-                return Name;
+                return name;
             }
         }
 

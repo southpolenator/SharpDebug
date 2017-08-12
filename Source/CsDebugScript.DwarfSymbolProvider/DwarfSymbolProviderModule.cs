@@ -91,6 +91,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         private uint nextTypeId = 0;
 
         /// <summary>
+        /// The next unnamed type id
+        /// </summary>
+        int nextUnnamedTypeId = 0;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DwarfSymbolProviderModule"/> class.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -480,6 +485,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                                 return BasicType.ULong;
                             case "wchar_t":
                                 return BasicType.WChar;
+                            case "signed char":
                             case "char":
                                 return BasicType.Char;
                             case "bool":
@@ -490,6 +496,10 @@ namespace CsDebugScript.DwarfSymbolProvider
                         throw new Exception($"Unknown BasicType name: {type.Name}");
                     case DwarfTag.EnumerationType:
                         type = GetType(type);
+                        if (type == null)
+                        {
+                            return BasicType.Int;
+                        }
                         continue;
                     default:
                         return BasicType.NoType;
@@ -1565,6 +1575,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Resolves the symbol address.
         /// </summary>
         /// <param name="process">The process.</param>
+        /// <param name="function">The function.</param>
         /// <param name="symbol">The symbol.</param>
         /// <param name="frameContext">The frame context.</param>
         private ulong ResolveAddress(Process process, DwarfSymbol function, DwarfSymbol symbol, ThreadContext frameContext)
@@ -1733,33 +1744,6 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="type">The type.</param>
         private uint GetTypeId(DwarfSymbol type)
         {
-            if (type == null)
-            {
-                type = type;
-            }
-
-            if (type != null && type.Tag == DwarfTag.Inheritance)
-            {
-                type = type;
-            }
-
-            if (type != null && type.Tag == DwarfTag.PointerType)
-            {
-                DwarfSymbol ptype = GetType(type);
-
-                if (ptype != null)
-                {
-                    if (ptype.Tag == DwarfTag.SubroutineType)
-                    {
-                        type = type;
-                    }
-                }
-                else
-                {
-                    type = type;
-                }
-            }
-
             uint typeId;
 
             if (typeOffsetToTypeId.TryGetValue(type.Offset, out typeId))
@@ -1819,7 +1803,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Gets the name of the specified type.
         /// </summary>
         /// <param name="type">The type.</param>
-        private static string GetTypeName(DwarfSymbol type)
+        private string GetTypeName(DwarfSymbol type)
         {
             if (type == null)
             {
@@ -1848,10 +1832,21 @@ namespace CsDebugScript.DwarfSymbolProvider
                 case DwarfTag.InterfaceType:
                 case DwarfTag.SubroutineType:
                 case DwarfTag.UnionType:
-                    return type.FullName;
+                    return type.FullName ?? GetUnnamedType();
                 default:
                     return null;
             }
+        }
+
+        /// <summary>
+        /// Gets the unnamed type name.
+        /// </summary>
+        /// <returns>Generated name for unnamed type.</returns>
+        private string GetUnnamedType()
+        {
+            int unnamedTypeId = System.Threading.Interlocked.Increment(ref nextUnnamedTypeId);
+
+            return $"__unnamed_type_{unnamedTypeId}";
         }
     }
 }

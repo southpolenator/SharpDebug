@@ -34,9 +34,8 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 try
                 {
-                    IDwarfImage image = new PeImage(location);
-                    var debugStrings = ParseDebugStrings(image.DebugDataStrings);
-                    var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, debugStrings, image.CodeSegmentOffset);
+                    IDwarfImage image = LoadImage(location);
+                    var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, image.DebugDataStrings, image.CodeSegmentOffset);
                     var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.CodeSegmentOffset);
                     var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.Is64bit);
 
@@ -50,24 +49,19 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Parses the debug data strings.
+        /// Loads the specified image.
         /// </summary>
-        /// <param name="debugDataStrings">The debug data strings.</param>
-        /// <returns>Dictionary of strings located by position in the stream</returns>
-        private Dictionary<int, string> ParseDebugStrings(byte[] debugDataStrings)
+        /// <param name="path">The image path.</param>
+        /// <returns>Loaded image interface.</returns>
+        private IDwarfImage LoadImage(string path)
         {
-            using (DwarfMemoryReader reader = new DwarfMemoryReader(debugDataStrings))
+            try
             {
-                Dictionary<int, string> strings = new Dictionary<int, string>();
-
-                while (!reader.IsEnd)
-                {
-                    int position = reader.Position;
-
-                    strings.Add(position, reader.ReadString());
-                }
-
-                return strings;
+                return new PeImage(path);
+            }
+            catch
+            {
+                return new ElfImage(path);
             }
         }
 
@@ -78,16 +72,17 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="debugDataDescription">The debug data description.</param>
         /// <param name="debugStrings">The debug strings.</param>
         /// <param name="codeSegmentOffset">The code segment offset.</param>
-        private static DwarfCompilationUnit[] ParseCompilationUnits(byte[] debugData, byte[] debugDataDescription, Dictionary<int, string> debugStrings, ulong codeSegmentOffset)
+        private static DwarfCompilationUnit[] ParseCompilationUnits(byte[] debugData, byte[] debugDataDescription, byte[] debugStrings, ulong codeSegmentOffset)
         {
             using (DwarfMemoryReader debugDataReader = new DwarfMemoryReader(debugData))
             using (DwarfMemoryReader debugDataDescriptionReader = new DwarfMemoryReader(debugDataDescription))
+            using (DwarfMemoryReader debugStringsReader = new DwarfMemoryReader(debugStrings))
             {
                 List<DwarfCompilationUnit> compilationUnits = new List<DwarfCompilationUnit>();
 
                 while (!debugDataReader.IsEnd)
                 {
-                    DwarfCompilationUnit compilationUnit = new DwarfCompilationUnit(debugDataReader, debugDataDescriptionReader, debugStrings, codeSegmentOffset);
+                    DwarfCompilationUnit compilationUnit = new DwarfCompilationUnit(debugDataReader, debugDataDescriptionReader, debugStringsReader, codeSegmentOffset);
 
                     compilationUnits.Add(compilationUnit);
                 }

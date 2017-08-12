@@ -20,7 +20,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="debugDataDescription">The debug data description stream.</param>
         /// <param name="debugStrings">The debug strings.</param>
         /// <param name="codeSegmentOffset">The code segment offset.</param>
-        public DwarfCompilationUnit(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, Dictionary<int, string> debugStrings, ulong codeSegmentOffset)
+        public DwarfCompilationUnit(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, DwarfMemoryReader debugStrings, ulong codeSegmentOffset)
         {
             ReadData(debugData, debugDataDescription, debugStrings, codeSegmentOffset);
         }
@@ -48,7 +48,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="debugDataDescription">The debug data description.</param>
         /// <param name="debugStrings">The debug strings.</param>
         /// <param name="codeSegmentOffset">The code segment offset.</param>
-        private void ReadData(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, Dictionary<int, string> debugStrings, ulong codeSegmentOffset)
+        private void ReadData(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, DwarfMemoryReader debugStrings, ulong codeSegmentOffset)
         {
             // Read header
             bool is64bit;
@@ -136,7 +136,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                             break;
                         case DwarfFormat.Strp:
                             attributeValue.Type = DwarfAttributeValueType.String;
-                            attributeValue.Value = debugStrings[debugData.ReadOffset(is64bit)];
+                            attributeValue.Value = debugStrings.ReadString(debugData.ReadOffset(is64bit));
                             break;
                         case DwarfFormat.Flag:
                             attributeValue.Type = DwarfAttributeValueType.Flag;
@@ -271,7 +271,8 @@ namespace CsDebugScript.DwarfSymbolProvider
                         }
                     }
 
-                    if (symbol.Tag == DwarfTag.PointerType && !attributes.ContainsKey(DwarfAttribute.Type))
+                    if ((symbol.Tag == DwarfTag.PointerType && !attributes.ContainsKey(DwarfAttribute.Type))
+                        || (symbol.Tag == DwarfTag.Typedef && !attributes.ContainsKey(DwarfAttribute.Type)))
                     {
                         attributes.Add(DwarfAttribute.Type, new DwarfAttributeValue()
                         {

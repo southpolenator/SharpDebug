@@ -24,10 +24,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             if (Tag != SymTagEnum.SymTagExe)
             {
                 Name = EngineModuleProvider.GetTypeName(EngineModule, Id);
-                if (string.IsNullOrEmpty(Name))
-                {
-                    Name = Name;
-                }
             }
             else
             {
