@@ -3,4 +3,8 @@ g++ ./Tests/DumpApps/NativeDumpTest/NativeDumpTest.cpp -o ./dumps/NativeDumpTest
 pushd ./dumps/
 ./NativeDumpTest.linux.x64.gcc
 popd
+g++ -m32 ./Tests/DumpApps/NativeDumpTest/NativeDumpTest.cpp -o ./dumps/NativeDumpTest.linux.x86.gcc -std=c++11 -g
+pushd ./dumps/
+./NativeDumpTest.linux.x86.gcc
+popd
 
