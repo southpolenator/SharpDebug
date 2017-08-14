@@ -70,6 +70,8 @@
     <Compile Include="DwarfSymbolProviderModule.cs" />
     <Compile Include="DwarfSymbolProvider.cs" />
     <Compile Include="DwarfEnums.cs" />
+    <Compile Include="ElfCoreDump.cs" />
+    <Compile Include="ElfCoreDumpDebuggingEngine.cs" />
     <Compile Include="ElfImage.cs" />
     <Compile Include="IDwarfImage.cs" />
     <Compile Include="PeImage.cs" />

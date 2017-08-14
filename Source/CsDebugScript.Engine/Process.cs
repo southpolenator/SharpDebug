@@ -106,6 +106,11 @@ namespace CsDebugScript
         private DictionaryCache<Tuple<ulong, int>, string> unicodeStringCache;
 
         /// <summary>
+        /// The wide unicode string cache
+        /// </summary>
+        private DictionaryCache<Tuple<ulong, int>, string> wideUnicodeStringCache;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Process"/> class.
         /// </summary>
         /// <param name="id">The identifier.</param>
@@ -176,7 +181,7 @@ namespace CsDebugScript
             {
                 try
                 {
-                    return string.IsNullOrEmpty(DumpFileName) ? null : new DumpFileMemoryReader(DumpFileName);
+                    return string.IsNullOrEmpty(DumpFileName) ? default(DumpFileMemoryReader) : new WindowsDumpFileMemoryReader(DumpFileName);
                 }
                 catch (Exception)
                 {
@@ -186,14 +191,19 @@ namespace CsDebugScript
             memoryRegions = SimpleCache.Create(() =>
             {
                 if (DumpFileMemoryReader != null)
+                {
                     return DumpFileMemoryReader.GetMemoryRanges();
+                }
                 else
+                {
                     return Context.Debugger.GetMemoryRegions(this);
+                }
             });
             memoryRegionFinder = SimpleCache.Create(() => new MemoryRegionFinder(MemoryRegions));
             TypeToUserTypeDescription = new DictionaryCache<Type, UserTypeDescription[]>(GetUserTypeDescription);
             ansiStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadAnsiString);
             unicodeStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadUnicodeString);
+            wideUnicodeStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadWideUnicodeString);
         }
 
         /// <summary>
@@ -709,6 +719,10 @@ namespace CsDebugScript
             {
                 return unicodeStringCache[Tuple.Create(address, length)];
             }
+            else if (charSize == 4)
+            {
+                return wideUnicodeStringCache[Tuple.Create(address, length)];
+            }
             else
             {
                 throw new Exception("Unsupported char size");
@@ -764,6 +778,32 @@ namespace CsDebugScript
             else
             {
                 return Context.Debugger.ReadUnicodeString(this, address, length);
+            }
+        }
+
+        /// <summary>
+        /// Does the actual wide unicode (4bytes) string read.
+        /// </summary>
+        /// <param name="tuple">Address and length tuple.</param>
+        private string DoReadWideUnicodeString(Tuple<ulong, int> tuple)
+        {
+            ulong address = tuple.Item1;
+            int length = tuple.Item2;
+
+            if (address == 0)
+            {
+                return null;
+            }
+
+            var dumpReader = DumpFileMemoryReader;
+
+            if (dumpReader != null)
+            {
+                return dumpReader.ReadWideUnicodeString(address, length);
+            }
+            else
+            {
+                return Context.Debugger.ReadWideUnicodeString(this, address, length);
             }
         }
     }

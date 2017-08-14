@@ -37,9 +37,9 @@ namespace DbgEngTest
 
         private bool ExecuteCodeGen { get; set; }
 
-        public void TestSetup(bool useDia = true, bool useDwarf = false, bool executeCodeGen = true)
+        public void TestSetup(bool useDia = true, bool useDwarf = false, bool executeCodeGen = true, bool useElfCoreDumps = false)
         {
-            InitializeDump(DefaultDumpFile, DefaultSymbolPath);
+            InitializeDump(DefaultDumpFile, DefaultSymbolPath, useElfCoreDumps: useElfCoreDumps);
             if (!useDia)
             {
                 if (!useDwarf)

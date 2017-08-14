@@ -129,6 +129,7 @@
     <Compile Include="NativeDumpTest64.cs" />
     <Compile Include="NativeDumpTest64Clang.cs" />
     <Compile Include="NativeDumpTest64GCC.cs" />
+    <Compile Include="NativeDumpTest64LinuxGCC.cs" />
     <Compile Include="NativeDumpTest64NoDia.cs" />
     <Compile Include="NativeDumpTest64Release.cs" />
     <Compile Include="ScriptExecutionTests.cs" />

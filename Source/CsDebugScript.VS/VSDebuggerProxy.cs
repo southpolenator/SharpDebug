@@ -504,6 +504,16 @@ namespace CsDebugScript.VS
             });
         }
 
+        public string ReadWideUnicodeString(uint processId, ulong address, int length)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return System.Text.Encoding.UTF32.GetString(process.ReadMemoryString(address, DkmReadMemoryFlags.None, 4, length));
+            });
+        }
+
         public void SetCurrentProcess(uint processId)
         {
             ExecuteOnDkmInitializedThread(() =>
