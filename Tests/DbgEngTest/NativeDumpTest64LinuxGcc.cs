@@ -3,7 +3,7 @@
 namespace DbgEngTest
 {
     /// <summary>
-    /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.VS2013.exe.
+    /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.linux.x64.gcc.
     /// </summary>
     [TestClass]
     [DeploymentItem(DefaultDumpFile)]

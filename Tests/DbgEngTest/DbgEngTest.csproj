@@ -124,6 +124,7 @@
     <Compile Include="InteractiveModeTests.cs" />
     <Compile Include="NativeDumpTest32.cs" />
     <Compile Include="NativeDumpTest32GCC.cs" />
+    <Compile Include="NativeDumpTest32LinuxGCC.cs" />
     <Compile Include="NativeDumpTest32Release.cs" />
     <Compile Include="NativeDumpTest32VS2013.cs" />
     <Compile Include="NativeDumpTest64.cs" />

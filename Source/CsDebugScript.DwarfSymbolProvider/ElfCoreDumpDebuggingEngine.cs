@@ -308,8 +308,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="process">The process.</param>
         public ImageFileMachine GetProcessActualProcessorType(Process process)
         {
-            // TODO: Implement support for others
-            return ImageFileMachine.AMD64;
+            ElfCoreDump dump = GetDump(process);
+
+            return dump.GetActualProcessorType();
         }
 
         /// <summary>
@@ -318,8 +319,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="process">The process.</param>
         public ImageFileMachine GetProcessEffectiveProcessorType(Process process)
         {
-            // TODO: Implement support for others
-            return ImageFileMachine.AMD64;
+            ElfCoreDump dump = GetDump(process);
+
+            return dump.GetEffectiveProcessorType();
         }
 
         /// <summary>

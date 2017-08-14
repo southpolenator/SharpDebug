@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.IO;
 using CsDebugScript.Engine.Utility;
+using CsDebugScript.Engine.Native;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
@@ -21,9 +22,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         private ELF<ulong> elf;
 
         /// <summary>
-        /// The list of available threads in the dump
+        /// The instance
         /// </summary>
-        private List<elf_prstatus> threads = new List<elf_prstatus>();
+        private IInstance instance;
 
         /// <summary>
         /// The ELF note files loaded in the dump
@@ -71,6 +72,17 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 throw new Exception($"Expected core dump, but got: {elf.Type}");
             }
+            switch (elf.Machine)
+            {
+                case Machine.Intel386:
+                    instance = new Intel386Instance(elf);
+                    break;
+                case Machine.AMD64:
+                    instance = new AMD64Instance(elf);
+                    break;
+                default:
+                    throw new Exception($"Unsupported machine type: {elf.Machine}");
+            }
             Path = coreDumpPath;
 
             foreach (var segment in elf.Segments)
@@ -97,38 +109,18 @@ namespace CsDebugScript.DwarfSymbolProvider
                         reader.Position = nameEnd;
                         byte[] content = reader.ReadBlock(note.n_descsz);
 
-                        Console.WriteLine($"{name}: {note.n_type} [{note.n_descsz}]");
-                        if (note.n_type == elf_note_type.Prstatus)
-                        {
-                            DwarfMemoryReader data = new DwarfMemoryReader(content);
-                            elf_prstatus prstatus = data.ReadStructure<elf_prstatus>();
-
-                            threads.Add(prstatus);
-                        }
-                        else if (note.n_type == elf_note_type.Prpsinfo)
-                        {
-                            // TODO: Use when needed
-                            //DwarfMemoryReader data = new DwarfMemoryReader(content);
-                            //elf_prpsinfo prpsinfo = data.ReadStructure<elf_prpsinfo>();
-                            //Console.WriteLine($"  Filename: {prpsinfo.Filename}");
-                            //Console.WriteLine($"  ArgList: {prpsinfo.ArgList}");
-                        }
-                        else if (note.n_type == elf_note_type.File)
+                        instance.ProcessNote(name, content, note.n_type);
+                        if (note.n_type == elf_note_type.File)
                         {
                             DwarfMemoryReader data = new DwarfMemoryReader(content);
 
-                            files = elf_note_file.Parse(data);
+                            files = elf_note_file.Parse(data, Is64bit);
                         }
                     }
                 }
             }
 
             DumpFileMemoryReader = new CoreDumpReader(coreDumpPath, elf.Segments.Where(s => s.Type == SegmentType.Load));
-
-            if (threads.Count > 0)
-            {
-                ProcessId = (uint)threads[0].pr_pid;
-            }
         }
 
         /// <summary>
@@ -139,7 +131,27 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the dumped process identifier.
         /// </summary>
-        public uint ProcessId { get; private set; }
+        public uint ProcessId
+        {
+            get
+            {
+                return instance.ProcessId;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this <see cref="ElfCoreDump"/> is is 64bit dump.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if is 64bit; otherwise, <c>false</c>.
+        /// </value>
+        public bool Is64bit
+        {
+            get
+            {
+                return elf.Class == Class.Bit64;
+            }
+        }
 
         /// <summary>
         /// Gets the dump file memory reader.
@@ -151,13 +163,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// </summary>
         public int[] GetThreadIds()
         {
-            int[] ids = new int[threads.Count];
-
-            for (int i = 0; i < ids.Length; i++)
-            {
-                ids[i] = threads[i].pr_pid;
-            }
-            return ids;
+            return instance.GetThreadIds();
         }
 
         /// <summary>
@@ -167,36 +173,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <returns>Array of tuples of instruction offset, stack offset and frame offset.</returns>
         public Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex)
         {
-            elf_prstatus prstatus = threads[threadIndex];
-            ulong bp = prstatus.pr_reg[X64RegisterIndex.RBP];
-            ulong ip = prstatus.pr_reg[X64RegisterIndex.RIP];
-
-            return GetThreadStackTrace(bp, ip);
-        }
-
-        /// <summary>
-        /// Gets the thread stack trace for Intel x86 and AMD64 platforms.
-        /// </summary>
-        /// <param name="bp">The base pointer.</param>
-        /// <param name="ip">The instruction pointer.</param>
-        /// <returns>Array of tuples of instruction offset, stack offset and frame offset.</returns>
-        private Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(ulong bp, ulong ip)
-        {
-            List<Tuple<ulong, ulong, ulong>> result = new List<Tuple<ulong, ulong, ulong>>();
-            bool is64bit = elf.Class == Class.Bit64;
-            int pointerSize = is64bit ? 8 : 4;
-            ulong segmentStartAddress, segmentSize;
-
-            DumpFileMemoryReader.GetMemoryRange(bp, out segmentStartAddress, out segmentSize);
-            while (bp >= segmentStartAddress && bp < segmentStartAddress + segmentSize)
-            {
-                result.Add(Tuple.Create(ip, bp, bp));
-
-                MemoryBuffer buffer = DumpFileMemoryReader.ReadMemory(bp, pointerSize * 2);
-                bp = UserType.ReadPointer(buffer, 0, pointerSize);
-                ip = UserType.ReadPointer(buffer, pointerSize, pointerSize);
-            }
-            return result.ToArray();
+            return instance.GetThreadStackTrace(threadIndex, DumpFileMemoryReader);
         }
 
         /// <summary>
@@ -252,10 +229,25 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Gets the actual processor type.
+        /// </summary>
+        public ImageFileMachine GetActualProcessorType()
+        {
+            return instance.GetActualProcessorType();
+        }
+
+        /// <summary>
+        /// Gets the effective processor type.
+        /// </summary>
+        public ImageFileMachine GetEffectiveProcessorType()
+        {
+            return instance.GetEffectiveProcessorType();
+        }
+
+        /// <summary>
         /// Reads the segment from the dump.
         /// </summary>
         /// <param name="segment">The segment.</param>
-        /// <returns></returns>
         private byte[] ReadSegment(Segment<ulong> segment)
         {
             try
@@ -275,6 +267,682 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
         }
 
+        /// <summary>
+        /// Interface that explains what different platforms will provide
+        /// </summary>
+        private interface IInstance
+        {
+            /// <summary>
+            /// Gets the dumped process identifier.
+            /// </summary>
+            uint ProcessId { get; }
+
+            /// <summary>
+            /// Processes the parsed note.
+            /// </summary>
+            /// <param name="name">The note name.</param>
+            /// <param name="content">The note content.</param>
+            /// <param name="type">The note type.</param>
+            void ProcessNote(string name, byte[] content, elf_note_type type);
+
+            /// <summary>
+            /// Gets the actual processor type.
+            /// </summary>
+            ImageFileMachine GetActualProcessorType();
+
+            /// <summary>
+            /// Gets the effective processor type.
+            /// </summary>
+            ImageFileMachine GetEffectiveProcessorType();
+
+            /// <summary>
+            /// Gets the array of thread ids available in the dump.
+            /// </summary>
+            int[] GetThreadIds();
+
+            /// <summary>
+            /// Gets the thread stack trace.
+            /// </summary>
+            /// <param name="threadIndex">Index of the thread.</param>
+            /// <param name="dumpFileMemoryReader">The dump file memory reader.</param>
+            /// <returns>Array of tuples of instruction offset, stack offset and frame offset.</returns>
+            Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex, DumpFileMemoryReader dumpFileMemoryReader);
+        }
+
+        /// <summary>
+        /// Implementation for Intel386 platform
+        /// </summary>
+        /// <seealso cref="CsDebugScript.DwarfSymbolProvider.ElfCoreDump.IInstance" />
+        private class Intel386Instance : IInstance
+        {
+            /// <summary>
+            /// The elf reader.
+            /// </summary>
+            private ELF<ulong> elf;
+
+            /// <summary>
+            /// The list of available threads in the dump
+            /// </summary>
+            private List<elf_prstatus> threads = new List<elf_prstatus>();
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Intel386Instance"/> class.
+            /// </summary>
+            /// <param name="elf">The elf reader.</param>
+            public Intel386Instance(ELF<ulong> elf)
+            {
+                this.elf = elf;
+            }
+
+            /// <summary>
+            /// Gets the dumped process identifier.
+            /// </summary>
+            public uint ProcessId
+            {
+                get
+                {
+                    return (uint)threads[0].ProcessId;
+                }
+            }
+
+            /// <summary>
+            /// Processes the parsed note.
+            /// </summary>
+            /// <param name="name">The note name.</param>
+            /// <param name="content">The note content.</param>
+            /// <param name="type">The note type.</param>
+            public void ProcessNote(string name, byte[] content, elf_note_type type)
+            {
+                if (type == elf_note_type.Prstatus)
+                {
+                    DwarfMemoryReader data = new DwarfMemoryReader(content);
+                    elf_prstatus prstatus = data.ReadStructure<elf_prstatus>();
+
+                    threads.Add(prstatus);
+                }
+                else if (type == elf_note_type.Prpsinfo)
+                {
+                    // TODO: Use when needed
+                    //DwarfMemoryReader data = new DwarfMemoryReader(content);
+                    //elf_prpsinfo prpsinfo = data.ReadStructure<elf_prpsinfo>();
+                    //Console.WriteLine($"  Filename: {prpsinfo.Filename}");
+                    //Console.WriteLine($"  ArgList: {prpsinfo.ArgList}");
+                }
+            }
+
+            /// <summary>
+            /// Gets the array of thread ids available in the dump.
+            /// </summary>
+            public int[] GetThreadIds()
+            {
+                int[] ids = new int[threads.Count];
+
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    ids[i] = threads[i].ProcessId;
+                }
+                return ids;
+            }
+
+            /// <summary>
+            /// Gets the thread stack trace.
+            /// </summary>
+            /// <param name="threadIndex">Index of the thread.</param>
+            /// <param name="dumpFileMemoryReader">The dump file memory reader.</param>
+            /// <returns>Array of tuples of instruction offset, stack offset and frame offset.</returns>
+            public Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex, DumpFileMemoryReader dumpFileMemoryReader)
+            {
+                const int pointerSize = 4;
+                elf_prstatus prstatus = threads[threadIndex];
+                ulong bp = prstatus.pr_reg[X86RegisterIndex.EBP];
+                ulong ip = prstatus.pr_reg[X86RegisterIndex.EIP];
+                List<Tuple<ulong, ulong, ulong>> result = new List<Tuple<ulong, ulong, ulong>>();
+                ulong segmentStartAddress, segmentSize;
+
+                dumpFileMemoryReader.GetMemoryRange(bp, out segmentStartAddress, out segmentSize);
+                while (bp >= segmentStartAddress && bp < segmentStartAddress + segmentSize)
+                {
+                    result.Add(Tuple.Create(ip, bp, bp));
+
+                    MemoryBuffer buffer = dumpFileMemoryReader.ReadMemory(bp, pointerSize * 2);
+                    bp = UserType.ReadPointer(buffer, 0, pointerSize);
+                    ip = UserType.ReadPointer(buffer, pointerSize, pointerSize);
+                }
+                return result.ToArray();
+            }
+
+            /// <summary>
+            /// Gets the actual processor type.
+            /// </summary>
+            public ImageFileMachine GetActualProcessorType()
+            {
+                return ImageFileMachine.I386;
+            }
+
+            /// <summary>
+            /// Gets the effective processor type.
+            /// </summary>
+            public ImageFileMachine GetEffectiveProcessorType()
+            {
+                return ImageFileMachine.I386;
+            }
+
+            #region Native structures
+            private static class X86RegisterIndex
+            {
+                public const int EBP = 5;
+                public const int EIP = 12;
+                public const int ESP = 15;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 4)]
+            private struct timeval
+            {
+                /// <summary>
+                /// Seconds
+                /// </summary>
+                public int tv_sec;
+
+                /// <summary>
+                /// Microseconds
+                /// </summary>
+                public int tv_usec;
+            }
+
+            /// <summary>
+            /// Definitions to generate Intel SVR4-like core files.
+            /// These mostly have the same names as the SVR4 types with "elf_"
+            /// tacked on the front to prevent clashes with linux definitions,
+            /// and the typedef forms have been avoided.This is mostly like
+            /// the SVR4 structure, but more Linuxy, with things that Linux does
+            /// not support and which gdb doesn't really use excluded.
+            /// Fields present but not used are marked with "XXX".
+            /// </summary>
+            [StructLayout(LayoutKind.Sequential, Pack = 4)]
+            private struct elf_prstatus
+            {
+
+                /// <summary>
+                /// Info associated with signal
+                /// </summary>
+                public elf_siginfo pr_info;
+
+                /// <summary>
+                /// Current signal
+                /// </summary>
+                public short pr_cursig;
+
+                /// <summary>
+                /// Set of pending signals
+                /// </summary>
+                public uint pr_sigpend;
+
+                /// <summary>
+                /// Set of held signals
+                /// </summary>
+                public uint pr_sighold;
+
+                public int pr_pid;
+
+                public int pr_ppid;
+
+                public int pr_pgrp;
+
+                public int pr_sid;
+
+                /// <summary>
+                /// User time
+                /// </summary>
+                public timeval pr_utime;
+
+                /// <summary>
+                /// System time
+                /// </summary>
+                public timeval pr_stime;
+
+                /// <summary>
+                /// Cumulative user time
+                /// </summary>
+                public timeval pr_cutime;
+
+                /// <summary>
+                /// Cumulative system time
+                /// </summary>
+                public timeval pr_cstime;
+
+                /// <summary>
+                /// GP registers
+                /// </summary>
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 17)]
+                public uint[] pr_reg;
+
+                /// <summary>
+                /// True if math co-processor being used.
+                /// </summary>
+                public int pr_fpvalid;
+
+                public int ProcessId
+                {
+                    get
+                    {
+                        return pr_pid;
+                    }
+                }
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 4)]
+            private struct elf_prpsinfo
+            {
+                /// <summary>
+                /// Numeric process state
+                /// </summary>
+                public sbyte pr_state;
+
+                /// <summary>
+                /// Char for pr_state
+                /// </summary>
+                public sbyte pr_sname;
+
+                /// <summary>
+                /// zombie
+                /// </summary>
+                public sbyte pr_zomb;
+
+                /// <summary>
+                /// nice val
+                /// </summary>
+                public sbyte pr_nice;
+
+                /// <summary>
+                /// Flags
+                /// </summary>
+                public uint pr_flag;
+
+                public ushort pr_uid;
+
+                public ushort pr_gid;
+
+                public int pr_pid;
+
+                public int pr_ppid;
+
+                public int pr_pgrp;
+
+                public int pr_sid;
+
+                /// <summary>
+                /// Filename of executable
+                /// </summary>
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+                byte[] pr_fname;
+
+                /// <summary>
+                /// Initial part of arg list
+                /// </summary>
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 80)]
+                byte[] pr_psargs;
+
+                public string Filename
+                {
+                    get
+                    {
+                        return Encoding.UTF8.GetString(pr_fname, 0, ZeroIndex(pr_fname));
+                    }
+                }
+
+                public string ArgList
+                {
+                    get
+                    {
+                        return Encoding.UTF8.GetString(pr_psargs, 0, ZeroIndex(pr_psargs));
+                    }
+                }
+
+                private int ZeroIndex(byte[] bytes)
+                {
+                    for (int index = 0; index < bytes.Length; index++)
+                    {
+                        if (bytes[index] == 0)
+                        {
+                            return index;
+                        }
+                    }
+
+                    return bytes.Length;
+                }
+            }
+            #endregion
+        }
+
+        /// <summary>
+        /// Implementation for AMD64 platform
+        /// </summary>
+        /// <seealso cref="CsDebugScript.DwarfSymbolProvider.ElfCoreDump.IInstance" />
+        private class AMD64Instance : IInstance
+        {
+            /// <summary>
+            /// The elf reader.
+            /// </summary>
+            private ELF<ulong> elf;
+
+            /// <summary>
+            /// The list of available threads in the dump
+            /// </summary>
+            private List<elf_prstatus> threads = new List<elf_prstatus>();
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="AMD64Instance"/> class.
+            /// </summary>
+            /// <param name="elf">The elf reader.</param>
+            public AMD64Instance(ELF<ulong> elf)
+            {
+                this.elf = elf;
+            }
+
+            /// <summary>
+            /// Gets the dumped process identifier.
+            /// </summary>
+            public uint ProcessId
+            {
+                get
+                {
+                    return (uint)threads[0].ProcessId;
+                }
+            }
+
+            /// <summary>
+            /// Processes the parsed note.
+            /// </summary>
+            /// <param name="name">The note name.</param>
+            /// <param name="content">The note content.</param>
+            /// <param name="type">The note type.</param>
+            public void ProcessNote(string name, byte[] content, elf_note_type type)
+            {
+                if (type == elf_note_type.Prstatus)
+                {
+                    DwarfMemoryReader data = new DwarfMemoryReader(content);
+                    elf_prstatus prstatus = data.ReadStructure<elf_prstatus>();
+
+                    threads.Add(prstatus);
+                }
+                else if (type == elf_note_type.Prpsinfo)
+                {
+                    // TODO: Use when needed
+                    //DwarfMemoryReader data = new DwarfMemoryReader(content);
+                    //elf_prpsinfo prpsinfo = data.ReadStructure<elf_prpsinfo>();
+                    //Console.WriteLine($"  Filename: {prpsinfo.Filename}");
+                    //Console.WriteLine($"  ArgList: {prpsinfo.ArgList}");
+                }
+            }
+
+            /// <summary>
+            /// Gets the array of thread ids available in the dump.
+            /// </summary>
+            public int[] GetThreadIds()
+            {
+                int[] ids = new int[threads.Count];
+
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    ids[i] = threads[i].ProcessId;
+                }
+                return ids;
+            }
+
+            /// <summary>
+            /// Gets the thread stack trace.
+            /// </summary>
+            /// <param name="threadIndex">Index of the thread.</param>
+            /// <param name="dumpFileMemoryReader">The dump file memory reader.</param>
+            /// <returns>Array of tuples of instruction offset, stack offset and frame offset.</returns>
+            public Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex, DumpFileMemoryReader dumpFileMemoryReader)
+            {
+                const int pointerSize = 8;
+                elf_prstatus prstatus = threads[threadIndex];
+                ulong bp = prstatus.pr_reg[X64RegisterIndex.RBP];
+                ulong ip = prstatus.pr_reg[X64RegisterIndex.RIP];
+                List<Tuple<ulong, ulong, ulong>> result = new List<Tuple<ulong, ulong, ulong>>();
+                ulong segmentStartAddress, segmentSize;
+
+                dumpFileMemoryReader.GetMemoryRange(bp, out segmentStartAddress, out segmentSize);
+                while (bp >= segmentStartAddress && bp < segmentStartAddress + segmentSize)
+                {
+                    result.Add(Tuple.Create(ip, bp, bp));
+
+                    MemoryBuffer buffer = dumpFileMemoryReader.ReadMemory(bp, pointerSize * 2);
+                    bp = UserType.ReadPointer(buffer, 0, pointerSize);
+                    ip = UserType.ReadPointer(buffer, pointerSize, pointerSize);
+                }
+                return result.ToArray();
+            }
+
+            /// <summary>
+            /// Gets the actual processor type.
+            /// </summary>
+            public ImageFileMachine GetActualProcessorType()
+            {
+                return ImageFileMachine.AMD64;
+            }
+
+            /// <summary>
+            /// Gets the effective processor type.
+            /// </summary>
+            public ImageFileMachine GetEffectiveProcessorType()
+            {
+                return ImageFileMachine.AMD64;
+            }
+
+            #region Native structures
+            private static class X64RegisterIndex
+            {
+                public const int R15 = 0;
+                public const int R14 = 1;
+                public const int R13 = 2;
+                public const int R12 = 3;
+                public const int RBP = 4;
+                public const int RBX = 5;
+                public const int R11 = 6;
+                public const int R10 = 7;
+                public const int R9 = 8;
+                public const int R8 = 9;
+                public const int RAX = 10;
+                public const int RCX = 11;
+                public const int RDX = 12;
+                public const int RSI = 13;
+                public const int RDI = 14;
+                public const int OrigRAX = 15;
+                public const int RIP = 16;
+                public const int CS = 17;
+                public const int EFlags = 18;
+                public const int RSP = 19;
+                public const int SS = 20;
+                public const int FSBase = 21;
+                public const int GSBase = 22;
+                public const int DS = 23;
+                public const int ES = 24;
+                public const int FS = 25;
+                public const int GS = 26;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 8)]
+            private struct timeval
+            {
+                /// <summary>
+                /// Seconds
+                /// </summary>
+                public long tv_sec;
+
+                /// <summary>
+                /// Microseconds
+                /// </summary>
+                public long tv_usec;
+            }
+
+            /// <summary>
+            /// Definitions to generate Intel SVR4-like core files.
+            /// These mostly have the same names as the SVR4 types with "elf_"
+            /// tacked on the front to prevent clashes with linux definitions,
+            /// and the typedef forms have been avoided.This is mostly like
+            /// the SVR4 structure, but more Linuxy, with things that Linux does
+            /// not support and which gdb doesn't really use excluded.
+            /// Fields present but not used are marked with "XXX".
+            /// </summary>
+            [StructLayout(LayoutKind.Sequential, Pack = 8)]
+            private struct elf_prstatus
+            {
+
+                /// <summary>
+                /// Info associated with signal
+                /// </summary>
+                public elf_siginfo pr_info;
+
+                /// <summary>
+                /// Current signal
+                /// </summary>
+                public short pr_cursig;
+
+                /// <summary>
+                /// Set of pending signals
+                /// </summary>
+                public ulong pr_sigpend;
+
+                /// <summary>
+                /// Set of held signals
+                /// </summary>
+                public ulong pr_sighold;
+
+                public int pr_pid;
+
+                public int pr_ppid;
+
+                public int pr_pgrp;
+
+                public int pr_sid;
+
+                /// <summary>
+                /// User time
+                /// </summary>
+                public timeval pr_utime;
+
+                /// <summary>
+                /// System time
+                /// </summary>
+                public timeval pr_stime;
+
+                /// <summary>
+                /// Cumulative user time
+                /// </summary>
+                public timeval pr_cutime;
+
+                /// <summary>
+                /// Cumulative system time
+                /// </summary>
+                public timeval pr_cstime;
+
+                /// <summary>
+                /// GP registers
+                /// </summary>
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 27)]
+                public ulong[] pr_reg;
+
+                /// <summary>
+                /// True if math co-processor being used.
+                /// </summary>
+                public int pr_fpvalid;
+
+                public int ProcessId
+                {
+                    get
+                    {
+                        return pr_pid;
+                    }
+                }
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 8)]
+            private struct elf_prpsinfo
+            {
+                /// <summary>
+                /// Numeric process state
+                /// </summary>
+                public sbyte pr_state;
+
+                /// <summary>
+                /// Char for pr_state
+                /// </summary>
+                public sbyte pr_sname;
+
+                /// <summary>
+                /// zombie
+                /// </summary>
+                public sbyte pr_zomb;
+
+                /// <summary>
+                /// nice val
+                /// </summary>
+                public sbyte pr_nice;
+
+                /// <summary>
+                /// Flags
+                /// </summary>
+                public ulong pr_flag;
+
+                public uint pr_uid;
+
+                public uint pr_gid;
+
+                public int pr_pid;
+
+                public int pr_ppid;
+
+                public int pr_pgrp;
+
+                public int pr_sid;
+
+                /// <summary>
+                /// Filename of executable
+                /// </summary>
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+                byte[] pr_fname;
+
+                /// <summary>
+                /// Initial part of arg list
+                /// </summary>
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 80)]
+                byte[] pr_psargs;
+
+                public string Filename
+                {
+                    get
+                    {
+                        return Encoding.UTF8.GetString(pr_fname, 0, ZeroIndex(pr_fname));
+                    }
+                }
+
+                public string ArgList
+                {
+                    get
+                    {
+                        return Encoding.UTF8.GetString(pr_psargs, 0, ZeroIndex(pr_psargs));
+                    }
+                }
+
+                private int ZeroIndex(byte[] bytes)
+                {
+                    for (int index = 0; index < bytes.Length; index++)
+                    {
+                        if (bytes[index] == 0)
+                        {
+                            return index;
+                        }
+                    }
+
+                    return bytes.Length;
+                }
+            }
+            #endregion
+        }
+
         #region Native structures
         private enum elf_note_type : uint
         {
@@ -286,37 +954,6 @@ namespace CsDebugScript.DwarfSymbolProvider
             Siginfo = 0x53494749,
             File = 0x46494c45,
             Prxpfreg = 0x46e62b7f,
-        }
-
-        private static class X64RegisterIndex
-        {
-            public const int R15 = 0;
-            public const int R14 = 1;
-            public const int R13 = 2;
-            public const int R12 = 3;
-            public const int RBP = 4;
-            public const int RBX = 5;
-            public const int R11 = 6;
-            public const int R10 = 7;
-            public const int R9 = 8;
-            public const int R8 = 9;
-            public const int RAX = 10;
-            public const int RCX = 11;
-            public const int RDX = 12;
-            public const int RSI = 13;
-            public const int RDI = 14;
-            public const int OrigRAX = 15;
-            public const int RIP = 16;
-            public const int CS = 17;
-            public const int EFlags = 18;
-            public const int RSP = 19;
-            public const int SS = 20;
-            public const int FSBase = 21;
-            public const int GSBase = 22;
-            public const int DS = 23;
-            public const int ES = 24;
-            public const int FS = 25;
-            public const int GS = 26;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
@@ -365,175 +1002,6 @@ namespace CsDebugScript.DwarfSymbolProvider
             public int si_errno;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        private struct timeval
-        {
-            /// <summary>
-            /// Seconds
-            /// </summary>
-            public long tv_sec;
-
-            /// <summary>
-            /// Microseconds
-            /// </summary>
-            public long tv_usec;
-        }
-
-        /// <summary>
-        /// Definitions to generate Intel SVR4-like core files.
-        /// These mostly have the same names as the SVR4 types with "elf_"
-        /// tacked on the front to prevent clashes with linux definitions,
-        /// and the typedef forms have been avoided.This is mostly like
-        /// the SVR4 structure, but more Linuxy, with things that Linux does
-        /// not support and which gdb doesn't really use excluded.
-        /// Fields present but not used are marked with "XXX".
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential, Pack = 8)]
-        private struct elf_prstatus
-        {
-
-            /// <summary>
-            /// Info associated with signal
-            /// </summary>
-            public elf_siginfo pr_info;
-
-            /// <summary>
-            /// Current signal
-            /// </summary>
-            public short pr_cursig;
-
-            /// <summary>
-            /// Set of pending signals
-            /// </summary>
-            public ulong pr_sigpend;
-
-            /// <summary>
-            /// Set of held signals
-            /// </summary>
-            public ulong pr_sighold;
-
-            public int pr_pid;
-
-            public int pr_ppid;
-
-            public int pr_pgrp;
-
-            public int pr_sid;
-
-            /// <summary>
-            /// User time
-            /// </summary>
-            public timeval pr_utime;
-
-            /// <summary>
-            /// System time
-            /// </summary>
-            public timeval pr_stime;
-
-            /// <summary>
-            /// Cumulative user time
-            /// </summary>
-            public timeval pr_cutime;
-
-            /// <summary>
-            /// Cumulative system time
-            /// </summary>
-            public timeval pr_cstime;
-
-            /// <summary>
-            /// GP registers
-            /// </summary>
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 27)]
-            public ulong[] pr_reg;
-
-            /// <summary>
-            /// True if math co-processor being used.
-            /// </summary>
-            public int pr_fpvalid;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 8)]
-        private struct elf_prpsinfo
-        {
-            /// <summary>
-            /// Numeric process state
-            /// </summary>
-            public sbyte pr_state;
-
-            /// <summary>
-            /// Char for pr_state
-            /// </summary>
-            public sbyte pr_sname;
-
-            /// <summary>
-            /// zombie
-            /// </summary>
-            public sbyte pr_zomb;
-
-            /// <summary>
-            /// nice val
-            /// </summary>
-            public sbyte pr_nice;
-
-            /// <summary>
-            /// Flags
-            /// </summary>
-            public ulong pr_flag;
-
-            public uint pr_uid;
-
-            public uint pr_gid;
-
-            public int pr_pid;
-
-            public int pr_ppid;
-
-            public int pr_pgrp;
-
-            public int pr_sid;
-
-            /// <summary>
-            /// Filename of executable
-            /// </summary>
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            byte[] pr_fname;
-
-            /// <summary>
-            /// Initial part of arg list
-            /// </summary>
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 80)]
-            byte[] pr_psargs;
-
-            public string Filename
-            {
-                get
-                {
-                    return Encoding.UTF8.GetString(pr_fname, 0, ZeroIndex(pr_fname));
-                }
-            }
-
-            public string ArgList
-            {
-                get
-                {
-                    return Encoding.UTF8.GetString(pr_psargs, 0, ZeroIndex(pr_psargs));
-                }
-            }
-
-            private int ZeroIndex(byte[] bytes)
-            {
-                for (int index = 0; index < bytes.Length; index++)
-                {
-                    if (bytes[index] == 0)
-                    {
-                        return index;
-                    }
-                }
-
-                return bytes.Length;
-            }
-        }
-
         private struct elf_note_file
         {
             public ulong start;
@@ -549,18 +1017,18 @@ namespace CsDebugScript.DwarfSymbolProvider
                 }
             }
 
-            public static elf_note_file[] Parse(DwarfMemoryReader reader)
+            public static elf_note_file[] Parse(DwarfMemoryReader reader, bool is64bit)
             {
-                ulong count = reader.ReadUlong();
-                ulong page_size = reader.ReadUlong();
+                ulong count = is64bit ? reader.ReadUlong() : reader.ReadUint();
+                ulong page_size = is64bit ? reader.ReadUlong() : reader.ReadUint();
 
                 elf_note_file[] files = new elf_note_file[count];
 
                 for (int i = 0; i < files.Length; i++)
                 {
-                    files[i].start = reader.ReadUlong();
-                    files[i].end = reader.ReadUlong();
-                    files[i].file_ofs = reader.ReadUlong() * page_size;
+                    files[i].start = is64bit ? reader.ReadUlong() : reader.ReadUint();
+                    files[i].end = is64bit ? reader.ReadUlong() : reader.ReadUint();
+                    files[i].file_ofs = (is64bit ? reader.ReadUlong() : reader.ReadUint()) * page_size;
                 }
                 for (int i = 0; i < files.Length; i++)
                 {

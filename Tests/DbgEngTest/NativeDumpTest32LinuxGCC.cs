@@ -3,15 +3,15 @@
 namespace DbgEngTest
 {
     /// <summary>
-    /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.x86.Release.exe.
+    /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.linux.x86.gcc.
     /// </summary>
     [TestClass]
     [DeploymentItem(DefaultDumpFile)]
-    public class NativeDumpTest32Release : TestBase
+    public class NativeDumpTest32LinuxGCC : TestBase
     {
-        private const string DefaultDumpFile = "NativeDumpTest.x86.Release.dmp";
-        private const string DefaultModuleName = "NativeDumpTest_x86_Release";
-        private const string DefaultSymbolPath = @".\";
+        private const string DefaultDumpFile = @"..\..\..\dumps\NativeDumpTest.linux.x86.gcc.coredump";
+        private const string DefaultModuleName = "NativeDumpTest.linux.x86.gcc";
+        private const string DefaultSymbolPath = @"..\..\..\dumps\";
 
         private static NativeDumpTest testRunner;
 
@@ -20,7 +20,7 @@ namespace DbgEngTest
         {
             SyncStart();
             testRunner = new NativeDumpTest(DefaultDumpFile, DefaultModuleName, DefaultSymbolPath);
-            testRunner.TestSetup();
+            testRunner.TestSetup(useDia: false, useDwarf: true, useElfCoreDumps: true);
         }
 
         [ClassCleanup]
@@ -38,6 +38,21 @@ namespace DbgEngTest
 
         [TestMethod]
         [TestCategory("NativeDumpTests")]
+        public void ReadingFloatPointTypes()
+        {
+            testRunner.ReadingFloatPointTypes();
+        }
+
+        [TestMethod]
+        [TestCategory("NativeDumpTests")]
+        public void GettingClassStaticMember()
+        {
+            testRunner.GettingClassStaticMember();
+        }
+
+#if false // TODO: Enable more ElfCoreDumpDebuggingEngine tests
+        [TestMethod]
+        [TestCategory("NativeDumpTests")]
         public void CheckProcess()
         {
             testRunner.CheckProcess();
@@ -49,6 +64,14 @@ namespace DbgEngTest
         {
             testRunner.CheckDebugger();
         }
+
+        [TestMethod]
+        [TestCategory("NativeDumpTests")]
+        public void CheckThread()
+        {
+            testRunner.CheckThread();
+        }
+#endif
 
         [TestMethod]
         [TestCategory("NativeDumpTests")]
@@ -66,9 +89,16 @@ namespace DbgEngTest
 
         [TestMethod]
         [TestCategory("NativeDumpTests")]
-        public void CheckThread()
+        public void CheckMainArguments()
         {
-            testRunner.CheckThread();
+            testRunner.CheckMainArguments();
+        }
+
+        [TestMethod]
+        [TestCategory("NativeDumpTests")]
+        public void CheckCodeArray()
+        {
+            testRunner.CheckCodeArray();
         }
 
         [TestMethod]
@@ -76,6 +106,13 @@ namespace DbgEngTest
         public void CheckCodeFunction()
         {
             testRunner.CheckCodeFunction();
+        }
+
+        [TestMethod]
+        [TestCategory("NativeDumpTests")]
+        public void CheckMainLocals()
+        {
+            testRunner.CheckDefaultTestCaseLocals();
         }
 
         [TestMethod]
