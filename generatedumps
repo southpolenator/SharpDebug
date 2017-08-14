@@ -7,4 +7,8 @@ g++ -m32 ./Tests/DumpApps/NativeDumpTest/NativeDumpTest.cpp -o ./dumps/NativeDum
 pushd ./dumps/
 ./NativeDumpTest.linux.x86.gcc
 popd
+clang++ ./Tests/DumpApps/NativeDumpTest/NativeDumpTest.cpp -o ./dumps/NativeDumpTest.linux.x64.clang -std=c++11 -g
+pushd ./dumps/
+./NativeDumpTest.linux.x64.clang
+popd
 
