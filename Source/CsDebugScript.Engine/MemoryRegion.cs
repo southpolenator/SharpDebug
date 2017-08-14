@@ -81,26 +81,33 @@ namespace CsDebugScript
         /// <param name="regions">The memory regions.</param>
         public MemoryRegionFinder(IReadOnlyList<MemoryRegion> regions)
         {
-            ulong minValue = regions[0].MemoryStart;
-            ulong maxValue = regions[regions.Count - 1].MemoryEnd;
-
-            triesStartBits = 64 - BucketSizeBits;
-            triesStartMask = ((1UL << BucketSizeBits) - 1) << triesStartBits;
-            while ((triesStartMask & (maxValue - 1)) == 0)
+            if (regions.Count > 0)
             {
-                triesStartMask >>= BucketSizeBits;
-                triesStartBits -= BucketSizeBits;
+                ulong minValue = regions[0].MemoryStart;
+                ulong maxValue = regions[regions.Count - 1].MemoryEnd;
+
+                triesStartBits = 64 - BucketSizeBits;
+                triesStartMask = ((1UL << BucketSizeBits) - 1) << triesStartBits;
+                while ((triesStartMask & (maxValue - 1)) == 0)
+                {
+                    triesStartMask >>= BucketSizeBits;
+                    triesStartBits -= BucketSizeBits;
+                }
+
+                Tuple<int, MemoryRegion>[] regionsTuple = new Tuple<int, MemoryRegion>[regions.Count];
+                for (int i = 0; i < regionsTuple.Length; i++)
+                    regionsTuple[i] = Tuple.Create(i, regions[i]);
+                TriesElement element = new TriesElement(regionsTuple, triesStartMask, triesStartBits);
+
+                buckets = element.buckets;
+                if (buckets == null)
+                {
+                    buckets = new TriesElement[] { element };
+                }
             }
-
-            Tuple<int, MemoryRegion>[]regionsTuple = new Tuple<int, MemoryRegion>[regions.Count];
-            for (int i = 0; i < regionsTuple.Length; i++)
-                regionsTuple[i] = Tuple.Create(i, regions[i]);
-            TriesElement element = new TriesElement(regionsTuple, triesStartMask, triesStartBits);
-
-            buckets = element.buckets;
-            if (buckets == null)
+            else
             {
-                buckets = new TriesElement[] { element };
+                buckets = new TriesElement[0];
             }
         }
 

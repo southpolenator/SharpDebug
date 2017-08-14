@@ -41,11 +41,6 @@ namespace CsDebugScript.VS
             throw new NotImplementedException();
         }
 
-        public Engine.ISymbolProviderModule CreateDefaultSymbolProviderModule()
-        {
-            throw new NotImplementedException();
-        }
-
         public ulong FindPatternInMemory(Process process, ulong memoryStart, ulong memoryEnd, byte[] pattern, int patternStart, int patternEnd, uint searchAlignment = 1, bool searchWritableMemoryOnly = false)
         {
             throw new NotImplementedException();
@@ -410,6 +405,17 @@ namespace CsDebugScript.VS
         public string ReadUnicodeString(Process process, ulong address, int length = -1)
         {
             return proxy.ReadUnicodeString(process.Id, address, length);
+        }
+
+        /// <summary>
+        /// Reads the wide unicode (4bytes) string.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="length">The length. If length is -1, string is null terminated</param>
+        public string ReadWideUnicodeString(Process process, ulong address, int length = -1)
+        {
+            return proxy.ReadWideUnicodeString(process.Id, address, length);
         }
 
         /// <summary>

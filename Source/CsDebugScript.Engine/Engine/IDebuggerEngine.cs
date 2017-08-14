@@ -24,11 +24,6 @@ namespace CsDebugScript.Engine
         ISymbolProvider CreateDefaultSymbolProvider();
 
         /// <summary>
-        /// Creates new instance of default symbol provider module.
-        /// </summary>
-        ISymbolProviderModule CreateDefaultSymbolProviderModule();
-
-        /// <summary>
         /// Executes the action in redirected console output and error stream.
         /// </summary>
         /// <param name="action">The action.</param>
@@ -260,6 +255,14 @@ namespace CsDebugScript.Engine
         /// <param name="address">The address.</param>
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         string ReadUnicodeString(Process process, ulong address, int length = -1);
+
+        /// <summary>
+        /// Reads the wide unicode (4bytes) string.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="length">The length. If length is -1, string is null terminated</param>
+        string ReadWideUnicodeString(Process process, ulong address, int length = -1);
 
         /// <summary>
         /// Finds memory range where the specified address belongs to.

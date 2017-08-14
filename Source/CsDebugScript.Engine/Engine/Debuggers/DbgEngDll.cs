@@ -76,19 +76,19 @@ namespace CsDebugScript.Engine.Debuggers
         private static IDebugSystemObjects4 systemObjects;
 
         /// <summary>
-        /// Dictionary of all debugee flow controlers. Key is process id that is being debugged.
+        /// Dictionary of all debugee flow controllers. Key is process id that is being debugged.
         /// </summary>
-        private static DictionaryCache<uint, DebuggeeFlowController> debugeeFlowControlers;
+        private static DictionaryCache<uint, DebuggeeFlowController> debugeeFlowControllers;
 
         /// <summary>
         /// Static constructor.
         /// </summary>
         static DbgEngDll()
         {
-            // Populate flow controlers lazely.
+            // Populate flow controllers lazily.
             //
             // NOTE: Client passed needs to be set to process with selected processId.
-            debugeeFlowControlers =
+            debugeeFlowControllers =
                 new DictionaryCache<uint, DebuggeeFlowController>(
                     (processId) => new DebuggeeFlowController(ThreadClient));
         }
@@ -125,6 +125,9 @@ namespace CsDebugScript.Engine.Debuggers
             }
         }
 
+        /// <summary>
+        /// Gets the state cache.
+        /// </summary>
         internal static StateCache StateCache
         {
             get
@@ -1060,17 +1063,20 @@ namespace CsDebugScript.Engine.Debuggers
         }
 
         /// <summary>
-        /// Creates new instance of default symbol provider.
+        /// Reads the wide unicode string.
         /// </summary>
-        public ISymbolProvider CreateDefaultSymbolProvider()
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="length">The length.</param>
+        public string ReadWideUnicodeString(Process process, ulong address, int length = -1)
         {
-            return new DbgEngSymbolProvider(this);
+            throw new NotImplementedException();
         }
 
         /// <summary>
-        /// Creates new instance of default symbol provider module.
+        /// Creates new instance of default symbol provider.
         /// </summary>
-        public ISymbolProviderModule CreateDefaultSymbolProviderModule()
+        public ISymbolProvider CreateDefaultSymbolProvider()
         {
             return new DbgEngSymbolProvider(this);
         }
@@ -1310,7 +1316,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                DebuggeeFlowController flowControler = debugeeFlowControlers[process.Id];
+                DebuggeeFlowController flowControler = debugeeFlowControllers[process.Id];
                 flowControler.DebugStatusBreak.WaitOne();
                 Control.Execute(0, "g", 0);
             }
@@ -1323,7 +1329,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                DebuggeeFlowController flowControler = debugeeFlowControlers[process.Id];
+                DebuggeeFlowController flowControler = debugeeFlowControllers[process.Id];
                 flowControler.DebugStatusBreak.Reset();
                 Control.SetInterrupt(0);
                 flowControler.DebugStatusBreak.WaitOne();
@@ -1344,7 +1350,7 @@ namespace CsDebugScript.Engine.Debuggers
             Client.EndSession((uint)Defines.DebugEndActiveTerminate);
 
             DebuggeeFlowController flowControler;
-            debugeeFlowControlers.RemoveEntry(process.Id, out flowControler);
+            debugeeFlowControllers.RemoveEntry(process.Id, out flowControler);
 
             // Release any threads that are waiting.
             //
@@ -1354,7 +1360,7 @@ namespace CsDebugScript.Engine.Debuggers
             flowControler.WaitForDebuggerLoopToExit();
         }
 
-#region Native methods
+        #region Native methods
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.
         /// </summary>
@@ -1658,6 +1664,6 @@ namespace CsDebugScript.Engine.Debuggers
             ulong AddrBase,
             ReadProcessMemoryProc64 ReadMemoryRoutine,
             GetModuleBaseProc64 GetModuleBaseRoutine);
-#endregion
+        #endregion
     }
 }
