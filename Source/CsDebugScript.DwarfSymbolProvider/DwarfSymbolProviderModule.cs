@@ -1,11 +1,12 @@
 ﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Native;
+using CsDebugScript.Engine.Utility;
+using Dia2Lib;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using CsDebugScript.Engine.Native;
-using Dia2Lib;
-using CsDebugScript.Engine.Utility;
-using System.Collections.Concurrent;
+using System.Text;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
@@ -93,7 +94,17 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// The next unnamed type id
         /// </summary>
-        int nextUnnamedTypeId = 0;
+        private int nextUnnamedTypeId = 0;
+
+        /// <summary>
+        /// The list of public symbols sorted by Address.
+        /// </summary>
+        private List<PublicSymbol> publicSymbols;
+
+        /// <summary>
+        /// The list of public symbols addresses sorted.
+        /// </summary>
+        private List<ulong> publicSymbolsAddresses;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DwarfSymbolProviderModule"/> class.
@@ -104,11 +115,13 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="commonInformationEntries">The common information entries.</param>
         /// <param name="codeSegmentOffset">The code segment offset.</param>
         /// <param name="is64bit">if set to <c>true</c> image is 64 bit.</param>
-        public DwarfSymbolProviderModule(Module module, DwarfCompilationUnit[] compilationUnits, DwarfLineNumberProgram[] programs, DwarfCommonInformationEntry[] commonInformationEntries, ulong codeSegmentOffset, bool is64bit)
+        public DwarfSymbolProviderModule(Module module, DwarfCompilationUnit[] compilationUnits, DwarfLineNumberProgram[] programs, DwarfCommonInformationEntry[] commonInformationEntries, IReadOnlyList<PublicSymbol> publicSymbols, ulong codeSegmentOffset, bool is64bit)
         {
             Module = module;
             Is64bit = is64bit;
             symbolEnumerator = compilationUnits.SelectMany(cu => cu.Symbols).GetEnumerator();
+            this.publicSymbols = publicSymbols.OrderBy(s => s.Address).ToList();
+            publicSymbolsAddresses = this.publicSymbols.Select(s => s.Address).ToList();
             lineInformationCache = SimpleCache.Create(() =>
             {
                 List<DwarfLineInformation> result = programs.SelectMany(p => p.Files).SelectMany(f => f.Lines).ToList();
@@ -283,7 +296,38 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="distance">The distance within the module.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance)
         {
-            // TODO: Something better must be done. This is not always correct.
+            // Try to locate address in public symbols and see if it is virtual table
+            CodeType codeType;
+            PublicSymbol publicSymbol;
+            int publicSymbolIndex = publicSymbolsAddresses.BinarySearch(distance);
+
+            if (publicSymbolIndex < 0)
+            {
+                publicSymbolIndex = ~publicSymbolIndex;
+            }
+            if (publicSymbolIndex >= publicSymbolsAddresses.Count)
+            {
+                publicSymbolIndex = publicSymbolsAddresses.Count - 1;
+            }
+            if (publicSymbolsAddresses[publicSymbolIndex] > distance && publicSymbolIndex > 0)
+            {
+                publicSymbolIndex--;
+            }
+
+            publicSymbol = publicSymbols[publicSymbolIndex];
+            if (publicSymbol.DemangledName.StartsWith("vtable for "))
+            {
+                DwarfSymbol symbol;
+                string name = publicSymbol.DemangledName.Substring(11);
+
+                if (typeNameToType.TryGetValue(name, out symbol))
+                {
+                    codeType = Module.TypesById[GetTypeId(symbol)];
+                    return Tuple.Create(codeType, 0);
+                }
+            }
+
+            // We failed to find it in public symbols, try to see if function pointer is stored at vtable address
             MemoryBuffer memoryBuffer =  Debugger.ReadMemory(process, vtableAddress, process.GetPointerSize());
             ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)process.GetPointerSize());
             ulong displacement;
@@ -297,8 +341,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                 type = GetType(type);
             }
 
-            CodeType codeType = Module.TypesById[GetTypeId(type)];
-
+            codeType = Module.TypesById[GetTypeId(type)];
             return Tuple.Create(codeType, 0);
         }
 
@@ -460,6 +503,14 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             DwarfSymbol type = GetType(typeId);
 
+            return GetTypeBasicType(type);
+        }
+
+        /// <summary>
+        /// Gets the basic type of the specified type.
+        /// </summary>
+        private BasicType GetTypeBasicType(DwarfSymbol type)
+        {
             while (true)
             {
                 switch (type.Tag)
@@ -568,7 +619,13 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                     if (subrangetype.Tag == DwarfTag.SubrangeType)
                     {
-                        return (uint)(subrangetype.GetConstantAttribute(DwarfAttribute.UpperBound) + 1) * GetTypeSize(module, GetTypeId(GetType(type)));
+                        ulong count = subrangetype.GetConstantAttribute(DwarfAttribute.Count);
+
+                        if (count == 0)
+                        {
+                            count = subrangetype.GetConstantAttribute(DwarfAttribute.UpperBound) + 1;
+                        }
+                        return (uint)count * GetTypeSize(module, GetTypeId(GetType(type)));
                     }
                 }
                 else
@@ -830,6 +887,10 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 typeName = typeName.Substring(0, typeName.Length - 7) + "*";
             }
+            if (typeName == "unsigned long" && Is64bit)
+            {
+                typeName = "long long unsigned int";
+            }
 
             DwarfSymbol type;
 
@@ -958,6 +1019,9 @@ namespace CsDebugScript.DwarfSymbolProvider
                             if (!string.IsNullOrEmpty(typeName))
                             {
                                 typeNameToType.TryAdd(typeName, symbol);
+                                typeNameToType.TryAdd(CleanSymbolNameNumbers(typeName), symbol);
+                                typeNameToType.TryAdd(GetTypeNameNicePrint(symbol, true), symbol);
+                                typeNameToType.TryAdd(GetTypeNameNicePrint(symbol, false), symbol);
                             }
 
                             // If it is pointer type, add it to collection
@@ -1025,6 +1089,219 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Gets the type name using nice print.
+        /// </summary>
+        /// <param name="symbol">The symbol of the type.</param>
+        /// <param name="gccPrint">if set to <c>true</c> GCC print compatibility will be used.</param>
+        private string GetTypeNameNicePrint(DwarfSymbol symbol, bool gccPrint)
+        {
+            try
+            {
+                if (symbol.Tag == DwarfTag.Typedef)
+                {
+                    return GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint);
+                }
+                if (symbol.Tag == DwarfTag.PointerType)
+                {
+                    return GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint) + " *";
+                }
+                if (symbol.Tag == DwarfTag.ReferenceType)
+                {
+                    return GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint) + " &";
+                }
+                if (symbol.Tag == DwarfTag.ArrayType)
+                {
+                    DwarfSymbol subrangetype = symbol.Children.FirstOrDefault();
+
+                    if (subrangetype.Tag == DwarfTag.SubrangeType)
+                    {
+                        ulong count = subrangetype.GetConstantAttribute(DwarfAttribute.Count);
+
+                        if (count == 0)
+                        {
+                            count = subrangetype.GetConstantAttribute(DwarfAttribute.UpperBound) + 1;
+                        }
+                        return GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint) + $"[{count}]";
+                    }
+                    return GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint) + "[]";
+                }
+                if (symbol.Tag == DwarfTag.ConstType)
+                {
+                    return "const " + GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint);
+                }
+                if (symbol.Tag == DwarfTag.VolatileType)
+                {
+                    return "volatile " + GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint);
+                }
+            }
+            catch
+            {
+                return GetTypeName(symbol);
+            }
+
+            StringBuilder sb = new StringBuilder();
+            Stack<DwarfSymbol> symbols = new Stack<DwarfSymbol>();
+
+            while (symbol != null && symbol.Tag != DwarfTag.CompileUnit && !string.IsNullOrEmpty(symbol.Name))
+            {
+                symbols.Push(symbol);
+                symbol = symbol.Parent;
+            }
+
+            while (symbols.Count > 0)
+            {
+                symbol = symbols.Pop();
+                if (sb.Length > 0)
+                {
+                    sb.Append("::");
+                }
+
+                string symbolName = symbol.Name;
+                int position = sb.Length;
+
+                if (symbol.Children != null && symbolName.Contains("<"))
+                {
+                    try
+                    {
+                        DwarfSymbol[] parameters = symbol.Children.Where(c => c.Tag == DwarfTag.TemplateTypeParameter || c.Tag == DwarfTag.TemplateValueParameter).ToArray();
+
+                        sb.Append(symbolName.Substring(0, symbolName.IndexOf('<')));
+                        sb.Append("<");
+                        foreach (DwarfSymbol parameter in parameters)
+                        {
+                            if (sb[sb.Length - 1] != '<')
+                            {
+                                sb.Append(", ");
+                            }
+                            switch (parameter.Tag)
+                            {
+                                case DwarfTag.TemplateTypeParameter:
+                                    {
+                                        DwarfSymbol type = parameter.Attributes[DwarfAttribute.Type].Reference;
+
+                                        sb.Append(GetTypeNameNicePrint(type, gccPrint));
+                                    }
+                                    break;
+                                case DwarfTag.TemplateValueParameter:
+                                    {
+                                        DwarfSymbol type = parameter.Attributes[DwarfAttribute.Type].Reference;
+                                        ulong value = parameter.GetConstantAttribute(DwarfAttribute.ConstValue);
+                                        string stringValue = null;
+
+                                        if (!parameter.Attributes.ContainsKey(DwarfAttribute.ConstValue))
+                                        {
+                                            throw new NotImplementedException();
+                                        }
+                                        switch (type.Tag)
+                                        {
+                                            case DwarfTag.BaseType:
+                                                switch (GetTypeBasicType(type))
+                                                {
+                                                    case BasicType.Bool:
+                                                        stringValue = value != 0 ? "true" : "false";
+                                                        break;
+                                                    case BasicType.Int:
+                                                        // TODO: Check type size
+                                                        if (value > int.MaxValue)
+                                                        {
+                                                            throw new NotImplementedException();
+                                                        }
+                                                        stringValue = value.ToString();
+                                                        break;
+                                                    case BasicType.UInt:
+                                                    case BasicType.ULong:
+                                                        stringValue = value.ToString();
+                                                        break;
+                                                    default:
+                                                        stringValue = value.ToString();
+                                                        break;
+                                                }
+                                                break;
+                                            case DwarfTag.EnumerationType:
+                                                {
+                                                    DwarfSymbol enumValue = type.Children.FirstOrDefault(c => c.GetConstantAttribute(DwarfAttribute.ConstValue) == value);
+
+                                                    if (enumValue != null && !gccPrint)
+                                                    {
+                                                        stringValue = $"{GetTypeNameNicePrint(type, gccPrint)}::{enumValue.Name}";
+                                                    }
+                                                    else
+                                                    {
+                                                        stringValue = $"({GetTypeNameNicePrint(type, gccPrint)}){value}";
+                                                    }
+                                                }
+                                                break;
+                                            default:
+                                                throw new NotImplementedException();
+                                        }
+                                        sb.Append(stringValue);
+                                    }
+                                    break;
+                            }
+                        }
+                        if (sb[sb.Length - 1] == '>')
+                        {
+                            sb.Append(" >");
+                        }
+                        else
+                        {
+                            sb.Append(">");
+                        }
+                    }
+                    catch
+                    {
+                        sb.Length = position;
+                    }
+                }
+
+                if (sb.Length == position)
+                {
+                    sb.Append(symbolName);
+                }
+            }
+
+            return sb.Length > 0 ? sb.ToString() : GetTypeName(symbol);
+        }
+
+        /// <summary>
+        /// Cleans numbers from the symbol name (removed trailing type).
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        /// <returns></returns>
+        private string CleanSymbolNameNumbers(string typeName)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < typeName.Length; i++)
+            {
+                if (char.IsDigit(typeName[i]) && (i == 0 || (!char.IsLetterOrDigit(typeName[i - 1]) && typeName[i - 1] != '_')))
+                {
+                    int numberStart = i;
+
+                    while (i < typeName.Length && char.IsDigit(typeName[i]))
+                    {
+                        sb.Append(typeName[i]);
+                        i++;
+                    }
+
+                    int numberEnd = i;
+
+                    while (i < typeName.Length && (typeName[i] == 'u' || typeName[i] == 'U' || typeName[i] == 'l' || typeName[i] == 'L'))
+                    {
+                        i++;
+                    }
+                    i--;
+                }
+                else
+                {
+                    sb.Append(typeName[i]);
+                }
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>
@@ -1820,7 +2097,19 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
             if (type.Tag == DwarfTag.ArrayType)
             {
-                return GetTypeName(GetType(type)) + $"[{type.GetConstantAttribute(DwarfAttribute.UpperBound) + 1}]";
+                DwarfSymbol subrangetype = type.Children.FirstOrDefault();
+
+                if (subrangetype.Tag == DwarfTag.SubrangeType)
+                {
+                    ulong count = subrangetype.GetConstantAttribute(DwarfAttribute.Count);
+
+                    if (count == 0)
+                    {
+                        count = subrangetype.GetConstantAttribute(DwarfAttribute.UpperBound) + 1;
+                    }
+                    return $"{GetTypeName(GetType(type))}[{count}]";
+                }
+                return $"{GetTypeName(GetType(type))}[]";
             }
 
             switch (type.Tag)

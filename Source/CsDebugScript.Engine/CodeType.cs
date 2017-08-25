@@ -1155,7 +1155,13 @@ namespace CsDebugScript
                 }
                 else
                 {
-                    result[i] = CodeType.Create(arguments[i], Module);
+                    try
+                    {
+                        result[i] = CodeType.Create(arguments[i], Module);
+                    }
+                    catch
+                    {
+                    }
                 }
             }
 

@@ -39,7 +39,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                     var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.CodeSegmentOffset);
                     var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.Is64bit);
 
-                    return new DwarfSymbolProviderModule(module, compilationUnits, lineNumberPrograms, commonInformationEntries, image.CodeSegmentOffset, image.Is64bit);
+                    return new DwarfSymbolProviderModule(module, compilationUnits, lineNumberPrograms, commonInformationEntries, image.PublicSymbols, image.CodeSegmentOffset, image.Is64bit);
                 }
                 catch
                 {

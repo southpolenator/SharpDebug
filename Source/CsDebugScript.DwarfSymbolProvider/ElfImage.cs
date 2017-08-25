@@ -1,5 +1,7 @@
 ﻿using ELFSharp.ELF;
 using ELFSharp.ELF.Sections;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
@@ -12,7 +14,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// The ELF interface
         /// </summary>
-        private IELF elf;
+        private ELF<ulong> elf;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ElfImage"/> class.
@@ -20,8 +22,31 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="path">The image path.</param>
         public ElfImage(string path)
         {
-            elf = ELFReader.Load(path);
+            elf = ELFReader.Load<ulong>(path);
+            List<PublicSymbol> publicSymbols = new List<PublicSymbol>();
+            SymbolTable<ulong> symbols = elf.Sections.FirstOrDefault(s => s.Type == SectionType.SymbolTable) as SymbolTable<ulong>;
+
+            if (symbols == null || !symbols.Entries.Any())
+            {
+                symbols = elf.Sections.FirstOrDefault(s => s.Type == SectionType.DynamicSymbolTable) as SymbolTable<ulong>;
+            }
+
+            if (symbols != null)
+            {
+                ulong codeSegmentOffset = CodeSegmentOffset;
+
+                foreach (SymbolEntry<ulong> symbol in symbols.Entries)
+                {
+                    publicSymbols.Add(new PublicSymbol(symbol.Name, symbol.Value - codeSegmentOffset));
+                }
+            }
+            PublicSymbols = publicSymbols;
         }
+
+        /// <summary>
+        /// Gets the public symbols.
+        /// </summary>
+        public IReadOnlyList<PublicSymbol> PublicSymbols { get; private set; }
 
         /// <summary>
         /// Gets the code segment offset.
@@ -30,6 +55,14 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             get
             {
+                foreach (var segment in elf.Segments)
+                {
+                    if (segment.Type == ELFSharp.ELF.Segments.SegmentType.ProgramHeader)
+                    {
+                        return segment.Address - (ulong)segment.Offset;
+                    }
+                }
+
                 return 0;
             }
         }

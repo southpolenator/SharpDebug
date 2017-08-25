@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -92,6 +93,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         public bool Is64bit { get; private set; }
 
         /// <summary>
+        /// Gets the public symbols.
+        /// </summary>
+        public IReadOnlyList<PublicSymbol> PublicSymbols { get; private set; }
+
+        /// <summary>
         /// Parses the specified data.
         /// </summary>
         /// <param name="data">The PE image data.</param>
@@ -147,12 +153,6 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                     switch (name)
                     {
-                        case ".debug_aranges":
-                            break;
-                        case ".debug_pubnames":
-                            break;
-                        case ".debug_pubtypes":
-                            break;
                         case ".debug_info":
                             DebugData = reader.ReadBlock(imageSectionHeader.SizeInImage, (int)imageSectionHeader.PointerToRawData);
                             break;
@@ -168,21 +168,14 @@ namespace CsDebugScript.DwarfSymbolProvider
                         case ".debug_str":
                             DebugDataStrings = reader.ReadBlock(imageSectionHeader.SizeInImage, (int)imageSectionHeader.PointerToRawData);
                             break;
-                        case ".debug_loc":
-                            break;
-                        case ".debug_ranges":
-                            break;
-                        case ".reloc":
-                            break;
-                        case ".text":
-                            break;
                     }
                 }
 
-#if false
                 // Load image symbols
-                reader.Position = (int)fileHeader.PointerToSymbolTable;
+                List<PublicSymbol> publicSymbols = new List<PublicSymbol>();
                 byte toSkip = 0;
+
+                reader.Position = (int)fileHeader.PointerToSymbolTable;
                 for (uint i = 0; i < fileHeader.NumberOfSymbols; i++)
                 {
                     int position = reader.Position;
@@ -197,16 +190,17 @@ namespace CsDebugScript.DwarfSymbolProvider
                             int stringPosition = (int)reader.ReadUint(position);
                             stringPosition = (int)reader.ReadUint(position + 4);
 
-                            name = reader.ReadAnsiString((int)stringTablePosition + stringPosition);
+                            name = reader.ReadString((int)stringTablePosition + stringPosition);
                         }
 
-                        // TODO: Extract virtual tables
-                        //if (name.Contains("TV"))
-                        //if (symbol.SectionNumber > 0 && symbol.SectionNumber <= imageSectionHeaders.Length)
-                        //{
-                        //    uint sectionAddress = imageSectionHeaders[symbol.SectionNumber - 1].VirtualAddress;
-                        //    sectionAddress += symbol.Value;
-                        //}
+
+                        if (symbol.SectionNumber > 0 && symbol.SectionNumber <= imageSectionHeaders.Length)
+                        {
+                            uint sectionAddress = imageSectionHeaders[symbol.SectionNumber - 1].VirtualAddress;
+                            sectionAddress += symbol.Value;
+
+                            publicSymbols.Add(new PublicSymbol(name, sectionAddress));
+                        }
 
                         toSkip = symbol.NumberOfAuxSymbols;
                     }
@@ -215,11 +209,11 @@ namespace CsDebugScript.DwarfSymbolProvider
                         toSkip--;
                     }
                 }
-#endif
+                PublicSymbols = publicSymbols;
             }
         }
 
-#region File Header Structures
+        #region File Header Structures
         public const ushort IMAGE_DOS_SIGNATURE = 0x5A4D;
         public const uint IMAGE_NT_SIGNATURE = 0x00004550;
         public const ushort IMAGE_FILE_MACHINE_AMD64 = 0x8664;
@@ -696,6 +690,6 @@ namespace CsDebugScript.DwarfSymbolProvider
             /// </summary>
             MemoryWrite = 0x80000000
         }
-#endregion File Header Structures
+        #endregion File Header Structures
     }
 }
