@@ -2,6 +2,8 @@
 
 namespace CsDebugScript.CodeGen.TypeTrees
 {
+    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+
     /// <summary>
     /// Type tree that represents single base class and notes that user type also implements some interfaces (types without fields and have just vtable).
     /// </summary>

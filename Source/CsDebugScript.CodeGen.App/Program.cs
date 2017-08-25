@@ -1,8 +1,9 @@
 ﻿using CommandLine;
+using CsDebugScript.DwarfSymbolProvider;
 using System.Collections.Generic;
 using System.IO;
 
-namespace CsDebugScript.CodeGen
+namespace CsDebugScript.CodeGen.App
 {
     class Options
     {
@@ -44,6 +45,9 @@ namespace CsDebugScript.CodeGen
 
         [Option('x', "xml-config", HelpText = "Path to xml file with configuration", SetName = "xmlConfig")]
         public string XmlConfigPath { get; set; }
+
+        [Option("use-dwarf", Default = false, HelpText = "Use DWARF symbol provider")]
+        public bool UseDwarfSymbolProvider { get; set; }
     }
 
     class Program
@@ -97,7 +101,17 @@ namespace CsDebugScript.CodeGen
                     };
             }
 
-            new Generator().Generate(config);
+            Generator generator;
+
+            if (!options.UseDwarfSymbolProvider)
+            {
+                generator = new Generator();
+            }
+            else
+            {
+                generator = new Generator(new DwarfCodeGenModuleProvider());
+            }
+            generator.Generate(config);
         }
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using CsDebugScript.DwarfSymbolProvider;
 
 namespace DbgEngTest
 {
@@ -34,18 +35,31 @@ namespace DbgEngTest
             }
         }
 
-        public void TestSetup(bool useDia = true)
+        private bool ExecuteCodeGen { get; set; }
+
+        public void TestSetup(bool useDia = true, bool useDwarf = false, bool executeCodeGen = true, bool useElfCoreDumps = false)
         {
-            InitializeDump(DefaultDumpFile, DefaultSymbolPath);
+            InitializeDump(DefaultDumpFile, DefaultSymbolPath, useElfCoreDumps: useElfCoreDumps);
             if (!useDia)
             {
-                Context.InitializeDebugger(Context.Debugger, Context.Debugger.CreateDefaultSymbolProvider());
+                if (!useDwarf)
+                {
+                    Context.InitializeDebugger(Context.Debugger, Context.Debugger.CreateDefaultSymbolProvider());
+                }
+                else
+                {
+                    Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider());
+                }
             }
-            InterpretInteractive($@"
+            ExecuteCodeGen = executeCodeGen;
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
 var options = new ImportUserTypeOptions();
 options.Modules.Add(""{DefaultModuleName}"");
 ImportUserTypes(options, true);
-                ");
+                    ");
+            }
         }
 
         public void CurrentThreadContainsNativeDumpTestCpp()
@@ -117,22 +131,10 @@ ImportUserTypes(options, true);
             Console.WriteLine("SourceFileDisplacement: {0}", defaultTestCaseFunction.SourceFileDisplacement);
 
             Variable codeFunctionVariable = DefaultModule.GetVariable($"{DefaultModuleName}!defaultTestCaseAddress");
-            CodeFunction codeFunction;
 
             Assert.IsTrue(codeFunctionVariable.GetCodeType().IsPointer);
 
-            // Check if cv2pdb was used to generate PDB.
-            if (codeFunctionVariable.GetCodeType().ElementType.IsFunction)
-            {
-                CodePointer<CodeFunction> functionPointer = new CodePointer<CodeFunction>(new NakedPointer(codeFunctionVariable));
-
-                codeFunction = functionPointer.Element;
-            }
-            else
-            {
-                // cv2pdb doesn't export correct function type, but uses int**. Ignore variable type and just take pointer value for function address.
-                codeFunction = new CodeFunction(codeFunctionVariable.GetPointerAddress(), codeFunctionVariable.GetCodeType().Module.Process);
-            }
+            CodeFunction codeFunction = new CodePointer<CodeFunction>(new NakedPointer(codeFunctionVariable)).Element;
 
             Assert.AreEqual($"{DefaultModuleName}!DefaultTestCase", codeFunction.FunctionName);
         }
@@ -226,9 +228,16 @@ ImportUserTypes(options, true);
 
             Assert.AreEqual("enumEntry3", e.ToString());
             Assert.AreEqual(3, (int)e);
+
+            dynamic pEnumeration = p.enumeration;
+            dynamic pInnerEnumeration = p.innerEnumeration;
+            Assert.AreEqual("enumEntry2", pEnumeration.ToString());
+            Assert.AreEqual(2, (int)pEnumeration);
+            Assert.AreEqual("simple4", pInnerEnumeration.ToString());
+            Assert.AreEqual(4, (int)pInnerEnumeration);
         }
 
-        public void CheckSharedWeakPointers(bool checkMakeShared = true)
+        public void CheckSharedWeakPointers()
         {
             StackFrame frame = GetFrame($"{DefaultModuleName}!TestSharedWeakPointers");
             VariableCollection locals = frame.Locals;
@@ -245,19 +254,13 @@ ImportUserTypes(options, true);
             Assert.AreEqual(1, sptr1.SharedCount);
             Assert.AreEqual(2, sptr1.WeakCount);
             Assert.AreEqual(5, sptr1.Element);
-            if (checkMakeShared)
-            {
-                Assert.IsTrue(sptr1.IsCreatedWithMakeShared);
-            }
+            Assert.IsTrue(sptr1.IsCreatedWithMakeShared);
 
             Assert.IsFalse(wptr1.IsEmpty);
             Assert.AreEqual(1, wptr1.SharedCount);
             Assert.AreEqual(2, wptr1.WeakCount);
             Assert.AreEqual(5, wptr1.Element);
-            if (checkMakeShared)
-            {
-                Assert.IsTrue(wptr1.IsCreatedWithMakeShared);
-            }
+            Assert.IsTrue(wptr1.IsCreatedWithMakeShared);
 
             Assert.IsTrue(esptr1.IsEmpty);
 
@@ -265,20 +268,14 @@ ImportUserTypes(options, true);
             Assert.AreEqual(0, ewptr1.SharedCount);
             Assert.AreEqual(1, ewptr1.WeakCount);
             Assert.AreEqual(42, ewptr1.UnsafeElement);
-            if (checkMakeShared)
-            {
-                Assert.IsTrue(ewptr1.IsCreatedWithMakeShared);
-            }
+            Assert.IsTrue(ewptr1.IsCreatedWithMakeShared);
 
             Assert.IsTrue(esptr2.IsEmpty);
 
             Assert.IsTrue(ewptr2.IsEmpty);
             Assert.AreEqual(0, ewptr2.SharedCount);
             Assert.AreEqual(1, ewptr2.WeakCount);
-            if (checkMakeShared)
-            {
-                Assert.IsFalse(ewptr2.IsCreatedWithMakeShared);
-            }
+            Assert.IsFalse(ewptr2.IsCreatedWithMakeShared);
         }
 
         public void CheckCodeArray()
@@ -313,7 +310,9 @@ ImportUserTypes(options, true);
                 }
             }
 
-            InterpretInteractive($@"
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
 StackFrame frame = GetFrame(""{DefaultModuleName}!TestBasicTemplateType"");
 VariableCollection locals = frame.Locals;
 
@@ -331,7 +330,8 @@ var intTemplate = new BasicTemplateType<int>(locals[""intTemplate""]);
 AreEqual(42, intTemplate.value);
 for (int i = 0; i < intTemplate.values.Length; i++)
     AreEqual(i, intTemplate.values[i]);
-                ");
+                   ");
+            }
         }
 
         private void VerifyMap(IReadOnlyDictionary<std.wstring, std.@string> stringMap)

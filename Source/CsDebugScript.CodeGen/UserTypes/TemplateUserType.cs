@@ -1,4 +1,5 @@
-﻿using CsDebugScript.CodeGen.TypeTrees;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using CsDebugScript.CodeGen.TypeTrees;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +8,8 @@ using System.Text;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
+    using Module = CsDebugScript.CodeGen.SymbolProviders.Module;
+
     /// <summary>
     /// User type that represents template user type. For example: MyType&lt;T&gt;
     /// </summary>
@@ -152,7 +155,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
         }
 
-        private static IEnumerable<Symbol> ParseTemplateArguments(UserTypeFactory factory, Module module, string symbolName)
+        private static IEnumerable<Symbol> ParseTemplateArguments(UserTypeFactory factory, SymbolProviders.Module module, string symbolName)
         {
             int templateStart = symbolName.IndexOf('<');
 
@@ -178,15 +181,15 @@ namespace CsDebugScript.CodeGen.UserTypes
                     arguments.Add(extractedType);
 
                     // Try to see if argument is number (constants are removed from the template arguments as they cannot be used in C#)
-                    double constant;
-
-                    if (!double.TryParse(extractedType, out constant))
+                    if (!module.IsConstant(extractedType))
                     {
                         // Check if type is existing type (symbol)
                         Symbol symbol = GlobalCache.GetSymbol(extractedType, module);
 
                         if (symbol == null)
+                        {
                             throw new Exception("Wrongly formed template argument");
+                        }
                         yield return symbol;
                     }
                 }
@@ -262,7 +265,9 @@ namespace CsDebugScript.CodeGen.UserTypes
             get
             {
                 if (this != TemplateType && TemplateType != null)
+                {
                     return TemplateType.DeclaredInType;
+                }
                 return base.DeclaredInType;
             }
         }
@@ -354,7 +359,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                 while (parent != null)
                 {
                     if (parent is TemplateUserType)
+                    {
                         sb.Append('i');
+                    }
                     parent = parent.DeclaredInType;
                 }
 
@@ -369,11 +376,13 @@ namespace CsDebugScript.CodeGen.UserTypes
         public string GetSpecializedStringVersion(string[] types)
         {
             if (types.Length != NumberOfTemplateArguments)
+            {
                 throw new Exception("Wrong number of generics arguments");
+            }
 
             // TODO: Consider using ConstructorName instead of ClassName
             // TODO: Why is this function using ClassName and one with no arguments is using FullClassName?
-            string className = ClassName;
+            string className = ClassName ?? OriginalClassName;
             string symbolName = className;
             int templateStart = symbolName.IndexOf('<');
 

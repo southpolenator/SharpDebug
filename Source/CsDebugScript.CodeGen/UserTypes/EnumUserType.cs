@@ -1,7 +1,8 @@
-﻿using Dia2Lib;
-using System.IO;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using Dia2Lib;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
@@ -42,18 +43,26 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             // Write beginning of the enumeration
             if (generationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
+            {
                 output.WriteLine(indentation, "// {0} (original name: {1})", ClassName, Symbol.Name);
+            }
 
             if (AreValuesFlags())
+            {
                 output.WriteLine(indentation, @"[System.Flags]");
+            }
             if (Symbol.Size != 0)
+            {
                 output.WriteLine(indentation, @"public enum {0} : {1}", ClassName, GetEnumBasicType(Symbol));
+            }
             else
+            {
                 output.WriteLine(indentation, @"public enum {0}", ClassName);
+            }
             output.WriteLine(indentation++, @"{{");
 
             // Write values
-            foreach (var enumValue in Symbol.GetEnumValues())
+            foreach (var enumValue in Symbol.EnumValues)
             {
                 output.WriteLine(indentation, "{0} = {1},", enumValue.Item1, enumValue.Item2);
             }
@@ -84,15 +93,23 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 SortedSet<long> values = new SortedSet<long>();
 
-                foreach (var enumValue in Symbol.GetEnumValues())
+                foreach (var enumValue in Symbol.EnumValues)
+                {
                     values.Add(long.Parse(enumValue.Item2));
+                }
 
                 foreach (var value in values)
+                {
                     if (!IsPowerOfTwo(value))
+                    {
                         return false;
+                    }
+                }
                 if (values.Count < 2 || (values.Contains(0) && values.Contains(1) && values.Count == 2)
                     || (values.Contains(0) && values.Contains(1) && values.Contains(2) && values.Count == 3))
+                {
                     return false;
+                }
                 return true;
             }
             catch (Exception)

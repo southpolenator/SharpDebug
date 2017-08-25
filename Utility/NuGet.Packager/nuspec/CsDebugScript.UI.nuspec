@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>CsDebugScript.UI</id>
-    <version>$version$-beta</version>
+    <version>$version$</version>
     <title>CsDebugScript.UI</title>
     <authors>$authors$</authors>
     <owners>$owners$</owners>
@@ -19,7 +19,7 @@
       <dependency id="AvalonEdit" version="5.0.2" />
       <dependency id="CsDebugScript.DbgEng" version="$version$" />
       <dependency id="CsDebugScript.Engine" version="$version$" />
-      <dependency id="CsDebugScript.CodeGen" version="$version$-beta" />
+      <dependency id="CsDebugScript.CodeGen" version="$version$" />
       <dependency id="ICSharpCode.NRefactory" version="5.5.1" />
       <dependency id="Microsoft.CodeAnalysis.CSharp" version="2.3.1" />
       <dependency id="Microsoft.CodeAnalysis.CSharp.Scripting" version="2.3.1" />
@@ -28,6 +28,7 @@
   </metadata>
   <files>
     <file src="CsDebugScript.UI.dll" target="lib\dotnet" />
+    <file src="CsDebugScript.UI.dll.config" target="lib\dotnet" />
     <file src="CsDebugScript.UI.xml" target="lib\dotnet" />
     <file src="CsDebugScript.UI.pdb" target="lib\dotnet" />
   </files>

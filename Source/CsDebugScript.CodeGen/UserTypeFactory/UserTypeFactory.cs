@@ -1,4 +1,5 @@
-﻿using Dia2Lib;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using Dia2Lib;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -43,7 +44,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="typeString">The type string.</param>
         /// <param name="userType">The found user type.</param>
         /// <returns><c>true</c> if user type was found.</returns>
-        internal virtual bool GetUserType(Module module, string typeString, out UserType userType)
+        internal virtual bool GetUserType(SymbolProviders.Module module, string typeString, out UserType userType)
         {
             userType = GlobalCache.GetUserType(typeString, module);
             return userType != null;
@@ -81,7 +82,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="module">The module.</param>
         /// <param name="typeString">The type string.</param>
         /// <returns><c>true</c> if user type was found.</returns>
-        internal bool ContainsSymbol(Module module, string typeString)
+        internal bool ContainsSymbol(SymbolProviders.Module module, string typeString)
         {
             UserType userType;
 
@@ -234,7 +235,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                             {
                                 var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
 
-                                if (argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
+                                if (argumentSymbol != null && argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
                                 {
                                     noneIsTemplate = false;
                                     break;

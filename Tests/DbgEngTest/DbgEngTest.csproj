@@ -124,11 +124,14 @@
     <Compile Include="InteractiveModeTests.cs" />
     <Compile Include="NativeDumpTest32.cs" />
     <Compile Include="NativeDumpTest32GCC.cs" />
+    <Compile Include="NativeDumpTest32LinuxGCC.cs" />
     <Compile Include="NativeDumpTest32Release.cs" />
     <Compile Include="NativeDumpTest32VS2013.cs" />
     <Compile Include="NativeDumpTest64.cs" />
     <Compile Include="NativeDumpTest64Clang.cs" />
     <Compile Include="NativeDumpTest64GCC.cs" />
+    <Compile Include="NativeDumpTest64LinuxClang.cs" />
+    <Compile Include="NativeDumpTest64LinuxGCC.cs" />
     <Compile Include="NativeDumpTest64NoDia.cs" />
     <Compile Include="NativeDumpTest64Release.cs" />
     <Compile Include="ScriptExecutionTests.cs" />
@@ -179,15 +182,19 @@
       <Project>{74CD700C-EDAA-4EB2-905E-7A4EA982E0C3}</Project>
       <Name>DbgEngHelpers</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj">
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj">
       <Project>{283a0331-2ead-4dd2-a3fe-20d229e2d277}</Project>
       <Name>CsDebugScript.CodeGen</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj">
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj">
       <Project>{21a929ea-b96b-4523-9d0f-853ea771058d}</Project>
       <Name>CsDebugScript.CommonUserTypes</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Source\CsDebugScript.UI\CsDebugScript.UI.csproj">
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.DwarfSymbolProvider\CsDebugScript.DwarfSymbolProvider.csproj">
+      <Project>{7DA23F60-F5BC-4F59-B00E-072CC464AD64}</Project>
+      <Name>CsDebugScript.DwarfSymbolProvider</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.UI\CsDebugScript.UI.csproj">
       <Project>{b63c2b4e-eb2e-45fc-93fd-5d6f2077064d}</Project>
       <Name>CsDebugScript.UI</Name>
     </ProjectReference>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using System;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {

@@ -418,7 +418,7 @@ namespace CsDebugScript
             // Unicode string
             if (codeType.IsWideString)
             {
-                return UserType.ReadString(codeType.Module.Process, GetPointerAddress(), 2);
+                return UserType.ReadString(codeType.Module.Process, GetPointerAddress(), (int)codeType.ElementType.Size);
             }
 
             // Check float/double

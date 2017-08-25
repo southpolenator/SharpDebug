@@ -1,4 +1,6 @@
-﻿namespace CsDebugScript.CodeGen.UserTypes
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+
+namespace CsDebugScript.CodeGen.UserTypes
 {
     /// <summary>
     /// User type that represents template argument (T1, T2, etc.)

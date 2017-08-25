@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using System.Linq;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {

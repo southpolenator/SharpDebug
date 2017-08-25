@@ -9,6 +9,15 @@ namespace CsDebugScript.Engine.SymbolProviders
     internal class DiaSymbolProvider : PerModuleSymbolProvider
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="DiaSymbolProvider"/> class.
+        /// </summary>
+        /// <param name="fallbackSymbolProvider">The fall-back symbol provider.</param>
+        public DiaSymbolProvider(ISymbolProvider fallbackSymbolProvider = null)
+            : base(fallbackSymbolProvider)
+        {
+        }
+
+        /// <summary>
         /// Loads symbol provider module from the specified module.
         /// </summary>
         /// <param name="module">The module.</param>

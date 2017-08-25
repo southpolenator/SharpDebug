@@ -6,6 +6,9 @@ using System.Text;
 
 namespace CsDebugScript.CodeGen.TypeTrees
 {
+    using SymbolProviders;
+    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+
     /// <summary>
     /// Type tree that represents template user type.
     /// </summary>

@@ -1,12 +1,13 @@
 ﻿using CsDebugScript;
+using CsDebugScript.DwarfSymbolProvider;
 using CsDebugScript.Engine;
 using DbgEngManaged;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace DbgEngTest
 {
@@ -67,12 +68,21 @@ namespace DbgEngTest
         /// <param name="dumpFile">The dump file.</param>
         /// <param name="symbolPath">The symbol path.</param>
         /// <param name="addSymbolServer">if set to <c>true</c> symbol server will be added to the symbol path.</param>
-        protected static void InitializeDump(string dumpFile, string symbolPath, bool addSymbolServer = true)
+        /// <param name="useElfCoreDumps">if set to <c>true</c> elf core dump debugger will be used.</param>
+        protected static void InitializeDump(string dumpFile, string symbolPath, bool addSymbolServer = true, bool useElfCoreDumps = false)
         {
             NormalizeDebugPaths(ref dumpFile, ref symbolPath, addSymbolServer);
 
-            client = DebugClient.OpenDumpFile(dumpFile, symbolPath);
-            Context.Initalize(client);
+            if (!useElfCoreDumps)
+            {
+                client = DebugClient.OpenDumpFile(dumpFile, symbolPath);
+                Context.Initalize(client);
+            }
+            else
+            {
+                var engine = new ElfCoreDumpDebuggingEngine(dumpFile);
+                Context.InitializeDebugger(engine, engine.CreateDefaultSymbolProvider());
+            }
         }
 
         /// <summary>
@@ -120,7 +130,9 @@ namespace DbgEngTest
         {
             Assert.AreEqual(array1.Length, array2.Length);
             for (int i = 0; i < array1.Length; i++)
-                Assert.AreEqual(array1[i], array2[i]);
+            {
+                Assert.IsTrue(array2.Contains(array1[i]));
+            }
         }
 
         public void InterpretInteractive(string code)

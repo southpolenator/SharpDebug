@@ -1,4 +1,6 @@
-﻿namespace CsDebugScript.CodeGen.UserTypes
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+
+namespace CsDebugScript.CodeGen.UserTypes
 {
     /// <summary>
     /// Class representing template user type factory. It is used to inject template arguments into existing user type factory.
@@ -56,7 +58,7 @@
         /// <param name="typeString">The type string.</param>
         /// <param name="userType">The found user type.</param>
         /// <returns><c>true</c> if user type was found.</returns>
-        internal override bool GetUserType(Module module, string typeString, out UserType userType)
+        internal override bool GetUserType(SymbolProviders.Module module, string typeString, out UserType userType)
         {
             string argumentName;
 

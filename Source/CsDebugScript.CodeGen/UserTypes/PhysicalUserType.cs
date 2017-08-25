@@ -1,4 +1,5 @@
-﻿using CsDebugScript.CodeGen.TypeTrees;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using CsDebugScript.CodeGen.TypeTrees;
 using Dia2Lib;
 using System;
 using System.Collections.Generic;

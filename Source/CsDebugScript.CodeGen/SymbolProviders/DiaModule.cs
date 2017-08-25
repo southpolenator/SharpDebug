@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace CsDebugScript.CodeGen
+namespace CsDebugScript.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Class represents module during debugging. It is being described by PDB.
     /// </summary>
-    internal class Module
+    public class DiaModule : Module
     {
         /// <summary>
         /// The DIA data source
@@ -33,30 +33,18 @@ namespace CsDebugScript.CodeGen
         private ConcurrentDictionary<string, Symbol> symbolByName = new ConcurrentDictionary<string, Symbol>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Module"/> class.
+        /// Initializes a new instance of the <see cref="DiaModule"/> class.
         /// </summary>
         /// <param name="name">The module name.</param>
         /// <param name="nameSpace">The default namespace.</param>
         /// <param name="dia">The DIA data source.</param>
         /// <param name="session">The DIA session.</param>
-        private Module(string name, string nameSpace, IDiaDataSource dia, IDiaSession session)
+        private DiaModule(string name, string nameSpace, IDiaDataSource dia, IDiaSession session)
         {
             this.session = session;
             this.dia = dia;
             Name = name;
             Namespace = nameSpace;
-            GlobalScope = GetSymbol(session.globalScope);
-
-            PublicSymbols = new HashSet<string>(session.globalScope.GetChildren(SymTagEnum.SymTagPublicSymbol).Select((type) =>
-            {
-                if (type.code != 0 || type.function != 0 || (LocationType)type.locationType != LocationType.Static)
-                    return string.Empty;
-
-                string undecoratedName;
-
-                type.get_undecoratedNameEx(0x1000, out undecoratedName);
-                return undecoratedName ?? type.name;
-            }));
         }
 
         /// <summary>
@@ -72,42 +60,33 @@ namespace CsDebugScript.CodeGen
             module.Name = moduleName;
             dia.loadDataFromPdb(module.PdbPath);
             dia.openSession(out session);
-            return new Module(module.Name, module.Namespace, dia, session);
+            return new DiaModule(module.Name, module.Namespace, dia, session);
         }
 
         /// <summary>
         /// Gets the global scope symbol.
         /// </summary>
-        public Symbol GlobalScope { get; private set; }
-
-        /// <summary>
-        /// Gets the module name.
-        /// </summary>
-        public string Name { get; private set; }
-
-        /// <summary>
-        /// Gets the default namespace.
-        /// </summary>
-        public string Namespace { get; private set; }
-
-        /// <summary>
-        /// Gets the set of public symbols.
-        /// </summary>
-        public HashSet<string> PublicSymbols { get; private set; }
+        public override Symbol GlobalScope
+        {
+            get
+            {
+                return GetSymbol(session.globalScope);
+            }
+        }
 
         /// <summary>
         /// Finds the list of global types specified by the wildcard.
         /// </summary>
         /// <param name="nameWildcard">The type name wildcard.</param>
-        public Symbol[] FindGlobalTypeWildcard(string nameWildcard)
+        public override Symbol[] FindGlobalTypeWildcard(string nameWildcard)
         {
-            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).ToArray();
+            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).Cast<Symbol>().ToArray();
         }
 
         /// <summary>
         /// Gets all types defined in the symbol.
         /// </summary>
-        public IEnumerable<Symbol> GetAllTypes()
+        public override IEnumerable<Symbol> GetAllTypes()
         {
             // Get all types defined in the symbol
             var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
@@ -117,7 +96,7 @@ namespace CsDebugScript.CodeGen
             diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagArrayType));
 
             // Create symbols from types
-            var convertedTypes = diaGlobalTypes.Select(s => new Symbol(this, s)).ToList();
+            var convertedTypes = diaGlobalTypes.Select(s => new DiaSymbol(this, s)).ToList();
             var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).OrderBy(s => s.Name).ToArray();
             var cacheTypes = convertedTypes.OrderBy(s => s.Tag).ThenBy(s => s.Name).ToArray();
 
@@ -125,7 +104,8 @@ namespace CsDebugScript.CodeGen
             var symbols = new List<Symbol>();
             var previousName = "";
 
-            foreach (var s in resultingTypes)
+            foreach (DiaSymbol s in resultingTypes)
+            {
                 if (s.Name != previousName)
                 {
                     IDiaSymbol ss = session.globalScope.GetChild(s.Name, s.Tag);
@@ -136,16 +116,17 @@ namespace CsDebugScript.CodeGen
                     }
                     else
                     {
-                        symbols.Add(GetSymbol(s.DiaSymbol));
+                        symbols.Add(GetSymbol(s.symbol));
                     }
 
                     previousName = s.Name;
                 }
+            }
 
             // Cache symbols inside the module
-            foreach (var s in cacheTypes)
+            foreach (DiaSymbol s in cacheTypes)
             {
-                var symbolCache = GetSymbol(s.DiaSymbol);
+                var symbolCache = GetSymbol(s.symbol);
             }
 
             return symbols;
@@ -158,20 +139,23 @@ namespace CsDebugScript.CodeGen
         internal Symbol GetSymbol(IDiaSymbol symbol)
         {
             if (symbol == null)
+            {
                 return null;
+            }
 
             Symbol s;
             uint symbolId = symbol.symIndexId;
 
             if (!symbolById.TryGetValue(symbolId, out s))
             {
-                s = new Symbol(this, symbol);
+                s = new DiaSymbol(this, symbol);
                 lock (this)
                 {
                     Symbol previousSymbol = null;
 
                     symbolById.TryAdd(symbolId, s);
                     if (s.Tag != SymTagEnum.SymTagExe)
+                    {
                         if (!symbolByName.TryGetValue(s.Name, out previousSymbol))
                         {
                             symbolByName.TryAdd(s.Name, s);
@@ -180,6 +164,7 @@ namespace CsDebugScript.CodeGen
                         {
                             previousSymbol.LinkSymbols(s);
                         }
+                    }
                 }
 
                 s.InitializeCache();
@@ -193,7 +178,7 @@ namespace CsDebugScript.CodeGen
         /// </summary>
         /// <param name="name">The symbol name.</param>
         /// <returns>Symbol if found; otherwise null.</returns>
-        public Symbol GetSymbol(string name)
+        public override Symbol GetSymbol(string name)
         {
             Symbol symbol;
             string originalName = name;
@@ -227,9 +212,30 @@ namespace CsDebugScript.CodeGen
 #endif
             }
             else
+            {
                 for (int i = 0; i < pointer; i++)
+                {
                     symbol = symbol.PointerType;
+                }
+            }
             return symbol;
+        }
+
+        /// <summary>
+        /// Gets the public symbols.
+        /// </summary>
+        protected override IEnumerable<string> GetPublicSymbols()
+        {
+            return session.globalScope.GetChildren(SymTagEnum.SymTagPublicSymbol).Select((type) =>
+            {
+                if (type.code != 0 || type.function != 0 || (LocationType)type.locationType != LocationType.Static)
+                    return string.Empty;
+
+                string undecoratedName;
+
+                type.get_undecoratedNameEx(0x1000, out undecoratedName);
+                return undecoratedName ?? type.name;
+            });
         }
 
         /// <summary>

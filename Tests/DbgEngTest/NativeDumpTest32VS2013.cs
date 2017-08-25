@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace DbgEngTest
 {
     /// <summary>
-    /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.GCC.exe.
+    /// E2E tests for verifying various functionalities of CsScript against NativeDumpTest.VS2013.exe.
     /// </summary>
     [TestClass]
     [DeploymentItem(DefaultDumpFile)]

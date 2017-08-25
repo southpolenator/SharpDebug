@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 

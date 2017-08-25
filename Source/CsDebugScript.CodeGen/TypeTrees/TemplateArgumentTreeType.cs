@@ -2,6 +2,8 @@
 
 namespace CsDebugScript.CodeGen.TypeTrees
 {
+    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+
     /// <summary>
     /// Tree type that represents template type argument.  
     /// Used when we know that the type is representing Generic Specialization.

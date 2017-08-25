@@ -2,13 +2,13 @@
 <package >
   <metadata>
     <id>CsDebugScript.CodeGen</id>
-    <version>$version$-beta</version>
+    <version>$version$</version>
     <title>CsDebugScript.CodeGen</title>
     <authors>$authors$</authors>
     <owners>$owners$</owners>
     <releaseNotes>$releaseNotes$</releaseNotes>
-    <description>Helper application for extracting user types from PDBs.</description>
-    <summary>Helper application for extracting user types from PDBs</summary>
+    <description>Helper library for extracting user types from PDBs.</description>
+    <summary>Helper library for extracting user types from PDBs</summary>
     <language>en-US</language>
     <projectUrl>$projectUrl$</projectUrl>
     <iconUrl>$iconUrl$</iconUrl>
@@ -16,15 +16,15 @@
     <licenseUrl>$licenseUrl$</licenseUrl>
     <copyright>$copyright$</copyright>
     <dependencies>
-      <dependency id="CommandLineParser" version="2.0.275-beta" />
       <dependency id="Microsoft.CodeAnalysis.CSharp" version="2.3.1" />
       <dependency id="CsDebugScript.DiaHelpers" version="$version$" />
+      <dependency id="CsDebugScript.Engine" version="$version$" />
     </dependencies>
     <tags>$tags$</tags>
   </metadata>
   <files>
-    <file src="CsDebugScript.CodeGen.exe" target="lib\dotnet" />
-    <file src="CsDebugScript.CodeGen.exe.config" target="lib\dotnet" />
+    <file src="CsDebugScript.CodeGen.dll" target="lib\dotnet" />
+    <file src="CsDebugScript.CodeGen.dll.config" target="lib\dotnet" />
     <file src="CsDebugScript.CodeGen.xml" target="lib\dotnet" />
     <file src="CsDebugScript.CodeGen.pdb" target="lib\dotnet" />
   </files>

@@ -20,7 +20,7 @@ namespace DbgEngTest
         {
             SyncStart();
             testRunner = new NativeDumpTest(DefaultDumpFile, DefaultModuleName, DefaultSymbolPath);
-            testRunner.TestSetup(useDia:false);
+            testRunner.TestSetup(useDia: false, executeCodeGen: false);
         }
 
         [ClassCleanup]

@@ -1,4 +1,5 @@
-﻿using CsDebugScript.CodeGen.TypeTrees;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using CsDebugScript.CodeGen.TypeTrees;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -71,7 +72,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
 
                 // Skip fields that are actual values of enum values
-                if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagEnum && field.Type.GetEnumValues().Any(t => t.Item1 == field.Name))
+                if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagEnum && field.Type.EnumValues.Any(t => t.Item1 == field.Name))
                 {
                     continue;
                 }

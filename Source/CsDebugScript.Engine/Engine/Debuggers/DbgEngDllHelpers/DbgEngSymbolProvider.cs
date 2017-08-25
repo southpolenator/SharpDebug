@@ -613,5 +613,52 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         {
             return GetRuntimeCodeTypeAndOffset(process, vtableAddress);
         }
+
+        /// <summary>
+        /// Gets the <see cref="ISymbolProviderModule" /> interface for the specified module.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public ISymbolProviderModule GetSymbolProviderModule(Module module)
+        {
+            return this;
+        }
+
+        /// <summary>
+        /// Gets all available types from the module.
+        /// </summary>
+        /// <returns>Enumeration of type identifiers.</returns>
+        public IEnumerable<uint> GetAllTypes()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the name and value of all enumeration values.
+        /// </summary>
+        /// <param name="enumTypeId">The enumeration type identifier.</param>
+        /// <returns>
+        /// Enumeration of tuples of name and value for all enumeration values.
+        /// </returns>
+        public IEnumerable<Tuple<string, string>> GetEnumValues(uint enumTypeId)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Determines whether the specified type has virtual table of functions.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public bool HasTypeVTable(uint typeId)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the global scope.
+        /// </summary>
+        public uint GetGlobalScope()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

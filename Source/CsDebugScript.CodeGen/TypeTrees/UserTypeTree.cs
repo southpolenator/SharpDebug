@@ -3,6 +3,8 @@ using System;
 
 namespace CsDebugScript.CodeGen.TypeTrees
 {
+    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+
     /// <summary>
     /// Type tree that represents UserType.
     /// </summary>

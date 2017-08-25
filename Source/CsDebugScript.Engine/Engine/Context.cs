@@ -23,11 +23,6 @@ namespace CsDebugScript.Engine
         public static ISymbolProvider SymbolProvider;
 
         /// <summary>
-        /// The DIA symbol provider
-        /// </summary>
-        private static DiaSymbolProvider DiaSymbolProvider = new DiaSymbolProvider();
-
-        /// <summary>
         /// The user type metadata (used for casting to user types)
         /// </summary>
         internal static UserTypeMetadata[] UserTypeMetadata;
@@ -81,9 +76,7 @@ namespace CsDebugScript.Engine
         /// <param name="client">The DbgEng.dll Client interface.</param>
         public static void Initalize(IDebugClient client)
         {
-            Debugger = new DbgEngDll(client);
-            SymbolProvider = Debugger.CreateDefaultSymbolProvider();
-            SymbolProvider = DiaSymbolProvider;
+            InitializeDebugger(new DbgEngDll(client));
         }
 
         /// <summary>
@@ -92,7 +85,7 @@ namespace CsDebugScript.Engine
         /// <param name="debuggerEngine">The debugger engine interface.</param>
         public static void InitializeDebugger(IDebuggerEngine debuggerEngine)
         {
-            InitializeDebugger(debuggerEngine, DiaSymbolProvider);
+            InitializeDebugger(debuggerEngine, new DiaSymbolProvider(debuggerEngine.CreateDefaultSymbolProvider()));
         }
 
         /// <summary>
@@ -100,7 +93,7 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="debuggerEngine">The debugger engine interface.</param>
         /// <param name="symbolProvider">The symbol provider interface.</param>
-        internal static void InitializeDebugger(IDebuggerEngine debuggerEngine, ISymbolProvider symbolProvider)
+        public static void InitializeDebugger(IDebuggerEngine debuggerEngine, ISymbolProvider symbolProvider)
         {
             Debugger = debuggerEngine;
             SymbolProvider = symbolProvider;

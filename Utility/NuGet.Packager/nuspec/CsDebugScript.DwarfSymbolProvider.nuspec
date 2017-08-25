@@ -1,0 +1,32 @@
+﻿<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>CsDebugScript.DwarfSymbolProvider</id>
+    <version>$version$</version>
+    <title>CsDebugScript.DwarfSymbolProvider</title>
+    <authors>$authors$</authors>
+    <owners>$owners$</owners>
+    <releaseNotes>$releaseNotes$</releaseNotes>
+    <description>DWARF symbol provider which allows reading DWARF symbol files.</description>
+    <summary>DWARF symbol provider which allows reading DWARF symbol files.</summary>
+    <language>en-US</language>
+    <projectUrl>$projectUrl$</projectUrl>
+    <iconUrl>$iconUrl$</iconUrl>
+    <requireLicenseAcceptance>$requireLicenseAcceptance$</requireLicenseAcceptance>
+    <licenseUrl>$licenseUrl$</licenseUrl>
+    <copyright>$copyright$</copyright>
+    <dependencies>
+      <dependency id="CsDebugScript.Engine" version="$version$" />
+      <dependency id="CsDebugScript.CodeGen" version="$version$" />
+      <dependency id="ELFSharp" version="1.0.4" />
+      <dependency id="JonSkeet.MiscUtil" version="0.1" />
+    </dependencies>
+    <tags>$tags$</tags>
+  </metadata>
+  <files>
+    <file src="CsDebugScript.DwarfSymbolProvider.dll" target="lib\dotnet" />
+    <file src="CsDebugScript.DwarfSymbolProvider.dll.config" target="lib\dotnet" />
+    <file src="CsDebugScript.DwarfSymbolProvider.xml" target="lib\dotnet" />
+    <file src="CsDebugScript.DwarfSymbolProvider.pdb" target="lib\dotnet" />
+  </files>
+</package>

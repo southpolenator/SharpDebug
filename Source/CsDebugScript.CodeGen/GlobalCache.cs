@@ -1,24 +1,28 @@
-﻿using System.Collections.Generic;
-using CsDebugScript.CodeGen.UserTypes;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using System.Collections.Generic;
 using System.Text;
 using Dia2Lib;
 
 namespace CsDebugScript.CodeGen
 {
+    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+
     internal static class GlobalCache
     {
         private static Dictionary<string, Symbol[]> deduplicatedSymbols = new Dictionary<string, Symbol[]>();
 
-        public static Symbol GetSymbol(string typeName, Module module)
+        public static Symbol GetSymbol(string typeName, SymbolProviders.Module module)
         {
             Symbol[] symbols;
 
             if (deduplicatedSymbols.TryGetValue(typeName, out symbols))
+            {
                 return symbols[0];
+            }
             return module.GetSymbol(typeName);
         }
 
-        public static UserType GetUserType(string typeName, Module module)
+        public static UserType GetUserType(string typeName, SymbolProviders.Module module)
         {
             Symbol symbol = GetSymbol(typeName, module);
 
@@ -27,21 +31,21 @@ namespace CsDebugScript.CodeGen
 
         public static UserType GetUserType(Symbol symbol)
         {
-            if (symbol != null)
+            if (symbol != null && (symbol.Tag == SymTagEnum.SymTagEnum || symbol.Tag == SymTagEnum.SymTagUDT || symbol.Tag == SymTagEnum.SymTagBaseClass))
             {
                 if (symbol.UserType == null)
                 {
-                    symbol = GetSymbol(symbol.Name, symbol.Module);
+                    symbol = GetSymbol(symbol.Name, symbol.Module) ?? symbol;
                 }
 
                 if (symbol.UserType == null && symbol.Name.EndsWith("*"))
                 {
                     // Try to use Pointer
-                    symbol = GetSymbol(symbol.Name.Substring(0, symbol.Name.Length - 1), symbol.Module);
+                    symbol = GetSymbol(symbol.Name.Substring(0, symbol.Name.Length - 1), symbol.Module) ?? symbol;
                 }
                 else if (symbol.UserType == null && symbol.Tag == SymTagEnum.SymTagArrayType)
                 {
-                    symbol = GetSymbol(symbol.ElementType.Name, symbol.Module);
+                    symbol = GetSymbol(symbol.ElementType.Name, symbol.Module) ?? symbol;
                 }
 
                 return symbol.UserType;
@@ -60,14 +64,20 @@ namespace CsDebugScript.CodeGen
             Symbol[] symbols;
 
             if (deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+            {
                 foreach (var s in symbols)
                 {
                     if (symbol.Size > 0 && s.Size == 0)
+                    {
                         continue;
+                    }
                     yield return s.Module.Name;
                 }
+            }
             else
+            {
                 yield return symbol.Module.Name;
+            }
         }
 
         internal static IEnumerable<Symbol> GetSymbolStaticFieldsSymbols(Symbol symbol)
@@ -75,15 +85,23 @@ namespace CsDebugScript.CodeGen
             Symbol[] symbols;
 
             if (!deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+            {
                 yield return symbol;
+            }
             else
+            {
                 foreach (var s in symbols)
+                {
                     foreach (var field in s.Fields)
+                    {
                         if (field.DataKind == DataKind.StaticMember && field.IsValidStatic)
                         {
                             yield return s;
                             break;
                         }
+                    }
+                }
+            }
         }
 
         internal static IEnumerable<SymbolField> GetSymbolStaticFields(Symbol symbol)
@@ -91,12 +109,20 @@ namespace CsDebugScript.CodeGen
             Symbol[] symbols;
 
             if (!deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
+            {
                 symbols = new Symbol[] { symbol };
+            }
 
             foreach (var s in symbols)
+            {
                 foreach (var field in s.Fields)
+                {
                     if (field.DataKind == DataKind.StaticMember && field.IsValidStatic)
+                    {
                         yield return field;
+                    }
+                }
+            }
         }
 
         public static string GenerateClassCodeTypeInfo(Symbol symbol, string typeName)

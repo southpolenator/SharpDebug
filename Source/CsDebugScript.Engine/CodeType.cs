@@ -914,7 +914,7 @@ namespace CsDebugScript
         {
             get
             {
-                return (IsArray || IsPointer) && ElementType.Size == 2 && ElementType.IsSimple;
+                return (IsArray || IsPointer) && ((ElementType.Size == 2 && ElementType.IsSimple) || (((NativeCodeType)ElementType).BasicType == Dia2Lib.BasicType.WChar && ElementType.Size == 4));
             }
         }
 
@@ -1155,7 +1155,13 @@ namespace CsDebugScript
                 }
                 else
                 {
-                    result[i] = CodeType.Create(arguments[i], Module);
+                    try
+                    {
+                        result[i] = CodeType.Create(arguments[i], Module);
+                    }
+                    catch
+                    {
+                    }
                 }
             }
 

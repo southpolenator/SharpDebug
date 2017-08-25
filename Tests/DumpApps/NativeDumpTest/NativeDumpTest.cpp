@@ -77,9 +77,11 @@ NO_INLINE void TestDbgEngDll()
 {
     const char* testString = "Testing...";
     const wchar_t* testWString = L"Testing...";
+#ifdef WIN32
     CONTEXT context;
 
     GetThreadContext(GetCurrentThread(), &context);
+#endif
 
     CauseDump();
 }
@@ -135,6 +137,8 @@ NO_INLINE void DefaultTestCase()
     p->stringMap.insert(make_pair(L"bar", "ansiBar"));
     p->stringUMap.insert(make_pair(L"foo", "ansiFoo"));
     p->stringUMap.insert(make_pair(L"bar", "ansiBar"));
+    p->enumeration = enumEntry2;
+    p->innerEnumeration = MyTestClass::simple4;
 
     TestArray();
 }

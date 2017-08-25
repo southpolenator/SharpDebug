@@ -15,6 +15,9 @@ using System.Threading.Tasks;
 
 namespace CsDebugScript.CodeGen
 {
+    using SymbolProviders;
+    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+
     /// <summary>
     /// Starting point for generating user types from PDBs.
     /// </summary>
@@ -74,6 +77,28 @@ namespace CsDebugScript.CodeGen
         /// The error logger
         /// </summary>
         private TextWriter errorLogger;
+
+        /// <summary>
+        /// The module provider
+        /// </summary>
+        private IModuleProvider moduleProvider;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Generator"/> class.
+        /// </summary>
+        public Generator()
+            : this(new DiaModuleProvider())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Generator"/> class.
+        /// </summary>
+        /// <param name="moduleProvider">The module provider.</param>
+        public Generator(IModuleProvider moduleProvider)
+        {
+            this.moduleProvider = moduleProvider;
+        }
 
         /// <summary>
         /// Generates the script code from the specified CodeGen configuration.
@@ -361,7 +386,7 @@ namespace CsDebugScript.CodeGen
             logger.Write("Loading modules...");
             Parallel.ForEach(xmlModules, (xmlModule) =>
             {
-                Module module = Module.Open(xmlModule);
+                Module module = moduleProvider.Open(xmlModule);
 
                 modules.TryAdd(module, xmlModule);
             });
@@ -398,7 +423,7 @@ namespace CsDebugScript.CodeGen
                     {
                         foreach (Symbol symbol in foundSymbols)
                         {
-                            symbol.ExtractDependantSymbols(symbols, xmlConfig.Transformations);
+                            symbol.ExtractDependentSymbols(symbols, xmlConfig.Transformations);
                         }
                     }
                 }
