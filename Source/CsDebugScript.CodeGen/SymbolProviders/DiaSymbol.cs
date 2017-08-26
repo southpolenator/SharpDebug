@@ -1,4 +1,5 @@
-﻿using Dia2Lib;
+﻿using CsDebugScript.Engine;
+using Dia2Lib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,11 +24,13 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         public DiaSymbol(DiaModule module, IDiaSymbol symbol)
             : base(module)
         {
+            SymTagEnum symTag = (SymTagEnum)symbol.symTag;
+
             this.symbol = symbol;
-            Tag = (SymTagEnum)symbol.symTag;
+            Tag = ConvertToCodeTypeTag(symTag);
             BasicType = (BasicType)symbol.baseType;
             Id = symbol.symIndexId;
-            if (Tag != SymTagEnum.SymTagExe)
+            if (symTag != SymTagEnum.SymTagExe)
             {
                 Name = TypeToString.GetTypeString(symbol);
                 Name = Name.Replace("<enum ", "<").Replace(",enum ", ",");
@@ -64,7 +67,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override IEnumerable<Tuple<string, string>> GetEnumValues()
         {
-            if (Tag == SymTagEnum.SymTagEnum)
+            if (Tag == CodeTypeTag.Enum)
             {
                 foreach (var enumValue in symbol.GetChildren())
                 {
@@ -86,7 +89,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         public override void InitializeCache()
         {
-            if (Tag != SymTagEnum.SymTagExe)
+            if (Tag != CodeTypeTag.ModuleGlobals)
             {
                 var elementType = this.ElementType;
             }
@@ -132,7 +135,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override Symbol GetElementType()
         {
-            if (Tag == SymTagEnum.SymTagPointerType || Tag == SymTagEnum.SymTagArrayType)
+            if (Tag == CodeTypeTag.Pointer || Tag == CodeTypeTag.Array)
             {
                 IDiaSymbol type = symbol.type;
 
@@ -140,7 +143,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
                 {
                     Symbol result = DiaModule.GetSymbol(type);
 
-                    if (Tag == SymTagEnum.SymTagPointerType)
+                    if (Tag == CodeTypeTag.Pointer)
                     {
                         result.PointerType = this;
                     }
@@ -160,6 +163,35 @@ namespace CsDebugScript.CodeGen.SymbolProviders
 
             result.ElementType = this;
             return result;
+        }
+
+        /// <summary>
+        /// Converts <see cref="SymTagEnum"/> to <see cref="CodeTypeTag"/>.
+        /// </summary>
+        public static CodeTypeTag ConvertToCodeTypeTag(SymTagEnum tag)
+        {
+            switch (tag)
+            {
+                case SymTagEnum.SymTagArrayType:
+                    return CodeTypeTag.Array;
+                case SymTagEnum.SymTagBaseType:
+                    return CodeTypeTag.BuiltinType;
+                case SymTagEnum.SymTagUDT:
+                    // TODO: What about Structure/Union?
+                    return CodeTypeTag.Class;
+                case SymTagEnum.SymTagEnum:
+                    return CodeTypeTag.Enum;
+                case SymTagEnum.SymTagFunctionType:
+                    return CodeTypeTag.Function;
+                case SymTagEnum.SymTagPointerType:
+                    return CodeTypeTag.Pointer;
+                case SymTagEnum.SymTagBaseClass:
+                    return CodeTypeTag.BaseClass;
+                case SymTagEnum.SymTagExe:
+                    return CodeTypeTag.ModuleGlobals;
+                default:
+                    return CodeTypeTag.Unsupported;
+            }
         }
     }
 }

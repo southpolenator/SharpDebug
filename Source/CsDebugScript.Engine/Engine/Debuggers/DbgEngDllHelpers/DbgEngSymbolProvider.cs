@@ -193,15 +193,17 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         }
 
         /// <summary>
-        /// Gets the symbol tag of the specified type.
+        /// Gets the code type tag of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public SymTag GetTypeTag(Module module, uint typeId)
+        public CodeTypeTag GetTypeTag(Module module, uint typeId)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, module.Process))
             {
-                return typedData[Tuple.Create(module.Address, typeId, module.Process.PebAddress)].Tag;
+                SymTag symTag = typedData[Tuple.Create(module.Address, typeId, module.Process.PebAddress)].Tag;
+
+                return symTag.ToCodeTypeTag();
             }
         }
 
@@ -494,7 +496,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         public BasicType GetTypeBasicType(Module module, uint typeId)
         {
             // TODO: Find better way to fetch basic type from DbgEng
-            if (GetTypeTag(module, typeId) == SymTag.BaseType)
+            if (GetTypeTag(module, typeId) == CodeTypeTag.BuiltinType)
             {
                 string name = GetTypeName(module, typeId);
 

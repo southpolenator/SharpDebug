@@ -1,4 +1,5 @@
-﻿using CsDebugScript.Engine.Utility;
+﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Utility;
 using Dia2Lib;
 using System;
 using System.Collections.Generic;
@@ -190,7 +191,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <summary>
         /// Gets the tag.
         /// </summary>
-        public SymTagEnum Tag { get; protected set; }
+        public CodeTypeTag Tag { get; protected set; }
 
         /// <summary>
         /// Gets the basic type.
@@ -256,7 +257,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
 
                 Symbol s = symbol;
 
-                if (s.Tag == SymTagEnum.SymTagBaseClass)
+                if (s.Tag == CodeTypeTag.BaseClass)
                 {
                     s = s.Module.FindGlobalTypeWildcard(s.Name).Single();
                 }

@@ -1,4 +1,5 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
+﻿using CsDebugScript.Engine;
+using CsDebugScript.CodeGen.SymbolProviders;
 using System.Collections.Generic;
 using System.Text;
 using Dia2Lib;
@@ -31,7 +32,7 @@ namespace CsDebugScript.CodeGen
 
         public static UserType GetUserType(Symbol symbol)
         {
-            if (symbol != null && (symbol.Tag == SymTagEnum.SymTagEnum || symbol.Tag == SymTagEnum.SymTagUDT || symbol.Tag == SymTagEnum.SymTagBaseClass))
+            if (symbol != null && (symbol.Tag == CodeTypeTag.Enum || symbol.Tag == CodeTypeTag.Class || symbol.Tag == CodeTypeTag.Structure || symbol.Tag == CodeTypeTag.Union || symbol.Tag == CodeTypeTag.BaseClass))
             {
                 if (symbol.UserType == null)
                 {
@@ -43,7 +44,7 @@ namespace CsDebugScript.CodeGen
                     // Try to use Pointer
                     symbol = GetSymbol(symbol.Name.Substring(0, symbol.Name.Length - 1), symbol.Module) ?? symbol;
                 }
-                else if (symbol.UserType == null && symbol.Tag == SymTagEnum.SymTagArrayType)
+                else if (symbol.UserType == null && symbol.Tag == CodeTypeTag.Array)
                 {
                     symbol = GetSymbol(symbol.ElementType.Name, symbol.Module) ?? symbol;
                 }

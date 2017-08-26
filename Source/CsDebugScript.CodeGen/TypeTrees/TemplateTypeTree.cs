@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.CodeGen.UserTypes;
-using Dia2Lib;
+using CsDebugScript.Engine;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -69,9 +69,9 @@ namespace CsDebugScript.CodeGen.TypeTrees
                         // TODO: Check why do we go one more round trip through module for getting argument symbol
                         Symbol symbol = templateSpecialization.Symbol.Module.GetSymbol(arguments[i].Name);
 
-                        if (symbol.Tag != SymTagEnum.SymTagBaseType)
+                        if (symbol.Tag != CodeTypeTag.BuiltinType)
                         {
-                            // Base Types (Primitive Types) can be used for specialization
+                            // Built-in types can be used for specialization
                             CanInstantiate = false;
                         }
 

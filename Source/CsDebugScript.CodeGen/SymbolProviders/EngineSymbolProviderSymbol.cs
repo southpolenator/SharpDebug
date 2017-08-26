@@ -19,9 +19,9 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             : base(module)
         {
             Id = typeId;
-            Tag = (SymTagEnum)EngineModuleProvider.GetTypeTag(EngineModule, Id);
+            Tag = EngineModuleProvider.GetTypeTag(EngineModule, Id);
             BasicType = EngineModuleProvider.GetTypeBasicType(EngineModule, Id);
-            if (Tag != SymTagEnum.SymTagExe)
+            if (Tag != CodeTypeTag.ModuleGlobals)
             {
                 Name = EngineModuleProvider.GetTypeName(EngineModule, Id);
             }
@@ -44,8 +44,8 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="offset">The offset.</param>
-        /// <param name="tag">The symbol tag.</param>
-        public EngineSymbolProviderSymbol(Module module, uint typeId, int offset, SymTagEnum tag)
+        /// <param name="tag">The code type tag.</param>
+        public EngineSymbolProviderSymbol(Module module, uint typeId, int offset, CodeTypeTag tag)
             : this(module, typeId)
         {
             Offset = offset;
@@ -101,7 +101,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             foreach (Tuple<uint, int> baseClass in EngineModuleProvider.GetTypeDirectBaseClasses(EngineModule, Id).Values)
             {
                 Symbol baseClassTypeSymbol = Module.GetSymbol(baseClass.Item1);
-                Symbol baseClassSymbol = new EngineSymbolProviderSymbol(Module, baseClass.Item1, baseClass.Item2, SymTagEnum.SymTagBaseClass);
+                Symbol baseClassSymbol = new EngineSymbolProviderSymbol(Module, baseClass.Item1, baseClass.Item2, CodeTypeTag.BaseClass);
 
                 baseClassTypeSymbol.LinkSymbols(baseClassSymbol);
                 yield return baseClassSymbol;

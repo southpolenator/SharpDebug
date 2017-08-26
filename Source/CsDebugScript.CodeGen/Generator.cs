@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.CodeGen.UserTypes;
-using Dia2Lib;
+using CsDebugScript.Engine;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CSharp;
@@ -438,7 +438,7 @@ namespace CsDebugScript.CodeGen
 
                 globalTypesPerModule.TryAdd(
                     xmlModule,
-                    symbols.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).ToArray());
+                    symbols.Where(t => t.Tag == CodeTypeTag.Class || t.Tag == CodeTypeTag.Structure || t.Tag == CodeTypeTag.Union || t.Tag == CodeTypeTag.Enum).ToArray());
             });
 
             List<Symbol> allSymbols = new List<Symbol>();
@@ -614,7 +614,7 @@ namespace CsDebugScript.CodeGen
                 }
 
                 // Check if symbol contains template type.
-                if (SymbolNameHelper.ContainsTemplateType(symbolName) && symbol.Tag == SymTagEnum.SymTagUDT)
+                if (SymbolNameHelper.ContainsTemplateType(symbolName) && (symbol.Tag == CodeTypeTag.Class || symbol.Tag == CodeTypeTag.Structure || symbol.Tag == CodeTypeTag.Union))
                 {
                     List<string> namespaces = symbol.Namespaces;
                     string className = namespaces.Last();
@@ -802,9 +802,9 @@ namespace CsDebugScript.CodeGen
         {
             Symbol symbol = userType.Symbol;
 
-            if (symbol != null && symbol.Tag == SymTagEnum.SymTagBaseType)
+            if (symbol != null && symbol.Tag == CodeTypeTag.BuiltinType)
             {
-                // ignore Base (Primitive) types.
+                // Ignore built-in types.
                 return Tuple.Create("", "");
             }
 
@@ -872,9 +872,9 @@ namespace CsDebugScript.CodeGen
         {
             Symbol symbol = userType.Symbol;
 
-            if (symbol != null && symbol.Tag == SymTagEnum.SymTagBaseType)
+            if (symbol != null && symbol.Tag == CodeTypeTag.BuiltinType)
             {
-                // ignore Base (Primitive) types.
+                // Ignore built-in types.
                 return false;
             }
 

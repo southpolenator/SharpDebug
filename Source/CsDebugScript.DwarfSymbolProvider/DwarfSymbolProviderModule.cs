@@ -639,11 +639,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Gets the symbol tag of the specified type.
+        /// Gets the code type tag of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public SymTag GetTypeTag(Module module, uint typeId)
+        public CodeTypeTag GetTypeTag(Module module, uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -651,21 +651,23 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 case DwarfTag.ReferenceType:
                 case DwarfTag.PointerType:
-                    return SymTag.PointerType;
+                    return CodeTypeTag.Pointer;
                 case DwarfTag.SubroutineType:
-                    return SymTag.FunctionType;
+                    return CodeTypeTag.Function;
                 case DwarfTag.StructureType:
+                    return CodeTypeTag.Structure;
                 case DwarfTag.ClassType:
+                    return CodeTypeTag.Class;
                 case DwarfTag.UnionType:
-                    return SymTag.UDT;
+                    return CodeTypeTag.Union;
                 case DwarfTag.BaseType:
-                    return SymTag.BaseType;
+                    return CodeTypeTag.BuiltinType;
                 case DwarfTag.EnumerationType:
-                    return SymTag.Enum;
+                    return CodeTypeTag.Enum;
                 case DwarfTag.ArrayType:
-                    return SymTag.ArrayType;
+                    return CodeTypeTag.Array;
                 default:
-                    throw new NotImplementedException();
+                    return CodeTypeTag.Unsupported;
             }
         }
 

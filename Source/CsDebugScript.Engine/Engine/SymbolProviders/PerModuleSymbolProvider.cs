@@ -210,11 +210,11 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
-        /// Gets the symbol tag of the specified type.
+        /// Gets the code type tag of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public SymTag GetTypeTag(Module module, uint typeId)
+        public CodeTypeTag GetTypeTag(Module module, uint typeId)
         {
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 

@@ -16,7 +16,7 @@
         Exe,
 
         /// <summary>
-        /// Indicates the compiland symbol for each compiland component of the symbol store. For native applications, SymTagCompiland symbols correspond to the object files linked into the image. For some kinds of Microsoft Intermediate Language (MSIL) images, there is one compiland per class. 
+        /// Indicates the compiland symbol for each compiland component of the symbol store. For native applications, SymTagCompiland symbols correspond to the object files linked into the image. For some kinds of Microsoft Intermediate Language (MSIL) images, there is one compiland per class.
         /// </summary>
         Compiland,
 
@@ -219,5 +219,40 @@
         /// The number of defined elements in this enumeration.
         /// </summary>
         Max,
+    }
+
+    /// <summary>
+    /// Extension methods for <see cref="SymTag"/>
+    /// </summary>
+    public static class SymTagExtensions
+    {
+        /// <summary>
+        /// Converts <see cref="SymTag"/> to <see cref="CodeTypeTag"/>.
+        /// </summary>
+        public static CodeTypeTag ToCodeTypeTag(this SymTag tag)
+        {
+            switch (tag)
+            {
+                case SymTag.ArrayType:
+                    return CodeTypeTag.Array;
+                case SymTag.BaseType:
+                    return CodeTypeTag.BuiltinType;
+                case SymTag.UDT:
+                    // TODO: What about Structure/Union?
+                    return CodeTypeTag.Class;
+                case SymTag.Enum:
+                    return CodeTypeTag.Enum;
+                case SymTag.FunctionType:
+                    return CodeTypeTag.Function;
+                case SymTag.PointerType:
+                    return CodeTypeTag.Pointer;
+                case SymTag.BaseClass:
+                    return CodeTypeTag.BaseClass;
+                case SymTag.Exe:
+                    return CodeTypeTag.ModuleGlobals;
+                default:
+                    return CodeTypeTag.Unsupported;
+            }
+        }
     }
 }

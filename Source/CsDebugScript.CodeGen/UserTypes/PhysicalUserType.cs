@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.CodeGen.TypeTrees;
+using CsDebugScript.Engine;
 using Dia2Lib;
 using System;
 using System.Collections.Generic;
@@ -263,7 +264,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 ArrayTypeTree codeArrayType = fieldType as ArrayTypeTree;
                 UserTypeTree userType = fieldType as UserTypeTree;
                 TransformationTypeTree transformationType = fieldType as TransformationTypeTree;
-                bool isEmbedded = field.Type.Tag != SymTagEnum.SymTagPointerType;
+                bool isEmbedded = field.Type.Tag != CodeTypeTag.Pointer;
 
                 // Specialization for basic types
                 if (baseType != null)

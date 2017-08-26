@@ -1,5 +1,4 @@
-﻿using CsDebugScript.Engine.Native;
-using Dia2Lib;
+﻿using Dia2Lib;
 using System;
 using System.Collections.Generic;
 
@@ -25,11 +24,11 @@ namespace CsDebugScript.Engine
         uint GetGlobalVariableTypeId(Module module, string globalVariableName);
 
         /// <summary>
-        /// Gets the symbol tag of the specified type.
+        /// Gets the code type tag of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        SymTag GetTypeTag(Module module, uint typeId);
+        CodeTypeTag GetTypeTag(Module module, uint typeId);
 
         /// <summary>
         /// Gets the type of the basic type.

@@ -1,5 +1,4 @@
-﻿using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.Utility;
+﻿using CsDebugScript.Engine.Utility;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -801,9 +800,9 @@ namespace CsDebugScript
         /// <remarks>This should not be used directly, but through Module.TypesById[typeId]</remarks>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        /// <param name="tag">The symbol tag.</param>
+        /// <param name="tag">The code type tag.</param>
         /// <param name="basicType">Type of the basic type.</param>
-        internal NativeCodeType(Module module, uint typeId, SymTag tag, Dia2Lib.BasicType basicType)
+        internal NativeCodeType(Module module, uint typeId, CodeTypeTag tag, Dia2Lib.BasicType basicType)
             : base(module)
         {
             TypeId = typeId;
@@ -825,9 +824,9 @@ namespace CsDebugScript
         public uint TypeId { get; private set; }
 
         /// <summary>
-        /// Gets the symbol tag.
+        /// Gets the code type tag.
         /// </summary>
-        internal SymTag Tag { get; private set; }
+        internal CodeTypeTag Tag { get; private set; }
 
         /// <summary>
         /// Gets the type of the basic type.
@@ -844,7 +843,7 @@ namespace CsDebugScript
         {
             get
             {
-                return Tag == SymTag.Enum;
+                return Tag == CodeTypeTag.Enum;
             }
         }
 
@@ -858,7 +857,7 @@ namespace CsDebugScript
         {
             get
             {
-                return Tag == SymTag.ArrayType;
+                return Tag == CodeTypeTag.Array;
             }
         }
 
@@ -872,7 +871,7 @@ namespace CsDebugScript
         {
             get
             {
-                return Tag == SymTag.PointerType;
+                return Tag == CodeTypeTag.Pointer;
             }
         }
 
@@ -970,7 +969,7 @@ namespace CsDebugScript
         {
             get
             {
-                return Tag == SymTag.BaseType;
+                return Tag == CodeTypeTag.BuiltinType;
             }
         }
 
@@ -984,7 +983,7 @@ namespace CsDebugScript
         {
             get
             {
-                return Tag == SymTag.FunctionType;
+                return Tag == CodeTypeTag.Function;
             }
         }
 
@@ -1043,7 +1042,7 @@ namespace CsDebugScript
             }
             catch (Exception)
             {
-                NativeCodeType codeType = new NativeCodeType(Module, Module.GetNextFakeCodeTypeId(), SymTag.PointerType, Dia2Lib.BasicType.NoType);
+                NativeCodeType codeType = new NativeCodeType(Module, Module.GetNextFakeCodeTypeId(), CodeTypeTag.Pointer, Dia2Lib.BasicType.NoType);
 
                 codeType.elementType.Value = this;
                 codeType.name.Value = name.Value + "*";

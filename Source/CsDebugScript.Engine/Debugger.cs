@@ -43,23 +43,36 @@ namespace CsDebugScript
         /// <returns>Resolved function address.</returns>
         public static ulong ResolveFunctionAddress(Process process, ulong address)
         {
-            if (Context.SymbolProvider.IsFunctionAddressPublicSymbol(process, address))
+            bool rethrow = false;
+
+            try
             {
-                Module module = process.GetModuleByInnerAddress(address);
-
-                if (module != null && module.ClrModule == null)
+                if (Context.SymbolProvider.IsFunctionAddressPublicSymbol(process, address))
                 {
-                    const uint length = 5;
-                    MemoryBuffer buffer = Debugger.ReadMemory(process, address, length);
-                    byte jmpByte = UserType.ReadByte(buffer, 0);
-                    uint relativeAddress = UserType.ReadUint(buffer, 1);
+                    Module module = process.GetModuleByInnerAddress(address);
 
-                    if (jmpByte != 0xe9)
+                    if (module != null && module.ClrModule == null)
                     {
-                        throw new Exception("Unsupported jump instruction while resolving function address.");
-                    }
+                        const uint length = 5;
+                        MemoryBuffer buffer = Debugger.ReadMemory(process, address, length);
+                        byte jmpByte = UserType.ReadByte(buffer, 0);
+                        uint relativeAddress = UserType.ReadUint(buffer, 1);
 
-                    return address + relativeAddress + length;
+                        if (jmpByte != 0xe9)
+                        {
+                            rethrow = true;
+                            throw new Exception("Unsupported jump instruction while resolving function address.");
+                        }
+
+                        return address + relativeAddress + length;
+                    }
+                }
+            }
+            catch
+            {
+                if (rethrow)
+                {
+                    throw;
                 }
             }
 

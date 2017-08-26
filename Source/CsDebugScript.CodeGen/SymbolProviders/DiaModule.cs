@@ -1,4 +1,5 @@
-﻿using Dia2Lib;
+﻿using CsDebugScript.Engine;
+using Dia2Lib;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -97,7 +98,10 @@ namespace CsDebugScript.CodeGen.SymbolProviders
 
             // Create symbols from types
             var convertedTypes = diaGlobalTypes.Select(s => new DiaSymbol(this, s)).ToList();
-            var resultingTypes = convertedTypes.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).OrderBy(s => s.Name).ToArray();
+            var resultingTypes = convertedTypes
+                .Where(t => t.Tag == CodeTypeTag.Class || t.Tag == CodeTypeTag.Structure || t.Tag == CodeTypeTag.Union || t.Tag == CodeTypeTag.Enum)
+                .OrderBy(s => s.Name)
+                .ToArray();
             var cacheTypes = convertedTypes.OrderBy(s => s.Tag).ThenBy(s => s.Name).ToArray();
 
             // Remove duplicate symbols by searching for the by name
@@ -108,7 +112,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             {
                 if (s.Name != previousName)
                 {
-                    IDiaSymbol ss = session.globalScope.GetChild(s.Name, s.Tag);
+                    IDiaSymbol ss = session.globalScope.GetChild(s.Name, ConvertToSymTag(s.Tag));
 
                     if (ss != null)
                     {
@@ -154,7 +158,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
                     Symbol previousSymbol = null;
 
                     symbolById.TryAdd(symbolId, s);
-                    if (s.Tag != SymTagEnum.SymTagExe)
+                    if (s.Tag != CodeTypeTag.ModuleGlobals)
                     {
                         if (!symbolByName.TryGetValue(s.Name, out previousSymbol))
                         {
@@ -251,6 +255,38 @@ namespace CsDebugScript.CodeGen.SymbolProviders
                 name = name.Substring(0, name.Length - 9);
             if (name.StartsWith("enum "))
                 name = name.Substring(5);
+        }
+
+        /// <summary>
+        /// Converts <see cref="CodeTypeTag"/> to <see cref="SymTagEnum"/>.
+        /// </summary>
+        /// <param name="tag">The tag.</param>
+        private static SymTagEnum ConvertToSymTag(CodeTypeTag tag)
+        {
+            switch (tag)
+            {
+                case CodeTypeTag.Array:
+                    return SymTagEnum.SymTagArrayType;
+                case CodeTypeTag.BaseClass:
+                    return SymTagEnum.SymTagBaseClass;
+                case CodeTypeTag.BuiltinType:
+                    return SymTagEnum.SymTagBaseType;
+                case CodeTypeTag.Class:
+                case CodeTypeTag.Structure:
+                case CodeTypeTag.Union:
+                    return SymTagEnum.SymTagUDT;
+                case CodeTypeTag.Enum:
+                    return SymTagEnum.SymTagEnum;
+                case CodeTypeTag.Function:
+                    return SymTagEnum.SymTagFunctionType;
+                case CodeTypeTag.ModuleGlobals:
+                    return SymTagEnum.SymTagExe;
+                case CodeTypeTag.Pointer:
+                    return SymTagEnum.SymTagPointerType;
+                default:
+                case CodeTypeTag.Unsupported:
+                    throw new NotImplementedException();
+            }
         }
     }
 }

@@ -534,7 +534,7 @@ namespace CsDebugScript
                 {
                     uint typeId = Context.SymbolProvider.GetTypeId(this, name);
 
-                    if (Context.SymbolProvider.GetTypeTag(this, typeId) != Engine.Native.SymTag.Compiland)
+                    if (Context.SymbolProvider.GetTypeTag(this, typeId) != CodeTypeTag.Unsupported)
                     {
                         codeType = TypesById[typeId];
                     }

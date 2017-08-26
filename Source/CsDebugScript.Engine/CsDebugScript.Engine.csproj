@@ -89,6 +89,7 @@
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\DebugCallbacks.cs" />
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\DebuggeFlowController.cs" />
     <Compile Include="Engine\SymbolProviders\PerModuleSymbolProvider.cs" />
+    <Compile Include="Engine\CodeTypeTag.cs" />
     <Compile Include="Engine\Utility\CacheInvalidator.cs" />
     <Compile Include="Engine\Utility\WindowsDumpFileMemoryReader.cs" />
     <Compile Include="Exceptions\InvalidMemoryAddressException.cs" />
