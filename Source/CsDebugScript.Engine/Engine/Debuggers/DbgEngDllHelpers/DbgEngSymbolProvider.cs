@@ -1,7 +1,6 @@
 ﻿using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
 using DbgEngManaged;
-using Dia2Lib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -489,28 +488,94 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         }
 
         /// <summary>
-        /// Gets the type of the basic type.
+        /// Gets the type's built-in type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public BasicType GetTypeBasicType(Module module, uint typeId)
+        public BuiltinType GetTypeBuiltinType(Module module, uint typeId)
         {
             // TODO: Find better way to fetch basic type from DbgEng
             if (GetTypeTag(module, typeId) == CodeTypeTag.BuiltinType)
             {
                 string name = GetTypeName(module, typeId);
+                uint size = GetTypeSize(module, typeId);
 
                 switch (name)
                 {
                     case "float":
                     case "double":
-                        return BasicType.Float;
+                    case "long double":
+                        switch (size)
+                        {
+                            default:
+                            case 4:
+                                return BuiltinType.Float32;
+                            case 8:
+                                return BuiltinType.Float64;
+                            case 10:
+                                return BuiltinType.Float80;
+                        }
+                    case "bool":
+                        return BuiltinType.Bool;
+                    case "char":
+                    case "wchar_t":
+                        switch (size)
+                        {
+                            default:
+                            case 1:
+                                return BuiltinType.Char8;
+                            case 2:
+                                return BuiltinType.Char16;
+                            case 4:
+                                return BuiltinType.Char32;
+                        }
+                    case "short":
+                    case "int":
+                    case "long":
+                    case "long long":
+                    case "int64":
+                        switch (size)
+                        {
+                            case 1:
+                                return BuiltinType.Int8;
+                            case 2:
+                                return BuiltinType.Int16;
+                            default:
+                            case 4:
+                                return BuiltinType.Int32;
+                            case 8:
+                                return BuiltinType.Int64;
+                            case 16:
+                                return BuiltinType.Int128;
+                        }
+                    case "unsigned char":
+                    case "unsigned short":
+                    case "unsigned int":
+                    case "unsigned long":
+                    case "unsigned long long":
+                    case "unsigned int64":
+                        switch (size)
+                        {
+                            case 1:
+                                return BuiltinType.UInt8;
+                            case 2:
+                                return BuiltinType.UInt16;
+                            default:
+                            case 4:
+                                return BuiltinType.UInt32;
+                            case 8:
+                                return BuiltinType.UInt64;
+                            case 16:
+                                return BuiltinType.UInt128;
+                        }
+                    case "void":
+                        return BuiltinType.Void;
                     default:
-                        return BasicType.NoType;
+                        return BuiltinType.NoType;
                 }
             }
 
-            return BasicType.NoType;
+            return BuiltinType.NoType;
         }
 
         /// <summary>

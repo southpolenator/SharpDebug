@@ -334,6 +334,51 @@ for (int i = 0; i < intTemplate.values.Length; i++)
             }
         }
 
+        public void TestBuiltinTypes()
+        {
+            CodeType codeType = CodeType.Create("BuiltinTypesTest", DefaultModule);
+
+            VerifyFieldBuiltinType(codeType, "b", BuiltinType.Bool);
+            VerifyFieldBuiltinType(codeType, "c1", BuiltinType.Char8, BuiltinType.Int8);
+            VerifyFieldBuiltinType(codeType, "c2", BuiltinType.Char16, BuiltinType.Char32);
+            VerifyFieldBuiltinType(codeType, "i8", BuiltinType.Int8, BuiltinType.Char8);
+            VerifyFieldBuiltinType(codeType, "i16", BuiltinType.Int16);
+            VerifyFieldBuiltinType(codeType, "i32", BuiltinType.Int32);
+            VerifyFieldBuiltinType(codeType, "i64", BuiltinType.Int64);
+            VerifyFieldBuiltinType(codeType, "u8", BuiltinType.UInt8);
+            VerifyFieldBuiltinType(codeType, "u16", BuiltinType.UInt16);
+            VerifyFieldBuiltinType(codeType, "u32", BuiltinType.UInt32);
+            VerifyFieldBuiltinType(codeType, "u64", BuiltinType.UInt64);
+            VerifyFieldBuiltinType(codeType, "f32", BuiltinType.Float32);
+            VerifyFieldBuiltinType(codeType, "f64", BuiltinType.Float64);
+            VerifyFieldBuiltinType(codeType, "f80", BuiltinType.Float80, BuiltinType.Float64);
+        }
+
+        private void VerifyFieldBuiltinType(CodeType codeType, string fieldName, params BuiltinType[] expected)
+        {
+            CodeType fieldCodeType = codeType.GetFieldType(fieldName);
+            NativeCodeType nativeCodeType = fieldCodeType as NativeCodeType;
+
+            Assert.IsNotNull(nativeCodeType);
+            Assert.IsTrue(nativeCodeType.Tag == CodeTypeTag.BuiltinType || nativeCodeType.Tag == CodeTypeTag.Enum);
+            VerifyBuiltinType(nativeCodeType, expected);
+        }
+
+        private void VerifyBuiltinType(NativeCodeType codeType, params BuiltinType[] expected)
+        {
+            BuiltinType actual = codeType.BuiltinType;
+
+            foreach (BuiltinType builtinType in expected)
+            {
+                if (actual == builtinType)
+                {
+                    return;
+                }
+            }
+
+            Assert.AreEqual(expected[0], actual);
+        }
+
         private void VerifyMap(IReadOnlyDictionary<std.wstring, std.@string> stringMap)
         {
             string[] mapKeys = stringMap.Keys.Select(s => s.Text).ToArray();

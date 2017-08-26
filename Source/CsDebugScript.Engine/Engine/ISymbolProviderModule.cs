@@ -1,5 +1,4 @@
-﻿using Dia2Lib;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace CsDebugScript.Engine
@@ -31,11 +30,11 @@ namespace CsDebugScript.Engine
         CodeTypeTag GetTypeTag(Module module, uint typeId);
 
         /// <summary>
-        /// Gets the type of the basic type.
+        /// Gets the type's built-in type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        BasicType GetTypeBasicType(Module module, uint typeId);
+        BuiltinType GetTypeBuiltinType(Module module, uint typeId);
 
         /// <summary>
         /// Gets the size of the specified type.

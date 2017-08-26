@@ -77,6 +77,7 @@
     <Compile Include="CLR\NamespaceDoc.cs" />
     <Compile Include="CLR\Runtime.cs" />
     <Compile Include="DerivedClassAttribute.cs" />
+    <Compile Include="Engine\BuiltinType.cs" />
     <Compile Include="Engine\Constants.cs" />
     <Compile Include="Engine\Context.cs" />
     <Compile Include="BasicType.cs" />

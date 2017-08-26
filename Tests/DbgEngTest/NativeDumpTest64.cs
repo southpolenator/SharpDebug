@@ -126,5 +126,12 @@ namespace DbgEngTest
         {
             testRunner.TestBasicTemplateType();
         }
+
+        [TestMethod]
+        [TestCategory("NativeDumpTests")]
+        public void TestBuiltinTypes()
+        {
+            testRunner.TestBuiltinTypes();
+        }
     }
 }

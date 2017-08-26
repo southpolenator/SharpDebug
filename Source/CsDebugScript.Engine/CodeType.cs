@@ -801,13 +801,13 @@ namespace CsDebugScript
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="tag">The code type tag.</param>
-        /// <param name="basicType">Type of the basic type.</param>
-        internal NativeCodeType(Module module, uint typeId, CodeTypeTag tag, Dia2Lib.BasicType basicType)
+        /// <param name="builtinType">Built-in type.</param>
+        internal NativeCodeType(Module module, uint typeId, CodeTypeTag tag, BuiltinType builtinType)
             : base(module)
         {
             TypeId = typeId;
             Tag = tag;
-            BasicType = basicType;
+            BuiltinType = builtinType;
 
             if (IsPointer && module.IsFakeCodeTypeId(typeId))
             {
@@ -829,9 +829,9 @@ namespace CsDebugScript
         internal CodeTypeTag Tag { get; private set; }
 
         /// <summary>
-        /// Gets the type of the basic type.
+        /// Gets the built-in type.
         /// </summary>
-        internal Dia2Lib.BasicType BasicType { get; private set; }
+        internal BuiltinType BuiltinType { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether this type is enum.
@@ -913,7 +913,7 @@ namespace CsDebugScript
         {
             get
             {
-                return (IsArray || IsPointer) && ((ElementType.Size == 2 && ElementType.IsSimple) || (((NativeCodeType)ElementType).BasicType == Dia2Lib.BasicType.WChar && ElementType.Size == 4));
+                return (IsArray || IsPointer) && ((ElementType.Size == 2 && ElementType.IsSimple) || (((NativeCodeType)ElementType).BuiltinType == BuiltinType.Char32));
             }
         }
 
@@ -927,7 +927,7 @@ namespace CsDebugScript
         {
             get
             {
-                return BasicType == Dia2Lib.BasicType.Float;
+                return BuiltinType == BuiltinType.Float32 || BuiltinType == BuiltinType.Float64 || BuiltinType == BuiltinType.Float80;
             }
         }
 
@@ -941,7 +941,7 @@ namespace CsDebugScript
         {
             get
             {
-                return IsReal && Size == 4;
+                return BuiltinType == BuiltinType.Float32;
             }
         }
 
@@ -955,7 +955,7 @@ namespace CsDebugScript
         {
             get
             {
-                return IsReal && Size == 8;
+                return BuiltinType == BuiltinType.Float64;
             }
         }
 
@@ -1042,7 +1042,7 @@ namespace CsDebugScript
             }
             catch (Exception)
             {
-                NativeCodeType codeType = new NativeCodeType(Module, Module.GetNextFakeCodeTypeId(), CodeTypeTag.Pointer, Dia2Lib.BasicType.NoType);
+                NativeCodeType codeType = new NativeCodeType(Module, Module.GetNextFakeCodeTypeId(), CodeTypeTag.Pointer, BuiltinType.NoType);
 
                 codeType.elementType.Value = this;
                 codeType.name.Value = name.Value + "*";

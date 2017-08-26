@@ -804,13 +804,82 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
-        /// Gets the type of the basic type.
+        /// Gets the type's built-in type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public BasicType GetTypeBasicType(Module module, uint typeId)
+        public BuiltinType GetTypeBuiltinType(Module module, uint typeId)
         {
-            return (BasicType)GetTypeFromId(typeId).baseType;
+            BasicType basicType = (BasicType)GetTypeFromId(typeId).baseType;
+            uint size = GetTypeSize(module, typeId);
+
+            switch (basicType)
+            {
+                case BasicType.Bool:
+                    return BuiltinType.Bool;
+                case BasicType.Char16:
+                case BasicType.Char32:
+                case BasicType.WChar:
+                case BasicType.Char:
+                    switch (size)
+                    {
+                        default:
+                        case 1:
+                            return BuiltinType.Char8;
+                        case 2:
+                            return BuiltinType.Char16;
+                        case 4:
+                            return BuiltinType.Char32;
+                    }
+                case BasicType.Int:
+                case BasicType.Long:
+                    switch (size)
+                    {
+                        case 1:
+                            return BuiltinType.Int8;
+                        case 2:
+                            return BuiltinType.Int16;
+                        default:
+                        case 4:
+                            return BuiltinType.Int32;
+                        case 8:
+                            return BuiltinType.Int64;
+                        case 16:
+                            return BuiltinType.Int128;
+                    }
+                case BasicType.UInt:
+                case BasicType.ULong:
+                case BasicType.Hresult:
+                    switch (size)
+                    {
+                        case 1:
+                            return BuiltinType.UInt8;
+                        case 2:
+                            return BuiltinType.UInt16;
+                        default:
+                        case 4:
+                            return BuiltinType.UInt32;
+                        case 8:
+                            return BuiltinType.UInt64;
+                        case 16:
+                            return BuiltinType.UInt128;
+                    }
+                case BasicType.Float:
+                    switch (size)
+                    {
+                        default:
+                        case 4:
+                            return BuiltinType.Float32;
+                        case 8:
+                            return BuiltinType.Float64;
+                        case 10:
+                            return BuiltinType.Float80;
+                    }
+                case BasicType.Void:
+                    return BuiltinType.Void;
+                default:
+                    return BuiltinType.NoType;
+            }
         }
 
         /// <summary>
