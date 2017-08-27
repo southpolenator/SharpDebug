@@ -25,11 +25,6 @@ namespace CsDebugScript.Engine
         internal static UserTypeMetadata[] UserTypeMetadata;
 
         /// <summary>
-        /// The settings for script execution
-        /// </summary>
-        internal static Settings Settings = new Settings();
-
-        /// <summary>
         /// Gets or sets a value indicating whether variable caching is enabled.
         /// </summary>
         /// <value>

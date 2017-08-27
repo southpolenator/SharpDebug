@@ -14,7 +14,7 @@
         /// The maximum length of symbol name
         /// </summary>
         public const int MaxSymbolName = 4096;
-        
+
         /// <summary>
         /// The maximum base type identifier
         /// </summary>

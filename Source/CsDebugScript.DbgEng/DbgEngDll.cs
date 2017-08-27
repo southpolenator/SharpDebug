@@ -791,7 +791,25 @@ namespace CsDebugScript.Engine.Debuggers
                 uint framesCount;
 
                 Control.GetContextStackTraceEx(contextAddress, contextSize, frameBuffer.Pointer, (uint)frameBuffer.Count, threadContextBuffer.Pointer, (uint)(threadContextBuffer.Size * threadContextBuffer.Count), (uint)threadContextBuffer.Size, out framesCount);
-                return new StackTrace(thread, frameBuffer.Elements.Take((int)framesCount).ToArray(), threadContextBuffer.Elements.Take((int)framesCount).ToArray());
+
+                _DEBUG_STACK_FRAME_EX[] frames = frameBuffer.Elements.Take((int)framesCount).ToArray();
+                ThreadContext[] frameContexts = threadContextBuffer.Elements.Take((int)framesCount).ToArray();
+                StackTrace stackTrace = new StackTrace(thread);
+
+                stackTrace.Frames = new StackFrame[frames.Length];
+                for (int i = 0; i < frames.Length; i++)
+                {
+                    stackTrace.Frames[i] = new StackFrame(stackTrace, frameContexts[i])
+                    {
+                        Virtual = frames[i].Virtual != 0,
+                        FrameNumber = frames[i].FrameNumber,
+                        FrameOffset = frames[i].FrameOffset,
+                        InstructionOffset = frames[i].InstructionOffset,
+                        ReturnOffset = frames[i].ReturnOffset,
+                        StackOffset = frames[i].StackOffset,
+                    };
+                }
+                return stackTrace;
             }
         }
 
