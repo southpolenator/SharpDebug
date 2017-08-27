@@ -1,4 +1,5 @@
-﻿using EnvDTE;
+﻿using CsDebugScript.Engine.SymbolProviders;
+using EnvDTE;
 using Microsoft.VisualStudio.OLE.Interop;
 using System;
 using System.Runtime.InteropServices;
@@ -94,7 +95,7 @@ namespace CsDebugScript.VS
                 debuggerEvents.OnEnterRunMode += DebuggerEvents_OnEnterRunMode;
                 debuggerProxy = (VSDebuggerProxy)AppDomain.CurrentDomain.GetData(VSDebuggerProxy.AppDomainDataName) ?? new VSDebuggerProxy();
                 VSDebugger = new VSDebugger(debuggerProxy);
-                Engine.Context.InitializeDebugger(VSDebugger);
+                Engine.Context.InitializeDebugger(VSDebugger, new DiaSymbolProvider());
             }
             else
             {

@@ -3,7 +3,7 @@ using CsDebugScript.Engine.Utility;
 using System;
 using System.Linq;
 using Dia2Lib;
-using CsDebugScript.DiaSymbolProvider;
+using CsDebugScript.Engine.SymbolProviders;
 
 namespace CsDebugScript.VS
 {
