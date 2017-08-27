@@ -472,11 +472,7 @@ namespace CsDebugScript.VS
         {
             // This should update cache with new values. For now, just clear everything
             proxy.ClearCache();
-            Engine.GlobalCache.Processes.Clear();
-            Engine.GlobalCache.UserTypeCastedVariableCollections.Clear();
-            Engine.GlobalCache.UserTypeCastedVariables.Clear();
-            Engine.GlobalCache.VariablesUserTypeCastedFields.Clear();
-            Engine.GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
+            Engine.Context.ClearCache();
         }
 
         #region Unsupported functionality

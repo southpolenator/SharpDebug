@@ -74,8 +74,21 @@ namespace CsDebugScript.Engine
         /// <param name="symbolProvider">The symbol provider interface.</param>
         public static void InitializeDebugger(IDebuggerEngine debuggerEngine, ISymbolProvider symbolProvider)
         {
+            ClearCache();
             Debugger = debuggerEngine;
             SymbolProvider = symbolProvider;
+        }
+
+        /// <summary>
+        /// Clears the cache.
+        /// </summary>
+        internal static void ClearCache()
+        {
+            GlobalCache.Processes.Clear();
+            GlobalCache.UserTypeCastedVariableCollections.Clear();
+            GlobalCache.UserTypeCastedVariables.Clear();
+            GlobalCache.VariablesUserTypeCastedFields.Clear();
+            GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
         }
 
         /// <summary>
