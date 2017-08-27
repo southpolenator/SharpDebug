@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+using CsDebugScript.Engine.Debuggers;
 using CsDebugScript.Engine.Utility;
 using DbgEngManaged;
 using System;
@@ -29,7 +30,7 @@ namespace CsDebugScript.Engine.Test
             if (options == null)
                 return;
 
-            new Executor().InitializeContext(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
+            DbgEngDll.InitializeContext(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
             if (options.UseDwarfSymbolProvider)
             {
                 Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider.DwarfSymbolProvider());

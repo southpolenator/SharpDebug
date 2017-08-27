@@ -59,6 +59,7 @@
     <Compile Include="IDiaSessionProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
+    <Compile Include="WindowsDumpFileMemoryReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(SolutionDir)\Key.snk" />

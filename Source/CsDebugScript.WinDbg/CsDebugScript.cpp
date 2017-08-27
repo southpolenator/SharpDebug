@@ -24,7 +24,7 @@
 #import "CsDebugScript.UI.tlb" raw_interfaces_only
 
 // Debugging engine headers
-#define KDEXT_64BIT 
+#define KDEXT_64BIT
 #include <wdbgexts.h>
 #include <Dbgeng.h>
 
@@ -46,7 +46,7 @@ using namespace mscorlib;
 void WriteComException(HRESULT hr, const char* expression)
 {
     CAutoComPtr<IErrorInfo> errorInfo;
-	wstringstream out;
+    wstringstream out;
 
     out << "COM Exception!!!" << endl;
     out << "HRESULT: " << hex << showbase << hr << noshowbase << dec << endl;
@@ -65,19 +65,19 @@ void WriteComException(HRESULT hr, const char* expression)
 
         if (SUCCEEDED(errorInfo->QueryInterface(IID_PPV_ARGS(&exception))))
         {
-        	BSTR toString = nullptr, stackTrace = nullptr;
+            BSTR toString = nullptr, stackTrace = nullptr;
 
-        	exception->get_ToString(&toString);
-        	if (toString != nullptr)
-        	{
-        		out << "Exception.ToString(): " << toString << endl;
-        	}
+            exception->get_ToString(&toString);
+            if (toString != nullptr)
+            {
+                out << "Exception.ToString(): " << toString << endl;
+            }
         }
     }
 
-	wcout << out.str();
+    wcout << out.str();
 
-	// TODO: Write output to debug client output callbacks
+    // TODO: Write output to debug client output callbacks
 }
 
 
@@ -107,192 +107,192 @@ wstring GetCurrentDllDirectory()
 
 wstring GetWorkingDirectory()
 {
-	wchar_t dllpath[8000];
+    wchar_t dllpath[8000];
 
-	GetCurrentDirectoryW(ARRAYSIZE(dllpath), dllpath);
-	return dllpath;
+    GetCurrentDirectoryW(ARRAYSIZE(dllpath), dllpath);
+    return dllpath;
 }
 
 class ClrInitializator
 {
 public:
-	HRESULT Initialize(const wchar_t* csDebugScriptUI)
-	{
-		// We should figure out needed runtime version
-		//
-		CAutoComPtr<ICLRMetaHostPolicy> pClrHostPolicy;
+    HRESULT Initialize(const wchar_t* csDebugScriptUI)
+    {
+        // We should figure out needed runtime version
+        //
+        CAutoComPtr<ICLRMetaHostPolicy> pClrHostPolicy;
 
-		CHECKCOM(CLRCreateInstance(
-			CLSID_CLRMetaHostPolicy,
-			IID_ICLRMetaHostPolicy,
-			(LPVOID*)&pClrHostPolicy));
+        CHECKCOM(CLRCreateInstance(
+            CLSID_CLRMetaHostPolicy,
+            IID_ICLRMetaHostPolicy,
+            (LPVOID*)&pClrHostPolicy));
 
-		wchar_t queriedRuntimeVersion[100] = { 0 };
-		DWORD length = sizeof(queriedRuntimeVersion) / sizeof(wchar_t);
+        wchar_t queriedRuntimeVersion[100] = { 0 };
+        DWORD length = sizeof(queriedRuntimeVersion) / sizeof(wchar_t);
 
-		CHECKCOM(pClrHostPolicy->GetRequestedRuntime(
-			METAHOST_POLICY_HIGHCOMPAT,
-			csDebugScriptUI,
-			nullptr,
-			queriedRuntimeVersion,
-			&length,
-			nullptr,
-			nullptr,
-			nullptr,
-			IID_PPV_ARGS(&runtimeInfo)));
+        CHECKCOM(pClrHostPolicy->GetRequestedRuntime(
+            METAHOST_POLICY_HIGHCOMPAT,
+            csDebugScriptUI,
+            nullptr,
+            queriedRuntimeVersion,
+            &length,
+            nullptr,
+            nullptr,
+            nullptr,
+            IID_PPV_ARGS(&runtimeInfo)));
 
-		// Set custom memory manager and start CLR
-		//
-		CHECKCOM(runtimeInfo->BindAsLegacyV2Runtime());
-		CHECKCOM(runtimeInfo->SetDefaultStartupFlags(STARTUP_SERVER_GC, nullptr));
-		CHECKCOM(runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&clrRuntimeHost)));
-		CHECKCOM(clrRuntimeHost->Start());
+        // Set custom memory manager and start CLR
+        //
+        CHECKCOM(runtimeInfo->BindAsLegacyV2Runtime());
+        CHECKCOM(runtimeInfo->SetDefaultStartupFlags(STARTUP_SERVER_GC, nullptr));
+        CHECKCOM(runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&clrRuntimeHost)));
+        CHECKCOM(clrRuntimeHost->Start());
 
-		// Create a new AppDomain that will contain application configuration.
-		//
-		CAutoComPtr<IUnknown> appDomainSetupThunk;
-		CAutoComPtr<IAppDomainSetup> appDomainSetup;
-		CAutoComPtr<IUnknown> appDomainThunk;
+        // Create a new AppDomain that will contain application configuration.
+        //
+        CAutoComPtr<IUnknown> appDomainSetupThunk;
+        CAutoComPtr<IAppDomainSetup> appDomainSetup;
+        CAutoComPtr<IUnknown> appDomainThunk;
 
-		CHECKCOM(runtimeInfo->GetInterface(CLSID_CorRuntimeHost, IID_PPV_ARGS(&corRuntimeHost)));
-		CHECKCOM(corRuntimeHost->CreateDomainSetup(&appDomainSetupThunk));
-		CHECKCOM(appDomainSetupThunk->QueryInterface(IID_PPV_ARGS(&appDomainSetup)));
-		CHECKCOM(corRuntimeHost->CreateDomainEx(L"MyDomain", appDomainSetup, nullptr, &appDomainThunk));
-		CHECKCOM(appDomainThunk->QueryInterface(IID_PPV_ARGS(&appDomain)));
+        CHECKCOM(runtimeInfo->GetInterface(CLSID_CorRuntimeHost, IID_PPV_ARGS(&corRuntimeHost)));
+        CHECKCOM(corRuntimeHost->CreateDomainSetup(&appDomainSetupThunk));
+        CHECKCOM(appDomainSetupThunk->QueryInterface(IID_PPV_ARGS(&appDomainSetup)));
+        CHECKCOM(corRuntimeHost->CreateDomainEx(L"MyDomain", appDomainSetup, nullptr, &appDomainThunk));
+        CHECKCOM(appDomainThunk->QueryInterface(IID_PPV_ARGS(&appDomain)));
 
-		// Load our assembly
-		//
-		CAutoComPtr<_Assembly> mscorlibAssembly;
-		CAutoComPtr<_Type> reflectionAssemblyType;
-		SafeArray loadFromArguments;
-		variant_t loadFromResult;
-		variant_t arg1(csDebugScriptUI);
+        // Load our assembly
+        //
+        CAutoComPtr<_Assembly> mscorlibAssembly;
+        CAutoComPtr<_Type> reflectionAssemblyType;
+        SafeArray loadFromArguments;
+        variant_t loadFromResult;
+        variant_t arg1(csDebugScriptUI);
 
-		loadFromArguments.CreateVector(VT_VARIANT, 0, 1);
-		loadFromArguments.PutElement(0, &arg1);
+        loadFromArguments.CreateVector(VT_VARIANT, 0, 1);
+        loadFromArguments.PutElement(0, &arg1);
 
-		CHECKCOM(GetAssemblyFromAppDomain(appDomain, L"mscorlib", &mscorlibAssembly));
-		CHECKCOM(mscorlibAssembly->GetType_2(bstr_t(L"System.Reflection.Assembly"), &reflectionAssemblyType));
-		CHECKCOM(reflectionAssemblyType->InvokeMember_3(bstr_t(L"LoadFrom"), (BindingFlags)(BindingFlags_InvokeMethod | BindingFlags_Public | BindingFlags_Static), nullptr, variant_t(), loadFromArguments, &loadFromResult));
+        CHECKCOM(GetAssemblyFromAppDomain(appDomain, L"mscorlib", &mscorlibAssembly));
+        CHECKCOM(mscorlibAssembly->GetType_2(bstr_t(L"System.Reflection.Assembly"), &reflectionAssemblyType));
+        CHECKCOM(reflectionAssemblyType->InvokeMember_3(bstr_t(L"LoadFrom"), (BindingFlags)(BindingFlags_InvokeMethod | BindingFlags_Public | BindingFlags_Static), nullptr, variant_t(), loadFromArguments, &loadFromResult));
 
-		// Create our extension CLR instance
-		//
-		CAutoComPtr<_Assembly> assembly = (_Assembly*)(IDispatch*)loadFromResult;
-		variant_t variant;
+        // Create our extension CLR instance
+        //
+        CAutoComPtr<_Assembly> assembly = (_Assembly*)(IDispatch*)loadFromResult;
+        variant_t variant;
 
-		CHECKCOM(assembly->CreateInstance_2(bstr_t(L"CsDebugScript.Executor"), true, &variant));
-		CHECKCOM(variant.punkVal->QueryInterface(&instance));
-		return S_OK;
-	}
+        CHECKCOM(assembly->CreateInstance_2(bstr_t(L"CsDebugScript.Executor"), true, &variant));
+        CHECKCOM(variant.punkVal->QueryInterface(&instance));
+        return S_OK;
+    }
 
-	HRESULT InitializeContext(IDebugClient* client)
-	{
-		CHECKCOM(instance->InitializeContext(client));
-		return S_OK;
-	}
+    HRESULT InitializeContext(IDebugClient* client)
+    {
+        CHECKCOM(instance->InitializeContext(client));
+        return S_OK;
+    }
 
-	HRESULT ExecuteScript(const wchar_t* scriptPath, const vector<wstring>& arguments)
-	{
-		// Transfer all arguments to CLR
-		//
-		SafeArray safeArray;
-		bstr_t bstrScriptPath = scriptPath;
+    HRESULT ExecuteScript(const wchar_t* scriptPath, const vector<wstring>& arguments)
+    {
+        // Transfer all arguments to CLR
+        //
+        SafeArray safeArray;
+        bstr_t bstrScriptPath = scriptPath;
 
-		safeArray.CreateVector(VT_BSTR, 0, (ULONG)arguments.size());
-		for (size_t i = 0; i < arguments.size(); i++)
-		{
-			// Intentionally allocating string because SafeArray will automatically dispose of it.
-			//
-			safeArray.PutElement((LONG)i, SysAllocString(arguments[i].c_str()));
-		}
+        safeArray.CreateVector(VT_BSTR, 0, (ULONG)arguments.size());
+        for (size_t i = 0; i < arguments.size(); i++)
+        {
+            // Intentionally allocating string because SafeArray will automatically dispose of it.
+            //
+            safeArray.PutElement((LONG)i, SysAllocString(arguments[i].c_str()));
+        }
 
-		// Execute script function
-		//
-		CHECKCOM(instance->ExecuteScript(bstrScriptPath, safeArray));
-		return S_OK;
-	}
+        // Execute script function
+        //
+        CHECKCOM(instance->ExecuteScript(bstrScriptPath, safeArray));
+        return S_OK;
+    }
 
-	HRESULT ExecuteScript(const wchar_t* arguments)
-	{
-		// Execute script function
-		//
-		bstr_t bstrArguments = arguments;
+    HRESULT ExecuteScript(const wchar_t* arguments)
+    {
+        // Execute script function
+        //
+        bstr_t bstrArguments = arguments;
 
-		CHECKCOM(instance->ExecuteScript_2(bstrArguments));
-		return S_OK;
-	}
+        CHECKCOM(instance->ExecuteScript_2(bstrArguments));
+        return S_OK;
+    }
 
-	HRESULT EnterInteractiveMode(const wchar_t* arguments)
-	{
-		bstr_t bstrArguments = arguments;
+    HRESULT EnterInteractiveMode(const wchar_t* arguments)
+    {
+        bstr_t bstrArguments = arguments;
 
-		CHECKCOM(instance->EnterInteractiveMode(bstrArguments));
-		return S_OK;
-	}
+        CHECKCOM(instance->EnterInteractiveMode(bstrArguments));
+        return S_OK;
+    }
 
-	HRESULT OpenUI(const wchar_t*arguments)
-	{
-		bstr_t bstrArguments = arguments;
+    HRESULT OpenUI(const wchar_t*arguments)
+    {
+        bstr_t bstrArguments = arguments;
 
-		CHECKCOM(instance->OpenUI(bstrArguments));
-		return S_OK;
-	}
+        CHECKCOM(instance->OpenUI(bstrArguments));
+        return S_OK;
+    }
 
-	HRESULT Interpret(const wchar_t* arguments)
-	{
-		bstr_t bstrArguments = arguments;
+    HRESULT Interpret(const wchar_t* arguments)
+    {
+        bstr_t bstrArguments = arguments;
 
-		CHECKCOM(instance->Interpret(bstrArguments));
-		return S_OK;
-	}
+        CHECKCOM(instance->Interpret(bstrArguments));
+        return S_OK;
+    }
 
-	HRESULT Uninitialize(bool full)
-	{
-		instance = nullptr;
-		if (full && corRuntimeHost != nullptr && appDomain != nullptr)
-		{
-			CHECKCOM(corRuntimeHost->UnloadDomain(appDomain));
-			appDomain.PvReturn();
-		}
+    HRESULT Uninitialize(bool full)
+    {
+        instance = nullptr;
+        if (full && corRuntimeHost != nullptr && appDomain != nullptr)
+        {
+            CHECKCOM(corRuntimeHost->UnloadDomain(appDomain));
+            appDomain.PvReturn();
+        }
 
-		corRuntimeHost = nullptr;
-		clrRuntimeHost = nullptr;
-		runtimeInfo = nullptr;
-		return S_OK;
-	}
+        corRuntimeHost = nullptr;
+        clrRuntimeHost = nullptr;
+        runtimeInfo = nullptr;
+        return S_OK;
+    }
 
 private:
-	HRESULT GetAssemblyFromAppDomain(_AppDomain* appDomain, const wchar_t* assemblyName, _Assembly **assembly)
-	{
-		SAFEARRAY* safearray;
-		CComSafeArray<IUnknown*> assemblies;
+    HRESULT GetAssemblyFromAppDomain(_AppDomain* appDomain, const wchar_t* assemblyName, _Assembly **assembly)
+    {
+        SAFEARRAY* safearray;
+        CComSafeArray<IUnknown*> assemblies;
 
-		CHECKCOM(appDomain->GetAssemblies(&safearray));
-		assemblies.Attach(safearray);
-		for (int i = 0, n = assemblies.GetCount(); i < n; i++)
-		{
-			CComPtr<_Assembly> a;
+        CHECKCOM(appDomain->GetAssemblies(&safearray));
+        assemblies.Attach(safearray);
+        for (int i = 0, n = assemblies.GetCount(); i < n; i++)
+        {
+            CComPtr<_Assembly> a;
 
-			a = assemblies[i];
-			if (a == nullptr)
-				continue;
-			CComBSTR assemblyFullName;
-			CHECKCOM(a->get_FullName(&assemblyFullName));
-			if (assemblyFullName != nullptr && _wcsnicmp(assemblyFullName, assemblyName, wcslen(assemblyName)) == 0)
-			{
-				*assembly = a.Detach();
-				return S_OK;
-			}
-		}
+            a = assemblies[i];
+            if (a == nullptr)
+                continue;
+            CComBSTR assemblyFullName;
+            CHECKCOM(a->get_FullName(&assemblyFullName));
+            if (assemblyFullName != nullptr && _wcsnicmp(assemblyFullName, assemblyName, wcslen(assemblyName)) == 0)
+            {
+                *assembly = a.Detach();
+                return S_OK;
+            }
+        }
 
-		return E_FAIL;
-	}
+        return E_FAIL;
+    }
 
-	CAutoComPtr<ICLRRuntimeInfo> runtimeInfo;
-	CAutoComPtr<ICLRRuntimeHost> clrRuntimeHost;
-	CAutoComPtr<ICorRuntimeHost> corRuntimeHost;
-	CAutoComPtr<CsDebugScript_UI::IExecutor> instance;
-	CAutoComPtr<_AppDomain> appDomain;
+    CAutoComPtr<ICLRRuntimeInfo> runtimeInfo;
+    CAutoComPtr<ICLRRuntimeHost> clrRuntimeHost;
+    CAutoComPtr<ICorRuntimeHost> corRuntimeHost;
+    CAutoComPtr<CsDebugScript_UI::IExecutor> instance;
+    CAutoComPtr<_AppDomain> appDomain;
 } clr;
 
 CSDEBUGSCRIPT_API HRESULT DebugExtensionInitialize(
@@ -308,112 +308,112 @@ CSDEBUGSCRIPT_API HRESULT DebugExtensionInitialize(
     if (Flags != nullptr)
         *Flags = 0;
 
-	// Initialize CRL and CsDebugScript.UI library
-	HRESULT hr = clr.Initialize(csDebugScriptUI.c_str());
+    // Initialize CRL and CsDebugScript.UI library
+    HRESULT hr = clr.Initialize(csDebugScriptUI.c_str());
 
-	return hr;
+    return hr;
 }
 
 DWORD WINAPI UninitializeThread(void*)
 {
-	clr.Uninitialize(true);
-	return 0;
+    clr.Uninitialize(true);
+    return 0;
 }
 
 HANDLE g_thread = nullptr;
 
 CSDEBUGSCRIPT_API void DebugExtensionUninitialize()
 {
-	clr.Uninitialize(false);
+    clr.Uninitialize(false);
 }
 
 CSDEBUGSCRIPT_API HRESULT uninitialize(
-	_In_     IDebugClient* Client,
-	_In_opt_ PCSTR         Args)
+    _In_     IDebugClient* Client,
+    _In_opt_ PCSTR         Args)
 {
-	g_thread = CreateThread(nullptr, 0, UninitializeThread, nullptr, 0, nullptr);
-	return S_OK;
+    g_thread = CreateThread(nullptr, 0, UninitializeThread, nullptr, 0, nullptr);
+    return S_OK;
 }
 
 CSDEBUGSCRIPT_API HRESULT execute(
-	_In_     IDebugClient* Client,
-	_In_opt_ PCSTR         Args)
+    _In_     IDebugClient* Client,
+    _In_opt_ PCSTR         Args)
 {
-	wstringstream ss;
+    wstringstream ss;
 
-	ss << Args;
+    ss << Args;
 
-	clr.InitializeContext(Client);
-	HRESULT result = clr.ExecuteScript(ss.str().c_str());
-	clr.InitializeContext(nullptr);
+    clr.InitializeContext(Client);
+    HRESULT result = clr.ExecuteScript(ss.str().c_str());
+    clr.InitializeContext(nullptr);
 
-	return result;
+    return result;
 }
 
 CSDEBUGSCRIPT_API HRESULT interactive(
-	_In_     IDebugClient* Client,
-	_In_opt_ PCSTR         Args)
+    _In_     IDebugClient* Client,
+    _In_opt_ PCSTR         Args)
 {
-	wstringstream ss;
+    wstringstream ss;
 
-	ss << Args;
-	clr.InitializeContext(Client);
-	HRESULT result = clr.EnterInteractiveMode(ss.str().c_str());
-	clr.InitializeContext(nullptr);
-	return result;
+    ss << Args;
+    clr.InitializeContext(Client);
+    HRESULT result = clr.EnterInteractiveMode(ss.str().c_str());
+    clr.InitializeContext(nullptr);
+    return result;
 }
 
 struct OpenUiSecondThreadParameters
 {
-	IDebugClient* Client;
-	char* Args;
+    IDebugClient* Client;
+    char* Args;
 };
 
 DWORD WINAPI OpenUiSecondThread(void* parameter)
 {
-	OpenUiSecondThreadParameters* p = (OpenUiSecondThreadParameters*)parameter;
-	IDebugClient* Client = p->Client;
-	char* Args = p->Args;
-	CAutoComPtr<IDebugClient> client2;
+    OpenUiSecondThreadParameters* p = (OpenUiSecondThreadParameters*)parameter;
+    IDebugClient* Client = p->Client;
+    char* Args = p->Args;
+    CAutoComPtr<IDebugClient> client2;
 
-	CHECKCOM(Client->CreateClient(&client2));
+    CHECKCOM(Client->CreateClient(&client2));
 
-	wstringstream ss;
+    wstringstream ss;
 
-	ss << Args;
-	clr.InitializeContext(client2);
-	HRESULT result = clr.OpenUI(ss.str().c_str());
+    ss << Args;
+    clr.InitializeContext(client2);
+    HRESULT result = clr.OpenUI(ss.str().c_str());
 
-	delete[] p->Args;
-	delete p;
-	return result;
+    delete[] p->Args;
+    delete p;
+    return result;
 }
 
 CSDEBUGSCRIPT_API HRESULT openui(
-	_In_     IDebugClient* Client,
-	_In_opt_ PCSTR         Args)
+    _In_     IDebugClient* Client,
+    _In_opt_ PCSTR         Args)
 {
-	OpenUiSecondThreadParameters* p = new OpenUiSecondThreadParameters();
-	int size = strlen(Args) + 1;
-	p->Client = Client;
-	p->Args = new char[size];
-	strcpy_s(p->Args, size, Args);
+    OpenUiSecondThreadParameters* p = new OpenUiSecondThreadParameters();
+    size_t size = strlen(Args) + 1;
+    p->Client = Client;
+    p->Args = new char[size];
+    strcpy_s(p->Args, size, Args);
 
-	HANDLE thread = CreateThread(nullptr, 0, OpenUiSecondThread, p, 0, nullptr);
+    HANDLE thread = CreateThread(nullptr, 0, OpenUiSecondThread, p, 0, nullptr);
 
-	CloseHandle(thread);
-	return S_OK;
+    CloseHandle(thread);
+    return S_OK;
 }
 
 CSDEBUGSCRIPT_API HRESULT interpret(
-	_In_     IDebugClient* Client,
-	_In_opt_ PCSTR         Args)
+    _In_     IDebugClient* Client,
+    _In_opt_ PCSTR         Args)
 {
-	wstringstream ss;
+    wstringstream ss;
 
-	ss << Args;
-	clr.InitializeContext(Client);
-	HRESULT result = clr.Interpret(ss.str().c_str());
-	clr.InitializeContext(nullptr);
-	return result;
+    ss << Args;
+    clr.InitializeContext(Client);
+    HRESULT result = clr.Interpret(ss.str().c_str());
+    clr.InitializeContext(nullptr);
+    return result;
 }

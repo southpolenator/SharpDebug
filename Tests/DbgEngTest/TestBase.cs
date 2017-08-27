@@ -1,6 +1,7 @@
 ﻿using CsDebugScript;
 using CsDebugScript.DwarfSymbolProvider;
 using CsDebugScript.Engine;
+using CsDebugScript.Engine.Debuggers;
 using DbgEngManaged;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -76,7 +77,7 @@ namespace DbgEngTest
             if (!useElfCoreDumps)
             {
                 client = DebugClient.OpenDumpFile(dumpFile, symbolPath);
-                new Executor().InitializeContext(client);
+                DbgEngDll.InitializeContext(client);
             }
             else
             {
@@ -102,7 +103,7 @@ namespace DbgEngTest
             Context.EnableVariableCaching = false;
 
             client = DebugClient.OpenProcess(processPath, processArguments, symbolPath, debugEngineOptions);
-            new Executor().InitializeContext(client);
+            DbgEngDll.InitializeContext(client);
         }
 
         protected static StackFrame GetFrame(string functionName)

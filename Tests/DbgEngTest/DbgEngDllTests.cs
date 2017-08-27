@@ -2,6 +2,7 @@
 using CsDebugScript.Engine;
 using CsDebugScript.Engine.Debuggers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
 namespace DbgEngTest
 {
@@ -18,6 +19,8 @@ namespace DbgEngTest
         {
             SyncStart();
             InitializeDump(DefaultDumpFile, DefaultSymbolPath);
+            string version = DbgEngDll.ExecuteAndCapture("version");
+            Console.WriteLine("Debugger version: {0}", version);
         }
 
         [ClassCleanup]

@@ -12,6 +12,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using CsDebugScript.Engine.Debuggers;
 
 namespace CsDebugScript.UI
 {
@@ -232,7 +233,7 @@ namespace CsDebugScript.UI
 
                 try
                 {
-                    textOutput = Debugger.ExecuteAndCapture(documentText);
+                    textOutput = DbgEngDll.ExecuteAndCapture(documentText);
                 }
                 catch (Exception ex)
                 {

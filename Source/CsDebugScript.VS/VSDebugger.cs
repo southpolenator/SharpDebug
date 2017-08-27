@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using Dia2Lib;
 using CsDebugScript.Engine.SymbolProviders;
+using System.IO;
 
 namespace CsDebugScript.VS
 {
@@ -45,6 +46,22 @@ namespace CsDebugScript.VS
         public ulong FindPatternInMemory(Process process, ulong memoryStart, ulong memoryEnd, byte[] pattern, int patternStart, int patternEnd, uint searchAlignment = 1, bool searchWritableMemoryOnly = false)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the dump file memory reader of the specified process if it is debugged from a dump.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        public DumpFileMemoryReader GetDumpFileMemoryReader(Process process)
+        {
+            string dumpFilename = process.DumpFileName;
+
+            if (File.Exists(dumpFilename))
+            {
+                return new WindowsDumpFileMemoryReader(dumpFilename);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -467,36 +484,6 @@ namespace CsDebugScript.VS
         /// The exception text for all functions that were intentionally not implemented.
         /// </summary>
         public const string NotImplementedExceptionText = "This function is not planned to be implemented for VS debugger.";
-
-        /// <summary>
-        /// Executes the specified command, but leaves its output visible to the user.
-        /// </summary>
-        /// <param name="command">The command.</param>
-        /// <param name="parameters">The parameters.</param>
-        /// <exception cref="System.NotImplementedException">This function is not planned to be implemented for VS debugger.</exception>
-        public void Execute(string command, params object[] parameters)
-        {
-            throw new NotImplementedException(NotImplementedExceptionText);
-        }
-
-        /// <summary>
-        /// Executes the action in redirected console output and error stream.
-        /// </summary>
-        /// <param name="action">The action.</param>
-        /// <exception cref="System.NotImplementedException">This function is not planned to be implemented for VS debugger.</exception>
-        public void ExecuteAction(Action action)
-        {
-            throw new NotImplementedException(NotImplementedExceptionText);
-        }
-
-        /// <summary>
-        /// Reads the line from the debugger input.
-        /// </summary>
-        /// <exception cref="System.NotImplementedException">This function is not planned to be implemented for VS debugger.</exception>
-        public string ReadInput()
-        {
-            throw new NotImplementedException(NotImplementedExceptionText);
-        }
 
         /// <summary>
         /// Gets last event info.

@@ -27,10 +27,7 @@ namespace CsDebugScript
         /// <param name="client">The client.</param>
         public void InitializeContext(IDebugClient client)
         {
-            IDebuggerEngine debugger = new DbgEngDll(client);
-            ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.CreateDefaultSymbolProvider());
-
-            Context.InitializeDebugger(debugger, symbolProvider);
+            DbgEngDll.InitializeContext(client);
         }
 
         /// <summary>
@@ -60,7 +57,7 @@ namespace CsDebugScript
         /// <param name="arguments">The arguments</param>
         public void EnterInteractiveMode(string arguments)
         {
-            Context.Debugger.ExecuteAction(() => InteractiveExecution.Run());
+            ExecuteAction(() => InteractiveExecution.Run());
         }
 
         /// <summary>
@@ -97,7 +94,7 @@ namespace CsDebugScript
         /// <param name="args">The arguments.</param>
         public static void Execute(string path, params string[] args)
         {
-            Context.Debugger.ExecuteAction(() =>
+            ExecuteAction(() =>
             {
                 ScriptExecution.Execute(path, args);
             });
@@ -125,7 +122,32 @@ namespace CsDebugScript
         /// <param name="code">The C# code.</param>
         public static void InterpretInteractive(string code)
         {
-            Context.Debugger.ExecuteAction(() => InteractiveExecution.Interpret(code));
+            ExecuteAction(() => InteractiveExecution.Interpret(code));
+        }
+
+        /// <summary>
+        /// Executes the specified action against the current debugger.
+        /// </summary>
+        /// <param name="action">The action to be executed.</param>
+        private static void ExecuteAction(Action action)
+        {
+            DbgEngDll dbgEngDll = Context.Debugger as DbgEngDll;
+
+            if (dbgEngDll != null)
+            {
+                dbgEngDll.ExecuteAction(action);
+            }
+            else
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex);
+                }
+            }
         }
     }
 }

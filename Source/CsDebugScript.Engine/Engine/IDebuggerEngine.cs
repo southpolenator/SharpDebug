@@ -23,22 +23,10 @@ namespace CsDebugScript.Engine
         ISymbolProvider CreateDefaultSymbolProvider();
 
         /// <summary>
-        /// Executes the action in redirected console output and error stream.
+        /// Gets the dump file memory reader of the specified process if it is debugged from a dump.
         /// </summary>
-        /// <param name="action">The action.</param>
-        void ExecuteAction(Action action);
-
-        /// <summary>
-        /// Executes the specified command, but leaves its output visible to the user.
-        /// </summary>
-        /// <param name="command">The command.</param>
-        /// <param name="parameters">The parameters.</param>
-        void Execute(string command, params object[] parameters);
-
-        /// <summary>
-        /// Reads the line from the debugger input.
-        /// </summary>
-        string ReadInput();
+        /// <param name="process">The process.</param>
+        DumpFileMemoryReader GetDumpFileMemoryReader(Process process);
 
         /// <summary>
         /// Reads the memory from the specified process.

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
-using Dia2Lib;
 using System.IO;
 
 namespace CsDebugScript.DwarfSymbolProvider
@@ -197,6 +196,17 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             return fileName;
+        }
+
+        /// <summary>
+        /// Gets the dump file memory reader.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        public DumpFileMemoryReader GetDumpFileMemoryReader(Process process)
+        {
+            ElfCoreDump dump = GetDump(process);
+
+            return dump.DumpFileMemoryReader;
         }
 
         /// <summary>
@@ -582,34 +592,6 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         #region Unsupported functionality
-        /// <summary>
-        /// Executes the specified command, but leaves its output visible to the user.
-        /// </summary>
-        /// <param name="command">The command.</param>
-        /// <param name="parameters">The parameters.</param>
-        public void Execute(string command, params object[] parameters)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Executes the action in redirected console output and error stream.
-        /// </summary>
-        /// <param name="action">The action.</param>
-        public void ExecuteAction(Action action)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Reads the line from the debugger input.
-        /// </summary>
-        /// <returns></returns>
-        public string ReadInput()
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// When doing live process debugging breaks debugee execution of the specified process.
         /// </summary>

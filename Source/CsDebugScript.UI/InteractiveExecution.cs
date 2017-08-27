@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Debuggers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
@@ -156,7 +157,7 @@ namespace CsDebugScript
             }
             else
             {
-                Debugger.Execute(code.Substring(5));
+                ((DbgEngDll)Context.Debugger).ExecuteCommand(code.Substring(5));
             }
         }
 
@@ -171,7 +172,16 @@ namespace CsDebugScript
             Console.Write(prompt);
 
             // Read string
-            return Context.Debugger.ReadInput();
+            DbgEngDll dbgEngDll = Context.Debugger as DbgEngDll;
+
+            if (dbgEngDll != null)
+            {
+                return dbgEngDll.ReadInput();
+            }
+            else
+            {
+                return Console.ReadLine();
+            }
         }
 
         /// <summary>

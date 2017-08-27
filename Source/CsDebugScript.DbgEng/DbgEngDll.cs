@@ -1,6 +1,7 @@
 ﻿using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
 using CsDebugScript.Engine.Marshaling;
 using CsDebugScript.Engine.Native;
+using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
 using DbgEngManaged;
@@ -273,11 +274,70 @@ namespace CsDebugScript.Engine.Debuggers
         }
 
         /// <summary>
+        /// Initializes the context with the specified <see cref="IDebugClient"/>.
+        /// </summary>
+        /// <param name="client">The client.</param>
+        public static void InitializeContext(IDebugClient client)
+        {
+            IDebuggerEngine debugger = new DbgEngDll(client);
+            ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.CreateDefaultSymbolProvider());
+
+            Context.InitializeDebugger(debugger, symbolProvider);
+        }
+
+        #region Executing native commands
+        /// <summary>
+        /// Executes the specified command and captures its output.
+        /// </summary>
+        /// <param name="command">The command.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>Captured text</returns>
+        public static string ExecuteAndCapture(string command, params object[] parameters)
+        {
+            DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
+                | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
+                | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
+            return ExecuteAndCapture(captureFlags, command, parameters);
+        }
+
+        /// <summary>
+        /// Executes the specified command and captures its output.
+        /// </summary>
+        /// <param name="captureFlags">The capture flags.</param>
+        /// <param name="command">The command.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>Captured text</returns>
+        public static string ExecuteAndCapture(DebugOutput captureFlags, string command, params object[] parameters)
+        {
+            using (StringWriter writer = new StringWriter())
+            {
+                var callbacks = DebuggerOutputToTextWriter.Create(writer, captureFlags);
+                using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
+                {
+                    Execute(command, parameters);
+                    writer.Flush();
+                    return writer.GetStringBuilder().ToString();
+                }
+            }
+        }
+
+        /// <summary>
         /// Executes the specified command, but leaves its output visible to the user.
         /// </summary>
         /// <param name="command">The command.</param>
         /// <param name="parameters">The parameters.</param>
-        public void Execute(string command, params object[] parameters)
+        public static void Execute(string command, params object[] parameters)
+        {
+            ((DbgEngDll)Context.Debugger).ExecuteCommand(command, parameters);
+        }
+        #endregion
+
+        /// <summary>
+        /// Executes the specified command, but leaves its output visible to the user.
+        /// </summary>
+        /// <param name="command">The command.</param>
+        /// <param name="parameters">The parameters.</param>
+        public void ExecuteCommand(string command, params object[] parameters)
         {
             command = string.Join(" ", command, string.Join(" ", parameters));
             StateCache.SyncState();
@@ -327,6 +387,22 @@ namespace CsDebugScript.Engine.Debuggers
             {
                 Marshal.FreeHGlobal(pointer);
             }
+        }
+
+        /// <summary>
+        /// Gets the dump file memory reader of the specified process if it is debugged from a dump.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        public DumpFileMemoryReader GetDumpFileMemoryReader(Process process)
+        {
+            string dumpFilename = process.DumpFileName;
+
+            if (File.Exists(dumpFilename))
+            {
+                return new WindowsDumpFileMemoryReader(dumpFilename);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -1352,6 +1428,7 @@ namespace CsDebugScript.Engine.Debuggers
         }
 
         #region Native methods
+#pragma warning disable CS0649
         /// <summary>
         /// An application-defined callback function used with the StackWalkEx function. It is called when StackWalk64 needs to read memory from the address space of the process.
         /// </summary>
@@ -1655,6 +1732,7 @@ namespace CsDebugScript.Engine.Debuggers
             ulong AddrBase,
             ReadProcessMemoryProc64 ReadMemoryRoutine,
             GetModuleBaseProc64 GetModuleBaseRoutine);
+#pragma warning restore CS0649
         #endregion
     }
 }

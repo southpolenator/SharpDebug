@@ -181,7 +181,7 @@ namespace CsDebugScript
             {
                 try
                 {
-                    return string.IsNullOrEmpty(DumpFileName) ? default(DumpFileMemoryReader) : new WindowsDumpFileMemoryReader(DumpFileName);
+                    return Context.Debugger.GetDumpFileMemoryReader(this);
                 }
                 catch (Exception)
                 {

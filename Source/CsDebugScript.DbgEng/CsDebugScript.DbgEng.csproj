@@ -50,6 +50,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DbgEngDll.cs" />
+    <Compile Include="DbgEngDllHelpers\DbgEngSymbolProvider.cs" />
+    <Compile Include="DbgEngDllHelpers\DebugCallbacks.cs" />
+    <Compile Include="DbgEngDllHelpers\DebuggeFlowController.cs" />
+    <Compile Include="DbgEngDllHelpers\DebuggerOutputCapture.cs" />
+    <Compile Include="DbgEngDllHelpers\DebuggerTextWriter.cs" />
+    <Compile Include="DbgEngDllHelpers\OutputCallbacksSwitcher.cs" />
+    <Compile Include="DbgEngDllHelpers\ProcessSwitcher.cs" />
+    <Compile Include="DbgEngDllHelpers\StackFrameSwitcher.cs" />
+    <Compile Include="DbgEngDllHelpers\StateCache.cs" />
+    <Compile Include="DbgEngDllHelpers\ThreadSwitcher.cs" />
+    <Compile Include="DebuggerOutputToTextWriter.cs" />
+    <Compile Include="OutputCallbacksSwitcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
   </ItemGroup>
@@ -57,6 +70,10 @@
     <None Include="$(SolutionDir)\Key.snk" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj">
+      <Project>{F8D58D8A-83BA-4701-AC5F-2DB03F640455}</Project>
+      <Name>CsDebugScript.DiaSymbolProvider</Name>
+    </ProjectReference>
     <Reference Include="DbgEngManaged">
       <HintPath>$(OutputPath)\DbgEngManaged.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
