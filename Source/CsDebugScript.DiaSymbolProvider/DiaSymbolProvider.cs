@@ -26,7 +26,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             // Try to get debugger DIA session
             IDiaSessionProvider diaSessionProvider = Context.Debugger as IDiaSessionProvider;
-            IDiaSession diaSession = diaSessionProvider.GetModuleDiaSession(module);
+            IDiaSession diaSession = diaSessionProvider?.GetModuleDiaSession(module);
 
             if (diaSession != null)
             {
