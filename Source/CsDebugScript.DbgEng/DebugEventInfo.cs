@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using CsDebugScript.Engine.Native;
+using CsDebugScript.Engine;
+using CsDebugScript.Engine.Debuggers;
 
 namespace CsDebugScript
 {
@@ -91,7 +87,7 @@ namespace CsDebugScript
         public DebugEvent Type;
 
         /// <summary>
-        /// Process where Event occured.
+        /// Process where Event occurred.
         /// </summary>
         public Process Process;
 
@@ -113,6 +109,6 @@ namespace CsDebugScript
         /// <summary>
         /// Get Last occurred Event or Exception.
         /// </summary>
-        public static DebugEventInfo LastEvent => Engine.Context.Debugger.GetLastEventInfo();
+        public static DebugEventInfo LastEvent => ((DbgEngDll)Context.Debugger).GetLastEventInfo();
     }
 }

@@ -565,14 +565,6 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Gets last event info.
-        /// </summary>
-        public DebugEventInfo GetLastEventInfo()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// Finds the pattern in memory of the specified process.
         /// </summary>
         /// <param name="process">The process.</param>

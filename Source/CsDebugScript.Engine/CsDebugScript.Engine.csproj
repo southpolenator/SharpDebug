@@ -84,7 +84,6 @@
     <Compile Include="CodeArray.cs" />
     <Compile Include="CodeFunction.cs" />
     <Compile Include="CodePointer.cs" />
-    <Compile Include="DebugEventInfo.cs" />
     <Compile Include="Debugger.cs" />
     <Compile Include="CodeType.cs" />
     <Compile Include="Engine\SymbolProviders\PerModuleSymbolProvider.cs" />
@@ -113,8 +112,6 @@
     <Compile Include="VoidType.cs" />
     <Compile Include="Engine\IDebuggerEngine.cs" />
     <Compile Include="Engine\Marshaling\NamespaceDoc.cs" />
-    <Compile Include="Engine\Native\DEBUG_MODULE_PARAMETERS.cs" />
-    <Compile Include="Engine\Native\DEBUG_LAST_EVENT_INFO.cs" />
     <Compile Include="Engine\SymbolProviders\NamespaceDoc.cs" />
     <Compile Include="Engine\UserTypeDelegates.cs" />
     <Compile Include="Engine\Utility\DictionaryCache.cs" />
@@ -124,10 +121,7 @@
     <Compile Include="Engine\NamespaceDoc.cs" />
     <Compile Include="Engine\Native\NamespaceDoc.cs" />
     <Compile Include="Engine\Native\NativeMethods.cs" />
-    <Compile Include="Engine\Native\DEBUG_TYPED_DATA.cs" />
-    <Compile Include="Engine\Native\Extensions.cs" />
     <Compile Include="Engine\Native\ExtTdop.cs" />
-    <Compile Include="Engine\Native\EXT_TYPED_DATA.cs" />
     <Compile Include="Engine\Native\ImageFileMachine.cs" />
     <Compile Include="Engine\Native\SymTag.cs" />
     <Compile Include="Engine\Utility\DumpFileMemoryReader.cs" />

@@ -482,19 +482,9 @@ namespace CsDebugScript.VS
         public const string NotImplementedExceptionText = "This function is not planned to be implemented for VS debugger.";
 
         /// <summary>
-        /// Gets last event info.
-        /// </summary>
-        /// <exception cref="System.NotImplementedException">This function is not planned to be implemented for VS debugger.</exception>
-        public DebugEventInfo GetLastEventInfo()
-        {
-            throw new NotImplementedException(NotImplementedExceptionText);
-        }
-
-        /// <summary>
         /// When doing live process debugging continues debugee execution of the specified process.
         /// </summary>
         /// <param name="process">Process to be continued.</param>
-
         public void ContinueExecution(Process process)
         {
             throw new NotImplementedException();

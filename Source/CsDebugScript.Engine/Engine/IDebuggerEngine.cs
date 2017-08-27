@@ -275,12 +275,6 @@ namespace CsDebugScript.Engine
         bool IsMinidump(Process process);
 
         /// <summary>
-        /// Gets last event info.
-        /// </summary>
-        /// <returns></returns>
-        DebugEventInfo GetLastEventInfo();
-
-        /// <summary>
         /// When doing live process debugging continues debugee execution of the specified process.
         /// </summary>
         /// <param name="process">Process to be continued.</param>

@@ -61,7 +61,13 @@
     <Compile Include="DbgEngDllHelpers\StackFrameSwitcher.cs" />
     <Compile Include="DbgEngDllHelpers\StateCache.cs" />
     <Compile Include="DbgEngDllHelpers\ThreadSwitcher.cs" />
+    <Compile Include="DebugEventInfo.cs" />
     <Compile Include="DebuggerOutputToTextWriter.cs" />
+    <Compile Include="Native\DEBUG_LAST_EVENT_INFO.cs" />
+    <Compile Include="Native\DEBUG_MODULE_PARAMETERS.cs" />
+    <Compile Include="Native\DEBUG_TYPED_DATA.cs" />
+    <Compile Include="Native\Extensions.cs" />
+    <Compile Include="Native\EXT_TYPED_DATA.cs" />
     <Compile Include="OutputCallbacksSwitcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
