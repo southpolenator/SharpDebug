@@ -41,14 +41,6 @@
     <AssemblyOriginatorKeyFile>$(SolutionDir)\Key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DbgEngManaged">
-      <HintPath>$(OutputPath)\DbgEngManaged.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="Dia2Lib">
-      <HintPath>$(SolutionDir)\Source\DiaHelpers\Dia2Lib.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SolutionDir)\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
@@ -131,12 +123,6 @@
     <Compile Include="Engine\UserTypeDescription.cs" />
     <Compile Include="Engine\UserTypeMetadata.cs" />
     <Compile Include="Engine\Utility\NamespaceDoc.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)\Source\DiaHelpers\DiaHelpers.csproj">
-      <Project>{3ca2d1d6-136f-4032-901e-043fa25b6255}</Project>
-      <Name>DiaHelpers</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(SolutionDir)\Key.snk" />

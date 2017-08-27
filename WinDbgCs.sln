@@ -10,9 +10,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CsDebugScript.WinDbg", "Sou
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.Engine", "Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj", "{2A7F1646-9B5A-433C-8A84-2215194F59B9}"
-	ProjectSection(ProjectDependencies) = postProject
-		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A} = {BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.Engine.Test", "Tests\CsDebugScript.Engine.Test\CsDebugScript.Engine.Test.csproj", "{B683D8DD-6759-4301-A54A-FAEFE1105416}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -37,9 +34,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeDumpTest.x64", "Tests
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiaHelpers", "Source\DiaHelpers\DiaHelpers.csproj", "{3CA2D1D6-136F-4032-901E-043FA25B6255}"
-	ProjectSection(ProjectDependencies) = postProject
-		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A} = {BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.CommonUserTypes", "Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj", "{21A929EA-B96B-4523-9D0F-853EA771058D}"
 EndProject
@@ -97,6 +91,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.CodeGen.App", "Source\CsDebugScript.CodeGen.App\CsDebugScript.CodeGen.App.csproj", "{F0826881-E3F3-47B3-9716-18001DE8333A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.DbgEng", "Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj", "{DE29EE94-EE6E-4BC1-86B4-B67CAC48A0BE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A} = {BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.DiaSymbolProvider", "Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj", "{F8D58D8A-83BA-4701-AC5F-2DB03F640455}"
 EndProject
