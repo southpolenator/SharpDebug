@@ -1,7 +1,4 @@
-﻿using CsDebugScript.Engine.Debuggers;
-using CsDebugScript.Engine.SymbolProviders;
-using DbgEngManaged;
-using System;
+﻿using System;
 using System.IO;
 using System.Reflection;
 
@@ -68,24 +65,6 @@ namespace CsDebugScript.Engine
             {
                 return Debugger.IsLiveDebugging;
             }
-        }
-
-        /// <summary>
-        /// Initializes the Context with the specified DbgEng.dll Client interface.
-        /// </summary>
-        /// <param name="client">The DbgEng.dll Client interface.</param>
-        public static void Initalize(IDebugClient client)
-        {
-            InitializeDebugger(new DbgEngDll(client));
-        }
-
-        /// <summary>
-        /// Initializes the Context with the specified debugger engine interface.
-        /// </summary>
-        /// <param name="debuggerEngine">The debugger engine interface.</param>
-        public static void InitializeDebugger(IDebuggerEngine debuggerEngine)
-        {
-            InitializeDebugger(debuggerEngine, new DiaSymbolProvider(debuggerEngine.CreateDefaultSymbolProvider()));
         }
 
         /// <summary>

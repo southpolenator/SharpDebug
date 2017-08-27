@@ -3,10 +3,11 @@ using CsDebugScript.Engine.Utility;
 using System;
 using System.Linq;
 using Dia2Lib;
+using CsDebugScript.DiaSymbolProvider;
 
 namespace CsDebugScript.VS
 {
-    internal class VSDebugger : Engine.IDebuggerEngine
+    internal class VSDebugger : Engine.IDebuggerEngine, IDiaSessionProvider
     {
         /// <summary>
         /// The Visual Studio debugger proxy running in Default AppDomain.

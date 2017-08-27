@@ -1,6 +1,5 @@
 ﻿using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
-using Dia2Lib;
 using System;
 
 namespace CsDebugScript.Engine
@@ -90,15 +89,6 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="module">The module.</param>
         string GetModuleSymbolFile(Module module);
-
-        /// <summary>
-        /// Gets the DIA session for the specified module.
-        /// </summary>
-        /// <param name="module">The module.</param>
-        /// <returns>
-        ///   <see cref="IDiaSession" /> if available, null otherwise.
-        /// </returns>
-        IDiaSession GetModuleDiaSession(Module module);
 
         /// <summary>
         /// Gets the name of the mapped image. In most cases, this is null. If the debugger is mapping an image file

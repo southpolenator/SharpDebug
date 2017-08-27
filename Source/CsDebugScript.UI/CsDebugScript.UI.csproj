@@ -39,9 +39,17 @@
     <DocumentationFile>$(SolutionDir)\bin\Release\CsDebugScript.UI.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj">
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj">
       <Project>{283a0331-2ead-4dd2-a3fe-20d229e2d277}</Project>
       <Name>CsDebugScript.CodeGen</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj">
+      <Project>{de29ee94-ee6e-4bc1-86b4-b67cac48a0be}</Project>
+      <Name>CsDebugScript.DbgEng</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj">
+      <Project>{f8d58d8a-83ba-4701-ac5f-2db03f640455}</Project>
+      <Name>CsDebugScript.DiaSymbolProvider</Name>
     </ProjectReference>
     <Reference Include="DbgEngManaged">
       <HintPath>$(OutputPath)\DbgEngManaged.dll</HintPath>

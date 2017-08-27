@@ -149,8 +149,6 @@
     <Compile Include="Engine\Utility\SimpleCache.cs" />
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\StackFrameSwitcher.cs" />
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\DbgEngSymbolProvider.cs" />
-    <Compile Include="Engine\SymbolProviders\DiaModule.cs" />
-    <Compile Include="Engine\SymbolProviders\DiaSymbolProvider.cs" />
     <Compile Include="Engine\ISymbolProvider.cs" />
     <Compile Include="Engine\ISymbolProviderModule.cs" />
     <Compile Include="Engine\Debuggers\DbgEngDllHelpers\ThreadSwitcher.cs" />

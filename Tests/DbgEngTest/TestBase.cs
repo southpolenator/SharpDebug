@@ -76,7 +76,7 @@ namespace DbgEngTest
             if (!useElfCoreDumps)
             {
                 client = DebugClient.OpenDumpFile(dumpFile, symbolPath);
-                Context.Initalize(client);
+                new Executor().InitializeContext(client);
             }
             else
             {
@@ -102,7 +102,7 @@ namespace DbgEngTest
             Context.EnableVariableCaching = false;
 
             client = DebugClient.OpenProcess(processPath, processArguments, symbolPath, debugEngineOptions);
-            Context.Initalize(client);
+            new Executor().InitializeContext(client);
         }
 
         protected static StackFrame GetFrame(string functionName)

@@ -6,7 +6,7 @@ namespace CsDebugScript.Engine.SymbolProviders
     /// <summary>
     /// Symbol provider that is being implemented over DIA library.
     /// </summary>
-    internal class DiaSymbolProvider : PerModuleSymbolProvider
+    public class DiaSymbolProvider : PerModuleSymbolProvider
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DiaSymbolProvider"/> class.
@@ -25,7 +25,8 @@ namespace CsDebugScript.Engine.SymbolProviders
         public override ISymbolProviderModule LoadModule(Module module)
         {
             // Try to get debugger DIA session
-            IDiaSession diaSession = Context.Debugger.GetModuleDiaSession(module);
+            IDiaSessionProvider diaSessionProvider = Context.Debugger as IDiaSessionProvider;
+            IDiaSession diaSession = diaSessionProvider.GetModuleDiaSession(module);
 
             if (diaSession != null)
             {

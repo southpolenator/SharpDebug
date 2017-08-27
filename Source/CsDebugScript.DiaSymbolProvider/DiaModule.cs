@@ -1,4 +1,5 @@
-﻿using CsDebugScript.Engine.Native;
+﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
 using Dia2Lib;
 using System;

@@ -29,7 +29,7 @@ namespace CsDebugScript.Engine.Test
             if (options == null)
                 return;
 
-            Context.Initalize(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
+            new Executor().InitializeContext(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
             if (options.UseDwarfSymbolProvider)
             {
                 Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider.DwarfSymbolProvider());

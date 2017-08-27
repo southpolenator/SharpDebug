@@ -10,11 +10,14 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using Dia2Lib;
 
 namespace CsDebugScript.Engine.Debuggers
 {
-    internal class DbgEngDll : IDebuggerEngine
+    /// <summary>
+    /// DbgEng.dll implementation of <see cref="IDebuggerEngine"/>.
+    /// </summary>
+    /// <seealso cref="CsDebugScript.Engine.IDebuggerEngine" />
+    public class DbgEngDll : IDebuggerEngine
     {
         /// <summary>
         /// The original debug client interface
@@ -402,18 +405,6 @@ namespace CsDebugScript.Engine.Debuggers
         public string GetModuleSymbolFile(Module module)
         {
             return GetModuleName(module, DebugModname.SymbolFile);
-        }
-
-        /// <summary>
-        /// Gets the DIA session for the specified module.
-        /// </summary>
-        /// <param name="module">The module.</param>
-        /// <returns>
-        ///   <see cref="IDiaSession" /> if available, null otherwise.
-        /// </returns>
-        public IDiaSession GetModuleDiaSession(Module module)
-        {
-            return null;
         }
 
         /// <summary>

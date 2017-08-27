@@ -146,18 +146,6 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Gets the DIA session for the specified module.
-        /// </summary>
-        /// <param name="module">The module.</param>
-        /// <returns>
-        /// <see cref="T:Dia2Lib.IDiaSession" /> if available, null otherwise.
-        /// </returns>
-        public IDiaSession GetModuleDiaSession(Module module)
-        {
-            return null;
-        }
-
-        /// <summary>
         /// Gets the name of the image. This is the name of the executable file, including the extension.
         /// Typically, the full path is included in user mode but not in kernel mode.
         /// </summary>

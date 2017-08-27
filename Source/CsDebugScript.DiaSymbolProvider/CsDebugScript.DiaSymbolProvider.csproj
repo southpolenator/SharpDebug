@@ -7,7 +7,7 @@
     <ProjectGuid>{F8D58D8A-83BA-4701-AC5F-2DB03F640455}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CsDebugScript.DiaSymbolProvider</RootNamespace>
+    <RootNamespace>CsDebugScript.Engine.SymbolProviders</RootNamespace>
     <AssemblyName>CsDebugScript.DiaSymbolProvider</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -40,6 +40,10 @@
     <AssemblyOriginatorKeyFile>$(SolutionDir)\Key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dia2Lib">
+      <HintPath>$(SolutionDir)\Source\DiaHelpers\Dia2Lib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -50,11 +54,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DiaModule.cs" />
+    <Compile Include="DiaSymbolProvider.cs" />
+    <Compile Include="IDiaSessionProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(SolutionDir)\Key.snk" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj">
+      <Project>{2A7F1646-9B5A-433C-8A84-2215194F59B9}</Project>
+      <Name>CsDebugScript.Engine</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Source\DiaHelpers\DiaHelpers.csproj">
+      <Project>{3ca2d1d6-136f-4032-901e-043fa25b6255}</Project>
+      <Name>DiaHelpers</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

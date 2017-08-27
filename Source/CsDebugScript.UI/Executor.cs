@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using DbgEngManaged;
 using CsDebugScript.UI;
 using CsDebugScript.Engine;
+using CsDebugScript.Engine.Debuggers;
+using CsDebugScript.Engine.SymbolProviders;
 
 namespace CsDebugScript
 {
@@ -25,7 +27,10 @@ namespace CsDebugScript
         /// <param name="client">The client.</param>
         public void InitializeContext(IDebugClient client)
         {
-            Context.Initalize(client);
+            IDebuggerEngine debugger = new DbgEngDll(client);
+            ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.CreateDefaultSymbolProvider());
+
+            Context.InitializeDebugger(debugger, symbolProvider);
         }
 
         /// <summary>
