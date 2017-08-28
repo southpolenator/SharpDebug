@@ -143,6 +143,7 @@
       <DependentUpon>UIMap.uitest</DependentUpon>
     </Compile>
     <Compile Include="UserTypeTests.cs" />
+    <Compile Include="WinDbgExtensionTests.cs" />
     <None Include="app.config" />
     <None Include="CLR\Apps\AppDomains.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -205,6 +206,10 @@
     <ProjectReference Include="$(SolutionDir)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj">
       <Project>{f8d58d8a-83ba-4701-ac5f-2db03f640455}</Project>
       <Name>CsDebugScript.DiaSymbolProvider</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.csproj">
+      <Project>{07e5620b-c092-4fe5-9c54-bbfd0f0fd3f6}</Project>
+      <Name>CsDebugScript.WinDbg</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>
