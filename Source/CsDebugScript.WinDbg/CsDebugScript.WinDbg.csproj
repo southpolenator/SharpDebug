@@ -80,7 +80,7 @@
     <AssemblyName>$(AssemblyName).x86</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>$(SolutionDir)\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(SolutionDir)\bin\Release\CsDebugScript.WinDbg.XML</DocumentationFile>
