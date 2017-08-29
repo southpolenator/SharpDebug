@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dia2Lib;
 using System.Runtime.InteropServices;
+using CsDebugScript.Engine;
 
 namespace CsDebugScript.VS
 {
@@ -228,7 +229,7 @@ namespace CsDebugScript.VS
             patch = tempPatch;
         }
 
-        public Engine.Native.ImageFileMachine GetProcessActualProcessorType(uint processId)
+        public ArchitectureType GetProcessArchitectureType(uint processId)
         {
             return ExecuteOnDkmInitializedThread(() =>
             {
@@ -237,13 +238,14 @@ namespace CsDebugScript.VS
                 switch (process.SystemInformation.ProcessorArchitecture)
                 {
                     case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64:
-                        return Engine.Native.ImageFileMachine.AMD64;
+                        return (process.SystemInformation.Flags & Microsoft.VisualStudio.Debugger.DefaultPort.DkmSystemInformationFlags.Is64Bit) != 0
+                            ? ArchitectureType.Amd64 : ArchitectureType.X86OverAmd64;
                     case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_ARM:
-                        return Engine.Native.ImageFileMachine.ARM;
+                        return ArchitectureType.Arm;
                     case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL:
                         return string.IsNullOrEmpty(process.SystemInformation.SystemWow64Directory)
                             || process.SystemInformation.SystemDirectory == process.SystemInformation.SystemWow64Directory
-                                ? Engine.Native.ImageFileMachine.I386 : Engine.Native.ImageFileMachine.AMD64;
+                                ? ArchitectureType.X86OverAmd64 : ArchitectureType.Amd64;
                     default:
                         throw new NotImplementedException("Unexpected DkmProcessorArchitecture");
                 }
@@ -262,26 +264,6 @@ namespace CsDebugScript.VS
                 }
 
                 return string.Empty;
-            });
-        }
-
-        public Engine.Native.ImageFileMachine GetProcessEffectiveProcessorType(uint processId)
-        {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess process = GetProcess(processId);
-
-                switch (process.SystemInformation.ProcessorArchitecture)
-                {
-                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64:
-                        return (process.SystemInformation.Flags & Microsoft.VisualStudio.Debugger.DefaultPort.DkmSystemInformationFlags.Is64Bit) != 0 ? Engine.Native.ImageFileMachine.AMD64 : Engine.Native.ImageFileMachine.I386;
-                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_ARM:
-                        return Engine.Native.ImageFileMachine.ARM;
-                    case DkmProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL:
-                        return Engine.Native.ImageFileMachine.I386;
-                    default:
-                        throw new NotImplementedException("Unexpected DkmProcessorArchitecture");
-                }
             });
         }
 

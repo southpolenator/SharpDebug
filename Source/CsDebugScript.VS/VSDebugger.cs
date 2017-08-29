@@ -5,6 +5,7 @@ using System.Linq;
 using Dia2Lib;
 using CsDebugScript.Engine.SymbolProviders;
 using System.IO;
+using CsDebugScript.Engine;
 
 namespace CsDebugScript.VS
 {
@@ -222,12 +223,12 @@ namespace CsDebugScript.VS
         }
 
         /// <summary>
-        /// Gets the actual processor type of the specified process.
+        /// Gets the architecture type of the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
-        public Engine.Native.ImageFileMachine GetProcessActualProcessorType(Process process)
+        public ArchitectureType GetProcessArchitectureType(Process process)
         {
-            return proxy.GetProcessActualProcessorType(process.Id);
+            return proxy.GetProcessArchitectureType(process.Id);
         }
 
         /// <summary>
@@ -237,15 +238,6 @@ namespace CsDebugScript.VS
         public string GetProcessDumpFileName(Process process)
         {
             return proxy.GetProcessDumpFileName(process.Id);
-        }
-
-        /// <summary>
-        /// Gets the effective processor type of the specified process.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        public Engine.Native.ImageFileMachine GetProcessEffectiveProcessorType(Process process)
-        {
-            return proxy.GetProcessEffectiveProcessorType(process.Id);
         }
 
         public ulong GetProcessEnvironmentBlockAddress(Process process)

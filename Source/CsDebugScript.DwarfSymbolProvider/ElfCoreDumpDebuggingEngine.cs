@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
 using System.IO;
 
@@ -301,25 +300,14 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Gets the actual processor type of the specified process.
+        /// Gets the architecture type of the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
-        public ImageFileMachine GetProcessActualProcessorType(Process process)
+        public ArchitectureType GetProcessArchitectureType(Process process)
         {
             ElfCoreDump dump = GetDump(process);
 
-            return dump.GetActualProcessorType();
-        }
-
-        /// <summary>
-        /// Gets the effective processor type of the specified process.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        public ImageFileMachine GetProcessEffectiveProcessorType(Process process)
-        {
-            ElfCoreDump dump = GetDump(process);
-
-            return dump.GetEffectiveProcessorType();
+            return dump.GetProcessArchitectureType();
         }
 
         /// <summary>

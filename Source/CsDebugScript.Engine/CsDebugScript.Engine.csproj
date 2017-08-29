@@ -69,6 +69,7 @@
     <Compile Include="CLR\NamespaceDoc.cs" />
     <Compile Include="CLR\Runtime.cs" />
     <Compile Include="DerivedClassAttribute.cs" />
+    <Compile Include="Engine\ArchitectureType.cs" />
     <Compile Include="Engine\BuiltinType.cs" />
     <Compile Include="Engine\Constants.cs" />
     <Compile Include="Engine\Context.cs" />
@@ -112,7 +113,6 @@
     <Compile Include="Engine\Marshaling\MarshalStructure.cs" />
     <Compile Include="Engine\NamespaceDoc.cs" />
     <Compile Include="Engine\Native\NativeMethods.cs" />
-    <Compile Include="Engine\Native\ImageFileMachine.cs" />
     <Compile Include="Engine\Utility\DumpFileMemoryReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />

@@ -808,26 +808,27 @@ namespace CsDebugScript.Engine.Debuggers
         }
 
         /// <summary>
-        /// Gets the actual processor type of the specified process.
+        /// Gets the architecture type of the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
-        public ImageFileMachine GetProcessActualProcessorType(Process process)
+        public ArchitectureType GetProcessArchitectureType(Process process)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
-                return (ImageFileMachine)Control.GetActualProcessorType();
-            }
-        }
+                ImageFileMachine actual = (ImageFileMachine)Control.GetActualProcessorType();
+                ImageFileMachine effective = (ImageFileMachine)Control.GetEffectiveProcessorType();
 
-        /// <summary>
-        /// Gets the effective processor type of the specified process.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        public ImageFileMachine GetProcessEffectiveProcessorType(Process process)
-        {
-            using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
-            {
-                return (ImageFileMachine)Control.GetEffectiveProcessorType();
+                switch (actual)
+                {
+                    case ImageFileMachine.ARM:
+                        return ArchitectureType.Arm;
+                    case ImageFileMachine.I386:
+                        return ArchitectureType.X86;
+                    case ImageFileMachine.AMD64:
+                        return effective == ImageFileMachine.I386 ? ArchitectureType.X86OverAmd64 : ArchitectureType.Amd64;
+                    default:
+                        return ArchitectureType.Unknown;
+                }
             }
         }
 

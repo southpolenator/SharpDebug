@@ -104,17 +104,15 @@ namespace CsDebugScript.CLR
         /// </returns>
         public Architecture GetArchitecture()
         {
-            switch (Process.EffectiveProcessorType)
+            switch (Process.ArchitectureType)
             {
-                case Engine.Native.ImageFileMachine.I386:
-                    return Architecture.X86;
-
-                case Engine.Native.ImageFileMachine.AMD64:
+                case ArchitectureType.Amd64:
                     return Architecture.Amd64;
-
-                case Engine.Native.ImageFileMachine.ARM:
+                case ArchitectureType.X86:
+                case ArchitectureType.X86OverAmd64:
+                    return Architecture.X86;
+                case ArchitectureType.Arm:
                     return Architecture.Arm;
-
                 default:
                     return Architecture.Unknown;
             }

@@ -69,6 +69,7 @@
     <Compile Include="Native\Extensions.cs" />
     <Compile Include="Native\ExtTdop.cs" />
     <Compile Include="Native\EXT_TYPED_DATA.cs" />
+    <Compile Include="Native\ImageFileMachine.cs" />
     <Compile Include="Native\NamespaceDoc.cs" />
     <Compile Include="OutputCallbacksSwitcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

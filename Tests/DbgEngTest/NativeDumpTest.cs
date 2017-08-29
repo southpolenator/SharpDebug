@@ -96,7 +96,7 @@ ImportUserTypes(options, true);
         {
             Process process = Process.Current;
 
-            Console.WriteLine("Actual processor type: {0}", process.ActualProcessorType);
+            Console.WriteLine("Architecture type: {0}", process.ArchitectureType);
             Console.WriteLine("SystemId: {0}", process.SystemId);
             Assert.AreNotSame(0, process.SystemId);
             Assert.AreNotSame(0, Process.All.Length);

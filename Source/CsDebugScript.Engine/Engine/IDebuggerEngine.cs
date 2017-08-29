@@ -1,5 +1,4 @@
-﻿using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.Utility;
+﻿using CsDebugScript.Engine.Utility;
 using System;
 
 namespace CsDebugScript.Engine
@@ -160,16 +159,10 @@ namespace CsDebugScript.Engine
         string GetProcessDumpFileName(Process process);
 
         /// <summary>
-        /// Gets the actual processor type of the specified process.
+        /// Gets the architecture type of the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
-        ImageFileMachine GetProcessActualProcessorType(Process process);
-
-        /// <summary>
-        /// Gets the effective processor type of the specified process.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        ImageFileMachine GetProcessEffectiveProcessorType(Process process);
+        ArchitectureType GetProcessArchitectureType(Process process);
 
         /// <summary>
         /// Gets all threads of the specified process.

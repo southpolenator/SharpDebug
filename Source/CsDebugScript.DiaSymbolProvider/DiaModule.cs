@@ -597,10 +597,14 @@ namespace CsDebugScript.Engine.SymbolProviders
                             address = frameContext.FramePointer;
                             break;
                         case CV_HREG_e.CV_ALLREG_VFRAME:
-                            if (process.EffectiveProcessorType == ImageFileMachine.AMD64)
+                            if (process.ArchitectureType == ArchitectureType.Amd64)
+                            {
                                 address = frameContext.StackPointer;
+                            }
                             else
+                            {
                                 address = frameContext.FramePointer;
+                            }
                             break;
                         default:
                             throw new Exception("Unknown register id" + (CV_HREG_e)symbol.registerId);

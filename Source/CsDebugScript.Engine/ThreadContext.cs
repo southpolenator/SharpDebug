@@ -1,5 +1,5 @@
-﻿using CsDebugScript.Engine.Marshaling;
-using CsDebugScript.Engine.Native;
+﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Marshaling;
 using System;
 using System.Runtime.InteropServices;
 
@@ -274,14 +274,16 @@ namespace CsDebugScript
         /// <returns></returns>
         private static uint GetNativeStructureSize(Process process)
         {
-            switch (process.ActualProcessorType)
+            switch (process.ArchitectureType)
             {
-                case ImageFileMachine.I386:
+                case ArchitectureType.X86:
                     return (uint)Marshal.SizeOf(typeof(CONTEXT_X86));
-                case ImageFileMachine.AMD64:
-                    return (uint)(process.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf(typeof(WOW64_CONTEXT)) : Marshal.SizeOf(typeof(CONTEXT_X64)));
+                case ArchitectureType.Amd64:
+                    return (uint)Marshal.SizeOf(typeof(CONTEXT_X64));
+                case ArchitectureType.X86OverAmd64:
+                    return (uint)Marshal.SizeOf(typeof(WOW64_CONTEXT));
                 default:
-                    throw new Exception("Unknown platform " + process.ActualProcessorType);
+                    throw new Exception($"Unknown architecture type: {process.ArchitectureType}");
             }
         }
 
@@ -333,14 +335,16 @@ namespace CsDebugScript
         /// <param name="pointer">The pointer.</param>
         internal static ThreadContext PtrToStructure(Process process, IntPtr pointer)
         {
-            switch (process.ActualProcessorType)
+            switch (process.ArchitectureType)
             {
-                case ImageFileMachine.I386:
+                case ArchitectureType.X86:
                     return ReadX86Structure(pointer);
-                case ImageFileMachine.AMD64:
-                    return process.EffectiveProcessorType == ImageFileMachine.I386 ? ReadWowX64Structure(pointer) : ReadX64Structure(pointer);
+                case ArchitectureType.Amd64:
+                    return ReadX64Structure(pointer);
+                case ArchitectureType.X86OverAmd64:
+                    return ReadWowX64Structure(pointer);
                 default:
-                    throw new Exception("Unknown platform " + process.ActualProcessorType);
+                    throw new Exception($"Unknown architecture type: {process.ArchitectureType}");
             }
         }
 
@@ -424,14 +428,16 @@ namespace CsDebugScript
         /// <param name="process">The process.</param>
         internal static int GetContextSize(Process process)
         {
-            switch (process.ActualProcessorType)
+            switch (process.ArchitectureType)
             {
-                case ImageFileMachine.I386:
+                case ArchitectureType.X86:
                     return Marshal.SizeOf(typeof(CONTEXT_X86));
-                case ImageFileMachine.AMD64:
-                    return process.EffectiveProcessorType == ImageFileMachine.I386 ? Marshal.SizeOf(typeof(WOW64_CONTEXT)) : Marshal.SizeOf(typeof(CONTEXT_X64));
+                case ArchitectureType.Amd64:
+                    return Marshal.SizeOf(typeof(CONTEXT_X64));
+                case ArchitectureType.X86OverAmd64:
+                    return Marshal.SizeOf(typeof(WOW64_CONTEXT));
                 default:
-                    throw new Exception("Unknown platform " + process.ActualProcessorType);
+                    throw new Exception($"Unknown architecture type: {process.ArchitectureType}");
             }
         }
     }

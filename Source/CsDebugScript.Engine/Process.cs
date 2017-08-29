@@ -1,12 +1,10 @@
 ﻿using CsDebugScript.CLR;
 using CsDebugScript.Engine;
-using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Reflection = System.Reflection;
 
 namespace CsDebugScript
 {
@@ -56,14 +54,9 @@ namespace CsDebugScript
         private SimpleCache<List<UserTypeDescription>> userTypes;
 
         /// <summary>
-        /// The actual processor type
+        /// The architecture type
         /// </summary>
-        private SimpleCache<ImageFileMachine> actualProcessorType;
-
-        /// <summary>
-        /// The effective processor type
-        /// </summary>
-        private SimpleCache<ImageFileMachine> effectiveProcessorType;
+        private SimpleCache<ArchitectureType> architectureType;
 
         /// <summary>
         /// The dump file memory reader
@@ -122,8 +115,7 @@ namespace CsDebugScript
             pebAddress = SimpleCache.Create(() => Context.Debugger.GetProcessEnvironmentBlockAddress(this));
             executableName = SimpleCache.Create(() => Context.Debugger.GetProcessExecutableName(this));
             dumpFileName = SimpleCache.Create(() => Context.Debugger.GetProcessDumpFileName(this));
-            actualProcessorType = SimpleCache.Create(() => Context.Debugger.GetProcessActualProcessorType(this));
-            effectiveProcessorType = SimpleCache.Create(() => Context.Debugger.GetProcessEffectiveProcessorType(this));
+            architectureType = SimpleCache.Create(() => Context.Debugger.GetProcessArchitectureType(this));
             threads = SimpleCache.Create(() => Context.Debugger.GetProcessThreads(this));
             modules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
             userTypes = SimpleCache.Create(GetUserTypes);
@@ -354,7 +346,7 @@ namespace CsDebugScript
             {
                 try
                 {
-                    List<string> searchModulesOrder = new List<string>{ Modules[0].Name.ToLower(), "wow64", "ntdll", "nt" };
+                    List<string> searchModulesOrder = new List<string> { Modules[0].Name.ToLower(), "wow64", "ntdll", "nt" };
                     IEnumerable<Module> modules = Modules.OrderByDescending(m => searchModulesOrder.IndexOf(m.Name.ToLower()));
 
                     foreach (Module module in modules)
@@ -422,24 +414,13 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Gets the actual type of the processor.
+        /// Gets the architecture type.
         /// </summary>
-        public ImageFileMachine ActualProcessorType
+        public ArchitectureType ArchitectureType
         {
             get
             {
-                return actualProcessorType.Value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the effective type of the processor.
-        /// </summary>
-        public ImageFileMachine EffectiveProcessorType
-        {
-            get
-            {
-                return effectiveProcessorType.Value;
+                return architectureType.Value;
             }
         }
 
@@ -692,10 +673,18 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the size of the pointer.
         /// </summary>
-        /// <returns></returns>
         public uint GetPointerSize()
         {
-            return ActualProcessorType == ImageFileMachine.I386 || EffectiveProcessorType == ImageFileMachine.I386 ? 4U : 8U;
+            switch (ArchitectureType)
+            {
+                case ArchitectureType.X86:
+                case ArchitectureType.X86OverAmd64:
+                    return 4U;
+                case ArchitectureType.Amd64:
+                    return 8U;
+                default:
+                    throw new Exception($"Unsupported architecture type: {ArchitectureType}");
+            }
         }
 
         /// <summary>
