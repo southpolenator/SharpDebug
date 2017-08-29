@@ -10,6 +10,62 @@ namespace CsDebugScript
     /// </summary>
     public class ThreadContext
     {
+        /// <summary>
+        /// Prevents a default instance of the <see cref="ThreadContext"/> class from being created.
+        /// </summary>
+        private ThreadContext()
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ThreadContext" /> class.
+        /// </summary>
+        /// <param name="instructionPointer">The instruction pointer.</param>
+        /// <param name="stackPointer">The stack pointer.</param>
+        /// <param name="framePointer">The frame pointer.</param>
+        /// <param name="bytes">The native structure bytes.</param>
+        public ThreadContext(ulong instructionPointer, ulong stackPointer, ulong framePointer, byte[] bytes)
+        {
+            InstructionPointer = instructionPointer;
+            StackPointer = stackPointer;
+            FramePointer = framePointer;
+            Bytes = bytes;
+        }
+
+        /// <summary>
+        /// Gets the instruction pointer.
+        /// </summary>
+        public ulong InstructionPointer { get; private set; }
+
+        /// <summary>
+        /// Gets the stack pointer.
+        /// </summary>
+        public ulong StackPointer { get; private set; }
+
+        /// <summary>
+        /// Gets the frame pointer.
+        /// </summary>
+        public ulong FramePointer { get; private set; }
+
+        /// <summary>
+        /// Gets the structure bytes.
+        /// </summary>
+        public byte[] Bytes { get; private set; }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"IP = 0x{InstructionPointer:X}, SP = 0x{StackPointer:X}, FP = 0x{FramePointer:X}";
+        }
+    }
+
+    internal class WindowsThreadContext : ThreadContext
+    {
         #region Native structures
 #pragma warning disable 0649
 #pragma warning disable 0169
@@ -237,23 +293,15 @@ namespace CsDebugScript
         #endregion
 
         /// <summary>
-        /// Prevents a default instance of the <see cref="ThreadContext"/> class from being created.
-        /// </summary>
-        private ThreadContext()
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ThreadContext"/> class.
+        /// Initializes a new instance of the <see cref="WindowsThreadContext" /> class.
         /// </summary>
         /// <param name="instructionPointer">The instruction pointer.</param>
         /// <param name="stackPointer">The stack pointer.</param>
         /// <param name="framePointer">The frame pointer.</param>
-        internal ThreadContext(ulong instructionPointer, ulong stackPointer, ulong framePointer)
+        /// <param name="bytes">The native structure bytes.</param>
+        private WindowsThreadContext(ulong instructionPointer, ulong stackPointer, ulong framePointer, byte[] bytes)
+            : base(instructionPointer, stackPointer, framePointer, bytes)
         {
-            InstructionPointer = instructionPointer;
-            StackPointer = stackPointer;
-            FramePointer = framePointer;
         }
 
         /// <summary>
@@ -285,37 +333,6 @@ namespace CsDebugScript
                 default:
                     throw new Exception($"Unknown architecture type: {process.ArchitectureType}");
             }
-        }
-
-        /// <summary>
-        /// Gets the instruction pointer.
-        /// </summary>
-        public ulong InstructionPointer { get; private set; }
-
-        /// <summary>
-        /// Gets the stack pointer.
-        /// </summary>
-        public ulong StackPointer { get; private set; }
-
-        /// <summary>
-        /// Gets the frame pointer.
-        /// </summary>
-        public ulong FramePointer { get; private set; }
-
-        /// <summary>
-        /// Gets the structure bytes.
-        /// </summary>
-        public byte[] Bytes { get; private set; }
-
-        /// <summary>
-        /// Returns a <see cref="System.String" /> that represents this instance.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
-        public override string ToString()
-        {
-            return $"IP = 0x{InstructionPointer:X}, SP = 0x{StackPointer:X}, FP = 0x{FramePointer:X}";
         }
 
         /// <summary>
@@ -366,13 +383,7 @@ namespace CsDebugScript
         {
             CONTEXT_X86 structure = (CONTEXT_X86)Marshal.PtrToStructure(pointer, typeof(CONTEXT_X86));
 
-            return new ThreadContext()
-            {
-                InstructionPointer = structure.Eip,
-                StackPointer = structure.Esp,
-                FramePointer = structure.Ebp,
-                Bytes = ReadBytes(pointer, typeof(CONTEXT_X86)),
-            };
+            return new WindowsThreadContext(structure.Eip, structure.Esp, structure.Ebp, ReadBytes(pointer, typeof(CONTEXT_X86)));
         }
 
         /// <summary>
@@ -383,13 +394,7 @@ namespace CsDebugScript
         {
             WOW64_CONTEXT structure = (WOW64_CONTEXT)Marshal.PtrToStructure(pointer, typeof(WOW64_CONTEXT));
 
-            return new ThreadContext()
-            {
-                InstructionPointer = structure.Eip,
-                StackPointer = structure.Esp,
-                FramePointer = structure.Ebp,
-                Bytes = ReadBytes(pointer, typeof(WOW64_CONTEXT)),
-            };
+            return new WindowsThreadContext(structure.Eip, structure.Esp, structure.Ebp, ReadBytes(pointer, typeof(WOW64_CONTEXT)));
         }
 
         /// <summary>
@@ -400,13 +405,7 @@ namespace CsDebugScript
         {
             CONTEXT_X64 structure = (CONTEXT_X64)Marshal.PtrToStructure(pointer, typeof(CONTEXT_X64));
 
-            return new ThreadContext()
-            {
-                InstructionPointer = structure.Rip,
-                StackPointer = structure.Rsp,
-                FramePointer = structure.Rbp,
-                Bytes = ReadBytes(pointer, typeof(CONTEXT_X64)),
-            };
+            return new WindowsThreadContext(structure.Rip, structure.Rsp, structure.Rbp, ReadBytes(pointer, typeof(CONTEXT_X64)));
         }
 
         /// <summary>

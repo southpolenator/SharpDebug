@@ -385,7 +385,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 ulong instructionOffset = framesData[i].Item1, stackOffset = framesData[i].Item2, frameOffset = framesData[i].Item3;
 
-                ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset);
+                ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset, null);
                 frames[i] = new StackFrame(stackTrace, threadContext)
                 {
                     FrameNumber = (uint)i,

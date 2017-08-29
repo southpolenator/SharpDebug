@@ -513,7 +513,7 @@ namespace CsDebugScript.Engine.Debuggers
         public ThreadContext GetThreadContext(Thread thread)
         {
             using (ThreadSwitcher switcher = new ThreadSwitcher(StateCache, thread))
-            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(thread.Process, 1))
+            using (MarshalArrayReader<ThreadContext> threadContextBuffer = WindowsThreadContext.CreateArrayMarshaler(thread.Process, 1))
             {
                 Advanced.GetThreadContext(threadContextBuffer.Pointer, (uint)(threadContextBuffer.Count * threadContextBuffer.Size));
 
@@ -540,7 +540,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             if (contextSize == 0)
             {
-                contextSize = (uint)ThreadContext.GetContextSize(process);
+                contextSize = (uint)WindowsThreadContext.GetContextSize(process);
             }
 
             Thread thread = new Thread(0, 0, Process.Current);
@@ -703,7 +703,7 @@ namespace CsDebugScript.Engine.Debuggers
             const int MaxCallStack = 10240;
             using (ThreadSwitcher switcher = new ThreadSwitcher(StateCache, thread))
             using (MarshalArrayReader<_DEBUG_STACK_FRAME_EX> frameBuffer = new RegularMarshalArrayReader<_DEBUG_STACK_FRAME_EX>(MaxCallStack))
-            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(thread.Process, MaxCallStack))
+            using (MarshalArrayReader<ThreadContext> threadContextBuffer = WindowsThreadContext.CreateArrayMarshaler(thread.Process, MaxCallStack))
             {
                 uint framesCount;
 

@@ -314,7 +314,7 @@ namespace CsDebugScript.VS
         /// <param name="thread">The thread.</param>
         public ThreadContext GetThreadContext(Thread thread)
         {
-            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(thread.Process, 1))
+            using (MarshalArrayReader<ThreadContext> threadContextBuffer = WindowsThreadContext.CreateArrayMarshaler(thread.Process, 1))
             {
                 proxy.GetThreadContext(thread.Id, threadContextBuffer.Pointer, threadContextBuffer.Count * threadContextBuffer.Size);
 
@@ -346,7 +346,7 @@ namespace CsDebugScript.VS
             {
                 ulong instructionOffset = framesData[i].Item1, stackOffset = framesData[i].Item2, frameOffset = framesData[i].Item3;
 
-                ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset);
+                ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset, null);
                 frames[i] = new StackFrame(stackTrace, threadContext)
                 {
                     FrameNumber = (uint)i,
