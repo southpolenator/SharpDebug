@@ -27,7 +27,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// The cache of last thrown exception
         /// </summary>
-        SimpleCache<ClrException> lastThrownException;
+        SimpleCache<Variable> lastThrownException;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClrThread"/> class.
@@ -60,7 +60,16 @@ namespace CsDebugScript.CLR
                 }).ToArray();
                 return stackTrace;
             });
-            lastThrownException = SimpleCache.Create(() => ClrThread.CurrentException != null ? new ClrException(this, ClrThread.CurrentException) : null);
+            lastThrownException = SimpleCache.Create(() =>
+            {
+                if (ClrThread.CurrentException != null)
+                {
+                    Microsoft.Diagnostics.Runtime.ClrException clrException = ClrThread.CurrentException;
+
+                    return Variable.CreatePointer(Process.FromClrType(clrException.Type), clrException.Address);
+                }
+                return null;
+            });
         }
 
         /// <summary>
@@ -116,7 +125,7 @@ namespace CsDebugScript.CLR
         /// It may be stale...meaning the thread could be done processing the exception but
         /// a crash dump was taken before the exception was cleared off the field.
         /// </summary>
-        public ClrException LastThrownException
+        public Variable LastThrownException
         {
             get
             {

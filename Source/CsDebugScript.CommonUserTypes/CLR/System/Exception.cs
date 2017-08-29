@@ -3,19 +3,19 @@ using CsDebugScript.Exceptions;
 using System;
 using System.Collections;
 
-namespace CsDebugScript.CLR
+namespace CsDebugScript.CommonUserTypes.CLR.System
 {
     /// <summary>
     /// CLR code Exception. This is valid only if there is CLR loaded into debugging process.
     /// </summary>
     /// <seealso cref="CsDebugScript.Variable" />
-    public class ClrException : Variable
+    public class Exception : Variable
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ClrException"/> class.
+        /// Initializes a new instance of the <see cref="Exception"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
-        public ClrException(Variable variable)
+        public Exception(Variable variable)
             : base(variable)
         {
             // Check if code type is exception type
@@ -38,16 +38,6 @@ namespace CsDebugScript.CLR
             {
                 throw new WrongCodeTypeException(variable.GetCodeType(), nameof(variable), "System.Exception");
             }
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ClrException"/> class.
-        /// </summary>
-        /// <param name="clrThread">The CLR thread.</param>
-        /// <param name="clrException">The CLR exception.</param>
-        internal ClrException(ClrThread clrThread, Microsoft.Diagnostics.Runtime.ClrException clrException)
-            : base(clrThread.Process.FromClrType(clrException.Type), ulong.MaxValue, Variable.ComputedName, Variable.UnknownPath, clrException.Address)
-        {
         }
 
         /// <summary>
@@ -92,11 +82,11 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the Exception instance that caused the current exception.
         /// </summary>
-        public ClrException InnerException
+        public Exception InnerException
         {
             get
             {
-                return new ClrException(GetField("_innerException"));
+                return new Exception(GetField("_innerException"));
             }
         }
 
@@ -197,7 +187,7 @@ namespace CsDebugScript.CLR
 
             if (field != null && !field.IsNullPointer())
             {
-                return new ClrString(field).Text;
+                return new String(field).Text;
             }
 
             return null;

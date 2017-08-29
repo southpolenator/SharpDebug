@@ -2,6 +2,7 @@
 using CsDebugScript.CLR;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
+using ClrString = CsDebugScript.CommonUserTypes.CLR.System.String;
 
 namespace DbgEngTest.CLR
 {

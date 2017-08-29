@@ -49,6 +49,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CLR\System\Exception.cs" />
+    <Compile Include="CLR\System\String.cs" />
     <Compile Include="DynamicSelf.cs" />
     <Compile Include="InvalidSymbolsException.cs" />
     <Compile Include="NativeTypes\std\map.cs" />

@@ -1,24 +1,24 @@
 ﻿using CsDebugScript.Exceptions;
 
-namespace CsDebugScript.CLR
+namespace CsDebugScript.CommonUserTypes.CLR.System
 {
     /// <summary>
     /// CLR code String. This is valid only if there is CLR loaded into debugging process.
     /// </summary>
     /// <seealso cref="CsDebugScript.Variable" />
-    public class ClrString : Variable
+    public class String : Variable
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ClrString"/> class.
+        /// Initializes a new instance of the <see cref="String"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
-        public ClrString(Variable variable)
+        public String(Variable variable)
             : base(variable)
         {
             // Check if code type is string type
             ClrCodeType codeType = variable.GetCodeType() as ClrCodeType;
 
-            if (codeType == null || !codeType.ClrType.IsString)
+            if (codeType == null) //TODO: || !codeType.ClrType.IsString)
             {
                 throw new WrongCodeTypeException(variable.GetCodeType(), nameof(variable), "System.String");
             }

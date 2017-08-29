@@ -2,6 +2,7 @@
 using CsDebugScript.CLR;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
+using ClrException = CsDebugScript.CommonUserTypes.CLR.System.Exception;
 
 namespace DbgEngTest.CLR
 {
@@ -41,7 +42,7 @@ namespace DbgEngTest.CLR
             Assert.IsFalse(dataReader.VirtualQuery(0, out vq));
 
             Debugger.DontUseDumpReader = true;
-            ClrException exception = thread.FindClrThread().LastThrownException;
+            ClrException exception = Variable.CastAs<ClrException>(thread.FindClrThread().LastThrownException);
             Assert.AreEqual("IOE Message", exception.Message);
             Debugger.DontUseDumpReader = false;
 

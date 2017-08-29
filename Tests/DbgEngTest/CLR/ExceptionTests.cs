@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
 using System.IO;
+using ClrException = CsDebugScript.CommonUserTypes.CLR.System.Exception;
 
 namespace DbgEngTest.CLR
 {
@@ -33,7 +34,7 @@ namespace DbgEngTest.CLR
 
             Assert.IsFalse(thread.IsFinalizerThread);
 
-            ClrException exception = thread.LastThrownException;
+            ClrException exception = Variable.CastAs<ClrException>(thread.LastThrownException);
 
             Assert.IsNotNull(exception);
             Assert.AreEqual("IOE Message", exception.Message);
