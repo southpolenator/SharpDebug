@@ -23,7 +23,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// The original debug client interface
         /// </summary>
-        private static IDebugClient originalClient;
+        private IDebugClient originalClient;
 
         /// <summary>
         /// The thread debug client interface
@@ -34,78 +34,28 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// The state cache
         /// </summary>
-        [ThreadStatic]
-        private static StateCache stateCache;
-
-        /// <summary>
-        /// The DbgEng.dll Advanced interface
-        /// </summary>
-        [ThreadStatic]
-        private static IDebugAdvanced3 advanced;
-
-        /// <summary>
-        /// The DbgEng.dll Client interface
-        /// </summary>
-        [ThreadStatic]
-        private static IDebugClient7 client;
-
-        /// <summary>
-        /// The DbgEng.dll Control interface
-        /// </summary>
-        [ThreadStatic]
-        private static IDebugControl7 control;
-
-        /// <summary>
-        /// The DbgEng.dll Data spaces interface
-        /// </summary>
-        [ThreadStatic]
-        private static IDebugDataSpaces4 dataSpaces;
-
-        /// <summary>
-        /// The DbgEng.dll Registers interface
-        /// </summary>
-        [ThreadStatic]
-        private static IDebugRegisters2 registers;
-
-        /// <summary>
-        /// The DbgEng.dll Symbols interface
-        /// </summary>
-        [ThreadStatic]
-        private static IDebugSymbols5 symbols;
-
-        /// <summary>
-        /// The DbgEng.dll System objects interface
-        /// </summary>
-        [ThreadStatic]
-        private static IDebugSystemObjects4 systemObjects;
+        private System.Threading.ThreadLocal<StateCache> stateCache;
 
         /// <summary>
         /// Dictionary of all debugee flow controllers. Key is process id that is being debugged.
         /// </summary>
-        private static DictionaryCache<uint, DebuggeeFlowController> debugeeFlowControllers;
-
-        /// <summary>
-        /// Static constructor.
-        /// </summary>
-        static DbgEngDll()
-        {
-            // Populate flow controllers lazily.
-            //
-            // NOTE: Client passed needs to be set to process with selected processId.
-            debugeeFlowControllers =
-                new DictionaryCache<uint, DebuggeeFlowController>(
-                    (processId) => new DebuggeeFlowController(ThreadClient));
-        }
+        private DictionaryCache<uint, DebuggeeFlowController> debugeeFlowControllers;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbgEngDll"/> class.
         /// </summary>
-        /// <param name="client">The debugger client interface.</param>
-        public DbgEngDll(IDebugClient client)
+        /// <param name="debugClient">The debugger client interface.</param>
+        public DbgEngDll(IDebugClient debugClient)
         {
-            originalClient = client;
-            threadClient = client;
-            stateCache = new StateCache(this);
+            originalClient = debugClient;
+            stateCache = new System.Threading.ThreadLocal<StateCache>(() => new StateCache(this));
+
+            // Populate flow controllers lazily.
+            //
+            // NOTE: Client passed needs to be set to process with selected processId.
+            debugeeFlowControllers =
+                    new DictionaryCache<uint, DebuggeeFlowController>(
+                        (processId) => new DebuggeeFlowController(this));
         }
 
         /// <summary>
@@ -132,23 +82,18 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// Gets the state cache.
         /// </summary>
-        internal static StateCache StateCache
+        internal StateCache StateCache
         {
             get
             {
-                if (stateCache == null)
-                {
-                    stateCache = new StateCache((DbgEngDll)Context.Debugger);
-                }
-
-                return stateCache;
+                return stateCache.Value;
             }
         }
 
         /// <summary>
         /// Gets the thread debug client interface.
         /// </summary>
-        private static IDebugClient ThreadClient
+        internal IDebugClient ThreadClient
         {
             get
             {
@@ -168,12 +113,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             get
             {
-                if (advanced == null)
-                {
-                    advanced = ThreadClient as IDebugAdvanced3;
-                }
-
-                return advanced;
+                return ThreadClient as IDebugAdvanced3;
             }
         }
 
@@ -184,12 +124,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             get
             {
-                if (client == null)
-                {
-                    client = ThreadClient as IDebugClient7;
-                }
-
-                return client;
+                return ThreadClient as IDebugClient7;
             }
         }
 
@@ -200,12 +135,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             get
             {
-                if (control == null)
-                {
-                    control = ThreadClient as IDebugControl7;
-                }
-
-                return control;
+                return ThreadClient as IDebugControl7;
             }
         }
 
@@ -216,12 +146,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             get
             {
-                if (dataSpaces == null)
-                {
-                    dataSpaces = ThreadClient as IDebugDataSpaces4;
-                }
-
-                return dataSpaces;
+                return ThreadClient as IDebugDataSpaces4;
             }
         }
 
@@ -232,12 +157,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             get
             {
-                if (registers == null)
-                {
-                    registers = ThreadClient as IDebugRegisters2;
-                }
-
-                return registers;
+                return ThreadClient as IDebugRegisters2;
             }
         }
 
@@ -248,12 +168,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             get
             {
-                if (symbols == null)
-                {
-                    symbols = ThreadClient as IDebugSymbols5;
-                }
-
-                return symbols;
+                return ThreadClient as IDebugSymbols5;
             }
         }
 
@@ -264,12 +179,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             get
             {
-                if (systemObjects == null)
-                {
-                    systemObjects = ThreadClient as IDebugSystemObjects4;
-                }
-
-                return systemObjects;
+                return ThreadClient as IDebugSystemObjects4;
             }
         }
 
@@ -279,10 +189,17 @@ namespace CsDebugScript.Engine.Debuggers
         /// <param name="client">The client.</param>
         public static void InitializeContext(IDebugClient client)
         {
-            IDebuggerEngine debugger = new DbgEngDll(client);
-            ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.CreateDefaultSymbolProvider());
+            if (client != null)
+            {
+                IDebuggerEngine debugger = new DbgEngDll(client);
+                ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.CreateDefaultSymbolProvider());
 
-            Context.InitializeDebugger(debugger, symbolProvider);
+                Context.InitializeDebugger(debugger, symbolProvider);
+            }
+            else
+            {
+                Context.InitializeDebugger(null, null);
+            }
         }
 
         #region Executing native commands

@@ -1,4 +1,5 @@
-﻿using CsDebugScript.Engine.Debuggers;
+﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Debuggers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
@@ -41,7 +42,7 @@ namespace DbgEngTest
         [TestCategory("WinDbgExtension")]
         public void CheckSimpleInterpret()
         {
-            string output = DbgEngDll.ExecuteAndCapture("!interpret 2+3");
+            string output = Execute("!interpret 2+3");
 
             Assert.AreEqual("5", output?.Trim());
         }
@@ -50,7 +51,7 @@ namespace DbgEngTest
         [TestCategory("WinDbgExtension")]
         public void CheckInterpret()
         {
-            string output = DbgEngDll.ExecuteAndCapture("!interpret Process.Current.GetGlobal(\"MyTestClass::staticVariable\")");
+            string output = Execute("!interpret Process.Current.GetGlobal(\"MyTestClass::staticVariable\")");
 
             Assert.AreEqual("1212121212", output?.Trim());
         }
@@ -59,9 +60,19 @@ namespace DbgEngTest
         [TestCategory("WinDbgExtension")]
         public void CheckExecuteFailure()
         {
-            string output = DbgEngDll.ExecuteAndCapture("!execute invalid_path_to_script arg1 arg2");
+            string output = Execute("!execute invalid_path_to_script arg1 arg2");
 
             Assert.IsTrue(output.Contains("Compile error"));
+        }
+
+        private string Execute(string command, params string[] parameters)
+        {
+            IDebuggerEngine debugger = Context.Debugger;
+            ISymbolProvider symbolProvider = Context.SymbolProvider;
+            string output = DbgEngDll.ExecuteAndCapture(command, parameters);
+
+            Context.InitializeDebugger(debugger, symbolProvider);
+            return output;
         }
     }
 }

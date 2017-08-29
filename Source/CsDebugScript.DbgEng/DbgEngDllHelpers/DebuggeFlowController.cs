@@ -4,7 +4,7 @@ using System;
 namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
-    /// Controler for Debugee actions during live debugging.
+    /// Controller for Debugee actions during live debugging.
     /// </summary>
     class DebuggeeFlowController
     {
@@ -24,20 +24,20 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         private System.Threading.Thread debuggerStateLoop;
 
         /// <summary>
-        /// Reference to debug client taken from DbgEng.
+        /// Reference to <see cref="DbgEngDll"/>.
         /// </summary>
-        private IDebugClient client;
+        private DbgEngDll dbgEngDll;
 
         /// <summary>
-        /// Syncronization signaling that debug callbacks are installed.
+        /// Synchronization signaling that debug callbacks are installed.
         /// </summary>
         private static readonly object eventCallbacksReady = new Object();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DebuggeeFlowController"/> class.
         /// </summary>
-        /// <param name="client">The client.</param>
-        public DebuggeeFlowController(IDebugClient client)
+        /// <param name="dbgEngDll">The DbgEngDll.</param>
+        public DebuggeeFlowController(DbgEngDll dbgEngDll)
         {
             // Default is that we start in break mode.
             // TODO: Needs to be changed when we allow non intrusive attach/start for example.
@@ -45,8 +45,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
             DebugStatusGo = new System.Threading.AutoResetEvent(false);
             DebugStatusBreak = new System.Threading.AutoResetEvent(true);
 
-            this.client = client;
-
+            this.dbgEngDll = dbgEngDll;
             lock (eventCallbacksReady)
             {
                 debuggerStateLoop =
@@ -67,8 +66,8 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         private void DebuggerStateLoop()
         {
             bool hasClientExited = false;
-            IDebugControl7 loopControl = (IDebugControl7)client;
-            DebugCallbacks eventCallbacks = new DebugCallbacks(client, DebugStatusGo);
+            IDebugControl7 loopControl = dbgEngDll.Control;
+            DebugCallbacks eventCallbacks = new DebugCallbacks(dbgEngDll.ThreadClient, DebugStatusGo);
 
             lock (eventCallbacksReady)
             {
