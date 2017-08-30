@@ -18,7 +18,7 @@ namespace CsDebugScript.CommonUserTypes.CLR.System
             // Check if code type is string type
             ClrCodeType codeType = variable.GetCodeType() as ClrCodeType;
 
-            if (codeType == null) //TODO: || !codeType.ClrType.IsString)
+            if (codeType == null || !codeType.ClrType.IsString)
             {
                 throw new WrongCodeTypeException(variable.GetCodeType(), nameof(variable), "System.String");
             }

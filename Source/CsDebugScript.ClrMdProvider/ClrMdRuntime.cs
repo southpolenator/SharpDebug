@@ -1,65 +1,69 @@
-﻿using CsDebugScript.Engine.Utility;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine.Utility;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript.CLR
+namespace CsDebugScript.ClrMdProvider
 {
     /// <summary>
-    /// CLR code Runtime. This is valid only if there is CLR loaded into debugging process.
+    /// ClrMD implemenatation of <see cref="IClrRuntime"/>.
     /// </summary>
-    public class Runtime
+    internal class ClrMdRuntime : IClrRuntime
     {
         /// <summary>
         /// The application domains
         /// </summary>
-        private SimpleCache<AppDomain[]> appDomains;
+        private SimpleCache<ClrMdAppDomain[]> appDomains;
 
         /// <summary>
         /// The modules
         /// </summary>
-        private SimpleCache<Module[]> modules;
+        private SimpleCache<ClrMdModule[]> modules;
 
         /// <summary>
         /// The shared domain
         /// </summary>
-        private SimpleCache<AppDomain> sharedDomain;
+        private SimpleCache<ClrMdAppDomain> sharedDomain;
 
         /// <summary>
         /// The system domain
         /// </summary>
-        private SimpleCache<AppDomain> systemDomain;
+        private SimpleCache<ClrMdAppDomain> systemDomain;
 
         /// <summary>
         /// The threads
         /// </summary>
-        private SimpleCache<ClrThread[]> threads;
+        private SimpleCache<ClrMdThread[]> threads;
 
         /// <summary>
         /// The GC threads
         /// </summary>
-        private SimpleCache<ClrThread[]> gcThreads;
+        private SimpleCache<ClrMdThread[]> gcThreads;
 
         /// <summary>
         /// The cache of CLR heap
         /// </summary>
-        private SimpleCache<Heap> heap;
+        private SimpleCache<ClrMdHeap> heap;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Runtime" /> class.
+        /// Initializes a new instance of the <see cref="ClrMdRuntime" /> class.
         /// </summary>
+        /// <param name="provider">The ClrMD provider.</param>
         /// <param name="process">The process.</param>
         /// <param name="clrRuntime">The CLR runtime.</param>
-        internal Runtime(Process process, Microsoft.Diagnostics.Runtime.ClrRuntime clrRuntime)
+        internal ClrMdRuntime(CLR.ClrMdProvider provider, Process process, Microsoft.Diagnostics.Runtime.ClrRuntime clrRuntime)
         {
+            Provider = provider;
             Process = process;
             ClrRuntime = clrRuntime;
-            appDomains = SimpleCache.Create(() => ClrRuntime.AppDomains.Select(ad => new AppDomain(this, ad)).ToArray());
-            modules = SimpleCache.Create(() => ClrRuntime.Modules.Select(mm => Process.ClrModuleCache[mm]).ToArray());
-            sharedDomain = SimpleCache.Create(() => ClrRuntime.SharedDomain != null ? new AppDomain(this, ClrRuntime.SharedDomain) : null);
-            systemDomain = SimpleCache.Create(() => ClrRuntime.SystemDomain != null ? new AppDomain(this, ClrRuntime.SystemDomain) : null);
-            threads = SimpleCache.Create(() => ClrRuntime.Threads.Select(tt => new ClrThread(Process.Threads.Where(t => t.SystemId == tt.OSThreadId).FirstOrDefault(), tt, Process)).ToArray());
-            gcThreads = SimpleCache.Create(() => ClrRuntime.EnumerateGCThreads().Select(tt => new ClrThread(Process.Threads.Where(t => t.SystemId == tt).FirstOrDefault(), ClrRuntime.Threads.First(ct => ct.OSThreadId == tt), Process)).ToArray());
-            heap = SimpleCache.Create(() => new Heap(this, ClrRuntime.GetHeap()));
+            appDomains = SimpleCache.Create(() => ClrRuntime.AppDomains.Select(ad => new ClrMdAppDomain(this, ad)).ToArray());
+            modules = SimpleCache.Create(() => ClrRuntime.Modules.Select(mm => Provider.FromClrModule(mm)).ToArray());
+            sharedDomain = SimpleCache.Create(() => ClrRuntime.SharedDomain != null ? new ClrMdAppDomain(this, ClrRuntime.SharedDomain) : null);
+            systemDomain = SimpleCache.Create(() => ClrRuntime.SystemDomain != null ? new ClrMdAppDomain(this, ClrRuntime.SystemDomain) : null);
+            threads = SimpleCache.Create(() => ClrRuntime.Threads.Select(tt => new ClrMdThread(Process.Threads.Where(t => t.SystemId == tt.OSThreadId).FirstOrDefault(), tt, Process)).ToArray());
+            gcThreads = SimpleCache.Create(() => ClrRuntime.EnumerateGCThreads().Select(tt => new ClrMdThread(Process.Threads.Where(t => t.SystemId == tt).FirstOrDefault(), ClrRuntime.Threads.First(ct => ct.OSThreadId == tt), Process)).ToArray());
+            heap = SimpleCache.Create(() => new ClrMdHeap(this, ClrRuntime.GetHeap()));
 
             var version = ClrRuntime.ClrInfo.Version;
 
@@ -71,6 +75,11 @@ namespace CsDebugScript.CLR
                 Revision = version.Revision,
             };
         }
+
+        /// <summary>
+        /// Gets the ClrMD provider.
+        /// </summary>
+        public CLR.ClrMdProvider Provider { get; private set; }
 
         /// <summary>
         /// Gets the process.
@@ -85,7 +94,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the array of application domains in the process. Note that System AppDomain and Shared AppDomain are omitted.
         /// </summary>
-        public AppDomain[] AppDomains
+        public IClrAppDomain[] AppDomains
         {
             get
             {
@@ -96,12 +105,14 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the enumeration of all application domains in the process including System and Shared AppDomain.
         /// </summary>
-        public IEnumerable<AppDomain> AllAppDomains
+        public IEnumerable<IClrAppDomain> AllAppDomains
         {
             get
             {
-                foreach (AppDomain appDomain in AppDomains)
+                foreach (ClrMdAppDomain appDomain in AppDomains)
+                {
                     yield return appDomain;
+                }
                 yield return SharedDomain;
                 yield return SystemDomain;
             }
@@ -110,7 +121,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the Shared AppDomain.
         /// </summary>
-        public AppDomain SharedDomain
+        public IClrAppDomain SharedDomain
         {
             get
             {
@@ -121,7 +132,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the System AppDomain.
         /// </summary>
-        public AppDomain SystemDomain
+        public IClrAppDomain SystemDomain
         {
             get
             {
@@ -132,7 +143,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the array of all modules loaded in the runtime.
         /// </summary>
-        public Module[] Modules
+        public IClrModule[] Modules
         {
             get
             {
@@ -143,7 +154,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the array of all managed threads in the process. Only threads which have previously run managed code will be enumerated.
         /// </summary>
-        public ClrThread[] Threads
+        public IClrThread[] Threads
         {
             get
             {
@@ -154,7 +165,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the array of GC threads in the runtime.
         /// </summary>
-        public ClrThread[] GCThreads
+        public IClrThread[] GCThreads
         {
             get
             {
@@ -191,7 +202,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the GC heap of the process.
         /// </summary>
-        public Heap Heap
+        public IClrHeap Heap
         {
             get
             {
@@ -220,7 +231,7 @@ namespace CsDebugScript.CLR
         /// If there is no such AppDomain, it will return null.
         /// </summary>
         /// <param name="appDomainName">The application domain name.</param>
-        public AppDomain GetAppDomainByName(string appDomainName)
+        public IClrAppDomain GetAppDomainByName(string appDomainName)
         {
             return AppDomains.SingleOrDefault(ad => ad.Name == appDomainName);
         }
@@ -229,12 +240,36 @@ namespace CsDebugScript.CLR
         /// Gets the module by the file name.
         /// </summary>
         /// <param name="fileName">Name of the file.</param>
-        public Module GetModuleByFileName(string fileName)
+        public IClrModule GetModuleByFileName(string fileName)
         {
             return (from module in Modules
-                    let file = System.IO.Path.GetFileName(module.ImageName)
+                    let file = System.IO.Path.GetFileName(module.Name) // TODO: Check if this is correct (it was ImageName)
                     where file.Equals(fileName, System.StringComparison.OrdinalIgnoreCase)
                     select module).SingleOrDefault();
+        }
+
+        /// <summary>
+        /// Reads the name of the source file, line and displacement of the specified code address.
+        /// </summary>
+        /// <param name="address">The code address</param>
+        public Tuple<string, uint, ulong> ReadSourceFileNameAndLine(ulong address)
+        {
+            Microsoft.Diagnostics.Runtime.ClrMethod method = ClrRuntime.GetMethodByAddress(address);
+            ClrMdModule clrModule = Provider.FromClrModule(method.Type.Module);
+
+            return ClrMdStackFrame.ReadSourceFileNameAndLine(clrModule, method, address);
+        }
+
+        /// <summary>
+        /// Reads the function name and displacement of the specified code address.
+        /// </summary>
+        /// <param name="address">The code address</param>
+        public Tuple<string, ulong> ReadFunctionNameAndDisplacement(ulong address)
+        {
+            Microsoft.Diagnostics.Runtime.ClrMethod method = ClrRuntime.GetMethodByAddress(address);
+            IClrModule clrModule = Provider.FromClrModule(method.Type.Module);
+
+            return ClrMdStackFrame.ReadFunctionNameAndDisplacement(clrModule.Module, method, address);
         }
     }
 }

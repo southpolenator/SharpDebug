@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using CsDebugScript.Engine;
+using CsDebugScript.CLR;
 
 namespace CsDebugScript
 {
@@ -711,7 +712,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="staticFieldName">Name of the static field.</param>
         /// <param name="appDomain">The CLR application domain.</param>
-        public abstract Variable GetClrStaticField(string staticFieldName, CLR.AppDomain appDomain);
+        public abstract Variable GetClrStaticField(string staticFieldName, CLR.IClrAppDomain appDomain);
 
         /// <summary>
         /// Gets the element type.
@@ -1240,7 +1241,7 @@ namespace CsDebugScript
         /// <param name="staticFieldName">Name of the static field.</param>
         /// <param name="appDomain">The CLR application domain.</param>
         /// <exception cref="System.NotImplementedException">You cannot get CLR variable from Native code type</exception>
-        public override Variable GetClrStaticField(string staticFieldName, CLR.AppDomain appDomain)
+        public override Variable GetClrStaticField(string staticFieldName, CLR.IClrAppDomain appDomain)
         {
             throw new NotImplementedException("You cannot get CLR variable from Native code type");
         }
@@ -1365,7 +1366,7 @@ namespace CsDebugScript
         /// <param name="staticFieldName">Name of the static field.</param>
         /// <param name="appDomain">The CLR application domain.</param>
         /// <exception cref="System.NotImplementedException"></exception>
-        public override Variable GetClrStaticField(string staticFieldName, CLR.AppDomain appDomain)
+        public override Variable GetClrStaticField(string staticFieldName, CLR.IClrAppDomain appDomain)
         {
             throw new NotImplementedException();
         }
@@ -1495,7 +1496,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="clrType">The CLR type.</param>
-        public ClrCodeType(Module module, Microsoft.Diagnostics.Runtime.ClrType clrType)
+        public ClrCodeType(Module module, IClrType clrType)
             : base(module)
         {
             ClrType = clrType;
@@ -1530,7 +1531,7 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the CLR type.
         /// </summary>
-        internal Microsoft.Diagnostics.Runtime.ClrType ClrType { get; private set; }
+        internal IClrType ClrType { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether this type is ANSI string.
@@ -1570,7 +1571,7 @@ namespace CsDebugScript
         {
             get
             {
-                return ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Double;
+                return ClrType.ElementType == ClrElementType.Double;
             }
         }
 
@@ -1598,7 +1599,7 @@ namespace CsDebugScript
         {
             get
             {
-                return ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Float;
+                return ClrType.ElementType == ClrElementType.Float;
             }
         }
 
@@ -1612,7 +1613,7 @@ namespace CsDebugScript
         {
             get
             {
-                return ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.FunctionPointer;
+                return ClrType.ElementType == ClrElementType.FunctionPointer;
             }
         }
 
@@ -1682,7 +1683,7 @@ namespace CsDebugScript
         {
             get
             {
-                return ClrType.IsPointer && ClrType.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Char;
+                return ClrType.IsPointer && ClrType.ElementType == ClrElementType.Char;
             }
         }
 
@@ -1725,9 +1726,9 @@ namespace CsDebugScript
         /// Gets the field type and offset.
         /// </summary>
         /// <param name="field">The CLR field.</param>
-        private Tuple<CodeType, int> GetFieldTypeAndOffset(Microsoft.Diagnostics.Runtime.ClrInstanceField field)
+        private Tuple<CodeType, int> GetFieldTypeAndOffset(IClrInstanceField field)
         {
-            return Tuple.Create(Module.FromClrType(field.Type), (int)field.GetAddress(0, ClrType.IsValueClass));
+            return Tuple.Create(Module.FromClrType(field.Type), field.GetOffset(ClrType.IsValueClass));
         }
 
         /// <summary>
@@ -1737,10 +1738,16 @@ namespace CsDebugScript
         protected override Tuple<CodeType, int> GetBaseClassAndOffset(string className)
         {
             if (Name == className)
+            {
                 return new Tuple<CodeType, int>(this, 0);
+            }
             for (var clrType = ClrType; clrType != null; clrType = clrType.BaseType)
+            {
                 if (clrType.Name == className)
+                {
                     return Tuple.Create(Module.FromClrType(clrType), 0);
+                }
+            }
             throw new EntryPointNotFoundException(className);
         }
 
@@ -1753,7 +1760,9 @@ namespace CsDebugScript
             var baseType = ClrType.BaseType;
 
             if (baseType != null)
+            {
                 baseClassesAndOffsets.Add(baseType.Name, Tuple.Create(Module.FromClrType(baseType), 0));
+            }
             return baseClassesAndOffsets;
         }
 
@@ -1763,7 +1772,9 @@ namespace CsDebugScript
         protected override CodeType GetElementType()
         {
             if (ClrType.ComponentType != null)
+            {
                 return Module.FromClrType(ClrType.ComponentType);
+            }
             return this;
         }
 
@@ -1796,10 +1807,12 @@ namespace CsDebugScript
         /// </summary>
         protected override string[] GetTypeAllFieldNames()
         {
-            IEnumerable<Microsoft.Diagnostics.Runtime.ClrInstanceField> fields = ClrType.Fields;
+            IEnumerable<IClrInstanceField> fields = ClrType.Fields;
 
             for (var baseType = ClrType.BaseType; baseType != null; baseType = baseType.BaseType)
+            {
                 fields = fields.Union(baseType.Fields);
+            }
             return fields.Select(f => f.Name).ToArray();
         }
 
@@ -1828,31 +1841,31 @@ namespace CsDebugScript
             {
                 switch (ClrType.ElementType)
                 {
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.Boolean:
+                    case ClrElementType.Boolean:
                         return 1;
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.Char:
+                    case ClrElementType.Char:
                         return 2;
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.String:
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.Object:
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.Pointer:
+                    case ClrElementType.String:
+                    case ClrElementType.Object:
+                    case ClrElementType.Pointer:
                         return Module.Process.GetPointerSize();
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.Float:
+                    case ClrElementType.Float:
                         return 4;
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.Double:
+                    case ClrElementType.Double:
                         return 8;
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int8:
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt8:
+                    case ClrElementType.Int8:
+                    case ClrElementType.UInt8:
                         return 1;
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int16:
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt16:
+                    case ClrElementType.Int16:
+                    case ClrElementType.UInt16:
                         return 2;
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int32:
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt32:
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.NativeInt:
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.NativeUInt:
+                    case ClrElementType.Int32:
+                    case ClrElementType.UInt32:
+                    case ClrElementType.NativeInt:
+                    case ClrElementType.NativeUInt:
                         return 4;
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.Int64:
-                    case Microsoft.Diagnostics.Runtime.ClrElementType.UInt64:
+                    case ClrElementType.Int64:
+                    case ClrElementType.UInt64:
                         return 8;
                 }
             }
@@ -1874,7 +1887,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="staticFieldName">Name of the static field.</param>
         /// <param name="appDomain">The CLR application domain.</param>
-        public override Variable GetClrStaticField(string staticFieldName, CLR.AppDomain appDomain)
+        public override Variable GetClrStaticField(string staticFieldName, CLR.IClrAppDomain appDomain)
         {
             return Module.GetClrVariable($"{Name}.{staticFieldName}", appDomain);
         }

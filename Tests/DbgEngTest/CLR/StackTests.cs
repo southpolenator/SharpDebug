@@ -28,7 +28,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void ObjectArgumentAndLocalTest()
         {
-            ClrThread clrThread = Thread.Current.FindClrThread();
+            IClrThread clrThread = Thread.Current.ClrThread;
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable args = frame.Arguments.Single();
 

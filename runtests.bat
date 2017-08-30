@@ -7,3 +7,4 @@ SET TestSettings=%PROJECT_ROOT%\Tests\DbgEngTest\WinDbgCs_%Platform%.testsetting
 SET DbgEngTest=%PROJECT_ROOT%\bin\%CONFIGURATION%\Tests\DbgEngTest.dll
 
 "%TestConsole%" /Settings:"%TestSettings%" /inIsolation /Platform:%Platform% "%DbgEngTest%"
+rem "%TestConsole%" /Settings:"%TestSettings%" /inIsolation /Platform:%Platform% "%DbgEngTest%" /TestCaseFilter:"TestCategory=CLR"

@@ -1,4 +1,5 @@
-﻿using CsDebugScript.Engine;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
 using System;
@@ -1049,7 +1050,7 @@ namespace CsDebugScript
             if (clrCodeType != null)
             {
                 // Get runtime type
-                Microsoft.Diagnostics.Runtime.ClrType newClrType = clrCodeType.ClrType.Heap.GetObjectType(variable.GetPointerAddress());
+                IClrType newClrType = clrCodeType.ClrType.Heap.GetObjectType(variable.GetPointerAddress());
                 ClrCodeType clrCodeTypeSpecialization = clrCodeType.GetSpecializedCodeType(variable.GetPointerAddress());
 
                 if ((newClrType != clrCodeType.ClrType && newClrType.Module != null) || clrCodeTypeSpecialization != clrCodeType)

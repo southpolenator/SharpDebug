@@ -1,39 +1,40 @@
-﻿using CsDebugScript.Engine.Utility;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine.Utility;
 using System.Linq;
 
-namespace CsDebugScript.CLR
+namespace CsDebugScript.ClrMdProvider
 {
     /// <summary>
-    /// CLR code AppDomain. This is valid only if there is CLR loaded into debugging process.
+    /// ClrMD implementation of <see cref="IClrAppDomain"/>.
     /// </summary>
-    public class AppDomain
+    internal class ClrMdAppDomain : IClrAppDomain
     {
         /// <summary>
         /// The cache of modules
         /// </summary>
-        private SimpleCache<Module[]> modules;
+        private SimpleCache<ClrMdModule[]> modules;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AppDomain" /> class.
+        /// Initializes a new instance of the <see cref="ClrMdAppDomain" /> class.
         /// </summary>
         /// <param name="runtime">The runtime.</param>
         /// <param name="clrAppDomain">The CLR application domain.</param>
-        internal AppDomain(Runtime runtime, Microsoft.Diagnostics.Runtime.ClrAppDomain clrAppDomain)
+        internal ClrMdAppDomain(ClrMdRuntime runtime, Microsoft.Diagnostics.Runtime.ClrAppDomain clrAppDomain)
         {
             Runtime = runtime;
             ClrAppDomain = clrAppDomain;
-            modules = SimpleCache.Create(() => Runtime.ClrRuntime.Modules.Where(m => m.AppDomains.Contains(ClrAppDomain)).Select(mm => Runtime.Process.ClrModuleCache[mm]).ToArray());
+            modules = SimpleCache.Create(() => runtime.ClrRuntime.Modules.Where(m => m.AppDomains.Contains(ClrAppDomain)).Select(mm => runtime.Provider.FromClrModule(mm)).ToArray());
         }
 
         /// <summary>
         /// Gets the runtime associated with this AppDomain.
         /// </summary>
-        public Runtime Runtime { get; private set; }
+        public IClrRuntime Runtime { get; private set; }
 
         /// <summary>
         /// Gets the array of modules loaded into this AppDomain.
         /// </summary>
-        public Module[] Modules
+        public IClrModule[] Modules
         {
             get
             {
@@ -91,6 +92,17 @@ namespace CsDebugScript.CLR
         /// Gets the CLR application domain.
         /// </summary>
         internal Microsoft.Diagnostics.Runtime.ClrAppDomain ClrAppDomain { get; private set; }
+
+        /// <summary>
+        /// Gets the address of the AppDomain
+        /// </summary>
+        public ulong Address
+        {
+            get
+            {
+                return ClrAppDomain.Address;
+            }
+        }
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.

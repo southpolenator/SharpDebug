@@ -28,7 +28,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void IntegerObjectClrType()
         {
-            Heap heap = Process.Current.ClrRuntimes.Single().Heap;
+            IClrHeap heap = Process.Current.ClrRuntimes.Single().Heap;
             Module typesModule = Module.All.Single(m => m.Name == "Types");
             Variable s_i = typesModule.GetVariable("Types.s_i");
 
@@ -40,7 +40,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void FieldNameAndValueTests()
         {
-            Heap heap = Process.Current.ClrRuntimes.Single().Heap;
+            IClrHeap heap = Process.Current.ClrRuntimes.Single().Heap;
             Module typesModule = Module.All.Single(m => m.Name == "Types");
             CodeType fooType = CodeType.Create("Foo", typesModule);
             Variable s_foo = typesModule.GetVariable("Types.s_foo");

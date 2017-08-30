@@ -196,16 +196,11 @@ namespace CsDebugScript
             catch (Exception ex)
             {
                 // Try to find function among CLR ones
-                foreach (Runtime runtime in Process.ClrRuntimes)
+                foreach (IClrRuntime runtime in Process.ClrRuntimes)
                 {
                     try
                     {
-                        Microsoft.Diagnostics.Runtime.ClrMethod method = runtime.ClrRuntime.GetMethodByAddress(Address);
-
-                        if (method != null)
-                        {
-                            return StackFrame.ReadClrSourceFileNameAndLine(Process.ClrModuleCache[method.Type.Module], method, Address);
-                        }
+                        return runtime.ReadSourceFileNameAndLine(Address);
                     }
                     catch
                     {
@@ -219,7 +214,6 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the function name and displacement.
         /// </summary>
-        /// <returns></returns>
         /// <exception cref="System.AggregateException">Couldn't read source file name. Check if symbols are present.</exception>
         private Tuple<string, ulong> ReadFunctionNameAndDisplacement()
         {
@@ -234,16 +228,11 @@ namespace CsDebugScript
             catch (Exception ex)
             {
                 // Try to find function among CLR ones
-                foreach (Runtime runtime in Process.ClrRuntimes)
+                foreach (IClrRuntime runtime in Process.ClrRuntimes)
                 {
                     try
                     {
-                        Microsoft.Diagnostics.Runtime.ClrMethod method = runtime.ClrRuntime.GetMethodByAddress(Address);
-
-                        if (method != null)
-                        {
-                            return StackFrame.ReadClrFunctionNameAndDisplacement(Process.ClrModuleCache[method.Type.Module], method, Address);
-                        }
+                        return runtime.ReadFunctionNameAndDisplacement(Address);
                     }
                     catch
                     {

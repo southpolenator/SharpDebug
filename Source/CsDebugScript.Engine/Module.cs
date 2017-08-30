@@ -1,4 +1,5 @@
-﻿using CsDebugScript.Engine;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
 using System;
 using System.Linq;
@@ -80,12 +81,7 @@ namespace CsDebugScript
         /// <summary>
         /// The CLR module
         /// </summary>
-        private SimpleCache<Microsoft.Diagnostics.Runtime.ClrModule> clrModule;
-
-        /// <summary>
-        /// The CLR PDB reader
-        /// </summary>
-        private SimpleCache<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader> clrPdbReader;
+        private SimpleCache<IClrModule> clrModule;
 
         /// <summary>
         /// The timestamp and size
@@ -135,28 +131,11 @@ namespace CsDebugScript
                 return version;
             });
             timestampAndSize = SimpleCache.Create(() => Context.Debugger.GetModuleTimestampAndSize(this));
-            clrModule = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.ClrRuntime.Modules).Where(m => m.ImageBase == Address).FirstOrDefault());
-            clrPdbReader = SimpleCache.Create(() =>
-            {
-                try
-                {
-                    string pdbPath = ClrModule.Runtime.DataTarget.SymbolLocator.FindPdb(ClrModule.Pdb);
-
-                    if (!string.IsNullOrEmpty(pdbPath))
-                    {
-                        return new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath);
-                    }
-                }
-                catch (Exception)
-                {
-                }
-
-                return null;
-            });
+            clrModule = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.Modules).Where(m => m.ImageBase == Address).FirstOrDefault());
             pointerSize = SimpleCache.Create(() => Process.GetPointerSize());
             TypesByName = new DictionaryCache<string, CodeType>(GetTypeByName);
             TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
-            ClrTypes = new DictionaryCache<Microsoft.Diagnostics.Runtime.ClrType, CodeType>(GetClrCodeType);
+            ClrTypes = new DictionaryCache<IClrType, CodeType>(GetClrCodeType);
             GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
             UserTypeCastedGlobalVariables = new DictionaryCache<string, Variable>((name) =>
             {
@@ -195,7 +174,7 @@ namespace CsDebugScript
         /// <summary>
         /// Dictionary cache of CLR types.
         /// </summary>
-        internal DictionaryCache<Microsoft.Diagnostics.Runtime.ClrType, CodeType> ClrTypes { get; private set; }
+        internal DictionaryCache<IClrType, CodeType> ClrTypes { get; private set; }
 
         /// <summary>
         /// Types by the identifier
@@ -364,7 +343,7 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the CLR module.
         /// </summary>
-        internal Microsoft.Diagnostics.Runtime.ClrModule ClrModule
+        internal IClrModule ClrModule
         {
             get
             {
@@ -374,17 +353,6 @@ namespace CsDebugScript
             set
             {
                 clrModule.Value = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the CLR PDB reader.
-        /// </summary>
-        internal Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader ClrPdbReader
-        {
-            get
-            {
-                return clrPdbReader.Value;
             }
         }
 
@@ -451,7 +419,7 @@ namespace CsDebugScript
         /// <param name="name">The name.</param>
         /// <param name="appDomain">The application domain.</param>
         /// <returns>Static variable if found</returns>
-        public Variable GetClrVariable(string name, CsDebugScript.CLR.AppDomain appDomain)
+        public Variable GetClrVariable(string name, IClrAppDomain appDomain)
         {
             int variableNameIndex = name.LastIndexOf('.');
             string typeName = name.Substring(0, variableNameIndex);
@@ -470,7 +438,7 @@ namespace CsDebugScript
                 throw new Exception($"Field {staticField} wasn't found in CLR type {typeName}");
             }
 
-            var address = staticField.GetAddress(appDomain.ClrAppDomain);
+            var address = staticField.GetAddress(appDomain);
             Variable field = Variable.CreateNoCast(FromClrType(clrType), address, variableName);
 
             return Variable.UpcastClrVariable(field);
@@ -611,7 +579,7 @@ namespace CsDebugScript
         /// Creates CodeType from the CLR type.
         /// </summary>
         /// <param name="clrType">The CLR type.</param>
-        internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
+        internal CodeType FromClrType(IClrType clrType)
         {
             return Process.FromClrType(clrType);
         }
@@ -620,7 +588,7 @@ namespace CsDebugScript
         /// Creates CodeType from the CLR type.
         /// </summary>
         /// <param name="clrType">The CLR type.</param>
-        private CodeType GetClrCodeType(Microsoft.Diagnostics.Runtime.ClrType clrType)
+        private CodeType GetClrCodeType(IClrType clrType)
         {
             return new ClrCodeType(this, clrType);
         }

@@ -41,10 +41,6 @@
     <AssemblyOriginatorKeyFile>$(SolutionDir)\Key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SolutionDir)\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
-    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -60,12 +56,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseClassesArrayAttribute.cs" />
-    <Compile Include="CLR\AppDomain.cs" />
-    <Compile Include="CLR\ClrThread.cs" />
-    <Compile Include="CLR\DataReader.cs" />
-    <Compile Include="CLR\Heap.cs" />
+    <Compile Include="CLR\ClrElementType.cs" />
+    <Compile Include="CLR\IClrAppDomain.cs" />
+    <Compile Include="CLR\IClrInstanceField.cs" />
+    <Compile Include="CLR\IClrProvider.cs" />
+    <Compile Include="CLR\IClrStackFrame.cs" />
+    <Compile Include="CLR\IClrStaticField.cs" />
+    <Compile Include="CLR\IClrThread.cs" />
+    <Compile Include="CLR\IClrHeap.cs" />
+    <Compile Include="CLR\IClrModule.cs" />
+    <Compile Include="CLR\IClrType.cs" />
     <Compile Include="CLR\NamespaceDoc.cs" />
-    <Compile Include="CLR\Runtime.cs" />
+    <Compile Include="CLR\IClrRuntime.cs" />
     <Compile Include="DerivedClassAttribute.cs" />
     <Compile Include="Engine\ArchitectureType.cs" />
     <Compile Include="Engine\BuiltinType.cs" />

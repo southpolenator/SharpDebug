@@ -64,19 +64,14 @@ namespace CsDebugScript
         private SimpleCache<DumpFileMemoryReader> dumpFileMemoryReader;
 
         /// <summary>
-        /// The CLR data target
-        /// </summary>
-        private SimpleCache<Microsoft.Diagnostics.Runtime.DataTarget> clrDataTarget;
-
-        /// <summary>
         /// The CLR runtimes running in the process
         /// </summary>
-        private SimpleCache<Runtime[]> clrRuntimes;
+        private SimpleCache<IClrRuntime[]> clrRuntimes;
 
         /// <summary>
         /// The current application domain
         /// </summary>
-        private SimpleCache<CsDebugScript.CLR.AppDomain> currentAppDomain;
+        private SimpleCache<IClrAppDomain> currentAppDomain;
 
         /// <summary>
         /// The cache of memory regions
@@ -119,23 +114,19 @@ namespace CsDebugScript
             threads = SimpleCache.Create(() => Context.Debugger.GetProcessThreads(this));
             modules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
             userTypes = SimpleCache.Create(GetUserTypes);
-            clrDataTarget = SimpleCache.Create(() =>
-            {
-                var dataTarget = Microsoft.Diagnostics.Runtime.DataTarget.CreateFromDataReader(new CsDebugScript.CLR.DataReader(this));
-
-                dataTarget.SymbolLocator.SymbolPath += ";http://symweb";
-                return dataTarget;
-            });
             clrRuntimes = SimpleCache.Create(() =>
             {
                 try
                 {
-                    return ClrDataTarget.ClrVersions.Select(clrInfo => new Runtime(this, clrInfo.CreateRuntime())).ToArray();
+                    if (Context.ClrProvider != null)
+                    {
+                        return Context.ClrProvider.GetClrRuntimes(this);
+                    }
                 }
                 catch
                 {
-                    return new Runtime[0];
                 }
+                return new IClrRuntime[0];
             });
             currentAppDomain = SimpleCache.Create(() => ClrRuntimes.SelectMany(r => r.AppDomains).FirstOrDefault());
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
@@ -143,25 +134,25 @@ namespace CsDebugScript
             Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
             UserTypeCastedVariables = new DictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
             GlobalCache.UserTypeCastedVariables.Add(UserTypeCastedVariables);
-            ClrModuleCache = new DictionaryCache<Microsoft.Diagnostics.Runtime.ClrModule, Module>((clrModule) =>
+            ClrModuleCache = new DictionaryCache<IClrModule, Module>((clrModule) =>
             {
                 // TODO: This needs to change when ClrModule starts to be child of Module
                 Module module = ModulesById[clrModule.ImageBase];
 
                 module.ClrModule = clrModule;
                 module.ImageName = clrModule.Name;
-                if (clrModule.Pdb != null && !string.IsNullOrEmpty(clrModule.Pdb.FileName))
+                if (!string.IsNullOrEmpty(clrModule.PdbFileName))
                 {
                     try
                     {
                         if (!module.SymbolFileName.ToLowerInvariant().EndsWith(".pdb"))
                         {
-                            module.SymbolFileName = clrModule.Pdb.FileName;
+                            module.SymbolFileName = clrModule.PdbFileName;
                         }
                     }
                     catch
                     {
-                        module.SymbolFileName = clrModule.Pdb.FileName;
+                        module.SymbolFileName = clrModule.PdbFileName;
                     }
                 }
                 module.Name = Path.GetFileNameWithoutExtension(clrModule.Name);
@@ -243,7 +234,7 @@ namespace CsDebugScript
         /// <summary>
         /// The cache of CLR module to Module.
         /// </summary>
-        internal DictionaryCache<Microsoft.Diagnostics.Runtime.ClrModule, Module> ClrModuleCache { get; private set; }
+        internal DictionaryCache<IClrModule, Module> ClrModuleCache { get; private set; }
 
         /// <summary>
         /// Gets the user type casted variables.
@@ -438,7 +429,7 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the array of CLR runtimes running in the process.
         /// </summary>
-        public Runtime[] ClrRuntimes
+        public IClrRuntime[] ClrRuntimes
         {
             get
             {
@@ -449,7 +440,7 @@ namespace CsDebugScript
         /// <summary>
         /// Gets or sets the current CLR application domain. If not set, if will be first AppDomain from first Runtime.
         /// </summary>
-        public CsDebugScript.CLR.AppDomain CurrentCLRAppDomain
+        public IClrAppDomain CurrentCLRAppDomain
         {
             get
             {
@@ -459,17 +450,6 @@ namespace CsDebugScript
             set
             {
                 currentAppDomain.Value = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the CLR data target.
-        /// </summary>
-        internal Microsoft.Diagnostics.Runtime.DataTarget ClrDataTarget
-        {
-            get
-            {
-                return clrDataTarget.Value;
             }
         }
 
@@ -582,7 +562,7 @@ namespace CsDebugScript
         /// Creates CodeType from the CLR type.
         /// </summary>
         /// <param name="clrType">The CLR type.</param>
-        internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
+        internal CodeType FromClrType(IClrType clrType)
         {
             return ClrModuleCache[clrType.Module].ClrTypes[clrType];
         }

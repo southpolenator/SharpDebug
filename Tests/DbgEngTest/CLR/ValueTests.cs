@@ -28,7 +28,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void CheckObjectArgsAndLocals()
         {
-            ClrThread clrThread = Thread.Current.FindClrThread();
+            IClrThread clrThread = Thread.Current.ClrThread;
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Inner(")).Single();
             Variable i = frame.Arguments["i"];
             Variable d = frame.Locals["d"];
@@ -41,7 +41,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void NullValueOkTest()
         {
-            ClrThread clrThread = Thread.Current.FindClrThread();
+            IClrThread clrThread = Thread.Current.ClrThread;
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable fooObject = frame.Locals["containsnullref"];
 
@@ -54,7 +54,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void PrimitiveVariableConversionTest()
         {
-            ClrThread clrThread = Thread.Current.FindClrThread();
+            IClrThread clrThread = Thread.Current.ClrThread;
             StackFrame frame;
 
             foreach (var f in clrThread.ClrStackTrace.Frames)
@@ -90,7 +90,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void ObjectFieldTest()
         {
-            ClrThread clrThread = Thread.Current.FindClrThread();
+            IClrThread clrThread = Thread.Current.ClrThread;
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable foo = frame.Locals["foo"];
 
@@ -114,7 +114,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void ObjectLocalVariableTest()
         {
-            ClrThread clrThread = Thread.Current.FindClrThread();
+            IClrThread clrThread = Thread.Current.ClrThread;
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable foo = frame.Locals["foo"];
 
@@ -127,7 +127,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void GetFieldTests()
         {
-            ClrThread clrThread = Thread.Current.FindClrThread();
+            IClrThread clrThread = Thread.Current.ClrThread;
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable foo = frame.Locals["foo"];
 
@@ -142,7 +142,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void StructVariableTest()
         {
-            ClrThread clrThread = Thread.Current.FindClrThread();
+            IClrThread clrThread = Thread.Current.ClrThread;
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable s = frame.Locals["s"];
 
@@ -164,7 +164,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void InteriorStructTest()
         {
-            ClrThread clrThread = Thread.Current.FindClrThread();
+            IClrThread clrThread = Thread.Current.ClrThread;
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable s = frame.Locals["s"];
 

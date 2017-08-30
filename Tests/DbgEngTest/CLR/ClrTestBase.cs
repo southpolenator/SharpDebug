@@ -1,4 +1,6 @@
-﻿using Microsoft.CSharp;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine;
+using Microsoft.CSharp;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.CodeDom.Compiler;
@@ -91,6 +93,7 @@ namespace DbgEngTest.CLR
             }
 
             InitializeDump(dumpPath, appDirectory);
+            Context.ClrProvider = new ClrMdProvider();
         }
     }
 }

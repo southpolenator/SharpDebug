@@ -1,18 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using CsDebugScript.CLR;
+using System.Collections.Generic;
 
-namespace CsDebugScript.CLR
+namespace CsDebugScript.ClrMdProvider
 {
     /// <summary>
-    /// CLR code Heap is a abstraction for the whole GC Heap. This is valid only if there is CLR loaded into debugging process.
+    /// ClrMD implementation of <see cref="IClrHeap"/>.
     /// </summary>
-    public class Heap
+    internal class ClrMdHeap : IClrHeap
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Heap"/> class.
+        /// Initializes a new instance of the <see cref="ClrMdHeap"/> class.
         /// </summary>
         /// <param name="runtime">The runtime.</param>
         /// <param name="clrHeap">The CLR heap.</param>
-        internal Heap(Runtime runtime, Microsoft.Diagnostics.Runtime.ClrHeap clrHeap)
+        internal ClrMdHeap(ClrMdRuntime runtime, Microsoft.Diagnostics.Runtime.ClrHeap clrHeap)
         {
             Runtime = runtime;
             ClrHeap = clrHeap;
@@ -21,7 +22,7 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Gets the runtime.
         /// </summary>
-        public Runtime Runtime { get; private set; }
+        public IClrRuntime Runtime { get; private set; }
 
         /// <summary>
         /// Returns <c>true</c> if the GC heap is in a consistent state for heap enumeration.
@@ -62,14 +63,18 @@ namespace CsDebugScript.CLR
         /// <returns>An enumeration of all objects on the heap.</returns>
         public IEnumerable<Variable> EnumerateObjects()
         {
+            CLR.ClrMdProvider provider = ((ClrMdRuntime)Runtime).Provider;
+
             foreach (ulong address in ClrHeap.EnumerateObjectAddresses())
             {
                 var clrType = ClrHeap.GetObjectType(address);
 
                 if (clrType.IsFree)
+                {
                     continue;
+                }
 
-                CodeType codeType = Runtime.Process.FromClrType(clrType);
+                CodeType codeType = Runtime.Process.FromClrType(provider.FromClrType(clrType));
                 Variable variable;
 
                 if (codeType.IsPointer)
@@ -94,6 +99,17 @@ namespace CsDebugScript.CLR
         public ulong GetSizeByGeneration(int generation)
         {
             return ClrHeap.GetSizeByGen(generation);
+        }
+
+        /// <summary>
+        /// Gets the type of the object at the specified address.
+        /// </summary>
+        /// <param name="objectAddress">The object address.</param>
+        public IClrType GetObjectType(ulong objectAddress)
+        {
+            CLR.ClrMdProvider provider = ((ClrMdRuntime)Runtime).Provider;
+
+            return provider.FromClrType(ClrHeap.GetObjectType(objectAddress));
         }
     }
 }

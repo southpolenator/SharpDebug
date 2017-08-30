@@ -28,8 +28,8 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void HeapSize()
         {
-            Runtime runtime = Process.Current.ClrRuntimes.Single();
-            Heap heap = runtime.Heap;
+            IClrRuntime runtime = Process.Current.ClrRuntimes.Single();
+            IClrHeap heap = runtime.Heap;
 
             Assert.IsTrue(heap.TotalHeapSize > 0);
 
@@ -44,8 +44,8 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void HeapEnumeration()
         {
-            Runtime runtime = Process.Current.ClrRuntimes.Single();
-            Heap heap = runtime.Heap;
+            IClrRuntime runtime = Process.Current.ClrRuntimes.Single();
+            IClrHeap heap = runtime.Heap;
             int count = 0;
 
             Assert.IsNotNull(heap);
@@ -68,7 +68,7 @@ namespace DbgEngTest.CLR
         {
             Environment.SetEnvironmentVariable("COMPlus_BuildFlavor", "svr");
             CompileAndInitialize(ClrTestApps.Types, customDumpName: "TypesServerGC.mdmp");
-            Runtime runtime = Process.Current.ClrRuntimes.Single();
+            IClrRuntime runtime = Process.Current.ClrRuntimes.Single();
 
             Assert.IsTrue(runtime.ServerGC);
         }
@@ -79,7 +79,7 @@ namespace DbgEngTest.CLR
         {
             Environment.SetEnvironmentVariable("COMPlus_BuildFlavor", "");
             CompileAndInitialize(ClrTestApps.Types, customDumpName: "TypesWorkstation.mdmp");
-            Runtime runtime = Process.Current.ClrRuntimes.Single();
+            IClrRuntime runtime = Process.Current.ClrRuntimes.Single();
 
             Assert.IsFalse(runtime.ServerGC);
         }

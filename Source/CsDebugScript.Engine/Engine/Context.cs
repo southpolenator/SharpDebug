@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine.Utility;
+using System;
 using System.IO;
 using System.Reflection;
 
@@ -18,6 +20,11 @@ namespace CsDebugScript.Engine
         /// The symbol provider interface
         /// </summary>
         public static ISymbolProvider SymbolProvider;
+
+        /// <summary>
+        /// The CLR provider interface
+        /// </summary>
+        public static IClrProvider ClrProvider;
 
         /// <summary>
         /// The user type metadata (used for casting to user types)
@@ -79,6 +86,7 @@ namespace CsDebugScript.Engine
         /// </summary>
         internal static void ClearCache()
         {
+            CacheInvalidator.InvalidateCaches(ClrProvider);
             GlobalCache.Processes.Clear();
             GlobalCache.UserTypeCastedVariableCollections.Clear();
             GlobalCache.UserTypeCastedVariables.Clear();

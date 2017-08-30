@@ -30,7 +30,7 @@ namespace DbgEngTest.CLR
         [TestCategory("CLR")]
         public void ExceptionPropertyTest()
         {
-            ClrThread thread = Thread.Current.FindClrThread();
+            IClrThread thread = Thread.Current.ClrThread;
 
             Assert.IsFalse(thread.IsFinalizerThread);
 
