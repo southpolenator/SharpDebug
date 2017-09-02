@@ -23,15 +23,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.CodeGen", "Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj", "{283A0331-2EAD-4DD2-A3FE-20D229E2D277}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeDumpTest.x86", "Tests\DumpApps\NativeDumpTest\NativeDumpTest.x86.vcxproj", "{AB472172-0FC0-4914-86C2-D2D3BE49EB20}"
-	ProjectSection(ProjectDependencies) = postProject
-		{3147597A-BDB9-4543-B1A7-33B529C3F4AB} = {3147597A-BDB9-4543-B1A7-33B529C3F4AB}
-		{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C} = {21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeDumpTest.x64", "Tests\DumpApps\NativeDumpTest\NativeDumpTest.x64.vcxproj", "{C48B3103-FA43-4C03-88C3-E14887F53527}"
-	ProjectSection(ProjectDependencies) = postProject
-		{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C} = {21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.DiaHelpers", "Source\CsDebugScript.DiaHelpers\CsDebugScript.DiaHelpers.csproj", "{3CA2D1D6-136F-4032-901E-043FA25B6255}"
 EndProject
@@ -64,15 +57,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.DbgEngHelpers
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeDumpTest.x64.Release", "Tests\DumpApps\NativeDumpTest\NativeDumpTest.x64.Release.vcxproj", "{FD1FC530-F6B0-4E8C-9ECA-AED2140D70C8}"
-	ProjectSection(ProjectDependencies) = postProject
-		{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C} = {21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeDumpTest.x86.Release", "Tests\DumpApps\NativeDumpTest\NativeDumpTest.x86.Release.vcxproj", "{0D07F796-AA21-4D3E-B0B0-2BFB02E2BF47}"
-	ProjectSection(ProjectDependencies) = postProject
-		{3147597A-BDB9-4543-B1A7-33B529C3F4AB} = {3147597A-BDB9-4543-B1A7-33B529C3F4AB}
-		{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C} = {21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExceptionDumper32", "Utility\ExceptionDumper32\ExceptionDumper32.csproj", "{3147597A-BDB9-4543-B1A7-33B529C3F4AB}"
 EndProject
