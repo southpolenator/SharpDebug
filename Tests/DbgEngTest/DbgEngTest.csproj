@@ -40,9 +40,7 @@
     <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="$(EnlistmentRoot)\Utility\ExceptionDumper\ExceptionDumper.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
+    <ProjectReference Include="$(EnlistmentRoot)\Utility\ExceptionDumper\ExceptionDumper.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj" />
