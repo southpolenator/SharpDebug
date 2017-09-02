@@ -6,6 +6,7 @@
     <OutputType>Exe</OutputType>
     <Prefer32Bit>false</Prefer32Bit>
     <IsPackable>false</IsPackable>
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

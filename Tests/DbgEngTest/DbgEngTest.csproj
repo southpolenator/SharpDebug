@@ -4,6 +4,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
     <IsPackable>false</IsPackable>
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
