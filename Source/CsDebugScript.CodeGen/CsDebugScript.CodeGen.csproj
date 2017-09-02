@@ -2,7 +2,8 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <Description>Extension to CsDebugScript.Engine that provides ability to extract user types from symbols files. By default it uses DIA to read PDB files, but it can be used with CsDebugScript.DwarfSymbolProvider to generate from DWARF symbols (either from PE or ELF image containers).</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,7 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaHelpers\CsDebugScript.DiaHelpers.csproj" />
   </ItemGroup>

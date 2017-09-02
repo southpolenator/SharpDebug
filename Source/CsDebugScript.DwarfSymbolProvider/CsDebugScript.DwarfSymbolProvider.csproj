@@ -2,7 +2,8 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>net461</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <Description>Provides access to DWARF symbols (for PE and ELF image containers) and also ability to read ELF core dumps. It is symbol provider and debugger engine interface for CsDebugScript.Engine.</Description>
   </PropertyGroup>
 
   <ItemGroup>

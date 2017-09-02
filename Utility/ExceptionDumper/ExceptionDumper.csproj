@@ -2,9 +2,10 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>net461</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <Prefer32Bit>false</Prefer32Bit>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

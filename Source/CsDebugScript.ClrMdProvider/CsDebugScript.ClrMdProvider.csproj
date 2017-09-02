@@ -2,13 +2,10 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>net461</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>Provides CLR debugging ability to CsDebugScript.Engine using ClrMD. It only works when used with CsDebugScript.DbgEng as debugger engine.</Description>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="DllExport" Version="1.5.2" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
@@ -20,4 +17,11 @@
     </Reference>
   </ItemGroup>
 
+  <!-- Hack for 'dotnet pack' command to include ClrMD into nuget. -->
+  <ItemGroup>
+    <_PackageFiles Include="$(EnlistmentRoot)\ClrMd\Microsoft.Diagnostics.Runtime.dll">
+      <BuildAction>None</BuildAction>
+      <PackagePath>lib\$(DefaultNetFramework)\</PackagePath>
+    </_PackageFiles>
+  </ItemGroup>
 </Project>

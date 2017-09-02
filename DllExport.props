@@ -11,7 +11,7 @@
 
   <!-- This is needed until bug is fixed/propagated to msbuild  ==>  We cannot use $(TargetPath) - it is empty -->
   <PropertyGroup>
-    <DllExportInputFileName>$(OutputPath)\$(TargetFramework)\$(AssemblyName).dll</DllExportInputFileName>
+    <DllExportInputFileName>$(OutputPath)\$(DefaultNetFramework)\$(AssemblyName).dll</DllExportInputFileName>
   </PropertyGroup>
 
   <!-- Until DllExports bug is fixed, we need to define missing target -->
