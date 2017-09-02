@@ -1,0 +1,77 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>net461</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DeployExtension Condition="'$(AppVeyor)' != ''">False</DeployExtension>
+
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectTypeGuids>{82b43b9b-a64c-4715-b499-d71e9ca2bd60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{065A323D-4E36-4414-B85B-D7506DEFC022}</ProjectGuid>
+    <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+    <IncludeDebugSymbolsInVSIXContainer>true</IncludeDebugSymbolsInVSIXContainer>
+    <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
+    <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
+    <CopyOutputSymbolsToOutputDirectory>false</CopyOutputSymbolsToOutputDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AvalonEdit" Version="5.0.2" />
+    <PackageReference Include="EnvDTE100" Version="10.0.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Debugger.Engine" Version="15.0.26606" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" Version="15.0.26606" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.Interop.10.0" Version="10.0.30319" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="15.1.192" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="**\*.xaml.cs">
+      <DependentUpon>%(Filename)</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Include="**\*.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <None Remove="Resources\VSInteractiveWindowCommand.png" />
+    <None Remove="Resources\VSInteractiveWindowPackage.ico" />
+    <Content Include="Resources\VSInteractiveWindowCommand.png" />
+    <Content Include="Resources\VSInteractiveWindowPackage.ico" />
+    <Compile Update="VSInteractiveWindowPackage.cs">
+      <DependentUpon>VSInteractiveWindowPackage.vsct</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <VSCTCompile Include="VSInteractiveWindowPackage.vsct">
+      <ResourceName>Menus.ctmenu</ResourceName>
+      <SubType>Designer</SubType>
+    </VSCTCompile>
+    <EmbeddedResource Update="VSPackage.resx">
+      <MergeWithCTO>true</MergeWithCTO>
+      <ManifestResourceName>VSPackage</ManifestResourceName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Dia2Lib">
+      <HintPath>$(OutDir)\Dia2Lib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Windows.Presentation" />
+    <Reference Include="System.AddIn.Contract" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.UI\CsDebugScript.UI.csproj" />
+  </ItemGroup>
+
+</Project>

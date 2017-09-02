@@ -78,7 +78,7 @@ namespace CsDebugScript.Engine.Utility
         protected DumpFileMemoryReader(string dumpFilePath)
         {
             fileStream = new FileStream(dumpFilePath, FileMode.Open, FileAccess.Read);
-            memoryMappedFile = MemoryMappedFile.CreateFromFile(fileStream, Guid.NewGuid().ToString(), fileStream.Length, MemoryMappedFileAccess.Read, new MemoryMappedFileSecurity(), HandleInheritability.Inheritable, false);
+            memoryMappedFile = MemoryMappedFile.CreateFromFile(fileStream, Guid.NewGuid().ToString(), fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.Inheritable, false);
             stream = memoryMappedFile.CreateViewStream(0, fileStream.Length, MemoryMappedFileAccess.Read);
             stream.SafeMemoryMappedViewHandle.AcquirePointer(ref basePointer);
         }

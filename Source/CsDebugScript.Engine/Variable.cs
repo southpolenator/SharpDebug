@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
+using System.Reflection;
 
 namespace CsDebugScript
 {
@@ -735,7 +736,7 @@ namespace CsDebugScript
                 return this;
 
             // Check if it is basic type
-            else if (conversionType.IsPrimitive)
+            else if (conversionType.GetTypeInfo().IsPrimitive)
             {
                 if (conversionType == typeof(bool))
                     return (bool)this;
@@ -772,7 +773,7 @@ namespace CsDebugScript
             Variable activatorParameter = this;
 
             // Check if we should do CastAs
-            if (conversionType.IsSubclassOf(typeof(Variable)))
+            if (conversionType.GetTypeInfo().IsSubclassOf(typeof(Variable)))
             {
                 var description = codeType.Module.Process.TypeToUserTypeDescription[conversionType].FromModuleOrFirst(codeType.Module);
                 if (description != null)

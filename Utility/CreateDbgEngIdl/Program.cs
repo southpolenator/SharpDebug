@@ -156,250 +156,258 @@ namespace CreateDbgEngIdl
             throw new Exception(folderName + " not found. Have you installed Windows Kit?");
         }
 
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
-            // Find paths
-            string HeaderFile = FindFile("DbgEng.h", HeaderFiles);
-            string MidlPath = FindExe("midl.exe", MidlPaths);
-            string UmPath = FindFolder("um", UmPaths);
-            string SharedPath = FindFolder("um", SharedPaths);
-            string VCBinPath = FindFolder("VC\\bin", VCBinPaths);
-            string TlbImpPath = FindExe("TlbImp.exe", TlbImpPaths);
-            string DiaIncludePath = FindFolder("include", VCDiaSdkIncludePaths);
-            string DiaIdlPath = FindFolder("idl", VCDiaSdkIdlPaths);
+            string tempFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            string outputFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            // Generate IDL file
-            Regex defineDeclarationRegex = new Regex(@"#define\s+([^(]+)\s+((0x|)[0-9a-fA-F]+)$");
-            Regex typedefStructOneLineRegex = new Regex(@"typedef struct.*;");
-            Regex typedefStructMultiLineRegex = new Regex(@"typedef struct[^;]+");
-            Regex typedefInterfaceOneLineRegex = new Regex("typedef interface DECLSPEC_UUID[(]\"([^\"]+)\"");
-            Regex declareInterfaceRegex = new Regex(@"DECLARE_INTERFACE_[(](\w+)");
-            Dictionary<string, string> uuids = new Dictionary<string, string>();
-            Dictionary<string, string> references = new Dictionary<string, string>();
-            StringBuilder outputString = new StringBuilder();
-            Dictionary<string, string> constants = new Dictionary<string, string>();
+            Directory.CreateDirectory(tempFolder);
+            Directory.SetCurrentDirectory(tempFolder);
 
-            using (StreamWriter output = new StreamWriter("output.idl"))
-            using (StreamReader reader = new StreamReader(HeaderFile))
+            try
             {
-                while (!reader.EndOfStream)
+                // Find paths
+                string HeaderFile = FindFile("DbgEng.h", HeaderFiles);
+                string MidlPath = FindExe("midl.exe", MidlPaths);
+                string UmPath = FindFolder("um", UmPaths);
+                string SharedPath = FindFolder("um", SharedPaths);
+                string VCBinPath = FindFolder("VC\\bin", VCBinPaths);
+                string TlbImpPath = FindExe("TlbImp.exe", TlbImpPaths);
+                string DiaIncludePath = FindFolder("include", VCDiaSdkIncludePaths);
+                string DiaIdlPath = FindFolder("idl", VCDiaSdkIdlPaths);
+
+                // Generate IDL file
+                Regex defineDeclarationRegex = new Regex(@"#define\s+([^(]+)\s+((0x|)[0-9a-fA-F]+)$");
+                Regex typedefStructOneLineRegex = new Regex(@"typedef struct.*;");
+                Regex typedefStructMultiLineRegex = new Regex(@"typedef struct[^;]+");
+                Regex typedefInterfaceOneLineRegex = new Regex("typedef interface DECLSPEC_UUID[(]\"([^\"]+)\"");
+                Regex declareInterfaceRegex = new Regex(@"DECLARE_INTERFACE_[(](\w+)");
+                Dictionary<string, string> uuids = new Dictionary<string, string>();
+                Dictionary<string, string> references = new Dictionary<string, string>();
+                StringBuilder outputString = new StringBuilder();
+                Dictionary<string, string> constants = new Dictionary<string, string>();
+
+                using (StreamWriter output = new StreamWriter("output.idl"))
+                using (StreamReader reader = new StreamReader(HeaderFile))
                 {
-                    string line = reader.ReadLine();
-                    Match match;
-
-                    // Check if it is enum definition
-                    match = defineDeclarationRegex.Match(line);
-                    if (match != null && match.Success && match.Groups[1].ToString().ToUpper() != "INTERFACE" && match.Groups[2].Length <= 10)
+                    while (!reader.EndOfStream)
                     {
-                        constants.Add(match.Groups[1].Value, match.Groups[2].Value);
-                        continue;
-                    }
+                        string line = reader.ReadLine();
+                        Match match;
 
-                    // Check if it is typedef of one-line struct
-                    match = typedefStructOneLineRegex.Match(line);
-                    if (match != null && match.Success)
-                    {
-                        outputString.AppendLine(string.Format("    {0}", line));
-                        continue;
-                    }
-
-                    // Check if it is typedef of multi-line struct
-                    match = typedefStructMultiLineRegex.Match(line);
-                    if (match != null && match.Success)
-                    {
-                        int brackets = 0;
-
-                        outputString.AppendLine();
-                        while (!reader.EndOfStream)
+                        // Check if it is enum definition
+                        match = defineDeclarationRegex.Match(line);
+                        if (match != null && match.Success && match.Groups[1].ToString().ToUpper() != "INTERFACE" && match.Groups[2].Length <= 10)
                         {
-                            string newLine = StripWin32Defs(RemoveSpaces(line));
-
-                            brackets -= line.Count(c => c == '}');
-                            outputString.AppendLine(string.Format("    {0}{1}", new string(' ', brackets * 4), newLine));
-                            brackets += line.Count(c => c == '{');
-                            if (brackets == 0 && newLine.EndsWith(";"))
-                                break;
-                            line = reader.ReadLine();
-                        }
-                        outputString.AppendLine();
-
-                        continue;
-                    }
-
-                    // Check if it is typedef of interface UUID
-                    match = typedefInterfaceOneLineRegex.Match(line);
-                    if (match != null && match.Success)
-                    {
-                        string uuid = match.Groups[1].Value;
-                        string definition = "";
-
-                        while (!reader.EndOfStream)
-                        {
-                            line = reader.ReadLine();
-                            definition += line;
-                            if (definition.Contains(';'))
-                                break;
-                        }
-
-                        // Check if definition contains interface pointer type
-                        match = Regex.Match(definition, @"(\w+)\s*\*\s+(\w+);");
-                        if (match == null || !match.Success)
-                        {
+                            constants.Add(match.Groups[1].Value, match.Groups[2].Value);
                             continue;
                         }
 
-                        // Save definition
-                        string interfaceName = match.Groups[1].Value;
-                        string interfaceReference = match.Groups[2].Value;
-
-                        uuids.Add(interfaceName, uuid);
-                        references.Add(interfaceReference, interfaceName);
-                        continue;
-                    }
-
-                    // Check if it is interface declaration
-                    match = declareInterfaceRegex.Match(line);
-                    if (match != null && match.Success)
-                    {
-                        string interfaceName = match.Groups[1].Value;
-                        string uuid = uuids[interfaceName];
-                        StringBuilder definitionBuilder = new StringBuilder();
-                        List<Tuple<string, string, string>> interfaceMethods = new List<Tuple<string, string, string>>();
-
-                        while (!reader.EndOfStream)
+                        // Check if it is typedef of one-line struct
+                        match = typedefStructOneLineRegex.Match(line);
+                        if (match != null && match.Success)
                         {
-                            line = reader.ReadLine();
-                            definitionBuilder.AppendLine(line);
-                            if (line.StartsWith("};"))
-                                break;
+                            outputString.AppendLine(string.Format("    {0}", line));
+                            continue;
                         }
 
-                        string definition = definitionBuilder.ToString();
-
-                        // Remove comments
-                        definition = Regex.Replace(definition, "/[*].*[*]/", "");
-                        definition = Regex.Replace(definition, "//[^\n]*", "");
-
-                        // Extract methods
-                        string[] methods = definition.Split(";".ToCharArray());
-
-                        foreach (string method in methods)
+                        // Check if it is typedef of multi-line struct
+                        match = typedefStructMultiLineRegex.Match(line);
+                        if (match != null && match.Success)
                         {
-                            match = Regex.Match(method, @"[(]([^)]+)[)].*[(](([^)]*[)]?)*)[)] PURE");
-                            if (match != null && match.Success)
+                            int brackets = 0;
+
+                            outputString.AppendLine();
+                            while (!reader.EndOfStream)
                             {
-                                string[] methodReturnValueAndName = match.Groups[1].Value.Split(",".ToCharArray());
-                                string methodName = methodReturnValueAndName.Length > 1 ? methodReturnValueAndName[1].Trim() : methodReturnValueAndName[0].Trim();
-                                string returnValue = methodReturnValueAndName.Length > 1 ? methodReturnValueAndName[0].Trim() : "HRESULT";
-                                string parametersString = match.Groups[2].Value;
+                                string newLine = StripWin32Defs(RemoveSpaces(line));
 
-                                if (methodName != "QueryInterface" && methodName != "AddRef" && methodName != "Release")
+                                brackets -= line.Count(c => c == '}');
+                                outputString.AppendLine(string.Format("    {0}{1}", new string(' ', brackets * 4), newLine));
+                                brackets += line.Count(c => c == '{');
+                                if (brackets == 0 && newLine.EndsWith(";"))
+                                    break;
+                                line = reader.ReadLine();
+                            }
+                            outputString.AppendLine();
+
+                            continue;
+                        }
+
+                        // Check if it is typedef of interface UUID
+                        match = typedefInterfaceOneLineRegex.Match(line);
+                        if (match != null && match.Success)
+                        {
+                            string uuid = match.Groups[1].Value;
+                            string definition = "";
+
+                            while (!reader.EndOfStream)
+                            {
+                                line = reader.ReadLine();
+                                definition += line;
+                                if (definition.Contains(';'))
+                                    break;
+                            }
+
+                            // Check if definition contains interface pointer type
+                            match = Regex.Match(definition, @"(\w+)\s*\*\s+(\w+);");
+                            if (match == null || !match.Success)
+                            {
+                                continue;
+                            }
+
+                            // Save definition
+                            string interfaceName = match.Groups[1].Value;
+                            string interfaceReference = match.Groups[2].Value;
+
+                            uuids.Add(interfaceName, uuid);
+                            references.Add(interfaceReference, interfaceName);
+                            continue;
+                        }
+
+                        // Check if it is interface declaration
+                        match = declareInterfaceRegex.Match(line);
+                        if (match != null && match.Success)
+                        {
+                            string interfaceName = match.Groups[1].Value;
+                            string uuid = uuids[interfaceName];
+                            StringBuilder definitionBuilder = new StringBuilder();
+                            List<Tuple<string, string, string>> interfaceMethods = new List<Tuple<string, string, string>>();
+
+                            while (!reader.EndOfStream)
+                            {
+                                line = reader.ReadLine();
+                                definitionBuilder.AppendLine(line);
+                                if (line.StartsWith("};"))
+                                    break;
+                            }
+
+                            string definition = definitionBuilder.ToString();
+
+                            // Remove comments
+                            definition = Regex.Replace(definition, "/[*].*[*]/", "");
+                            definition = Regex.Replace(definition, "//[^\n]*", "");
+
+                            // Extract methods
+                            string[] methods = definition.Split(";".ToCharArray());
+
+                            foreach (string method in methods)
+                            {
+                                match = Regex.Match(method, @"[(]([^)]+)[)].*[(](([^)]*[)]?)*)[)] PURE");
+                                if (match != null && match.Success)
                                 {
-                                    // Clean parameters
-                                    StringBuilder parameters = new StringBuilder();
+                                    string[] methodReturnValueAndName = match.Groups[1].Value.Split(",".ToCharArray());
+                                    string methodName = methodReturnValueAndName.Length > 1 ? methodReturnValueAndName[1].Trim() : methodReturnValueAndName[0].Trim();
+                                    string returnValue = methodReturnValueAndName.Length > 1 ? methodReturnValueAndName[0].Trim() : "HRESULT";
+                                    string parametersString = match.Groups[2].Value;
 
-                                    parametersString = RemoveSpaces(parametersString.Replace("THIS_", "").Replace("THIS", ""));
-                                    if (parametersString.Length > 0)
+                                    if (methodName != "QueryInterface" && methodName != "AddRef" && methodName != "Release")
                                     {
-                                        // Check if there are SAL notation parenthesis that have comma inside and replace with semicolon
-                                        var matches = Regex.Matches(parametersString, "[(][^)]*[)]");
+                                        // Clean parameters
+                                        StringBuilder parameters = new StringBuilder();
 
-                                        foreach (Match m in matches)
+                                        parametersString = RemoveSpaces(parametersString.Replace("THIS_", "").Replace("THIS", ""));
+                                        if (parametersString.Length > 0)
                                         {
-                                            parametersString = parametersString.Replace(m.Value, m.Value.Replace(",", ":"));
-                                        }
+                                            // Check if there are SAL notation parenthesis that have comma inside and replace with semicolon
+                                            var matches = Regex.Matches(parametersString, "[(][^)]*[)]");
 
-                                        // Fix parameters
-                                        bool optionalStarted = false;
-                                        string[] parametersArray = parametersString.Split(",".ToCharArray());
-                                        int outParameters = 0;
-                                        bool forbidOptional = false;
-
-                                        if (parametersString.Contains("..."))
-                                        {
-                                            returnValue = "[vararg] " + returnValue;
-                                            forbidOptional = true;
-                                        }
-
-                                        for (int i = 0; i < parametersArray.Length; i++)
-                                        {
-                                            string parameter = parametersArray[i];
-
-                                            if (parameters.Length != 0)
-                                                parameters.Append(", ");
-
-                                            bool outAttribute = Regex.IsMatch(parameter, @"OUT\s|_Out_[a-zA-Z_]*([(][^)]*[)])?\s|__out\w*\s|__inout|_Inout\w*\s");
-                                            bool optionalAttribute = (Regex.IsMatch(parameter, @"_(In|Out)[a-zA-Z_]*opt[a-zA-Z_]*([(][^)]*[)])?\s|OPTIONAL") || optionalStarted) && !forbidOptional;
-                                            Match sizeAttribute = Regex.Match(parameter, @"_(In|Out)_(reads_|writes_)(bytes_|)(opt_|)[(]([^)]*)[)]");
-                                            Match maxAttribute = Regex.Match(parameter, @"_Out_writes_to_(opt_|)[(]([^):]*):([^)]*)[)]");
-                                            bool convertToArray = false;
-
-                                            if (Regex.IsMatch(parameter, @"[(][^)]*[)]") && (sizeAttribute == null || sizeAttribute.Success == false) && (maxAttribute == null || maxAttribute.Success == false))
+                                            foreach (Match m in matches)
                                             {
-                                                throw new Exception("Not all SAL attributes are parsed");
+                                                parametersString = parametersString.Replace(m.Value, m.Value.Replace(",", ":"));
                                             }
 
-                                            if (outAttribute)
-                                                outParameters++;
-                                            optionalStarted = optionalAttribute;
-                                            parameters.Append('[');
-                                            parameters.Append(outAttribute ? "out" : "in");
-                                            if (optionalAttribute)
-                                                parameters.Append(",optional");
-                                            if (sizeAttribute != null && sizeAttribute.Success)
+                                            // Fix parameters
+                                            bool optionalStarted = false;
+                                            string[] parametersArray = parametersString.Split(",".ToCharArray());
+                                            int outParameters = 0;
+                                            bool forbidOptional = false;
+
+                                            if (parametersString.Contains("..."))
                                             {
-                                                parameters.Append(",size_is(");
-                                                parameters.Append(sizeAttribute.Groups[5].Value);
-                                                parameters.Append(")");
-                                                convertToArray = true;
-                                            }
-                                            else if (maxAttribute != null && maxAttribute.Success)
-                                            {
-                                                parameters.Append(",size_is(");
-                                                parameters.Append(maxAttribute.Groups[2].Value);
-                                                parameters.Append(")");
-                                                convertToArray = true;
+                                                returnValue = "[vararg] " + returnValue;
+                                                forbidOptional = true;
                                             }
 
-                                            if (outParameters == 1 && outAttribute && i == parametersArray.Length - 1 && !optionalAttribute)
-                                                parameters.Append(",retval");
-                                            parameters.Append("] ");
-                                            foreach (var reference in references)
+                                            for (int i = 0; i < parametersArray.Length; i++)
                                             {
-                                                parameter = parameter.Replace(reference.Key + " ", reference.Value + "* ");
-                                                parameter = parameter.Replace(reference.Key + "*", reference.Value + "**");
-                                            }
+                                                string parameter = parametersArray[i];
 
-                                            parameter = RemoveSpaces(StripWin32Defs(parameter));
-                                            if (convertToArray)
-                                            {
-                                                int pointerIndex = parameter.LastIndexOf('*');
+                                                if (parameters.Length != 0)
+                                                    parameters.Append(", ");
 
-                                                if (pointerIndex >= 0)
+                                                bool outAttribute = Regex.IsMatch(parameter, @"OUT\s|_Out_[a-zA-Z_]*([(][^)]*[)])?\s|__out\w*\s|__inout|_Inout\w*\s");
+                                                bool optionalAttribute = (Regex.IsMatch(parameter, @"_(In|Out)[a-zA-Z_]*opt[a-zA-Z_]*([(][^)]*[)])?\s|OPTIONAL") || optionalStarted) && !forbidOptional;
+                                                Match sizeAttribute = Regex.Match(parameter, @"_(In|Out)_(reads_|writes_)(bytes_|)(opt_|)[(]([^)]*)[)]");
+                                                Match maxAttribute = Regex.Match(parameter, @"_Out_writes_to_(opt_|)[(]([^):]*):([^)]*)[)]");
+                                                bool convertToArray = false;
+
+                                                if (Regex.IsMatch(parameter, @"[(][^)]*[)]") && (sizeAttribute == null || sizeAttribute.Success == false) && (maxAttribute == null || maxAttribute.Success == false))
                                                 {
-                                                    parameter = RemoveSpaces(parameter.Remove(pointerIndex, 1) + "[]");
+                                                    throw new Exception("Not all SAL attributes are parsed");
                                                 }
-                                                else if (!parameter.StartsWith("LPStr") && !parameter.StartsWith("LPWStr"))
-                                                {
-                                                    parameter += "[]";
-                                                }
-                                            }
 
-                                            parameters.Append(parameter);
+                                                if (outAttribute)
+                                                    outParameters++;
+                                                optionalStarted = optionalAttribute;
+                                                parameters.Append('[');
+                                                parameters.Append(outAttribute ? "out" : "in");
+                                                if (optionalAttribute)
+                                                    parameters.Append(",optional");
+                                                if (sizeAttribute != null && sizeAttribute.Success)
+                                                {
+                                                    parameters.Append(",size_is(");
+                                                    parameters.Append(sizeAttribute.Groups[5].Value);
+                                                    parameters.Append(")");
+                                                    convertToArray = true;
+                                                }
+                                                else if (maxAttribute != null && maxAttribute.Success)
+                                                {
+                                                    parameters.Append(",size_is(");
+                                                    parameters.Append(maxAttribute.Groups[2].Value);
+                                                    parameters.Append(")");
+                                                    convertToArray = true;
+                                                }
+
+                                                if (outParameters == 1 && outAttribute && i == parametersArray.Length - 1 && !optionalAttribute)
+                                                    parameters.Append(",retval");
+                                                parameters.Append("] ");
+                                                foreach (var reference in references)
+                                                {
+                                                    parameter = parameter.Replace(reference.Key + " ", reference.Value + "* ");
+                                                    parameter = parameter.Replace(reference.Key + "*", reference.Value + "**");
+                                                }
+
+                                                parameter = RemoveSpaces(StripWin32Defs(parameter));
+                                                if (convertToArray)
+                                                {
+                                                    int pointerIndex = parameter.LastIndexOf('*');
+
+                                                    if (pointerIndex >= 0)
+                                                    {
+                                                        parameter = RemoveSpaces(parameter.Remove(pointerIndex, 1) + "[]");
+                                                    }
+                                                    else if (!parameter.StartsWith("LPStr") && !parameter.StartsWith("LPWStr"))
+                                                    {
+                                                        parameter += "[]";
+                                                    }
+                                                }
+
+                                                parameters.Append(parameter);
+                                            }
                                         }
+
+                                        interfaceMethods.Add(Tuple.Create(returnValue, methodName, parameters.ToString()));
                                     }
-
-                                    interfaceMethods.Add(Tuple.Create(returnValue, methodName, parameters.ToString()));
+                                }
+                                else if (method.Trim() != "" && method.Trim() != "}")
+                                {
+                                    throw new Exception("Wrong method parsing");
                                 }
                             }
-                            else if (method.Trim() != "" && method.Trim() != "}")
-                            {
-                                throw new Exception("Wrong method parsing");
-                            }
-                        }
 
-                        // Print interface definition
-                        outputString.AppendLine(string.Format(@"    ///////////////////////////////////////////////////////////
+                            // Print interface definition
+                            outputString.AppendLine(string.Format(@"    ///////////////////////////////////////////////////////////
     [
         object,
         uuid({0}),
@@ -407,34 +415,34 @@ namespace CreateDbgEngIdl
     ]
     interface {1} : IUnknown
     {{", uuid, interfaceName));
-                        foreach (var method in interfaceMethods)
-                        {
-                            outputString.AppendLine(string.Format("        {0} {1}({2});", method.Item1, method.Item2, method.Item3));
+                            foreach (var method in interfaceMethods)
+                            {
+                                outputString.AppendLine(string.Format("        {0} {1}({2});", method.Item1, method.Item2, method.Item3));
+                            }
+
+                            outputString.AppendLine("    };");
+                            outputString.AppendLine();
+                            continue;
                         }
 
-                        outputString.AppendLine("    };");
-                        outputString.AppendLine();
-                        continue;
+                        // TODO: Unknown line
                     }
 
-                    // TODO: Unknown line
-                }
+                    // Write constants
+                    var remainingConstants = constants.ToArray();
+                    var usedConstants = new HashSet<string>();
+                    WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_REQUEST_", "DebugRequest", (s) => s.StartsWith("DEBUG_LIVE_USER_NON_INVASIVE"));
+                    WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_SCOPE_GROUP_");
+                    WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_OUTPUT_", "DebugOutput", null, (s) => !s.StartsWith("DEBUG_OUTPUT_SYMBOLS_") && !s.StartsWith("DEBUG_OUTPUT_IDENTITY_DEFAULT"));
+                    WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_MODNAME_");
+                    WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_OUTCTL_");
+                    WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_EXECUTE_");
+                    WriteConstants(outputString, usedConstants, ref remainingConstants, "", "Defines");
 
-                // Write constants
-                var remainingConstants = constants.ToArray();
-                var usedConstants = new HashSet<string>();
-                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_REQUEST_", "DebugRequest", (s) => s.StartsWith("DEBUG_LIVE_USER_NON_INVASIVE"));
-                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_SCOPE_GROUP_");
-                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_OUTPUT_", "DebugOutput", null, (s) => !s.StartsWith("DEBUG_OUTPUT_SYMBOLS_") && !s.StartsWith("DEBUG_OUTPUT_IDENTITY_DEFAULT"));
-                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_MODNAME_");
-                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_OUTCTL_");
-                WriteConstants(outputString, usedConstants, ref remainingConstants, "DEBUG_EXECUTE_");
-                WriteConstants(outputString, usedConstants, ref remainingConstants, "", "Defines");
+                    // Write file header
+                    FileVersionInfo fileVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
 
-                // Write file header
-                FileVersionInfo fileVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
-
-                output.WriteLine(@"import ""oaidl.idl"";
+                    output.WriteLine(@"import ""oaidl.idl"";
 import ""ocidl.idl"";
 
 #if (__midl >= 501)
@@ -453,12 +461,12 @@ library DbgEngManaged
 
     ///////////////////////////////////////////////////////////
     // interface forward declaration", Guid.NewGuid(), fileVersion.ProductMajorPart, fileVersion.ProductMinorPart);
-                foreach (var uuid in uuids)
-                {
-                    output.WriteLine("    interface {0};", uuid.Key);
-                }
+                    foreach (var uuid in uuids)
+                    {
+                        output.WriteLine("    interface {0};", uuid.Key);
+                    }
 
-                output.WriteLine(@"
+                    output.WriteLine(@"
     ///////////////////////////////////////////////////////////
     // missing structs
     enum {EXCEPTION_MAXIMUM_PARAMETERS = 15}; // maximum number of exception parameters
@@ -551,59 +559,81 @@ library DbgEngManaged
 
 ");
 
-                output.WriteLine();
-                output.WriteLine("    ///////////////////////////////////////////////////////////");
-                output.WriteLine(outputString);
-                output.WriteLine("};");
-            }
+                    output.WriteLine();
+                    output.WriteLine("    ///////////////////////////////////////////////////////////");
+                    output.WriteLine(outputString);
+                    output.WriteLine("};");
+                }
 
-            ProcessStartInfo startInfo = new ProcessStartInfo(MidlPath);
-            string midlPlatform = IntPtr.Size == 4 ? "/win32 /robust" : "/x64";
+                ProcessStartInfo startInfo = new ProcessStartInfo(MidlPath);
+                string midlPlatform = IntPtr.Size == 4 ? "/win32 /robust" : "/x64";
 
-            startInfo.Arguments = string.Format(@"/I""{0}"" /I""{1}"" output.idl /tlb output.tlb {2}", UmPath, SharedPath, midlPlatform);
-            startInfo.UseShellExecute = false;
-            startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
-            using (Process process = Process.Start(startInfo))
-            {
-                process.WaitForExit();
-            }
+                startInfo.Arguments = string.Format(@"/I""{0}"" /I""{1}"" output.idl /tlb output.tlb {2}", UmPath, SharedPath, midlPlatform);
+                startInfo.UseShellExecute = false;
+                startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
+                using (Process process = Process.Start(startInfo))
+                {
+                    process.WaitForExit();
+                }
 
 #if X64
             string tlbimpPlatform = "x64";
 #elif X86
             string tlbimpPlatform = "x86";
 #else
-            string tlbimpPlatform = "Agnostic";
+                string tlbimpPlatform = "Agnostic";
 #endif
 
-            startInfo = new ProcessStartInfo(TlbImpPath);
-            startInfo.Arguments = @"output.tlb /machine:" + tlbimpPlatform;
-            startInfo.UseShellExecute = false;
-            startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
-            using (Process process = Process.Start(startInfo))
-            {
-                process.WaitForExit();
-            }
+                startInfo = new ProcessStartInfo(TlbImpPath);
+                startInfo.Arguments = @"output.tlb /machine:" + tlbimpPlatform;
+                startInfo.UseShellExecute = false;
+                startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
+                using (Process process = Process.Start(startInfo))
+                {
+                    process.WaitForExit();
+                }
 
-            // Create Dia2Lib.tlb
-            startInfo = new ProcessStartInfo(MidlPath);
-            startInfo.Arguments = $"/I \"{DiaIncludePath}\" /I \"{DiaIdlPath}\" /I \"{UmPath}\" /I \"{SharedPath}\" dia2.idl /tlb dia2lib.tlb";
-            startInfo.UseShellExecute = false;
-            startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
-            using (Process process = Process.Start(startInfo))
-            {
-                process.WaitForExit();
-            }
+                // Create Dia2Lib.tlb
+                startInfo = new ProcessStartInfo(MidlPath);
+                startInfo.Arguments = $"/I \"{DiaIncludePath}\" /I \"{DiaIdlPath}\" /I \"{UmPath}\" /I \"{SharedPath}\" dia2.idl /tlb dia2lib.tlb";
+                startInfo.UseShellExecute = false;
+                startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
+                using (Process process = Process.Start(startInfo))
+                {
+                    process.WaitForExit();
+                }
 
-            // Create Dia2Lib.dll
-            startInfo = new ProcessStartInfo(TlbImpPath);
-            startInfo.Arguments = "dia2lib.tlb";
-            startInfo.UseShellExecute = false;
-            startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
-            using (Process process = Process.Start(startInfo))
-            {
-                process.WaitForExit();
+                // Create Dia2Lib.dll
+                startInfo = new ProcessStartInfo(TlbImpPath);
+                startInfo.Arguments = "dia2lib.tlb";
+                startInfo.UseShellExecute = false;
+                startInfo.EnvironmentVariables["Path"] = VCBinPath + ";" + startInfo.EnvironmentVariables["Path"];
+                using (Process process = Process.Start(startInfo))
+                {
+                    process.WaitForExit();
+                }
+
+                // Copy files to output folder
+                string[] filesToCopy = new[] { "Dia2Lib.dll", "DbgEngManaged.dll" };
+
+                foreach (string fileToCopy in filesToCopy)
+                {
+                    string inputFile = Path.Combine(tempFolder, fileToCopy);
+                    string outputFile = Path.Combine(outputFolder, fileToCopy);
+
+                    if (File.Exists(outputFile))
+                    {
+                        File.Delete(outputFile);
+                    }
+                    File.Move(inputFile, outputFile);
+                }
             }
+            finally
+            {
+                Directory.SetCurrentDirectory(outputFolder);
+                Directory.Delete(tempFolder, true);
+            }
+            return 0;
         }
 
         private static void WriteConstants(StringBuilder outputString, HashSet<string> usedConstants, ref KeyValuePair<string,string>[] remainingConstants, string prefix, string constantsName = null, Func<string, bool> additionalAcceptanceConstantFilter = null, Func<string, bool> additionalRejectConstantFilter = null)

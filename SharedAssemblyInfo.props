@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <!-- Nuget properties -->
+    <Copyright>Copyright (C) WinDbgCs team 2015-2017</Copyright>
+    <AssemblyVersion>1.3</AssemblyVersion>
+    <FileVersion>1.3</FileVersion>
+    <VersionPrefix>1.3</VersionPrefix>
+
+    <!-- Common properties for all projects -->
+    <EnlistmentRoot>$(MSBuildThisFileDirectory)</EnlistmentRoot>
+    <OutputPath>$(EnlistmentRoot)\bin\$(Configuration)\</OutputPath>
+    <DocumentationFile>$(OutputPath)\$(AssemblyName).XML</DocumentationFile>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(EnlistmentRoot)\Key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <!-- Solving problem with VSIX project build errors -->
+  <Target Name="BuiltProjectOutputGroupDependencies" />
+  <Target Name="BuiltProjectOutputGroup" />
+  <Target Name="GetCopyToOutputDirectoryItems" />
+  <Target Name="SatelliteDllsProjectOutputGroup" />
+  <Target Name="DebugSymbolsProjectOutputGroup" />
+</Project>

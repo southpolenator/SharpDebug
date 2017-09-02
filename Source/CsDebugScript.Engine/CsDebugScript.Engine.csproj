@@ -1,143 +1,19 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2A7F1646-9B5A-433C-8A84-2215194F59B9}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>CsDebugScript</RootNamespace>
-    <AssemblyName>CsDebugScript.Engine</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>$(SolutionDir)\bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(SolutionDir)\bin\Debug\CsDebugScript.Engine.XML</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>$(SolutionDir)\bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(SolutionDir)\bin\Release\CsDebugScript.Engine.XML</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>$(SolutionDir)\Key.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
-    <Reference Include="WindowsBase" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.4.0" />
+    <PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
+    <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.TypeExtensions" Version="4.4.0" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="BaseClassesArrayAttribute.cs" />
-    <Compile Include="CLR\ClrElementType.cs" />
-    <Compile Include="CLR\IClrAppDomain.cs" />
-    <Compile Include="CLR\IClrInstanceField.cs" />
-    <Compile Include="CLR\IClrProvider.cs" />
-    <Compile Include="CLR\IClrStackFrame.cs" />
-    <Compile Include="CLR\IClrStaticField.cs" />
-    <Compile Include="CLR\IClrThread.cs" />
-    <Compile Include="CLR\IClrHeap.cs" />
-    <Compile Include="CLR\IClrModule.cs" />
-    <Compile Include="CLR\IClrType.cs" />
-    <Compile Include="CLR\NamespaceDoc.cs" />
-    <Compile Include="CLR\IClrRuntime.cs" />
-    <Compile Include="DerivedClassAttribute.cs" />
-    <Compile Include="Engine\ArchitectureType.cs" />
-    <Compile Include="Engine\BuiltinType.cs" />
-    <Compile Include="Engine\Constants.cs" />
-    <Compile Include="Engine\Context.cs" />
-    <Compile Include="BasicType.cs" />
-    <Compile Include="CodeArray.cs" />
-    <Compile Include="CodeFunction.cs" />
-    <Compile Include="CodePointer.cs" />
-    <Compile Include="Debugger.cs" />
-    <Compile Include="CodeType.cs" />
-    <Compile Include="Engine\SymbolProviders\PerModuleSymbolProvider.cs" />
-    <Compile Include="Engine\CodeTypeTag.cs" />
-    <Compile Include="Engine\Utility\CacheInvalidator.cs" />
-    <Compile Include="Exceptions\InvalidMemoryAddressException.cs" />
-    <Compile Include="Exceptions\NotAllMemoryCanBeReadException.cs" />
-    <Compile Include="Exceptions\WrongCodeTypeException.cs" />
-    <Compile Include="ICastableObject.cs" />
-    <Compile Include="IMultiClassInheritance.cs" />
-    <Compile Include="MemoryRegion.cs" />
-    <Compile Include="Module.cs" />
-    <Compile Include="NakedPointer.cs" />
-    <Compile Include="NamespaceDoc.cs" />
-    <Compile Include="ScriptBase.cs" />
-    <Compile Include="StackFrame.cs" />
-    <Compile Include="StackTrace.cs" />
-    <Compile Include="Process.cs" />
-    <Compile Include="Thread.cs" />
-    <Compile Include="ThreadContext.cs" />
-    <Compile Include="UserMember.cs" />
-    <Compile Include="UserType.cs" />
-    <Compile Include="UserTypeAttribute.cs" />
-    <Compile Include="Variable.cs" />
-    <Compile Include="VariableCollection.cs" />
-    <Compile Include="VoidType.cs" />
-    <Compile Include="Engine\IDebuggerEngine.cs" />
-    <Compile Include="Engine\Marshaling\NamespaceDoc.cs" />
-    <Compile Include="Engine\SymbolProviders\NamespaceDoc.cs" />
-    <Compile Include="Engine\UserTypeDelegates.cs" />
-    <Compile Include="Engine\Utility\DictionaryCache.cs" />
-    <Compile Include="Engine\GlobalCache.cs" />
-    <Compile Include="Engine\Marshaling\MarshalArrayReader.cs" />
-    <Compile Include="Engine\Marshaling\MarshalStructure.cs" />
-    <Compile Include="Engine\NamespaceDoc.cs" />
-    <Compile Include="Engine\Native\NativeMethods.cs" />
-    <Compile Include="Engine\Utility\DumpFileMemoryReader.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="$(SolutionDir)\Properties\SharedAssemblyInfo.cs" />
-    <Compile Include="Engine\Utility\MemoryBuffer.cs" />
-    <Compile Include="Engine\Utility\SimpleCache.cs" />
-    <Compile Include="Engine\ISymbolProvider.cs" />
-    <Compile Include="Engine\ISymbolProviderModule.cs" />
-    <Compile Include="Engine\UserTypeDescription.cs" />
-    <Compile Include="Engine\UserTypeMetadata.cs" />
-    <Compile Include="Engine\Utility\NamespaceDoc.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="$(SolutionDir)\Key.snk" />
-  </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

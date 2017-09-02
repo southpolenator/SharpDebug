@@ -9,7 +9,7 @@ namespace Dia2Lib
     public static class DiaHelpers
     {
         /// <summary>
-        /// Converts IDiaEnumSymbols container to IEnumerable<IDiaSymbol>.
+        /// Converts IDiaEnumSymbols container to <see cref="IEnumerable{IDiaSymbol}"/>.
         /// </summary>
         /// <param name="container">The container.</param>
         public static IEnumerable<IDiaSymbol> Enum(this IDiaEnumSymbols container)

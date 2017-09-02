@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.Generic;
 using CsDebugScript.Engine;
 using CsDebugScript.CLR;
+using System.Reflection;
 
 namespace CsDebugScript
 {
@@ -603,7 +604,7 @@ namespace CsDebugScript
         /// <returns><c>true</c> if this instance inherits the specified type; otherwise <c>false</c></returns>
         public bool Inherits(Type type)
         {
-            if (type.IsSubclassOf(typeof(Variable)))
+            if (type.GetTypeInfo().IsSubclassOf(typeof(Variable)))
             {
                 UserTypeDescription[] descriptions = Module.Process.TypeToUserTypeDescription[type];
 

@@ -104,7 +104,10 @@ namespace CsDebugScript.VS
                 timer.Tick += (a, b) =>
                 {
                     timer.Stop();
-                    InitializeDTE();
+                    if (DTE == null)
+                    {
+                        InitializeDTE();
+                    }
                 };
                 timer.Interval = TimeSpan.FromSeconds(0.1);
                 timer.Start();
@@ -191,7 +194,7 @@ namespace CsDebugScript.VS
         {
             try
             {
-                return (DTE)System.Runtime.InteropServices.Marshal.GetActiveObject(programmaticId);
+                return (DTE)Marshal.GetActiveObject(programmaticId);
             }
             catch (Exception)
             {

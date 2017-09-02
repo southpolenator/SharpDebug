@@ -35,82 +35,89 @@ namespace CsDebugScript.VS
 
         private static InteractiveWindowContent CreateInteractiveWindowContent()
         {
-            var result = new List<HighlightingColor>();
-            var properties = VSContext.DTE.Properties["FontsAndColors", "TextEditor"];
-            var colors = properties.Item("FontsAndColorsItems").Object as EnvDTE.FontsAndColorsItems;
-            string fontFamily = properties.Item("FontFamily").Value.ToString();
-            double fontSize = double.Parse(properties.Item("FontSize").Value.ToString());
-            int indentationSize = 4; // TODO:
-
-            result.Add(CreateColor("#RegularText#", colors.Item("Plain Text")));
-            result.Add(CreateColor("#CurrentLine#", colors.Item("CurrentLineActiveFormat")));
-            result.Add(CreateColor("#TooltipText#", colors.Item("Plain Text"), colors.Item("Peek Highlighted Text Unfocused")));
-            result.Add(CreateColor("#CompletionText#", colors.Item("Plain Text"), colors.Item("Peek Background Unfocused")));
-
-            Dictionary<string, string> colorMap = new Dictionary<string, string>()
+            try
             {
-                { "Comment", "Comment" },
-                { "String", "String" },
-                { "StringInterpolation", "Plain Text" },
-                { "Char", "String" },
-                { "Preprocessor", "Preprocessor Keyword" },
-                { "Punctuation", "Punctuation" },
-                { "ValueTypeKeywords", "Keyword" },
-                { "ReferenceTypeKeywords", "Keyword" },
-                { "MethodCall", "Plain Text" },
-                { "NumberLiteral", "Number" },
-                { "ThisOrBaseReference", "Keyword" },
-                { "NullOrValueKeywords", "Keyword" },
-                { "Keywords", "Keyword" },
-                { "GotoKeywords", "Keyword" },
-                { "ContextKeywords", "Keyword" },
-                { "ExceptionKeywords", "Keyword" },
-                { "CheckedKeyword", "Keyword" },
-                { "UnsafeKeywords", "Keyword" },
-                { "OperatorKeywords", "Keyword" },
-                { "ParameterModifiers", "Keyword" },
-                { "Modifiers", "Keyword" },
-                { "Visibility", "Keyword" },
-                { "NamespaceKeywords", "Keyword" },
-                { "GetSetAddRemove", "Keyword" },
-                { "TrueFalse", "Keyword" },
-                { "TypeKeywords", "Keyword" },
-                { "SemanticKeywords", "Keyword" },
-            };
+                var result = new List<HighlightingColor>();
+                var properties = VSContext.DTE.Properties["FontsAndColors", "TextEditor"];
+                var colors = properties.Item("FontsAndColorsItems").Object as EnvDTE.FontsAndColorsItems;
+                string fontFamily = properties.Item("FontFamily").Value.ToString();
+                double fontSize = double.Parse(properties.Item("FontSize").Value.ToString());
+                int indentationSize = 4; // TODO:
 
-            foreach (var kvp in colorMap)
-            {
-                var color = CreateColor(kvp.Key, colors.Item(kvp.Value));
+                result.Add(CreateColor("#RegularText#", colors.Item("Plain Text")));
+                result.Add(CreateColor("#CurrentLine#", colors.Item("CurrentLineActiveFormat")));
+                result.Add(CreateColor("#TooltipText#", colors.Item("Plain Text"), colors.Item("Peek Highlighted Text Unfocused")));
+                result.Add(CreateColor("#CompletionText#", colors.Item("Plain Text"), colors.Item("Peek Background Unfocused")));
 
-                color.Background = null;
-                result.Add(color);
-            }
+                Dictionary<string, string> colorMap = new Dictionary<string, string>()
+                {
+                    { "Comment", "Comment" },
+                    { "String", "String" },
+                    { "StringInterpolation", "Plain Text" },
+                    { "Char", "String" },
+                    { "Preprocessor", "Preprocessor Keyword" },
+                    { "Punctuation", "Punctuation" },
+                    { "ValueTypeKeywords", "Keyword" },
+                    { "ReferenceTypeKeywords", "Keyword" },
+                    { "MethodCall", "Plain Text" },
+                    { "NumberLiteral", "Number" },
+                    { "ThisOrBaseReference", "Keyword" },
+                    { "NullOrValueKeywords", "Keyword" },
+                    { "Keywords", "Keyword" },
+                    { "GotoKeywords", "Keyword" },
+                    { "ContextKeywords", "Keyword" },
+                    { "ExceptionKeywords", "Keyword" },
+                    { "CheckedKeyword", "Keyword" },
+                    { "UnsafeKeywords", "Keyword" },
+                    { "OperatorKeywords", "Keyword" },
+                    { "ParameterModifiers", "Keyword" },
+                    { "Modifiers", "Keyword" },
+                    { "Visibility", "Keyword" },
+                    { "NamespaceKeywords", "Keyword" },
+                    { "GetSetAddRemove", "Keyword" },
+                    { "TrueFalse", "Keyword" },
+                    { "TypeKeywords", "Keyword" },
+                    { "SemanticKeywords", "Keyword" },
+                };
+
+                foreach (var kvp in colorMap)
+                {
+                    var color = CreateColor(kvp.Key, colors.Item(kvp.Value));
+
+                    color.Background = null;
+                    result.Add(color);
+                }
 
 #if false
-            System.Drawing.Color cc = System.Drawing.Color.FromArgb(37, 37, 38);
+                System.Drawing.Color cc = System.Drawing.Color.FromArgb(37, 37, 38);
 
-            IEnumerable<EnvDTE.ColorableItems> sorted = colors.Cast<EnvDTE.ColorableItems>()
-                .OrderBy(color =>
+                IEnumerable<EnvDTE.ColorableItems> sorted = colors.Cast<EnvDTE.ColorableItems>()
+                    .OrderBy(color =>
+                    {
+                        var c = System.Drawing.ColorTranslator.FromOle((int)color.Background);
+
+                        return System.Math.Abs(c.B - cc.B) + System.Math.Abs(c.G - cc.G) + System.Math.Abs(c.R - cc.R);
+                    });
+
+                var sb = new System.Text.StringBuilder();
+
+                foreach (var color in sorted.Take(10))
                 {
                     var c = System.Drawing.ColorTranslator.FromOle((int)color.Background);
+                    int diff = System.Math.Abs(c.B - cc.B) + System.Math.Abs(c.G - cc.G) + System.Math.Abs(c.R - cc.R);
 
-                    return System.Math.Abs(c.B - cc.B) + System.Math.Abs(c.G - cc.G) + System.Math.Abs(c.R - cc.R);
-                });
+                    sb.AppendLine($"({diff}) [{c.R}, {c.G}, {c.B}] '{color.Name}'");
+                }
 
-            var sb = new System.Text.StringBuilder();
-
-            foreach (var color in sorted.Take(10))
-            {
-                var c = System.Drawing.ColorTranslator.FromOle((int)color.Background);
-                int diff = System.Math.Abs(c.B - cc.B) + System.Math.Abs(c.G - cc.G) + System.Math.Abs(c.R - cc.R);
-
-                sb.AppendLine($"({diff}) [{c.R}, {c.G}, {c.B}] '{color.Name}'");
-            }
-
-            MessageBox.Show(sb.ToString());
+                MessageBox.Show(sb.ToString());
 #endif
 
-            return new InteractiveWindowContent(fontFamily, fontSize * 1.4, indentationSize, result.ToArray());
+                return new InteractiveWindowContent(fontFamily, fontSize * 1.4, indentationSize, result.ToArray());
+            }
+            catch
+            {
+                return new InteractiveWindowContent();
+            }
         }
 
         private static HighlightingColor CreateColor(string name, EnvDTE.ColorableItems colorableItems)

@@ -1,6 +1,5 @@
 ﻿using CsDebugScript.Engine;
 using DbgEngManaged;
-using RGiesecke.DllExport;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;

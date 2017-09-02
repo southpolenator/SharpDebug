@@ -82,9 +82,9 @@ namespace CsDebugScript.Engine
         }
 
         /// <summary>
-        /// Clears the cache.
+        /// Clears the internal Engine caches.
         /// </summary>
-        internal static void ClearCache()
+        public static void ClearCache()
         {
             CacheInvalidator.InvalidateCaches(ClrProvider);
             GlobalCache.Processes.Clear();

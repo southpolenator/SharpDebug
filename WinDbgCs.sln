@@ -1,18 +1,26 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.8
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.Engine", "Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj", "{2A7F1646-9B5A-433C-8A84-2215194F59B9}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{18FD9D16-E851-4EC3-8A30-8BB9E69C2374}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.Engine.Test", "Tests\CsDebugScript.Engine.Test\CsDebugScript.Engine.Test.csproj", "{B683D8DD-6759-4301-A54A-FAEFE1105416}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{F1AA153A-AAB9-4F0A-8A41-C7ED8FDD0EC5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utility", "Utility", "{EF2FD4E0-777D-4E92-A036-4604D0D14868}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DumpApps", "DumpApps", "{7DB77B56-F42E-484B-B85D-F274136CF96B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Engine", "Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj", "{2A7F1646-9B5A-433C-8A84-2215194F59B9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Engine.Test", "Tests\CsDebugScript.Engine.Test\CsDebugScript.Engine.Test.csproj", "{B683D8DD-6759-4301-A54A-FAEFE1105416}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B63C2B4E-EB2E-45FC-93FD-5D6F2077064D} = {B63C2B4E-EB2E-45FC-93FD-5D6F2077064D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateDbgEngIdl", "Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj", "{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CreateDbgEngIdl", "Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj", "{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.CodeGen", "Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj", "{283A0331-2EAD-4DD2-A3FE-20D229E2D277}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.CodeGen", "Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj", "{283A0331-2EAD-4DD2-A3FE-20D229E2D277}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeDumpTest.x86", "Tests\DumpApps\NativeDumpTest\NativeDumpTest.x86.vcxproj", "{AB472172-0FC0-4914-86C2-D2D3BE49EB20}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -25,9 +33,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeDumpTest.x64", "Tests
 		{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C} = {21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiaHelpers", "Source\DiaHelpers\DiaHelpers.csproj", "{3CA2D1D6-136F-4032-901E-043FA25B6255}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DiaHelpers", "Source\DiaHelpers\DiaHelpers.csproj", "{3CA2D1D6-136F-4032-901E-043FA25B6255}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.CommonUserTypes", "Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj", "{21A929EA-B96B-4523-9D0F-853EA771058D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.CommonUserTypes", "Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj", "{21A929EA-B96B-4523-9D0F-853EA771058D}"
 EndProject
 Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "CsDebugScript.Reference", "Utility\CsDebugScript.Reference\CsDebugScript.Reference.shfbproj", "{7A19DBB3-DA7D-48E8-BCBA-48A727176063}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -37,28 +45,20 @@ Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "CsDebugScript.Reference", "
 		{21A929EA-B96B-4523-9D0F-853EA771058D} = {21A929EA-B96B-4523-9D0F-853EA771058D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugCmdlets", "Source\DebugCmdlets\DebugCmdlets.csproj", "{1E791857-FBC2-4AC2-ABD7-5CC2AA7D4D59}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DebugCmdlets", "Source\DebugCmdlets\DebugCmdlets.csproj", "{1E791857-FBC2-4AC2-ABD7-5CC2AA7D4D59}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbgEngTest", "Tests\DbgEngTest\DbgEngTest.csproj", "{855FB0C3-CC35-458A-B709-975E6DA44C0D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DbgEngTest", "Tests\DbgEngTest\DbgEngTest.csproj", "{855FB0C3-CC35-458A-B709-975E6DA44C0D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExceptionDumper", "Utility\ExceptionDumper\ExceptionDumper.csproj", "{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExceptionDumper", "Utility\ExceptionDumper\ExceptionDumper.csproj", "{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A} = {BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{18FD9D16-E851-4EC3-8A30-8BB9E69C2374}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{F1AA153A-AAB9-4F0A-8A41-C7ED8FDD0EC5}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utility", "Utility", "{EF2FD4E0-777D-4E92-A036-4604D0D14868}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DumpApps", "DumpApps", "{7DB77B56-F42E-484B-B85D-F274136CF96B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.UI", "Source\CsDebugScript.UI\CsDebugScript.UI.csproj", "{B63C2B4E-EB2E-45FC-93FD-5D6F2077064D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.UI", "Source\CsDebugScript.UI\CsDebugScript.UI.csproj", "{B63C2B4E-EB2E-45FC-93FD-5D6F2077064D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.VS", "Source\CsDebugScript.VS\CsDebugScript.VS.csproj", "{065A323D-4E36-4414-B85B-D7506DEFC022}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbgEngHelpers", "Source\DbgEngHelpers\DbgEngHelpers.csproj", "{74CD700C-EDAA-4EB2-905E-7A4EA982E0C3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DbgEngHelpers", "Source\DbgEngHelpers\DbgEngHelpers.csproj", "{74CD700C-EDAA-4EB2-905E-7A4EA982E0C3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A} = {BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}
 	EndProjectSection
@@ -76,22 +76,24 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeDumpTest.x86.Release"
 		{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C} = {21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExceptionDumper32", "Utility\ExceptionDumper32\ExceptionDumper32.csproj", "{3147597A-BDB9-4543-B1A7-33B529C3F4AB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExceptionDumper32", "Utility\ExceptionDumper32\ExceptionDumper32.csproj", "{3147597A-BDB9-4543-B1A7-33B529C3F4AB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.DwarfSymbolProvider", "Source\CsDebugScript.DwarfSymbolProvider\CsDebugScript.DwarfSymbolProvider.csproj", "{7DA23F60-F5BC-4F59-B00E-072CC464AD64}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.DwarfSymbolProvider", "Source\CsDebugScript.DwarfSymbolProvider\CsDebugScript.DwarfSymbolProvider.csproj", "{7DA23F60-F5BC-4F59-B00E-072CC464AD64}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.CodeGen.App", "Source\CsDebugScript.CodeGen.App\CsDebugScript.CodeGen.App.csproj", "{F0826881-E3F3-47B3-9716-18001DE8333A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.CodeGen.App", "Source\CsDebugScript.CodeGen.App\CsDebugScript.CodeGen.App.csproj", "{F0826881-E3F3-47B3-9716-18001DE8333A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.DbgEng", "Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj", "{DE29EE94-EE6E-4BC1-86B4-B67CAC48A0BE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.DbgEng", "Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj", "{DE29EE94-EE6E-4BC1-86B4-B67CAC48A0BE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A} = {BAD1B3D0-3030-4D19-AA7F-16F62E2D879A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.DiaSymbolProvider", "Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj", "{F8D58D8A-83BA-4701-AC5F-2DB03F640455}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.DiaSymbolProvider", "Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj", "{F8D58D8A-83BA-4701-AC5F-2DB03F640455}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.WinDbg", "Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.csproj", "{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.ClrMdProvider", "Source\CsDebugScript.ClrMdProvider\CsDebugScript.ClrMdProvider.csproj", "{5BE4AA0C-B242-45FD-968F-EB66745A9EFF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsDebugScript.ClrMdProvider", "Source\CsDebugScript.ClrMdProvider\CsDebugScript.ClrMdProvider.csproj", "{5BE4AA0C-B242-45FD-968F-EB66745A9EFF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x64", "Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.x64.csproj", "{05AFBC66-4049-4E34-934E-60D336FD7098}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x86", "Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.x86.csproj", "{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -373,18 +375,6 @@ Global
 		{F8D58D8A-83BA-4701-AC5F-2DB03F640455}.Release|x64.Build.0 = Release|Any CPU
 		{F8D58D8A-83BA-4701-AC5F-2DB03F640455}.Release|x86.ActiveCfg = Release|Any CPU
 		{F8D58D8A-83BA-4701-AC5F-2DB03F640455}.Release|x86.Build.0 = Release|Any CPU
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Debug|Any CPU.Build.0 = Debug|x64
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Debug|x64.ActiveCfg = Debug|x64
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Debug|x64.Build.0 = Debug|x64
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Debug|x86.ActiveCfg = Debug|x86
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Debug|x86.Build.0 = Debug|x86
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Release|Any CPU.ActiveCfg = Release|x64
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Release|Any CPU.Build.0 = Release|x64
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Release|x64.ActiveCfg = Release|x64
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Release|x64.Build.0 = Release|x64
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Release|x86.ActiveCfg = Release|x86
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6}.Release|x86.Build.0 = Release|x86
 		{5BE4AA0C-B242-45FD-968F-EB66745A9EFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5BE4AA0C-B242-45FD-968F-EB66745A9EFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5BE4AA0C-B242-45FD-968F-EB66745A9EFF}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -397,11 +387,36 @@ Global
 		{5BE4AA0C-B242-45FD-968F-EB66745A9EFF}.Release|x64.Build.0 = Release|Any CPU
 		{5BE4AA0C-B242-45FD-968F-EB66745A9EFF}.Release|x86.ActiveCfg = Release|Any CPU
 		{5BE4AA0C-B242-45FD-968F-EB66745A9EFF}.Release|x86.Build.0 = Release|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Debug|x64.Build.0 = Debug|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Debug|x86.Build.0 = Debug|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Release|x64.ActiveCfg = Release|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Release|x64.Build.0 = Release|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Release|x86.ActiveCfg = Release|Any CPU
+		{05AFBC66-4049-4E34-934E-60D336FD7098}.Release|x86.Build.0 = Release|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Debug|x64.Build.0 = Debug|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Debug|x86.Build.0 = Debug|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Release|x64.ActiveCfg = Release|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Release|x64.Build.0 = Release|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Release|x86.ActiveCfg = Release|Any CPU
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{7DB77B56-F42E-484B-B85D-F274136CF96B} = {F1AA153A-AAB9-4F0A-8A41-C7ED8FDD0EC5}
 		{2A7F1646-9B5A-433C-8A84-2215194F59B9} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 		{B683D8DD-6759-4301-A54A-FAEFE1105416} = {F1AA153A-AAB9-4F0A-8A41-C7ED8FDD0EC5}
 		{BAD1B3D0-3030-4D19-AA7F-16F62E2D879A} = {EF2FD4E0-777D-4E92-A036-4604D0D14868}
@@ -414,7 +429,6 @@ Global
 		{1E791857-FBC2-4AC2-ABD7-5CC2AA7D4D59} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 		{855FB0C3-CC35-458A-B709-975E6DA44C0D} = {F1AA153A-AAB9-4F0A-8A41-C7ED8FDD0EC5}
 		{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C} = {EF2FD4E0-777D-4E92-A036-4604D0D14868}
-		{7DB77B56-F42E-484B-B85D-F274136CF96B} = {F1AA153A-AAB9-4F0A-8A41-C7ED8FDD0EC5}
 		{B63C2B4E-EB2E-45FC-93FD-5D6F2077064D} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 		{065A323D-4E36-4414-B85B-D7506DEFC022} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 		{74CD700C-EDAA-4EB2-905E-7A4EA982E0C3} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
@@ -426,7 +440,11 @@ Global
 		{F0826881-E3F3-47B3-9716-18001DE8333A} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 		{DE29EE94-EE6E-4BC1-86B4-B67CAC48A0BE} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 		{F8D58D8A-83BA-4701-AC5F-2DB03F640455} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
-		{07E5620B-C092-4FE5-9C54-BBFD0F0FD3F6} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 		{5BE4AA0C-B242-45FD-968F-EB66745A9EFF} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
+		{05AFBC66-4049-4E34-934E-60D336FD7098} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
+		{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9EE35CEC-B6D7-4442-BD27-F74972D115AE}
 	EndGlobalSection
 EndGlobal

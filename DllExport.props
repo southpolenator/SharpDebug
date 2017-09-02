@@ -1,0 +1,39 @@
+<Project>
+  <!-- We need to disable signing because of the bug -->
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+
+  <!-- Nuget reference -->
+  <ItemGroup>
+    <PackageReference Include="DllExport" Version="1.5.2" />
+  </ItemGroup>
+
+  <!-- This is needed until bug is fixed/propagated to msbuild  ==>  We cannot use $(TargetPath) - it is empty -->
+  <PropertyGroup>
+    <DllExportInputFileName>$(OutputPath)\$(TargetFramework)\$(AssemblyName).dll</DllExportInputFileName>
+  </PropertyGroup>
+
+  <!-- Until DllExports bug is fixed, we need to define missing target -->
+  <Target Name="GetFrameworkPaths" />
+
+  <!-- With new Microsoft.NET.Sdk projects, we need to add this step manually -->
+  <PropertyGroup>
+    <NugetPackagesFolder>$(EnlistmentRoot)\packages</NugetPackagesFolder>
+    <DllExportTargets>$(NugetPackagesFolder)\DllExport\1.5.2\tools\net.r_eg.DllExport.targets</DllExportTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="!Exists('$(DllExportTargets)')">
+    <NugetPackagesFolder>$(NugetPackageFolders)</NugetPackagesFolder>
+    <DllExportTargets>$(NugetPackagesFolder)\DllExport\1.5.2\tools\net.r_eg.DllExport.targets</DllExportTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="!Exists('$(DllExportTargets)')">
+    <NugetPackagesFolder>$(NuGetPackageRoot)</NugetPackagesFolder>
+    <DllExportTargets>$(NugetPackagesFolder)\DllExport\1.5.2\tools\net.r_eg.DllExport.targets</DllExportTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="!Exists('$(DllExportTargets)')">
+    <NugetPackagesFolder>$(UserProfile)\.nuget\packages</NugetPackagesFolder>
+    <DllExportTargets>$(NugetPackagesFolder)\DllExport\1.5.2\tools\net.r_eg.DllExport.targets</DllExportTargets>
+  </PropertyGroup>
+  <Import Project="$(DllExportTargets)" Condition="Exists('$(DllExportTargets)')" />
+
+</Project>

@@ -6,6 +6,7 @@ namespace CsDebugScript.ClrMdProvider
 {
     /// <summary>
     /// ClrMD implementation of <see cref="IClrModule"/>.
+    /// </summary>
     internal class ClrMdModule : IClrModule
     {
         /// <summary>

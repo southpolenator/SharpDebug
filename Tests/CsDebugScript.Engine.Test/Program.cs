@@ -30,10 +30,19 @@ namespace CsDebugScript.Engine.Test
             if (options == null)
                 return;
 
-            DbgEngDll.InitializeContext(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
-            if (options.UseDwarfSymbolProvider)
+            try
             {
-                Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider.DwarfSymbolProvider());
+                DbgEngDll.InitializeContext(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
+                if (options.UseDwarfSymbolProvider)
+                {
+                    Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider.DwarfSymbolProvider());
+                }
+            }
+            catch (Exception)
+            {
+                IDebuggerEngine engine = new DwarfSymbolProvider.ElfCoreDumpDebuggingEngine(options.DumpPath);
+
+                Context.InitializeDebugger(engine, engine.CreateDefaultSymbolProvider());
             }
 
             Console.WriteLine("Threads: {0}", Thread.All.Length);
