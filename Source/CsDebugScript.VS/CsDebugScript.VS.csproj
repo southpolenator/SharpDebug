@@ -110,9 +110,9 @@
       <Project>{b63c2b4e-eb2e-45fc-93fd-5d6f2077064d}</Project>
       <Name>CsDebugScript.UI</Name>
     </ProjectReference>
-    <ProjectReference Include="$(EnlistmentRoot)\Source\DiaHelpers\DiaHelpers.csproj">
+    <ProjectReference Include="..\CsDebugScript.DiaHelpers\CsDebugScript.DiaHelpers.csproj">
       <Project>{3CA2D1D6-136F-4032-901E-043FA25B6255}</Project>
-      <Name>DiaHelpers</Name>
+      <Name>CsDebugScript.DiaHelpers</Name>
     </ProjectReference>
     <ProjectReference Include="..\CsDebugScript.ClrMdProvider\CsDebugScript.ClrMdProvider.csproj">
       <Project>{5be4aa0c-b242-45fd-968f-eb66745a9eff}</Project>
@@ -130,9 +130,9 @@
       <Project>{7da23f60-f5bc-4f59-b00e-072cc464ad64}</Project>
       <Name>CsDebugScript.DwarfSymbolProvider</Name>
     </ProjectReference>
-    <ProjectReference Include="..\DbgEngHelpers\DbgEngHelpers.csproj">
+    <ProjectReference Include="..\CsDebugScript.DbgEngHelpers\CsDebugScript.DbgEngHelpers.csproj">
       <Project>{74cd700c-edaa-4eb2-905e-7a4ea982e0c3}</Project>
-      <Name>DbgEngHelpers</Name>
+      <Name>CsDebugScript.DbgEngHelpers</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

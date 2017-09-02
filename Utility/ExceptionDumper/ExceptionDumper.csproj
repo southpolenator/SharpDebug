@@ -15,11 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Source\DbgEngHelpers\DbgEngHelpers.csproj"/>
+    <PackageReference Include="CommandLineParser" Version="2.0.275-beta" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.0.275-beta" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEngHelpers\CsDebugScript.DbgEngHelpers.csproj" />
   </ItemGroup>
 
 </Project>

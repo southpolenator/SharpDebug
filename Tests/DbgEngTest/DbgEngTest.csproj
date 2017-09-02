@@ -48,7 +48,7 @@
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.ClrMdProvider\CsDebugScript.ClrMdProvider.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.x64.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.x86.csproj" />
-    <ProjectReference Include="$(EnlistmentRoot)\Source\DbgEngHelpers\DbgEngHelpers.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEngHelpers\CsDebugScript.DbgEngHelpers.csproj" />
   </ItemGroup>
 
 </Project>
