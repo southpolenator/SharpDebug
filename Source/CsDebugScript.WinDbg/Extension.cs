@@ -1,6 +1,9 @@
 ﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Debuggers;
+using CsDebugScript.UI;
 using DbgEngManaged;
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -11,7 +14,10 @@ namespace CsDebugScript.WinDbg
     /// </summary>
     public static class Extension
     {
-        private static Executor executor = new Executor();
+        /// <summary>
+        /// The interactive execution
+        /// </summary>
+        public static InteractiveExecution InteractiveExecution { get; private set; } = new InteractiveExecution();
 
         /// <summary>
         /// Initializes WinDbg extension.
@@ -49,9 +55,11 @@ namespace CsDebugScript.WinDbg
         [DllExport("execute")]
         public static int Execute(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
         {
+            string[] arguments = args.Split(" ".ToCharArray());
+
             return ExecuteAction(client, () =>
             {
-                executor.ExecuteScript(args);
+                ScriptExecution.Execute(arguments[0], arguments.Skip(1).ToArray());
             });
         }
 
@@ -66,7 +74,7 @@ namespace CsDebugScript.WinDbg
         {
             return ExecuteAction(client, () =>
             {
-                executor.EnterInteractiveMode(args);
+                InteractiveExecution.Run();
             });
         }
 
@@ -81,7 +89,7 @@ namespace CsDebugScript.WinDbg
         {
             return ExecuteAction(client, () =>
             {
-                executor.Interpret(args);
+                InteractiveExecution.Interpret(args);
             });
         }
 
@@ -94,12 +102,30 @@ namespace CsDebugScript.WinDbg
         [DllExport("openui")]
         public static int OpenUI(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
         {
+            string[] arguments = args.Split(" ".ToCharArray());
+            bool showModal = false;
+
+            if (arguments.Length > 0 && !bool.TryParse(arguments[0], out showModal))
+            {
+                showModal = false;
+            }
+
             try
             {
                 IDebugClient debugClient = (IDebugClient)Marshal.GetUniqueObjectForIUnknown(client);
 
-                executor.InitializeContext(debugClient);
-                new Task(() => executor.OpenUI(args)).Start();
+                DbgEngDll.InitializeContext(debugClient);
+                new Task(() =>
+                {
+                    if (showModal)
+                    {
+                        InteractiveWindow.ShowModalWindow();
+                    }
+                    else
+                    {
+                        InteractiveWindow.ShowWindow();
+                    }
+                }).Start();
                 return 0;
             }
             catch (Exception ex)
@@ -115,8 +141,11 @@ namespace CsDebugScript.WinDbg
             {
                 IDebugClient debugClient = (IDebugClient)Marshal.GetUniqueObjectForIUnknown(client);
 
-                executor.InitializeContext(debugClient);
-                action();
+                DbgEngDll.InitializeContext(debugClient);
+                Context.ClrProvider = new CLR.ClrMdProvider();
+                DbgEngDll dbgEngDll = Context.Debugger as DbgEngDll;
+
+                dbgEngDll.ExecuteAction(action);
             }
             catch (Exception ex)
             {
@@ -125,7 +154,7 @@ namespace CsDebugScript.WinDbg
             }
             finally
             {
-                executor.InitializeContext(null);
+                DbgEngDll.InitializeContext(null);
             }
 
             return 0;

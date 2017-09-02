@@ -67,7 +67,20 @@ namespace CsDebugScript.Engine.Test
 
             using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
             {
-                Executor.Execute(@"..\..\..\samples\script.csx");
+                Action action = () =>
+                {
+                    ScriptExecution.Execute(@"..\..\..\samples\script.csx", args);
+                };
+                DbgEngDll dbgEngDll = Context.Debugger as DbgEngDll;
+
+                if (dbgEngDll != null)
+                {
+                    dbgEngDll.ExecuteAction(action);
+                }
+                else
+                {
+                    action();
+                }
             }
         }
     }

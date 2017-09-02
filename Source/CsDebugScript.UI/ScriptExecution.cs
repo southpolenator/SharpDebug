@@ -18,7 +18,7 @@ namespace CsDebugScript
     /// <summary>
     /// Compiles and executes scripts
     /// </summary>
-    internal static class ScriptExecution
+    public static class ScriptExecution
     {
         /// <summary>
         /// Resolves the path for the specified base file path.
@@ -531,9 +531,9 @@ namespace CsDebugScript
         /// <summary>
         /// Executes the specified script.
         /// </summary>
-        /// <param name="path">The path.</param>
-        /// <param name="args">The arguments.</param>
-        internal static void Execute(string path, params string[] args)
+        /// <param name="path">The script path.</param>
+        /// <param name="arguments">Script arguments.</param>
+        public static void Execute(string path, params string[] arguments)
         {
             try
             {
@@ -545,7 +545,7 @@ namespace CsDebugScript
                 scriptOptions = scriptOptions.WithMetadataResolver(new MetadataResolver(originalMetadataResolver));
                 scriptOptions = scriptOptions.WithSourceResolver(new SourceResolver(originalSourceResolver));
 
-                var argsCode = Convert(args);
+                var argsCode = Convert(arguments);
                 var scriptState = CSharpScript.RunAsync(argsCode, scriptOptions, scriptBase).Result;
 
                 // TODO: What about loading and clearing metadata?

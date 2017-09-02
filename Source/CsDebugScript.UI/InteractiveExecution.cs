@@ -20,7 +20,10 @@ namespace CsDebugScript
     {
     }
 
-    internal class InteractiveExecution
+    /// <summary>
+    /// Provides interactive mode (C# REPL) with debugging scripts.
+    /// </summary>
+    public class InteractiveExecution
     {
         /// <summary>
         /// The default prompt

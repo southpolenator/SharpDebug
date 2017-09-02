@@ -1,4 +1,6 @@
 ﻿using CsDebugScript;
+using CsDebugScript.Engine;
+using CsDebugScript.Engine.Debuggers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DbgEngTest
@@ -8,6 +10,7 @@ namespace DbgEngTest
     {
         private const string DefaultDumpFile = NativeDumpTest64.DefaultDumpFile;
         private const string DefaultSymbolPath = NativeDumpTest64.DefaultSymbolPath;
+        private InteractiveExecution interactiveExecution;
 
         [ClassInitialize]
         public static void TestSetup(TestContext context)
@@ -25,34 +28,42 @@ namespace DbgEngTest
         public void TestInitialize()
         {
             InitializeDump(DefaultDumpFile, DefaultSymbolPath);
+            interactiveExecution = new InteractiveExecution();
         }
 
         [TestMethod]
         [TestCategory("Scripting")]
         public void DynamicTest()
         {
-            Executor.InterpretInteractive("dynamic a = 5");
-            Executor.InterpretInteractive("Console.WriteLine(a);");
-            Executor.InterpretInteractive("Dump(a);");
-            Executor.InterpretInteractive("a");
+            InterpretInteractive("dynamic a = 5");
+            InterpretInteractive("Console.WriteLine(a);");
+            InterpretInteractive("Dump(a);");
+            InterpretInteractive("a");
         }
 
         [TestMethod]
         [TestCategory("Scripting")]
         public void ScriptBaseTest()
         {
-            Executor.InterpretInteractive("ListCommands();");
-            Executor.InterpretInteractive("ListAllCommands();");
-            Executor.InterpretInteractive("ListVariables();");
-            Executor.InterpretInteractive("ChangeBaseClass<InteractiveScriptBase>();");
-            Executor.InterpretInteractive("exit");
+            InterpretInteractive("ListCommands();");
+            InterpretInteractive("ListAllCommands();");
+            InterpretInteractive("ListVariables();");
+            InterpretInteractive("ChangeBaseClass<InteractiveScriptBase>();");
+            InterpretInteractive("exit");
         }
 
         [TestMethod]
         [TestCategory("Scripting")]
         public void DebuggerCommand()
         {
-            new Executor().Interpret("#dbg k");
+            InterpretInteractive("#dbg k");
+        }
+
+        private new void InterpretInteractive(string code)
+        {
+            DbgEngDll dbgEngDll = Context.Debugger as DbgEngDll;
+
+            dbgEngDll.ExecuteAction(() => interactiveExecution.Interpret(code));
         }
     }
 }

@@ -4,7 +4,11 @@ using System.Windows.Controls;
 
 namespace CsDebugScript.UI
 {
-    internal class InteractiveWindow : Window
+    /// <summary>
+    /// C# REPL interactive window
+    /// </summary>
+    /// <seealso cref="System.Windows.Window" />
+    public class InteractiveWindow : Window
     {
         private InteractiveWindowContent contentControl;
 

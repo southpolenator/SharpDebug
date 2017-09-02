@@ -27,16 +27,6 @@ namespace DbgEngTest
 
         [TestMethod]
         [TestCategory("Scripting")]
-        public void TestExecutor()
-        {
-            ExecuteScript((fileName, arguments) => new Executor().ExecuteScript(fileName),
-                @"writeln(1 + 2);");
-            ExecuteScript((fileName, arguments) => new Executor().ExecuteScript(fileName, arguments),
-                @"writeln(args[0]);writeln(args[1]);", "First argument", "Second \" argument");
-        }
-
-        [TestMethod]
-        [TestCategory("Scripting")]
         public void SimpleScript()
         {
             string[] lines = ExecuteScript(@"writeln(1 + 2);");
