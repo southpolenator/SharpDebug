@@ -23,8 +23,8 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             Type = fieldType;
 
             // TODO: BitPosition, LocationType, DataKind, Value
-            DataKind = Dia2Lib.DataKind.Member;
-            LocationType = Dia2Lib.LocationType.RegRel;
+            DataKind = DIA.DataKind.Member;
+            LocationType = DIA.LocationType.RegRel;
         }
 
         /// <summary>

@@ -1,7 +1,7 @@
-﻿namespace Dia2Lib
+﻿namespace DIA
 {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-    public enum CV_HREG_e
+    public enum CV_HREG_e : uint
     {
         // Register subset shared by all processor types,
         // must not overlap with any of the ranges below, hence the high values

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace Dia2Lib
+namespace DIA
 {
     /// <summary>
     /// Collection of extension methods that makes using DIA lib easier.
@@ -9,14 +9,26 @@ namespace Dia2Lib
     public static class DiaHelpers
     {
         /// <summary>
-        /// Converts IDiaEnumSymbols container to <see cref="IEnumerable{IDiaSymbol}"/>.
+        /// Converts <see cref="IDiaEnumSymbols"/> container to <see cref="IEnumerable{IDiaSymbol}"/>.
         /// </summary>
         /// <param name="container">The container.</param>
         public static IEnumerable<IDiaSymbol> Enum(this IDiaEnumSymbols container)
         {
-            foreach (IDiaSymbol value in container)
+            for (int i = 0, n = container.count; i < n; i++)
             {
-                yield return value;
+                yield return container.Item((uint)i);
+            }
+        }
+
+        /// <summary>
+        /// Converts <see cref="IDiaEnumLineNumbers"/> container to <see cref="IEnumerable{IDiaLineNumber}"/>.
+        /// </summary>
+        /// <param name="container">The container.</param>
+        public static IEnumerable<IDiaLineNumber> Enum(this IDiaEnumLineNumbers container)
+        {
+            for (int i = 0, n = container.count; i < n; i++)
+            {
+                yield return container.Item((uint)i);
             }
         }
 
@@ -26,14 +38,13 @@ namespace Dia2Lib
         /// <param name="symbol">The symbol.</param>
         /// <param name="name">The name.</param>
         /// <param name="tag">The tag.</param>
-        public static IDiaSymbol GetChild(this IDiaSymbol symbol, string name, SymTagEnum tag = SymTagEnum.SymTagNull)
+        public static IDiaSymbol GetChild(this IDiaSymbol symbol, string name, SymTagEnum tag = SymTagEnum.Null)
         {
             IDiaEnumSymbols symbols;
 
-            symbol.findChildren(tag, name, 0, out symbols);
+            symbol.findChildren(tag, name, NameSearchOptions.None, out symbols);
             return symbols.Enum().FirstOrDefault();
         }
-
 
         /// <summary>
         /// Gets the children using wildcard search: Applies a case-sensitive name match using asterisks (*) and question marks (?) as wildcards.
@@ -41,12 +52,11 @@ namespace Dia2Lib
         /// <param name="symbol">The symbol.</param>
         /// <param name="nameWildcard">The name wildcard.</param>
         /// <param name="tag">The tag.</param>
-        public static IEnumerable<IDiaSymbol> GetChildrenWildcard(this IDiaSymbol symbol, string nameWildcard, SymTagEnum tag = SymTagEnum.SymTagNull)
+        public static IEnumerable<IDiaSymbol> GetChildrenWildcard(this IDiaSymbol symbol, string nameWildcard, SymTagEnum tag = SymTagEnum.Null)
         {
             IDiaEnumSymbols symbols;
-            const uint nsfRegularExpression = 0x8; // https://msdn.microsoft.com/en-us/library/yat28ads.aspx
 
-            symbol.findChildren(tag, nameWildcard, nsfRegularExpression, out symbols);
+            symbol.findChildren(tag, nameWildcard, NameSearchOptions.RegularExpression, out symbols);
             return symbols.Enum();
         }
 
@@ -55,11 +65,11 @@ namespace Dia2Lib
         /// </summary>
         /// <param name="symbol">The symbol.</param>
         /// <param name="tag">The tag.</param>
-        public static IEnumerable<IDiaSymbol> GetChildren(this IDiaSymbol symbol, SymTagEnum tag = SymTagEnum.SymTagNull)
+        public static IEnumerable<IDiaSymbol> GetChildren(this IDiaSymbol symbol, SymTagEnum tag = SymTagEnum.Null)
         {
             IDiaEnumSymbols symbols;
 
-            symbol.findChildren(tag, null, 0, out symbols);
+            symbol.findChildren(tag, null, NameSearchOptions.None, out symbols);
             return symbols.Enum();
         }
 
@@ -69,14 +79,14 @@ namespace Dia2Lib
         /// <param name="symbol">The symbol.</param>
         public static IEnumerable<IDiaSymbol> GetBaseClasses(this IDiaSymbol symbol)
         {
-            if ((SymTagEnum)symbol.symTag == SymTagEnum.SymTagData)
+            if (symbol.symTag == SymTagEnum.Data)
             {
                 symbol = symbol.type;
             }
 
             if (symbol != null)
             {
-                return symbol.GetChildren(SymTagEnum.SymTagBaseClass);
+                return symbol.GetChildren(SymTagEnum.BaseClass);
             }
 
             return new IDiaSymbol[] { };

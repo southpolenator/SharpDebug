@@ -1,7 +1,7 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.CodeGen.TypeTrees;
 using CsDebugScript.Engine;
-using Dia2Lib;
+using DIA;
 using System;
 using System.Collections.Generic;
 using System.IO;

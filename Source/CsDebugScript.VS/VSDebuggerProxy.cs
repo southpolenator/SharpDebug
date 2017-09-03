@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.Debugger.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dia2Lib;
+using DIA;
 using System.Runtime.InteropServices;
 using CsDebugScript.Engine;
 
@@ -426,10 +426,10 @@ namespace CsDebugScript.VS
 
                     for (int j = 0; !found && j < frames[i].Registers.UnwoundRegisters.Count; j++)
                     {
-                        switch ((Dia2Lib.CV_HREG_e)frames[i].Registers.UnwoundRegisters[j].Identifier)
+                        switch ((CV_HREG_e)frames[i].Registers.UnwoundRegisters[j].Identifier)
                         {
-                            case Dia2Lib.CV_HREG_e.CV_AMD64_EBP:
-                            case Dia2Lib.CV_HREG_e.CV_AMD64_RBP:
+                            case CV_HREG_e.CV_AMD64_EBP:
+                            case CV_HREG_e.CV_AMD64_RBP:
                                 {
                                     byte[] bytes = frames[i].Registers.UnwoundRegisters[j].Value.ToArray();
 

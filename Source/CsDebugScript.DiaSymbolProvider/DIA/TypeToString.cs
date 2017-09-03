@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace Dia2Lib
+namespace DIA
 {
     /// <summary>
     /// Exposes converted from IDiaSymbol type to code text
@@ -19,10 +19,10 @@ namespace Dia2Lib
             /// <param name="type">The type.</param>
             public static string GetTypeString(IDiaSymbol type)
             {
-                switch ((SymTagEnum)type.symTag)
+                switch (type.symTag)
                 {
-                    case SymTagEnum.SymTagBaseType:
-                        switch ((BasicType)type.baseType)
+                    case SymTagEnum.BaseType:
+                        switch (type.baseType)
                         {
                             case BasicType.Bit:
                             case BasicType.Bool:
@@ -84,27 +84,27 @@ namespace Dia2Lib
                                 return "char32_t";
 
                             default:
-                                throw new Exception("Unexpected basic type " + (BasicType)type.baseType);
+                                throw new Exception("Unexpected basic type " + type.baseType);
                         }
 
-                    case SymTagEnum.SymTagPointerType:
+                    case SymTagEnum.PointerType:
                         {
                             IDiaSymbol pointerType = type.type;
 
                             return GetTypeString(pointerType) + "*";
                         }
 
-                    case SymTagEnum.SymTagBaseClass:
-                    case SymTagEnum.SymTagUDT:
-                    case SymTagEnum.SymTagEnum:
-                    case SymTagEnum.SymTagVTable:
-                    case SymTagEnum.SymTagVTableShape:
+                    case SymTagEnum.BaseClass:
+                    case SymTagEnum.UDT:
+                    case SymTagEnum.Enum:
+                    case SymTagEnum.VTable:
+                    case SymTagEnum.VTableShape:
                         return type.name ?? "";
 
-                    case SymTagEnum.SymTagFunctionType:
+                    case SymTagEnum.FunctionType:
                         {
                             StringBuilder sb = new StringBuilder();
-                            var arguments = type.GetChildren(SymTagEnum.SymTagFunctionArgType);
+                            var arguments = type.GetChildren(SymTagEnum.FunctionArgType);
                             bool first = true;
 
                             sb.Append(GetTypeString(type.type));
@@ -121,11 +121,11 @@ namespace Dia2Lib
                             return sb.ToString();
                         }
 
-                    case SymTagEnum.SymTagArrayType:
+                    case SymTagEnum.ArrayType:
                         return GetTypeString(type.type) + "[]";
 
                     default:
-                        throw new Exception("Unexpected type tag " + (SymTagEnum)type.symTag);
+                        throw new Exception("Unexpected type tag " + type.symTag);
                 }
             }
         }
@@ -136,7 +136,7 @@ namespace Dia2Lib
         /// <param name="type">The type.</param>
         public static string GetTypeString(IDiaSymbol type)
         {
-            switch ((CV_CFL_LANG)type.language)
+            switch (type.language)
             {
                 case CV_CFL_LANG.CV_CFL_C:
                 case CV_CFL_LANG.CV_CFL_CXX:

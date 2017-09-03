@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.Engine;
-using Dia2Lib;
+using DIA;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,13 +24,13 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         public DiaSymbol(DiaModule module, IDiaSymbol symbol)
             : base(module)
         {
-            SymTagEnum symTag = (SymTagEnum)symbol.symTag;
+            SymTagEnum symTag = symbol.symTag;
 
             this.symbol = symbol;
             Tag = ConvertToCodeTypeTag(symTag);
-            BasicType = (BasicType)symbol.baseType;
+            BasicType = symbol.baseType;
             Id = symbol.symIndexId;
-            if (symTag != SymTagEnum.SymTagExe)
+            if (symTag != SymTagEnum.Exe)
             {
                 Name = TypeToString.GetTypeString(symbol);
                 Name = Name.Replace("<enum ", "<").Replace(",enum ", ",");
@@ -100,7 +100,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         public override bool HasVTable()
         {
-            if (symbol.GetChildren(SymTagEnum.SymTagVTable).Any())
+            if (symbol.GetChildren(SymTagEnum.VTable).Any())
             {
                 return true;
             }
@@ -119,7 +119,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override IEnumerable<SymbolField> GetFields()
         {
-            return symbol.GetChildren(SymTagEnum.SymTagData).Select(s => new DiaSymbolField(this, s)).Where(f => f.Type != null).Cast<SymbolField>();
+            return symbol.GetChildren(SymTagEnum.Data).Select(s => new DiaSymbolField(this, s)).Where(f => f.Type != null).Cast<SymbolField>();
         }
 
         /// <summary>
@@ -127,7 +127,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override IEnumerable<Symbol> GetBaseClasses()
         {
-            return symbol.GetChildren(SymTagEnum.SymTagBaseClass).Select(s => DiaModule.GetSymbol(s)).Cast<Symbol>();
+            return symbol.GetChildren(SymTagEnum.BaseClass).Select(s => DiaModule.GetSymbol(s)).Cast<Symbol>();
         }
 
         /// <summary>
@@ -172,22 +172,22 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         {
             switch (tag)
             {
-                case SymTagEnum.SymTagArrayType:
+                case SymTagEnum.ArrayType:
                     return CodeTypeTag.Array;
-                case SymTagEnum.SymTagBaseType:
+                case SymTagEnum.BaseType:
                     return CodeTypeTag.BuiltinType;
-                case SymTagEnum.SymTagUDT:
+                case SymTagEnum.UDT:
                     // TODO: What about Structure/Union?
                     return CodeTypeTag.Class;
-                case SymTagEnum.SymTagEnum:
+                case SymTagEnum.Enum:
                     return CodeTypeTag.Enum;
-                case SymTagEnum.SymTagFunctionType:
+                case SymTagEnum.FunctionType:
                     return CodeTypeTag.Function;
-                case SymTagEnum.SymTagPointerType:
+                case SymTagEnum.PointerType:
                     return CodeTypeTag.Pointer;
-                case SymTagEnum.SymTagBaseClass:
+                case SymTagEnum.BaseClass:
                     return CodeTypeTag.BaseClass;
-                case SymTagEnum.SymTagExe:
+                case SymTagEnum.Exe:
                     return CodeTypeTag.ModuleGlobals;
                 default:
                     return CodeTypeTag.Unsupported;

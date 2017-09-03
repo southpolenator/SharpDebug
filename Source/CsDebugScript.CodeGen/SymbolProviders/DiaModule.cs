@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.Engine;
-using Dia2Lib;
+using DIA;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -54,6 +54,9 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <param name="module">The XML module description.</param>
         public static Module Open(XmlModule module)
         {
+            // Example on how else it can be created.
+            // Guid clsid = new Guid("E6756135-1E65-4D17-8576-610761398C3C");
+            // IDiaDataSource dia = (IDiaDataSource)Activator.CreateInstance(Type.GetTypeFromCLSID(clsid));
             IDiaDataSource dia = new DiaSource();
             IDiaSession session;
             string moduleName = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.PdbPath).ToLower();
@@ -81,7 +84,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <param name="nameWildcard">The type name wildcard.</param>
         public override Symbol[] FindGlobalTypeWildcard(string nameWildcard)
         {
-            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.SymTagUDT).Select(s => GetSymbol(s)).Cast<Symbol>().ToArray();
+            return session.globalScope.GetChildrenWildcard(nameWildcard, SymTagEnum.UDT).Select(s => GetSymbol(s)).Cast<Symbol>().ToArray();
         }
 
         /// <summary>
@@ -90,11 +93,11 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         public override IEnumerable<Symbol> GetAllTypes()
         {
             // Get all types defined in the symbol
-            var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
-            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagEnum));
-            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagBaseType));
-            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagPointerType));
-            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagArrayType));
+            var diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.UDT).ToList();
+            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.Enum));
+            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.BaseType));
+            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.PointerType));
+            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.ArrayType));
 
             // Create symbols from types
             var convertedTypes = diaGlobalTypes.Select(s => new DiaSymbol(this, s)).ToList();
@@ -230,14 +233,16 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override IEnumerable<string> GetPublicSymbols()
         {
-            return session.globalScope.GetChildren(SymTagEnum.SymTagPublicSymbol).Select((type) =>
+            return session.globalScope.GetChildren(SymTagEnum.PublicSymbol).Select((type) =>
             {
-                if (type.code != 0 || type.function != 0 || (LocationType)type.locationType != LocationType.Static)
+                if (type.code || type.function || type.locationType != LocationType.Static)
+                {
                     return string.Empty;
+                }
 
                 string undecoratedName;
 
-                type.get_undecoratedNameEx(0x1000, out undecoratedName);
+                type.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly, out undecoratedName);
                 return undecoratedName ?? type.name;
             });
         }
@@ -266,23 +271,23 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             switch (tag)
             {
                 case CodeTypeTag.Array:
-                    return SymTagEnum.SymTagArrayType;
+                    return SymTagEnum.ArrayType;
                 case CodeTypeTag.BaseClass:
-                    return SymTagEnum.SymTagBaseClass;
+                    return SymTagEnum.BaseClass;
                 case CodeTypeTag.BuiltinType:
-                    return SymTagEnum.SymTagBaseType;
+                    return SymTagEnum.BaseType;
                 case CodeTypeTag.Class:
                 case CodeTypeTag.Structure:
                 case CodeTypeTag.Union:
-                    return SymTagEnum.SymTagUDT;
+                    return SymTagEnum.UDT;
                 case CodeTypeTag.Enum:
-                    return SymTagEnum.SymTagEnum;
+                    return SymTagEnum.Enum;
                 case CodeTypeTag.Function:
-                    return SymTagEnum.SymTagFunctionType;
+                    return SymTagEnum.FunctionType;
                 case CodeTypeTag.ModuleGlobals:
-                    return SymTagEnum.SymTagExe;
+                    return SymTagEnum.Exe;
                 case CodeTypeTag.Pointer:
-                    return SymTagEnum.SymTagPointerType;
+                    return SymTagEnum.PointerType;
                 default:
                 case CodeTypeTag.Unsupported:
                     throw new NotImplementedException();

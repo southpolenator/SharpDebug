@@ -290,6 +290,7 @@ namespace CsDebugScript.CodeGen
             // Check whether we should generate assembly
             if (!xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
             {
+#if NET461
                 var codeProvider = new CSharpCodeProvider();
                 var compilerParameters = new CompilerParameters()
                 {
@@ -321,6 +322,9 @@ namespace CsDebugScript.CodeGen
                 }
 
                 logger.WriteLine("Compiling: {0}", stopwatch.Elapsed);
+#else
+                throw new Exception(".NET standard must use Roslyn to generate assemblies.");
+#endif
             }
 
             // Generating props file

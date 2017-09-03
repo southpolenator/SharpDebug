@@ -1,6 +1,6 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
-using Dia2Lib;
+using DIA;
 using System;
 using System.Collections.Generic;
 using System.Linq;

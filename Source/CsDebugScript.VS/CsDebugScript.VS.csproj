@@ -110,10 +110,6 @@
       <Project>{b63c2b4e-eb2e-45fc-93fd-5d6f2077064d}</Project>
       <Name>CsDebugScript.UI</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CsDebugScript.DiaHelpers\CsDebugScript.DiaHelpers.csproj">
-      <Project>{3CA2D1D6-136F-4032-901E-043FA25B6255}</Project>
-      <Name>CsDebugScript.DiaHelpers</Name>
-    </ProjectReference>
     <ProjectReference Include="..\CsDebugScript.ClrMdProvider\CsDebugScript.ClrMdProvider.csproj">
       <Project>{5be4aa0c-b242-45fd-968f-eb66745a9eff}</Project>
       <Name>CsDebugScript.ClrMdProvider</Name>
@@ -142,10 +138,6 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Dia2Lib">
-      <HintPath>$(OutDir)\Dia2Lib.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
     <Reference Include="EnvDTE, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>

@@ -1,9 +1,9 @@
-﻿namespace Dia2Lib
+﻿namespace DIA
 {
     /// <summary>
     /// Specifies the symbol's basic type.
     /// </summary>
-    public enum BasicType
+    public enum BasicType : uint
     {
         /// <summary>
         /// No basic type is specified.
@@ -96,12 +96,12 @@
         Hresult = 31,
 
         /// <summary>
-        /// TODO: Undocumented
+        /// Undocumented on MSDN
         /// </summary>
         Char16 = 32,
 
         /// <summary>
-        /// TODO: Undocumented
+        /// Undocumented on MSDN
         /// </summary>
         Char32 = 33,
     };

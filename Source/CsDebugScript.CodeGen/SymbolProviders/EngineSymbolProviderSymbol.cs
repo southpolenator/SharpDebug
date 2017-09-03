@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.Engine;
-using Dia2Lib;
+using DIA;
 using System;
 using System.Collections.Generic;
 

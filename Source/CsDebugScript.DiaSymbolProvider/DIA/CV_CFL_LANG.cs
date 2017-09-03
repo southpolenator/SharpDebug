@@ -1,9 +1,9 @@
-﻿namespace Dia2Lib
+﻿namespace DIA
 {
     /// <summary>
     /// Specifies the source code language of the application or linked module.
     /// </summary>
-    public enum CV_CFL_LANG
+    public enum CV_CFL_LANG : uint
     {
         /// <summary>
         /// Application language is C.

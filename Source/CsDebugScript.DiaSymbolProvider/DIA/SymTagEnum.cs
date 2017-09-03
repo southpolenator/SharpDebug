@@ -1,9 +1,11 @@
-﻿namespace CsDebugScript.Engine.Native
+using CsDebugScript.Engine;
+
+namespace DIA
 {
     /// <summary>
     /// Specifies the type of symbol.
     /// </summary>
-    public enum SymTag : uint
+    public enum SymTagEnum : uint
     {
         /// <summary>
         /// Indicates that the symbol has no type.
@@ -191,27 +193,27 @@
         HLSLType,
 
         /// <summary>
-        /// TODO: Not found on MSDN
+        /// Undocumented on MSDN
         /// </summary>
         Caller,
 
         /// <summary>
-        /// TODO: Not found on MSDN
+        /// Undocumented on MSDN
         /// </summary>
         Callee,
 
         /// <summary>
-        /// TODO: Not found on MSDN
+        /// Undocumented on MSDN
         /// </summary>
         Export,
 
         /// <summary>
-        /// TODO: Not found on MSDN
+        /// Undocumented on MSDN
         /// </summary>
         HeapAllocationSite,
 
         /// <summary>
-        /// TODO: Not found on MSDN
+        /// Undocumented on MSDN
         /// </summary>
         CoffGroup,
 
@@ -222,33 +224,33 @@
     }
 
     /// <summary>
-    /// Extension methods for <see cref="SymTag"/>
+    /// Extension methods for <see cref="SymTagEnum"/>
     /// </summary>
     public static class SymTagExtensions
     {
         /// <summary>
-        /// Converts <see cref="SymTag"/> to <see cref="CodeTypeTag"/>.
+        /// Converts <see cref="SymTagEnum"/> to <see cref="CodeTypeTag"/>.
         /// </summary>
-        public static CodeTypeTag ToCodeTypeTag(this SymTag tag)
+        public static CodeTypeTag ToCodeTypeTag(this SymTagEnum tag)
         {
             switch (tag)
             {
-                case SymTag.ArrayType:
+                case SymTagEnum.ArrayType:
                     return CodeTypeTag.Array;
-                case SymTag.BaseType:
+                case SymTagEnum.BaseType:
                     return CodeTypeTag.BuiltinType;
-                case SymTag.UDT:
-                    // TODO: What about Structure/Union?
+                case SymTagEnum.UDT:
+                    // TODO: What about Structure/Union? IDiaSymbol.udtKind might help...
                     return CodeTypeTag.Class;
-                case SymTag.Enum:
+                case SymTagEnum.Enum:
                     return CodeTypeTag.Enum;
-                case SymTag.FunctionType:
+                case SymTagEnum.FunctionType:
                     return CodeTypeTag.Function;
-                case SymTag.PointerType:
+                case SymTagEnum.PointerType:
                     return CodeTypeTag.Pointer;
-                case SymTag.BaseClass:
+                case SymTagEnum.BaseClass:
                     return CodeTypeTag.BaseClass;
-                case SymTag.Exe:
+                case SymTagEnum.Exe:
                     return CodeTypeTag.ModuleGlobals;
                 default:
                     return CodeTypeTag.Unsupported;

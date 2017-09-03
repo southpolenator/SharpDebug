@@ -1,6 +1,7 @@
 ﻿using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
 using DbgEngManaged;
+using DIA;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -200,7 +201,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(dbgEngDll.StateCache, module.Process))
             {
-                SymTag symTag = typedData[Tuple.Create(module.Address, typeId, module.Process.PebAddress)].Tag;
+                SymTagEnum symTag = typedData[Tuple.Create(module.Address, typeId, module.Process.PebAddress)].Tag;
 
                 return symTag.ToCodeTypeTag();
             }

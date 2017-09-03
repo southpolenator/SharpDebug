@@ -2,24 +2,13 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetFramework);$(DefaultNetStandard)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>Provides fast access to symbols by directly reading PDB files using DIA library. It is symbol provider for CsDebugScript.Engine.</Description>
+    <Description>Provides fast access to symbols by directly reading PDB files using DIA library. It is symbol provider for CsDebugScript.Engine. Also includes COM interfaces for working with DIA library.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Dia2Lib">
-      <HintPath>$(OutDir)\Dia2Lib.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaHelpers\CsDebugScript.DiaHelpers.csproj" />
   </ItemGroup>
 
 </Project>

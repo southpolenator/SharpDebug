@@ -8,10 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Dia2Lib">
-      <HintPath>$(OutDir)\Dia2Lib.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
     <Reference Include="DbgEngManaged">
       <HintPath>$(OutDir)\DbgEngManaged.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
@@ -24,7 +20,6 @@
     </ProjectReference>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaHelpers\CsDebugScript.DiaHelpers.csproj" />
   </ItemGroup>
 
 </Project>

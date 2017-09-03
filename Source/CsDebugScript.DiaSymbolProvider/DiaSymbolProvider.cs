@@ -1,4 +1,4 @@
-﻿using Dia2Lib;
+﻿using DIA;
 using System.IO;
 
 namespace CsDebugScript.Engine.SymbolProviders

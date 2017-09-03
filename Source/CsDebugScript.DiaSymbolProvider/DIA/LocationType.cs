@@ -1,9 +1,9 @@
-﻿namespace Dia2Lib
+﻿namespace DIA
 {
     /// <summary>
     /// Indicates the kind of location information contained in a symbol.
     /// </summary>
-    public enum LocationType
+    public enum LocationType : uint
     {
         /// <summary>
         /// Location information is unavailable.

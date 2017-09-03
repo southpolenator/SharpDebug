@@ -1,9 +1,9 @@
-﻿namespace Dia2Lib
+﻿namespace DIA
 {
     /// <summary>
     /// Indicates the particular scope of a data value.
     /// </summary>
-    public enum DataKind
+    public enum DataKind : uint
     {
         /// <summary>
         /// Data symbol cannot be determined.

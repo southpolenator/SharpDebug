@@ -2,7 +2,7 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetFramework);$(DefaultNetStandard)</TargetFrameworks>
     <Description>Extension to CsDebugScript.Engine that provides ability to extract user types from symbols files. By default it uses DIA to read PDB files, but it can be used with CsDebugScript.DwarfSymbolProvider to generate from DWARF symbols (either from PE or ELF image containers).</Description>
   </PropertyGroup>
 
@@ -11,18 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Dia2Lib">
-      <HintPath>$(OutDir)\Dia2Lib.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaHelpers\CsDebugScript.DiaHelpers.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />
   </ItemGroup>
 
 </Project>

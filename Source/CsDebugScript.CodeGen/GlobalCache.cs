@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.CodeGen.SymbolProviders;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using CsDebugScript.Engine;
+using DIA;
 using System.Collections.Generic;
 using System.Text;
-using Dia2Lib;
 
 namespace CsDebugScript.CodeGen
 {

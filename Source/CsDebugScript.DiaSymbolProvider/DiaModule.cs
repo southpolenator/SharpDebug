@@ -1,7 +1,5 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.Utility;
-using Dia2Lib;
+﻿using CsDebugScript.Engine.Utility;
+using DIA;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -94,7 +92,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             basicTypes = SimpleCache.Create(() =>
             {
                 var types = new Dictionary<string, IDiaSymbol>();
-                var basicTypes = globalScope.GetChildren(SymTagEnum.SymTagBaseType);
+                var basicTypes = globalScope.GetChildren(SymTagEnum.BaseType);
 
                 foreach (var type in basicTypes)
                 {
@@ -120,8 +118,8 @@ namespace CsDebugScript.Engine.SymbolProviders
                 int displacement;
                 string name;
 
-                session.findSymbolByRVAEx(distance, SymTagEnum.SymTagNull, out symbol, out displacement);
-                symbol.get_undecoratedNameEx(0 | 0x8000 | 0x1000, out name);
+                session.findSymbolByRVAEx(distance, SymTagEnum.Null, out symbol, out displacement);
+                symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu, out name);
                 return Tuple.Create(name, (ulong)displacement);
             });
 
@@ -176,11 +174,13 @@ namespace CsDebugScript.Engine.SymbolProviders
             }
 
             // Get type fields
-            var fields = type.GetChildren(SymTagEnum.SymTagData);
+            var fields = type.GetChildren(SymTagEnum.Data);
             foreach (var field in fields)
             {
-                if ((DataKind)field.dataKind == DataKind.StaticMember)
+                if (field.dataKind == DataKind.StaticMember)
+                {
                     continue;
+                }
 
                 typeFields.Add(Tuple.Create(field.name, field.typeId, offset + field.offset));
             }
@@ -194,12 +194,14 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             var type = GetTypeFromId(typeId);
             List<Tuple<string, uint, int>> typeFields = new List<Tuple<string, uint, int>>();
-            var fields = type.GetChildren(SymTagEnum.SymTagData);
+            var fields = type.GetChildren(SymTagEnum.Data);
 
             foreach (var field in fields)
             {
-                if ((DataKind)field.dataKind == DataKind.StaticMember)
+                if (field.dataKind == DataKind.StaticMember)
+                {
                     continue;
+                }
 
                 typeFields.Add(Tuple.Create(field.name, field.typeId, field.offset));
             }
@@ -226,7 +228,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public CodeTypeTag GetTypeTag(Module module, uint typeId)
         {
-            SymTag symTag = (SymTag)GetTypeFromId(typeId).symTag;
+            SymTagEnum symTag = GetTypeFromId(typeId).symTag;
 
             return symTag.ToCodeTypeTag();
         }
@@ -296,11 +298,11 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeName">Name of the type.</param>
         private IDiaSymbol GetTypeFromGlobalSpace(string typeName)
         {
-            IDiaSymbol type = globalScope.GetChild(typeName, SymTagEnum.SymTagUDT);
+            IDiaSymbol type = globalScope.GetChild(typeName, SymTagEnum.UDT);
 
             if (type == null)
             {
-                type = globalScope.GetChild(typeName, SymTagEnum.SymTagEnum);
+                type = globalScope.GetChild(typeName, SymTagEnum.Enum);
             }
 
             if (type == null)
@@ -374,8 +376,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="type">The type.</param>
         private string[] GetTypeAllFieldNames(IDiaSymbol type)
         {
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+            if (type.symTag == SymTagEnum.PointerType)
+            {
                 type = type.type;
+            }
 
             var fields = typeAllFields[type.symIndexId];
 
@@ -400,15 +404,19 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="fieldName">Name of the field.</param>
         private Tuple<uint, int> GetTypeFieldTypeAndOffset(IDiaSymbol type, string fieldName)
         {
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+            if (type.symTag == SymTagEnum.PointerType)
+            {
                 type = type.type;
+            }
 
             var fields = typeAllFields[type.symIndexId];
 
             foreach (var field in fields)
             {
                 if (field.Item1 != fieldName)
+                {
                     continue;
+                }
 
                 return Tuple.Create(field.Item2, field.Item3);
             }
@@ -432,9 +440,9 @@ namespace CsDebugScript.Engine.SymbolProviders
             IDiaEnumLineNumbers lineNumbers;
             IDiaSymbol function;
 
-            session.findSymbolByRVA(address, SymTagEnum.SymTagFunction, out function);
+            session.findSymbolByRVA(address, SymTagEnum.Function, out function);
             session.findLinesByRVA(address, (uint)function.length, out lineNumbers);
-            foreach (IDiaLineNumber lineNumber in lineNumbers)
+            foreach (IDiaLineNumber lineNumber in lineNumbers.Enum())
             {
                 if (address >= lineNumber.relativeVirtualAddress)
                 {
@@ -461,7 +469,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             int innerDisplacement;
             IDiaSymbol function;
 
-            session.findSymbolByRVAEx(address, SymTagEnum.SymTagFunction, out function, out innerDisplacement);
+            session.findSymbolByRVAEx(address, SymTagEnum.Function, out function, out innerDisplacement);
             displacement = (ulong)innerDisplacement;
             functionName = function.name;
         }
@@ -480,8 +488,8 @@ namespace CsDebugScript.Engine.SymbolProviders
             int innerDisplacement;
             IDiaSymbol function;
 
-            session.findSymbolByRVAEx(address, SymTagEnum.SymTagNull, out function, out innerDisplacement);
-            return function != null && (SymTagEnum)function.symTag == SymTagEnum.SymTagPublicSymbol;
+            session.findSymbolByRVAEx(address, SymTagEnum.Null, out function, out innerDisplacement);
+            return function != null && function.symTag == SymTagEnum.PublicSymbol;
         }
 
         /// <summary>
@@ -497,19 +505,19 @@ namespace CsDebugScript.Engine.SymbolProviders
             int displacement;
             List<Variable> variables = new List<Variable>();
 
-            session.findSymbolByRVAEx(relativeAddress, SymTagEnum.SymTagFunction, out function, out displacement);
+            session.findSymbolByRVAEx(relativeAddress, SymTagEnum.Function, out function, out displacement);
             GetFrameLocals(function, relativeAddress, variables, frame, module, arguments);
             if (!arguments)
             {
                 IDiaSymbol block;
 
                 // Locate locals using block.
-                session.findSymbolByRVAEx(relativeAddress, SymTagEnum.SymTagBlock, out block, out displacement);
+                session.findSymbolByRVAEx(relativeAddress, SymTagEnum.Block, out block, out displacement);
 
                 if (block != null)
                 {
                     // Traverse blocks till we reach function.
-                    while ((SymTagEnum)block.symTag != SymTagEnum.SymTagFunction)
+                    while (block.symTag != SymTagEnum.Function)
                     {
                         GetFrameLocals(block, uint.MaxValue, variables, frame, module, arguments);
                         block = block.lexicalParent;
@@ -536,28 +544,28 @@ namespace CsDebugScript.Engine.SymbolProviders
             if (relativeAddress != uint.MaxValue)
             {
                 IDiaEnumSymbols symbolsEnum;
-                block.findChildrenExByRVA(SymTagEnum.SymTagNull, null, 0, relativeAddress, out symbolsEnum);
+                block.findChildrenExByRVA(SymTagEnum.Null, null, 0, relativeAddress, out symbolsEnum);
                 symbols = symbolsEnum.Enum();
             }
             else
             {
-                symbols = block.GetChildren(SymTagEnum.SymTagData);
+                symbols = block.GetChildren(SymTagEnum.Data);
             }
 
             foreach (var symbol in symbols)
             {
-                SymTagEnum tag = (SymTagEnum)symbol.symTag;
+                SymTagEnum tag = symbol.symTag;
 
-                if (tag == SymTagEnum.SymTagData)
+                if (tag == SymTagEnum.Data)
                 {
-                    DataKind symbolDataKind = (DataKind)symbol.dataKind;
+                    DataKind symbolDataKind = symbol.dataKind;
 
-                    if ((arguments && symbolDataKind != DataKind.Param) || (LocationType)symbol.locationType == LocationType.Null)
+                    if ((arguments && symbolDataKind != DataKind.Param) || symbol.locationType == LocationType.Null)
                     {
                         continue;
                     }
                 }
-                else if (tag != SymTagEnum.SymTagFunctionArgType || !arguments)
+                else if (tag != SymTagEnum.FunctionArgType || !arguments)
                 {
                     continue;
                 }
@@ -580,10 +588,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             ulong address;
 
-            switch ((LocationType)symbol.locationType)
+            switch (symbol.locationType)
             {
                 case LocationType.RegRel:
-                    switch ((CV_HREG_e)symbol.registerId)
+                    switch (symbol.registerId)
                     {
                         case CV_HREG_e.CV_AMD64_ESP:
                         case CV_HREG_e.CV_AMD64_RSP:
@@ -607,7 +615,7 @@ namespace CsDebugScript.Engine.SymbolProviders
                             }
                             break;
                         default:
-                            throw new Exception("Unknown register id" + (CV_HREG_e)symbol.registerId);
+                            throw new Exception("Unknown register id" + symbol.registerId);
                     }
 
                     address += (ulong)symbol.offset;
@@ -617,7 +625,7 @@ namespace CsDebugScript.Engine.SymbolProviders
                     return symbol.virtualAddress;
 
                 default:
-                    throw new Exception("Unknown location type " + (LocationType)symbol.locationType);
+                    throw new Exception("Unknown location type " + symbol.locationType);
             }
         }
 
@@ -672,7 +680,7 @@ namespace CsDebugScript.Engine.SymbolProviders
                     var type = globalScope.GetChild(string.Join("::", spaces.Take(spaces.Length - 1)));
 
                     if (type != null)
-                        globalVariable = type.GetChild(spaces.Last(), SymTagEnum.SymTagData);
+                        globalVariable = type.GetChild(spaces.Last(), SymTagEnum.Data);
                 }
             }
 
@@ -691,8 +699,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             var type = GetTypeFromId(typeId);
 
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+            if (type.symTag == SymTagEnum.PointerType)
+            {
                 type = type.type;
+            }
 
             var fields = typeFields[type.symIndexId];
 
@@ -709,15 +719,19 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             var type = GetTypeFromId(typeId);
 
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+            if (type.symTag == SymTagEnum.PointerType)
+            {
                 type = type.type;
+            }
 
             var fields = typeFields[type.symIndexId];
 
             foreach (var field in fields)
             {
                 if (field.Item1 != fieldName)
+                {
                     continue;
+                }
 
                 return Tuple.Create(field.Item2, field.Item3);
             }
@@ -735,8 +749,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             var type = GetTypeFromId(typeId);
 
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+            if (type.symTag == SymTagEnum.PointerType)
+            {
                 type = type.type;
+            }
 
             if (CodeType.TypeNameMatches(type.name, className))
             {
@@ -787,7 +803,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             var type = GetTypeFromId(enumTypeId);
 
-            if ((SymTagEnum)type.symTag != SymTagEnum.SymTagEnum)
+            if (type.symTag != SymTagEnum.Enum)
             {
                 throw new Exception("type must be enum");
             }
@@ -815,7 +831,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public BuiltinType GetTypeBuiltinType(Module module, uint typeId)
         {
-            BasicType basicType = (BasicType)GetTypeFromId(typeId).baseType;
+            BasicType basicType = GetTypeFromId(typeId).baseType;
             uint size = GetTypeSize(module, typeId);
 
             switch (basicType)
@@ -896,8 +912,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             var type = GetTypeFromId(typeId);
 
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagPointerType)
+            if (type.symTag == SymTagEnum.PointerType)
+            {
                 type = type.type;
+            }
 
             var bases = type.GetBaseClasses();
             var result = new Dictionary<string, Tuple<uint, int>>();
@@ -935,9 +953,9 @@ namespace CsDebugScript.Engine.SymbolProviders
             int displacement;
             string fullyUndecoratedName, partiallyUndecoratedName;
 
-            session.findSymbolByRVAEx(distance, SymTagEnum.SymTagNull, out symbol, out displacement);
-            symbol.get_undecoratedNameEx(0 | 0x8000 | 0x1000, out fullyUndecoratedName);
-            symbol.get_undecoratedNameEx(0 | 0x8000, out partiallyUndecoratedName);
+            session.findSymbolByRVAEx(distance, SymTagEnum.Null, out symbol, out displacement);
+            symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu, out fullyUndecoratedName);
+            symbol.get_undecoratedNameEx(UndecoratedNameOptions.NoEscu, out partiallyUndecoratedName);
 
             // Fully undecorated name should be in form: "DerivedClass::`vftable'"
             const string vftableString = "::`vftable'";
@@ -986,8 +1004,8 @@ namespace CsDebugScript.Engine.SymbolProviders
         public IEnumerable<uint> GetAllTypes()
         {
             // Get all types defined in the symbol
-            List<IDiaSymbol> diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.SymTagUDT).ToList();
-            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.SymTagEnum));
+            List<IDiaSymbol> diaGlobalTypes = session.globalScope.GetChildren(SymTagEnum.UDT).ToList();
+            diaGlobalTypes.AddRange(session.globalScope.GetChildren(SymTagEnum.Enum));
 
             // Remove duplicate symbols by searching for the by name
             HashSet<string> usedNames = new HashSet<string>();
@@ -998,7 +1016,7 @@ namespace CsDebugScript.Engine.SymbolProviders
 
                 if (!usedNames.Contains(name))
                 {
-                    IDiaSymbol ss = session.globalScope.GetChild(name, (SymTagEnum)s.symTag);
+                    IDiaSymbol ss = session.globalScope.GetChild(name, s.symTag);
 
                     if (ss != null)
                     {
@@ -1025,9 +1043,9 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             var type = GetTypeFromId(enumTypeId);
 
-            if ((SymTagEnum)type.symTag == SymTagEnum.SymTagEnum)
+            if (type.symTag == SymTagEnum.Enum)
             {
-                foreach (var enumValue in type.GetChildren(SymTagEnum.SymTagNull))
+                foreach (var enumValue in type.GetChildren(SymTagEnum.Null))
                 {
                     yield return Tuple.Create(enumValue.name, enumValue.value.ToString());
                 }
@@ -1042,7 +1060,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             var type = GetTypeFromId(typeId);
 
-            if (type.GetChildren(SymTagEnum.SymTagVTable).Any())
+            if (type.GetChildren(SymTagEnum.VTable).Any())
             {
                 return true;
             }

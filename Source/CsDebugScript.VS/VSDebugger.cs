@@ -2,7 +2,7 @@
 using CsDebugScript.Engine.Utility;
 using System;
 using System.Linq;
-using Dia2Lib;
+using DIA;
 using CsDebugScript.Engine.SymbolProviders;
 using System.IO;
 using CsDebugScript.Engine;
