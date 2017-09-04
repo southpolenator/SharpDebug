@@ -813,7 +813,7 @@ namespace CsDebugScript.Engine.SymbolProviders
 
             foreach (var child in children)
             {
-                ulong value = (ulong)child.value;
+                ulong value = Convert.ToUInt64(child.value);
 
                 if (!result.ContainsKey(value))
                 {
