@@ -1,47 +1,83 @@
 using System;
 using System.Collections;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace DIA
 {
-	[DefaultMember("Item"), Guid("486943E8-D187-4A6B-A3C4-291259FFF60D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-	[ComImport]
-	public interface IDiaEnumDebugStreamData
-	{
-		[DispId(1)]
-		int count
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+    /// <summary>
+    /// Provides access to the records in a debug data stream.
+    /// </summary>
+    [ComImport, Guid("486943E8-D187-4A6B-A3C4-291259FFF60D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IDiaEnumDebugStreamData
+    {
+        /// <summary>
+        /// Gets the enumerator. Internally, marshals the COM IEnumVARIANT interface to the .NET Framework <see cref="IEnumerator"/> interface, and vice versa.
+        /// </summary>
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "System.Runtime.InteropServices.CustomMarshalers.EnumeratorToEnumVariantMarshaler")]
+        IEnumerator GetEnumerator();
 
-		[DispId(2)]
-		string name
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			[return: MarshalAs(UnmanagedType.BStr)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the number of records in the debug data stream.
+        /// </summary>
+        [DispId(1)]
+        int count { get; }
 
-		[MethodImpl(MethodImplOptions.InternalCall)]
-		[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "System.Runtime.InteropServices.CustomMarshalers.EnumeratorToEnumVariantMarshaler")]
-		IEnumerator GetEnumerator();
+        /// <summary>
+        /// Retrieves the name of the debug data stream.
+        /// </summary>
+        [DispId(2)]
+        string name
+        {
+            [return: MarshalAs(UnmanagedType.BStr)]
+            get;
+        }
 
-		[MethodImpl(MethodImplOptions.InternalCall)]
-		void Item([In] uint index, [In] uint cbData, out uint pcbData, out byte pbData);
+        /// <summary>
+        /// Retrieves the specified record.
+        /// </summary>
+        /// <param name="index">Index of the record to be retrieved. The index is in the range 0 to count-1, where count is returned by <see cref="IDiaEnumDebugStreamData.count"/>.</param>
+        /// <param name="cbData">Size of the data buffer, in bytes.</param>
+        /// <param name="pcbData">Returns the number of bytes returned. If data is <c>null</c>, then pcbData contains the total number of bytes of data available in the specified record.</param>
+        /// <param name="pbData">A buffer that is filled in with the debug stream record data.</param>
+        [DispId(0)]
+        void Item(
+            [In] uint index,
+            [In] uint cbData,
+            [Out] out uint pcbData,
+            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref byte[] pbData);
 
-		[MethodImpl(MethodImplOptions.InternalCall)]
-		void Next([In] uint celt, [In] uint cbData, out uint pcbData, out byte pbData, out uint pceltFetched);
+        /// <summary>
+        /// Retrieves a specified number of records in the enumerated sequence.
+        /// </summary>
+        /// <param name="celt">The number of records to be retrieved.</param>
+        /// <param name="cbData">Size of the data buffer, in bytes.</param>
+        /// <param name="pcbData">Returns the number of bytes returned. If data is <c>null</c>, then pcbData contains the total number of bytes of data available for all requested records.</param>
+        /// <param name="pbData">A buffer that is to be filled with the debug stream record data.</param>
+        /// <param name="pceltFetched">Returns the number of records in data.</param>
+        void Next(
+            [In] uint celt,
+            [In] uint cbData,
+            [Out] out uint pcbData,
+            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref byte[] pbData,
+            [Out] out uint pceltFetched);
 
-		[MethodImpl(MethodImplOptions.InternalCall)]
-		void Skip([In] uint celt);
+        /// <summary>
+        /// Skips a specified number of records in an enumerated sequence.
+        /// </summary>
+        /// <param name="celt">The number of records to skip in the enumerated sequence.</param>
+        void Skip(
+            [In] uint celt);
 
-		[MethodImpl(MethodImplOptions.InternalCall)]
-		void Reset();
+        /// <summary>
+        /// Resets to the beginning of an enumerated sequence.
+        /// </summary>
+        void Reset();
 
-		[MethodImpl(MethodImplOptions.InternalCall)]
-		void Clone([MarshalAs(UnmanagedType.Interface)] out IDiaEnumDebugStreamData ppenum);
-	}
+        /// <summary>
+        /// Creates an enumerator that contains the same enumerated sequence as the current enumerator.
+        /// </summary>
+        /// <returns>Returns an <see cref="IDiaEnumDebugStreamData"/> object that contains the duplicated sequence of debug data stream records.</returns>
+        [return: MarshalAs(UnmanagedType.Interface)]
+        IDiaEnumDebugStreamData Clone();
+    }
 }

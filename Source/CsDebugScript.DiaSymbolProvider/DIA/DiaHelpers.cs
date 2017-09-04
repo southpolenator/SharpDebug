@@ -14,9 +14,9 @@ namespace DIA
         /// <param name="container">The container.</param>
         public static IEnumerable<IDiaSymbol> Enum(this IDiaEnumSymbols container)
         {
-            for (int i = 0, n = container.count; i < n; i++)
+            foreach (IDiaSymbol symbol in container)
             {
-                yield return container.Item((uint)i);
+                yield return symbol;
             }
         }
 
@@ -26,9 +26,9 @@ namespace DIA
         /// <param name="container">The container.</param>
         public static IEnumerable<IDiaLineNumber> Enum(this IDiaEnumLineNumbers container)
         {
-            for (int i = 0, n = container.count; i < n; i++)
+            foreach (IDiaLineNumber lineNumber in container)
             {
-                yield return container.Item((uint)i);
+                yield return lineNumber;
             }
         }
 
@@ -40,9 +40,8 @@ namespace DIA
         /// <param name="tag">The tag.</param>
         public static IDiaSymbol GetChild(this IDiaSymbol symbol, string name, SymTagEnum tag = SymTagEnum.Null)
         {
-            IDiaEnumSymbols symbols;
+            IDiaEnumSymbols symbols = symbol.findChildren(tag, name, NameSearchOptions.None);
 
-            symbol.findChildren(tag, name, NameSearchOptions.None, out symbols);
             return symbols.Enum().FirstOrDefault();
         }
 
@@ -54,9 +53,8 @@ namespace DIA
         /// <param name="tag">The tag.</param>
         public static IEnumerable<IDiaSymbol> GetChildrenWildcard(this IDiaSymbol symbol, string nameWildcard, SymTagEnum tag = SymTagEnum.Null)
         {
-            IDiaEnumSymbols symbols;
+            IDiaEnumSymbols symbols = symbol.findChildren(tag, nameWildcard, NameSearchOptions.RegularExpression);
 
-            symbol.findChildren(tag, nameWildcard, NameSearchOptions.RegularExpression, out symbols);
             return symbols.Enum();
         }
 
@@ -67,9 +65,8 @@ namespace DIA
         /// <param name="tag">The tag.</param>
         public static IEnumerable<IDiaSymbol> GetChildren(this IDiaSymbol symbol, SymTagEnum tag = SymTagEnum.Null)
         {
-            IDiaEnumSymbols symbols;
+            IDiaEnumSymbols symbols = symbol.findChildren(tag, null, NameSearchOptions.None);
 
-            symbol.findChildren(tag, null, NameSearchOptions.None, out symbols);
             return symbols.Enum();
         }
 

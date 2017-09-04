@@ -240,10 +240,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
                     return string.Empty;
                 }
 
-                string undecoratedName;
-
-                type.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly, out undecoratedName);
-                return undecoratedName ?? type.name;
+                return type.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly) ?? type.name;
             });
         }
 

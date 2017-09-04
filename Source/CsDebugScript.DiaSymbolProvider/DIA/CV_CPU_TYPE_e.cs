@@ -1,8 +1,12 @@
 namespace DIA
 {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-    public enum CV_CPU_TYPE_e
+    /// <summary>
+    /// Specifies the target processor.
+    /// <note>The processor is identified in the enumeration element after the <c>CV_CFL_*</c> prefix.</note>
+    /// </summary>
+    public enum CV_CPU_TYPE_e : uint
     {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         CV_CFL_8080,
         CV_CFL_8086,
         CV_CFL_80286,
@@ -69,6 +73,6 @@ namespace DIA
         CV_CFL_ARM64 = 246,
         CV_CFL_HYBRID_X86_ARM64,
         CV_CFL_D3D11_SHADER = 256
-    }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+    }
 }

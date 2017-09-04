@@ -119,7 +119,7 @@ namespace CsDebugScript.Engine.SymbolProviders
                 string name;
 
                 session.findSymbolByRVAEx(distance, SymTagEnum.Null, out symbol, out displacement);
-                symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu, out name);
+                name = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu);
                 return Tuple.Create(name, (ulong)displacement);
             });
 
@@ -215,10 +215,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         private IDiaSymbol GetTypeFromId(uint typeId)
         {
-            IDiaSymbol type;
-
-            session.symbolById(typeId, out type);
-            return type;
+            return session.symbolById(typeId);
         }
 
         /// <summary>
@@ -437,11 +434,9 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <exception cref="Exception">Address not found</exception>
         public void GetSourceFileNameAndLine(Process process, ulong processAddress, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
-            IDiaEnumLineNumbers lineNumbers;
-            IDiaSymbol function;
+            IDiaSymbol function = session.findSymbolByRVA(address, SymTagEnum.Function);
+            IDiaEnumLineNumbers lineNumbers = session.findLinesByRVA(address, (uint)function.length);
 
-            session.findSymbolByRVA(address, SymTagEnum.Function, out function);
-            session.findLinesByRVA(address, (uint)function.length, out lineNumbers);
             foreach (IDiaLineNumber lineNumber in lineNumbers.Enum())
             {
                 if (address >= lineNumber.relativeVirtualAddress)
@@ -543,8 +538,8 @@ namespace CsDebugScript.Engine.SymbolProviders
 
             if (relativeAddress != uint.MaxValue)
             {
-                IDiaEnumSymbols symbolsEnum;
-                block.findChildrenExByRVA(SymTagEnum.Null, null, 0, relativeAddress, out symbolsEnum);
+                IDiaEnumSymbols symbolsEnum = block.findChildrenExByRVA(SymTagEnum.Null, null, 0, relativeAddress);
+
                 symbols = symbolsEnum.Enum();
             }
             else
@@ -954,8 +949,8 @@ namespace CsDebugScript.Engine.SymbolProviders
             string fullyUndecoratedName, partiallyUndecoratedName;
 
             session.findSymbolByRVAEx(distance, SymTagEnum.Null, out symbol, out displacement);
-            symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu, out fullyUndecoratedName);
-            symbol.get_undecoratedNameEx(UndecoratedNameOptions.NoEscu, out partiallyUndecoratedName);
+            fullyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu) ?? symbol.name;
+            partiallyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NoEscu) ?? symbol.name;
 
             // Fully undecorated name should be in form: "DerivedClass::`vftable'"
             const string vftableString = "::`vftable'";

@@ -44,7 +44,7 @@ namespace DIA
         /// </summary>
         /// <param name="executable">Path to the .exe or .dll file.</param>
         /// <param name="searchPath">Alternate path to search for debug data.</param>
-        /// <param name="pCallback">An IUnknown interface for an object that supports a debug callback interface, such as the <see cref="IDiaLoadCallback"/>, <see cref="IDiaLoadCallback2"/>, the <see cref="IDiaReadExeAtOffsetCallback"/>, and/or the <see cref="IDiaReadExeAtRVACallback"/> interfaces.</param>
+        /// <param name="pCallback">An IUnknown interface for an object that supports a debug callback interface, such as the IDiaLoadCallback, IDiaLoadCallback2, the IDiaReadExeAtOffsetCallback, and/or the IDiaReadExeAtRVACallback interfaces.</param>
         void loadDataForExe(
             [In, MarshalAs(UnmanagedType.LPWStr)] string executable,
             [In, MarshalAs(UnmanagedType.LPWStr)] string searchPath,
@@ -53,9 +53,9 @@ namespace DIA
         /// <summary>
         /// Prepares the debug data stored in a program database (.pdb) file accessed through an in-memory data stream.
         /// </summary>
-        /// <param name="pIStream">An <see cref="IStream"/> object representing the data stream to use.</param>
+        /// <param name="pIStream">An IStream object representing the data stream to use.</param>
         void loadDataFromIStream(
-            [In, MarshalAs(UnmanagedType.Interface)] IStream pIStream);
+            [In, MarshalAs(UnmanagedType.Interface)] object pIStream);
 
         /// <summary>
         /// Opens a session for querying symbols.

@@ -1,135 +1,152 @@
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace DIA
 {
-	[Guid("A39184B7-6A36-42DE-8EEC-7DF9F3F59F33"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-	[ComImport]
-	public interface IDiaFrameData
-	{
-		[DispId(2)]
-		uint addressSection
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+    /// <summary>
+    /// Exposes the details of a stack frame.
+    /// </summary>
+    [ComImport, Guid("A39184B7-6A36-42DE-8EEC-7DF9F3F59F33"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IDiaFrameData
+    {
+        /// <summary>
+        /// Retrieves the section part of the code address for the frame.
+        /// </summary>
+        [DispId(2)]
+        uint addressSection { get; }
 
-		[DispId(3)]
-		uint addressOffset
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the offset part of the code address for the frame.
+        /// </summary>
+        [DispId(3)]
+        uint addressOffset { get; }
 
-		[DispId(4)]
-		uint relativeVirtualAddress
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the image relative virtual address (RVA) of the code for the frame.
+        /// </summary>
+        [DispId(4)]
+        uint relativeVirtualAddress { get; }
 
-		[DispId(5)]
-		ulong virtualAddress
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the virtual address (VA) of the code for the frame.
+        /// </summary>
+        [DispId(5)]
+        ulong virtualAddress { get; }
 
-		[DispId(6)]
-		uint lengthBlock
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the length, in bytes, of the block of code described by the frame.
+        /// </summary>
+        [DispId(6)]
+        uint lengthBlock { get; }
 
-		[DispId(7)]
-		uint lengthLocals
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the number of bytes of local variables pushed on the stack.
+        /// </summary>
+        [DispId(7)]
+        uint lengthLocals { get; }
 
-		[DispId(8)]
-		uint lengthParams
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the number of bytes of parameters pushed on the stack.
+        /// </summary>
+        [DispId(8)]
+        uint lengthParams { get; }
 
-		[DispId(9)]
-		uint maxStack
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the maximum number of bytes pushed on the stack in the frame.
+        /// </summary>
+        [DispId(9)]
+        uint maxStack { get; }
 
-		[DispId(10)]
-		uint lengthProlog
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the number of bytes of prologue code in the block.
+        /// </summary>
+        [DispId(10)]
+        uint lengthProlog { get; }
 
-		[DispId(11)]
-		uint lengthSavedRegisters
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the number of bytes of saved registers pushed on the stack.
+        /// </summary>
+        [DispId(11)]
+        uint lengthSavedRegisters { get; }
 
-		[DispId(12)]
-		string program
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			[return: MarshalAs(UnmanagedType.BStr)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the program string that is used to compute the register set before the call to the current function.
+        /// </summary>
+        [DispId(12)]
+        string program
+        {
+            [return: MarshalAs(UnmanagedType.BStr)]
+            get;
+        }
 
-		[DispId(13)]
-		int systemExceptionHandling
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves a flag that indicates that system exception handling is in effect.
+        /// </summary>
+        [DispId(13)]
+        bool systemExceptionHandling
+        {
+            [return: MarshalAs(UnmanagedType.Bool)]
+            get;
+        }
 
-		[DispId(14)]
-		int cplusplusExceptionHandling
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves a flag that indicates that C++ exception handling is in effect.
+        /// </summary>
+        [DispId(14)]
+        bool cplusplusExceptionHandling
+        {
+            [return: MarshalAs(UnmanagedType.Bool)]
+            get;
+        }
 
-		[DispId(15)]
-		int functionStart
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves a flag that indicates that the block contains the entry point of a function.
+        /// </summary>
+        [DispId(15)]
+        bool functionStart
+        {
+            [return: MarshalAs(UnmanagedType.Bool)]
+            get;
+        }
 
-		[DispId(16)]
-		int allocatesBasePointer
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves a flag that indicates that the base pointer is allocated for code in this address range. This method is deprecated.
+        /// </summary>
+        [DispId(16)]
+        bool allocatesBasePointer
+        {
+            [return: MarshalAs(UnmanagedType.Bool)]
+            get;
+        }
 
-		[DispId(17)]
-		uint type
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves the compiler-specific frame type.
+        /// </summary>
+        [DispId(17)]
+        StackFrameTypeEnum type
+        {
+            get;
+        }
 
-		[DispId(18)]
-		IDiaFrameData functionParent
-		{
-			[MethodImpl(MethodImplOptions.InternalCall)]
-			[return: MarshalAs(UnmanagedType.Interface)]
-			get;
-		}
+        /// <summary>
+        /// Retrieves frame data interface for enclosing function.
+        /// </summary>
+        [DispId(18)]
+        IDiaFrameData functionParent
+        {
+            [return: MarshalAs(UnmanagedType.Interface)]
+            get;
+        }
 
-		[MethodImpl(MethodImplOptions.InternalCall)]
-		void execute([MarshalAs(UnmanagedType.Interface)] IDiaStackWalkFrame frame);
-	}
+        /// <summary>
+        /// Performs stack unwinding and returns results in a stack walk frame interface.
+        /// </summary>
+        /// <param name="frame">An <see cref="IDiaStackWalkFrame"/> object that holds the state of frame registers.</param>
+        /// <remarks>
+        /// This method is called during debugging to unwind the stack.
+        /// The <see cref="IDiaStackWalkFrame"/> object is implemented by the client application to receive updates to the registers and to provide methods used by the execute method.
+        /// </remarks>
+        void execute(
+            [In, MarshalAs(UnmanagedType.Interface)] IDiaStackWalkFrame frame);
+    }
 }
