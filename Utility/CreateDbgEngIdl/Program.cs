@@ -454,7 +454,7 @@ midl_pragma warning( disable: 2362 )
     helpstring(""DbgEng Type Library""),
     version({1}.{2}),
 ]
-library DbgEngManaged
+library DbgEng
 {{
     importlib(""stdole32.tlb"");
     importlib(""stdole2.tlb"");
@@ -614,7 +614,7 @@ library DbgEngManaged
                 }
 
                 // Copy files to output folder
-                string[] filesToCopy = new[] { "Dia2Lib.dll", "DbgEngManaged.dll" };
+                string[] filesToCopy = new[] { "Dia2Lib.dll", "DbgEng.dll" };
 
                 foreach (string fileToCopy in filesToCopy)
                 {

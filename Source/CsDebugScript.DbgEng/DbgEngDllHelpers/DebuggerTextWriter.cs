@@ -1,4 +1,4 @@
-﻿using DbgEngManaged;
+﻿using DbgEng;
 using System.IO;
 using System.Text;
 

@@ -1,6 +1,6 @@
 ﻿using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
-using DbgEngManaged;
+using DbgEng;
 using DIA;
 using System;
 using System.Collections.Generic;

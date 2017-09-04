@@ -1,7 +1,7 @@
 ﻿using CommandLine;
 using CsDebugScript.Engine.Debuggers;
 using CsDebugScript.Engine.Utility;
-using DbgEngManaged;
+using DbgEng;
 using System;
 
 namespace CsDebugScript.Engine.Test

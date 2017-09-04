@@ -4,7 +4,7 @@ using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
-using DbgEngManaged;
+using DbgEng;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -109,11 +109,11 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// Gets the DbgEng.dll Advanced interface
         /// </summary>
-        internal IDebugAdvanced3 Advanced
+        internal IDebugAdvanced4 Advanced
         {
             get
             {
-                return ThreadClient as IDebugAdvanced3;
+                return ThreadClient as IDebugAdvanced4;
             }
         }
 

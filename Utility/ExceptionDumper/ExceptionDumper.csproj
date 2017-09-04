@@ -10,18 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="DbgEngManaged">
-      <HintPath>$(OutDir)\DbgEngManaged.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.0.275-beta" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEngHelpers\CsDebugScript.DbgEngHelpers.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj" />
   </ItemGroup>
 
 </Project>

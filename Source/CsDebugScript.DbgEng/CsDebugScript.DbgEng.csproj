@@ -4,20 +4,10 @@
   <PropertyGroup>
     <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>Provides DbgEng.dll as debugger engine interface for CsDebugScript.Engine. It can be used to inspect Windows dumps or debug running applications.</Description>
+    <Description>Provides DbgEng.dll as debugger engine interface for CsDebugScript.Engine. It can be used to inspect Windows dumps or debug running applications. Also includes COM interfaces for working with DbgEng.dll (WinDbg debugging engine).</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="DbgEngManaged">
-      <HintPath>$(OutDir)\DbgEngManaged.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />
   </ItemGroup>

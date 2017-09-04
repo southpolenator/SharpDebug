@@ -23,10 +23,6 @@
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>$(EnlistmentRoot)\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
-    <Reference Include="DbgEngManaged">
-      <HintPath>$(OutDir)\DbgEngManaged.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -38,9 +34,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="$(EnlistmentRoot)\Utility\ExceptionDumper\ExceptionDumper.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj" />
@@ -52,7 +45,6 @@
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.ClrMdProvider\CsDebugScript.ClrMdProvider.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.x64.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.x86.csproj" />
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEngHelpers\CsDebugScript.DbgEngHelpers.csproj" />
   </ItemGroup>
 
 </Project>

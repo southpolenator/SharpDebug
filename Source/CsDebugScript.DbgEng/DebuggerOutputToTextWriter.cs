@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
-using DbgEngManaged;
+using DbgEng;
 using System.IO;
 
 namespace CsDebugScript.Engine.Utility

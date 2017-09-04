@@ -2,7 +2,7 @@
 using CsDebugScript.Engine;
 using CsDebugScript.Engine.Debuggers;
 using CsDebugScript.Engine.SymbolProviders;
-using DbgEngManaged;
+using DbgEng;
 using System;
 using System.Management.Automation;
 

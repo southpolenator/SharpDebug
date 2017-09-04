@@ -7,24 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="DbgEngManaged">
-      <HintPath>$(OutDir)\DbgEngManaged.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="System.Management.Automation" Version="6.1.7601.17515" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEngHelpers\CsDebugScript.DbgEngHelpers.csproj" />
   </ItemGroup>
 
 </Project>

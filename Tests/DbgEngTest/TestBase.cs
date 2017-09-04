@@ -2,7 +2,7 @@
 using CsDebugScript.DwarfSymbolProvider;
 using CsDebugScript.Engine;
 using CsDebugScript.Engine.Debuggers;
-using DbgEngManaged;
+using DbgEng;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.ComponentModel;

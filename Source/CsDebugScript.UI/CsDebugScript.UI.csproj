@@ -14,10 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="DbgEngManaged">
-      <HintPath>$(OutDir)\DbgEngManaged.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System.Web.Extensions" />
@@ -25,9 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />

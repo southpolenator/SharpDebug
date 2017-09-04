@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace DbgEngManaged
+namespace DbgEng
 {
     /// <summary>
     /// Static class with functions that provide creation of interfaces pointers to debug client objects.
@@ -16,12 +16,14 @@ namespace DbgEngManaged
         public static IDebugClient OpenDumpFile(string dumpFile, string symbolPath)
         {
             IDebugClient client = DebugCreate();
+            IDebugSymbols5 symbols = (IDebugSymbols5)client;
+            IDebugControl7 control = (IDebugControl7)client;
 
-            ((IDebugSymbols5)client).SetSymbolPathWide(symbolPath);
+            symbols.SetSymbolPathWide(symbolPath);
             client.OpenDumpFile(dumpFile);
-            ((IDebugControl7)client).WaitForEvent(0, uint.MaxValue);
-            ((IDebugSymbols5)client).SetSymbolPathWide(symbolPath);
-            ((IDebugControl7)client).Execute(0, ".reload -f", 0);
+            control.WaitForEvent(0, uint.MaxValue);
+            symbols.SetSymbolPathWide(symbolPath);
+            control.Execute(0, ".reload -f", 0);
             return client;
         }
 
@@ -38,11 +40,13 @@ namespace DbgEngManaged
             string processCommandLine = processPath + " " + processArguments;
 
             IDebugClient client = DebugCreate();
+            IDebugSymbols5 symbols = (IDebugSymbols5)client;
+            IDebugControl7 control = (IDebugControl7)client;
 
-            ((IDebugSymbols5)client).SetSymbolPathWide(symbolPath);
-            ((IDebugControl7)client).SetEngineOptions(debugEngineOptions);
+            symbols.SetSymbolPathWide(symbolPath);
+            control.SetEngineOptions(debugEngineOptions);
             client.CreateProcessAndAttach(0, processCommandLine, (uint)Defines.DebugProcessOnlyThisProcess, 0, 0);
-            ((IDebugControl7)client).WaitForEvent(0, uint.MaxValue);
+            control.WaitForEvent(0, uint.MaxValue);
             return client;
         }
 
@@ -52,13 +56,8 @@ namespace DbgEngManaged
         public static IDebugClient DebugCreate()
         {
             IDebugClient client;
-            int hresult = DebugCreate(Marshal.GenerateGuidForType(typeof(IDebugClient)), out client);
 
-            if (hresult < 0)
-            {
-                Marshal.ThrowExceptionForHR(hresult);
-            }
-
+            DebugCreate(Marshal.GenerateGuidForType(typeof(IDebugClient)), out client);
             return client;
         }
 
@@ -69,13 +68,8 @@ namespace DbgEngManaged
         public static IDebugClient DebugCreateEx(uint dbgEngOptions)
         {
             IDebugClient client;
-            int hresult = DebugCreateEx(Marshal.GenerateGuidForType(typeof(IDebugClient)), dbgEngOptions, out client);
 
-            if (hresult < 0)
-            {
-                Marshal.ThrowExceptionForHR(hresult);
-            }
-
+            DebugCreateEx(Marshal.GenerateGuidForType(typeof(IDebugClient)), dbgEngOptions, out client);
             return client;
         }
 
@@ -85,17 +79,17 @@ namespace DbgEngManaged
         /// </summary>
         /// <param name="InterfaceId">Specifies the interface identifier (IID) of the desired debugger engine client interface. This is the type of the interface that will be returned in Interface.</param>
         /// <param name="client">Receives an interface pointer for the new client. The type of this interface is specified by InterfaceId.</param>
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
-        private static extern int DebugCreate([In][MarshalAs(UnmanagedType.LPStruct)]Guid InterfaceId, out IDebugClient Interface);
+        [DllImport("dbgeng.dll", EntryPoint = "DebugCreate", SetLastError = false, CallingConvention = CallingConvention.StdCall, PreserveSig = false)]
+        private static extern void DebugCreate([In][MarshalAs(UnmanagedType.LPStruct)]Guid InterfaceId, out IDebugClient client);
 
         /// <summary>
         /// The DebugCreateEx function creates a new client object and returns an interface pointer to it.
         /// </summary>
         /// <param name="InterfaceId">Specifies the interface identifier (IID) of the desired debugger engine client interface. This is the type of the interface that will be returned in Interface.</param>
         /// <param name="DbgEngOptions">Supplies debugger option flags.</param>
-        /// <param name="Interface">Receives an interface pointer for the new client. The type of this interface is specified by InterfaceId.</param>
-        [DllImport("dbgeng.dll", EntryPoint = "DebugCreateEx", SetLastError = false, CallingConvention = CallingConvention.StdCall)]
-        private static extern int DebugCreateEx([In][MarshalAs(UnmanagedType.LPStruct)]Guid InterfaceId, uint DbgEngOptions, out IDebugClient Interface);
+        /// <param name="client">Receives an interface pointer for the new client. The type of this interface is specified by InterfaceId.</param>
+        [DllImport("dbgeng.dll", EntryPoint = "DebugCreateEx", SetLastError = false, CallingConvention = CallingConvention.StdCall, PreserveSig = false)]
+        private static extern void DebugCreateEx([In][MarshalAs(UnmanagedType.LPStruct)]Guid InterfaceId, uint DbgEngOptions, out IDebugClient client);
         #endregion
     }
 }

@@ -1,7 +1,7 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Debuggers;
 using CsDebugScript.UI;
-using DbgEngManaged;
+using DbgEng;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;

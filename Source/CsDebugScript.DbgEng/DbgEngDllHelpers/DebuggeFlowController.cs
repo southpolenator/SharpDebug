@@ -1,4 +1,4 @@
-﻿using DbgEngManaged;
+﻿using DbgEng;
 using System;
 
 namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers

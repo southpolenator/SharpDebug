@@ -1,6 +1,6 @@
 ﻿using CsDebugScript.UI.CodeWindow;
 using CsDebugScript.Engine.Utility;
-using DbgEngManaged;
+using DbgEng;
 using ICSharpCode.NRefactory.Documentation;
 using ICSharpCode.NRefactory.TypeSystem;
 using System;

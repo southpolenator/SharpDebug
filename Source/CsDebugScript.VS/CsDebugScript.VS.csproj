@@ -126,10 +126,6 @@
       <Project>{7da23f60-f5bc-4f59-b00e-072cc464ad64}</Project>
       <Name>CsDebugScript.DwarfSymbolProvider</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CsDebugScript.DbgEngHelpers\CsDebugScript.DbgEngHelpers.csproj">
-      <Project>{74cd700c-edaa-4eb2-905e-7a4ea982e0c3}</Project>
-      <Name>CsDebugScript.DbgEngHelpers</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Page Include="VSInteractiveWindowControl.xaml">

@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.Engine.Marshaling;
-using DbgEngManaged;
+using DbgEng;
 using System.Text;
 
 namespace CsDebugScript.Engine.Native

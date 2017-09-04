@@ -8,13 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="DbgEngManaged">
-      <HintPath>$(OutDir)\DbgEngManaged.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.UI\CsDebugScript.UI.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj" />
@@ -22,7 +15,6 @@
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DwarfSymbolProvider\CsDebugScript.DwarfSymbolProvider.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEngHelpers\CsDebugScript.DbgEngHelpers.csproj" />
   </ItemGroup>
 
   <ItemGroup>
