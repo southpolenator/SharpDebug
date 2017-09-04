@@ -57,7 +57,7 @@ namespace DbgEng
         {
             IDebugClient client;
 
-            DebugCreate(Marshal.GenerateGuidForType(typeof(IDebugClient)), out client);
+            DebugCreate(new Guid("27FE5639-8407-4F47-8364-EE118FB08AC8"), out client);
             return client;
         }
 
@@ -69,7 +69,7 @@ namespace DbgEng
         {
             IDebugClient client;
 
-            DebugCreateEx(Marshal.GenerateGuidForType(typeof(IDebugClient)), dbgEngOptions, out client);
+            DebugCreateEx(new Guid("27FE5639-8407-4F47-8364-EE118FB08AC8"), dbgEngOptions, out client);
             return client;
         }
 

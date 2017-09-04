@@ -25,6 +25,7 @@
     <!-- Default frameworks -->
     <DefaultNetFramework>net461</DefaultNetFramework>
     <DefaultNetStandard>netstandard2.0</DefaultNetStandard>
+    <DefaultNetCoreApp>netcoreapp2.0</DefaultNetCoreApp>
   </PropertyGroup>
 
   <!-- Solving problem with VSIX project build errors -->

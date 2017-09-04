@@ -2,7 +2,7 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetFramework);$(DefaultNetStandard)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>Provides DbgEng.dll as debugger engine interface for CsDebugScript.Engine. It can be used to inspect Windows dumps or debug running applications. Also includes COM interfaces for working with DbgEng.dll (WinDbg debugging engine).</Description>
   </PropertyGroup>
