@@ -60,7 +60,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
       <Command>pushd "$(OutDir)"&amp;ExceptionDumper32.exe -a "$(TargetPath)" -d "$(OutDir)$(ProjectName).dmp"</Command>
@@ -78,7 +78,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
       <Command>pushd "$(OutDir)"&amp;ExceptionDumper32.exe -a "$(TargetPath)" -d "$(OutDir)$(ProjectName).dmp"</Command>
