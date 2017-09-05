@@ -10,6 +10,7 @@ namespace CsDebugScript.UI
     /// <seealso cref="System.Windows.Window" />
     public class InteractiveWindow : Window
     {
+        internal const string WindowTitle = "C# Interactive Window";
         private InteractiveWindowContent contentControl;
 
         /// <summary>
@@ -19,7 +20,7 @@ namespace CsDebugScript.UI
         {
             // Set window look
             ShowInTaskbar = false;
-            Title = "C# Interactive Window";
+            Title = WindowTitle;
 
             // Add content
             Grid grid = new Grid();
@@ -63,6 +64,8 @@ namespace CsDebugScript.UI
         /// </summary>
         public static void ShowWindow()
         {
+            System.Threading.AutoResetEvent windowShown = new System.Threading.AutoResetEvent(false);
+
             ExecuteInSTA(() =>
             {
                 Window window = null;
@@ -71,6 +74,7 @@ namespace CsDebugScript.UI
                 {
                     window = new InteractiveWindow();
                     window.Show();
+                    windowShown.Set();
 
                     var _dispatcherFrame = new System.Windows.Threading.DispatcherFrame();
                     window.Closed += (obj, e) => { _dispatcherFrame.Continue = false; };
@@ -80,10 +84,15 @@ namespace CsDebugScript.UI
                 {
                     MessageBox.Show(ex.ToString());
                 }
+                finally
+                {
+                    windowShown.Set();
+                }
 
-                window.Close();
+                window?.Close();
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
             }, waitForExecution: false);
+            windowShown.WaitOne();
         }
 
         internal static void ExecuteInSTA(Action action, bool waitForExecution = true)
