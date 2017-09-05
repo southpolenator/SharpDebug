@@ -4,8 +4,12 @@
   <PropertyGroup>
     <TargetFrameworks>$(DefaultNetFramework);$(DefaultNetStandard)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>Provides fast access to symbols by directly reading PDB files using DIA library. It is symbol provider for CsDebugScript.Engine. Also includes COM interfaces for working with DIA library.</Description>
+    <Description>Provides fast access to symbols by directly reading PDB files using DIA library. It is symbol provider for CsDebugScript.Engine.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DIA" Version="1.0.1" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />

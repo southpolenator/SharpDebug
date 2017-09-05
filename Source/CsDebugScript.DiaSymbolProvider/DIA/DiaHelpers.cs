@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using CsDebugScript.Engine;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace DIA
@@ -107,6 +108,41 @@ namespace DIA
                     yield return s;
                     unprocessed.AddRange(s.GetBaseClasses());
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Extension methods for <see cref="SymTagEnum"/>
+    /// </summary>
+    public static class SymTagExtensions
+    {
+        /// <summary>
+        /// Converts <see cref="SymTagEnum"/> to <see cref="CodeTypeTag"/>.
+        /// </summary>
+        public static CodeTypeTag ToCodeTypeTag(this SymTagEnum tag)
+        {
+            switch (tag)
+            {
+                case SymTagEnum.ArrayType:
+                    return CodeTypeTag.Array;
+                case SymTagEnum.BaseType:
+                    return CodeTypeTag.BuiltinType;
+                case SymTagEnum.UDT:
+                    // TODO: What about Structure/Union? IDiaSymbol.udtKind might help...
+                    return CodeTypeTag.Class;
+                case SymTagEnum.Enum:
+                    return CodeTypeTag.Enum;
+                case SymTagEnum.FunctionType:
+                    return CodeTypeTag.Function;
+                case SymTagEnum.PointerType:
+                    return CodeTypeTag.Pointer;
+                case SymTagEnum.BaseClass:
+                    return CodeTypeTag.BaseClass;
+                case SymTagEnum.Exe:
+                    return CodeTypeTag.ModuleGlobals;
+                default:
+                    return CodeTypeTag.Unsupported;
             }
         }
     }
