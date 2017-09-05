@@ -39,7 +39,7 @@ namespace DIA
         /// <param name="pceltFetched">Returns the number of line numbers in the fetched enumerator.</param>
         void Next(
             [In] uint celt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] ref IDiaLineNumber[] rgelt,
+            [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] IDiaLineNumber[] rgelt,
             [Out] out uint pceltFetched);
 
         /// <summary>

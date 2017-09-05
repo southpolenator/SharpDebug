@@ -66,6 +66,6 @@ namespace DIA
         void get_source(
             [In] uint cbData,
             [Out] out uint pcbData,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] ref byte[] pbData);
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] pbData);
     }
 }

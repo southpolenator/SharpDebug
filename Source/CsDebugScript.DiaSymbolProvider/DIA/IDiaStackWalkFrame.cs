@@ -30,7 +30,7 @@ namespace DIA
             [In] ulong va,
             [In] uint cbData,
             [Out] out uint pcbData,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref byte[] pbData);
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pbData);
 
         /// <summary>
         /// Searches the specified stack frame for the nearest function return address.

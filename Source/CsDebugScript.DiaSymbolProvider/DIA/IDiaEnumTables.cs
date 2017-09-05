@@ -39,7 +39,7 @@ namespace DIA
         /// <param name="pceltFetched">Returns the number of tables in the fetched enumerator.</param>
         void Next(
             [In] uint celt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] ref IDiaTable[] rgelt,
+            [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] IDiaTable[] rgelt,
             [Out] out uint pceltFetched);
 
         /// <summary>

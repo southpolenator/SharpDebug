@@ -46,7 +46,7 @@ namespace DIA
         /// <param name="pceltFetched">Returns the number of symbols in the fetched enumerator.</param>
         void Next(
             [In] uint celt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] ref IDiaSymbol[] rgelt,
+            [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] IDiaSymbol[] rgelt,
             [Out] out uint pceltFetched);
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace DIA
         /// <param name="pceltFetched">Returns the number of symbols in the fetched enumerator.</param>
         void Prev(
             [In] uint celt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] ref IDiaSymbol[] rgelt,
+            [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] IDiaSymbol[] rgelt,
             [Out] out uint pceltFetched);
 
         /// <summary>

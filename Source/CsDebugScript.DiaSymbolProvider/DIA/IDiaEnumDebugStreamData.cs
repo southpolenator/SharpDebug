@@ -44,7 +44,7 @@ namespace DIA
             [In] uint index,
             [In] uint cbData,
             [Out] out uint pcbData,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref byte[] pbData);
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pbData);
 
         /// <summary>
         /// Retrieves a specified number of records in the enumerated sequence.
@@ -58,7 +58,7 @@ namespace DIA
             [In] uint celt,
             [In] uint cbData,
             [Out] out uint pcbData,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref byte[] pbData,
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pbData,
             [Out] out uint pceltFetched);
 
         /// <summary>

@@ -39,7 +39,7 @@ namespace DIA
         /// <param name="pceltFetched">Returns the number of injected sources in the fetched enumerator.</param>
         void Next(
             [In] uint celt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] ref IDiaInjectedSource[] rgelt,
+            [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] IDiaInjectedSource[] rgelt,
             [Out] out uint pceltFetched);
 
         /// <summary>

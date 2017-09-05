@@ -38,7 +38,7 @@ namespace DIA
         /// <param name="pceltFetched">Returns the number of input assembly files in the fetched enumerator.</param>
         void Next(
             [In] uint celt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] ref IDiaInputAssemblyFile[] rgelt,
+            [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] IDiaInputAssemblyFile[] rgelt,
             [Out] out uint pceltFetched);
 
         /// <summary>

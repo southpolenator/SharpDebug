@@ -6,9 +6,9 @@ namespace DIA
     /// <summary>
     /// Enumerate the various stack frames contained in the data source.
     /// </summary>
-	[ComImport, Guid("EC9D461D-CE74-4711-A020-7D8F9A1DD255"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-	public interface IDiaEnumStackFrames
-	{
+    [ComImport, Guid("EC9D461D-CE74-4711-A020-7D8F9A1DD255"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IDiaEnumStackFrames
+    {
         /// <summary>
         /// Retrieves a specified number of stack frames in the enumeration sequence.
         /// </summary>
@@ -17,7 +17,7 @@ namespace DIA
         /// <param name="pceltFetched">Returns the number of stack frames in the fetched enumerator.</param>
         void Next(
             [In] uint celt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] ref IDiaStackFrame[] rgelt,
+            [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] IDiaStackFrame[] rgelt,
             [Out] out uint pceltFetched);
 
         /// <summary>

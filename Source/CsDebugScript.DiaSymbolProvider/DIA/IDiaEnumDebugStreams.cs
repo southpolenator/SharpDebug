@@ -39,7 +39,7 @@ namespace DIA
         /// <param name="pceltFetched">Returns the number of debug streams returned.</param>
         void Next(
             [In] uint celt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] ref IDiaEnumDebugStreamData rgelt,
+            [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] IDiaEnumDebugStreamData[] rgelt,
             [Out] out uint pceltFetched);
 
         /// <summary>

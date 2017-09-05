@@ -657,7 +657,7 @@ namespace DIA
         void get_dataBytes(
             [In] uint cbData,
             [Out] out uint pcbData,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref byte[] pbData);
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pbData);
 
         /// <summary>
         /// Retrieves the children of the symbol.
@@ -783,7 +783,7 @@ namespace DIA
         void get_types(
             [In] uint cTypes,
             [Out] out uint pcTypes,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] ref IDiaSymbol[] pTypes);
+            [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Interface, SizeParamIndex = 0)] IDiaSymbol[] pTypes);
 
         /// <summary>
         /// Retrieves an array of compiler-specific type identifier values for this symbol.
@@ -794,7 +794,7 @@ namespace DIA
         void get_typeIds(
             [In] uint cTypeIds,
             [Out] out uint pcTypeIds,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] ref uint[] pdwTypeIds);
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] uint[] pdwTypeIds);
 
         /// <summary>
         /// Retrieves the type of the object pointer for a class method.
@@ -1378,7 +1378,7 @@ namespace DIA
         void get_numericProperties(
             [In] uint cnt,
             [Out] out uint pcnt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] ref uint[] pProperties);
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] uint[] pProperties);
 
         /// <summary>
         /// Undocumented on MSDN
@@ -1389,7 +1389,7 @@ namespace DIA
         void get_modifierValues(
             [In] uint cnt,
             [Out] out uint pcnt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] ref ushort[] pModifiers);
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] ushort[] pModifiers);
 
         /// <summary>
         /// Specifies whether the variable carries a return value.

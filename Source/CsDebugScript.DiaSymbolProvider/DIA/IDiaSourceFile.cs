@@ -50,6 +50,6 @@ namespace DIA
         void get_checksum(
             [In] uint cbData,
             [Out] out uint pcbData,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] ref byte[] pbData);
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] pbData);
     }
 }

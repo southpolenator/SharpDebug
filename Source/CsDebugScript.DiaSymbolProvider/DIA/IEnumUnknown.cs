@@ -17,7 +17,7 @@ namespace DIA
         /// <param name="pceltFetched">Returns the number of records in data.</param>
         void RemoteNext(
             [In] uint celt,
-            [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.IUnknown, SizeParamIndex = 0)] ref object[] rgelt,
+            [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.IUnknown, SizeParamIndex = 0)] object[] rgelt,
             [Out] out uint pceltFetched);
 
         /// <summary>
