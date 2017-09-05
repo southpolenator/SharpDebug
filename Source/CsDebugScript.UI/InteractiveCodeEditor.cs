@@ -143,7 +143,7 @@ namespace CsDebugScript.UI
                                 | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
                             var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
 
-                            interactiveExecution.scriptBase._Dispatcher_ = Dispatcher;
+                            interactiveExecution.scriptBase._UiActionExecutor_ = (action) => Dispatcher.Invoke(action);
                             using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
                             {
                                 interactiveExecution.UnsafeInterpret(documentText);
@@ -196,7 +196,7 @@ namespace CsDebugScript.UI
                         Console.SetOut(oldOut);
                         result = results;
                         results = new List<object>();
-                        interactiveExecution.scriptBase._Dispatcher_ = null;
+                        interactiveExecution.scriptBase._UiActionExecutor_ = null;
                     }
                 };
 

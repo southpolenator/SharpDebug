@@ -56,9 +56,9 @@ namespace CsDebugScript
         internal IObjectWriter _InternalObjectWriter_ { get; set; }
 
         /// <summary>
-        /// Gets or sets the UI dispatcher.
+        /// Gets or sets the UI action executor.
         /// </summary>
-        internal System.Windows.Threading.Dispatcher _Dispatcher_ { get; set; }
+        internal Action<Action> _UiActionExecutor_ { get; set; }
 
         /// <summary>
         /// Stops interactive scripting execution. You can use this simply by entering it as command in interactive scripting mode.
@@ -314,9 +314,9 @@ namespace CsDebugScript
         /// <param name="action">The action.</param>
         public void ExecuteInUiThread(Action action)
         {
-            if (_Dispatcher_ != null)
+            if (_UiActionExecutor_ != null)
             {
-                _Dispatcher_.Invoke(action);
+                _UiActionExecutor_(action);
             }
             else
             {
