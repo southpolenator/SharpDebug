@@ -1,6 +1,7 @@
 ﻿using CsDebugScript;
 using CsDebugScript.Engine;
 using CsDebugScript.Engine.Debuggers;
+using DbgEng;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 

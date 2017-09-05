@@ -786,21 +786,16 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(StateCache, process))
             {
-                uint dumpsFiles = Client.GetNumberDumpFiles();
+                string[] dumps = Client.GetDumpFiles();
 
-                if (dumpsFiles > 1)
+                if (dumps.Length > 1)
                 {
                     throw new Exception("Unexpected number of dump files");
                 }
 
-                if (dumpsFiles == 1)
+                if (dumps.Length == 1)
                 {
-                    StringBuilder sb = new StringBuilder(Constants.MaxFileName);
-                    uint nameSize, type;
-                    ulong handle;
-
-                    Client.GetDumpFileWide(0, sb, (uint)sb.Capacity, out nameSize, out handle, out type);
-                    return sb.ToString();
+                    return dumps[0];
                 }
 
                 return "";
@@ -1215,11 +1210,11 @@ namespace CsDebugScript.Engine.Debuggers
                 uint cls, qual;
 
                 Control.GetDebuggeeType(out cls, out qual);
-                if (qual == (uint)Defines.DebugDumpSmall)
+                if (qual == (uint)DebugDump.Small)
                 {
                     uint flags = Control.GetDumpFormatFlags();
 
-                    return (flags & (uint)Defines.DebugFormatUserSmallFullMemory) == 0;
+                    return (flags & (uint)DebugFormat.UserSmallFullMemory) == 0;
                 }
             }
 
@@ -1350,7 +1345,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// </summary>
         public void Terminate(Process process)
         {
-            Client.EndSession((uint)Defines.DebugEndActiveTerminate);
+            Client.EndSession(DebugEnd.ActiveTerminate);
 
             DebuggeeFlowController flowControler;
             debugeeFlowControllers.RemoveEntry(process.Id, out flowControler);

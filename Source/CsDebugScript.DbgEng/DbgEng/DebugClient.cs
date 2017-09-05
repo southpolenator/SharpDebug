@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace DbgEng
 {
@@ -45,7 +46,7 @@ namespace DbgEng
 
             symbols.SetSymbolPathWide(symbolPath);
             control.SetEngineOptions(debugEngineOptions);
-            client.CreateProcessAndAttach(0, processCommandLine, (uint)Defines.DebugProcessOnlyThisProcess, 0, 0);
+            client.CreateProcessAndAttach(0, processCommandLine, DebugCreateProcess.DebugOnlyThisProcess, 0, 0);
             control.WaitForEvent(0, uint.MaxValue);
             return client;
         }
@@ -72,6 +73,60 @@ namespace DbgEng
             DebugCreateEx(new Guid("27FE5639-8407-4F47-8364-EE118FB08AC8"), dbgEngOptions, out client);
             return client;
         }
+
+        #region Extension functions
+        /// <summary>
+        /// Gets the files containing supporting information that were used when opening the current dump target.
+        /// </summary>
+        /// <param name="client">The debug client.</param>
+        /// <param name="index">Specifies which file to describe. Index can take values between zero and the number of files minus one; the number of files can be found by using <see cref="IDebugClient4.GetNumberDumpFiles"/>.</param>
+        /// <param name="handle">Receives the file handle of the file.</param>
+        /// <param name="type">Receives the type of the file.</param>
+        /// <returns>Returns the file name.</returns>
+        public static string GetDumpFile(this IDebugClient4 client, uint index, out ulong handle, out DebugDumpFile type)
+        {
+            uint nameSize;
+
+            client.GetDumpFileWide(index, null, 0, out nameSize, out handle, out type);
+
+            StringBuilder buffer = new StringBuilder((int)nameSize);
+
+            client.GetDumpFileWide(index, buffer, (uint)buffer.Capacity, out nameSize, out handle, out type);
+            return buffer.ToString();
+        }
+
+        /// <summary>
+        /// Gets the files containing supporting information that were used when opening the current dump target.
+        /// </summary>
+        /// <param name="client">The debug client.</param>
+        /// <param name="index">Specifies which file to describe. Index can take values between zero and the number of files minus one; the number of files can be found by using <see cref="IDebugClient4.GetNumberDumpFiles"/>.</param>
+        /// <returns>Returns the file name.</returns>
+        public static string GetDumpFile(this IDebugClient4 client, uint index)
+        {
+            ulong handle;
+            DebugDumpFile type;
+
+            return GetDumpFile(client, index, out handle, out type);
+        }
+
+        /// <summary>
+        /// Gets all files containing supporting information that were used when opening the current dump target.
+        /// The number of files can be found by using <see cref="IDebugClient4.GetNumberDumpFiles"/>.
+        /// </summary>
+        /// <param name="client">The debug client.</param>
+        /// <returns>Returns array of file names.</returns>
+        public static string[] GetDumpFiles(this IDebugClient4 client)
+        {
+            uint dumpCount = client.GetNumberDumpFiles();
+            string[] dumps = new string[dumpCount];
+
+            for (uint i = 0; i < dumpCount; i++)
+            {
+                dumps[i] = GetDumpFile(client, i);
+            }
+            return dumps;
+        }
+        #endregion
 
         #region Native functions
         /// <summary>

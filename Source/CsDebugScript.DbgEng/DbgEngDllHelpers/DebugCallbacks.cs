@@ -115,7 +115,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <returns></returns>
         public uint GetInterestMask()
         {
-            return (uint)Defines.DebugEventChangeDebuggeeState;
+            return (uint)DebugEvent.ChangeDebuggeeState;
         }
     }
 }
