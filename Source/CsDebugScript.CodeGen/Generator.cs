@@ -235,6 +235,11 @@ namespace CsDebugScript.CodeGen
 
             // Compiling the code
             string binFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string[] dependentAssemblies = new string[]
+            {
+                "CsDebugScript.Engine.dll",
+                "CsDebugScript.CommonUserTypes.dll",
+            };
 
             if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
             {
@@ -242,9 +247,15 @@ namespace CsDebugScript.CodeGen
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                     MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.Engine.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.CommonUserTypes.dll")),
                 };
+
+                foreach (string dependentAssembly in dependentAssemblies)
+                {
+                    if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
+                    {
+                        references.Add(MetadataReference.CreateFromFile(Path.Combine(binFolder, dependentAssembly)));
+                    }
+                }
 
                 references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(Path.IsPathRooted(r.Path) ? r.Path : Path.Combine(binFolder, r.Path))));
 
@@ -298,8 +309,24 @@ namespace CsDebugScript.CodeGen
                     OutputAssembly = outputDirectory + xmlConfig.GeneratedAssemblyName,
                 };
 
-                compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
-                //compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies);
+                foreach (var assemblyPath in AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location))
+                {
+                    string assemblyName = Path.GetFileName(assemblyPath);
+
+                    if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(assemblyName)))
+                    {
+                        compilerParameters.ReferencedAssemblies.Add(assemblyPath);
+                    }
+                }
+
+                foreach (string dependentAssembly in dependentAssemblies)
+                {
+                    if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
+                    {
+                        compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, dependentAssembly));
+                    }
+                }
+                compilerParameters.ReferencedAssemblies.AddRange(xmlConfig.ReferencedAssemblies.Select(r => Path.IsPathRooted(r.Path) ? r.Path : Path.Combine(binFolder, r.Path)).ToArray());
 
                 const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
 
@@ -307,9 +334,6 @@ namespace CsDebugScript.CodeGen
                 {
                     compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
                 }
-
-                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsDebugScript.Engine.dll"));
-                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsDebugScript.CommonUserTypes.dll"));
 
                 var filesToCompile = generatedFiles.Values.Union(includedFiles.Select(f => f.Path)).ToArray();
                 var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);
