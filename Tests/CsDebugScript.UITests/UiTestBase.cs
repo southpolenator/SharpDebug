@@ -2,7 +2,7 @@
 
 namespace CsDebugScript.UITests
 {
-    public class UiTestBase : IClassFixture<InteractiveWindowFixture>
+    public class UiTestBase
     {
         public UiTestBase(InteractiveWindowFixture interactiveWindowFixture)
         {

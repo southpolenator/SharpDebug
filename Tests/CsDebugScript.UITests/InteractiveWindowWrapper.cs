@@ -21,6 +21,7 @@ namespace CsDebugScript.UITests
         private const string DefaultPrompt = "C#> ";
         private const string DbgPrompt = "dbg> ";
         private const string ExecutingPrompt = "...> ";
+        private readonly TimeSpan DefaultExecutionTimeout = TimeSpan.FromSeconds(20);
 
         public InteractiveWindowWrapper(Window mainWindow)
         {
@@ -33,6 +34,8 @@ namespace CsDebugScript.UITests
         public Window MainWindow { get; private set; }
 
         public Panel ContentPanel { get; private set; }
+
+        public InteractiveExecution InteractiveExecution { get; private set; } = new InteractiveExecution();
 
         public CustomUIItem CodeInput
         {
@@ -62,7 +65,7 @@ namespace CsDebugScript.UITests
 
         public void WaitForExecutionEnd()
         {
-            WaitForExecutionEnd(TimeSpan.FromSeconds(5));
+            WaitForExecutionEnd(DefaultExecutionTimeout);
         }
 
         public void WaitForExecutionEnd(TimeSpan timeout)
@@ -132,15 +135,21 @@ namespace CsDebugScript.UITests
                 string token = input.Substring(tokenStart + 1, tokenEnd - tokenStart - 1);
 
                 var values = Enum.GetValues(typeof(KeyboardInput.SpecialKeys));
+                bool found = false;
 
                 foreach (var value in values)
                 {
                     if (value.ToString().ToLowerInvariant() == token.ToLowerInvariant())
                     {
                         Keyboard.Instance.PressSpecialKey((KeyboardInput.SpecialKeys)value);
+                        found = true;
                     }
                 }
                 index = tokenEnd + 1;
+                if (!found)
+                {
+                    Keyboard.Instance.Enter(token);
+                }
             }
 
             if (index < input.Length)
@@ -213,7 +222,7 @@ namespace CsDebugScript.UITests
                     var callbacks = DebuggerOutputToTextWriter.Create(outputWriter, captureFlags);
                     using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
                     {
-                        new InteractiveExecution().Interpret(code);
+                        InteractiveExecution.Interpret(code);
                     }
 
                     expectedOutput = outputWriter.GetStringBuilder().ToString();

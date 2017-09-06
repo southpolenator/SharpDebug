@@ -1,6 +1,8 @@
-﻿using System;
+﻿using CsDebugScript.Tests;
+using System;
 using TestStack.White;
 using TestStack.White.Factory;
+using Xunit;
 
 namespace CsDebugScript.UITests
 {
@@ -21,5 +23,20 @@ namespace CsDebugScript.UITests
         {
             InteractiveWindow.MainWindow?.Close();
         }
+    }
+
+    public class DumpInteractiveWindowFixture : InteractiveWindowFixture
+    {
+        private NativeDumpTest_x64_dmp_Initialization dumpInitialization;
+
+        public DumpInteractiveWindowFixture()
+        {
+            dumpInitialization = new NativeDumpTest_x64_dmp_Initialization();
+        }
+    }
+
+    [CollectionDefinition("UI with dump")]
+    public class UiWithDumpCollectionFixture : ICollectionFixture<DumpInteractiveWindowFixture>
+    {
     }
 }

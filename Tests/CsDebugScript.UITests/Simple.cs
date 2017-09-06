@@ -2,9 +2,11 @@
 
 namespace CsDebugScript.UITests
 {
+    [Collection("UI with dump")]
+    [Trait("Run", "x64,x86")]
     public class Simple : UiTestBase
     {
-        public Simple(InteractiveWindowFixture interactiveWindow)
+        public Simple(DumpInteractiveWindowFixture interactiveWindow)
             : base(interactiveWindow)
         {
         }

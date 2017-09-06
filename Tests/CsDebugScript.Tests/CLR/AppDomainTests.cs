@@ -1,34 +1,16 @@
-﻿using CsDebugScript;
-using CsDebugScript.CLR;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using CsDebugScript.CLR;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Xunit;
 
-namespace DbgEngTest.CLR
+namespace CsDebugScript.Tests.CLR
 {
-    [TestClass]
-    [DeploymentItem(@"CLR\Apps\NestedException.cs", @"CLR\Apps")]
-    [DeploymentItem(@"CLR\Apps\AppDomains.cs", @"CLR\Apps")]
-    [DeploymentItem(@"CLR\Apps\SharedLibrary.cs", @"CLR\Apps")]
-    public class AppDomainTests : ClrTestBase
+    [Collection("CLR AppDomains")]
+    [Trait("Run", "x64,x86")]
+    public class AppDomainTests
     {
-        [ClassInitialize]
-        public static void TestSetup(TestContext context)
-        {
-            SyncStart();
-            CompileAndInitialize(ClrTestApps.NestedException);
-            CompileAndInitialize(ClrTestApps.AppDomains);
-        }
-
-        [ClassCleanup]
-        public static void TestCleanup()
-        {
-            SyncStop();
-        }
-
-        [TestMethod]
-        [TestCategory("CLR")]
+        [Fact]
         public void ModuleDomainTest()
         {
             IClrRuntime runtime = Process.Current.ClrRuntimes.Single();
@@ -49,51 +31,48 @@ namespace DbgEngTest.CLR
             AssertModuleDoesntContainDomains(nestedExeModule, runtime.SystemDomain, runtime.SharedDomain, appDomainExe);
         }
 
-        [TestMethod]
-        [TestCategory("CLR")]
+        [Fact]
         public void AppDomainPropertyTest()
         {
             IClrRuntime runtime = Process.Current.ClrRuntimes.Single();
 
             IClrAppDomain systemDomain = runtime.SystemDomain;
-            Assert.AreEqual("System Domain", systemDomain.Name);
+            Assert.Equal("System Domain", systemDomain.Name);
 
             IClrAppDomain sharedDomain = runtime.SharedDomain;
-            Assert.AreEqual("Shared Domain", sharedDomain.Name);
+            Assert.Equal("Shared Domain", sharedDomain.Name);
 
-            Assert.AreEqual(null, systemDomain.ApplicationBase);
-            Assert.IsTrue(string.IsNullOrEmpty(systemDomain.ConfigurationFile));
-            Assert.AreEqual("0: System Domain", systemDomain.ToString());
+            Assert.Equal(null, systemDomain.ApplicationBase);
+            Assert.True(string.IsNullOrEmpty(systemDomain.ConfigurationFile));
+            Assert.Equal("0: System Domain", systemDomain.ToString());
 
-            Assert.AreEqual(2, runtime.AppDomains.Length);
+            Assert.Equal(2, runtime.AppDomains.Length);
 
             IClrAppDomain AppDomainsExe = runtime.AppDomains[0];
-            Assert.AreEqual("AppDomains.exe", AppDomainsExe.Name);
-            Assert.AreEqual(1, AppDomainsExe.Id);
+            Assert.Equal("AppDomains.exe", AppDomainsExe.Name);
+            Assert.Equal(1, AppDomainsExe.Id);
 
             IClrAppDomain NestedExceptionExe = runtime.AppDomains[1];
-            Assert.AreEqual("Second AppDomain", NestedExceptionExe.Name);
-            Assert.AreEqual(2, NestedExceptionExe.Id);
+            Assert.Equal("Second AppDomain", NestedExceptionExe.Name);
+            Assert.Equal(2, NestedExceptionExe.Id);
         }
 
-        [TestMethod]
-        [TestCategory("CLR")]
+        [Fact]
         public void SystemAndSharedLibraryModulesTest()
         {
             IClrRuntime runtime = Process.Current.ClrRuntimes.Single();
 
             IClrAppDomain systemDomain = runtime.SystemDomain;
-            Assert.AreEqual(0, systemDomain.Modules.Length);
+            Assert.Equal(0, systemDomain.Modules.Length);
 
             IClrAppDomain sharedDomain = runtime.SharedDomain;
-            Assert.AreEqual(1, sharedDomain.Modules.Length);
+            Assert.Equal(1, sharedDomain.Modules.Length);
 
             IClrModule mscorlib = sharedDomain.Modules.Single();
-            Assert.IsTrue(Path.GetFileName(mscorlib.Module.ImageName).Equals("mscorlib.dll", System.StringComparison.OrdinalIgnoreCase));
+            Assert.True(Path.GetFileName(mscorlib.Module.ImageName).Equals("mscorlib.dll", System.StringComparison.OrdinalIgnoreCase));
         }
 
-        [TestMethod]
-        [TestCategory("CLR")]
+        [Fact]
         public void ModuleAppDomainEqualityTest()
         {
             IClrRuntime runtime = Process.Current.ClrRuntimes.Single();
@@ -103,20 +82,20 @@ namespace DbgEngTest.CLR
 
             Dictionary<string, Module> appDomainsModules = GetAppDomainModuleDictionary(appDomainsExe);
 
-            Assert.IsTrue(appDomainsModules.ContainsKey("appdomains.exe"));
-            Assert.IsTrue(appDomainsModules.ContainsKey("mscorlib.dll"));
+            Assert.True(appDomainsModules.ContainsKey("appdomains.exe"));
+            Assert.True(appDomainsModules.ContainsKey("mscorlib.dll"));
 
-            Assert.IsFalse(appDomainsModules.ContainsKey("nestedexception.exe"));
+            Assert.False(appDomainsModules.ContainsKey("nestedexception.exe"));
 
             Dictionary<string, Module> nestedExceptionModules = GetAppDomainModuleDictionary(nestedExceptionExe);
 
-            Assert.IsTrue(nestedExceptionModules.ContainsKey("nestedexception.exe"));
-            Assert.IsTrue(nestedExceptionModules.ContainsKey("mscorlib.dll"));
+            Assert.True(nestedExceptionModules.ContainsKey("nestedexception.exe"));
+            Assert.True(nestedExceptionModules.ContainsKey("mscorlib.dll"));
 
-            Assert.IsFalse(nestedExceptionModules.ContainsKey("appdomains.exe"));
+            Assert.False(nestedExceptionModules.ContainsKey("appdomains.exe"));
 
             // Ensure that we use the same Module in each AppDomain.
-            Assert.AreEqual(appDomainsModules["mscorlib.dll"], nestedExceptionModules["mscorlib.dll"]);
+            Assert.Equal(appDomainsModules["mscorlib.dll"], nestedExceptionModules["mscorlib.dll"]);
         }
 
         private static Dictionary<string, Module> GetAppDomainModuleDictionary(IClrAppDomain domain)
@@ -134,7 +113,7 @@ namespace DbgEngTest.CLR
         {
             foreach (IClrAppDomain domain in domainList)
             {
-                Assert.IsFalse(domain.Modules.Contains(module));
+                Assert.False(domain.Modules.Contains(module));
             }
         }
 
@@ -142,9 +121,9 @@ namespace DbgEngTest.CLR
         {
             foreach (IClrAppDomain domain in domainList)
             {
-                Assert.IsTrue(domain.Modules.Contains(module));
+                Assert.True(domain.Modules.Contains(module));
             }
-            Assert.AreEqual(domainList.Length, domainList[0].Runtime.AllAppDomains.Count(ad => ad.Modules.Contains(module)));
+            Assert.Equal(domainList.Length, domainList[0].Runtime.AllAppDomains.Count(ad => ad.Modules.Contains(module)));
         }
     }
 }

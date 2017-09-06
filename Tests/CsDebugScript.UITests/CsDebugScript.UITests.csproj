@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.UI\CsDebugScript.UI.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Tests\CsDebugScript.Tests\CsDebugScript.Tests.csproj" />
   </ItemGroup>
 
 </Project>

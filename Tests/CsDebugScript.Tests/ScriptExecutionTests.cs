@@ -1,32 +1,19 @@
-﻿using CsDebugScript;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.IO;
+using Xunit;
 
-namespace DbgEngTest
+namespace CsDebugScript.Tests
 {
-    [TestClass]
-    public class ScriptExecutionTests : TestBase
+    [Collection("NativeDumpTest.x64.dmp")]
+    [Trait("Run", "x64,x86")]
+    public class ScriptExecutionTests : DumpTestBase
     {
-        private const string DefaultDumpFile = NativeDumpTest64.DefaultDumpFile;
-        private const string DefaultSymbolPath = NativeDumpTest64.DefaultSymbolPath;
-        private const string DefaultModuleName = NativeDumpTest64.DefaultModuleName;
-
-        [ClassInitialize]
-        public static void ClassInitialize(TestContext testContext)
+        public ScriptExecutionTests(NativeDumpTest_x64_dmp_Initialization initialization)
+            : base(initialization)
         {
-            SyncStart();
-            InitializeDump(DefaultDumpFile, DefaultSymbolPath);
         }
 
-        [ClassCleanup]
-        public static void TestCleanup()
-        {
-            SyncStop();
-        }
-
-        [TestMethod]
-        [TestCategory("Scripting")]
+        [Fact]
         public void SimpleScript()
         {
             string[] lines = ExecuteScript(@"writeln(1 + 2);");
@@ -34,8 +21,7 @@ namespace DbgEngTest
             CompareArrays(lines, new[] { "3" });
         }
 
-        [TestMethod]
-        [TestCategory("Scripting")]
+        [Fact]
         public void ScriptArguments()
         {
             string[] arguments = new[] { "First argument", "Second \" argument" };
@@ -44,8 +30,7 @@ namespace DbgEngTest
             CompareArrays(lines, arguments);
         }
 
-        [TestMethod]
-        [TestCategory("Scripting")]
+        [Fact]
         public void DynamicTest()
         {
             string[] lines = ExecuteScript(@"dynamic a = new [] { 1, 2, 3, 4, 5, 6, 7 }; writeln(a.Length);");
@@ -53,8 +38,7 @@ namespace DbgEngTest
             CompareArrays(lines, new[] { "7" });
         }
 
-        [TestMethod]
-        [TestCategory("Scripting")]
+        [Fact]
         public void ScriptBase()
         {
             string[] lines = ExecuteScript($@"

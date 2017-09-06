@@ -1,43 +1,29 @@
-﻿using CsDebugScript;
-using CsDebugScript.CommonUserTypes;
+﻿using CsDebugScript.CommonUserTypes;
 using CsDebugScript.CommonUserTypes.NativeTypes.Windows;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using Xunit;
 
-namespace DbgEngTest
+namespace CsDebugScript.Tests
 {
-    [TestClass]
-    public class UserTypeTests : TestBase
+    [Collection("NativeDumpTest.x64.dmp")]
+    [Trait("Run", "x64,x86")]
+    public class UserTypeTests : DumpTestBase
     {
-        private const string DefaultDumpFile = NativeDumpTest64.DefaultDumpFile;
-        private const string DefaultSymbolPath = NativeDumpTest64.DefaultSymbolPath;
-        private const string DefaultModuleName = NativeDumpTest64.DefaultModuleName;
-
-        [ClassInitialize]
-        public static void ClassInitialize(TestContext testContext)
+        public UserTypeTests(NativeDumpTest_x64_dmp_Initialization initialization)
+            : base(initialization)
         {
-            SyncStart();
-            InitializeDump(DefaultDumpFile, DefaultSymbolPath);
         }
 
-        [ClassCleanup]
-        public static void TestCleanup()
-        {
-            SyncStop();
-        }
-
-        [TestMethod]
-        [TestCategory("CommonUserTypes")]
+        [Fact]
         public void TestNakedPointer()
         {
             NakedPointer nakedPointer = new NakedPointer(0);
 
-            Assert.IsTrue(nakedPointer.IsNull);
-            Assert.IsTrue(nakedPointer.ToCodePointer<int>().IsNull);
+            Assert.True(nakedPointer.IsNull);
+            Assert.True(nakedPointer.ToCodePointer<int>().IsNull);
         }
 
-        [TestMethod]
-        [TestCategory("CommonUserTypes")]
+        [Fact]
         public void TestPEB()
         {
             ProcessEnvironmentBlock peb = new ProcessEnvironmentBlock();
@@ -97,8 +83,7 @@ namespace DbgEngTest
             }
         }
 
-        [TestMethod]
-        [TestCategory("CommonUserTypes")]
+        [Fact]
         public void TestTEB()
         {
             ThreadEnvironmentBlock teb = new ThreadEnvironmentBlock(Thread.Current.TEB);

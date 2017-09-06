@@ -109,7 +109,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// Gets the DbgEng.dll Advanced interface
         /// </summary>
-        internal IDebugAdvanced4 Advanced
+        public IDebugAdvanced4 Advanced
         {
             get
             {
@@ -120,7 +120,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// The DbgEng.dll Client interface
         /// </summary>
-        internal IDebugClient7 Client
+        public IDebugClient7 Client
         {
             get
             {
@@ -131,7 +131,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// The DbgEng.dll Control interface
         /// </summary>
-        internal IDebugControl7 Control
+        public IDebugControl7 Control
         {
             get
             {
@@ -142,7 +142,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// The DbgEng.dll Data spaces interface
         /// </summary>
-        internal IDebugDataSpaces4 DataSpaces
+        public IDebugDataSpaces4 DataSpaces
         {
             get
             {
@@ -153,7 +153,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// The DbgEng.dll Registers interface
         /// </summary>
-        internal IDebugRegisters2 Registers
+        public IDebugRegisters2 Registers
         {
             get
             {
@@ -164,7 +164,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// The DbgEng.dll Symbols interface
         /// </summary>
-        internal IDebugSymbols5 Symbols
+        public IDebugSymbols5 Symbols
         {
             get
             {
@@ -175,7 +175,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// <summary>
         /// The DbgEng.dll System objects interface
         /// </summary>
-        internal IDebugSystemObjects4 SystemObjects
+        public IDebugSystemObjects4 SystemObjects
         {
             get
             {

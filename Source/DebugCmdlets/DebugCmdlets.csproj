@@ -2,7 +2,8 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetFramework);$(DefaultNetCoreApp)</TargetFrameworks>
+    <!--<TargetFrameworks>$(DefaultNetFramework);$(DefaultNetCoreApp)</TargetFrameworks>-->
+    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

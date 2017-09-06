@@ -1,19 +1,18 @@
-﻿using CsDebugScript;
-using CsDebugScript.Engine;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using CsDebugScript.Engine;
 using System;
 using Diagnostics = System.Diagnostics;
 using System.Linq;
+using Xunit;
+using DbgEng;
+using CsDebugScript.Engine.Debuggers;
 
-namespace DbgEngTest
+namespace CsDebugScript.Tests
 {
     /// <summary>
     /// Tests for interactive debugging control.
     /// Note that every test has to run in a MTA initialized thread.
     /// </summary>
-    [TestClass]
-    [DeploymentItem(TestProcessPathx64)]
-    [DeploymentItem(TestProcessPathx86)]
+    [Trait("Run", "x64,x86")]
     public class DebugControlTest : TestBase
     {
         private static string TestProcessPath;
@@ -57,7 +56,7 @@ namespace DbgEngTest
 
                 // Ensure that thread depth grows between the executions.
                 //
-                Assert.IsTrue(depthOfMainThread > lastStackDepth, "Stack did not grow between the executions");
+                Assert.True(depthOfMainThread > lastStackDepth, "Stack did not grow between the executions");
                 lastStackDepth = depthOfMainThread;
             }
         }
@@ -90,13 +89,13 @@ namespace DbgEngTest
                 var lastFrame = mainThread.StackTrace.Frames.First(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase"));
                 var functionArgument = lastFrame.Arguments.First(arg => arg.GetName() == "arg");
 
-                Assert.IsTrue((int)functionArgument > lastArgument, "Argument did not increase");
+                Assert.True((int)functionArgument > lastArgument, "Argument did not increase");
                 lastArgument = (int)functionArgument;
 
                 int depthOfMainThread = mainThread.StackTrace.Frames.Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
 
                 Diagnostics.Debug.WriteLine($"Depth of main thread is {depthOfMainThread}");
-                Assert.AreEqual(depthOfMainThread, lastArgument + 1);
+                Assert.Equal(depthOfMainThread, lastArgument + 1);
             }
         }
 
@@ -145,30 +144,52 @@ namespace DbgEngTest
 
             var testTask = System.Threading.Tasks.Task.Factory.StartNew(testWithCleanup);
             testTask.Wait();
-            Assert.IsTrue(testTask.Exception == null, "Exception happened while running the test");
+            Assert.True(testTask.Exception == null, "Exception happened while running the test");
         }
 
-        [TestMethod, Timeout(30000)]
-        [TestCategory("LiveTests")]
+        [Fact]
         public void GoBreakContinuosTestDepth()
         {
             ContinousTestExecutionWrapper(GoBreakContinuosTestDepthBody);
         }
 
-        [TestMethod, Timeout(30000)]
-        [TestCategory("LiveTests")]
+        [Fact]
         public void GoBreakContinousVariablesChange()
         {
             ContinousTestExecutionWrapper(GoBreakContinousVariablesChangeBody);
         }
 
-        [TestMethod]
-        [TestCategory("LiveTests")]
+        [Fact]
         public void MultipleProcesses()
         {
             // Not yet implemented.
             // ContinousTestExecutionWrapper(GoBreakMultipleProcessesBody);
         }
 
+        /// <summary>
+        /// Initializes the test class with the specified process file.
+        /// </summary>
+        /// <param name="processPath">Path to the process to be started.</param>
+        /// <param name="processArguments">Arguments for process to be started.</param>
+        /// <param name="symbolPath">Symbol path.</param>
+        /// <param name="addSymbolServer">if set to <c>true</c> symbol server will be added to the symbol path.</param>
+        /// <param name="debugEngineOptions">Debug create options. Default is to start in break mode, and break on process exit.</param>
+        protected static void InitializeProcess(string processPath, string processArguments, string symbolPath, bool addSymbolServer = true, uint debugEngineOptions = (uint)(Defines.DebugEngoptInitialBreak | Defines.DebugEngoptFinalBreak))
+        {
+            processPath = GetAbsoluteBinPath(processPath);
+            symbolPath = GetAbsoluteBinPath(symbolPath);
+            if (addSymbolServer)
+            {
+                symbolPath += ";srv*";
+            }
+
+            // Disable caching.
+            //
+            Context.EnableUserCastedVariableCaching = false;
+            Context.EnableVariableCaching = false;
+
+            IDebugClient client = DebugClient.OpenProcess(processPath, processArguments, symbolPath, debugEngineOptions);
+            DbgEngDll.InitializeContext(client);
+        }
     }
 }
