@@ -6,7 +6,8 @@ using Xunit;
 namespace CsDebugScript.Tests.CLR
 {
     [Collection("CLR NestedException")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class DataReaderTests
     {
         [Fact]

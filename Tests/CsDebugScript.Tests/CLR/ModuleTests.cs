@@ -5,7 +5,8 @@ using Xunit;
 namespace CsDebugScript.Tests.CLR
 {
     [Collection("CLR Types")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class ModuleTests
     {
         [Fact]

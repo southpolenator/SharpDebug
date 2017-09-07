@@ -6,7 +6,8 @@ using Xunit;
 namespace CsDebugScript.Tests
 {
     [Collection("NativeDumpTest.x64.dmp")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class DbgEngDllTests : DumpTestBase
     {
         public DbgEngDllTests(NativeDumpTest_x64_dmp_Initialization initialization)

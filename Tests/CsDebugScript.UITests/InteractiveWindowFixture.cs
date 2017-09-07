@@ -29,9 +29,4 @@ namespace CsDebugScript.UITests
             Application.Kill();
         }
     }
-
-    [CollectionDefinition("UI with dump")]
-    public class UiWithDumpCollectionFixture : ICollectionFixture<InteractiveWindowFixture>
-    {
-    }
 }

@@ -5,7 +5,8 @@ using Xunit;
 namespace CsDebugScript.Tests.CLR
 {
     [Collection("CLR Types")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class HeapTests
     {
         [Fact]
@@ -50,7 +51,8 @@ namespace CsDebugScript.Tests.CLR
     }
 
     [Collection("CLR Types Server")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class HeapTestsServer
     {
         [Fact]
@@ -63,7 +65,8 @@ namespace CsDebugScript.Tests.CLR
     }
 
     [Collection("CLR Types Workstation")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class HeapTestsWorkstation
     {
         [Fact]

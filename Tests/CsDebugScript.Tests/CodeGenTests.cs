@@ -6,7 +6,7 @@ using Xunit;
 
 namespace CsDebugScript.Tests
 {
-    [Trait("Run", "x64")]
+    [Trait("x64", "true")]
     public class CodeGenTests : TestBase
     {
         [Theory]

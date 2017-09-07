@@ -426,7 +426,8 @@ void AreEqual<T>(T value1, T value2)
 
     #region Test configurations
     [Collection("NativeDumpTest.x64.dmp")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x64 : NativeDumpTest
     {
         public NativeDumpTest_x64(NativeDumpTest_x64_dmp_Initialization initialization)
@@ -436,7 +437,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.x64.dmp NoDia")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x64_NoDia : NativeDumpTest
     {
         public NativeDumpTest_x64_NoDia(NativeDumpTest_x64_dmp_NoDia_Initialization initialization)
@@ -446,7 +448,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.x64.Release.dmp")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x64_Release : NativeDumpTest
     {
         public NativeDumpTest_x64_Release(NativeDumpTest_x64_Release_dmp_Initialization initialization)
@@ -456,7 +459,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.x86.dmp")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x86 : NativeDumpTest
     {
         public NativeDumpTest_x86(NativeDumpTest_x86_dmp_Initialization initialization)
@@ -466,7 +470,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.x86.Release.dmp")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x86_Release : NativeDumpTest
     {
         public NativeDumpTest_x86_Release(NativeDumpTest_x86_Release_dmp_Initialization initialization)
@@ -476,7 +481,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.VS2013.mdmp")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x86_VS2013 : NativeDumpTest
     {
         public NativeDumpTest_x86_VS2013(NativeDumpTest_VS2013_mdmp_Initialization initialization)
@@ -486,7 +492,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.gcc.mdmp")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x86_gcc : NativeDumpTest
     {
         public NativeDumpTest_x86_gcc(NativeDumpTest_gcc_dmp_Initialization initialization)
@@ -496,7 +503,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.x64.clang.mdmp")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x64_clang : NativeDumpTest
     {
         public NativeDumpTest_x64_clang(NativeDumpTest_x64_clang_Initialization initialization)
@@ -506,7 +514,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.x64.gcc.mdmp")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x64_gcc : NativeDumpTest
     {
         public NativeDumpTest_x64_gcc(NativeDumpTest_x64_gcc_Initialization initialization)
@@ -516,7 +525,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.linux.x86.gcc.coredump")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x86_Linux_gcc : NativeDumpTest
     {
         public NativeDumpTest_x86_Linux_gcc(NativeDumpTest_linux_x86_gcc_Initialization initialization)
@@ -526,7 +536,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.linux.x64.gcc.coredump")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x64_Linux_gcc : NativeDumpTest
     {
         public NativeDumpTest_x64_Linux_gcc(NativeDumpTest_linux_x64_gcc_Initialization initialization)
@@ -536,7 +547,8 @@ void AreEqual<T>(T value1, T value2)
     }
 
     [Collection("NativeDumpTest.linux.x64.clang.coredump")]
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class NativeDumpTest_x64_Linux_clang : NativeDumpTest
     {
         public NativeDumpTest_x64_Linux_clang(NativeDumpTest_linux_x64_clang_Initialization initialization)

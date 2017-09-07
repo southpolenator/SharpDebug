@@ -12,7 +12,8 @@ namespace CsDebugScript.Tests
     /// Tests for interactive debugging control.
     /// Note that every test has to run in a MTA initialized thread.
     /// </summary>
-    [Trait("Run", "x64,x86")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
     public class DebugControlTest : TestBase
     {
         private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
