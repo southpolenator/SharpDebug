@@ -40,4 +40,10 @@
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Scripting\CsDebugScript.Scripting.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="CsDebugScript.Tests.xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
