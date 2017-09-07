@@ -490,10 +490,12 @@ namespace CsDebugScript
             }
 
             CodeType codeType = null;
+            bool clrSearched = false;
 
             if (clrModule.Cached && ClrModule != null)
             {
                 codeType = GetClrTypeByName(name);
+                clrSearched = true;
             }
 
             try
@@ -512,7 +514,7 @@ namespace CsDebugScript
             {
             }
 
-            if (ClrModule != null)
+            if (!clrSearched && ClrModule != null)
             {
                 codeType = GetClrTypeByName(name);
             }

@@ -42,7 +42,7 @@ namespace CsDebugScript.Tests
         public DbgEngDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = @".\", bool addSymbolServer = true, bool useDia = true, bool useDwarf = false)
             : base(dumpPath, defaultModuleName, FixSymbolPath(symbolPath, addSymbolServer))
         {
-            IDebugClient client = DebugClient.OpenDumpFile(DumpPath, symbolPath);
+            IDebugClient client = DebugClient.OpenDumpFile(DumpPath, SymbolPath);
 
             DbgEngDll.InitializeContext(client);
             if (!useDia && !useDwarf)

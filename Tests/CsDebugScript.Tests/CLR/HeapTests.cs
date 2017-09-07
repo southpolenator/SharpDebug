@@ -37,16 +37,15 @@ namespace CsDebugScript.Tests.CLR
             Assert.NotNull(runtime.ToString());
             Assert.True(heap.CanWalkHeap);
 
-            // TODO: Find out why heap walk causes butterfly effect on other tests to fail.
-            //int count = 0;
+            int count = 0;
 
-            //foreach (Variable variable in heap.EnumerateObjects())
-            //{
-            //    Assert.NotNull(variable);
-            //    count++;
-            //}
+            foreach (Variable variable in heap.EnumerateObjects())
+            {
+                Assert.NotNull(variable);
+                count++;
+            }
 
-            //Assert.True(count > 0);
+            Assert.True(count > 0);
         }
     }
 

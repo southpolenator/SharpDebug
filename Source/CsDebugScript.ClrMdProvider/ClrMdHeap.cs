@@ -65,6 +65,10 @@ namespace CsDebugScript.ClrMdProvider
         {
             CLR.ClrMdProvider provider = ((ClrMdRuntime)Runtime).Provider;
 
+            // TODO: Because of ClrMD bug, we must enumerate all modules here...
+            var modules = Runtime.Modules;
+
+            // Enumerate all objects from heap
             foreach (ulong address in ClrHeap.EnumerateObjectAddresses())
             {
                 var clrType = ClrHeap.GetObjectType(address);
