@@ -15,7 +15,7 @@ namespace CsDebugScript.Tests
     [Trait("Run", "x64,x86")]
     public class DebugControlTest : TestBase
     {
-        private static string TestProcessPath;
+        private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
 
         private const string TestProcessPathx64 = "NativeDumpTest.x64.exe";
         private const string TestProcessPathx86 = "NativeDumpTest.x86.exe";
@@ -26,6 +26,14 @@ namespace CsDebugScript.Tests
         /// Test case id to be run.
         /// </summary>
         private const string ProcessArguments = @"1";
+
+        private static string TestProcessPath
+        {
+            get
+            {
+                return Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86;
+            }
+        }
 
         static Thread FindThreadHostingMain()
         {
@@ -129,7 +137,8 @@ namespace CsDebugScript.Tests
         /// in order to avoid problems with COM object sharing.
         /// </summary>
         /// <param name="test"></param>
-        static void ContinousTestExecutionWrapper(Action test)
+        /// <param name="timeout"></param>
+        static void ContinousTestExecutionWrapper(Action test, TimeSpan timeout)
         {
             Action cleanup = () =>
             {
@@ -140,30 +149,28 @@ namespace CsDebugScript.Tests
 
             var testWithCleanup = test + cleanup;
 
-            TestProcessPath = Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86;
-
             var testTask = System.Threading.Tasks.Task.Factory.StartNew(testWithCleanup);
-            testTask.Wait();
+            Assert.True(testTask.Wait(timeout), "Test timeout");
             Assert.True(testTask.Exception == null, "Exception happened while running the test");
         }
 
         [Fact]
         public void GoBreakContinuosTestDepth()
         {
-            ContinousTestExecutionWrapper(GoBreakContinuosTestDepthBody);
+            ContinousTestExecutionWrapper(GoBreakContinuosTestDepthBody, DefaultTimeout);
         }
 
         [Fact]
         public void GoBreakContinousVariablesChange()
         {
-            ContinousTestExecutionWrapper(GoBreakContinousVariablesChangeBody);
+            ContinousTestExecutionWrapper(GoBreakContinousVariablesChangeBody, DefaultTimeout);
         }
 
         [Fact]
         public void MultipleProcesses()
         {
             // Not yet implemented.
-            // ContinousTestExecutionWrapper(GoBreakMultipleProcessesBody);
+            // ContinousTestExecutionWrapper(GoBreakMultipleProcessesBody, DefaultTimeout);
         }
 
         /// <summary>
