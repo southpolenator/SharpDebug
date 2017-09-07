@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, ComConversionLoss, Guid("D4366723-44DF-4BED-8C7E-4C05424F4588"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugControl2 : IDebugControl
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugControl
         void GetInterrupt();
 
         void SetInterrupt(
@@ -394,10 +393,9 @@ namespace DbgEng
             [Out, MarshalAs(UnmanagedType.LPStr)] StringBuilder Description,
             [In] uint DescriptionSize,
             [Out] out uint DescriptionUsed);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl2
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         uint GetCurrentTimeDate();
 

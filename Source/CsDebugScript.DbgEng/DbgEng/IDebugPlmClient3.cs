@@ -6,10 +6,9 @@ namespace DbgEng
     [ComImport, Guid("D4A5DBD1-CA02-4D90-856A-2A92BFD0F20F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugPlmClient3 : IDebugPlmClient2
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugPlmClient
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugPlmClient
         void LaunchPlmPackageForDebugWide(
             [In] ulong Server,
             [In] uint Timeout,
@@ -18,11 +17,9 @@ namespace DbgEng
             [In, MarshalAs(UnmanagedType.LPWStr)] string Arguments,
             [Out] out uint ProcessId,
             [Out] out uint ThreadId);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugPlmClient2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugPlmClient2
         void LaunchPlmBgTaskForDebugWide(
             [In] ulong Server,
             [In] uint Timeout,
@@ -30,10 +27,9 @@ namespace DbgEng
             [In, MarshalAs(UnmanagedType.LPWStr)] string BackgroundTaskId,
             [Out] out uint ProcessId,
             [Out] out uint ThreadId);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugPlmClient3
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         void QueryPlmPackageWide(
             [In] ulong Server,

@@ -7,10 +7,6 @@ namespace DbgEng
     [ComImport, ComConversionLoss, Guid("5182E668-105E-416E-AD92-24EF800424BA"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugControl
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl
-        // ---------------------------------------------------------------------------------------------
-
         void GetInterrupt();
 
         void SetInterrupt(

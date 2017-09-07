@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, Guid("489468E6-7D0F-4AF5-87AB-25207454D553"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugSystemObjects4 : IDebugSystemObjects3
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSystemObjects
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugSystemObjects
         uint GetEventThread();
 
         uint GetEventProcess();
@@ -92,11 +91,9 @@ namespace DbgEng
             [Out, MarshalAs(UnmanagedType.LPStr)] StringBuilder Buffer,
             [In] uint BufferSize,
             [Out] out uint ExeSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSystemObjects2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugSystemObjects2
         uint GetCurrentProcessUpTime();
 
         ulong GetImplicitThreadDataOffset();
@@ -108,11 +105,9 @@ namespace DbgEng
 
         void SetImplicitProcessDataOffset(
             [In] ulong Offset);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSystemObjects3
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugSystemObjects3
         uint GetEventSystem();
 
         uint GetCurrentSystemId();
@@ -142,10 +137,9 @@ namespace DbgEng
             [Out, MarshalAs(UnmanagedType.LPStr)] StringBuilder Buffer,
             [In] uint BufferSize,
             [Out] out uint NameSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSystemObjects4
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         void GetCurrentProcessExecutableNameWide(
             [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder Buffer,

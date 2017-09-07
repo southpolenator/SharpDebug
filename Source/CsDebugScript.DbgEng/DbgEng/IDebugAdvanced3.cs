@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, Guid("CBA4ABB4-84C4-444D-87CA-A04E13286739"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugAdvanced3 : IDebugAdvanced2
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugAdvanced
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugAdvanced
         void GetThreadContext(
             [Out] IntPtr Context,
             [In] uint ContextSize);
@@ -18,11 +17,9 @@ namespace DbgEng
         void SetThreadContext(
             [In] IntPtr Context,
             [In] uint ContextSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugAdvanced2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugAdvanced2
         void Request(
             [In] uint Request,
             [In] IntPtr InBuffer,
@@ -70,10 +67,9 @@ namespace DbgEng
             [Out] IntPtr Buffer,
             [In] uint BufferSize,
             [Out] out uint InfoSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugAdvanced3
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         void GetSourceFileInformationWide(
             [In] uint Which,

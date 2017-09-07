@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, ComConversionLoss, Guid("B86FB3B1-80D4-475B-AEA3-CF06539CF63A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugControl7 : IDebugControl6
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugControl
         void GetInterrupt();
 
         void SetInterrupt(
@@ -394,11 +393,9 @@ namespace DbgEng
             [Out, MarshalAs(UnmanagedType.LPStr)] StringBuilder Description,
             [In] uint DescriptionSize,
             [Out] out uint DescriptionUsed);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugControl2
         uint GetCurrentTimeDate();
 
         uint GetCurrentSystemUpTime();
@@ -426,11 +423,9 @@ namespace DbgEng
         void OutputTextReplacements(
             [In] uint OutputControl,
             [In] uint Flags);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl3
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugControl3
         uint GetAssemblyOptions();
 
         void AddAssemblyOptions(
@@ -475,11 +470,9 @@ namespace DbgEng
         uint SetNextEventIndex(
             [In] uint Relation,
             [In] uint Value);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl4
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugControl4
         void GetLogFileWide(
             [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder Buffer,
             [In] uint BufferSize,
@@ -779,11 +772,9 @@ namespace DbgEng
 
         void ResetManagedStatus(
             [In] uint Flags);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl5
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugControl5
         void GetStackTraceEx(
             [In] ulong FrameOffset,
             [In] ulong StackOffset,
@@ -820,20 +811,17 @@ namespace DbgEng
         [return: MarshalAs(UnmanagedType.Interface)]
         IDebugBreakpoint3 GetBreakpointByGuid(
             [In] ref Guid Guid);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl6
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugControl6
         uint GetExecutionStatusEx();
 
         void GetSynchronizationStatus(
             [Out] out uint SendsAttempted,
             [Out] out uint SecondsSinceLastResponse);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl7
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         void GetDebuggeeType2(
             [In] uint Flags,

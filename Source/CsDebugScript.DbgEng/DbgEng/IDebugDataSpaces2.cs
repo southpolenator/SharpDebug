@@ -6,10 +6,9 @@ namespace DbgEng
     [ComImport, Guid("7A5E852F-96E9-468F-AC1B-0B3ADDC4A049"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugDataSpaces2 : IDebugDataSpaces
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugDataSpaces
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugDataSpaces
         void ReadVirtual(
             [In] ulong Offset,
             [Out] IntPtr Buffer,
@@ -133,10 +132,9 @@ namespace DbgEng
             [Out] IntPtr Buffer,
             [In] uint BufferSize,
             [Out] out uint DataSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugDataSpaces2
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         ulong VirtualToPhysical(
             [In] ulong Virtual);

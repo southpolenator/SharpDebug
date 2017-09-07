@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, ComConversionLoss, Guid("C65FA83E-1E69-475E-8E0E-B5D79E9CC17E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugSymbols5 : IDebugSymbols4
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbols
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugSymbols
         uint GetSymbolOptions();
 
         void AddSymbolOptions(
@@ -259,11 +258,9 @@ namespace DbgEng
             [Out] out ulong Buffer,
             [In] uint BufferLines,
             [Out] out uint FileLines);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbols2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugSymbols2
         void GetModuleVersionInformation(
             [In] uint Index,
             [In] ulong Base,
@@ -306,11 +303,9 @@ namespace DbgEng
 
         void SetTypeOptions(
             [In] uint Options);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbols3
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugSymbols3
         void GetNameByOffsetWide(
             [In] ulong Offset,
             [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder NameBuffer,
@@ -675,11 +670,9 @@ namespace DbgEng
         _DEBUG_SYMBOL_SOURCE_ENTRY GetSourceEntryBySourceEntry(
             [In] ref _DEBUG_SYMBOL_SOURCE_ENTRY FromEntry,
             [In] uint Flags);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbols4
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugSymbols4
         void GetScopeEx(
             [Out] out ulong InstructionOffset,
             [Out] out _DEBUG_STACK_FRAME_EX ScopeFrame,
@@ -731,10 +724,9 @@ namespace DbgEng
             [In] uint Flags,
             [In] ulong Offset,
             [In] uint InlineContext);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbols5
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         uint GetCurrentScopeFrameIndexEx(
             [In] uint Flags);

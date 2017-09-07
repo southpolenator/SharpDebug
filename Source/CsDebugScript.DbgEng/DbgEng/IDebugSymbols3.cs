@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, ComConversionLoss, Guid("F02FBECC-50AC-4F36-9AD9-C975E8F32FF8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugSymbols3 : IDebugSymbols2
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbols
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugSymbols
         uint GetSymbolOptions();
 
         void AddSymbolOptions(
@@ -259,11 +258,9 @@ namespace DbgEng
             [Out] out ulong Buffer,
             [In] uint BufferLines,
             [Out] out uint FileLines);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbols2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugSymbols2
         void GetModuleVersionInformation(
             [In] uint Index,
             [In] ulong Base,
@@ -306,10 +303,9 @@ namespace DbgEng
 
         void SetTypeOptions(
             [In] uint Options);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbols3
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         void GetNameByOffsetWide(
             [In] ulong Offset,

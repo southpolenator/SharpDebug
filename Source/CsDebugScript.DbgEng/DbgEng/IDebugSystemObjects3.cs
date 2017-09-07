@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, Guid("E9676E2F-E286-4EA3-B0F9-DFE5D9FC330E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugSystemObjects3 : IDebugSystemObjects2
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSystemObjects
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugSystemObjects
         uint GetEventThread();
 
         uint GetEventProcess();
@@ -92,11 +91,9 @@ namespace DbgEng
             [Out, MarshalAs(UnmanagedType.LPStr)] StringBuilder Buffer,
             [In] uint BufferSize,
             [Out] out uint ExeSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSystemObjects2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugSystemObjects2
         uint GetCurrentProcessUpTime();
 
         ulong GetImplicitThreadDataOffset();
@@ -108,10 +105,9 @@ namespace DbgEng
 
         void SetImplicitProcessDataOffset(
             [In] ulong Offset);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSystemObjects3
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         uint GetEventSystem();
 

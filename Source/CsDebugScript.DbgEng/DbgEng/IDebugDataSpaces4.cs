@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, Guid("D98ADA1F-29E9-4EF5-A6C0-E53349883212"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugDataSpaces4 : IDebugDataSpaces3
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugDataSpaces
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugDataSpaces
         void ReadVirtual(
             [In] ulong Offset,
             [Out] IntPtr Buffer,
@@ -134,11 +133,9 @@ namespace DbgEng
             [Out] IntPtr Buffer,
             [In] uint BufferSize,
             [Out] out uint DataSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugDataSpaces2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugDataSpaces2
         ulong VirtualToPhysical(
             [In] ulong Virtual);
 
@@ -171,11 +168,9 @@ namespace DbgEng
 
         _MEMORY_BASIC_INFORMATION64 QueryVirtual(
             [In] ulong Offset);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugDataSpaces3
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugDataSpaces3
         _IMAGE_NT_HEADERS64 ReadImageNtHeaders(
             [In] ulong ImageBase);
 
@@ -195,10 +190,9 @@ namespace DbgEng
 
         void EndEnumTagged(
             [In] ulong Handle);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugDataSpaces4
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         void GetOffsetInformation(
             [In] uint Space,

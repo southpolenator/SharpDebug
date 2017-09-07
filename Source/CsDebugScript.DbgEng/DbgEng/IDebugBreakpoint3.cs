@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, Guid("38F5C249-B448-43BB-9835-579D4EC02249"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugBreakpoint3 : IDebugBreakpoint2
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugBreakpoint
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugBreakpoint
         uint GetId();
 
         void GetType(
@@ -73,11 +72,9 @@ namespace DbgEng
             [In, MarshalAs(UnmanagedType.LPStr)] string Expression);
 
         _DEBUG_BREAKPOINT_PARAMETERS GetParameters();
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugBreakpoint2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugBreakpoint2
         void GetCommandWide(
             [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder Buffer,
             [In] uint BufferSize,
@@ -93,10 +90,9 @@ namespace DbgEng
 
         void SetOffsetExpressionWide(
             [In, MarshalAs(UnmanagedType.LPWStr)] string Expression);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugBreakpoint3
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         Guid GetGuid();
     }

@@ -7,10 +7,6 @@ namespace DbgEng
     [ComImport, ComConversionLoss, Guid("F2528316-0F1A-4431-AEED-11D096E1E2AB"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugSymbolGroup
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbolGroup
-        // ---------------------------------------------------------------------------------------------
-
         uint GetNumberSymbols();
 
         uint AddSymbol(

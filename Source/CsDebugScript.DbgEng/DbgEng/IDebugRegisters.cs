@@ -7,10 +7,6 @@ namespace DbgEng
     [ComImport, ComConversionLoss, Guid("CE289126-9E84-45A7-937E-67BB18691493"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugRegisters
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugRegisters
-        // ---------------------------------------------------------------------------------------------
-
         uint GetNumberRegisters();
 
         void GetDescription(

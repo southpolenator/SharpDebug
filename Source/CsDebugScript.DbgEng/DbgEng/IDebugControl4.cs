@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, ComConversionLoss, Guid("94E60CE9-9B41-4B19-9FC0-6D9EB35272B3"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugControl4 : IDebugControl3
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugControl
         void GetInterrupt();
 
         void SetInterrupt(
@@ -394,11 +393,9 @@ namespace DbgEng
             [Out, MarshalAs(UnmanagedType.LPStr)] StringBuilder Description,
             [In] uint DescriptionSize,
             [Out] out uint DescriptionUsed);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugControl2
         uint GetCurrentTimeDate();
 
         uint GetCurrentSystemUpTime();
@@ -426,11 +423,9 @@ namespace DbgEng
         void OutputTextReplacements(
             [In] uint OutputControl,
             [In] uint Flags);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl3
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugControl3
         uint GetAssemblyOptions();
 
         void AddAssemblyOptions(
@@ -475,10 +470,9 @@ namespace DbgEng
         uint SetNextEventIndex(
             [In] uint Relation,
             [In] uint Value);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugControl4
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         void GetLogFileWide(
             [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder Buffer,

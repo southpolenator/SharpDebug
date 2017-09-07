@@ -6,10 +6,6 @@ namespace DbgEng
     [ComImport, Guid("88F7DFAB-3EA7-4C3A-AEFB-C4E8106173AA"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugDataSpaces
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugDataSpaces
-        // ---------------------------------------------------------------------------------------------
-
         void ReadVirtual(
             [In] ulong Offset,
             [Out] IntPtr Buffer,

@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, Guid("D1069067-2A65-4BF0-AE97-76184B67856B"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugAdvanced4 : IDebugAdvanced3
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugAdvanced
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugAdvanced
         void GetThreadContext(
             [Out] IntPtr Context,
             [In] uint ContextSize);
@@ -18,11 +17,9 @@ namespace DbgEng
         void SetThreadContext(
             [In] IntPtr Context,
             [In] uint ContextSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugAdvanced2
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugAdvanced2
         void Request(
             [In] uint Request,
             [In] IntPtr InBuffer,
@@ -70,11 +67,9 @@ namespace DbgEng
             [Out] IntPtr Buffer,
             [In] uint BufferSize,
             [Out] out uint InfoSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugAdvanced3
-        // ---------------------------------------------------------------------------------------------
-
+        #region IDebugAdvanced3
         void GetSourceFileInformationWide(
             [In] uint Which,
             [In, MarshalAs(UnmanagedType.LPWStr)] string SourceFile,
@@ -106,10 +101,9 @@ namespace DbgEng
             [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder StringBuffer,
             [In] uint StringBufferSize,
             [Out] out uint StringSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugAdvanced4
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         void GetSymbolInformationWideEx(
             [In] uint Which,

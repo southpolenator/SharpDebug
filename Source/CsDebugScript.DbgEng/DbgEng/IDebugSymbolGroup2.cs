@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, ComConversionLoss, Guid("6A7CCC5F-FB5E-4DCC-B41C-6C20307BCCC7"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugSymbolGroup2 : IDebugSymbolGroup
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbolGroup
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugSymbolGroup
         uint GetNumberSymbols();
 
         uint AddSymbol(
@@ -49,10 +48,9 @@ namespace DbgEng
         void OutputAsType(
             [In] uint Index,
             [In, MarshalAs(UnmanagedType.LPStr)] string Type);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSymbolGroup2
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         uint AddSymbolWide(
             [In, MarshalAs(UnmanagedType.LPWStr)] string Name);

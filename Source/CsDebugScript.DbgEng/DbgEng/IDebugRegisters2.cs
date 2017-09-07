@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, ComConversionLoss, Guid("1656AFA9-19C6-4E3A-97E7-5DC9160CF9C4"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugRegisters2 : IDebugRegisters
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugRegisters
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugRegisters
         uint GetNumberRegisters();
 
         void GetDescription(
@@ -51,10 +50,9 @@ namespace DbgEng
         ulong GetStackOffset();
 
         ulong GetFrameOffset();
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugRegisters2
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         void GetDescriptionWide(
             [In] uint Register,

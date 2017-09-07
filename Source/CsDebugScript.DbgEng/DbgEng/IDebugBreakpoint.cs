@@ -7,10 +7,6 @@ namespace DbgEng
     [ComImport, Guid("5BD9D474-5975-423A-B88B-65A8E7110E65"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugBreakpoint
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugBreakpoint
-        // ---------------------------------------------------------------------------------------------
-
         uint GetId();
 
         void GetType(

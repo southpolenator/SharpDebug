@@ -7,10 +7,6 @@ namespace DbgEng
     [ComImport, Guid("6B86FE2C-2C4F-4F0C-9DA2-174311ACC327"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugSystemObjects
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSystemObjects
-        // ---------------------------------------------------------------------------------------------
-
         uint GetEventThread();
 
         uint GetEventProcess();

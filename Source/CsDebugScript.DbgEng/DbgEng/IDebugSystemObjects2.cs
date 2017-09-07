@@ -7,10 +7,9 @@ namespace DbgEng
     [ComImport, Guid("0AE9F5FF-1852-4679-B055-494BEE6407EE"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IDebugSystemObjects2 : IDebugSystemObjects
     {
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSystemObjects
-        // ---------------------------------------------------------------------------------------------
+#pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
+        #region IDebugSystemObjects
         uint GetEventThread();
 
         uint GetEventProcess();
@@ -92,10 +91,9 @@ namespace DbgEng
             [Out, MarshalAs(UnmanagedType.LPStr)] StringBuilder Buffer,
             [In] uint BufferSize,
             [Out] out uint ExeSize);
+        #endregion
 
-        // ---------------------------------------------------------------------------------------------
-        // IDebugSystemObjects2
-        // ---------------------------------------------------------------------------------------------
+#pragma warning restore CS0108 // XXX hides inherited member. This is COM default.
 
         uint GetCurrentProcessUpTime();
 
