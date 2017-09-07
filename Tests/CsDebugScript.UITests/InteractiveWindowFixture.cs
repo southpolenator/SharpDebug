@@ -10,8 +10,12 @@ namespace CsDebugScript.UITests
     {
         public InteractiveWindowFixture()
         {
-            UI.InteractiveWindow.ShowWindow();
-            Application = Application.Attach(System.Diagnostics.Process.GetCurrentProcess());
+            NativeDumpTest_x64_dmp_Initialization initialization = new NativeDumpTest_x64_dmp_Initialization();
+            Application = Application.Launch(new System.Diagnostics.ProcessStartInfo()
+            {
+                FileName = TestBase.GetAbsoluteBinPath("CsDebugScript.UI.App.exe"),
+                Arguments = $"-d \"{initialization.DumpPath}\" -p \"{initialization.SymbolPath}\"",
+            });
             InteractiveWindow = new InteractiveWindowWrapper(Application.GetWindow(UI.InteractiveWindow.WindowTitle, InitializeOption.NoCache));
         }
 
@@ -22,21 +26,12 @@ namespace CsDebugScript.UITests
         public void Dispose()
         {
             InteractiveWindow.MainWindow?.Close();
-        }
-    }
-
-    public class DumpInteractiveWindowFixture : InteractiveWindowFixture
-    {
-        private NativeDumpTest_x64_dmp_Initialization dumpInitialization;
-
-        public DumpInteractiveWindowFixture()
-        {
-            dumpInitialization = new NativeDumpTest_x64_dmp_Initialization();
+            Application.Kill();
         }
     }
 
     [CollectionDefinition("UI with dump")]
-    public class UiWithDumpCollectionFixture : ICollectionFixture<DumpInteractiveWindowFixture>
+    public class UiWithDumpCollectionFixture : ICollectionFixture<InteractiveWindowFixture>
     {
     }
 }

@@ -6,7 +6,7 @@ namespace CsDebugScript.UITests
     [Trait("Run", "x64")]
     public class Complex : UiTestBase
     {
-        public Complex(DumpInteractiveWindowFixture interactiveWindowFixture)
+        public Complex(InteractiveWindowFixture interactiveWindowFixture)
             : base(interactiveWindowFixture)
         {
         }
