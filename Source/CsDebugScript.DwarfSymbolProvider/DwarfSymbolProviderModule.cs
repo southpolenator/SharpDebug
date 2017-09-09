@@ -1,7 +1,5 @@
 ﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
-using Dia2Lib;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -107,12 +105,13 @@ namespace CsDebugScript.DwarfSymbolProvider
         private List<ulong> publicSymbolsAddresses;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DwarfSymbolProviderModule"/> class.
+        /// Initializes a new instance of the <see cref="DwarfSymbolProviderModule" /> class.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="compilationUnits">The compilation units.</param>
         /// <param name="programs">The line number programs.</param>
         /// <param name="commonInformationEntries">The common information entries.</param>
+        /// <param name="publicSymbols">The public symbols.</param>
         /// <param name="codeSegmentOffset">The code segment offset.</param>
         /// <param name="is64bit">if set to <c>true</c> image is 64 bit.</param>
         public DwarfSymbolProviderModule(Module module, DwarfCompilationUnit[] compilationUnits, DwarfLineNumberProgram[] programs, DwarfCommonInformationEntry[] commonInformationEntries, IReadOnlyList<PublicSymbol> publicSymbols, ulong codeSegmentOffset, bool is64bit)
@@ -499,7 +498,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public BasicType GetTypeBasicType(Module module, uint typeId)
+        public BuiltinType GetTypeBuiltinType(Module module, uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -509,8 +508,10 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the basic type of the specified type.
         /// </summary>
-        private BasicType GetTypeBasicType(DwarfSymbol type)
+        private BuiltinType GetTypeBasicType(DwarfSymbol type)
         {
+            ulong size = type.GetConstantAttribute(DwarfAttribute.ByteSize);
+
             while (true)
             {
                 switch (type.Tag)
@@ -521,39 +522,94 @@ namespace CsDebugScript.DwarfSymbolProvider
                             case "double":
                             case "float":
                             case "long double":
-                                return BasicType.Float;
+                                switch (size)
+                                {
+                                    default:
+                                    case 4:
+                                        return BuiltinType.Float32;
+                                    case 8:
+                                        return BuiltinType.Float64;
+                                    case 10:
+                                        return BuiltinType.Float80;
+                                }
+                            case "short int":
                             case "int":
                             case "long int":
-                                return BasicType.Int;
+                            case "long long int":
+                                switch (size)
+                                {
+                                    case 1:
+                                        return BuiltinType.Int8;
+                                    case 2:
+                                        return BuiltinType.Int16;
+                                    default:
+                                    case 4:
+                                        return BuiltinType.Int32;
+                                    case 8:
+                                        return BuiltinType.Int64;
+                                    case 16:
+                                        return BuiltinType.Int128;
+                                }
                             case "short unsigned int":
                             case "unsigned int":
                             case "long unsigned int":
                             case "unsigned char":
-                                return BasicType.UInt;
-                            case "long long int":
-                                return BasicType.Long;
                             case "long long unsigned int":
-                                return BasicType.ULong;
+                                switch (size)
+                                {
+                                    case 1:
+                                        return BuiltinType.UInt8;
+                                    case 2:
+                                        return BuiltinType.UInt16;
+                                    default:
+                                    case 4:
+                                        return BuiltinType.UInt32;
+                                    case 8:
+                                        return BuiltinType.UInt64;
+                                    case 16:
+                                        return BuiltinType.UInt128;
+                                }
                             case "wchar_t":
-                                return BasicType.WChar;
                             case "signed char":
                             case "char":
-                                return BasicType.Char;
+                                switch (size)
+                                {
+                                    default:
+                                    case 1:
+                                        return BuiltinType.Char8;
+                                    case 2:
+                                        return BuiltinType.Char16;
+                                    case 4:
+                                        return BuiltinType.Char32;
+                                }
                             case "bool":
-                                return BasicType.Bool;
+                                return BuiltinType.Bool;
                             case "void":
-                                return BasicType.Void;
+                                return BuiltinType.Void;
                         }
                         throw new Exception($"Unknown BasicType name: {type.Name}");
                     case DwarfTag.EnumerationType:
                         type = GetType(type);
                         if (type == null)
                         {
-                            return BasicType.Int;
+                            switch (size)
+                            {
+                                case 1:
+                                    return BuiltinType.Int8;
+                                case 2:
+                                    return BuiltinType.Int16;
+                                default:
+                                case 4:
+                                    return BuiltinType.Int32;
+                                case 8:
+                                    return BuiltinType.Int64;
+                                case 16:
+                                    return BuiltinType.Int128;
+                            }
                         }
                         continue;
                     default:
-                        return BasicType.NoType;
+                        return BuiltinType.NoType;
                 }
             }
         }
@@ -639,11 +695,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Gets the symbol tag of the specified type.
+        /// Gets the code type tag of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public SymTag GetTypeTag(Module module, uint typeId)
+        public CodeTypeTag GetTypeTag(Module module, uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -651,21 +707,23 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 case DwarfTag.ReferenceType:
                 case DwarfTag.PointerType:
-                    return SymTag.PointerType;
+                    return CodeTypeTag.Pointer;
                 case DwarfTag.SubroutineType:
-                    return SymTag.FunctionType;
+                    return CodeTypeTag.Function;
                 case DwarfTag.StructureType:
+                    return CodeTypeTag.Structure;
                 case DwarfTag.ClassType:
+                    return CodeTypeTag.Class;
                 case DwarfTag.UnionType:
-                    return SymTag.UDT;
+                    return CodeTypeTag.Union;
                 case DwarfTag.BaseType:
-                    return SymTag.BaseType;
+                    return CodeTypeTag.BuiltinType;
                 case DwarfTag.EnumerationType:
-                    return SymTag.Enum;
+                    return CodeTypeTag.Enum;
                 case DwarfTag.ArrayType:
-                    return SymTag.ArrayType;
+                    return CodeTypeTag.Array;
                 default:
-                    throw new NotImplementedException();
+                    return CodeTypeTag.Unsupported;
             }
         }
 
@@ -1200,19 +1258,27 @@ namespace CsDebugScript.DwarfSymbolProvider
                                             case DwarfTag.BaseType:
                                                 switch (GetTypeBasicType(type))
                                                 {
-                                                    case BasicType.Bool:
+                                                    case BuiltinType.Bool:
                                                         stringValue = value != 0 ? "true" : "false";
                                                         break;
-                                                    case BasicType.Int:
-                                                        // TODO: Check type size
-                                                        if (value > int.MaxValue)
-                                                        {
-                                                            throw new NotImplementedException();
-                                                        }
-                                                        stringValue = value.ToString();
+                                                    case BuiltinType.Int8:
+                                                        stringValue = ((sbyte)value).ToString();
                                                         break;
-                                                    case BasicType.UInt:
-                                                    case BasicType.ULong:
+                                                    case BuiltinType.Int16:
+                                                        stringValue = ((short)value).ToString();
+                                                        break;
+                                                    case BuiltinType.Int32:
+                                                        stringValue = ((int)value).ToString();
+                                                        break;
+                                                    case BuiltinType.Int64:
+                                                    case BuiltinType.Int128:
+                                                        stringValue = ((long)value).ToString();
+                                                        break;
+                                                    case BuiltinType.UInt8:
+                                                    case BuiltinType.UInt16:
+                                                    case BuiltinType.UInt32:
+                                                    case BuiltinType.UInt64:
+                                                    case BuiltinType.UInt128:
                                                         stringValue = value.ToString();
                                                         break;
                                                     default:

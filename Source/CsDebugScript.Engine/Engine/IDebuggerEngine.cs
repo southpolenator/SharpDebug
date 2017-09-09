@@ -1,6 +1,4 @@
-﻿using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.Utility;
-using Dia2Lib;
+﻿using CsDebugScript.Engine.Utility;
 using System;
 
 namespace CsDebugScript.Engine
@@ -24,22 +22,10 @@ namespace CsDebugScript.Engine
         ISymbolProvider CreateDefaultSymbolProvider();
 
         /// <summary>
-        /// Executes the action in redirected console output and error stream.
+        /// Gets the dump file memory reader of the specified process if it is debugged from a dump.
         /// </summary>
-        /// <param name="action">The action.</param>
-        void ExecuteAction(Action action);
-
-        /// <summary>
-        /// Executes the specified command, but leaves its output visible to the user.
-        /// </summary>
-        /// <param name="command">The command.</param>
-        /// <param name="parameters">The parameters.</param>
-        void Execute(string command, params object[] parameters);
-
-        /// <summary>
-        /// Reads the line from the debugger input.
-        /// </summary>
-        string ReadInput();
+        /// <param name="process">The process.</param>
+        DumpFileMemoryReader GetDumpFileMemoryReader(Process process);
 
         /// <summary>
         /// Reads the memory from the specified process.
@@ -90,15 +76,6 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="module">The module.</param>
         string GetModuleSymbolFile(Module module);
-
-        /// <summary>
-        /// Gets the DIA session for the specified module.
-        /// </summary>
-        /// <param name="module">The module.</param>
-        /// <returns>
-        ///   <see cref="IDiaSession" /> if available, null otherwise.
-        /// </returns>
-        IDiaSession GetModuleDiaSession(Module module);
 
         /// <summary>
         /// Gets the name of the mapped image. In most cases, this is null. If the debugger is mapping an image file
@@ -182,16 +159,10 @@ namespace CsDebugScript.Engine
         string GetProcessDumpFileName(Process process);
 
         /// <summary>
-        /// Gets the actual processor type of the specified process.
+        /// Gets the architecture type of the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
-        ImageFileMachine GetProcessActualProcessorType(Process process);
-
-        /// <summary>
-        /// Gets the effective processor type of the specified process.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        ImageFileMachine GetProcessEffectiveProcessorType(Process process);
+        ArchitectureType GetProcessArchitectureType(Process process);
 
         /// <summary>
         /// Gets all threads of the specified process.
@@ -295,12 +266,6 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="process">The process.</param>
         bool IsMinidump(Process process);
-
-        /// <summary>
-        /// Gets last event info.
-        /// </summary>
-        /// <returns></returns>
-        DebugEventInfo GetLastEventInfo();
 
         /// <summary>
         /// When doing live process debugging continues debugee execution of the specified process.

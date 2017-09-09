@@ -1,6 +1,5 @@
-﻿using CsDebugScript.Engine.Debuggers;
-using CsDebugScript.Engine.SymbolProviders;
-using DbgEngManaged;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine.Utility;
 using System;
 using System.IO;
 using System.Reflection;
@@ -23,14 +22,14 @@ namespace CsDebugScript.Engine
         public static ISymbolProvider SymbolProvider;
 
         /// <summary>
+        /// The CLR provider interface
+        /// </summary>
+        public static IClrProvider ClrProvider;
+
+        /// <summary>
         /// The user type metadata (used for casting to user types)
         /// </summary>
         internal static UserTypeMetadata[] UserTypeMetadata;
-
-        /// <summary>
-        /// The settings for script execution
-        /// </summary>
-        internal static Settings Settings = new Settings();
 
         /// <summary>
         /// Gets or sets a value indicating whether variable caching is enabled.
@@ -71,32 +70,28 @@ namespace CsDebugScript.Engine
         }
 
         /// <summary>
-        /// Initializes the Context with the specified DbgEng.dll Client interface.
-        /// </summary>
-        /// <param name="client">The DbgEng.dll Client interface.</param>
-        public static void Initalize(IDebugClient client)
-        {
-            InitializeDebugger(new DbgEngDll(client));
-        }
-
-        /// <summary>
-        /// Initializes the Context with the specified debugger engine interface.
-        /// </summary>
-        /// <param name="debuggerEngine">The debugger engine interface.</param>
-        public static void InitializeDebugger(IDebuggerEngine debuggerEngine)
-        {
-            InitializeDebugger(debuggerEngine, new DiaSymbolProvider(debuggerEngine.CreateDefaultSymbolProvider()));
-        }
-
-        /// <summary>
         /// Initializes the Context with the specified debugger engine interface.
         /// </summary>
         /// <param name="debuggerEngine">The debugger engine interface.</param>
         /// <param name="symbolProvider">The symbol provider interface.</param>
         public static void InitializeDebugger(IDebuggerEngine debuggerEngine, ISymbolProvider symbolProvider)
         {
+            ClearCache();
             Debugger = debuggerEngine;
             SymbolProvider = symbolProvider;
+        }
+
+        /// <summary>
+        /// Clears the internal Engine caches.
+        /// </summary>
+        public static void ClearCache()
+        {
+            CacheInvalidator.InvalidateCaches(ClrProvider);
+            GlobalCache.Processes.Clear();
+            GlobalCache.UserTypeCastedVariableCollections.Clear();
+            GlobalCache.UserTypeCastedVariables.Clear();
+            GlobalCache.VariablesUserTypeCastedFields.Clear();
+            GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
         }
 
         /// <summary>

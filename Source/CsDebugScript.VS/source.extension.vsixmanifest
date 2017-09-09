@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="CsDebugScript.VS.Vuk Jovanovic.1a8bc80a-3559-4a40-b220-2d1cebfa811a" Version="1.2" Language="en-US" Publisher="Vuk Jovanovic" />
+        <Identity Id="CsDebugScript.VS.Vuk Jovanovic.1a8bc80a-3559-4a40-b220-2d1cebfa811a" Version="1.3.0" Language="en-US" Publisher="Vuk Jovanovic" />
         <DisplayName>CsDebugScript.VS</DisplayName>
         <Description xml:space="preserve">CsDebugScript extension for Visual Studio</Description>
     </Metadata>
@@ -24,4 +24,8 @@
         <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="System.Collections.Immutable.dll" AssemblyName="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
         <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="System.IO.FileSystem.dll" AssemblyName="System.IO.FileSystem, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     </Assets>
+    <Prerequisites>
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0.26606.0,16.0)" DisplayName="Visual Studio core editor" />
+        <Prerequisite Id="Microsoft.VisualStudio.Component.Debugger.JustInTime" Version="[15.0.26208.0,16.0)" DisplayName="Just-In-Time debugger" />
+    </Prerequisites>
 </PackageManifest>

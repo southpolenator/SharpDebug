@@ -1,6 +1,8 @@
 ﻿using CsDebugScript;
 using CsDebugScript.Engine;
-using DbgEngManaged;
+using CsDebugScript.Engine.Debuggers;
+using CsDebugScript.Engine.SymbolProviders;
+using DbgEng;
 using System;
 using System.Management.Automation;
 
@@ -63,7 +65,7 @@ namespace PowershellDebugSession
             IDebugClient client = DebugClient.DebugCreateEx(0x60);
 
             ((IDebugSymbols5)client).SetSymbolPathWide(SymbolPath);
-            ((IDebugClient7)client).CreateProcessAndAttach(0, ProcessPath, 0x00000002); 
+            ((IDebugClient7)client).CreateProcessAndAttach(0, ProcessPath, DebugCreateProcess.DebugOnlyThisProcess, 0, DebugAttach.Default);
             ((IDebugControl7)client).WaitForEvent(0, uint.MaxValue);
 
             // For live debugging disable caching.
@@ -71,8 +73,9 @@ namespace PowershellDebugSession
             Context.EnableUserCastedVariableCaching = false;
             Context.EnableVariableCaching = false;
 
-            Context.Initalize(client);
-
+            IDebuggerEngine debugger = new DbgEngDll(client);
+            ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.CreateDefaultSymbolProvider());
+            Context.InitializeDebugger(debugger, symbolProvider);
 
             WriteDebug("Connection successfully initialized");
 

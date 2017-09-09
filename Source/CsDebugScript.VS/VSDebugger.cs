@@ -2,11 +2,14 @@
 using CsDebugScript.Engine.Utility;
 using System;
 using System.Linq;
-using Dia2Lib;
+using DIA;
+using CsDebugScript.Engine.SymbolProviders;
+using System.IO;
+using CsDebugScript.Engine;
 
 namespace CsDebugScript.VS
 {
-    internal class VSDebugger : Engine.IDebuggerEngine
+    internal class VSDebugger : Engine.IDebuggerEngine, IDiaSessionProvider
     {
         /// <summary>
         /// The Visual Studio debugger proxy running in Default AppDomain.
@@ -44,6 +47,22 @@ namespace CsDebugScript.VS
         public ulong FindPatternInMemory(Process process, ulong memoryStart, ulong memoryEnd, byte[] pattern, int patternStart, int patternEnd, uint searchAlignment = 1, bool searchWritableMemoryOnly = false)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the dump file memory reader of the specified process if it is debugged from a dump.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        public DumpFileMemoryReader GetDumpFileMemoryReader(Process process)
+        {
+            string dumpFilename = process.DumpFileName;
+
+            if (File.Exists(dumpFilename))
+            {
+                return new WindowsDumpFileMemoryReader(dumpFilename);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -204,12 +223,12 @@ namespace CsDebugScript.VS
         }
 
         /// <summary>
-        /// Gets the actual processor type of the specified process.
+        /// Gets the architecture type of the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
-        public Engine.Native.ImageFileMachine GetProcessActualProcessorType(Process process)
+        public ArchitectureType GetProcessArchitectureType(Process process)
         {
-            return proxy.GetProcessActualProcessorType(process.Id);
+            return proxy.GetProcessArchitectureType(process.Id);
         }
 
         /// <summary>
@@ -219,15 +238,6 @@ namespace CsDebugScript.VS
         public string GetProcessDumpFileName(Process process)
         {
             return proxy.GetProcessDumpFileName(process.Id);
-        }
-
-        /// <summary>
-        /// Gets the effective processor type of the specified process.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        public Engine.Native.ImageFileMachine GetProcessEffectiveProcessorType(Process process)
-        {
-            return proxy.GetProcessEffectiveProcessorType(process.Id);
         }
 
         public ulong GetProcessEnvironmentBlockAddress(Process process)
@@ -304,7 +314,7 @@ namespace CsDebugScript.VS
         /// <param name="thread">The thread.</param>
         public ThreadContext GetThreadContext(Thread thread)
         {
-            using (MarshalArrayReader<ThreadContext> threadContextBuffer = ThreadContext.CreateArrayMarshaler(thread.Process, 1))
+            using (MarshalArrayReader<ThreadContext> threadContextBuffer = WindowsThreadContext.CreateArrayMarshaler(thread.Process, 1))
             {
                 proxy.GetThreadContext(thread.Id, threadContextBuffer.Pointer, threadContextBuffer.Count * threadContextBuffer.Size);
 
@@ -336,7 +346,7 @@ namespace CsDebugScript.VS
             {
                 ulong instructionOffset = framesData[i].Item1, stackOffset = framesData[i].Item2, frameOffset = framesData[i].Item3;
 
-                ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset);
+                ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset, null);
                 frames[i] = new StackFrame(stackTrace, threadContext)
                 {
                     FrameNumber = (uint)i,
@@ -454,11 +464,7 @@ namespace CsDebugScript.VS
         {
             // This should update cache with new values. For now, just clear everything
             proxy.ClearCache();
-            Engine.GlobalCache.Processes.Clear();
-            Engine.GlobalCache.UserTypeCastedVariableCollections.Clear();
-            Engine.GlobalCache.UserTypeCastedVariables.Clear();
-            Engine.GlobalCache.VariablesUserTypeCastedFields.Clear();
-            Engine.GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
+            Engine.Context.ClearCache();
         }
 
         #region Unsupported functionality
@@ -468,49 +474,9 @@ namespace CsDebugScript.VS
         public const string NotImplementedExceptionText = "This function is not planned to be implemented for VS debugger.";
 
         /// <summary>
-        /// Executes the specified command, but leaves its output visible to the user.
-        /// </summary>
-        /// <param name="command">The command.</param>
-        /// <param name="parameters">The parameters.</param>
-        /// <exception cref="System.NotImplementedException">This function is not planned to be implemented for VS debugger.</exception>
-        public void Execute(string command, params object[] parameters)
-        {
-            throw new NotImplementedException(NotImplementedExceptionText);
-        }
-
-        /// <summary>
-        /// Executes the action in redirected console output and error stream.
-        /// </summary>
-        /// <param name="action">The action.</param>
-        /// <exception cref="System.NotImplementedException">This function is not planned to be implemented for VS debugger.</exception>
-        public void ExecuteAction(Action action)
-        {
-            throw new NotImplementedException(NotImplementedExceptionText);
-        }
-
-        /// <summary>
-        /// Reads the line from the debugger input.
-        /// </summary>
-        /// <exception cref="System.NotImplementedException">This function is not planned to be implemented for VS debugger.</exception>
-        public string ReadInput()
-        {
-            throw new NotImplementedException(NotImplementedExceptionText);
-        }
-
-        /// <summary>
-        /// Gets last event info.
-        /// </summary>
-        /// <exception cref="System.NotImplementedException">This function is not planned to be implemented for VS debugger.</exception>
-        public DebugEventInfo GetLastEventInfo()
-        {
-            throw new NotImplementedException(NotImplementedExceptionText);
-        }
-
-        /// <summary>
         /// When doing live process debugging continues debugee execution of the specified process.
         /// </summary>
         /// <param name="process">Process to be continued.</param>
-
         public void ContinueExecution(Process process)
         {
             throw new NotImplementedException();

@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.CodeGen.TypeTrees;
+using CsDebugScript.Engine;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -67,19 +68,19 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (field.Name.Contains("@") || field.PropertyName.Length > 511)
                 {
-                    // Skip names contaings '@'
+                    // Skip names containing '@'
                     continue;
                 }
 
                 // Skip fields that are actual values of enum values
-                if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagEnum && field.Type.EnumValues.Any(t => t.Item1 == field.Name))
+                if (field.Type.Tag == CodeTypeTag.Enum && field.Type.EnumValues.Any(t => t.Item1 == field.Name))
                 {
                     continue;
                 }
 
                 var userField = ExtractField(field, factory, generationFlags, forceIsStatic: true);
 
-                if (field.Type.Tag == Dia2Lib.SymTagEnum.SymTagPointerType)
+                if (field.Type.Tag == CodeTypeTag.Pointer)
                 {
                     // Do not use const values for pointers.
                     // We do not allow user type implicit conversion from integers.

@@ -1,4 +1,4 @@
-﻿using Dia2Lib;
+﻿using DIA;
 using System;
 
 namespace CsDebugScript.CodeGen.SymbolProviders
@@ -23,8 +23,8 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         {
             this.symbol = symbol;
             Name = symbol.name;
-            LocationType = (LocationType)symbol.locationType;
-            DataKind = (DataKind)symbol.dataKind;
+            LocationType = symbol.locationType;
+            DataKind = symbol.dataKind;
             Offset = symbol.offset;
             Value = symbol.value;
 

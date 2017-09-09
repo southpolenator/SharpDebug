@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace CsDebugScript
 {
@@ -289,7 +290,7 @@ namespace CsDebugScript
 
             if (!elementType.IsPointer)
             {
-                if (type.IsSubclassOf(typeof(UserType)))
+                if (type.GetTypeInfo().IsSubclassOf(typeof(UserType)))
                 {
                     var process = variable.GetCodeType().Module.Process;
 

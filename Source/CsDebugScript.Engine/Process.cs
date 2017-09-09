@@ -1,12 +1,10 @@
 ﻿using CsDebugScript.CLR;
 using CsDebugScript.Engine;
-using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Reflection = System.Reflection;
 
 namespace CsDebugScript
 {
@@ -56,14 +54,9 @@ namespace CsDebugScript
         private SimpleCache<List<UserTypeDescription>> userTypes;
 
         /// <summary>
-        /// The actual processor type
+        /// The architecture type
         /// </summary>
-        private SimpleCache<ImageFileMachine> actualProcessorType;
-
-        /// <summary>
-        /// The effective processor type
-        /// </summary>
-        private SimpleCache<ImageFileMachine> effectiveProcessorType;
+        private SimpleCache<ArchitectureType> architectureType;
 
         /// <summary>
         /// The dump file memory reader
@@ -71,19 +64,14 @@ namespace CsDebugScript
         private SimpleCache<DumpFileMemoryReader> dumpFileMemoryReader;
 
         /// <summary>
-        /// The CLR data target
-        /// </summary>
-        private SimpleCache<Microsoft.Diagnostics.Runtime.DataTarget> clrDataTarget;
-
-        /// <summary>
         /// The CLR runtimes running in the process
         /// </summary>
-        private SimpleCache<Runtime[]> clrRuntimes;
+        private SimpleCache<IClrRuntime[]> clrRuntimes;
 
         /// <summary>
         /// The current application domain
         /// </summary>
-        private SimpleCache<CsDebugScript.CLR.AppDomain> currentAppDomain;
+        private SimpleCache<IClrAppDomain> currentAppDomain;
 
         /// <summary>
         /// The cache of memory regions
@@ -122,28 +110,23 @@ namespace CsDebugScript
             pebAddress = SimpleCache.Create(() => Context.Debugger.GetProcessEnvironmentBlockAddress(this));
             executableName = SimpleCache.Create(() => Context.Debugger.GetProcessExecutableName(this));
             dumpFileName = SimpleCache.Create(() => Context.Debugger.GetProcessDumpFileName(this));
-            actualProcessorType = SimpleCache.Create(() => Context.Debugger.GetProcessActualProcessorType(this));
-            effectiveProcessorType = SimpleCache.Create(() => Context.Debugger.GetProcessEffectiveProcessorType(this));
+            architectureType = SimpleCache.Create(() => Context.Debugger.GetProcessArchitectureType(this));
             threads = SimpleCache.Create(() => Context.Debugger.GetProcessThreads(this));
             modules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
             userTypes = SimpleCache.Create(GetUserTypes);
-            clrDataTarget = SimpleCache.Create(() =>
-            {
-                var dataTarget = Microsoft.Diagnostics.Runtime.DataTarget.CreateFromDataReader(new CsDebugScript.CLR.DataReader(this));
-
-                dataTarget.SymbolLocator.SymbolPath += ";http://symweb";
-                return dataTarget;
-            });
             clrRuntimes = SimpleCache.Create(() =>
             {
                 try
                 {
-                    return ClrDataTarget.ClrVersions.Select(clrInfo => new Runtime(this, clrInfo.CreateRuntime())).ToArray();
+                    if (Context.ClrProvider != null)
+                    {
+                        return Context.ClrProvider.GetClrRuntimes(this);
+                    }
                 }
                 catch
                 {
-                    return new Runtime[0];
                 }
+                return new IClrRuntime[0];
             });
             currentAppDomain = SimpleCache.Create(() => ClrRuntimes.SelectMany(r => r.AppDomains).FirstOrDefault());
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
@@ -151,25 +134,25 @@ namespace CsDebugScript
             Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
             UserTypeCastedVariables = new DictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
             GlobalCache.UserTypeCastedVariables.Add(UserTypeCastedVariables);
-            ClrModuleCache = new DictionaryCache<Microsoft.Diagnostics.Runtime.ClrModule, Module>((clrModule) =>
+            ClrModuleCache = new DictionaryCache<IClrModule, Module>((clrModule) =>
             {
                 // TODO: This needs to change when ClrModule starts to be child of Module
                 Module module = ModulesById[clrModule.ImageBase];
 
                 module.ClrModule = clrModule;
                 module.ImageName = clrModule.Name;
-                if (clrModule.Pdb != null && !string.IsNullOrEmpty(clrModule.Pdb.FileName))
+                if (!string.IsNullOrEmpty(clrModule.PdbFileName))
                 {
                     try
                     {
                         if (!module.SymbolFileName.ToLowerInvariant().EndsWith(".pdb"))
                         {
-                            module.SymbolFileName = clrModule.Pdb.FileName;
+                            module.SymbolFileName = clrModule.PdbFileName;
                         }
                     }
                     catch
                     {
-                        module.SymbolFileName = clrModule.Pdb.FileName;
+                        module.SymbolFileName = clrModule.PdbFileName;
                     }
                 }
                 module.Name = Path.GetFileNameWithoutExtension(clrModule.Name);
@@ -181,7 +164,7 @@ namespace CsDebugScript
             {
                 try
                 {
-                    return string.IsNullOrEmpty(DumpFileName) ? default(DumpFileMemoryReader) : new WindowsDumpFileMemoryReader(DumpFileName);
+                    return Context.Debugger.GetDumpFileMemoryReader(this);
                 }
                 catch (Exception)
                 {
@@ -251,7 +234,7 @@ namespace CsDebugScript
         /// <summary>
         /// The cache of CLR module to Module.
         /// </summary>
-        internal DictionaryCache<Microsoft.Diagnostics.Runtime.ClrModule, Module> ClrModuleCache { get; private set; }
+        internal DictionaryCache<IClrModule, Module> ClrModuleCache { get; private set; }
 
         /// <summary>
         /// Gets the user type casted variables.
@@ -354,7 +337,7 @@ namespace CsDebugScript
             {
                 try
                 {
-                    List<string> searchModulesOrder = new List<string>{ Modules[0].Name.ToLower(), "wow64", "ntdll", "nt" };
+                    List<string> searchModulesOrder = new List<string> { Modules[0].Name.ToLower(), "wow64", "ntdll", "nt" };
                     IEnumerable<Module> modules = Modules.OrderByDescending(m => searchModulesOrder.IndexOf(m.Name.ToLower()));
 
                     foreach (Module module in modules)
@@ -422,24 +405,13 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Gets the actual type of the processor.
+        /// Gets the architecture type.
         /// </summary>
-        public ImageFileMachine ActualProcessorType
+        public ArchitectureType ArchitectureType
         {
             get
             {
-                return actualProcessorType.Value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the effective type of the processor.
-        /// </summary>
-        public ImageFileMachine EffectiveProcessorType
-        {
-            get
-            {
-                return effectiveProcessorType.Value;
+                return architectureType.Value;
             }
         }
 
@@ -457,7 +429,7 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the array of CLR runtimes running in the process.
         /// </summary>
-        public Runtime[] ClrRuntimes
+        public IClrRuntime[] ClrRuntimes
         {
             get
             {
@@ -468,7 +440,7 @@ namespace CsDebugScript
         /// <summary>
         /// Gets or sets the current CLR application domain. If not set, if will be first AppDomain from first Runtime.
         /// </summary>
-        public CsDebugScript.CLR.AppDomain CurrentCLRAppDomain
+        public IClrAppDomain CurrentCLRAppDomain
         {
             get
             {
@@ -478,17 +450,6 @@ namespace CsDebugScript
             set
             {
                 currentAppDomain.Value = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the CLR data target.
-        /// </summary>
-        internal Microsoft.Diagnostics.Runtime.DataTarget ClrDataTarget
-        {
-            get
-            {
-                return clrDataTarget.Value;
             }
         }
 
@@ -601,7 +562,7 @@ namespace CsDebugScript
         /// Creates CodeType from the CLR type.
         /// </summary>
         /// <param name="clrType">The CLR type.</param>
-        internal CodeType FromClrType(Microsoft.Diagnostics.Runtime.ClrType clrType)
+        internal CodeType FromClrType(IClrType clrType)
         {
             return ClrModuleCache[clrType.Module].ClrTypes[clrType];
         }
@@ -692,10 +653,18 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the size of the pointer.
         /// </summary>
-        /// <returns></returns>
         public uint GetPointerSize()
         {
-            return ActualProcessorType == ImageFileMachine.I386 || EffectiveProcessorType == ImageFileMachine.I386 ? 4U : 8U;
+            switch (ArchitectureType)
+            {
+                case ArchitectureType.X86:
+                case ArchitectureType.X86OverAmd64:
+                    return 4U;
+                case ArchitectureType.Amd64:
+                    return 8U;
+                default:
+                    throw new Exception($"Unsupported architecture type: {ArchitectureType}");
+            }
         }
 
         /// <summary>

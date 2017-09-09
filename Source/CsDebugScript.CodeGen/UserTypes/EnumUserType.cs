@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
-using Dia2Lib;
+using DIA;
 using System;
 using System.Collections.Generic;
 using System.IO;

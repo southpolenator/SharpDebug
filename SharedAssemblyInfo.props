@@ -1,0 +1,39 @@
+<Project>
+  <PropertyGroup>
+    <!-- Nuget properties -->
+    <AssemblyVersion>1.3</AssemblyVersion>
+    <FileVersion>1.3</FileVersion>
+    <VersionPrefix>1.3</VersionPrefix>
+    <Authors>WinDbgCs Team</Authors>
+    <Copyright>Copyright (C) WinDbgCs team 2015-2017</Copyright>
+    <PackageLicenseUrl>https://github.com/southpolenator/WinDbgCs/blob/master/license.txt</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/southpolenator/WinDbgCs</PackageProjectUrl>
+    <!--<PackageIconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</PackageIconUrl>-->
+    <PackageTags>windbg;dbgeng;dump-analysis;clr;dumps;dump-processing;coredump;dwarf;elf</PackageTags>
+    <IncludeSymbols>True</IncludeSymbols>
+    <IncludeSource>True</IncludeSource>
+    <RepositoryUrl>https://github.com/southpolenator/WinDbgCs.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <!-- Common properties for all projects -->
+    <EnlistmentRoot>$(MSBuildThisFileDirectory)</EnlistmentRoot>
+    <OutputPath>$(EnlistmentRoot)\bin\$(Configuration)\</OutputPath>
+    <DocumentationFile>$(OutputPath)\$(AssemblyName).XML</DocumentationFile>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(EnlistmentRoot)\Key.snk</AssemblyOriginatorKeyFile>
+    <DebugType>full</DebugType>
+    <DebugSymbols>True</DebugSymbols>
+
+    <!-- Default frameworks -->
+    <DefaultNetFramework>net461</DefaultNetFramework>
+    <DefaultNetStandard>netstandard2.0</DefaultNetStandard>
+    <DefaultNetCoreApp>netcoreapp2.0</DefaultNetCoreApp>
+  </PropertyGroup>
+
+  <!-- Solving problem with VSIX project build errors -->
+  <Target Name="BuiltProjectOutputGroupDependencies" />
+  <Target Name="BuiltProjectOutputGroup" />
+  <Target Name="GetCopyToOutputDirectoryItems" />
+  <Target Name="SatelliteDllsProjectOutputGroup" />
+  <Target Name="DebugSymbolsProjectOutputGroup" />
+</Project>

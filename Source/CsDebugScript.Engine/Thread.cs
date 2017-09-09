@@ -29,7 +29,7 @@ namespace CsDebugScript
         /// <summary>
         /// The CLR thread
         /// </summary>
-        private SimpleCache<Microsoft.Diagnostics.Runtime.ClrThread> clrThread;
+        private SimpleCache<IClrThread> clrThread;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Thread" /> class.
@@ -45,7 +45,7 @@ namespace CsDebugScript
             tebAddress = SimpleCache.Create(GetTEB);
             stackTrace = SimpleCache.Create(GetStackTrace);
             threadContext = SimpleCache.Create(GetThreadContext);
-            clrThread = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.ClrRuntime.Threads).Where(t => t.OSThreadId == SystemId).FirstOrDefault());
+            clrThread = SimpleCache.Create(() => Process.ClrRuntimes.SelectMany(r => r.Threads).Where(t => t.SystemId == SystemId).FirstOrDefault());
         }
 
         /// <summary>
@@ -168,16 +168,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Gets the CLR thread.
+        /// Gets the CLR thread object correlated with this native thread.
+        /// If this thread is not used by CLR, it will return null.
         /// </summary>
-        internal Microsoft.Diagnostics.Runtime.ClrThread ClrThread
+        public IClrThread ClrThread
         {
             get
             {
                 return clrThread.Value;
             }
 
-            set
+            internal set
             {
                 clrThread.Value = value;
             }
@@ -192,22 +193,6 @@ namespace CsDebugScript
         public override string ToString()
         {
             return $"({Id}:{SystemId})";
-        }
-
-        /// <summary>
-        /// Finds the CLR thread object correlated with this native thread.
-        /// If this thread is not used by CLR, it will return null.
-        /// </summary>
-        public ClrThread FindClrThread()
-        {
-            if (ClrThread != null)
-            {
-                Runtime runtime = Process.ClrRuntimes.Single(r => r.ClrRuntime == ClrThread.Runtime);
-
-                return runtime.Threads.FirstOrDefault(t => t.ClrThread == ClrThread);
-            }
-
-            return null;
         }
 
         /// <summary>

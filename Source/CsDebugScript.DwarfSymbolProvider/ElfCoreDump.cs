@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.IO;
 using CsDebugScript.Engine.Utility;
-using CsDebugScript.Engine.Native;
+using CsDebugScript.Engine;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
@@ -229,19 +229,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Gets the actual processor type.
+        /// Gets the architecture type.
         /// </summary>
-        public ImageFileMachine GetActualProcessorType()
+        public ArchitectureType GetProcessArchitectureType()
         {
-            return instance.GetActualProcessorType();
-        }
-
-        /// <summary>
-        /// Gets the effective processor type.
-        /// </summary>
-        public ImageFileMachine GetEffectiveProcessorType()
-        {
-            return instance.GetEffectiveProcessorType();
+            return instance.GetProcessArchitectureType();
         }
 
         /// <summary>
@@ -286,14 +278,9 @@ namespace CsDebugScript.DwarfSymbolProvider
             void ProcessNote(string name, byte[] content, elf_note_type type);
 
             /// <summary>
-            /// Gets the actual processor type.
+            /// Gets the architecture type.
             /// </summary>
-            ImageFileMachine GetActualProcessorType();
-
-            /// <summary>
-            /// Gets the effective processor type.
-            /// </summary>
-            ImageFileMachine GetEffectiveProcessorType();
+            ArchitectureType GetProcessArchitectureType();
 
             /// <summary>
             /// Gets the array of thread ids available in the dump.
@@ -412,19 +399,11 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             /// <summary>
-            /// Gets the actual processor type.
+            /// Gets the architecture type.
             /// </summary>
-            public ImageFileMachine GetActualProcessorType()
+            public ArchitectureType GetProcessArchitectureType()
             {
-                return ImageFileMachine.I386;
-            }
-
-            /// <summary>
-            /// Gets the effective processor type.
-            /// </summary>
-            public ImageFileMachine GetEffectiveProcessorType()
-            {
-                return ImageFileMachine.I386;
+                return ArchitectureType.X86;
             }
 
             #region Native structures
@@ -717,19 +696,11 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             /// <summary>
-            /// Gets the actual processor type.
+            /// Gets the architecture type.
             /// </summary>
-            public ImageFileMachine GetActualProcessorType()
+            public ArchitectureType GetProcessArchitectureType()
             {
-                return ImageFileMachine.AMD64;
-            }
-
-            /// <summary>
-            /// Gets the effective processor type.
-            /// </summary>
-            public ImageFileMachine GetEffectiveProcessorType()
-            {
-                return ImageFileMachine.AMD64;
+                return ArchitectureType.Amd64;
             }
 
             #region Native structures

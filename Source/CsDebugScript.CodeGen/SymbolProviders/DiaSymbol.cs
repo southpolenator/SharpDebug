@@ -1,4 +1,5 @@
-﻿using Dia2Lib;
+﻿using CsDebugScript.Engine;
+using DIA;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,11 +24,13 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         public DiaSymbol(DiaModule module, IDiaSymbol symbol)
             : base(module)
         {
+            SymTagEnum symTag = symbol.symTag;
+
             this.symbol = symbol;
-            Tag = (SymTagEnum)symbol.symTag;
-            BasicType = (BasicType)symbol.baseType;
+            Tag = ConvertToCodeTypeTag(symTag);
+            BasicType = symbol.baseType;
             Id = symbol.symIndexId;
-            if (Tag != SymTagEnum.SymTagExe)
+            if (symTag != SymTagEnum.Exe)
             {
                 Name = TypeToString.GetTypeString(symbol);
                 Name = Name.Replace("<enum ", "<").Replace(",enum ", ",");
@@ -64,7 +67,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override IEnumerable<Tuple<string, string>> GetEnumValues()
         {
-            if (Tag == SymTagEnum.SymTagEnum)
+            if (Tag == CodeTypeTag.Enum)
             {
                 foreach (var enumValue in symbol.GetChildren())
                 {
@@ -86,7 +89,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         public override void InitializeCache()
         {
-            if (Tag != SymTagEnum.SymTagExe)
+            if (Tag != CodeTypeTag.ModuleGlobals)
             {
                 var elementType = this.ElementType;
             }
@@ -97,7 +100,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         public override bool HasVTable()
         {
-            if (symbol.GetChildren(SymTagEnum.SymTagVTable).Any())
+            if (symbol.GetChildren(SymTagEnum.VTable).Any())
             {
                 return true;
             }
@@ -116,7 +119,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override IEnumerable<SymbolField> GetFields()
         {
-            return symbol.GetChildren(SymTagEnum.SymTagData).Select(s => new DiaSymbolField(this, s)).Where(f => f.Type != null).Cast<SymbolField>();
+            return symbol.GetChildren(SymTagEnum.Data).Select(s => new DiaSymbolField(this, s)).Where(f => f.Type != null).Cast<SymbolField>();
         }
 
         /// <summary>
@@ -124,7 +127,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override IEnumerable<Symbol> GetBaseClasses()
         {
-            return symbol.GetChildren(SymTagEnum.SymTagBaseClass).Select(s => DiaModule.GetSymbol(s)).Cast<Symbol>();
+            return symbol.GetChildren(SymTagEnum.BaseClass).Select(s => DiaModule.GetSymbol(s)).Cast<Symbol>();
         }
 
         /// <summary>
@@ -132,7 +135,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override Symbol GetElementType()
         {
-            if (Tag == SymTagEnum.SymTagPointerType || Tag == SymTagEnum.SymTagArrayType)
+            if (Tag == CodeTypeTag.Pointer || Tag == CodeTypeTag.Array)
             {
                 IDiaSymbol type = symbol.type;
 
@@ -140,7 +143,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
                 {
                     Symbol result = DiaModule.GetSymbol(type);
 
-                    if (Tag == SymTagEnum.SymTagPointerType)
+                    if (Tag == CodeTypeTag.Pointer)
                     {
                         result.PointerType = this;
                     }
@@ -160,6 +163,35 @@ namespace CsDebugScript.CodeGen.SymbolProviders
 
             result.ElementType = this;
             return result;
+        }
+
+        /// <summary>
+        /// Converts <see cref="SymTagEnum"/> to <see cref="CodeTypeTag"/>.
+        /// </summary>
+        public static CodeTypeTag ConvertToCodeTypeTag(SymTagEnum tag)
+        {
+            switch (tag)
+            {
+                case SymTagEnum.ArrayType:
+                    return CodeTypeTag.Array;
+                case SymTagEnum.BaseType:
+                    return CodeTypeTag.BuiltinType;
+                case SymTagEnum.UDT:
+                    // TODO: What about Structure/Union?
+                    return CodeTypeTag.Class;
+                case SymTagEnum.Enum:
+                    return CodeTypeTag.Enum;
+                case SymTagEnum.FunctionType:
+                    return CodeTypeTag.Function;
+                case SymTagEnum.PointerType:
+                    return CodeTypeTag.Pointer;
+                case SymTagEnum.BaseClass:
+                    return CodeTypeTag.BaseClass;
+                case SymTagEnum.Exe:
+                    return CodeTypeTag.ModuleGlobals;
+                default:
+                    return CodeTypeTag.Unsupported;
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.CodeGen.TypeTrees;
-using Dia2Lib;
+using CsDebugScript.Engine;
+using DIA;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -469,7 +470,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             // Do downcasting if field is pointer and has vtable
             UserTypeTree userType = fieldType as UserTypeTree;
-            bool isEmbedded = field.Type.Tag != SymTagEnum.SymTagPointerType;
+            bool isEmbedded = field.Type.Tag != CodeTypeTag.Pointer;
 
             if (userType != null && !(userType.UserType is EnumUserType) && !isEmbedded && userType.UserType.Symbol.HasVTable() && userType.UserType.DerivedClasses.Count > 0)
                 constructorText += ".DowncastObject()";
@@ -594,21 +595,29 @@ namespace CsDebugScript.CodeGen.UserTypes
                     continue;
                 }
 
-                if (counterField.Type.Tag == SymTagEnum.SymTagEnum)
+                if (counterField.Type.Tag == CodeTypeTag.Enum)
+                {
                     continue;
+                }
 
                 string counterNameSurfix = counterField.Name.Substring(CounterPrefix.Length);
 
                 if (string.IsNullOrEmpty(counterNameSurfix))
+                {
                     continue;
+                }
 
                 foreach (SymbolField pointerField in fields.Where(r => (r.Name.StartsWith(PointerPrefix) || r.Name.StartsWith(ArrayPrefix)) && r.Name.EndsWith(counterNameSurfix)))
                 {
                     if ((counterField.IsStatic) != (pointerField.IsStatic))
+                    {
                         continue;
+                    }
 
-                    if (pointerField.Type.Tag != SymTagEnum.SymTagPointerType)
+                    if (pointerField.Type.Tag != CodeTypeTag.Pointer)
+                    {
                         continue;
+                    }
 
                     if (userTypesArrays.ContainsKey(pointerField))
                     {
@@ -673,7 +682,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             if (ExportDynamicFields)
             {
-                if (Symbol.Tag != SymTagEnum.SymTagExe && useThisClass)
+                if (Symbol.Tag != CodeTypeTag.ModuleGlobals && useThisClass)
                 {
                     yield return new UserTypeField
                     {
@@ -688,7 +697,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     };
                 }
 
-                if (Symbol.Tag != SymTagEnum.SymTagExe)
+                if (Symbol.Tag != CodeTypeTag.ModuleGlobals)
                 {
                     yield return new UserTypeField
                     {
@@ -1116,7 +1125,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             switch (type.Tag)
             {
-                case SymTagEnum.SymTagBaseType:
+                case CodeTypeTag.BuiltinType:
                     if (bitLength == 1)
                         return new BasicTypeTree("bool");
                     switch (type.BasicType)
@@ -1179,7 +1188,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                             throw new Exception("Unexpected basic type " + type.BasicType);
                     }
 
-                case SymTagEnum.SymTagPointerType:
+                case CodeTypeTag.Pointer:
                     {
                         Symbol pointerType = type.ElementType;
                         UserType pointerUserType;
@@ -1200,8 +1209,8 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                         switch (pointerType.Tag)
                         {
-                            case SymTagEnum.SymTagBaseType:
-                            case SymTagEnum.SymTagEnum:
+                            case CodeTypeTag.BuiltinType:
+                            case CodeTypeTag.Enum:
                                 {
                                     string innerType = GetSymbolTypeTree(pointerType, factory).GetTypeString();
 
@@ -1210,15 +1219,19 @@ namespace CsDebugScript.CodeGen.UserTypes
                                     return new PointerTypeTree(GetSymbolTypeTree(pointerType, factory));
                                 }
 
-                            case SymTagEnum.SymTagUDT:
+                            case CodeTypeTag.Class:
+                            case CodeTypeTag.Structure:
+                            case CodeTypeTag.Union:
                                 return GetSymbolTypeTree(pointerType, factory);
                             default:
                                 return new PointerTypeTree(GetSymbolTypeTree(pointerType, factory));
                         }
                     }
 
-                case SymTagEnum.SymTagUDT:
-                case SymTagEnum.SymTagEnum:
+                case CodeTypeTag.Enum:
+                case CodeTypeTag.Class:
+                case CodeTypeTag.Structure:
+                case CodeTypeTag.Union:
                     {
                         // Try to apply transformation on the type
                         UserTypeTransformation transformation = factory.FindTransformation(type, this);
@@ -1242,7 +1255,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         }
 
                         // We were unable to find user type. If it is enum, use its basic type
-                        if (type.Tag == SymTagEnum.SymTagEnum)
+                        if (type.Tag == CodeTypeTag.Enum)
                         {
                             return new BasicTypeTree(EnumUserType.GetEnumBasicType(type));
                         }
@@ -1251,13 +1264,13 @@ namespace CsDebugScript.CodeGen.UserTypes
                         return new VariableTypeTree();
                     }
 
-                case SymTagEnum.SymTagArrayType:
+                case CodeTypeTag.Array:
                     return new ArrayTypeTree(GetSymbolTypeTree(type.ElementType, factory));
 
-                case SymTagEnum.SymTagFunctionType:
+                case CodeTypeTag.Function:
                     return new FunctionTypeTree();
 
-                case SymTagEnum.SymTagBaseClass:
+                case CodeTypeTag.BaseClass:
                     {
                         Symbol symbol = Symbol.Module.FindGlobalTypeWildcard(type.Name).Single();
 

@@ -1,6 +1,4 @@
-﻿using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.Utility;
-using Dia2Lib;
+﻿using CsDebugScript.Engine.Utility;
 using System;
 using System.Collections.Generic;
 
@@ -210,11 +208,11 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
-        /// Gets the symbol tag of the specified type.
+        /// Gets the code type tag of the specified type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public SymTag GetTypeTag(Module module, uint typeId)
+        public CodeTypeTag GetTypeTag(Module module, uint typeId)
         {
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
@@ -470,20 +468,20 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
-        /// Gets the type of the basic type.
+        /// Gets the type's built-in type.
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public BasicType GetTypeBasicType(Module module, uint typeId)
+        public BuiltinType GetTypeBuiltinType(Module module, uint typeId)
         {
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
             {
-                return FallbackSymbolProvider.GetTypeBasicType(module, typeId);
+                return FallbackSymbolProvider.GetTypeBuiltinType(module, typeId);
             }
 
-            return symbolProviderModule.GetTypeBasicType(module, typeId);
+            return symbolProviderModule.GetTypeBuiltinType(module, typeId);
         }
 
         /// <summary>

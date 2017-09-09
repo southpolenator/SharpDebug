@@ -1,10 +1,12 @@
-﻿using CsDebugScript.Engine;
+﻿using CsDebugScript.CLR;
+using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
+using System.Reflection;
 
 namespace CsDebugScript
 {
@@ -734,7 +736,7 @@ namespace CsDebugScript
                 return this;
 
             // Check if it is basic type
-            else if (conversionType.IsPrimitive)
+            else if (conversionType.GetTypeInfo().IsPrimitive)
             {
                 if (conversionType == typeof(bool))
                     return (bool)this;
@@ -771,7 +773,7 @@ namespace CsDebugScript
             Variable activatorParameter = this;
 
             // Check if we should do CastAs
-            if (conversionType.IsSubclassOf(typeof(Variable)))
+            if (conversionType.GetTypeInfo().IsSubclassOf(typeof(Variable)))
             {
                 var description = codeType.Module.Process.TypeToUserTypeDescription[conversionType].FromModuleOrFirst(codeType.Module);
                 if (description != null)
@@ -1049,7 +1051,7 @@ namespace CsDebugScript
             if (clrCodeType != null)
             {
                 // Get runtime type
-                Microsoft.Diagnostics.Runtime.ClrType newClrType = clrCodeType.ClrType.Heap.GetObjectType(variable.GetPointerAddress());
+                IClrType newClrType = clrCodeType.ClrType.Heap.GetObjectType(variable.GetPointerAddress());
                 ClrCodeType clrCodeTypeSpecialization = clrCodeType.GetSpecializedCodeType(variable.GetPointerAddress());
 
                 if ((newClrType != clrCodeType.ClrType && newClrType.Module != null) || clrCodeTypeSpecialization != clrCodeType)

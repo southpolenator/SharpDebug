@@ -2,9 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.Utility;
-using Dia2Lib;
 using System.IO;
 
 namespace CsDebugScript.DwarfSymbolProvider
@@ -146,18 +144,6 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Gets the DIA session for the specified module.
-        /// </summary>
-        /// <param name="module">The module.</param>
-        /// <returns>
-        /// <see cref="T:Dia2Lib.IDiaSession" /> if available, null otherwise.
-        /// </returns>
-        public IDiaSession GetModuleDiaSession(Module module)
-        {
-            return null;
-        }
-
-        /// <summary>
         /// Gets the name of the image. This is the name of the executable file, including the extension.
         /// Typically, the full path is included in user mode but not in kernel mode.
         /// </summary>
@@ -209,6 +195,17 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             return fileName;
+        }
+
+        /// <summary>
+        /// Gets the dump file memory reader.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        public DumpFileMemoryReader GetDumpFileMemoryReader(Process process)
+        {
+            ElfCoreDump dump = GetDump(process);
+
+            return dump.DumpFileMemoryReader;
         }
 
         /// <summary>
@@ -303,25 +300,14 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Gets the actual processor type of the specified process.
+        /// Gets the architecture type of the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
-        public ImageFileMachine GetProcessActualProcessorType(Process process)
+        public ArchitectureType GetProcessArchitectureType(Process process)
         {
             ElfCoreDump dump = GetDump(process);
 
-            return dump.GetActualProcessorType();
-        }
-
-        /// <summary>
-        /// Gets the effective processor type of the specified process.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        public ImageFileMachine GetProcessEffectiveProcessorType(Process process)
-        {
-            ElfCoreDump dump = GetDump(process);
-
-            return dump.GetEffectiveProcessorType();
+            return dump.GetProcessArchitectureType();
         }
 
         /// <summary>
@@ -399,7 +385,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 ulong instructionOffset = framesData[i].Item1, stackOffset = framesData[i].Item2, frameOffset = framesData[i].Item3;
 
-                ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset);
+                ThreadContext threadContext = new ThreadContext(instructionOffset, stackOffset, frameOffset, null);
                 frames[i] = new StackFrame(stackTrace, threadContext)
                 {
                     FrameNumber = (uint)i,
@@ -567,14 +553,6 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Gets last event info.
-        /// </summary>
-        public DebugEventInfo GetLastEventInfo()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// Finds the pattern in memory of the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
@@ -594,34 +572,6 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         #region Unsupported functionality
-        /// <summary>
-        /// Executes the specified command, but leaves its output visible to the user.
-        /// </summary>
-        /// <param name="command">The command.</param>
-        /// <param name="parameters">The parameters.</param>
-        public void Execute(string command, params object[] parameters)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Executes the action in redirected console output and error stream.
-        /// </summary>
-        /// <param name="action">The action.</param>
-        public void ExecuteAction(Action action)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Reads the line from the debugger input.
-        /// </summary>
-        /// <returns></returns>
-        public string ReadInput()
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// When doing live process debugging breaks debugee execution of the specified process.
         /// </summary>

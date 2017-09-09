@@ -1,4 +1,4 @@
-﻿using DbgEngManaged;
+﻿using DbgEng;
 using System;
 
 namespace ExceptionDumper
@@ -23,7 +23,7 @@ namespace ExceptionDumper
             client = (IDebugClient7)clientBase;
             control = (IDebugControl7)client;
             client.SetEventCallbacks(this);
-            client.CreateProcessAndAttach(0, applicationPath, 0x00000002);
+            client.CreateProcessAndAttach(0, applicationPath, DebugCreateProcess.DebugOnlyThisProcess, 0, DebugAttach.Default);
         }
 
         public static void RunAndDumpOnException(string applicationPath, string dumpPath, bool miniDump)
@@ -35,17 +35,17 @@ namespace ExceptionDumper
                     dumper.control.WaitForEvent(0, uint.MaxValue);
                 }
 
-                dumper.client.EndSession((uint)Defines.DebugEndActiveTerminate);
+                dumper.client.EndSession(DebugEnd.ActiveTerminate);
             }
         }
 
         #region IDebugEventCallbacks
         public uint GetInterestMask()
         {
-            return (uint)(Defines.DebugEventBreakpoint | Defines.DebugEventCreateProcess
-                | Defines.DebugEventException | Defines.DebugEventExitProcess
-                | Defines.DebugEventCreateThread | Defines.DebugEventExitThread
-                | Defines.DebugEventLoadModule | Defines.DebugEventUnloadModule);
+            return (uint)(DebugEvent.Breakpoint | DebugEvent.CreateProcess
+                | DebugEvent.Exception | DebugEvent.ExitProcess
+                | DebugEvent.CreateThread | DebugEvent.ExitThread
+                | DebugEvent.LoadModule | DebugEvent.UnloadModule);
         }
 
         public void Breakpoint(IDebugBreakpoint Bp)
@@ -58,7 +58,7 @@ namespace ExceptionDumper
             if (FirstChance != 1)
             {
                 // Save the dump
-                client.WriteDumpFile2(dumpPath, (uint)Defines.DebugDumpSmall, (uint)(miniDump ? Defines.DebugFormatDefault : Defines.DebugFormatUserSmallFullMemory | Defines.DebugFormatUserSmallHandleData));
+                client.WriteDumpFile2(dumpPath, DebugDump.Small, miniDump ? DebugFormat.Default : DebugFormat.UserSmallFullMemory | DebugFormat.UserSmallHandleData);
                 dumpTaken = true;
             }
         }

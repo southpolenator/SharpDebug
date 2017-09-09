@@ -1,6 +1,7 @@
 ﻿using CommandLine;
+using CsDebugScript.Engine.Debuggers;
 using CsDebugScript.Engine.Utility;
-using DbgEngManaged;
+using DbgEng;
 using System;
 
 namespace CsDebugScript.Engine.Test
@@ -29,10 +30,19 @@ namespace CsDebugScript.Engine.Test
             if (options == null)
                 return;
 
-            Context.Initalize(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
-            if (options.UseDwarfSymbolProvider)
+            try
             {
-                Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider.DwarfSymbolProvider());
+                DbgEngDll.InitializeContext(DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath));
+                if (options.UseDwarfSymbolProvider)
+                {
+                    Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider.DwarfSymbolProvider());
+                }
+            }
+            catch (Exception)
+            {
+                IDebuggerEngine engine = new DwarfSymbolProvider.ElfCoreDumpDebuggingEngine(options.DumpPath);
+
+                Context.InitializeDebugger(engine, engine.CreateDefaultSymbolProvider());
             }
 
             Console.WriteLine("Threads: {0}", Thread.All.Length);
@@ -57,7 +67,20 @@ namespace CsDebugScript.Engine.Test
 
             using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
             {
-                Executor.Execute(@"..\..\..\samples\script.csx");
+                Action action = () =>
+                {
+                    ScriptExecution.Execute(@"..\..\..\samples\script.csx", args);
+                };
+                DbgEngDll dbgEngDll = Context.Debugger as DbgEngDll;
+
+                if (dbgEngDll != null)
+                {
+                    dbgEngDll.ExecuteAction(action);
+                }
+                else
+                {
+                    action();
+                }
             }
         }
     }

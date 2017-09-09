@@ -1,9 +1,7 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Utility;
-using DbgEngManaged;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -18,85 +16,6 @@ namespace CsDebugScript
         /// If set to <c>true</c> don't use dump reader.
         /// </summary>
         internal static bool DontUseDumpReader = false;
-
-#region Executing native commands
-        /// <summary>
-        /// Executes the specified command and captures its output.
-        /// </summary>
-        /// <param name="command">The command.</param>
-        /// <param name="parameters">The parameters.</param>
-        /// <returns>Captured text</returns>
-        public static string ExecuteAndCapture(string command, params object[] parameters)
-        {
-            DebugOutput captureFlags = DebugOutput.Normal | DebugOutput.Error | DebugOutput.Warning | DebugOutput.Verbose
-                | DebugOutput.Prompt | DebugOutput.PromptRegisters | DebugOutput.ExtensionWarning | DebugOutput.Debuggee
-                | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
-            return ExecuteAndCapture(captureFlags, command, parameters);
-        }
-
-        /// <summary>
-        /// Resolves the function address if the specified address points to function type public symbol
-        /// or returns specified address otherwise.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="address">The address.</param>
-        /// <returns>Resolved function address.</returns>
-        public static ulong ResolveFunctionAddress(Process process, ulong address)
-        {
-            if (Context.SymbolProvider.IsFunctionAddressPublicSymbol(process, address))
-            {
-                Module module = process.GetModuleByInnerAddress(address);
-
-                if (module != null && module.ClrModule == null)
-                {
-                    const uint length = 5;
-                    MemoryBuffer buffer = Debugger.ReadMemory(process, address, length);
-                    byte jmpByte = UserType.ReadByte(buffer, 0);
-                    uint relativeAddress = UserType.ReadUint(buffer, 1);
-
-                    if (jmpByte != 0xe9)
-                    {
-                        throw new Exception("Unsupported jump instruction while resolving function address.");
-                    }
-
-                    return address + relativeAddress + length;
-                }
-            }
-
-            return address;
-        }
-
-        /// <summary>
-        /// Executes the specified command and captures its output.
-        /// </summary>
-        /// <param name="captureFlags">The capture flags.</param>
-        /// <param name="command">The command.</param>
-        /// <param name="parameters">The parameters.</param>
-        /// <returns>Captured text</returns>
-        public static string ExecuteAndCapture(DebugOutput captureFlags, string command, params object[] parameters)
-        {
-            using (StringWriter writer = new StringWriter())
-            {
-                var callbacks = DebuggerOutputToTextWriter.Create(writer, captureFlags);
-                using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
-                {
-                    Execute(command, parameters);
-                    writer.Flush();
-                    return writer.GetStringBuilder().ToString();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Executes the specified command, but leaves its output visible to the user.
-        /// </summary>
-        /// <param name="command">The command.</param>
-        /// <param name="parameters">The parameters.</param>
-        public static void Execute(string command, params object[] parameters)
-        {
-            Context.Debugger.Execute(command, parameters);
-        }
-#endregion
 
 #region Searching memory for a pattern
 #region Structure types
@@ -592,7 +511,52 @@ namespace CsDebugScript
             }
             while (memoryStart < memoryEnd);
         }
-#endregion
+        #endregion
+
+        /// <summary>
+        /// Resolves the function address if the specified address points to function type public symbol
+        /// or returns specified address otherwise.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        /// <returns>Resolved function address.</returns>
+        public static ulong ResolveFunctionAddress(Process process, ulong address)
+        {
+            bool rethrow = false;
+
+            try
+            {
+                if (Context.SymbolProvider.IsFunctionAddressPublicSymbol(process, address))
+                {
+                    Module module = process.GetModuleByInnerAddress(address);
+
+                    if (module != null && module.ClrModule == null)
+                    {
+                        const uint length = 5;
+                        MemoryBuffer buffer = Debugger.ReadMemory(process, address, length);
+                        byte jmpByte = UserType.ReadByte(buffer, 0);
+                        uint relativeAddress = UserType.ReadUint(buffer, 1);
+
+                        if (jmpByte != 0xe9)
+                        {
+                            rethrow = true;
+                            throw new Exception("Unsupported jump instruction while resolving function address.");
+                        }
+
+                        return address + relativeAddress + length;
+                    }
+                }
+            }
+            catch
+            {
+                if (rethrow)
+                {
+                    throw;
+                }
+            }
+
+            return address;
+        }
 
         /// <summary>
         /// Reads the memory from the specified process.

@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
-using Dia2Lib;
+using CsDebugScript.Engine;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -101,11 +101,11 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             UserType userType;
 
-            if (symbol.Tag == SymTagEnum.SymTagEnum)
+            if (symbol.Tag == CodeTypeTag.Enum)
             {
                 userType = new EnumUserType(symbol, nameSpace);
             }
-            else if (symbol.Tag == SymTagEnum.SymTagExe)
+            else if (symbol.Tag == CodeTypeTag.ModuleGlobals)
             {
                 userType = new GlobalsUserType(symbol, type, nameSpace);
             }
@@ -215,7 +215,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                             {
                                 var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
 
-                                if (argumentSymbol.Tag != SymTagEnum.SymTagUDT || argumentSymbol.Name.Contains("<"))
+                                if ((argumentSymbol.Tag != CodeTypeTag.Class && argumentSymbol.Tag != CodeTypeTag.Structure && argumentSymbol.Tag != CodeTypeTag.Union) || argumentSymbol.Name.Contains("<"))
                                 {
                                     simpleUserType = false;
                                     break;
@@ -235,7 +235,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                             {
                                 var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
 
-                                if (argumentSymbol != null && argumentSymbol.Tag == SymTagEnum.SymTagUDT && argumentSymbol.Name.Contains("<"))
+                                if (argumentSymbol != null && (argumentSymbol.Tag == CodeTypeTag.Class || argumentSymbol.Tag == CodeTypeTag.Structure || argumentSymbol.Tag == CodeTypeTag.Union) && argumentSymbol.Name.Contains("<"))
                                 {
                                     noneIsTemplate = false;
                                     break;
@@ -309,8 +309,10 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 Symbol symbol = userType.Symbol;
 
-                if (symbol.Tag != SymTagEnum.SymTagUDT && symbol.Tag != SymTagEnum.SymTagEnum)
+                if (symbol.Tag != CodeTypeTag.Class && symbol.Tag != CodeTypeTag.Structure && symbol.Tag != CodeTypeTag.Union && symbol.Tag != CodeTypeTag.Enum)
+                {
                     continue;
+                }
 
                 string symbolName = symbol.Name;
                 List<string> namespaces = symbol.Namespaces;
@@ -517,9 +519,9 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (symbol != null)
                 {
-                    if ((symbol.Tag == SymTagEnum.SymTagBaseType)
-                        || (symbol.Tag == SymTagEnum.SymTagPointerType && symbol.ElementType.Tag == SymTagEnum.SymTagBaseType)
-                        || (symbol.Tag == SymTagEnum.SymTagArrayType && symbol.ElementType.Tag == SymTagEnum.SymTagBaseType))
+                    if ((symbol.Tag == CodeTypeTag.BuiltinType)
+                        || (symbol.Tag == CodeTypeTag.Pointer && symbol.ElementType.Tag == CodeTypeTag.BuiltinType)
+                        || (symbol.Tag == CodeTypeTag.Array && symbol.ElementType.Tag == CodeTypeTag.BuiltinType))
                     {
                         return ownerUserType.GetSymbolTypeTree(symbol, null).GetTypeString();
                     }

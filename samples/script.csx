@@ -1,4 +1,4 @@
-#r "..\CsDebugScript.CommonUserTypes.dll"
+#r "CsDebugScript.CommonUserTypes.dll"
 #load "helper.csx"
 
 using System;

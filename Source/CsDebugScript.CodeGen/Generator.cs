@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.CodeGen.UserTypes;
-using Dia2Lib;
+using CsDebugScript.Engine;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CSharp;
@@ -234,7 +234,11 @@ namespace CsDebugScript.CodeGen
             logger.WriteLine(" {0}", stopwatch.Elapsed);
 
             // Compiling the code
-            string binFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string[] dependentAssemblies = new string[]
+            {
+                "CsDebugScript.Engine.dll",
+                "CsDebugScript.CommonUserTypes.dll",
+            };
 
             if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
             {
@@ -242,11 +246,17 @@ namespace CsDebugScript.CodeGen
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                     MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.Engine.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.CommonUserTypes.dll")),
                 };
 
-                references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(Path.IsPathRooted(r.Path) ? r.Path : Path.Combine(binFolder, r.Path))));
+                foreach (string dependentAssembly in dependentAssemblies)
+                {
+                    if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
+                    {
+                        references.Add(MetadataReference.CreateFromFile(ResolveAssemblyPath(dependentAssembly)));
+                    }
+                }
+
+                references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(ResolveAssemblyPath(r.Path))));
 
                 foreach (var includedFile in includedFiles)
                     syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(includedFile.Path), path: includedFile.Path, encoding: System.Text.UTF8Encoding.Default));
@@ -290,6 +300,7 @@ namespace CsDebugScript.CodeGen
             // Check whether we should generate assembly
             if (!xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
             {
+#if NET461
                 var codeProvider = new CSharpCodeProvider();
                 var compilerParameters = new CompilerParameters()
                 {
@@ -297,8 +308,24 @@ namespace CsDebugScript.CodeGen
                     OutputAssembly = outputDirectory + xmlConfig.GeneratedAssemblyName,
                 };
 
-                compilerParameters.ReferencedAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location).ToArray());
-                //compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies);
+                foreach (var assemblyPath in AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location))
+                {
+                    string assemblyName = Path.GetFileName(assemblyPath);
+
+                    if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(assemblyName)))
+                    {
+                        compilerParameters.ReferencedAssemblies.Add(assemblyPath);
+                    }
+                }
+
+                foreach (string dependentAssembly in dependentAssemblies)
+                {
+                    if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
+                    {
+                        compilerParameters.ReferencedAssemblies.Add(ResolveAssemblyPath(dependentAssembly));
+                    }
+                }
+                compilerParameters.ReferencedAssemblies.AddRange(xmlConfig.ReferencedAssemblies.Select(r => ResolveAssemblyPath(r.Path)).ToArray());
 
                 const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
 
@@ -306,9 +333,6 @@ namespace CsDebugScript.CodeGen
                 {
                     compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
                 }
-
-                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsDebugScript.Engine.dll"));
-                compilerParameters.ReferencedAssemblies.Add(Path.Combine(binFolder, "CsDebugScript.CommonUserTypes.dll"));
 
                 var filesToCompile = generatedFiles.Values.Union(includedFiles.Select(f => f.Path)).ToArray();
                 var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);
@@ -321,6 +345,9 @@ namespace CsDebugScript.CodeGen
                 }
 
                 logger.WriteLine("Compiling: {0}", stopwatch.Elapsed);
+#else
+                throw new Exception(".NET standard must use Roslyn to generate assemblies.");
+#endif
             }
 
             // Generating props file
@@ -438,7 +465,7 @@ namespace CsDebugScript.CodeGen
 
                 globalTypesPerModule.TryAdd(
                     xmlModule,
-                    symbols.Where(t => t.Tag == SymTagEnum.SymTagUDT || t.Tag == SymTagEnum.SymTagEnum).ToArray());
+                    symbols.Where(t => t.Tag == CodeTypeTag.Class || t.Tag == CodeTypeTag.Structure || t.Tag == CodeTypeTag.Union || t.Tag == CodeTypeTag.Enum).ToArray());
             });
 
             List<Symbol> allSymbols = new List<Symbol>();
@@ -614,7 +641,7 @@ namespace CsDebugScript.CodeGen
                 }
 
                 // Check if symbol contains template type.
-                if (SymbolNameHelper.ContainsTemplateType(symbolName) && symbol.Tag == SymTagEnum.SymTagUDT)
+                if (SymbolNameHelper.ContainsTemplateType(symbolName) && (symbol.Tag == CodeTypeTag.Class || symbol.Tag == CodeTypeTag.Structure || symbol.Tag == CodeTypeTag.Union))
                 {
                     List<string> namespaces = symbol.Namespaces;
                     string className = namespaces.Last();
@@ -745,17 +772,27 @@ namespace CsDebugScript.CodeGen
         /// <returns><c>true</c> if compilation succeeded.</returns>
         private bool GenerateRoslynAssembly(IEnumerable<SyntaxTree> syntaxTreesInput, Stream dllStream, Stream pdbStream)
         {
-            string binFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string[] dependentAssemblies = new string[]
+            {
+                "CsDebugScript.Engine.dll",
+                "CsDebugScript.CommonUserTypes.dll",
+            };
             List<SyntaxTree> syntaxTrees = syntaxTreesInput.ToList();
             List<MetadataReference> references = new List<MetadataReference>
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                     MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.Engine.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(binFolder, "CsDebugScript.CommonUserTypes.dll")),
                 };
 
-            references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(r.Path)));
+            foreach (string dependentAssembly in dependentAssemblies)
+            {
+                if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
+                {
+                    references.Add(MetadataReference.CreateFromFile(ResolveAssemblyPath(dependentAssembly)));
+                }
+            }
+
+            references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(ResolveAssemblyPath(r.Path))));
 
             foreach (var includedFile in includedFiles)
             {
@@ -802,9 +839,9 @@ namespace CsDebugScript.CodeGen
         {
             Symbol symbol = userType.Symbol;
 
-            if (symbol != null && symbol.Tag == SymTagEnum.SymTagBaseType)
+            if (symbol != null && symbol.Tag == CodeTypeTag.BuiltinType)
             {
-                // ignore Base (Primitive) types.
+                // Ignore built-in types.
                 return Tuple.Create("", "");
             }
 
@@ -872,9 +909,9 @@ namespace CsDebugScript.CodeGen
         {
             Symbol symbol = userType.Symbol;
 
-            if (symbol != null && symbol.Tag == SymTagEnum.SymTagBaseType)
+            if (symbol != null && symbol.Tag == CodeTypeTag.BuiltinType)
             {
-                // ignore Base (Primitive) types.
+                // Ignore built-in types.
                 return false;
             }
 
@@ -885,6 +922,50 @@ namespace CsDebugScript.CodeGen
 
             userType.WriteCode(new IndentedWriter(output, generationFlags.HasFlag(UserTypeGenerationFlags.CompressedOutput)), errorOutput, factory, generationFlags);
             return true;
+        }
+
+        /// <summary>
+        /// Resolves the specified assembly path if it is not rooted.
+        /// </summary>
+        /// <param name="path">Original assembly path./param>
+        /// <returns>Rooted assembly path if found.</returns>
+        private static string ResolveAssemblyPath(string path)
+        {
+            if (!Path.IsPathRooted(path))
+            {
+                // Check assembly location folder
+                Assembly assembly = Assembly.GetExecutingAssembly();
+                string binFolder = Path.GetDirectoryName(assembly.Location);
+                string rootedPath = Path.Combine(binFolder, path);
+
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+
+#if NET461
+                // Check loaded assemblies
+                foreach (var assemblyPath in AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location))
+                {
+                    if (assemblyPath.EndsWith(path))
+                    {
+                        return assemblyPath;
+                    }
+                }
+#endif
+
+                // Check assembly code base folder
+                Uri codeBaseUrl = new Uri(assembly.CodeBase);
+                string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
+
+                binFolder = Path.GetDirectoryName(codeBasePath);
+                rootedPath = Path.Combine(binFolder, path);
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+            return path;
         }
     }
 

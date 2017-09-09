@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.CodeGen.TypeTrees;
+using CsDebugScript.Engine;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -214,7 +215,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (!factory.GetUserType(symbol, out specializationUserType))
                 {
-                    if (symbol.Tag != Dia2Lib.SymTagEnum.SymTagEnum && symbol.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
+                    if (symbol.Tag != CodeTypeTag.Enum && symbol.Tag != CodeTypeTag.Class && symbol.Tag != CodeTypeTag.Structure && symbol.Tag != CodeTypeTag.Union)
                     {
                         try
                         {
@@ -565,7 +566,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 foreach (Symbol type in specializedSymbols)
                 {
                     // Check base type
-                    if (type.Tag == Dia2Lib.SymTagEnum.SymTagBaseType || type.Tag == Dia2Lib.SymTagEnum.SymTagEnum)
+                    if (type.Tag == CodeTypeTag.BuiltinType || type.Tag == CodeTypeTag.Enum)
                         if (type.Name != "void")
                         {
                             specializationType = TypeOfSpecializationType.Anything;
@@ -578,13 +579,13 @@ namespace CsDebugScript.CodeGen.UserTypes
                         }
 
                     // Check pointer, array and function types, they inherit Variable
-                    if (type.Tag == Dia2Lib.SymTagEnum.SymTagPointerType || type.Tag == Dia2Lib.SymTagEnum.SymTagArrayType || type.Tag == Dia2Lib.SymTagEnum.SymTagFunctionType)
+                    if (type.Tag == CodeTypeTag.Pointer || type.Tag == CodeTypeTag.Array || type.Tag == CodeTypeTag.Function)
                     {
                         specializationType = TypeOfSpecializationType.Variable;
                         continue;
                     }
 
-                    if (type.Tag != Dia2Lib.SymTagEnum.SymTagUDT)
+                    if (type.Tag != CodeTypeTag.Class && type.Tag != CodeTypeTag.Structure && type.Tag != CodeTypeTag.Union)
                     {
                         throw new NotImplementedException("Unexpected symbol type " + type.Tag + ". Symbol name: " + type.Name);
                     }

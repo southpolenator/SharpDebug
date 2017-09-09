@@ -2,6 +2,7 @@
 Set of .NET libraries that provide access to different debugging tools.
 CsDebugScript.Engine provides framework for writting .NET code against different debuggers/dump processing.
 Extension libraries provide access to dbgeng.dll for processing Windows dumps, ability to read Linux core dumps, WinDbg/VisualStudio extension with interactive scripting support.
+Debugging both native and managed code is supported (currently, managed code is supported only for dbgeng.dll and WinDbg extension).
 
 ### Latest status
 [![Build status](https://ci.appveyor.com/api/projects/status/d2j4lxglq0tl1x1i/branch/master?svg=true)](https://ci.appveyor.com/project/southpolenator/windbgcs/branch/master)

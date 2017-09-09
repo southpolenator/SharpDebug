@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.Engine;
-using Dia2Lib;
+using DIA;
 using System;
 using System.Collections.Generic;
 
@@ -19,9 +19,9 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             : base(module)
         {
             Id = typeId;
-            Tag = (SymTagEnum)EngineModuleProvider.GetTypeTag(EngineModule, Id);
-            BasicType = EngineModuleProvider.GetTypeBasicType(EngineModule, Id);
-            if (Tag != SymTagEnum.SymTagExe)
+            Tag = EngineModuleProvider.GetTypeTag(EngineModule, Id);
+            BasicType = ConvertToBasicType(EngineModuleProvider.GetTypeBuiltinType(EngineModule, Id));
+            if (Tag != CodeTypeTag.ModuleGlobals)
             {
                 Name = EngineModuleProvider.GetTypeName(EngineModule, Id);
             }
@@ -44,8 +44,8 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="offset">The offset.</param>
-        /// <param name="tag">The symbol tag.</param>
-        public EngineSymbolProviderSymbol(Module module, uint typeId, int offset, SymTagEnum tag)
+        /// <param name="tag">The code type tag.</param>
+        public EngineSymbolProviderSymbol(Module module, uint typeId, int offset, CodeTypeTag tag)
             : this(module, typeId)
         {
             Offset = offset;
@@ -101,7 +101,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             foreach (Tuple<uint, int> baseClass in EngineModuleProvider.GetTypeDirectBaseClasses(EngineModule, Id).Values)
             {
                 Symbol baseClassTypeSymbol = Module.GetSymbol(baseClass.Item1);
-                Symbol baseClassSymbol = new EngineSymbolProviderSymbol(Module, baseClass.Item1, baseClass.Item2, SymTagEnum.SymTagBaseClass);
+                Symbol baseClassSymbol = new EngineSymbolProviderSymbol(Module, baseClass.Item1, baseClass.Item2, CodeTypeTag.BaseClass);
 
                 baseClassTypeSymbol.LinkSymbols(baseClassSymbol);
                 yield return baseClassSymbol;
@@ -165,6 +165,48 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         protected override IEnumerable<Tuple<string, string>> GetEnumValues()
         {
             return EngineModuleProvider.GetEnumValues(Id);
+        }
+
+        /// <summary>
+        /// Converts <see cref="BuiltinType"/> to <see cref="BasicType"/>.
+        /// </summary>
+        /// <param name="builtinType">The built-in type.</param>
+        private static BasicType ConvertToBasicType(BuiltinType builtinType)
+        {
+            switch (builtinType)
+            {
+                default:
+                case BuiltinType.NoType:
+                    return BasicType.NoType;
+                case BuiltinType.Char8:
+                    return BasicType.Char;
+                case BuiltinType.Char16:
+                    return BasicType.WChar;
+                case BuiltinType.Char32:
+                    return BasicType.Char32;
+                case BuiltinType.Bool:
+                    return BasicType.Bool;
+                case BuiltinType.Void:
+                    return BasicType.Void;
+                case BuiltinType.Int8:
+                case BuiltinType.Int16:
+                case BuiltinType.Int32:
+                    return BasicType.Int;
+                case BuiltinType.Int64:
+                case BuiltinType.Int128:
+                    return BasicType.Long;
+                case BuiltinType.UInt8:
+                case BuiltinType.UInt16:
+                case BuiltinType.UInt32:
+                    return BasicType.UInt;
+                case BuiltinType.UInt64:
+                case BuiltinType.UInt128:
+                    return BasicType.ULong;
+                case BuiltinType.Float32:
+                case BuiltinType.Float64:
+                case BuiltinType.Float80:
+                    return BasicType.Float;
+            }
         }
     }
 }

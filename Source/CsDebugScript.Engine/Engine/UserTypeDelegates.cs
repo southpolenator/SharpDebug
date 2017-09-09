@@ -197,7 +197,7 @@ namespace CsDebugScript.Engine
 
                 assemblyName.KeyPair = new StrongNameKeyPair(bytes);
 
-                AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+                AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
 
                 return assemblyBuilder.DefineDynamicModule("CsDebugScript.Dynamic");
             });
@@ -756,7 +756,7 @@ namespace CsDebugScript.Engine
                 // TODO: What about virtual properties?
 
                 // Build type
-                return typeBuilder.CreateType();
+                return typeBuilder.CreateTypeInfo().AsType();
             }
         }
     }
