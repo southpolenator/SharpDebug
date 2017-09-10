@@ -2,15 +2,25 @@
 using CsDebugScript.Engine;
 using CsDebugScript.Engine.Debuggers;
 using DbgEng;
+using System.IO;
 using Xunit;
 
 namespace CsDebugScript.Tests
 {
     public class DumpInitialization
     {
+        public const string DefaultDumpPath = @"..\..\..\dumps\";
+
         public DumpInitialization(string dumpPath, string defaultModuleName, string symbolPath)
         {
-            DumpPath = TestBase.GetAbsoluteBinPath(dumpPath);
+            if (!Path.IsPathRooted(dumpPath))
+            {
+                DumpPath = TestBase.GetAbsoluteBinPath($"{DefaultDumpPath}{dumpPath}");
+            }
+            else
+            {
+                DumpPath = dumpPath;
+            }
             DefaultModuleName = defaultModuleName;
             SymbolPath = symbolPath;
         }
@@ -28,8 +38,8 @@ namespace CsDebugScript.Tests
 
     public class ElfCoreDumpInitialization : DumpInitialization
     {
-        public ElfCoreDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath)
-            : base(dumpPath, defaultModuleName, symbolPath)
+        public ElfCoreDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = DefaultDumpPath)
+            : base(dumpPath, defaultModuleName, TestBase.GetAbsoluteBinPath(symbolPath))
         {
             IDebuggerEngine engine = new ElfCoreDumpDebuggingEngine(DumpPath);
 
@@ -39,7 +49,7 @@ namespace CsDebugScript.Tests
 
     public class DbgEngDumpInitialization : DumpInitialization
     {
-        public DbgEngDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = @".\", bool addSymbolServer = true, bool useDia = true, bool useDwarf = false)
+        public DbgEngDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = DefaultDumpPath, bool addSymbolServer = true, bool useDia = true, bool useDwarf = false)
             : base(dumpPath, defaultModuleName, FixSymbolPath(symbolPath, addSymbolServer))
         {
             IDebugClient client = DebugClient.OpenDumpFile(DumpPath, SymbolPath);
@@ -66,56 +76,65 @@ namespace CsDebugScript.Tests
         }
     }
 
-    [CollectionDefinition("NativeDumpTest.x64.dmp")]
+    [CollectionDefinition("NativeDumpTest.x64.mdmp")]
     public class NativeDumpTest_x64_dmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_x64_dmp_Initialization>
     {
         public NativeDumpTest_x64_dmp_Initialization()
-            : base("NativeDumpTest.x64.dmp", "NativeDumpTest_x64")
+            : base("NativeDumpTest.x64.mdmp", "NativeDumpTest_x64")
         {
         }
     }
 
-    [CollectionDefinition("NativeDumpTest.x64.dmp NoDia")]
+    [CollectionDefinition("NativeDumpTest.x64.mdmp NoDia")]
     public class NativeDumpTest_x64_dmp_NoDia_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_x64_dmp_NoDia_Initialization>
     {
         public NativeDumpTest_x64_dmp_NoDia_Initialization()
-            : base("NativeDumpTest.x64.dmp", "NativeDumpTest_x64", useDia: false)
+            : base("NativeDumpTest.x64.mdmp", "NativeDumpTest_x64", useDia: false)
         {
         }
     }
 
-    [CollectionDefinition("NativeDumpTest.x64.Release.dmp")]
+    [CollectionDefinition("NativeDumpTest.x64.Release.mdmp")]
     public class NativeDumpTest_x64_Release_dmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_x64_Release_dmp_Initialization>
     {
         public NativeDumpTest_x64_Release_dmp_Initialization()
-            : base("NativeDumpTest.x64.Release.dmp", "NativeDumpTest_x64_Release")
+            : base("NativeDumpTest.x64.Release.mdmp", "NativeDumpTest_x64_Release")
         {
         }
     }
 
-    [CollectionDefinition("NativeDumpTest.x86.dmp")]
+    [CollectionDefinition("NativeDumpTest.x86.mdmp")]
     public class NativeDumpTest_x86_dmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_x86_dmp_Initialization>
     {
         public NativeDumpTest_x86_dmp_Initialization()
-            : base("NativeDumpTest.x86.dmp", "NativeDumpTest_x86")
+            : base("NativeDumpTest.x86.mdmp", "NativeDumpTest_x86")
         {
         }
     }
 
-    [CollectionDefinition("NativeDumpTest.x86.Release.dmp")]
+    [CollectionDefinition("NativeDumpTest.x86.Release.mdmp")]
     public class NativeDumpTest_x86_Release_dmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_x86_Release_dmp_Initialization>
     {
         public NativeDumpTest_x86_Release_dmp_Initialization()
-            : base("NativeDumpTest.x86.Release.dmp", "NativeDumpTest_x86_Release")
+            : base("NativeDumpTest.x86.Release.mdmp", "NativeDumpTest_x86_Release")
         {
         }
     }
 
-    [CollectionDefinition("NativeDumpTest.VS2013.mdmp")]
+    [CollectionDefinition("NativeDumpTest.x64.VS2013.mdmp")]
     public class NativeDumpTest_VS2013_mdmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_VS2013_mdmp_Initialization>
     {
         public NativeDumpTest_VS2013_mdmp_Initialization()
-            : base(@"..\..\..\dumps\NativeDumpTest.VS2013.mdmp", "NativeDumpTest_VS2013", @"..\..\..\dumps\")
+            : base("NativeDumpTest.x64.VS2013.mdmp", "NativeDumpTest_x64_VS2013")
+        {
+        }
+    }
+
+    [CollectionDefinition("NativeDumpTest.x64.VS2015.mdmp")]
+    public class NativeDumpTest_VS2015_mdmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_VS2015_mdmp_Initialization>
+    {
+        public NativeDumpTest_VS2015_mdmp_Initialization()
+            : base("NativeDumpTest.x64.VS2015.mdmp", "NativeDumpTest_x64_VS2015")
         {
         }
     }
@@ -124,16 +143,7 @@ namespace CsDebugScript.Tests
     public class NativeDumpTest_gcc_dmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_gcc_dmp_Initialization>
     {
         public NativeDumpTest_gcc_dmp_Initialization()
-            : base(@"..\..\..\dumps\NativeDumpTest.gcc.mdmp", "NativeDumpTest_gcc", @"..\..\..\dumps\", useDwarf: true)
-        {
-        }
-    }
-
-    [CollectionDefinition("NativeDumpTest.x64.clang.mdmp")]
-    public class NativeDumpTest_x64_clang_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_x64_clang_Initialization>
-    {
-        public NativeDumpTest_x64_clang_Initialization()
-            : base(@"..\..\..\dumps\NativeDumpTest.x64.clang.mdmp", "NativeDumpTest_x64_clang", @"..\..\..\dumps\")
+            : base("NativeDumpTest.gcc.mdmp", "NativeDumpTest_gcc", useDwarf: true)
         {
         }
     }
@@ -142,7 +152,7 @@ namespace CsDebugScript.Tests
     public class NativeDumpTest_x64_gcc_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_x64_gcc_Initialization>
     {
         public NativeDumpTest_x64_gcc_Initialization()
-            : base(@"..\..\..\dumps\NativeDumpTest.x64.gcc.mdmp", "NativeDumpTest_x64_gcc", @"..\..\..\dumps\", useDwarf: true)
+            : base("NativeDumpTest.x64.gcc.mdmp", "NativeDumpTest_x64_gcc", useDwarf: true)
         {
         }
     }
@@ -151,7 +161,7 @@ namespace CsDebugScript.Tests
     public class NativeDumpTest_linux_x86_gcc_Initialization : ElfCoreDumpInitialization, ICollectionFixture<NativeDumpTest_linux_x86_gcc_Initialization>
     {
         public NativeDumpTest_linux_x86_gcc_Initialization()
-            : base(@"..\..\..\dumps\NativeDumpTest.linux.x86.gcc.coredump", "NativeDumpTest.linux.x86.gcc", @"..\..\..\dumps\")
+            : base("NativeDumpTest.linux.x86.gcc.coredump", "NativeDumpTest.linux.x86.gcc")
         {
         }
     }
@@ -160,7 +170,7 @@ namespace CsDebugScript.Tests
     public class NativeDumpTest_linux_x64_gcc_Initialization : ElfCoreDumpInitialization, ICollectionFixture<NativeDumpTest_linux_x64_gcc_Initialization>
     {
         public NativeDumpTest_linux_x64_gcc_Initialization()
-            : base(@"..\..\..\dumps\NativeDumpTest.linux.x64.gcc.coredump", "NativeDumpTest.linux.x64.gcc", @"..\..\..\dumps\")
+            : base("NativeDumpTest.linux.x64.gcc.coredump", "NativeDumpTest.linux.x64.gcc")
         {
         }
     }
@@ -169,7 +179,7 @@ namespace CsDebugScript.Tests
     public class NativeDumpTest_linux_x64_clang_Initialization : ElfCoreDumpInitialization, ICollectionFixture<NativeDumpTest_linux_x64_clang_Initialization>
     {
         public NativeDumpTest_linux_x64_clang_Initialization()
-            : base(@"..\..\..\dumps\NativeDumpTest.linux.x64.clang.coredump", "NativeDumpTest.linux.x64.clang", @"..\..\..\dumps\")
+            : base("NativeDumpTest.linux.x64.clang.coredump", "NativeDumpTest.linux.x64.clang")
         {
         }
     }

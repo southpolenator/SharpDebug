@@ -425,7 +425,7 @@ void AreEqual<T>(T value1, T value2)
     }
 
     #region Test configurations
-    [Collection("NativeDumpTest.x64.dmp")]
+    [Collection("NativeDumpTest.x64.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x64 : NativeDumpTest
@@ -436,7 +436,7 @@ void AreEqual<T>(T value1, T value2)
         }
     }
 
-    [Collection("NativeDumpTest.x64.dmp NoDia")]
+    [Collection("NativeDumpTest.x64.mdmp NoDia")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x64_NoDia : NativeDumpTest
@@ -447,7 +447,7 @@ void AreEqual<T>(T value1, T value2)
         }
     }
 
-    [Collection("NativeDumpTest.x64.Release.dmp")]
+    [Collection("NativeDumpTest.x64.Release.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x64_Release : NativeDumpTest
@@ -458,7 +458,7 @@ void AreEqual<T>(T value1, T value2)
         }
     }
 
-    [Collection("NativeDumpTest.x86.dmp")]
+    [Collection("NativeDumpTest.x86.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x86 : NativeDumpTest
@@ -469,7 +469,7 @@ void AreEqual<T>(T value1, T value2)
         }
     }
 
-    [Collection("NativeDumpTest.x86.Release.dmp")]
+    [Collection("NativeDumpTest.x86.Release.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x86_Release : NativeDumpTest
@@ -491,23 +491,23 @@ void AreEqual<T>(T value1, T value2)
         }
     }
 
+    [Collection("NativeDumpTest.VS2015.mdmp")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class NativeDumpTest_x86_VS2015 : NativeDumpTest
+    {
+        public NativeDumpTest_x86_VS2015(NativeDumpTest_VS2015_mdmp_Initialization initialization)
+            : base(initialization)
+        {
+        }
+    }
+
     [Collection("NativeDumpTest.gcc.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x86_gcc : NativeDumpTest
     {
         public NativeDumpTest_x86_gcc(NativeDumpTest_gcc_dmp_Initialization initialization)
-            : base(initialization)
-        {
-        }
-    }
-
-    [Collection("NativeDumpTest.x64.clang.mdmp")]
-    [Trait("x64", "true")]
-    [Trait("x86", "true")]
-    public class NativeDumpTest_x64_clang : NativeDumpTest
-    {
-        public NativeDumpTest_x64_clang(NativeDumpTest_x64_clang_Initialization initialization)
             : base(initialization)
         {
         }
