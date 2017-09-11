@@ -4,6 +4,7 @@ $files = ConvertFrom-Json $json
 foreach ($file in $files)
 {
     $url = "https://dl.bintray.com/southpolenator/WinDbgCs_dumps/" + $file.path
-    Write-Host "$url  =>  $($file.path)"
-    $webClient.DownloadFile($url, $file.name);
+    $filename = "$PSScriptRoot\$($file.name)";
+    Write-Host "$url  =>  $filename"
+    $webClient.DownloadFile($url, $filename);
 }
