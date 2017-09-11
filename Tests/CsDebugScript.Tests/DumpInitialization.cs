@@ -15,7 +15,7 @@ namespace CsDebugScript.Tests
         {
             if (!Path.IsPathRooted(dumpPath))
             {
-                DumpPath = TestBase.GetAbsoluteBinPath($"{DefaultDumpPath}{dumpPath}");
+                DumpPath = TestBase.GetAbsoluteBinPath(Path.Combine(DefaultDumpPath, dumpPath));
             }
             else
             {
@@ -122,18 +122,18 @@ namespace CsDebugScript.Tests
     }
 
     [CollectionDefinition("NativeDumpTest.x64.VS2013.mdmp")]
-    public class NativeDumpTest_VS2013_mdmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_VS2013_mdmp_Initialization>
+    public class NativeDumpTest_x64_VS2013_mdmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_x64_VS2013_mdmp_Initialization>
     {
-        public NativeDumpTest_VS2013_mdmp_Initialization()
+        public NativeDumpTest_x64_VS2013_mdmp_Initialization()
             : base("NativeDumpTest.x64.VS2013.mdmp", "NativeDumpTest_x64_VS2013")
         {
         }
     }
 
     [CollectionDefinition("NativeDumpTest.x64.VS2015.mdmp")]
-    public class NativeDumpTest_VS2015_mdmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_VS2015_mdmp_Initialization>
+    public class NativeDumpTest_x64_VS2015_mdmp_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_x64_VS2015_mdmp_Initialization>
     {
-        public NativeDumpTest_VS2015_mdmp_Initialization()
+        public NativeDumpTest_x64_VS2015_mdmp_Initialization()
             : base("NativeDumpTest.x64.VS2015.mdmp", "NativeDumpTest_x64_VS2015")
         {
         }

@@ -5,6 +5,7 @@ using System.Linq;
 using Xunit;
 using DbgEng;
 using CsDebugScript.Engine.Debuggers;
+using System.IO;
 
 namespace CsDebugScript.Tests
 {
@@ -32,7 +33,7 @@ namespace CsDebugScript.Tests
         {
             get
             {
-                return Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86;
+                return Path.Combine(DumpInitialization.DefaultDumpPath, Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86);
             }
         }
 

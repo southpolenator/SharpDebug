@@ -480,23 +480,23 @@ void AreEqual<T>(T value1, T value2)
         }
     }
 
-    [Collection("NativeDumpTest.VS2013.mdmp")]
+    [Collection("NativeDumpTest.x64.VS2013.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
-    public class NativeDumpTest_x86_VS2013 : NativeDumpTest
+    public class NativeDumpTest_x64_VS2013 : NativeDumpTest
     {
-        public NativeDumpTest_x86_VS2013(NativeDumpTest_VS2013_mdmp_Initialization initialization)
+        public NativeDumpTest_x64_VS2013(NativeDumpTest_x64_VS2013_mdmp_Initialization initialization)
             : base(initialization)
         {
         }
     }
 
-    [Collection("NativeDumpTest.VS2015.mdmp")]
+    [Collection("NativeDumpTest.x64.VS2015.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
-    public class NativeDumpTest_x86_VS2015 : NativeDumpTest
+    public class NativeDumpTest_x64_VS2015 : NativeDumpTest
     {
-        public NativeDumpTest_x86_VS2015(NativeDumpTest_VS2015_mdmp_Initialization initialization)
+        public NativeDumpTest_x64_VS2015(NativeDumpTest_x64_VS2015_mdmp_Initialization initialization)
             : base(initialization)
         {
         }
