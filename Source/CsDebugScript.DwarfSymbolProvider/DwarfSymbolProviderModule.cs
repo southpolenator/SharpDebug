@@ -530,8 +530,11 @@ namespace CsDebugScript.DwarfSymbolProvider
                                     case 8:
                                         return BuiltinType.Float64;
                                     case 10:
+                                    case 12:
+                                    case 16:
                                         return BuiltinType.Float80;
                                 }
+                            case "short":
                             case "short int":
                             case "int":
                             case "long int":
@@ -550,6 +553,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                                     case 16:
                                         return BuiltinType.Int128;
                                 }
+                            case "unsigned short":
                             case "short unsigned int":
                             case "unsigned int":
                             case "long unsigned int":
