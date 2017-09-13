@@ -4,6 +4,7 @@ using System.Linq;
 using Xunit;
 using System.Collections.Generic;
 using CsDebugScript.Engine;
+using CsDebugScript.Tests.Utils;
 
 namespace CsDebugScript.Tests
 {
@@ -27,6 +28,10 @@ ImportUserTypes(options, true);
         }
 
         public bool ExecuteCodeGen { get; private set; }
+
+        protected bool ReleaseDump { get; set; }
+
+        protected bool LinuxDump { get; set; }
 
         [Fact]
         public void CurrentThreadContainsMainSourceFileName()
@@ -61,7 +66,7 @@ ImportUserTypes(options, true);
             Assert.True(Module.All.Any(module => module.Name == DefaultModuleName));
         }
 
-        [Fact]
+        [SkippableFact]
         public void CheckProcess()
         {
             Process process = Process.Current;
@@ -71,18 +76,30 @@ ImportUserTypes(options, true);
             Assert.NotEqual(0U, process.SystemId);
             Assert.NotEqual(0, Process.All.Length);
             Assert.NotEqual(-1, process.FindMemoryRegion(DefaultModule.Address));
+
+            if (LinuxDump)
+            {
+                throw new SkipTestException("Linux dump");
+            }
+
             Assert.Equal(DefaultModule.ImageName, process.ExecutableName);
             Assert.NotNull(process.PEB);
             Assert.Null(process.CurrentCLRAppDomain);
         }
 
-        [Fact]
+        [SkippableFact]
         public void CheckThread()
         {
             Thread thread = Thread.Current;
 
             Assert.NotEqual(0, Thread.All.Length);
             Assert.NotNull(thread.Locals);
+
+            if (LinuxDump)
+            {
+                throw new SkipTestException("Linux dump");
+            }
+
             Assert.NotNull(thread.TEB);
             Assert.NotNull(thread.ThreadContext);
         }
@@ -111,9 +128,14 @@ ImportUserTypes(options, true);
             Assert.Equal($"{DefaultModuleName}!DefaultTestCase", codeFunction.FunctionName);
         }
 
-        [Fact]
+        [SkippableFact]
         public void CheckDebugger()
         {
+            if (LinuxDump)
+            {
+                throw new SkipTestException("Linux dump");
+            }
+
             Assert.NotEmpty(Debugger.FindAllPatternInMemory(0x1212121212121212));
             Assert.NotEmpty(Debugger.FindAllBytePatternInMemory(new byte[] { 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12 }));
             Assert.NotEmpty(Debugger.FindAllTextPatternInMemory("qwerty"));
@@ -134,9 +156,14 @@ ImportUserTypes(options, true);
             Assert.Equal(doubleTest.GetCodeType(), doubleTest2.GetCodeType());
         }
 
-        [Fact]
+        [SkippableFact]
         public void GettingClassStaticMember()
         {
+            if (ReleaseDump)
+            {
+                throw new SkipTestException("Release dump");
+            }
+
             Variable staticVariable = DefaultModule.GetVariable("MyTestClass::staticVariable");
 
             Assert.Equal(1212121212, (int)staticVariable);
@@ -455,6 +482,7 @@ void AreEqual<T>(T value1, T value2)
         public NativeDumpTest_x64_Release(NativeDumpTest_x64_Release_dmp_Initialization initialization)
             : base(initialization)
         {
+            ReleaseDump = true;
         }
     }
 
@@ -477,6 +505,7 @@ void AreEqual<T>(T value1, T value2)
         public NativeDumpTest_x86_Release(NativeDumpTest_x86_Release_dmp_Initialization initialization)
             : base(initialization)
         {
+            ReleaseDump = true;
         }
     }
 
@@ -532,6 +561,7 @@ void AreEqual<T>(T value1, T value2)
         public NativeDumpTest_x86_Linux_gcc(NativeDumpTest_linux_x86_gcc_Initialization initialization)
             : base(initialization)
         {
+            LinuxDump = true;
         }
     }
 
@@ -543,6 +573,7 @@ void AreEqual<T>(T value1, T value2)
         public NativeDumpTest_x64_Linux_gcc(NativeDumpTest_linux_x64_gcc_Initialization initialization)
             : base(initialization)
         {
+            LinuxDump = true;
         }
     }
 
@@ -554,6 +585,7 @@ void AreEqual<T>(T value1, T value2)
         public NativeDumpTest_x64_Linux_clang(NativeDumpTest_linux_x64_clang_Initialization initialization)
             : base(initialization, executeCodeGen: false)
         {
+            LinuxDump = true;
         }
     }
     #endregion
