@@ -22,7 +22,7 @@ namespace CsDebugScript.Tests
         private const string TestProcessPathx64 = "NativeDumpTest.x64.exe";
         private const string TestProcessPathx86 = "NativeDumpTest.x86.exe";
 
-        private const string DefaultSymbolPath = @".\";
+        private const string DefaultSymbolPath = DumpInitialization.DefaultDumpPath;
 
         /// <summary>
         /// Test case id to be run.
