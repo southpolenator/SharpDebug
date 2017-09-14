@@ -234,11 +234,6 @@ namespace CsDebugScript.DwarfSymbolProvider
                                     childrenQueue.Enqueue(data.Children);
                                 }
                             }
-                            else
-                            {
-                                // TODO:
-                                throw new NotImplementedException();
-                            }
                         }
                     }
                 }
