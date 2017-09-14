@@ -29,9 +29,9 @@ ImportUserTypes(options, true);
 
         public bool ExecuteCodeGen { get; private set; }
 
-        protected bool ReleaseDump { get; set; }
+        public bool ReleaseDump { get; set; }
 
-        protected bool LinuxDump { get; set; }
+        public bool LinuxDump { get; set; }
 
         [Fact]
         public void CurrentThreadContainsMainSourceFileName()
@@ -66,7 +66,7 @@ ImportUserTypes(options, true);
             Assert.True(Module.All.Any(module => module.Name == DefaultModuleName));
         }
 
-        [SkippableFact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(LinuxDump))]
         public void CheckProcess()
         {
             Process process = Process.Current;
@@ -76,30 +76,18 @@ ImportUserTypes(options, true);
             Assert.NotEqual(0U, process.SystemId);
             Assert.NotEqual(0, Process.All.Length);
             Assert.NotEqual(-1, process.FindMemoryRegion(DefaultModule.Address));
-
-            if (LinuxDump)
-            {
-                throw new SkipTestException("Linux dump");
-            }
-
             Assert.Equal(DefaultModule.ImageName, process.ExecutableName);
             Assert.NotNull(process.PEB);
             Assert.Null(process.CurrentCLRAppDomain);
         }
 
-        [SkippableFact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(LinuxDump))]
         public void CheckThread()
         {
             Thread thread = Thread.Current;
 
             Assert.NotEqual(0, Thread.All.Length);
             Assert.NotNull(thread.Locals);
-
-            if (LinuxDump)
-            {
-                throw new SkipTestException("Linux dump");
-            }
-
             Assert.NotNull(thread.TEB);
             Assert.NotNull(thread.ThreadContext);
         }
@@ -128,14 +116,9 @@ ImportUserTypes(options, true);
             Assert.Equal($"{DefaultModuleName}!DefaultTestCase", codeFunction.FunctionName);
         }
 
-        [SkippableFact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(LinuxDump))]
         public void CheckDebugger()
         {
-            if (LinuxDump)
-            {
-                throw new SkipTestException("Linux dump");
-            }
-
             Assert.NotEmpty(Debugger.FindAllPatternInMemory(0x1212121212121212));
             Assert.NotEmpty(Debugger.FindAllBytePatternInMemory(new byte[] { 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12 }));
             Assert.NotEmpty(Debugger.FindAllTextPatternInMemory("qwerty"));
@@ -156,14 +139,9 @@ ImportUserTypes(options, true);
             Assert.Equal(doubleTest.GetCodeType(), doubleTest2.GetCodeType());
         }
 
-        [SkippableFact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(ReleaseDump))]
         public void GettingClassStaticMember()
         {
-            if (ReleaseDump)
-            {
-                throw new SkipTestException("Release dump");
-            }
-
             Variable staticVariable = DefaultModule.GetVariable("MyTestClass::staticVariable");
 
             Assert.Equal(1212121212, (int)staticVariable);
@@ -186,6 +164,9 @@ ImportUserTypes(options, true);
 
                 Assert.False(argument.IsNullPointer());
             }
+
+            string command = arguments["argv"].GetArrayElement(0).ToString();
+            Assert.True(command.Contains("NativeDumpTest"));
 
             Variable p;
             Assert.False(arguments.TryGetValue("p", out p));

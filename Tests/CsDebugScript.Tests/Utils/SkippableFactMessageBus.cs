@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -6,14 +7,17 @@ namespace CsDebugScript.Tests.Utils
 {
     public class SkippableFactMessageBus : IMessageBus
     {
-        readonly IMessageBus innerBus;
-
-        public SkippableFactMessageBus(IMessageBus innerBus)
+        public SkippableFactMessageBus(IMessageBus innerBus, object[] constructorArguments)
         {
-            this.innerBus = innerBus;
+            InnerBus = innerBus;
+            ConstructorArguments = constructorArguments;
         }
 
+        public IMessageBus InnerBus { get; private set; }
+
         public int DynamicallySkippedTestCount { get; private set; }
+
+        public object[] ConstructorArguments { get; private set; }
 
         public void Dispose() { }
 
@@ -23,15 +27,47 @@ namespace CsDebugScript.Tests.Utils
             if (testFailed != null)
             {
                 var exceptionType = testFailed.ExceptionTypes.FirstOrDefault();
-                if (exceptionType == typeof(SkipTestException).FullName)
+                bool shouldBeSkipped = exceptionType == typeof(SkipTestException).FullName;
+
+                if (!shouldBeSkipped)
+                {
+                    try
+                    {
+                        IAttributeInfo[] skippableAttributes = testFailed.Test.TestCase.TestMethod.Method.GetCustomAttributes(typeof(SkippableFactAttribute)).ToArray();
+
+                        if (skippableAttributes.Length > 0)
+                        {
+                            var attr = skippableAttributes[0];
+                            string propertyName = attr.GetNamedArgument<string>(nameof(SkippableFactAttribute.SkipOnFailurePropertyName));
+                            Type testClassType = testFailed.TestClass.Class.ToRuntimeType();
+                            object classInstance = Activator.CreateInstance(testClassType, ConstructorArguments);
+
+                            for (Type type = testClassType; type != null; type = type.BaseType)
+                            {
+                                var property = type.GetProperty(propertyName);
+
+                                if (property != null)
+                                {
+                                    shouldBeSkipped = (bool)property.GetValue(classInstance);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (shouldBeSkipped)
                 {
                     DynamicallySkippedTestCount++;
-                    return innerBus.QueueMessage(new TestSkipped(testFailed.Test, testFailed.Messages.FirstOrDefault()));
+                    return InnerBus.QueueMessage(new TestSkipped(testFailed.Test, testFailed.Messages.FirstOrDefault()));
                 }
             }
 
             // Nothing we care about, send it on its way
-            return innerBus.QueueMessage(message);
+            return InnerBus.QueueMessage(message);
         }
     }
 }

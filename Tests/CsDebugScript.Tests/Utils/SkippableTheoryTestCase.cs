@@ -21,7 +21,7 @@ namespace CsDebugScript.Tests.Utils
                                                         CancellationTokenSource cancellationTokenSource)
         {
             // Duplicated code from SkippableFactTestCase. I'm sure we could find a way to de-dup with some thought.
-            var skipMessageBus = new SkippableFactMessageBus(messageBus);
+            var skipMessageBus = new SkippableFactMessageBus(messageBus, constructorArguments);
             var result = await base.RunAsync(diagnosticMessageSink, skipMessageBus, constructorArguments, aggregator, cancellationTokenSource);
             if (skipMessageBus.DynamicallySkippedTestCount > 0)
             {

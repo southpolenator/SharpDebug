@@ -20,7 +20,7 @@ namespace CsDebugScript.Tests.Utils
                                                         ExceptionAggregator aggregator,
                                                         CancellationTokenSource cancellationTokenSource)
         {
-            var skipMessageBus = new SkippableFactMessageBus(messageBus);
+            var skipMessageBus = new SkippableFactMessageBus(messageBus, constructorArguments);
             var result = await base.RunAsync(diagnosticMessageSink, skipMessageBus, constructorArguments, aggregator, cancellationTokenSource);
             if (skipMessageBus.DynamicallySkippedTestCount > 0)
             {
