@@ -280,7 +280,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                 ulong length = data.ReadLength(out is64bit);
                 int endPosition = data.Position + (int)length;
 
-                if (endPosition >= data.Data.Length)
+                if (length == 0 || endPosition >= data.Data.Length)
                 {
                     break;
                 }
