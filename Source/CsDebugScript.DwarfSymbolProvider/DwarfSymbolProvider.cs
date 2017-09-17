@@ -37,7 +37,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                     IDwarfImage image = LoadImage(location);
                     var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, image.DebugDataStrings, image.CodeSegmentOffset);
                     var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.CodeSegmentOffset);
-                    var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.Is64bit);
+                    var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.EhFrame, new DwarfExceptionHandlingFrameParsingInput(image));
 
                     return new DwarfSymbolProviderModule(module, compilationUnits, lineNumberPrograms, commonInformationEntries, image.PublicSymbols, image.CodeSegmentOffset, image.Is64bit);
                 }
@@ -117,15 +117,23 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Parses the common information entries.
         /// </summary>
         /// <param name="debugFrame">The debug frame.</param>
-        /// <param name="is64bit">Set to <c>true</c> if image is 64 bit.</param>
-        private static DwarfCommonInformationEntry[] ParseCommonInformationEntries(byte[] debugFrame, bool is64bit)
+        /// <param name="ehFrame">The exception handling frames.</param>
+        /// <param name="input">The input data for parsing configuration.</param>
+        private static DwarfCommonInformationEntry[] ParseCommonInformationEntries(byte[] debugFrame, byte[] ehFrame, DwarfExceptionHandlingFrameParsingInput input)
         {
+            List<DwarfCommonInformationEntry> entries = new List<DwarfCommonInformationEntry>();
+
             using (DwarfMemoryReader debugFrameReader = new DwarfMemoryReader(debugFrame))
             {
-                byte defaultAddressSize = (byte)(is64bit ? 8 : 4);
-
-                return DwarfCommonInformationEntry.ParseAll(debugFrameReader, defaultAddressSize);
+                entries.AddRange(DwarfCommonInformationEntry.ParseAll(debugFrameReader, input.DefaultAddressSize));
             }
+
+            using (DwarfMemoryReader ehFrameReader = new DwarfMemoryReader(ehFrame))
+            {
+                entries.AddRange(DwarfExceptionHandlingCommonInformationEntry.ParseAll(ehFrameReader, input));
+            }
+
+            return entries.ToArray();
         }
     }
 }

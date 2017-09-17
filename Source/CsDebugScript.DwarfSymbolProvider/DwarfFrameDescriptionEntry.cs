@@ -18,6 +18,13 @@
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="DwarfFrameDescriptionEntry"/> class.
+        /// </summary>
+        internal DwarfFrameDescriptionEntry()
+        {
+        }
+
+        /// <summary>
         /// Gets or sets the initial location.
         /// </summary>
         public ulong InitialLocation { get; set; }
