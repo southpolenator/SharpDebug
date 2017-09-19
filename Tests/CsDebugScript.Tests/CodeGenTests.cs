@@ -26,26 +26,30 @@ namespace CsDebugScript.Tests
         [InlineData("NativeDumpTest.x86.Release.pdb", false, true, true, false)]
         [InlineData("NativeDumpTest.x86.Release.pdb", true, false, true, false)]
         [InlineData("NativeDumpTest.x86.Release.pdb", true, true, false, false)]
-        [InlineData(@"../../../dumps/NativeDumpTest.VS2013.pdb", true, true, true, false)]
-        [InlineData(@"../../../dumps/NativeDumpTest.VS2013.pdb", false, true, true, false)]
-        [InlineData(@"../../../dumps/NativeDumpTest.VS2013.pdb", true, false, true, false)]
-        [InlineData(@"../../../dumps/NativeDumpTest.VS2013.pdb", true, true, false, false)]
-        [InlineData(@"../../../dumps/NativeDumpTest.gcc.exe", true, true, true, true)]
-        [InlineData(@"../../../dumps/NativeDumpTest.gcc.exe", false, true, true, true)]
-        [InlineData(@"../../../dumps/NativeDumpTest.gcc.exe", true, false, true, true)]
-        [InlineData(@"../../../dumps/NativeDumpTest.gcc.exe", true, true, false, true)]
-        [InlineData(@"../../../dumps/NativeDumpTest.x64.gcc.exe", true, true, true, true)]
-        [InlineData(@"../../../dumps/NativeDumpTest.x64.gcc.exe", false, true, true, true)]
-        [InlineData(@"../../../dumps/NativeDumpTest.x64.gcc.exe", true, false, true, true)]
-        [InlineData(@"../../../dumps/NativeDumpTest.x64.gcc.exe", true, true, false, true)]
-        [InlineData(@"../../../dumps/NativeDumpTest.linux.x64.gcc", true, true, true, true)]
-        [InlineData(@"../../../dumps/NativeDumpTest.linux.x64.gcc", false, true, true, true)]
-        //[InlineData(@"../../../dumps/NativeDumpTest.linux.x64.gcc", true, false, true, true)] // TODO: Once ModuleGlobals are implemented for DwarfSymbolProvider, enable this test case...
-        [InlineData(@"../../../dumps/NativeDumpTest.linux.x64.gcc", true, true, false, true)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", true, true, true, false)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", false, true, true, false)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", true, false, true, false)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", true, true, false, false)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", true, true, true, false)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", false, true, true, false)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", true, false, true, false)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", true, true, false, false)]
+        [InlineData("NativeDumpTest.gcc.exe", true, true, true, true)]
+        [InlineData("NativeDumpTest.gcc.exe", false, true, true, true)]
+        [InlineData("NativeDumpTest.gcc.exe", true, false, true, true)]
+        [InlineData("NativeDumpTest.gcc.exe", true, true, false, true)]
+        [InlineData("NativeDumpTest.x64.gcc.exe", true, true, true, true)]
+        [InlineData("NativeDumpTest.x64.gcc.exe", false, true, true, true)]
+        [InlineData("NativeDumpTest.x64.gcc.exe", true, false, true, true)]
+        [InlineData("NativeDumpTest.x64.gcc.exe", true, true, false, true)]
+        [InlineData("NativeDumpTest.linux.x64.gcc", true, true, true, true)]
+        [InlineData("NativeDumpTest.linux.x64.gcc", false, true, true, true)]
+        //[InlineData("NativeDumpTest.linux.x64.gcc", true, false, true, true)] // TODO: Once ModuleGlobals are implemented for DwarfSymbolProvider, enable this test case...
+        [InlineData("NativeDumpTest.linux.x64.gcc", true, true, false, true)]
         public void Generation(string pdbFile, bool singleFileExport, bool compileWithRoslyn, bool transformations, bool useDwarf)
         {
             // Generate CodeGen configuration
-            XmlConfig xmlConfig = GetXmlConfig(pdbFile);
+            XmlConfig xmlConfig = GetXmlConfig(Path.Combine(DumpInitialization.DefaultDumpPath, pdbFile));
 
             xmlConfig.MultiFileExport = !singleFileExport;
             xmlConfig.GenerateAssemblyWithRoslyn = compileWithRoslyn;

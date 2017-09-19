@@ -4,6 +4,7 @@ using System.Linq;
 using Xunit;
 using System.Collections.Generic;
 using CsDebugScript.Engine;
+using CsDebugScript.Tests.Utils;
 
 namespace CsDebugScript.Tests
 {
@@ -27,6 +28,10 @@ ImportUserTypes(options, true);
         }
 
         public bool ExecuteCodeGen { get; private set; }
+
+        public bool ReleaseDump { get; set; }
+
+        public bool LinuxDump { get; set; }
 
         [Fact]
         public void CurrentThreadContainsMainSourceFileName()
@@ -61,7 +66,7 @@ ImportUserTypes(options, true);
             Assert.True(Module.All.Any(module => module.Name == DefaultModuleName));
         }
 
-        [Fact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(LinuxDump))]
         public void CheckProcess()
         {
             Process process = Process.Current;
@@ -76,7 +81,7 @@ ImportUserTypes(options, true);
             Assert.Null(process.CurrentCLRAppDomain);
         }
 
-        [Fact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(LinuxDump))]
         public void CheckThread()
         {
             Thread thread = Thread.Current;
@@ -111,7 +116,7 @@ ImportUserTypes(options, true);
             Assert.Equal($"{DefaultModuleName}!DefaultTestCase", codeFunction.FunctionName);
         }
 
-        [Fact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(LinuxDump))]
         public void CheckDebugger()
         {
             Assert.NotEmpty(Debugger.FindAllPatternInMemory(0x1212121212121212));
@@ -134,7 +139,7 @@ ImportUserTypes(options, true);
             Assert.Equal(doubleTest.GetCodeType(), doubleTest2.GetCodeType());
         }
 
-        [Fact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(ReleaseDump))]
         public void GettingClassStaticMember()
         {
             Variable staticVariable = DefaultModule.GetVariable("MyTestClass::staticVariable");
@@ -159,6 +164,9 @@ ImportUserTypes(options, true);
 
                 Assert.False(argument.IsNullPointer());
             }
+
+            string command = arguments["argv"].GetArrayElement(0).ToString();
+            Assert.True(command.Contains("NativeDumpTest"));
 
             Variable p;
             Assert.False(arguments.TryGetValue("p", out p));
@@ -425,7 +433,7 @@ void AreEqual<T>(T value1, T value2)
     }
 
     #region Test configurations
-    [Collection("NativeDumpTest.x64.dmp")]
+    [Collection("NativeDumpTest.x64.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x64 : NativeDumpTest
@@ -436,7 +444,7 @@ void AreEqual<T>(T value1, T value2)
         }
     }
 
-    [Collection("NativeDumpTest.x64.dmp NoDia")]
+    [Collection("NativeDumpTest.x64.mdmp NoDia")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x64_NoDia : NativeDumpTest
@@ -447,7 +455,7 @@ void AreEqual<T>(T value1, T value2)
         }
     }
 
-    [Collection("NativeDumpTest.x64.Release.dmp")]
+    [Collection("NativeDumpTest.x64.Release.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x64_Release : NativeDumpTest
@@ -455,10 +463,11 @@ void AreEqual<T>(T value1, T value2)
         public NativeDumpTest_x64_Release(NativeDumpTest_x64_Release_dmp_Initialization initialization)
             : base(initialization)
         {
+            ReleaseDump = true;
         }
     }
 
-    [Collection("NativeDumpTest.x86.dmp")]
+    [Collection("NativeDumpTest.x86.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x86 : NativeDumpTest
@@ -469,7 +478,7 @@ void AreEqual<T>(T value1, T value2)
         }
     }
 
-    [Collection("NativeDumpTest.x86.Release.dmp")]
+    [Collection("NativeDumpTest.x86.Release.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class NativeDumpTest_x86_Release : NativeDumpTest
@@ -477,15 +486,27 @@ void AreEqual<T>(T value1, T value2)
         public NativeDumpTest_x86_Release(NativeDumpTest_x86_Release_dmp_Initialization initialization)
             : base(initialization)
         {
+            ReleaseDump = true;
         }
     }
 
-    [Collection("NativeDumpTest.VS2013.mdmp")]
+    [Collection("NativeDumpTest.x64.VS2013.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
-    public class NativeDumpTest_x86_VS2013 : NativeDumpTest
+    public class NativeDumpTest_x64_VS2013 : NativeDumpTest
     {
-        public NativeDumpTest_x86_VS2013(NativeDumpTest_VS2013_mdmp_Initialization initialization)
+        public NativeDumpTest_x64_VS2013(NativeDumpTest_x64_VS2013_mdmp_Initialization initialization)
+            : base(initialization)
+        {
+        }
+    }
+
+    [Collection("NativeDumpTest.x64.VS2015.mdmp")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class NativeDumpTest_x64_VS2015 : NativeDumpTest
+    {
+        public NativeDumpTest_x64_VS2015(NativeDumpTest_x64_VS2015_mdmp_Initialization initialization)
             : base(initialization)
         {
         }
@@ -497,17 +518,6 @@ void AreEqual<T>(T value1, T value2)
     public class NativeDumpTest_x86_gcc : NativeDumpTest
     {
         public NativeDumpTest_x86_gcc(NativeDumpTest_gcc_dmp_Initialization initialization)
-            : base(initialization)
-        {
-        }
-    }
-
-    [Collection("NativeDumpTest.x64.clang.mdmp")]
-    [Trait("x64", "true")]
-    [Trait("x86", "true")]
-    public class NativeDumpTest_x64_clang : NativeDumpTest
-    {
-        public NativeDumpTest_x64_clang(NativeDumpTest_x64_clang_Initialization initialization)
             : base(initialization)
         {
         }
@@ -532,6 +542,7 @@ void AreEqual<T>(T value1, T value2)
         public NativeDumpTest_x86_Linux_gcc(NativeDumpTest_linux_x86_gcc_Initialization initialization)
             : base(initialization)
         {
+            LinuxDump = true;
         }
     }
 
@@ -543,6 +554,7 @@ void AreEqual<T>(T value1, T value2)
         public NativeDumpTest_x64_Linux_gcc(NativeDumpTest_linux_x64_gcc_Initialization initialization)
             : base(initialization)
         {
+            LinuxDump = true;
         }
     }
 
@@ -554,6 +566,7 @@ void AreEqual<T>(T value1, T value2)
         public NativeDumpTest_x64_Linux_clang(NativeDumpTest_linux_x64_clang_Initialization initialization)
             : base(initialization, executeCodeGen: false)
         {
+            LinuxDump = true;
         }
     }
     #endregion

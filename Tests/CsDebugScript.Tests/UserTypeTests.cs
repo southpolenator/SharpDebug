@@ -5,7 +5,7 @@ using Xunit;
 
 namespace CsDebugScript.Tests
 {
-    [Collection("NativeDumpTest.x64.dmp")]
+    [Collection("NativeDumpTest.x64.mdmp")]
     [Trait("x64", "true")]
     [Trait("x86", "true")]
     public class UserTypeTests : DumpTestBase
