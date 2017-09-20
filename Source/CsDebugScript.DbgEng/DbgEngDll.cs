@@ -543,7 +543,7 @@ namespace CsDebugScript.Engine.Debuggers
                 contextSize = (uint)WindowsThreadContext.GetContextSize(process);
             }
 
-            Thread thread = new Thread(0, 0, Process.Current);
+            Thread thread = new Thread(uint.MaxValue, 0, Process.Current);
             IntPtr buffer = Marshal.AllocHGlobal((int)contextSize);
 
             try

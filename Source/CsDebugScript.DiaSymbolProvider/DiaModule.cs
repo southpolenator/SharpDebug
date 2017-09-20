@@ -675,12 +675,16 @@ namespace CsDebugScript.Engine.SymbolProviders
                     var type = globalScope.GetChild(string.Join("::", spaces.Take(spaces.Length - 1)));
 
                     if (type != null)
+                    {
                         globalVariable = type.GetChild(spaces.Last(), SymTagEnum.Data);
+                    }
                 }
             }
 
-            if (globalVariable == null)
+            if (globalVariable == null || globalVariable.relativeVirtualAddress == 0)
+            {
                 throw new Exception("Global variable not found " + globalVariableName);
+            }
 
             return globalVariable;
         }

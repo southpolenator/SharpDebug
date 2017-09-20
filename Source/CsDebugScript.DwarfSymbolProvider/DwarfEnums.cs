@@ -1,4 +1,6 @@
-﻿namespace CsDebugScript.DwarfSymbolProvider
+﻿using System;
+
+namespace CsDebugScript.DwarfSymbolProvider
 {
     /// <summary>
     /// DWARF symbol tag.
@@ -631,5 +633,108 @@
         GNU_args_size = 0x2e,
         GNU_negative_offset_extended = 0x2f,
         high_user = 0x3f,
+    }
+
+    /// <summary>
+    /// Encodings used in Exception handling frames stream.
+    /// </summary>
+    [Flags]
+    internal enum DwarfExceptionHandlingEncoding : byte
+    {
+        /// <summary>
+        /// An absolute pointer. The size is determined by whether this is a 32-bit or 64-bit address space, and will be 32 or 64 bits.
+        /// </summary>
+        AbsolutePointer = 0,
+
+        /// <summary>
+        /// The value is omitted.
+        /// </summary>
+        Omit = 0xff,
+
+        /// <summary>
+        /// The value is an unsigned LEB128.
+        /// </summary>
+        Uleb128 = 1,
+
+        /// <summary>
+        /// The value is stored as unsigned data with 2 bytes.
+        /// </summary>
+        UnsignedData2 = 2,
+
+        /// <summary>
+        /// The value is stored as unsigned data with 4 bytes.
+        /// </summary>
+        UnsignedData4 = 3,
+
+        /// <summary>
+        /// The value is stored as unsigned data with 8 bytes.
+        /// </summary>
+        UnsignedData8 = 4,
+
+        /// <summary>
+        /// A signed number. The size is determined by whether this is a 32-bit or 64-bit address space.
+        /// I don’t think this ever appears in a CIE or FDE in practice.
+        /// </summary>
+        Signed = 8,
+
+        /// <summary>
+        /// A signed LEB128. Not used in practice.
+        /// </summary>
+        Sleb128 = 9,
+
+        /// <summary>
+        /// The value is stored as signed data with 2 bytes. Not used in practice.
+        /// </summary>
+        SignedData2 = 0x0a,
+
+        /// <summary>
+        /// The value is stored as signed data with 4 bytes. Not used in practice.
+        /// </summary>
+        SignedData4 = 0x0b,
+
+        /// <summary>
+        /// The value is stored as signed data with 8 bytes. Not used in practice.
+        /// </summary>
+        SignedData8 = 0x0c,
+
+        /// <summary>
+        /// Lower part of encoding that is not used as flags and says how to encode value.
+        /// </summary>
+        Mask = 0x0f,
+
+        /// <summary>
+        /// Value is PC relative.
+        /// </summary>
+        PcRelative = 0x10,
+
+        /// <summary>
+        /// Value is text relative.
+        /// </summary>
+        TextRelative = 0x20,
+
+        /// <summary>
+        /// Value is data relative.
+        /// </summary>
+        DataRelative = 0x30,
+
+        /// <summary>
+        /// Value is relative to start of function.
+        /// </summary>
+        FunctionRelative = 0x40,
+
+        /// <summary>
+        /// Value is aligned: padding bytes are inserted as required to make value be naturally aligned.
+        /// </summary>
+        Aligned = 0x50,
+
+        /// <summary>
+        /// This is actually the address of the real value.
+        /// </summary>
+        Indirect = 0x80,
+
+        /// <summary>
+        /// Higher part of encoding that are modifiers.
+        /// </summary>
+        Modifiers = 0x70,
     }
 }

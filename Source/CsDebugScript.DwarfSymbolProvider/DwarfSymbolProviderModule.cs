@@ -234,11 +234,6 @@ namespace CsDebugScript.DwarfSymbolProvider
                                     childrenQueue.Enqueue(data.Children);
                                 }
                             }
-                            else
-                            {
-                                // TODO:
-                                throw new NotImplementedException();
-                            }
                         }
                     }
                 }
@@ -530,8 +525,11 @@ namespace CsDebugScript.DwarfSymbolProvider
                                     case 8:
                                         return BuiltinType.Float64;
                                     case 10:
+                                    case 12:
+                                    case 16:
                                         return BuiltinType.Float80;
                                 }
+                            case "short":
                             case "short int":
                             case "int":
                             case "long int":
@@ -550,6 +548,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                                     case 16:
                                         return BuiltinType.Int128;
                                 }
+                            case "unsigned short":
                             case "short unsigned int":
                             case "unsigned int":
                             case "long unsigned int":
@@ -1519,8 +1518,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Decodes location from the specified attribute value.
         /// </summary>
         /// <param name="value">The location attribute value.</param>
+        /// <param name="frameContext">Optional frame context used for resolving register values.</param>
         /// <param name="frameBase">The frame base location.</param>
-        private static Location DecodeLocationStatic(DwarfAttributeValue value, Location? frameBase = null)
+        private Location DecodeLocationStatic(DwarfAttributeValue value, ThreadContext frameContext = null, Location? frameBase = null)
         {
             if (value.Type == DwarfAttributeValueType.Constant)
             {
@@ -1679,7 +1679,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                         case DwarfOperation.breg29:
                         case DwarfOperation.breg30:
                         case DwarfOperation.breg31:
-                            stack.Push(Location.RegisterRelative(operation - DwarfOperation.reg0, (int)reader.SLEB128()));
+                            stack.Push(Location.RegisterRelative(operation - DwarfOperation.breg0, (int)reader.SLEB128()));
                             break;
                         case DwarfOperation.bregx:
                             stack.Push(Location.RegisterRelative((int)reader.LEB128(), (int)reader.SLEB128()));
@@ -1708,6 +1708,20 @@ namespace CsDebugScript.DwarfSymbolProvider
                                 return Location.Invalid;
                             }
                             break;
+                        case DwarfOperation.deref:
+                            {
+                                if (frameContext == null)
+                                {
+                                    return Location.Invalid;
+                                }
+
+                                ulong address = ResolveLocation(stack.Pop(), frameContext);
+                                MemoryBuffer buffer = Debugger.ReadMemory(Module.Process, address, Module.PointerSize);
+
+                                address = UserType.ReadPointer(buffer, 0, (int)Module.PointerSize);
+                                stack.Push(Location.Absolute(address));
+                            }
+                            break;
                         default:
                             throw new Exception($"Unsupported DwarfOperation: {operation}");
                     }
@@ -1724,10 +1738,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Decodes location from the specified attribute value. Also applies code segment offset for absolute address.
         /// </summary>
         /// <param name="value">The location attribute value.</param>
+        /// <param name="frameContext">Optional frame context used for resolving register values.</param>
         /// <param name="frameBase">The frame base location.</param>
-        private Location DecodeLocation(DwarfAttributeValue value, Location? frameBase = null)
+        private Location DecodeLocation(DwarfAttributeValue value, ThreadContext frameContext = null, Location? frameBase = null)
         {
-            Location location = DecodeLocationStatic(value, frameBase);
+            Location location = DecodeLocationStatic(value, frameContext, frameBase);
 
             if (location.Type == LocationType.AbsoluteAddress && location.Address > codeSegmentOffset)
             {
@@ -1740,9 +1755,10 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Resolves the frame base location.
         /// </summary>
         /// <param name="frameBaseAttribute">The frame base attribute value.</param>
-        private Location ResolveFrameBaseLocation(DwarfAttributeValue frameBaseAttribute)
+        /// <param name="frameContext">The frame context used for resolving register values.</param>
+        private Location ResolveFrameBaseLocation(DwarfAttributeValue frameBaseAttribute, ThreadContext frameContext)
         {
-            Location frameBase = DecodeLocation(frameBaseAttribute);
+            Location frameBase = DecodeLocation(frameBaseAttribute, frameContext);
 
             if (frameBase.Type == LocationType.AbsoluteAddress)
             {
@@ -1759,11 +1775,12 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Processes the canonical frame address instructions.
         /// </summary>
         /// <param name="entry">The common information entry.</param>
+        /// <param name="frameContext">The frame context used for resolving register values.</param>
         /// <param name="instructions">The instructions.</param>
         /// <param name="currentAddress">The current address.</param>
         /// <param name="cfaLocation">The canonical frame address location.</param>
         /// <param name="stopBeforeRestore">if set to <c>true</c> stops before restore instruction.</param>
-        private void ProcessCanonicalFrameAddressInstructions(DwarfCommonInformationEntry entry, byte[] instructions, ref ulong currentAddress, ref Location cfaLocation, bool stopBeforeRestore = false)
+        private void ProcessCanonicalFrameAddressInstructions(DwarfCommonInformationEntry entry, ThreadContext frameContext, byte[] instructions, ref ulong currentAddress, ref Location cfaLocation, bool stopBeforeRestore = false)
         {
             using (DwarfMemoryReader data = new DwarfMemoryReader(instructions))
             {
@@ -1821,11 +1838,11 @@ namespace CsDebugScript.DwarfSymbolProvider
                                     cfaLocation.Offset = (int)data.SLEB128() * (int)entry.DataAlignmentFactor;
                                     break;
                                 case DwarfCanonicalFrameAddressInstruction.def_cfa_expression:
-                                    cfaLocation = DecodeLocation(new DwarfAttributeValue()
+                                    cfaLocation = DecodeLocationStatic(new DwarfAttributeValue()
                                     {
                                         Type = DwarfAttributeValueType.ExpressionLocation,
                                         Value = data.ReadBlock(data.LEB128()),
-                                    });
+                                    }, frameContext);
                                     break;
                                 case DwarfCanonicalFrameAddressInstruction.undefined:
                                 case DwarfCanonicalFrameAddressInstruction.same_value:
@@ -1848,11 +1865,11 @@ namespace CsDebugScript.DwarfSymbolProvider
                                 case DwarfCanonicalFrameAddressInstruction.expression:
                                 case DwarfCanonicalFrameAddressInstruction.val_expression:
                                     dummyLocation.Register = (int)data.LEB128();
-                                    dummyLocation = DecodeLocation(new DwarfAttributeValue()
+                                    dummyLocation = DecodeLocationStatic(new DwarfAttributeValue()
                                     {
                                         Type = DwarfAttributeValueType.Block,
                                         Value = data.ReadBlock(data.LEB128()),
-                                    });
+                                    }, frameContext);
                                     break;
                                 case DwarfCanonicalFrameAddressInstruction.restore_extended:
                                     if (stopBeforeRestore)
@@ -1884,7 +1901,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// </summary>
         /// <param name="startAddressValue">The function start address value.</param>
         /// <param name="endAddressValue">The function end address value.</param>
-        private Location ResolveCanonicalFrameAddress(DwarfAttributeValue startAddressValue, DwarfAttributeValue endAddressValue)
+        /// <param name="frameContext">The frame context used for resolving register values.</param>
+        private Location ResolveCanonicalFrameAddress(DwarfAttributeValue startAddressValue, DwarfAttributeValue endAddressValue, ThreadContext frameContext)
         {
             ulong startAddress = startAddressValue.Address + codeSegmentOffset;
             ulong endAddress = endAddressValue.Type == DwarfAttributeValueType.Address ? endAddressValue.Address + codeSegmentOffset : startAddress + endAddressValue.Constant;
@@ -1901,8 +1919,8 @@ namespace CsDebugScript.DwarfSymbolProvider
                     Location result = Location.CanonicalFrameAddress;
                     ulong location = startAddress;
 
-                    ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, description.CommonInformationEntry.InitialInstructions, ref location, ref result);
-                    ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, description.Instructions, ref location, ref result, stopBeforeRestore: true);
+                    ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, frameContext, description.CommonInformationEntry.InitialInstructions, ref location, ref result);
+                    ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, frameContext, description.Instructions, ref location, ref result, stopBeforeRestore: true);
                     return result;
                 }
                 else
@@ -1915,30 +1933,19 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Resolves the symbol address.
+        /// Resolves location into memory address based on specified frame context.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="function">The function.</param>
-        /// <param name="symbol">The symbol.</param>
-        /// <param name="frameContext">The frame context.</param>
-        private ulong ResolveAddress(Process process, DwarfSymbol function, DwarfSymbol symbol, ThreadContext frameContext)
+        /// <param name="location">Location to be resolved.</param>
+        /// <param name="frameContext">The frame context used for resolving register values.</param>
+        /// <returns>Resolved memory address.</returns>
+        private ulong ResolveLocation(Location location, ThreadContext frameContext)
         {
-            Location frameBase = ResolveFrameBaseLocation(function.Attributes[DwarfAttribute.FrameBase]);
-            Location canonicalFrameAddress = ResolveCanonicalFrameAddress(function.Attributes[DwarfAttribute.LowPc], function.Attributes[DwarfAttribute.HighPc]);
-            Location location = DecodeLocation(symbol.Attributes[DwarfAttribute.Location], frameBase);
-
             if (location.Type == LocationType.AbsoluteAddress)
             {
                 return location.Address;
             }
             else if (location.Type == LocationType.RegisterRelative)
             {
-                if (location.Register == Location.CanonicalFrameAddress.Register)
-                {
-                    location.Register = canonicalFrameAddress.Register;
-                    location.Offset += canonicalFrameAddress.Offset;
-                }
-
                 ulong address;
 
                 if (Is64bit)
@@ -1977,6 +1984,27 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             throw new Exception("Unsupported location");
+        }
+
+        /// <summary>
+        /// Resolves the symbol address.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="function">The function.</param>
+        /// <param name="symbol">The symbol.</param>
+        /// <param name="frameContext">The frame context.</param>
+        private ulong ResolveAddress(Process process, DwarfSymbol function, DwarfSymbol symbol, ThreadContext frameContext)
+        {
+            Location frameBase = ResolveFrameBaseLocation(function.Attributes[DwarfAttribute.FrameBase], frameContext);
+            Location canonicalFrameAddress = ResolveCanonicalFrameAddress(function.Attributes[DwarfAttribute.LowPc], function.Attributes[DwarfAttribute.HighPc], frameContext);
+            Location location = DecodeLocation(symbol.Attributes[DwarfAttribute.Location], frameContext, frameBase);
+
+            if (location.Type == LocationType.RegisterRelative && location.Register == Location.CanonicalFrameAddress.Register)
+            {
+                return ResolveLocation(canonicalFrameAddress, frameContext) + (ulong)location.Offset;
+            }
+
+            return ResolveLocation(location, frameContext);
         }
 
         /// <summary>

@@ -5,6 +5,7 @@ using System.Linq;
 using Xunit;
 using DbgEng;
 using CsDebugScript.Engine.Debuggers;
+using System.IO;
 
 namespace CsDebugScript.Tests
 {
@@ -21,7 +22,7 @@ namespace CsDebugScript.Tests
         private const string TestProcessPathx64 = "NativeDumpTest.x64.exe";
         private const string TestProcessPathx86 = "NativeDumpTest.x86.exe";
 
-        private const string DefaultSymbolPath = @".\";
+        private const string DefaultSymbolPath = DumpInitialization.DefaultDumpPath;
 
         /// <summary>
         /// Test case id to be run.
@@ -32,7 +33,7 @@ namespace CsDebugScript.Tests
         {
             get
             {
-                return Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86;
+                return Path.Combine(DumpInitialization.DefaultDumpPath, Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86);
             }
         }
 

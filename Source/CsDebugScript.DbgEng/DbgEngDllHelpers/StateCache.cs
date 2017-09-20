@@ -154,7 +154,10 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
             CacheCurrentThread();
             switchedThread[thread.Process] = thread;
             SwitchProcess(thread.Process);
-            dbgEngDll.SystemObjects.SetCurrentThreadId(thread.Id);
+            if (thread.Id != uint.MaxValue)
+            {
+                dbgEngDll.SystemObjects.SetCurrentThreadId(thread.Id);
+            }
         }
 
         /// <summary>
