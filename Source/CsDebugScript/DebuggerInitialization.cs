@@ -20,9 +20,8 @@ namespace CsDebugScript
             try
             {
                 IDebugClient debugClient = DebugClient.OpenDumpFile(dumpPath, string.Join(";", symbolPaths));
-                DbgEngDll.InitializeContext(debugClient);
-                Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider.DwarfSymbolProvider());
-                Context.ClrProvider = new CLR.ClrMdProvider();
+
+                InitializeDbgEng(debugClient);
             }
             catch
             {
@@ -30,6 +29,35 @@ namespace CsDebugScript
 
                 Context.InitializeDebugger(engine, engine.CreateDefaultSymbolProvider());
             }
+        }
+
+        /// <summary>
+        /// Attaches debugger to the already running specified process.
+        /// </summary>
+        /// <param name="processId">The process identifier.</param>
+        /// <param name="attachFlags">The attaching flags.</param>
+        /// <param name="symbolPaths">Array of paths where debugger will look for symbols.</param>
+        public static void AttachToProcess(uint processId, DebugAttach attachFlags = DebugAttach.Noninvasive, params string[] symbolPaths)
+        {
+            IDebugClient debugClient = DebugClient.DebugCreate();
+            IDebugSymbols5 symbols = (IDebugSymbols5)debugClient;
+            IDebugControl7 control = (IDebugControl7)debugClient;
+
+            symbols.SetSymbolPathWide(string.Join(";", symbolPaths));
+            debugClient.AttachProcess(0, processId, attachFlags);
+            control.WaitForEvent(0, uint.MaxValue);
+            InitializeDbgEng(debugClient);
+        }
+
+        /// <summary>
+        /// Initializes debugger as DbgEng from the specified debug client interface.
+        /// </summary>
+        /// <param name="debugClient">The debug client interface that will initialize debugger.</param>
+        private static void InitializeDbgEng(IDebugClient debugClient)
+        {
+            DbgEngDll.InitializeContext(debugClient);
+            Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider.DwarfSymbolProvider());
+            Context.ClrProvider = new CLR.ClrMdProvider();
         }
     }
 }
