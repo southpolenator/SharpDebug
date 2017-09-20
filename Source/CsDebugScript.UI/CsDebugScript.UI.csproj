@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
-    <Description>Provides scripting ability to CsDebugScript.Engine and exposes WPF controls for easier scripting, autocompletion, C# REPL...</Description>
+    <Description>Exposes WPF controls for easier scripting, autocompletion, C# REPL...</Description>
   </PropertyGroup>
 
   <ItemGroup>
