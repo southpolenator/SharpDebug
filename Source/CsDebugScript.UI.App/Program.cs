@@ -1,7 +1,4 @@
 ﻿using CommandLine;
-using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
-using DbgEng;
 
 namespace CsDebugScript.UI.App
 {
@@ -28,20 +25,7 @@ namespace CsDebugScript.UI.App
                 return;
             }
 
-            try
-            {
-                IDebugClient debugClient = DebugClient.OpenDumpFile(options.DumpPath, options.SymbolPath);
-                DbgEngDll.InitializeContext(debugClient);
-                Context.InitializeDebugger(Context.Debugger, new DwarfSymbolProvider.DwarfSymbolProvider());
-                Context.ClrProvider = new CLR.ClrMdProvider();
-            }
-            catch
-            {
-                IDebuggerEngine engine = new DwarfSymbolProvider.ElfCoreDumpDebuggingEngine(options.DumpPath);
-
-                Context.InitializeDebugger(engine, engine.CreateDefaultSymbolProvider());
-            }
-
+            DebuggerInitialization.OpenDump(options.DumpPath, options.SymbolPath);
             InteractiveWindow.ShowModalWindow();
         }
     }

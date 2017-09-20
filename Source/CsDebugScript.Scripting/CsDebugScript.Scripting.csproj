@@ -4,6 +4,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
     <RootNamespace>CsDebugScript</RootNamespace>
+    <Description>Provides scripting ability to CsDebugScript.Engine: executing scripts, interactive execution with REPL.</Description>
   </PropertyGroup>
 
   <ItemGroup>
