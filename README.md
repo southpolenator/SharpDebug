@@ -14,14 +14,13 @@ If you want newer build than what is available in Releases page or as nuget pack
 
 # Easy start for using engine
 * Create a new .NET project (you can use Console Application)
-* Add NuGet package [CsDebugScript.Engine](https://www.nuget.org/packages/CsDebugScript.Engine)
+* Add NuGet package [CsDebugScript](https://www.nuget.org/packages/CsDebugScript)
 * Start using it:
 
 ```
 using CsDebugScript;
 
-var debugClient = DbgEngManaged.DebugClient.OpenDumpFile("path_to_dump_file", "symbol_path;srv*");
-CsDebugScript.Engine.Context.Initialize(debugClient);
+DebuggerInitialization.OpenDump("path_to_dump_file", "symbol_path;srv*");
 // After this line, you can execute any code that can be executed in the script. For example:
 foreach (Module module in Process.Current.Modules)
     Console.WriteLine(module.Name);
