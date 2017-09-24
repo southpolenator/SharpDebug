@@ -27,7 +27,7 @@ namespace CsDebugScript
             {
                 IDebuggerEngine engine = new ElfCoreDumpDebuggingEngine(dumpPath);
 
-                Context.InitializeDebugger(engine, engine.CreateDefaultSymbolProvider());
+                Context.InitializeDebugger(engine);
             }
         }
 

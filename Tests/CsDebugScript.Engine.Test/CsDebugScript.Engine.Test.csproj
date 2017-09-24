@@ -15,6 +15,7 @@
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DwarfSymbolProvider\CsDebugScript.DwarfSymbolProvider.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />
+    <ProjectReference Include="..\..\Source\CsDebugScript\CsDebugScript.csproj" />
   </ItemGroup>
 
   <ItemGroup>
