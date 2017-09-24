@@ -14,14 +14,13 @@ If you want newer build than what is available in Releases page or as nuget pack
 
 # Easy start for using engine
 * Create a new .NET project (you can use Console Application)
-* Add NuGet package [CsDebugScript.Engine](https://www.nuget.org/packages/CsDebugScript.Engine)
+* Add NuGet package [CsDebugScript](https://www.nuget.org/packages/CsDebugScript)
 * Start using it:
 
 ```
 using CsDebugScript;
 
-var debugClient = DbgEngManaged.DebugClient.OpenDumpFile("path_to_dump_file", "symbol_path;srv*");
-CsDebugScript.Engine.Context.Initialize(debugClient);
+DebuggerInitialization.OpenDump("path_to_dump_file", "symbol_path;srv*");
 // After this line, you can execute any code that can be executed in the script. For example:
 foreach (Module module in Process.Current.Modules)
     Console.WriteLine(module.Name);
@@ -32,9 +31,9 @@ Take a look a [Wiki page](https://github.com/southpolenator/WinDbgCs/wiki) to ge
 Or jump to [WinDbg interactive mode screenshots](https://github.com/southpolenator/WinDbgCs/wiki/WinDbg-interactive-mode-screenshots)...
 
 # Code reference
-Now that you are hooked up, cou can take a look at [code reference](http://southpolenator.github.io/WinDbgCsReference/).
+Now that you are hooked up, you can take a look at [code reference](http://southpolenator.github.io/WinDbgCsReference/).
 
 # Prerequisites for building the project
-0. Visual Studio 2015
-1. Windows SDK 10: https://dev.windows.com/en-US/downloads/windows-10-sdk
+0. [.NET core 2.0](https://www.microsoft.com/net/download/core)
+1. [Visual Studio Community 2017](https://www.visualstudio.com/downloads/) (for building WinDbg extension, VisualStudio extension, documentation)
 2. Sandcastle (for documentation reference generation): https://github.com/EWSoftware/SHFB/releases
