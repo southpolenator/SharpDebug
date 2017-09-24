@@ -158,7 +158,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
 
                 FixSymbolSearchName(ref name);
 
-                symbol = GetSymbol(EngineModuleProvider.GetTypeId(EngineModule, name));
+                symbol = GetSymbol(EngineModuleProvider.GetTypeId(name));
                 for (int i = 0; i < pointer; i++)
                 {
                     symbol = symbol.PointerType;

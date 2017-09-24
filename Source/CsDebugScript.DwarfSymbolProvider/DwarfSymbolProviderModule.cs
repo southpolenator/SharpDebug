@@ -177,10 +177,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the name of the enumeration value.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="enumTypeId">The enumeration type identifier.</param>
         /// <param name="enumValue">The enumeration value.</param>
-        public string GetEnumName(Module module, uint enumTypeId, ulong enumValue)
+        public string GetEnumName(uint enumTypeId, ulong enumValue)
         {
             DwarfSymbol enumType = GetType(enumTypeId);
 
@@ -199,10 +198,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="frame">The frame.</param>
-        /// <param name="module">The module.</param>
         /// <param name="relativeAddress">The relative address.</param>
         /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
-        public VariableCollection GetFrameLocals(StackFrame frame, Module module, uint relativeAddress, bool arguments)
+        public VariableCollection GetFrameLocals(StackFrame frame, uint relativeAddress, bool arguments)
         {
             ulong displacement;
             DwarfSymbol function = FindFunction(relativeAddress, out displacement);
@@ -218,8 +216,8 @@ namespace CsDebugScript.DwarfSymbolProvider
                         {
                             DwarfSymbol parameterType = GetType(parameter);
                             uint parameterTypeId = GetTypeId(parameterType);
-                            CodeType codeType = module.TypesById[parameterTypeId];
-                            ulong address = ResolveAddress(module.Process, function, parameter, frame.FrameContext);
+                            CodeType codeType = Module.TypesById[parameterTypeId];
+                            ulong address = ResolveAddress(Module.Process, function, parameter, frame.FrameContext);
                             string variableName = parameter.Name;
 
                             variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
@@ -241,8 +239,8 @@ namespace CsDebugScript.DwarfSymbolProvider
                             {
                                 DwarfSymbol parameterType = GetType(data);
                                 uint parameterTypeId = GetTypeId(parameterType);
-                                CodeType codeType = module.TypesById[parameterTypeId];
-                                ulong address = ResolveAddress(module.Process, function, data, frame.FrameContext);
+                                CodeType codeType = Module.TypesById[parameterTypeId];
+                                ulong address = ResolveAddress(Module.Process, function, data, frame.FrameContext);
                                 string variableName = data.Name;
 
                                 variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
@@ -269,12 +267,10 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the name of the function for the specified stack frame.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="processAddress">The process address.</param>
         /// <param name="address">The address.</param>
         /// <param name="functionName">Name of the function.</param>
         /// <param name="displacement">The displacement.</param>
-        public void GetFunctionNameAndDisplacement(Process process, ulong processAddress, uint address, out string functionName, out ulong displacement)
+        public void GetFunctionNameAndDisplacement(uint address, out string functionName, out ulong displacement)
         {
             DwarfSymbol function = FindFunction(address, out displacement);
 
@@ -284,22 +280,20 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the global variable address.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="globalVariableName">Name of the global variable.</param>
-        public ulong GetGlobalVariableAddress(Module module, string globalVariableName)
+        public ulong GetGlobalVariableAddress(string globalVariableName)
         {
             DwarfSymbol globalVariable = FindGlobalVariable(globalVariableName);
             Location location = DecodeLocation(globalVariable.Attributes[DwarfAttribute.Location]);
 
-            return location.Address + module.Address;
+            return location.Address + Module.Address;
         }
 
         /// <summary>
         /// Gets the global variable type identifier.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="globalVariableName">Name of the global variable.</param>
-        public uint GetGlobalVariableTypeId(Module module, string globalVariableName)
+        public uint GetGlobalVariableTypeId(string globalVariableName)
         {
             DwarfSymbol globalVariable = FindGlobalVariable(globalVariableName);
 
@@ -309,15 +303,13 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the runtime code type and offset to original code type.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="vtableAddress">The vtable address.</param>
-        /// <param name="distance">The distance within the module.</param>
-        public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance)
+        /// <param name="vtableAddress">The vtable address within the module.</param>
+        public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(uint vtableAddress)
         {
             // Try to locate address in public symbols and see if it is virtual table
             CodeType codeType;
             PublicSymbol publicSymbol;
-            int publicSymbolIndex = publicSymbolsAddresses.BinarySearch(distance);
+            int publicSymbolIndex = publicSymbolsAddresses.BinarySearch(vtableAddress);
 
             if (publicSymbolIndex < 0)
             {
@@ -327,7 +319,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 publicSymbolIndex = publicSymbolsAddresses.Count - 1;
             }
-            if (publicSymbolsAddresses[publicSymbolIndex] > distance && publicSymbolIndex > 0)
+            if (publicSymbolsAddresses[publicSymbolIndex] > vtableAddress && publicSymbolIndex > 0)
             {
                 publicSymbolIndex--;
             }
@@ -346,8 +338,8 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             // We failed to find it in public symbols, try to see if function pointer is stored at vtable address
-            MemoryBuffer memoryBuffer =  Debugger.ReadMemory(process, vtableAddress, process.GetPointerSize());
-            ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)process.GetPointerSize());
+            MemoryBuffer memoryBuffer =  Debugger.ReadMemory(Module.Process, vtableAddress, Module.Process.GetPointerSize());
+            ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)Module.Process.GetPointerSize());
             ulong displacement;
             DwarfSymbol firstFunction = FindFunction(firstFunctionAddress - Module.Address, out displacement);
             DwarfSymbol implicitArgument = firstFunction.Attributes[DwarfAttribute.ObjectPointer].Reference;
@@ -366,13 +358,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the source file name and line for the specified stack frame.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="processAddress">The process address.</param>
         /// <param name="address">The address.</param>
         /// <param name="sourceFileName">Name of the source file.</param>
         /// <param name="sourceFileLine">The source file line.</param>
         /// <param name="displacement">The displacement.</param>
-        public void GetSourceFileNameAndLine(Process process, ulong processAddress, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
+        public void GetSourceFileNameAndLine(uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
             int index = lineInformationAddressesCache.Value.BinarySearch(address);
 
@@ -402,9 +392,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the names of all fields of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string[] GetTypeAllFieldNames(Module module, uint typeId)
+        public string[] GetTypeAllFieldNames(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
             List<string> names = new List<string>();
@@ -455,10 +444,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the field type id and offset of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
-        public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(Module module, uint typeId, string fieldName)
+        public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(uint typeId, string fieldName)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -515,9 +503,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the type of the type basic.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public BuiltinType GetTypeBuiltinType(Module module, uint typeId)
+        public BuiltinType GetTypeBuiltinType(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -640,9 +627,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the name of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string GetTypeName(Module module, uint typeId)
+        public string GetTypeName(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -652,9 +638,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the type pointer to type identifier.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public uint GetTypePointerToTypeId(Module module, uint typeId)
+        public uint GetTypePointerToTypeId(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
             DwarfSymbol pointerType;
@@ -680,9 +665,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the size of the type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public uint GetTypeSize(Module module, uint typeId)
+        public uint GetTypeSize(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -690,7 +674,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 if (type.Tag == DwarfTag.SubroutineType)
                 {
-                    return module.PointerSize;
+                    return Module.PointerSize;
                 }
                 else if (type.Tag == DwarfTag.ArrayType)
                 {
@@ -704,7 +688,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                         {
                             count = subrangetype.GetConstantAttribute(DwarfAttribute.UpperBound) + 1;
                         }
-                        return (uint)count * GetTypeSize(module, GetTypeId(GetType(type)));
+                        return (uint)count * GetTypeSize(GetTypeId(GetType(type)));
                     }
                 }
                 else
@@ -720,9 +704,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the code type tag of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public CodeTypeTag GetTypeTag(Module module, uint typeId)
+        public CodeTypeTag GetTypeTag(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -753,13 +736,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Determines whether the specified process address is function type public symbol.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="processAddress">The process address.</param>
         /// <param name="address">The address.</param>
         /// <returns>
         ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
         /// </returns>
-        public bool IsFunctionAddressPublicSymbol(Process process, ulong processAddress, uint address)
+        public bool IsFunctionAddressPublicSymbol(uint address)
         {
             // TODO:
             return false;
@@ -778,10 +759,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the symbol name by address.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="address">The address.</param>
-        /// <param name="distance">The distance within the module.</param>
-        public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address, uint distance)
+        /// <param name="address">The address within the module.</param>
+        public Tuple<string, ulong> GetSymbolNameByAddress(uint address)
         {
             throw new NotImplementedException();
         }
@@ -789,10 +768,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the type's base class type and offset.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="className">Name of the class.</param>
-        public Tuple<uint, int> GetTypeBaseClass(Module module, uint typeId, string className)
+        public Tuple<uint, int> GetTypeBaseClass(uint typeId, string className)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -815,9 +793,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the type's direct base classes type and offset.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId)
+        public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
             Dictionary<string, Tuple<uint, int>> result = new Dictionary<string, Tuple<uint, int>>();
@@ -841,9 +818,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the names of fields of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string[] GetTypeFieldNames(Module module, uint typeId)
+        public string[] GetTypeFieldNames(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
             List<string> names = new List<string>();
@@ -890,10 +866,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the field type id and offset of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
-        public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
+        public Tuple<uint, int> GetTypeFieldTypeAndOffset(uint typeId, string fieldName)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -944,9 +919,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the type element type identifier.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public uint GetTypeElementTypeId(Module module, uint typeId)
+        public uint GetTypeElementTypeId(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
 
@@ -956,9 +930,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the type identifier.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeName">Name of the type.</param>
-        public uint GetTypeId(Module module, string typeName)
+        public uint GetTypeId(string typeName)
         {
             if (typeName.StartsWith("const "))
             {

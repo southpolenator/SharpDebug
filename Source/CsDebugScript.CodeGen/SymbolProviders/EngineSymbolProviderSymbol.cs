@@ -19,17 +19,17 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             : base(module)
         {
             Id = typeId;
-            Tag = EngineModuleProvider.GetTypeTag(EngineModule, Id);
-            BasicType = ConvertToBasicType(EngineModuleProvider.GetTypeBuiltinType(EngineModule, Id));
+            Tag = EngineModuleProvider.GetTypeTag(Id);
+            BasicType = ConvertToBasicType(EngineModuleProvider.GetTypeBuiltinType(Id));
             if (Tag != CodeTypeTag.ModuleGlobals)
             {
-                Name = EngineModuleProvider.GetTypeName(EngineModule, Id);
+                Name = EngineModuleProvider.GetTypeName(Id);
             }
             else
             {
                 Name = "";
             }
-            ulong size = EngineModuleProvider.GetTypeSize(EngineModule, Id);
+            ulong size = EngineModuleProvider.GetTypeSize(Id);
 
             if (size > int.MaxValue)
             {
@@ -98,7 +98,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override IEnumerable<Symbol> GetBaseClasses()
         {
-            foreach (Tuple<uint, int> baseClass in EngineModuleProvider.GetTypeDirectBaseClasses(EngineModule, Id).Values)
+            foreach (Tuple<uint, int> baseClass in EngineModuleProvider.GetTypeDirectBaseClasses(Id).Values)
             {
                 Symbol baseClassTypeSymbol = Module.GetSymbol(baseClass.Item1);
                 Symbol baseClassSymbol = new EngineSymbolProviderSymbol(Module, baseClass.Item1, baseClass.Item2, CodeTypeTag.BaseClass);
@@ -113,7 +113,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override Symbol GetElementType()
         {
-            uint elementTypeId = EngineModuleProvider.GetTypeElementTypeId(EngineModule, Id);
+            uint elementTypeId = EngineModuleProvider.GetTypeElementTypeId(Id);
 
             return Module.GetSymbol(elementTypeId);
         }
@@ -123,7 +123,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override Symbol GetPointerType()
         {
-            uint pointerTypeId = EngineModuleProvider.GetTypePointerToTypeId(EngineModule, Id);
+            uint pointerTypeId = EngineModuleProvider.GetTypePointerToTypeId(Id);
 
             return Module.GetSymbol(pointerTypeId);
         }
@@ -134,9 +134,9 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         protected override IEnumerable<SymbolField> GetFields()
         {
             // TODO: Static fields are missing
-            foreach (string fieldName in EngineModuleProvider.GetTypeFieldNames(EngineModule, Id))
+            foreach (string fieldName in EngineModuleProvider.GetTypeFieldNames(Id))
             {
-                Tuple<uint, int> fieldTypeAndOffset = EngineModuleProvider.GetTypeFieldTypeAndOffset(EngineModule, Id, fieldName);
+                Tuple<uint, int> fieldTypeAndOffset = EngineModuleProvider.GetTypeFieldTypeAndOffset(Id, fieldName);
                 Symbol fieldType = Module.GetSymbol(fieldTypeAndOffset.Item1);
 
                 yield return new EngineSymbolProviderSymbolField(this, fieldName, fieldType, fieldTypeAndOffset.Item2);
