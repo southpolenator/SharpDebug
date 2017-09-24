@@ -170,10 +170,12 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Gets the thread stack trace.
         /// </summary>
         /// <param name="threadIndex">Index of the thread.</param>
+        /// <param name="process">Process being debugged.</param>
+        /// <param name="symbolProvider">The symbol provider.</param>
         /// <returns>Array of tuples of instruction offset, stack offset and frame offset.</returns>
-        public Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex)
+        public Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex, Process process, DwarfSymbolProvider symbolProvider)
         {
-            return instance.GetThreadStackTrace(threadIndex, DumpFileMemoryReader);
+            return instance.GetThreadStackTrace(threadIndex, DumpFileMemoryReader, process, symbolProvider);
         }
 
         /// <summary>
@@ -292,8 +294,10 @@ namespace CsDebugScript.DwarfSymbolProvider
             /// </summary>
             /// <param name="threadIndex">Index of the thread.</param>
             /// <param name="dumpFileMemoryReader">The dump file memory reader.</param>
+            /// <param name="process">Process being debugged.</param>
+            /// <param name="symbolProvider">The symbol provider.</param>
             /// <returns>Array of tuples of instruction offset, stack offset and frame offset.</returns>
-            Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex, DumpFileMemoryReader dumpFileMemoryReader);
+            Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex, DumpFileMemoryReader dumpFileMemoryReader, Process process, DwarfSymbolProvider symbolProvider);
         }
 
         /// <summary>
@@ -376,8 +380,10 @@ namespace CsDebugScript.DwarfSymbolProvider
             /// </summary>
             /// <param name="threadIndex">Index of the thread.</param>
             /// <param name="dumpFileMemoryReader">The dump file memory reader.</param>
+            /// <param name="process">Process being debugged.</param>
+            /// <param name="symbolProvider">The symbol provider.</param>
             /// <returns>Array of tuples of instruction offset, stack offset and frame offset.</returns>
-            public Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex, DumpFileMemoryReader dumpFileMemoryReader)
+            public Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex, DumpFileMemoryReader dumpFileMemoryReader, Process process, DwarfSymbolProvider symbolProvider)
             {
                 const int pointerSize = 4;
                 elf_prstatus prstatus = threads[threadIndex];
@@ -391,7 +397,26 @@ namespace CsDebugScript.DwarfSymbolProvider
                 {
                     result.Add(Tuple.Create(ip, bp, bp));
 
-                    MemoryBuffer buffer = dumpFileMemoryReader.ReadMemory(bp, pointerSize * 2);
+                    ulong savedLocationForRegisters = bp;
+                    Module module = process.GetModuleByInnerAddress(ip);
+
+                    if (module != null)
+                    {
+                        DwarfSymbolProviderModule symbolProviderModule = symbolProvider.GetSymbolProviderModule(module) as DwarfSymbolProviderModule;
+
+                        if (symbolProviderModule != null)
+                        {
+                            ThreadContext frameContext = new ThreadContext(ip, bp, bp, null);
+                            ulong canonicalFrameAddress = symbolProviderModule.GetFunctionCanonicalFrameAddress(process, ip, frameContext);
+
+                            if (canonicalFrameAddress != 0)
+                            {
+                                savedLocationForRegisters = canonicalFrameAddress - pointerSize * 2;
+                            }
+                        }
+                    }
+
+                    MemoryBuffer buffer = dumpFileMemoryReader.ReadMemory(savedLocationForRegisters, pointerSize * 2);
                     bp = UserType.ReadPointer(buffer, 0, pointerSize);
                     ip = UserType.ReadPointer(buffer, pointerSize, pointerSize);
                 }
@@ -673,8 +698,10 @@ namespace CsDebugScript.DwarfSymbolProvider
             /// </summary>
             /// <param name="threadIndex">Index of the thread.</param>
             /// <param name="dumpFileMemoryReader">The dump file memory reader.</param>
+            /// <param name="process">Process being debugged.</param>
+            /// <param name="symbolProvider">The symbol provider.</param>
             /// <returns>Array of tuples of instruction offset, stack offset and frame offset.</returns>
-            public Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex, DumpFileMemoryReader dumpFileMemoryReader)
+            public Tuple<ulong, ulong, ulong>[] GetThreadStackTrace(int threadIndex, DumpFileMemoryReader dumpFileMemoryReader, Process process, DwarfSymbolProvider symbolProvider)
             {
                 const int pointerSize = 8;
                 elf_prstatus prstatus = threads[threadIndex];
@@ -688,7 +715,26 @@ namespace CsDebugScript.DwarfSymbolProvider
                 {
                     result.Add(Tuple.Create(ip, bp, bp));
 
-                    MemoryBuffer buffer = dumpFileMemoryReader.ReadMemory(bp, pointerSize * 2);
+                    ulong savedLocationForRegisters = bp;
+                    Module module = process.GetModuleByInnerAddress(ip);
+
+                    if (module != null)
+                    {
+                        DwarfSymbolProviderModule symbolProviderModule = symbolProvider.GetSymbolProviderModule(module) as DwarfSymbolProviderModule;
+
+                        if (symbolProviderModule != null)
+                        {
+                            ThreadContext frameContext = new ThreadContext(ip, bp, bp, null);
+                            ulong canonicalFrameAddress = symbolProviderModule.GetFunctionCanonicalFrameAddress(process, ip, frameContext);
+
+                            if (canonicalFrameAddress != 0)
+                            {
+                                savedLocationForRegisters = canonicalFrameAddress - pointerSize * 2;
+                            }
+                        }
+                    }
+
+                    MemoryBuffer buffer = dumpFileMemoryReader.ReadMemory(savedLocationForRegisters, pointerSize * 2);
                     bp = UserType.ReadPointer(buffer, 0, pointerSize);
                     ip = UserType.ReadPointer(buffer, pointerSize, pointerSize);
                 }

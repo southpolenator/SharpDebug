@@ -70,6 +70,16 @@ namespace CsDebugScript.DwarfSymbolProvider
         private SimpleCache<MemoryRegionFinder> frameDescriptionEntryFinder;
 
         /// <summary>
+        /// The list of frame description entries from exception handling frames stream.
+        /// </summary>
+        private SimpleCache<List<DwarfFrameDescriptionEntry>> frameDescriptionEntriesFromExceptionHandlingStream;
+
+        /// <summary>
+        /// The frame description entry finder from exception handling frames stream.
+        /// </summary>
+        private SimpleCache<MemoryRegionFinder> frameDescriptionEntryFinderFromExceptionHandlingStream;
+
+        /// <summary>
         /// The code segment offset (read from the image)
         /// </summary>
         private ulong codeSegmentOffset;
@@ -131,12 +141,26 @@ namespace CsDebugScript.DwarfSymbolProvider
             lineInformationAddressesCache = SimpleCache.Create(() => lineInformationCache.Value.Select(l => l.Address).ToList());
             frameDescriptionEntries = SimpleCache.Create(() =>
             {
-                List<DwarfFrameDescriptionEntry> result = commonInformationEntries.SelectMany(e => e.FrameDescriptionEntries).ToList();
+                List<DwarfFrameDescriptionEntry> result = commonInformationEntries
+                    .Where(e => !(e is DwarfExceptionHandlingCommonInformationEntry))
+                    .SelectMany(e => e.FrameDescriptionEntries)
+                    .ToList();
 
                 result.Sort((f1, f2) => (int)f1.InitialLocation - (int)f2.InitialLocation);
                 return result;
             });
             frameDescriptionEntryFinder = SimpleCache.Create(() => new MemoryRegionFinder(frameDescriptionEntries.Value.Select(f => new MemoryRegion { BaseAddress = f.InitialLocation, RegionSize = f.AddressRange }).ToList()));
+            frameDescriptionEntriesFromExceptionHandlingStream = SimpleCache.Create(() =>
+            {
+                List<DwarfFrameDescriptionEntry> result = commonInformationEntries
+                    .Where(e => e is DwarfExceptionHandlingCommonInformationEntry)
+                    .SelectMany(e => e.FrameDescriptionEntries)
+                    .ToList();
+
+                result.Sort((f1, f2) => (int)f1.InitialLocation - (int)f2.InitialLocation);
+                return result;
+            });
+            frameDescriptionEntryFinderFromExceptionHandlingStream = SimpleCache.Create(() => new MemoryRegionFinder(frameDescriptionEntriesFromExceptionHandlingStream.Value.Select(f => new MemoryRegion { BaseAddress = f.InitialLocation, RegionSize = f.AddressRange }).ToList()));
             this.codeSegmentOffset = codeSegmentOffset;
         }
 
@@ -1735,6 +1759,42 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Checks whether function has special unwinding, or default (fast) unwinding should be used.
+        /// </summary>
+        /// <param name="functionStart">Address of the function start.</param>
+        /// <returns><c>true</c> if fast unwinding should be used; <c>false</c> otherwise.</returns>
+        private bool IsFastUnwind(ulong functionStart)
+        {
+            // if prologue is
+            //   55     pushl %ebp
+            //   89 e5  movl %esp, %ebp
+            //  or
+            //   55        pushq %rbp
+            //   48 89 e5  movq %rsp, %rbp
+            // We should pull in the ABI architecture default unwind plan and return that
+            byte[] i386_push_mov = new byte[] { 0x55, 0x89, 0xe5 };
+            byte[] x86_64_push_mov = new byte[] { 0x55, 0x48, 0x89, 0xe5 };
+            MemoryBuffer buffer = Debugger.ReadMemory(Module.Process, functionStart, (uint)Math.Max(i386_push_mov.Length, x86_64_push_mov.Length));
+            bool same = true;
+
+            for (int i = 0; i < i386_push_mov.Length && same; i++)
+            {
+                same = i386_push_mov[i] == buffer.Bytes[i];
+            }
+
+            if (!same)
+            {
+                same = true;
+                for (int i = 0; i < x86_64_push_mov.Length && same; i++)
+                {
+                    same = x86_64_push_mov[i] == buffer.Bytes[i];
+                }
+            }
+
+            return same;
+        }
+
+        /// <summary>
         /// Decodes location from the specified attribute value. Also applies code segment offset for absolute address.
         /// </summary>
         /// <param name="value">The location attribute value.</param>
@@ -1902,31 +1962,47 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="startAddressValue">The function start address value.</param>
         /// <param name="endAddressValue">The function end address value.</param>
         /// <param name="frameContext">The frame context used for resolving register values.</param>
-        private Location ResolveCanonicalFrameAddress(DwarfAttributeValue startAddressValue, DwarfAttributeValue endAddressValue, ThreadContext frameContext)
+        /// <param name="searchAddress">Search address where IP is located.</param>
+        private Location ResolveCanonicalFrameAddress(DwarfAttributeValue startAddressValue, DwarfAttributeValue endAddressValue, ThreadContext frameContext, ulong searchAddress = ulong.MaxValue)
         {
             ulong startAddress = startAddressValue.Address + codeSegmentOffset;
             ulong endAddress = endAddressValue.Type == DwarfAttributeValueType.Address ? endAddressValue.Address + codeSegmentOffset : startAddress + endAddressValue.Constant;
             Location ebp = Location.RegisterRelative(Is64bit ? 6 : 5, Is64bit ? 16 : 8);
+            ulong location = searchAddress == ulong.MaxValue ? startAddress : searchAddress;
 
-            int index = frameDescriptionEntryFinder.Value.Find(startAddress);
-
-            if (index >= 0)
+            try
             {
-                DwarfFrameDescriptionEntry description = frameDescriptionEntries.Value[index];
-
-                if (description.InitialLocation <= startAddress && description.InitialLocation + description.AddressRange >= endAddress)
+                if (!IsFastUnwind(startAddressValue.Address + Module.Address))
                 {
-                    Location result = Location.CanonicalFrameAddress;
-                    ulong location = startAddress;
+                    DwarfFrameDescriptionEntry description = null;
+                    int index = frameDescriptionEntryFinderFromExceptionHandlingStream.Value.Find(location);
 
-                    ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, frameContext, description.CommonInformationEntry.InitialInstructions, ref location, ref result);
-                    ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, frameContext, description.Instructions, ref location, ref result, stopBeforeRestore: true);
-                    return result;
+                    if (index >= 0)
+                    {
+                        description = frameDescriptionEntriesFromExceptionHandlingStream.Value[index];
+                    }
+
+                    if (description == null)
+                    {
+                        index = frameDescriptionEntryFinder.Value.Find(location);
+                        if (index >= 0)
+                        {
+                            description = frameDescriptionEntries.Value[index];
+                        }
+                    }
+
+                    if (description != null)
+                    {
+                        Location result = Location.CanonicalFrameAddress;
+
+                        ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, frameContext, description.CommonInformationEntry.InitialInstructions, ref location, ref result);
+                        ProcessCanonicalFrameAddressInstructions(description.CommonInformationEntry, frameContext, description.Instructions, ref location, ref result, stopBeforeRestore: true);
+                        return result;
+                    }
                 }
-                else
-                {
-                    throw new Exception("MemoryRangeFinder found wrong DwarfFrameDescriptionEntry");
-                }
+            }
+            catch
+            {
             }
 
             return ebp;
@@ -1984,6 +2060,28 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             throw new Exception("Unsupported location");
+        }
+
+        /// <summary>
+        /// Gets function canonical frame address. Used for unwinding.
+        /// </summary>
+        /// <param name="process">Process being debugged.</param>
+        /// <param name="instructionPointer">Instruction pointer location.</param>
+        /// <param name="frameContext">Frame context for resolving canonical frame address.</param>
+        /// <returns>Resolved canonical frame address.</returns>
+        public ulong GetFunctionCanonicalFrameAddress(Process process, ulong instructionPointer, ThreadContext frameContext)
+        {
+            ulong functionDisplacement;
+            DwarfSymbol function = FindFunction(instructionPointer - Module.Address, out functionDisplacement);
+
+            if (function == null)
+            {
+                return 0;
+            }
+
+            Location canonicalFrameAddress = ResolveCanonicalFrameAddress(function.Attributes[DwarfAttribute.LowPc], function.Attributes[DwarfAttribute.HighPc], frameContext, instructionPointer);
+
+            return ResolveLocation(canonicalFrameAddress, frameContext);
         }
 
         /// <summary>

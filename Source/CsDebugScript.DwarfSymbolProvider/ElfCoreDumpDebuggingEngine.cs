@@ -19,6 +19,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         private Dictionary<uint, ElfCoreDump> openedDumps = new Dictionary<uint, ElfCoreDump>();
 
         /// <summary>
+        /// DWARF symbol provider will be used as default symbol provider.
+        /// </summary>
+        private SimpleCache<DwarfSymbolProvider> dwarfSymbolProvider;
+
+        /// <summary>
         /// The next dump identifier
         /// </summary>
         private int nextDumpId = 0;
@@ -28,6 +33,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// </summary>
         public ElfCoreDumpDebuggingEngine()
         {
+            dwarfSymbolProvider = SimpleCache.Create(() => new DwarfSymbolProvider());
         }
 
         /// <summary>
@@ -86,7 +92,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// </summary>
         public ISymbolProvider CreateDefaultSymbolProvider()
         {
-            return new DwarfSymbolProvider();
+            return dwarfSymbolProvider.Value;
         }
 
         /// <summary>
@@ -376,7 +382,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         public StackTrace GetThreadStackTrace(Thread thread)
         {
             ElfCoreDump dump = GetDump(thread.Process);
-            Tuple<ulong, ulong, ulong>[] framesData = dump.GetThreadStackTrace((int)thread.Id);
+            Tuple<ulong, ulong, ulong>[] framesData = dump.GetThreadStackTrace((int)thread.Id, thread.Process, dwarfSymbolProvider.Value);
             StackTrace stackTrace = new StackTrace(thread);
             StackFrame[] frames = new StackFrame[framesData.Length];
 
