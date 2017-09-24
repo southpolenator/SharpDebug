@@ -128,10 +128,10 @@ namespace CsDebugScript.DwarfSymbolProvider
                 entries.AddRange(DwarfCommonInformationEntry.ParseAll(debugFrameReader, input.DefaultAddressSize));
             }
 
-            //using (DwarfMemoryReader ehFrameReader = new DwarfMemoryReader(ehFrame))
-            //{
-            //    entries.AddRange(DwarfExceptionHandlingCommonInformationEntry.ParseAll(ehFrameReader, input));
-            //}
+            using (DwarfMemoryReader ehFrameReader = new DwarfMemoryReader(ehFrame))
+            {
+                entries.AddRange(DwarfExceptionHandlingCommonInformationEntry.ParseAll(ehFrameReader, input));
+            }
 
             return entries.ToArray();
         }
