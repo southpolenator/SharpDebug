@@ -74,7 +74,7 @@ namespace PowershellDebugSession
             Context.EnableVariableCaching = false;
 
             IDebuggerEngine debugger = new DbgEngDll(client);
-            ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.CreateDefaultSymbolProvider());
+            ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.GetDefaultSymbolProvider());
             Context.InitializeDebugger(debugger, symbolProvider);
 
             WriteDebug("Connection successfully initialized");

@@ -26,9 +26,9 @@ namespace CsDebugScript.Engine.SymbolProviders
         public PerModuleSymbolProvider(ISymbolProvider fallbackSymbolProvider = null)
         {
             FallbackSymbolProvider = fallbackSymbolProvider ?? Context.SymbolProvider;
-            if (FallbackSymbolProvider == this)
+            if (FallbackSymbolProvider == null)
             {
-                FallbackSymbolProvider = Context.Debugger.CreateDefaultSymbolProvider();
+                FallbackSymbolProvider = Context.Debugger?.GetDefaultSymbolProvider();
             }
             modules = new DictionaryCache<Module, ISymbolProviderModule>(LoadModule);
             runtimeCodeTypeAndOffsetCache = new DictionaryCache<Tuple<Process, ulong>, Tuple<CodeType, int>>(GetRuntimeCodeTypeAndOffset);

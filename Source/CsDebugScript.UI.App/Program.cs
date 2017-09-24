@@ -39,7 +39,7 @@ namespace CsDebugScript.UI.App
             {
                 IDebuggerEngine engine = new DwarfSymbolProvider.ElfCoreDumpDebuggingEngine(options.DumpPath);
 
-                Context.InitializeDebugger(engine, engine.CreateDefaultSymbolProvider());
+                Context.InitializeDebugger(engine);
             }
 
             InteractiveWindow.ShowModalWindow();

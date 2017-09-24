@@ -88,9 +88,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Creates new instance of default symbol provider.
+        /// Gets instance of default symbol provider.
         /// </summary>
-        public ISymbolProvider CreateDefaultSymbolProvider()
+        public ISymbolProvider GetDefaultSymbolProvider()
         {
             return dwarfSymbolProvider.Value;
         }

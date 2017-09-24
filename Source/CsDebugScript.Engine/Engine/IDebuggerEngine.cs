@@ -17,9 +17,9 @@ namespace CsDebugScript.Engine
         bool IsLiveDebugging { get; }
 
         /// <summary>
-        /// Creates new instance of default symbol provider.
+        /// Gets instance of default symbol provider.
         /// </summary>
-        ISymbolProvider CreateDefaultSymbolProvider();
+        ISymbolProvider GetDefaultSymbolProvider();
 
         /// <summary>
         /// Gets the dump file memory reader of the specified process if it is debugged from a dump.

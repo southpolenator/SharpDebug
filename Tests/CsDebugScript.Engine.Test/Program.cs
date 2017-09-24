@@ -42,7 +42,7 @@ namespace CsDebugScript.Engine.Test
             {
                 IDebuggerEngine engine = new DwarfSymbolProvider.ElfCoreDumpDebuggingEngine(options.DumpPath);
 
-                Context.InitializeDebugger(engine, engine.CreateDefaultSymbolProvider());
+                Context.InitializeDebugger(engine);
             }
 
             Console.WriteLine("Threads: {0}", Thread.All.Length);
