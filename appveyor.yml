@@ -25,7 +25,13 @@ build:
   project: WinDbgCs.sln
   verbosity: minimal
 after_build:
-  - ps: "#if ($env:CONFIGURATION -eq \"Release\") { \n#  Write-Host \"Building documentation\"\n#  $env:SolutionDir=$env:PROJECT_ROOT\n#  msbuild Utility\\CsDebugScript.Reference\\csDebugScript.Reference.shfbproj /logger:\"C:\\Program Files\\AppVeyor\\BuildAgent\\Appveyor.MSBuildLogger.dll\" /p:Configuration=$env:CONFIGURATION\n#}\ndotnet pack --no-build\npushd $env:PROJECT_ROOT\\Source\\CsDebugScript.DbgEng\\\ndotnet pack --no-build\npopd\npushd $env:PROJECT_ROOT\\bin\\$env:CONFIGURATION\\$env:DEAFULT_TARGET_FRAMEWORK\\\n7z a CsDebugScript.WinDbgCs-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@(\"CsDebugScript.CommonUserTypes.dll\", \"CsDebugScript.DwarfSymbolProvider.dll\", \"CsDebugScript.WinDbg.x64.dll\", \"CsDebugScript.WinDbg.x86.dll\")))\nif ($env:CONFIGURATION -eq \"Release\") { Vsix-PushArtifacts | Vsix-PublishToGallery }"
+  - ps: if ($env:CONFIGURATION -eq "Release") { msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION }
+  - ps: dotnet pack --no-build
+  - ps: pushd $env:PROJECT_ROOT\Source\CsDebugScript.DbgEng\\ndotnet pack --no-build
+  - ps: popd
+  - ps: pushd $env:PROJECT_ROOT\bin\$env:CONFIGURATION\$env:DEAFULT_TARGET_FRAMEWORK\
+  - ps: 7z a CsDebugScript.WinDbgCs-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@("CsDebugScript.CommonUserTypes.dll", "CsDebugScript.DwarfSymbolProvider.dll", "CsDebugScript.WinDbg.x64.dll", "CsDebugScript.WinDbg.x86.dll")))
+  - ps: if ($env:CONFIGURATION -eq "Release") { Vsix-PushArtifacts | Vsix-PublishToGallery }
 test_script:
   - cmd: SET NUGET_PACKAGES=C:\Users\appveyor\.nuget\packages
   - cmd: SET OPENCOVER=%NUGET_PACKAGES%\OpenCover\4.6.519\tools\OpenCover.Console.exe
