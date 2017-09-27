@@ -8,7 +8,7 @@ environment:
 install:
   - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
   - ps: (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/WinDbgCs/master/GetShipFiles.ps1") | iex
-  - ps: choco install codecov --limitoutput
+  - ps: choco install codecov --limitoutput --no-progress
 before_build:
   - ps: Vsix-IncrementVsixVersion
   - ps: Vsix-TokenReplacement Source\CsDebugScript.VS\VSInteractiveWindowPackage.cs 'productId[:] "([0-9\\.]+)"' 'productId[:] "{version}"'
