@@ -39,7 +39,7 @@ after_build:
   - ps: 7z a CsDebugScript.WinDbgCs-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@("CsDebugScript.CommonUserTypes.dll", "CsDebugScript.DwarfSymbolProvider.dll", "CsDebugScript.WinDbg.x64.dll", "CsDebugScript.WinDbg.x86.dll")))
   - ps: if ($env:CONFIGURATION -eq "Release") { Vsix-PushArtifacts | Vsix-PublishToGallery }
   - ps: popd
-  - ps: if ($env:CONFIGURATION -eq "Release") { msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal /p:WarningLevel=0 }
+  - ps: if ($env:CONFIGURATION -eq "Release") { msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal /NoWarn }
 test_script:
   - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%UITESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.UI.xml -targetdir:%TARGET_DIR%'
   - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.xml -targetdir:%TARGET_DIR%'
