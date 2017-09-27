@@ -6,93 +6,51 @@ environment:
   PROJECT_ROOT: C:\projects\windbgcs
   DEAFULT_TARGET_FRAMEWORK: net461
 install:
-- ps: >-
-    (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
-
-    (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/WinDbgCs/master/GetShipFiles.ps1") | iex
-
-    choco install codecov
+- ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
+- ps: (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/WinDbgCs/master/GetShipFiles.ps1") | iex
+- ps: choco install codecov --limitoutput
 before_build:
-- ps: >-
-    Vsix-IncrementVsixVersion
-
-    Vsix-TokenReplacement Source\CsDebugScript.VS\VSInteractiveWindowPackage.cs 'productId: "([0-9\\.]+)"' 'productId: "{version}"'
-
-    Vsix-TokenReplacement SharedAssemblyInfo.props '<AssemblyVersion>([0-9\\.]+)</AssemblyVersion>' '<AssemblyVersion>{version}</AssemblyVersion>'
-
-    Vsix-TokenReplacement SharedAssemblyInfo.props '<FileVersion>([0-9\\.]+)</FileVersion>' '<FileVersion>{version}</FileVersion>'
-
-    Vsix-TokenReplacement SharedAssemblyInfo.props '<VersionPrefix>([0-9\\.]+)</VersionPrefix>' '<VersionPrefix>{version}</VersionPrefix>'
-
-    nuget restore
-
-    pushd $env:PROJECT_ROOT\dumps\
-
-    Get-Item $env:PROJECT_ROOT\dumps\*
-
-    .\download.ps1
-
-    Get-Item $env:PROJECT_ROOT\dumps\*
-
-    popd
-
-    msbuild WinDbgCs.sln /t:Utility\ExceptionDumper32 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION  /verbosity:minimal
+- ps: Vsix-IncrementVsixVersion
+- ps: Vsix-TokenReplacement Source\CsDebugScript.VS\VSInteractiveWindowPackage.cs 'productId: "([0-9\\.]+)"' 'productId: "{version}"'
+- ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<AssemblyVersion>([0-9\\.]+)</AssemblyVersion>' '<AssemblyVersion>{version}</AssemblyVersion>'
+- ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<FileVersion>([0-9\\.]+)</FileVersion>' '<FileVersion>{version}</FileVersion>'
+- ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<VersionPrefix>([0-9\\.]+)</VersionPrefix>' '<VersionPrefix>{version}</VersionPrefix>'
+- ps: nuget restore
+- ps: pushd $env:PROJECT_ROOT\dumps\
+- ps: .\download.ps1
+- ps: popd
+- ps: msbuild WinDbgCs.sln /t:Utility\ExceptionDumper32 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION  /verbosity:minimal
 build:
   project: WinDbgCs.sln
   verbosity: minimal
 after_build:
 - ps: "#if ($env:CONFIGURATION -eq \"Release\") { \n#  Write-Host \"Building documentation\"\n#  $env:SolutionDir=$env:PROJECT_ROOT\n#  msbuild Utility\\CsDebugScript.Reference\\csDebugScript.Reference.shfbproj /logger:\"C:\\Program Files\\AppVeyor\\BuildAgent\\Appveyor.MSBuildLogger.dll\" /p:Configuration=$env:CONFIGURATION\n#}\ndotnet pack --no-build\npushd $env:PROJECT_ROOT\\Source\\CsDebugScript.DbgEng\\\ndotnet pack --no-build\npopd\npushd $env:PROJECT_ROOT\\bin\\$env:CONFIGURATION\\$env:DEAFULT_TARGET_FRAMEWORK\\\n7z a CsDebugScript.WinDbgCs-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@(\"CsDebugScript.CommonUserTypes.dll\", \"CsDebugScript.DwarfSymbolProvider.dll\", \"CsDebugScript.WinDbg.x64.dll\", \"CsDebugScript.WinDbg.x86.dll\")))\nif ($env:CONFIGURATION -eq \"Release\") { Vsix-PushArtifacts | Vsix-PublishToGallery }"
 test_script:
-- cmd: >-
-    SET NUGET_PACKAGES=C:\Users\appveyor\.nuget\packages
-
-    SET OPENCOVER=%NUGET_PACKAGES%\OpenCover\4.6.519\tools\OpenCover.Console.exe
-
-    SET XUNIT_TOOLS=%NUGET_PACKAGES%\xunit.runner.console\2.2.0\tools
-
-    SET TESTS_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.Tests.dll
-
-    SET TESTS_X64_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.Tests_x64.dll
-
-    SET TESTS_X86_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.Tests_x86.dll
-
-    SET UITESTS_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.UITests.dll
-
-    SET UITESTS_X64_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.UITests_x64.dll
-
-    SET UITESTS_X86_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.UITests_x86.dll
-
-    copy %TESTS_DLL% %TESTS_X86_DLL% /y
-
-    copy %TESTS_DLL%.config %TESTS_X86_DLL%.config /y
-
-    copy %TESTS_DLL% %TESTS_X64_DLL% /y
-
-    copy %TESTS_DLL%.config %TESTS_X64_DLL%.config /y
-
-    copy %UITESTS_DLL% %UITESTS_X86_DLL% /y
-
-    copy %UITESTS_DLL%.config %UITESTS_X86_DLL%.config /y
-
-    copy %UITESTS_DLL% %UITESTS_X64_DLL% /y
-
-    copy %UITESTS_DLL%.config %UITESTS_X64_DLL%.config /y
-
-    "%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%UITESTS_X64_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.UI.xml -targetdir:%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%
-
-    "%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%TESTS_X64_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.xml -targetdir:%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%
-
-    "%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%UITESTS_X86_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.UI.xml -targetdir:%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%
-
-    "%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%TESTS_X86_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.xml -targetdir:%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%
-
-    codecov -f code_coverage_x64.xml
-
-    codecov -f code_coverage_x64.UI.xml
-
-    codecov -f code_coverage_x86.xml
-
-    codecov -f code_coverage_x86.UI.xml
+- SET NUGET_PACKAGES=C:\Users\appveyor\.nuget\packages
+- SET OPENCOVER=%NUGET_PACKAGES%\OpenCover\4.6.519\tools\OpenCover.Console.exe
+- SET XUNIT_TOOLS=%NUGET_PACKAGES%\xunit.runner.console\2.2.0\tools
+- SET TESTS_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.Tests.dll
+- SET TESTS_X64_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.Tests_x64.dll
+- SET TESTS_X86_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.Tests_x86.dll
+- SET UITESTS_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.UITests.dll
+- SET UITESTS_X64_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.UITests_x64.dll
+- SET UITESTS_X86_DLL=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%\CsDebugScript.UITests_x86.dll
+- copy %TESTS_DLL% %TESTS_X86_DLL% /y
+- copy %TESTS_DLL%.config %TESTS_X86_DLL%.config /y
+- copy %TESTS_DLL% %TESTS_X64_DLL% /y
+- copy %TESTS_DLL%.config %TESTS_X64_DLL%.config /y
+- copy %UITESTS_DLL% %UITESTS_X86_DLL% /y
+- copy %UITESTS_DLL%.config %UITESTS_X86_DLL%.config /y
+- copy %UITESTS_DLL% %UITESTS_X64_DLL% /y
+- copy %UITESTS_DLL%.config %UITESTS_X64_DLL%.config /y
+- "%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%UITESTS_X64_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.UI.xml -targetdir:%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%
+- "%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%TESTS_X64_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.xml -targetdir:%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%
+- "%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%UITESTS_X86_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.UI.xml -targetdir:%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%
+- "%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%TESTS_X86_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.xml -targetdir:%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_FRAMEWORK%
+- codecov -f code_coverage_x64.xml
+- codecov -f code_coverage_x64.UI.xml
+- codecov -f code_coverage_x86.xml
+- codecov -f code_coverage_x86.UI.xml
 artifacts:
 - path: bin\**\*.nupkg
   name: NuGets
