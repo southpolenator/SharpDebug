@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="EWSoftware.SHFB" Version="2017.5.15" />
+    <PackageReference Include="EWSoftware.SHFB.NETFramework" Version="4.7.0" />
+  </ItemGroup>
+</Project>
