@@ -11,7 +11,7 @@ install:
   - ps: choco install codecov --limitoutput
 before_build:
   - ps: Vsix-IncrementVsixVersion
-  - ps: Vsix-TokenReplacement Source\CsDebugScript.VS\VSInteractiveWindowPackage.cs 'productId: "([0-9\\.]+)"' 'productId: "{version}"'
+  - ps: Vsix-TokenReplacement Source\CsDebugScript.VS\VSInteractiveWindowPackage.cs 'productId[:] "([0-9\\.]+)"' 'productId[:] "{version}"'
   - ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<AssemblyVersion>([0-9\\.]+)</AssemblyVersion>' '<AssemblyVersion>{version}</AssemblyVersion>'
   - ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<FileVersion>([0-9\\.]+)</FileVersion>' '<FileVersion>{version}</FileVersion>'
   - ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<VersionPrefix>([0-9\\.]+)</VersionPrefix>' '<VersionPrefix>{version}</VersionPrefix>'
