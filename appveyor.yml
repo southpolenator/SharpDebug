@@ -15,8 +15,8 @@ environment:
   GITHUB_PAGES_REFERENCES: WinDbgCsReference
   HELP_OUTPUT_PATH: $(PROJECT_ROOT)\Utility\CsDebugScript.Reference\Help
   GITHUB_USERNAME: southpolenator
-  GITHUB_PASSWORD:
-    secure: 2KQWKwkpAyvIjNLzJS6g4SY9URejpaumcJuJLTqvppYB4+aINA3ElJC7n8UoD0zd
+  GITHUB_PASSWORD: WrongPassword
+  GITHUB_PAGES_URL: https://$(GITHUB_USERNAME):$(GITHUB_PASSWORD)@github.com/$(GITHUB_USERNAME)/$(GITHUB_USERNAME).github.io.git
 init:
  - git config --global user.email "auto_publish@appveyor.com"
  - git config --global user.name "southpolenator"
@@ -51,7 +51,9 @@ after_build:
   - ps: |-
         if ($env:CONFIGURATION -eq "Release") {
             msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
-                git clone "https://$($env:GITHUB_USERNAME):$($env:GITHUB_PASSWORD)@github.com/$($env:GITHUB_USERNAME)/$($env:GITHUB_USERNAME).github.io.git" $env:GITHUB_PAGES
+                Write-Host "------------------- git clone ---------------------"
+                Write-Host $env:GITHUB_PAGES_URL
+                git clone $env:GITHUB_PAGES_URL $env:GITHUB_PAGES
                 git config --global core.autocrlf false
                 pushd $env:GITHUB_PAGES
                 Remove-Item -Recurse -Force $env:GITHUB_PAGES_REFERENCES
