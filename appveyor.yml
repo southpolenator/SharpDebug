@@ -5,7 +5,10 @@ platform: Any CPU
 environment:
   PROJECT_ROOT: C:\projects\windbgcs
   DEAFULT_TARGET_FRAMEWORK: net461
+  NUGET_PACKAGES2: C:\Users\appveyor\.nuget\packages
+  OPENCOVER2: $(NUGET_PACKAGES2)\OpenCover\4.6.519\tools\OpenCover.Console.exe
 install:
+  - cmd: ECHO %OPENCOVER2%
   - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
   - ps: (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/WinDbgCs/master/GetShipFiles.ps1") | iex
   - ps: choco install codecov --limitoutput --no-progress
