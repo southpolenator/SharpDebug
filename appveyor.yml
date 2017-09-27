@@ -53,9 +53,9 @@ after_build:
             msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
                 git clone https://$env:GITHUB_USERNAME:$env:GITHUB_PASSWORD@github.com/$env:GITHUB_USERNAME/$env:GITHUB_USERNAME.github.io.git $env:GITHUB_PAGES
                 pushd $env:GITHUB_PAGES
-                git checkout master
                 Remove-Item -Recurse -Force $env:GITHUB_PAGES_REFERENCES
                 mkdir $env:GITHUB_PAGES_REFERENCES
+                Write-Host "------------------- Copying files --------------------"
                 Copy-Item $env:HELP_OUTPUT_PATH\index.html -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
                 Copy-Item $env:HELP_OUTPUT_PATH\search.html -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
                 Copy-Item $env:HELP_OUTPUT_PATH\SearchHelp.aspx -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
@@ -70,10 +70,11 @@ after_build:
                 Copy-Item $env:HELP_OUTPUT_PATH\scripts -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
                 Copy-Item $env:HELP_OUTPUT_PATH\styles -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
                 Copy-Item $env:HELP_OUTPUT_PATH\toc -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
-                git status
+                Write-Host "------------------- git add --------------------"
                 git add .
-                git status
+                Write-Host "------------------- git commit --------------------"
                 git commit -m "Automatic update of code reference"
+                Write-Host "------------------- end --------------------"
             if ($env:APPVEYOR_REPO_BRANCH -eq "master") {
                 git push
             }
