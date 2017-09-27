@@ -15,11 +15,12 @@ environment:
   GITHUB_PAGES_REFERENCES: WinDbgCsReference
   HELP_OUTPUT_PATH: $(PROJECT_ROOT)\Utility\CsDebugScript.Reference\Help
   GITHUB_USERNAME: southpolenator
-  GITHUB_PASSWORD: WrongPassword
-  GITHUB_PAGES_URL: https://$(GITHUB_USERNAME):$(GITHUB_PASSWORD)@github.com/$(GITHUB_USERNAME)/$(GITHUB_USERNAME).github.io.git
+  GITHUB_PASSWORD:
+    secure: 2KQWKwkpAyvIjNLzJS6g4SY9URejpaumcJuJLTqvppYB4+aINA3ElJC7n8UoD0zd
+  GITHUB_PAGES_URL: https://$(GITHUB_PASSWORD)@github.com/$(GITHUB_USERNAME)/$(GITHUB_USERNAME).github.io.git
 init:
  - git config --global user.email "auto_publish@appveyor.com"
- - git config --global user.name "southpolenator"
+ - git config --global user.name %GITHUB_PASSWORD%
 install:
   - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
   - ps: (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/WinDbgCs/master/GetShipFiles.ps1") | iex
@@ -51,33 +52,17 @@ after_build:
   - ps: |-
         if ($env:CONFIGURATION -eq "Release") {
             msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
-                Write-Host "------------------- git clone ---------------------"
-                Write-Host $env:GITHUB_PAGES_URL
                 git clone $env:GITHUB_PAGES_URL $env:GITHUB_PAGES
                 git config --global core.autocrlf false
                 pushd $env:GITHUB_PAGES
                 Remove-Item -Recurse -Force $env:GITHUB_PAGES_REFERENCES
-                mkdir $env:GITHUB_PAGES_REFERENCES
-                Write-Host "------------------- Copying files --------------------"
-                Copy-Item $env:HELP_OUTPUT_PATH\index.html -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
-                Copy-Item $env:HELP_OUTPUT_PATH\search.html -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
-                Copy-Item $env:HELP_OUTPUT_PATH\SearchHelp.aspx -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
-                Copy-Item $env:HELP_OUTPUT_PATH\SearchHelp.inc.php -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
-                Copy-Item $env:HELP_OUTPUT_PATH\SearchHelp.php -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
-                Copy-Item $env:HELP_OUTPUT_PATH\Web.Config -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
-                Copy-Item $env:HELP_OUTPUT_PATH\WebKI.xml -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
-                Copy-Item $env:HELP_OUTPUT_PATH\WebTOC.xml -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
-                Copy-Item $env:HELP_OUTPUT_PATH\fti -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
-                Copy-Item $env:HELP_OUTPUT_PATH\html -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
-                Copy-Item $env:HELP_OUTPUT_PATH\icons -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
-                Copy-Item $env:HELP_OUTPUT_PATH\scripts -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
-                Copy-Item $env:HELP_OUTPUT_PATH\styles -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
-                Copy-Item $env:HELP_OUTPUT_PATH\toc -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
-                Write-Host "------------------- git add --------------------"
+                mkdir $env:GITHUB_PAGES_REFERENCES | $null
+                $files = "index.html", "SearchHelp.aspx", "SearchHelp.inc.php", "SearchHelp.php", "Web.Config", "WebKI.xml", "WebTOC.xml", "fti", "html", "icons", "scripts", "styles", "toc"
+                foreach ($file in $files) {
+                    Copy-Item $env:HELP_OUTPUT_PATH\$file -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES\$file -Recurse
+                }
                 git add .
-                Write-Host "------------------- git commit --------------------"
                 git commit -m "Automatic update of code reference"
-                Write-Host "------------------- end --------------------"
             if ($env:APPVEYOR_REPO_BRANCH -eq "master") {
                 git push
             }
