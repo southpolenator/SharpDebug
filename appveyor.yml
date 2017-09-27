@@ -51,7 +51,8 @@ after_build:
   - ps: |-
         if ($env:CONFIGURATION -eq "Release") {
             msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
-                git clone https://$env:GITHUB_USERNAME:$env:GITHUB_PASSWORD@github.com/$env:GITHUB_USERNAME/$env:GITHUB_USERNAME.github.io.git $env:GITHUB_PAGES
+                git clone "https://$($env:GITHUB_USERNAME):$($env:GITHUB_PASSWORD)@github.com/$($env:GITHUB_USERNAME)/$($env:GITHUB_USERNAME).github.io.git" $env:GITHUB_PAGES
+                git config --global core.autocrlf false
                 pushd $env:GITHUB_PAGES
                 Remove-Item -Recurse -Force $env:GITHUB_PAGES_REFERENCES
                 mkdir $env:GITHUB_PAGES_REFERENCES
