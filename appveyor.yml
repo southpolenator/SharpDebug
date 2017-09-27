@@ -56,7 +56,7 @@ after_build:
                 git config --global core.autocrlf false
                 pushd $env:GITHUB_PAGES
                 Remove-Item -Recurse -Force $env:GITHUB_PAGES_REFERENCES
-                mkdir $env:GITHUB_PAGES_REFERENCES | $null
+                mkdir $env:GITHUB_PAGES_REFERENCES | Out-Null
                 $files = "index.html", "SearchHelp.aspx", "SearchHelp.inc.php", "SearchHelp.php", "Web.Config", "WebKI.xml", "WebTOC.xml", "fti", "html", "icons", "scripts", "styles", "toc"
                 foreach ($file in $files) {
                     Copy-Item $env:HELP_OUTPUT_PATH\$file -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES\$file -Recurse
