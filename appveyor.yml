@@ -11,6 +11,14 @@ environment:
   TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
   TESTS_DLL: $(TARGET_DIR)\CsDebugScript.Tests.dll
   UITESTS_DLL: $(TARGET_DIR)\CsDebugScript.UITests.dll
+  GITHUB_PAGES: $(PROJECT_ROOT)\GitHubPages
+  GITHUB_PAGES_REFERENCES: WinDbgCsReference
+  HELP_OUTPUT_PATH: $(PROJECT_ROOT)\Utility\CsDebugScript.Reference\Help
+  GITHUB_USERNAME: southpolenator
+  GITHUB_PASSWORD: WrongPassword
+init:
+ - git config --global user.email "auto_publish@appveyor.com"
+ - git config --global user.name "southpolenator"
 install:
   - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
   - ps: (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/WinDbgCs/master/GetShipFiles.ps1") | iex
@@ -39,7 +47,35 @@ after_build:
   - ps: 7z a CsDebugScript.WinDbgCs-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@("CsDebugScript.CommonUserTypes.dll", "CsDebugScript.DwarfSymbolProvider.dll", "CsDebugScript.WinDbg.x64.dll", "CsDebugScript.WinDbg.x86.dll")))
   - ps: if ($env:CONFIGURATION -eq "Release") { Vsix-PushArtifacts | Vsix-PublishToGallery }
   - ps: popd
-  - ps: if ($env:CONFIGURATION -eq "Release") { msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal }
+  - ps: |-
+        if ($env:CONFIGURATION -eq "Release") {
+            msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
+            if ($env:APPVEYOR_REPO_BRANCH -eq "master") {
+                git clone https://$env:GITHUB_USERNAME:$env:GITHUB_PASSWORD@github.com/$env:GITHUB_USERNAME/$env:GITHUB_USERNAME.github.io.git $env:GITHUB_PAGES
+                pushd $env:GITHUB_PAGES
+                git checkout master
+                Remove-Item -Recurse -Force $env:GITHUB_PAGES_REFERENCES
+                mkdir $env:GITHUB_PAGES_REFERENCES
+                Copy-Item $env:HELP_OUTPUT_PATH\index.html -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
+                Copy-Item $env:HELP_OUTPUT_PATH\search.html -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
+                Copy-Item $env:HELP_OUTPUT_PATH\SearchHelp.aspx -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
+                Copy-Item $env:HELP_OUTPUT_PATH\SearchHelp.inc.php -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
+                Copy-Item $env:HELP_OUTPUT_PATH\SearchHelp.php -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
+                Copy-Item $env:HELP_OUTPUT_PATH\Web.Config -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
+                Copy-Item $env:HELP_OUTPUT_PATH\WebKI.xml -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
+                Copy-Item $env:HELP_OUTPUT_PATH\WebTOC.xml -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES
+                Copy-Item $env:HELP_OUTPUT_PATH\fti -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
+                Copy-Item $env:HELP_OUTPUT_PATH\html -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
+                Copy-Item $env:HELP_OUTPUT_PATH\icons -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
+                Copy-Item $env:HELP_OUTPUT_PATH\scripts -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
+                Copy-Item $env:HELP_OUTPUT_PATH\styles -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
+                Copy-Item $env:HELP_OUTPUT_PATH\toc -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES -Recurse
+                git add .
+                git commit -m "Automatic update of code reference"
+                git push
+                popd
+            }
+        }
 test_script:
   - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%UITESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.UI.xml -targetdir:%TARGET_DIR%'
   - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.xml -targetdir:%TARGET_DIR%'
