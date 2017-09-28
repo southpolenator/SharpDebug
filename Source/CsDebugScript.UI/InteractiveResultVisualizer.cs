@@ -271,12 +271,27 @@ namespace CsDebugScript.UI
             TreeView tree = new TreeView();
             IResultTreeItem resultTreeItem = ResultTreeItem.Create(obj, obj.GetType(), "result", null, this);
 
+            tree.PreviewMouseWheel += Tree_PreviewMouseWheel;
             tree.PreviewKeyDown += Tree_PreviewKeyDown;
             tree.Items.Add(header);
             tree.Items.Add(CreateTreeItem(resultTreeItem, 0));
             ((TreeViewItem)tree.Items[1]).IsSelected = true;
             tableGrid.Children.Add(tree);
             return tableGrid;
+        }
+
+        private void Tree_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            // Since TreeView is going to eat our event, we need to re-raise it again yo regain scrolling ability.
+            if (sender is TreeView && !e.Handled)
+            {
+                e.Handled = true;
+                var eventArg = new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta);
+                eventArg.RoutedEvent = UIElement.MouseWheelEvent;
+                eventArg.Source = sender;
+                var parent = ((Control)sender).Parent as UIElement;
+                parent.RaiseEvent(eventArg);
+            }
         }
 
         private void Tree_PreviewKeyDown(object sender, KeyEventArgs e)
