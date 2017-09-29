@@ -69,7 +69,7 @@ namespace CsDebugScript.UI
             panel.Children.Add(promptBlock);
 
             // Add text editor
-            textEditor = new InteractiveCodeEditor(fontFamily, fontSize, indentationSize, highlightingColors);
+            textEditor = new InteractiveCodeEditor(new InteractiveResultVisualizer(this), fontFamily, fontSize, indentationSize, highlightingColors);
             textEditor.HorizontalAlignment = HorizontalAlignment.Stretch;
             textEditor.Background = Brushes.Transparent;
             textEditor.CommandExecuted += TextEditor_CommandExecuted;
@@ -92,6 +92,72 @@ namespace CsDebugScript.UI
             }
         }
 
+        public FocusNavigationDirection? TraverseDirection { get; private set; }
+
+        public FrameworkElement GetFocusedResultItem()
+        {
+            FrameworkElement elementWithFocus = Keyboard.FocusedElement as FrameworkElement;
+
+            while (elementWithFocus != null && elementWithFocus != textEditor.TextArea && elementWithFocus.Parent != resultsPanel)
+            {
+                elementWithFocus = elementWithFocus.Parent as FrameworkElement;
+            }
+
+            if (elementWithFocus == textEditor.TextArea)
+            {
+                return textEditor;
+            }
+
+            return elementWithFocus;
+        }
+
+        public void TraverseNext(FrameworkElement focus)
+        {
+            FrameworkElement elementWithFocus = Keyboard.FocusedElement as FrameworkElement;
+
+            focus = focus ?? GetFocusedResultItem();
+            if (focus == null)
+            {
+                textEditor.Focus();
+                return;
+            }
+
+            if (focus != textEditor)
+            {
+                TraverseDirection = FocusNavigationDirection.Next;
+                focus.MoveFocus(new TraversalRequest(FocusNavigationDirection.Down));
+                if (elementWithFocus == Keyboard.FocusedElement as FrameworkElement)
+                {
+                    elementWithFocus.MoveFocus(new TraversalRequest(FocusNavigationDirection.Down));
+                }
+                TraverseDirection = null;
+            }
+        }
+
+        public void TraversePrevious(FrameworkElement focus)
+        {
+            FrameworkElement elementWithFocus = Keyboard.FocusedElement as FrameworkElement;
+
+            focus = focus ?? GetFocusedResultItem();
+            if (focus == null)
+            {
+                textEditor.Focus();
+                return;
+            }
+
+            TraverseDirection = FocusNavigationDirection.Previous;
+            focus.MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
+            if (elementWithFocus == Keyboard.FocusedElement as FrameworkElement)
+            {
+                elementWithFocus.MoveFocus(new TraversalRequest(FocusNavigationDirection.Down));
+            }
+            if (Keyboard.FocusedElement == textEditor.TextArea)
+            {
+                focus.Focus();
+            }
+            TraverseDirection = null;
+        }
+
         private void PromptBlock_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             textEditor.Padding = new Thickness(promptBlock.ActualWidth, 0, 0, 0);
@@ -99,7 +165,10 @@ namespace CsDebugScript.UI
 
         private void TextArea_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            scrollViewer.ScrollToEnd();
+            if (textEditor.IsFocused)
+            {
+                scrollViewer.ScrollToEnd();
+            }
         }
 
         private void TextEditor_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -109,8 +178,7 @@ namespace CsDebugScript.UI
                 if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == 1)
                 {
                     e.Handled = true;
-                    MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
-                    textEditor.MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
+                    TraversePrevious(textEditor);
                 }
             }
             else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.None)
@@ -118,7 +186,7 @@ namespace CsDebugScript.UI
                 if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == textEditor.LineCount)
                 {
                     e.Handled = true;
-                    MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                    TraverseNext(textEditor);
                 }
             }
         }
@@ -180,6 +248,25 @@ namespace CsDebugScript.UI
             codeControl.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
             codeControl.Background = Brushes.Transparent;
             panel.Children.Add(codeControl);
+            codeControl.PreviewKeyDown += (object sender, KeyEventArgs e) =>
+            {
+                if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+                {
+                    if (codeControl.Document.GetLocation(codeControl.CaretOffset).Line == 1)
+                    {
+                        e.Handled = true;
+                        TraversePrevious(codeControl);
+                    }
+                }
+                else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+                {
+                    if (codeControl.Document.GetLocation(codeControl.CaretOffset).Line == codeControl.LineCount)
+                    {
+                        e.Handled = true;
+                        TraverseNext(codeControl);
+                    }
+                }
+            };
 
             return panel;
         }
@@ -203,16 +290,12 @@ namespace CsDebugScript.UI
             {
                 if (objectOutput != null)
                 {
-                    UIElement elementOutput = objectOutput as UIElement;
                     LazyUIResult lazyUI = objectOutput as LazyUIResult;
+                    UIElement elementOutput = objectOutput as UIElement ?? lazyUI?.UIElement;
 
                     if (elementOutput != null)
                     {
                         resultsPanel.Children.Insert(textEditorIndex, elementOutput);
-                    }
-                    else if (lazyUI != null)
-                    {
-                        resultsPanel.Children.Insert(textEditorIndex, lazyUI.UIElement);
                     }
                     else
                     {

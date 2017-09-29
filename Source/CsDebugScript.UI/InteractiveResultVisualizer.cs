@@ -86,7 +86,7 @@ namespace CsDebugScript.UI
                     foreach (var child in base.Children)
                         yield return child;
                     for (int i = 0; i < array.Length; i++)
-                        yield return ResultTreeItem.Create(GetValue(() => array.GetValue(i)), objType.GetElementType(), string.Format("[{0}]", i), CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                        yield return ResultTreeItem.Create(GetValue(() => array.GetValue(i)), objType.GetElementType(), $"[{i}]", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
                 }
             }
 
@@ -201,6 +201,16 @@ namespace CsDebugScript.UI
             }
         }
 
+        internal const string ExpandingItemText = "Loading...";
+
+        private InteractiveWindowContent interactiveWindowContent;
+
+        public InteractiveResultVisualizer(InteractiveWindowContent interactiveWindowContent)
+        {
+            this.interactiveWindowContent = interactiveWindowContent;
+        }
+
+
         public object Output(object obj)
         {
             // We don't visualize null
@@ -270,12 +280,54 @@ namespace CsDebugScript.UI
             // Create table tree
             TreeView tree = new TreeView();
             IResultTreeItem resultTreeItem = ResultTreeItem.Create(obj, obj.GetType(), "result", null, this);
+            TreeViewItem resultItem = CreateTreeItem(resultTreeItem, 0);
 
             tree.PreviewMouseWheel += Tree_PreviewMouseWheel;
             tree.PreviewKeyDown += Tree_PreviewKeyDown;
+            tree.LostFocus += (a, b) =>
+            {
+                var item = tree.SelectedItem as TreeViewItem;
+
+                if (item != null)
+                {
+                    item.IsSelected = false;
+                }
+            };
+            tree.GotFocus += (a, b) =>
+            {
+                var item = tree.SelectedItem as TreeViewItem;
+
+                if (item == null)
+                {
+                    if (interactiveWindowContent.TraverseDirection.HasValue)
+                    {
+                        if (interactiveWindowContent.TraverseDirection == FocusNavigationDirection.Next)
+                        {
+                            item = tree.Items[1] as TreeViewItem;
+                        }
+                        else
+                        {
+                            item = tree.Items[tree.Items.Count - 1] as TreeViewItem;
+                            while (item.IsExpanded)
+                            {
+                                item = item.Items[item.Items.Count - 1] as TreeViewItem;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        item = tree.Items[1] as TreeViewItem;
+                    }
+
+                    if (item != null)
+                    {
+                        item.IsSelected = true;
+                    }
+                }
+            };
             tree.Items.Add(header);
-            tree.Items.Add(CreateTreeItem(resultTreeItem, 0));
-            ((TreeViewItem)tree.Items[1]).IsSelected = true;
+            tree.Items.Add(resultItem);
+            resultItem.IsExpanded = true;
             tableGrid.Children.Add(tree);
             return tableGrid;
         }
@@ -322,7 +374,7 @@ namespace CsDebugScript.UI
                 }
 
                 e.Handled = true;
-                tree.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                interactiveWindowContent.TraverseNext(tree);
             }
             else if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.None)
             {
@@ -339,7 +391,7 @@ namespace CsDebugScript.UI
                 }
 
                 e.Handled = true;
-                tree.MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
+                interactiveWindowContent.TraversePrevious(tree);
             }
         }
 
@@ -442,7 +494,9 @@ namespace CsDebugScript.UI
                 Level = level,
             };
             if (resultTreeItem.Children.Any())
-                item.Items.Add(0);
+            {
+                item.Items.Add(ExpandingItemText);
+            }
             item.Expanded += TreeViewItem_Expanded;
             return item;
         }
@@ -453,39 +507,57 @@ namespace CsDebugScript.UI
             {
                 TreeViewItem item = e.Source as TreeViewItem;
 
-                if ((item.Items.Count == 1) && (item.Items[0] is int))
+                if ((item.Items.Count == 1) && (item.Items[0].ToString() == ExpandingItemText))
                 {
                     TreeViewItemTag tag = (TreeViewItemTag)item.Tag;
 
                     System.Threading.Tasks.Task.Run(() =>
                     {
-                        IResultTreeItem resultTreeItem = tag.ResultTreeItem;
-                        var children = resultTreeItem.Children.ToList();
-
-                        foreach (var child in children)
-                            if (!(child.Value is UIElement))
-                            {
-                                string ss = child.ValueString;
-                            }
-
-                        item.Dispatcher.InvokeAsync(() =>
+                        try
                         {
-                            int level = tag.Level;
-                            TreeViewItem lastItem = null;
+                            IResultTreeItem resultTreeItem = tag.ResultTreeItem;
+                            List<IResultTreeItem> children = resultTreeItem.Children.ToList();
 
-                            item.Items.Clear();
-                            foreach (var child in children.OrderBy(s => s.Name.StartsWith("[")).ThenBy(s => s.Name))
-                                item.Items.Add(lastItem = CreateTreeItem(child, level + 1));
-
-                            // Check if we need to fix empty list item width
-                            if (lastItem != null && double.IsNaN(emptyListItem.Width))
-                            {
-                                item.Dispatcher.BeginInvoke(new Action(() =>
+                            foreach (var child in children)
+                                if (!(child.Value is UIElement))
                                 {
-                                    emptyListItem.Width = item.ActualWidth - lastItem.ActualWidth;
-                                }), System.Windows.Threading.DispatcherPriority.Background);
-                            }
-                        });
+                                    try
+                                    {
+                                        string ss = child.ValueString;
+                                    }
+                                    catch
+                                    {
+                                    }
+                                }
+
+                            item.Dispatcher.InvokeAsync(() =>
+                            {
+                                int level = tag.Level;
+                                TreeViewItem lastItem = null;
+                                IEnumerable<IResultTreeItem> childrenOrder = children
+                                    .OrderBy(s => s.Name.StartsWith("[") && s.Name.EndsWith("]") ? int.Parse(s.Name.Substring(1, s.Name.Length - 2)) : int.MaxValue)
+                                    .ThenBy(s => s.Name);
+
+                                item.Items.Clear();
+                                foreach (var child in childrenOrder)
+                                {
+                                    item.Items.Add(lastItem = CreateTreeItem(child, level + 1));
+                                }
+
+                                // Check if we need to fix empty list item width
+                                if (lastItem != null && double.IsNaN(emptyListItem.Width))
+                                {
+                                    item.Dispatcher.BeginInvoke(new Action(() =>
+                                    {
+                                        emptyListItem.Width = item.ActualWidth - lastItem.ActualWidth;
+                                    }), System.Windows.Threading.DispatcherPriority.Background);
+                                }
+                            });
+                        }
+                        catch (Exception ex2)
+                        {
+                            MessageBox.Show(ex2.ToString());
+                        }
                     });
                 }
             }

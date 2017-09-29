@@ -54,11 +54,12 @@ namespace CsDebugScript.UI
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveCodeEditor" /> class.
         /// </summary>
+        /// <param name="objectWriter">Interactive result visualizer object writer.</param>
         /// <param name="fontFamily">The font family.</param>
         /// <param name="fontSize">Size of the font.</param>
         /// <param name="indentationSize">Size of the indentation.</param>
         /// <param name="highlightingColors">The highlighting colors.</param>
-        public InteractiveCodeEditor(string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+        public InteractiveCodeEditor(InteractiveResultVisualizer objectWriter, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
             : base(fontFamily, fontSize, indentationSize, highlightingColors)
         {
             interactiveExecution = new InteractiveExecution();
@@ -66,7 +67,7 @@ namespace CsDebugScript.UI
             {
                 InteractiveCodeEditor = this,
             };
-            interactiveExecution.scriptBase.ObjectWriter = new InteractiveResultVisualizer();
+            interactiveExecution.scriptBase.ObjectWriter = objectWriter;
 
             // Run initialization of the window in background task
             IsEnabled = false;
