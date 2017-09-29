@@ -102,6 +102,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the stack trace frames.
+        /// </summary>
+        public StackFrame[] Frames
+        {
+            get
+            {
+                return StackTrace.Frames;
+            }
+        }
+
+        /// <summary>
         /// Gets the local variables on current stack frame.
         /// </summary>
         public VariableCollection Locals
