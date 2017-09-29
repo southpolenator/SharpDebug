@@ -19,6 +19,8 @@ namespace CsDebugScript.UI
         private string fontFamily;
         private double fontSize;
         private int indentationSize;
+        private List<string> previousCommands = new List<string>();
+        private int previousCommandsIndex = -1;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindowContent" /> class.
@@ -89,6 +91,19 @@ namespace CsDebugScript.UI
             get
             {
                 return textEditor;
+            }
+        }
+
+        internal string PreviousCommand
+        {
+            get
+            {
+                if (previousCommandsIndex >= 0 && previousCommandsIndex < previousCommands.Count)
+                {
+                    return previousCommands[previousCommandsIndex];
+                }
+
+                return null;
             }
         }
 
@@ -171,6 +186,33 @@ namespace CsDebugScript.UI
             }
         }
 
+        private void SetCommandFromBuffer(bool forward)
+        {
+            if (forward)
+            {
+                previousCommandsIndex++;
+            }
+            else
+            {
+                previousCommandsIndex--;
+            }
+
+            if (previousCommandsIndex >= previousCommands.Count)
+            {
+                previousCommandsIndex = previousCommands.Count - 1;
+            }
+            else if (previousCommandsIndex < 0)
+            {
+                previousCommandsIndex = 0;
+            }
+
+            if (textEditor.Text != PreviousCommand)
+            {
+                textEditor.Text = PreviousCommand;
+                textEditor.SelectionStart = textEditor.Text.Length;
+            }
+        }
+
         private void TextEditor_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.None)
@@ -178,7 +220,14 @@ namespace CsDebugScript.UI
                 if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == 1)
                 {
                     e.Handled = true;
-                    TraversePrevious(textEditor);
+                    if (textEditor.Text == PreviousCommand || string.IsNullOrEmpty(textEditor.Text))
+                    {
+                        SetCommandFromBuffer(false);
+                    }
+                    else
+                    {
+                        TraversePrevious(textEditor);
+                    }
                 }
             }
             else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.None)
@@ -186,8 +235,35 @@ namespace CsDebugScript.UI
                 if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == textEditor.LineCount)
                 {
                     e.Handled = true;
-                    TraverseNext(textEditor);
+                    if (textEditor.Text == PreviousCommand || string.IsNullOrEmpty(textEditor.Text))
+                    {
+                        SetCommandFromBuffer(true);
+                    }
+                    else
+                    {
+                        TraverseNext(textEditor);
+                    }
                 }
+            }
+            else if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.Alt)
+            {
+                e.Handled = true;
+                SetCommandFromBuffer(false);
+            }
+            else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.Alt)
+            {
+                e.Handled = true;
+                SetCommandFromBuffer(true);
+            }
+            else if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+            {
+                e.Handled = true;
+                TraversePrevious(textEditor);
+            }
+            else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+            {
+                e.Handled = true;
+                TraverseNext(textEditor);
             }
         }
 
@@ -267,6 +343,12 @@ namespace CsDebugScript.UI
                     }
                 }
             };
+
+            if (previousCommands.Count == 0 || previousCommands.Last() != code)
+            {
+                previousCommands.Add(code);
+                previousCommandsIndex = previousCommands.Count;
+            }
 
             return panel;
         }
