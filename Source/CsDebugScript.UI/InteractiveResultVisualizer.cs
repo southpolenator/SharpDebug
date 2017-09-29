@@ -364,6 +364,7 @@ namespace CsDebugScript.UI
                 {
                     if (parent.Items.IndexOf(item) == parent.Items.Count - 1)
                     {
+                        item = parent;
                         parent = parent.Parent as TreeViewItem;
                     }
                     else
