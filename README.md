@@ -17,7 +17,7 @@ If you want newer build than what is available in Releases page or as nuget pack
 * Add NuGet package [CsDebugScript](https://www.nuget.org/packages/CsDebugScript)
 * Start using it:
 
-```
+```cs
 using CsDebugScript;
 
 DebuggerInitialization.OpenDump("path_to_dump_file", "symbol_path;srv*");
