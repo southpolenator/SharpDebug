@@ -1812,7 +1812,7 @@ namespace CsDebugScript
 
             for (var baseType = ClrType.BaseType; baseType != null; baseType = baseType.BaseType)
             {
-                fields = fields.Union(baseType.Fields);
+                fields = fields.Concat(baseType.Fields);
             }
             return fields.Select(f => f.Name).ToArray();
         }

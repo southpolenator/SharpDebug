@@ -334,7 +334,7 @@ namespace CsDebugScript.CodeGen
                     compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
                 }
 
-                var filesToCompile = generatedFiles.Values.Union(includedFiles.Select(f => f.Path)).ToArray();
+                var filesToCompile = generatedFiles.Values.Concat(includedFiles.Select(f => f.Path)).ToArray();
                 var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);
 
                 if (compileResult.Errors.Count > 0)

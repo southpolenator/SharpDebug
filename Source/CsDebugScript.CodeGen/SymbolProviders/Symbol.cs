@@ -241,7 +241,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <param name="transformations">The transformations.</param>
         public void ExtractDependentSymbols(HashSet<Symbol> extractedSymbols, XmlTypeTransformation[] transformations)
         {
-            List<Symbol> symbols = Fields.Select(f => f.Type).Union(BaseClasses).ToList();
+            List<Symbol> symbols = Fields.Select(f => f.Type).Concat(BaseClasses).ToList();
 
             if (ElementType != null)
             {

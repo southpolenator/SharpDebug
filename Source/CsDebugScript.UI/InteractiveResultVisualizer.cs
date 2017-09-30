@@ -1,7 +1,10 @@
 ﻿using CsDebugScript.Engine.Utility;
 using CsDebugScript.UI.CodeWindow;
+using Dynamitey;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -54,7 +57,9 @@ namespace CsDebugScript.UI
 
             ImageSource Image { get; }
 
-            IEnumerable<IResultTreeItem> Children { get; }
+            bool IsExpandable { get; }
+
+            IEnumerable<Tuple<string, IEnumerable<IResultTreeItem>>> Children { get; }
 
             string ValueString { get; }
         }
@@ -63,13 +68,35 @@ namespace CsDebugScript.UI
         {
             public static IResultTreeItem Create(object obj, Type objType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
             {
-                if (obj != null && objType.IsArray)
-                    return new ArrayResultTreeItem((Array)obj, objType, name, image, interactiveResultVisualizer);
+                if (obj != null)
+                {
+                    if (obj.GetType().IsArray)
+                    {
+                        return new ArrayResultTreeItem((Array)obj, objType, name, image, interactiveResultVisualizer);
+                    }
+                    else if (typeof(IDictionary).IsAssignableFrom(obj.GetType()))
+                    {
+                        return new DictionaryResultTreeItem((IDictionary)obj, objType, name, image, interactiveResultVisualizer);
+                    }
+                    else if (obj.GetType() == typeof(Variable))
+                    {
+                        return new VariableResultTreeItem(((Variable)obj).DowncastInterface(), objType, name, image, interactiveResultVisualizer);
+                    }
+                    else if (typeof(Variable).IsAssignableFrom(obj.GetType()))
+                    {
+                        // TODO: This is custom user type and we should visualize it differently
+                        return new VariableResultTreeItem((Variable)obj, objType, name, image, interactiveResultVisualizer);
+                    }
+                    else if (obj.GetType() == typeof(VariableCollection))
+                    {
+                        return new VariableCollectionResultTreeItem((VariableCollection)obj, objType, name, image, interactiveResultVisualizer);
+                    }
+                }
                 return new ObjectResultTreeItem(obj, objType, name, image, interactiveResultVisualizer);
             }
         }
 
-        private class ArrayResultTreeItem : ObjectResultTreeItem
+        private class ArrayResultTreeItem : CustomObjectResultTreeItem
         {
             private Array array;
 
@@ -79,14 +106,15 @@ namespace CsDebugScript.UI
                 this.array = array;
             }
 
-            public override IEnumerable<IResultTreeItem> Children
+            public override IEnumerable<IResultTreeItem> ExpandedChildren
             {
                 get
                 {
-                    foreach (var child in base.Children)
-                        yield return child;
+                    yield return ResultTreeItem.Create(array.Length, null, "Length", CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
                     for (int i = 0; i < array.Length; i++)
+                    {
                         yield return ResultTreeItem.Create(GetValue(() => array.GetValue(i)), objType.GetElementType(), $"[{i}]", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                    }
                 }
             }
 
@@ -94,7 +122,232 @@ namespace CsDebugScript.UI
             {
                 get
                 {
-                    return string.Format("{{ Length: {0} }}", array.Length);
+                    return $"{{ Length: {array.Length} }}";
+                }
+            }
+        }
+
+        private class DictionaryResultTreeItem : CustomObjectResultTreeItem
+        {
+            private IDictionary dictionary;
+
+            public DictionaryResultTreeItem(IDictionary dictionary, Type objType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
+                : base(dictionary, objType, name, image, interactiveResultVisualizer)
+            {
+                this.dictionary = dictionary;
+            }
+
+            public override IEnumerable<IResultTreeItem> ExpandedChildren
+            {
+                get
+                {
+                    yield return ResultTreeItem.Create(dictionary.Count, null, "Count", CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                    foreach (IResultTreeItem item in OrderItems(ExtractItems()))
+                    {
+                        yield return item;
+                    }
+                }
+            }
+
+            public override object Value
+            {
+                get
+                {
+                    return $"{{ Elements: {dictionary.Count} }}";
+                }
+            }
+
+            private IEnumerable<IResultTreeItem> ExtractItems()
+            {
+                foreach (DictionaryEntry entry in dictionary)
+                {
+                    yield return ResultTreeItem.Create(GetValue(() => entry.Value), objType.GetElementType(), entry.Key.ToString(), CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                }
+            }
+        }
+
+        private class VariableCollectionResultTreeItem : CustomObjectResultTreeItem
+        {
+            private VariableCollection variableCollection;
+
+            public VariableCollectionResultTreeItem(VariableCollection variableCollection, Type objType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
+                : base(variableCollection, objType, name, image, interactiveResultVisualizer)
+            {
+                this.variableCollection = variableCollection;
+            }
+
+            public override IEnumerable<IResultTreeItem> ExpandedChildren
+            {
+                get
+                {
+                    yield return ResultTreeItem.Create(variableCollection.Count, null, "Count", CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                    for (int i = 0; i < variableCollection.Count; i++)
+                    {
+                        yield return ResultTreeItem.Create(GetValue(() => variableCollection[i]), typeof(Variable), variableCollection[i].GetName(), CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                    }
+                }
+            }
+
+            public override object Value
+            {
+                get
+                {
+                    return $"{{ Variables: {variableCollection.Count} }}";
+                }
+            }
+        }
+
+        private class VariableResultTreeItem : CustomObjectResultTreeItem
+        {
+            private Variable variable;
+            private bool extractUsingClasses;
+
+            public VariableResultTreeItem(Variable variable, Type objType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
+                : base(variable, objType, name, image, interactiveResultVisualizer)
+            {
+                this.variable = variable;
+                try
+                {
+                    extractUsingClasses = variable.GetCodeType().ClassFieldNames != null;
+                }
+                catch
+                {
+                    extractUsingClasses = false;
+                }
+            }
+
+            public override bool IsExpandable
+            {
+                get
+                {
+                    CodeType codeType = variable.GetCodeType();
+
+                    return !codeType.IsSimple && !codeType.IsEnum && !variable.IsNullPointer();
+                }
+            }
+
+            public override string Type
+            {
+                get
+                {
+                    return variable.GetCodeType().ToString();
+                }
+            }
+
+            public override IEnumerable<IResultTreeItem> ExpandedChildren
+            {
+                get
+                {
+                    CodeType codeType = variable.GetCodeType();
+
+                    if (codeType.IsPointer && (codeType.ElementType.IsSimple || codeType.ElementType.IsPointer || codeType.ElementType.IsArray || codeType.ElementType.IsEnum))
+                    {
+                        yield return ResultTreeItem.Create(GetValue(() => variable.DereferencePointer()), typeof(Variable), "*", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                    }
+                    else if (codeType.IsArray)
+                    {
+                        for (int i = 0, n = variable.GetArrayLength(); i < n; i++)
+                        {
+                            yield return ResultTreeItem.Create(GetValue(() => variable.GetArrayElement(i)), typeof(Variable), $"[{i}]", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                        }
+                    }
+                    // TODO: Continue specializing on variable types
+                    else
+                    {
+                        foreach (IResultTreeItem item in OrderItems(ExtractFields()))
+                        {
+                            yield return item;
+                        }
+                        yield return ResultTreeItem.Create(codeType, codeType.GetType(), "CodeType", CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                    }
+                }
+            }
+
+            public override object Value
+            {
+                get
+                {
+                    CodeType codeType = variable.GetCodeType();
+
+                    if (codeType.IsEnum)
+                    {
+                        return $"{variable} ({variable.Data:X}) [0x{variable.Data:X}]";
+                    }
+                    else if (codeType.IsArray)
+                    {
+                        return $"{{ Length: {variable.GetArrayLength()} }}";
+                    }
+
+                    return variable;
+                }
+            }
+
+            private IEnumerable<IResultTreeItem> ExtractFields()
+            {
+                CodeType codeType = variable.GetCodeType();
+
+                if (extractUsingClasses)
+                {
+                    foreach (string baseClass in codeType.InheritedClasses.Keys)
+                    {
+                        object baseClassValue = GetValue(() => variable.GetBaseClass(baseClass));
+                        Variable baseClassVariable = baseClassValue as Variable;
+
+                        if (baseClassVariable != null)
+                        {
+                            yield return new VariableResultTreeItem(baseClassVariable, typeof(Variable), $"[{baseClass}]", CompletionData.GetImage(CompletionDataType.Class), interactiveResultVisualizer);
+                        }
+                        else
+                        {
+                            yield return ResultTreeItem.Create(baseClassValue, typeof(Variable), $"[{baseClass}]", CompletionData.GetImage(CompletionDataType.Class), interactiveResultVisualizer);
+                        }
+                    }
+
+                    foreach (string fieldName in codeType.ClassFieldNames)
+                    {
+                        yield return ResultTreeItem.Create(GetValue(() => variable.GetClassField(fieldName)), typeof(Variable), fieldName, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                    }
+                }
+                else
+                {
+                    foreach (string fieldName in codeType.FieldNames)
+                    {
+                        yield return ResultTreeItem.Create(GetValue(() => variable.GetField(fieldName)), typeof(Variable), fieldName, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                    }
+                }
+            }
+        }
+
+        private class CustomObjectResultTreeItem : ObjectResultTreeItem
+        {
+            public CustomObjectResultTreeItem(object obj, Type objType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
+                : base(obj, objType, name, image, interactiveResultVisualizer)
+            {
+            }
+
+            public override bool IsExpandable
+            {
+                get
+                {
+                    return true;
+                }
+            }
+
+            public override IEnumerable<Tuple<string, IEnumerable<IResultTreeItem>>> Children
+            {
+                get
+                {
+                    bool publicsReturned = false;
+
+                    foreach (Tuple<string, IEnumerable<IResultTreeItem>> children in base.Children)
+                    {
+                        yield return children;
+                        if (!publicsReturned && children.Item1 == "[Expanded]")
+                        {
+                            publicsReturned = true;
+                            yield return Tuple.Create("[Public]", base.ExpandedChildren);
+                        }
+                    }
                 }
             }
         }
@@ -116,7 +369,51 @@ namespace CsDebugScript.UI
                 valueString = SimpleCache.Create(() => Value.ToString());
             }
 
-            public virtual IEnumerable<IResultTreeItem> Children
+            public virtual bool IsExpandable
+            {
+                get
+                {
+                    if (obj != null && objType != null)
+                    {
+                        return Children.Any();
+                    }
+
+                    return false;
+                }
+            }
+
+            public virtual IEnumerable<Tuple<string, IEnumerable<IResultTreeItem>>> Children
+            {
+                get
+                {
+                    if (ExpandedChildren.Any())
+                    {
+                        yield return Tuple.Create("[Expanded]", ExpandedChildren);
+                    }
+                    if (NonPublicChildren.Any())
+                    {
+                        yield return Tuple.Create("[Internal]", OrderItems(NonPublicChildren));
+                    }
+                    if (StaticChildren.Any())
+                    {
+                        yield return Tuple.Create("[Static]", OrderItems(StaticChildren));
+                    }
+                    if (DynamicChildren.Any())
+                    {
+                        yield return Tuple.Create("[Dynamic]", OrderItems(DynamicChildren));
+                    }
+                }
+            }
+
+            public virtual IEnumerable<IResultTreeItem> ExpandedChildren
+            {
+                get
+                {
+                    return OrderItems(PublicChildren);
+                }
+            }
+
+            public virtual IEnumerable<IResultTreeItem> PublicChildren
             {
                 get
                 {
@@ -127,32 +424,117 @@ namespace CsDebugScript.UI
                         if (!type.IsPrimitive && !type.IsEnum)
                         {
                             // Non-static properties
-                            var properties = type.GetProperties(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                            var properties = type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 
                             foreach (var property in properties)
-                                if (property.CanRead)
+                            {
+                                if (property.CanRead && property.GetIndexParameters().Length == 0)
+                                {
                                     yield return ResultTreeItem.Create(GetValue(() => property.GetValue(obj)), property.PropertyType, property.Name, CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                                }
+                            }
 
+                            // Non-static fields
+                            var fields = type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+                            foreach (var field in fields)
+                            {
+                                if (!field.IsStatic && !field.Name.EndsWith(">k__BackingField"))
+                                {
+                                    yield return ResultTreeItem.Create(GetValue(() => field.GetValue(obj)), field.FieldType, field.Name, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            public virtual IEnumerable<IResultTreeItem> NonPublicChildren
+            {
+                get
+                {
+                    if (obj != null)
+                    {
+                        Type type = obj.GetType();
+
+                        if (!type.IsPrimitive && !type.IsEnum)
+                        {
+                            // Non-static properties
+                            var properties = type.GetProperties(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+                            foreach (var property in properties)
+                            {
+                                if (property.CanRead && property.GetIndexParameters().Length == 0)
+                                {
+                                    yield return ResultTreeItem.Create(GetValue(() => property.GetValue(obj)), property.PropertyType, property.Name, CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                                }
+                            }
+
+                            // Non-static fields
+                            var fields = type.GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+                            foreach (var field in fields)
+                            {
+                                if (!field.IsStatic && !field.Name.EndsWith(">k__BackingField"))
+                                {
+                                    yield return ResultTreeItem.Create(GetValue(() => field.GetValue(obj)), field.FieldType, field.Name, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            public virtual IEnumerable<IResultTreeItem> StaticChildren
+            {
+                get
+                {
+                    if (obj != null)
+                    {
+                        Type type = obj.GetType();
+
+                        if (!type.IsPrimitive && !type.IsEnum)
+                        {
                             // Static properties
                             var staticProperties = type.GetProperties(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
 
                             foreach (var property in staticProperties)
-                                if (property.CanRead)
+                            {
+                                if (property.CanRead && property.GetIndexParameters().Length == 0)
+                                {
                                     yield return ResultTreeItem.Create(GetValue(() => property.GetValue(obj)), property.PropertyType, property.Name, CompletionData.GetImage(CompletionDataType.StaticProperty), interactiveResultVisualizer);
-
-                            // Non-static fields
-                            var fields = type.GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-
-                            foreach (var field in fields)
-                                if (!field.IsStatic && !field.Name.EndsWith(">k__BackingField"))
-                                    yield return ResultTreeItem.Create(GetValue(() => field.GetValue(obj)), field.FieldType, field.Name, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                                }
+                            }
 
                             // Static fields
                             var staticFields = type.GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
 
                             foreach (var field in staticFields)
+                            {
                                 if (field.IsStatic && !field.Name.EndsWith(">k__BackingField"))
+                                {
                                     yield return ResultTreeItem.Create(GetValue(() => field.GetValue(obj)), field.FieldType, field.Name, CompletionData.GetImage(CompletionDataType.StaticVariable), interactiveResultVisualizer);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            public virtual IEnumerable<IResultTreeItem> DynamicChildren
+            {
+                get
+                {
+                    if (obj != null)
+                    {
+                        if (typeof(DynamicObject).IsAssignableFrom(obj.GetType()))
+                        {
+                            DynamicObject dynamicObject = (DynamicObject)obj;
+
+                            foreach (string memberName in dynamicObject.GetDynamicMemberNames())
+                            {
+                                yield return ResultTreeItem.Create(GetValue(() => Dynamic.InvokeGet(dynamicObject, memberName)), typeof(DynamicObject), memberName, CompletionData.GetImage(CompletionDataType.StaticVariable), interactiveResultVisualizer);
+                            }
                         }
                     }
                 }
@@ -168,7 +550,7 @@ namespace CsDebugScript.UI
                 }
                 catch (Exception ex)
                 {
-                    return interactiveResultVisualizer.CreateTextWithIcon("Exception", ExceptionImage, ex.ToString());
+                    return ex;
                 }
             }
 
@@ -180,7 +562,7 @@ namespace CsDebugScript.UI
             {
                 get
                 {
-                    return InteractiveExecution.GetCodeName(objType);
+                    return objType != null ? InteractiveExecution.GetCodeName(obj?.GetType() ?? objType) : "";
                 }
             }
 
@@ -188,6 +570,15 @@ namespace CsDebugScript.UI
             {
                 get
                 {
+                    if (obj != null && obj.GetType() == typeof(ulong))
+                    {
+                        return $"0x{obj:X} ({obj})";
+                    }
+                    else if (obj != null && typeof(Exception).IsAssignableFrom(obj.GetType()))
+                    {
+                        return interactiveResultVisualizer.CreateTextWithIcon("Exception", ExceptionImage, obj.ToString(), bold: true);
+                    }
+
                     return obj != null ? obj : "null";
                 }
             }
@@ -444,7 +835,7 @@ namespace CsDebugScript.UI
             public int Level { get; set; }
         }
 
-        private UIElement CreateTextWithIcon(string text, ImageSource icon, object tooltip = null)
+        private UIElement CreateTextWithIcon(string text, ImageSource icon, object tooltip = null, bool italic = false, bool bold = false)
         {
             return dispatcher.Invoke(() =>
             {
@@ -452,6 +843,15 @@ namespace CsDebugScript.UI
                 stackPanel.Orientation = Orientation.Horizontal;
                 Grid.SetColumn(stackPanel, NameColumnIndex);
                 TextBlock textBlock = new TextBlock();
+                if (italic)
+                {
+                    textBlock.FontStyle = FontStyles.Italic;
+                }
+                if (bold)
+                {
+                    textBlock.FontWeight = FontWeights.Bold;
+                }
+                textBlock.VerticalAlignment = VerticalAlignment.Center;
                 textBlock.Text = text;
                 Image image = new Image();
                 image.Width = image.Height = 16;
@@ -463,13 +863,27 @@ namespace CsDebugScript.UI
             });
         }
 
-        private TreeViewItem CreateTreeItem(IResultTreeItem resultTreeItem, int level)
+        private TreeViewItem CreateSimpleTreeItem(string name, ImageSource image, int level, bool italic)
+        {
+            Grid grid;
+
+            return CreateSimpleTreeItem(name, image, level, out grid, italic: italic);
+        }
+
+        private TreeViewItem CreateSimpleTreeItem(string name, ImageSource image, int level, out Grid grid, bool italic = false)
         {
             TreeViewItem item = new TreeViewItem();
-            Grid grid = CreateTreeItemGrid(level);
 
-            UIElement name = CreateTextWithIcon(resultTreeItem.Name, resultTreeItem.Image);
-            grid.Children.Add(name);
+            grid = CreateTreeItemGrid(level);
+            grid.Children.Add(CreateTextWithIcon(name, image, italic: italic));
+            item.Header = grid;
+            return item;
+        }
+
+        private TreeViewItem CreateTreeItem(IResultTreeItem resultTreeItem, int level)
+        {
+            Grid grid;
+            TreeViewItem item = CreateSimpleTreeItem(resultTreeItem.Name, resultTreeItem.Image, level, out grid);
             object itemValue = resultTreeItem.Value;
             if (itemValue is UIElement)
             {
@@ -488,18 +902,36 @@ namespace CsDebugScript.UI
             type.Text = resultTreeItem.Type;
             Grid.SetColumn(type, TypeColumnIndex);
             grid.Children.Add(type);
-            item.Header = grid;
             item.Tag = new TreeViewItemTag()
             {
                 ResultTreeItem = resultTreeItem,
                 Level = level,
             };
-            if (resultTreeItem.Children.Any())
+            if (resultTreeItem.IsExpandable)
             {
                 item.Items.Add(ExpandingItemText);
+                item.Expanded += TreeViewItem_Expanded;
             }
-            item.Expanded += TreeViewItem_Expanded;
             return item;
+        }
+
+        private static IEnumerable<IResultTreeItem> OrderItems(IEnumerable<IResultTreeItem> items)
+        {
+            return items
+                .OrderBy(s =>
+                {
+                    if (s.Name.StartsWith("[") && s.Name.EndsWith("]"))
+                    {
+                        int value;
+
+                        if (int.TryParse(s.Name.Substring(1, s.Name.Length - 2), out value))
+                        {
+                            return value;
+                        }
+                    }
+                    return int.MaxValue;
+                })
+                .ThenBy(s => s.Name);
         }
 
         private void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
@@ -517,41 +949,70 @@ namespace CsDebugScript.UI
                         try
                         {
                             IResultTreeItem resultTreeItem = tag.ResultTreeItem;
-                            List<IResultTreeItem> children = resultTreeItem.Children.ToList();
+                            List<Tuple<string, List<IResultTreeItem>>> customChildren = new List<Tuple<string, List<IResultTreeItem>>>();
 
-                            foreach (var child in children)
-                                if (!(child.Value is UIElement))
+                            foreach (Tuple<string, IEnumerable<IResultTreeItem>> customChild in resultTreeItem.Children)
+                            {
+                                customChildren.Add(Tuple.Create(customChild.Item1, customChild.Item2.ToList()));
+                                foreach (IResultTreeItem child in customChildren.Last().Item2)
                                 {
-                                    try
+                                    if (!(child.Value is UIElement))
                                     {
-                                        string ss = child.ValueString;
-                                    }
-                                    catch
-                                    {
+                                        try
+                                        {
+                                            string ss = child.ValueString;
+                                        }
+                                        catch
+                                        {
+                                        }
                                     }
                                 }
+                            }
 
                             item.Dispatcher.InvokeAsync(() =>
                             {
-                                int level = tag.Level;
-                                TreeViewItem lastItem = null;
-                                IEnumerable<IResultTreeItem> childrenOrder = children
-                                    .OrderBy(s => s.Name.StartsWith("[") && s.Name.EndsWith("]") ? int.Parse(s.Name.Substring(1, s.Name.Length - 2)) : int.MaxValue)
-                                    .ThenBy(s => s.Name);
-
-                                item.Items.Clear();
-                                foreach (var child in childrenOrder)
+                                try
                                 {
-                                    item.Items.Add(lastItem = CreateTreeItem(child, level + 1));
-                                }
+                                    int level = tag.Level;
+                                    TreeViewItem lastItem = null;
 
-                                // Check if we need to fix empty list item width
-                                if (lastItem != null && double.IsNaN(emptyListItem.Width))
-                                {
-                                    item.Dispatcher.BeginInvoke(new Action(() =>
+                                    item.Items.Clear();
+                                    foreach (Tuple<string, List<IResultTreeItem>> customChild in customChildren)
                                     {
-                                        emptyListItem.Width = item.ActualWidth - lastItem.ActualWidth;
-                                    }), System.Windows.Threading.DispatcherPriority.Background);
+                                        if (customChild.Item2.Count > 0)
+                                        {
+                                            if (customChild.Item1 == "[Expanded]")
+                                            {
+                                                foreach (IResultTreeItem child in customChild.Item2)
+                                                {
+                                                    item.Items.Add(lastItem = CreateTreeItem(child, level + 1));
+                                                }
+                                            }
+                                            else
+                                            {
+                                                TreeViewItem customItem = CreateSimpleTreeItem(customChild.Item1, CompletionData.GetImage(CompletionDataType.Namespace), level + 1, italic: true);
+
+                                                foreach (var child in customChild.Item2)
+                                                {
+                                                    customItem.Items.Add(CreateTreeItem(child, level + 2));
+                                                }
+                                                item.Items.Add(lastItem = customItem);
+                                            }
+                                        }
+                                    }
+
+                                    // Check if we need to fix empty list item width
+                                    if (lastItem != null && double.IsNaN(emptyListItem.Width))
+                                    {
+                                        item.Dispatcher.BeginInvoke(new Action(() =>
+                                        {
+                                            emptyListItem.Width = item.ActualWidth - lastItem.ActualWidth;
+                                        }), System.Windows.Threading.DispatcherPriority.Background);
+                                    }
+                                }
+                                catch (Exception ex3)
+                                {
+                                    MessageBox.Show(ex3.ToString());
                                 }
                             });
                         }

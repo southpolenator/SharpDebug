@@ -80,7 +80,7 @@ namespace CsDebugScript
             scriptOptions = scriptOptions.WithMetadataResolver(metadataResolver);
             scriptOptions = scriptOptions.WithSourceResolver(sourceResolver);
 
-            scriptState = CSharpScript.RunAsync("", scriptOptions, scriptBase).Result;
+            scriptState = CSharpScript.RunAsync(string.Join("\n", ScriptCompiler.DefaultAliases.Select(s => $"using {s};")), scriptOptions, scriptBase).Result;
             scriptBase.ObjectWriter = new DefaultObjectWriter();
             scriptBase._InternalObjectWriter_ = new ConsoleObjectWriter();
         }
@@ -235,7 +235,7 @@ namespace CsDebugScript
                     scriptBase._InternalObjectWriter_ = oldScriptBase._InternalObjectWriter_;
 
                     // TODO: Changing globals, but we need to store previous variables
-                    scriptState = CSharpScript.RunAsync("", scriptState.Script.Options, scriptBase).Result;
+                    scriptState = CSharpScript.RunAsync(string.Join("\n", ScriptCompiler.DefaultAliases.Select(s => $"using {s};")), scriptState.Script.Options, scriptBase).Result;
                 }
 
                 if (scriptBase._CodeGenCode_.Count > 0)

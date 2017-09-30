@@ -503,4 +503,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             return typeSelector.VerifyCodeType(codeType);
         }
     }
+
+    /// <summary>
+    /// Simplification class for creating <see cref="list{T}"/> with T being <see cref="Variable"/>.
+    /// </summary>
+    public class list : list<Variable>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="list"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public list(Variable variable)
+            : base(variable)
+        {
+        }
+    }
 }

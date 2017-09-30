@@ -414,4 +414,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             }
         }
     }
+
+    /// <summary>
+    /// Simplification class for creating <see cref="weak_ptr{T}"/> with T being <see cref="Variable"/>.
+    /// </summary>
+    public class weak_ptr : weak_ptr<Variable>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="weak_ptr"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public weak_ptr(Variable variable)
+            : base(variable)
+        {
+        }
+    }
 }

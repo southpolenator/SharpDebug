@@ -778,11 +778,16 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 foreach (DwarfSymbol child in type.Children)
                 {
-                    if (child.Tag == DwarfTag.Inheritance && child.Name == className)
+                    if (child.Tag == DwarfTag.Inheritance)
                     {
-                        int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                        DwarfSymbol baseClass = GetType(child);
 
-                        return Tuple.Create(GetTypeId(child), offset);
+                        if (baseClass.Name == className || baseClass.FullName == className)
+                        {
+                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+
+                            return Tuple.Create(GetTypeId(baseClass), offset);
+                        }
                     }
                 }
             }
@@ -803,11 +808,16 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 foreach (DwarfSymbol child in type.Children)
                 {
-                    if (child.Tag == DwarfTag.Inheritance && !string.IsNullOrEmpty(child.Name))
+                    if (child.Tag == DwarfTag.Inheritance)
                     {
-                        int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                        DwarfSymbol baseClass = GetType(child);
 
-                        result.Add(child.FullName, Tuple.Create(GetTypeId(child), offset));
+                        if (!string.IsNullOrEmpty(baseClass.Name))
+                        {
+                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+
+                            result.Add(baseClass.FullName, Tuple.Create(GetTypeId(baseClass), offset));
+                        }
                     }
                 }
             }

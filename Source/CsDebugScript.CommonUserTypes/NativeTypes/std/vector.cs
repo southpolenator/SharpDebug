@@ -634,4 +634,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             return instance.GetEnumerator();
         }
     }
+
+    /// <summary>
+    /// Simplification class for creating <see cref="vector{T}"/> with T being <see cref="Variable"/>.
+    /// </summary>
+    public class vector : vector<Variable>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="vector"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public vector(Variable variable)
+            : base(variable)
+        {
+        }
+    }
 }

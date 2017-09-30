@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="5.0.2" />
+    <PackageReference Include="Dynamitey" Version="2.0.6-beta114" />
     <PackageReference Include="ICSharpCode.NRefactory" Version="5.5.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="2.3.1" />
   </ItemGroup>
