@@ -47,6 +47,8 @@ namespace CsDebugScript.UI
 
     internal class InteractiveResultVisualizer : IObjectWriter
     {
+        private const int ArrayElementsVisualized = 100;
+
         private interface IResultTreeItem
         {
             string Name { get; }
@@ -111,9 +113,35 @@ namespace CsDebugScript.UI
                 get
                 {
                     yield return ResultTreeItem.Create(array.Length, null, "Length", CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
-                    for (int i = 0; i < array.Length; i++)
+                    if (array.Length <= ArrayElementsVisualized)
                     {
-                        yield return ResultTreeItem.Create(GetValue(() => array.GetValue(i)), objType.GetElementType(), $"[{i}]", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                        foreach (IResultTreeItem element in GetElements(0, array.Length))
+                        {
+                            yield return element;
+                        }
+                    }
+                }
+            }
+
+            public override IEnumerable<Tuple<string, IEnumerable<IResultTreeItem>>> Children
+            {
+                get
+                {
+                    bool elementsReturned = array.Length <= ArrayElementsVisualized;
+
+                    foreach (Tuple<string, IEnumerable<IResultTreeItem>> children in base.Children)
+                    {
+                        yield return children;
+                        if (!elementsReturned && children.Item1 == "[Expanded]")
+                        {
+                            elementsReturned = true;
+                            for (int j = 0; j < array.Length; j += ArrayElementsVisualized)
+                            {
+                                int end = Math.Min(j + ArrayElementsVisualized, array.Length) - 1;
+
+                                yield return Tuple.Create($"[{j}-{end}]", GetElements(j, end));
+                            }
+                        }
                     }
                 }
             }
@@ -123,6 +151,14 @@ namespace CsDebugScript.UI
                 get
                 {
                     return $"{{ Length: {array.Length} }}";
+                }
+            }
+
+            private IEnumerable<IResultTreeItem> GetElements(int start, int end)
+            {
+                for (int i = start; i < end; i++)
+                {
+                    yield return ResultTreeItem.Create(GetValue(() => array.GetValue(i)), objType.GetElementType(), $"[{i}]", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
                 }
             }
         }
@@ -246,9 +282,13 @@ namespace CsDebugScript.UI
                     }
                     else if (codeType.IsArray)
                     {
-                        for (int i = 0, n = variable.GetArrayLength(); i < n; i++)
+                        yield return ResultTreeItem.Create(variable.GetArrayLength(), typeof(int), "Length", CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                        if (variable.GetArrayLength() <= ArrayElementsVisualized)
                         {
-                            yield return ResultTreeItem.Create(GetValue(() => variable.GetArrayElement(i)), typeof(Variable), $"[{i}]", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                            foreach (IResultTreeItem element in GetArrayElements(0, variable.GetArrayLength()))
+                            {
+                                yield return element;
+                            }
                         }
                     }
                     // TODO: Continue specializing on variable types
@@ -279,6 +319,37 @@ namespace CsDebugScript.UI
                     }
 
                     return variable;
+                }
+            }
+
+            public override IEnumerable<Tuple<string, IEnumerable<IResultTreeItem>>> Children
+            {
+                get
+                {
+                    bool elementsReturned = !variable.GetCodeType().IsArray || variable.GetArrayLength() <= ArrayElementsVisualized;
+
+                    foreach (Tuple<string, IEnumerable<IResultTreeItem>> children in base.Children)
+                    {
+                        yield return children;
+                        if (!elementsReturned && children.Item1 == "[Expanded]")
+                        {
+                            elementsReturned = true;
+                            for (int j = 0; j < variable.GetArrayLength(); j += ArrayElementsVisualized)
+                            {
+                                int end = Math.Min(j + ArrayElementsVisualized, variable.GetArrayLength());
+
+                                yield return Tuple.Create($"[{j}-{end - 1}]", GetArrayElements(j, end));
+                            }
+                        }
+                    }
+                }
+            }
+
+            private IEnumerable<IResultTreeItem> GetArrayElements(int start, int end)
+            {
+                for (int i = start; i < end; i++)
+                {
+                    yield return ResultTreeItem.Create(GetValue(() => variable.GetArrayElement(i)), typeof(Variable), $"[{i}]", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
                 }
             }
 
@@ -831,7 +902,8 @@ namespace CsDebugScript.UI
 
         private class TreeViewItemTag
         {
-            public IResultTreeItem ResultTreeItem { get; set; }
+            public object ResultTreeItem { get; set; }
+
             public int Level { get; set; }
         }
 
@@ -942,44 +1014,58 @@ namespace CsDebugScript.UI
 
                 if ((item.Items.Count == 1) && (item.Items[0].ToString() == ExpandingItemText))
                 {
-                    TreeViewItemTag tag = (TreeViewItemTag)item.Tag;
+                    TreeViewItemTag tag = item.Tag as TreeViewItemTag;
 
                     System.Threading.Tasks.Task.Run(() =>
                     {
+                        IResultTreeItem resultTreeItem = tag.ResultTreeItem as IResultTreeItem;
+                        IEnumerable<IResultTreeItem> children = tag.ResultTreeItem as IEnumerable<IResultTreeItem>;
+
                         try
                         {
-                            IResultTreeItem resultTreeItem = tag.ResultTreeItem;
-                            List<Tuple<string, List<IResultTreeItem>>> customChildren = new List<Tuple<string, List<IResultTreeItem>>>();
-
-                            foreach (Tuple<string, IEnumerable<IResultTreeItem>> customChild in resultTreeItem.Children)
+                            if (resultTreeItem != null)
                             {
-                                customChildren.Add(Tuple.Create(customChild.Item1, customChild.Item2.ToList()));
-                                foreach (IResultTreeItem child in customChildren.Last().Item2)
+                                List<Tuple<string, IEnumerable<IResultTreeItem>>> customChildren = new List<Tuple<string, IEnumerable<IResultTreeItem>>>();
+
+                                foreach (Tuple<string, IEnumerable<IResultTreeItem>> customChild in resultTreeItem.Children)
                                 {
-                                    if (!(child.Value is UIElement))
+                                    if (customChild.Item2.Any())
                                     {
-                                        try
+                                        if (customChild.Item1 == "[Expanded]")
                                         {
-                                            string ss = child.ValueString;
+                                            List<IResultTreeItem> cachedItems = customChild.Item2.ToList();
+
+                                            customChildren.Add(Tuple.Create(customChild.Item1, (IEnumerable<IResultTreeItem>)cachedItems));
+                                            foreach (IResultTreeItem child in cachedItems)
+                                            {
+                                                if (!(child.Value is UIElement))
+                                                {
+                                                    try
+                                                    {
+                                                        string ss = child.ValueString;
+                                                    }
+                                                    catch
+                                                    {
+                                                    }
+                                                }
+                                            }
                                         }
-                                        catch
+                                        else
                                         {
+                                            customChildren.Add(customChild);
                                         }
                                     }
                                 }
-                            }
 
-                            item.Dispatcher.InvokeAsync(() =>
-                            {
-                                try
+                                item.Dispatcher.InvokeAsync(() =>
                                 {
-                                    int level = tag.Level;
-                                    TreeViewItem lastItem = null;
-
-                                    item.Items.Clear();
-                                    foreach (Tuple<string, List<IResultTreeItem>> customChild in customChildren)
+                                    try
                                     {
-                                        if (customChild.Item2.Count > 0)
+                                        int level = tag.Level;
+                                        TreeViewItem lastItem = null;
+
+                                        item.Items.Clear();
+                                        foreach (Tuple<string, IEnumerable<IResultTreeItem>> customChild in customChildren)
                                         {
                                             if (customChild.Item1 == "[Expanded]")
                                             {
@@ -992,29 +1078,78 @@ namespace CsDebugScript.UI
                                             {
                                                 TreeViewItem customItem = CreateSimpleTreeItem(customChild.Item1, CompletionData.GetImage(CompletionDataType.Namespace), level + 1, italic: true);
 
-                                                foreach (var child in customChild.Item2)
+                                                customItem.Tag = new TreeViewItemTag()
                                                 {
-                                                    customItem.Items.Add(CreateTreeItem(child, level + 2));
-                                                }
+                                                    Level = level + 1,
+                                                    ResultTreeItem = customChild.Item2,
+                                                };
+                                                customItem.Items.Add(ExpandingItemText);
+                                                customItem.Expanded += TreeViewItem_Expanded;
                                                 item.Items.Add(lastItem = customItem);
                                             }
                                         }
-                                    }
 
-                                    // Check if we need to fix empty list item width
-                                    if (lastItem != null && double.IsNaN(emptyListItem.Width))
-                                    {
-                                        item.Dispatcher.BeginInvoke(new Action(() =>
+                                        // Check if we need to fix empty list item width
+                                        if (lastItem != null && double.IsNaN(emptyListItem.Width))
                                         {
-                                            emptyListItem.Width = item.ActualWidth - lastItem.ActualWidth;
-                                        }), System.Windows.Threading.DispatcherPriority.Background);
+                                            item.Dispatcher.BeginInvoke(new Action(() =>
+                                            {
+                                                emptyListItem.Width = item.ActualWidth - lastItem.ActualWidth;
+                                            }), System.Windows.Threading.DispatcherPriority.Background);
+                                        }
+                                    }
+                                    catch (Exception ex3)
+                                    {
+                                        MessageBox.Show(ex3.ToString());
+                                    }
+                                });
+                            }
+                            else if (children != null)
+                            {
+                                List<IResultTreeItem> cachedItems = children.ToList();
+
+                                foreach (IResultTreeItem child in children)
+                                {
+                                    if (!(child.Value is UIElement))
+                                    {
+                                        try
+                                        {
+                                            string ss = child.ValueString;
+                                        }
+                                        catch
+                                        {
+                                        }
                                     }
                                 }
-                                catch (Exception ex3)
+
+                                item.Dispatcher.InvokeAsync(() =>
                                 {
-                                    MessageBox.Show(ex3.ToString());
-                                }
-                            });
+                                    try
+                                    {
+                                        int level = tag.Level;
+                                        TreeViewItem lastItem = null;
+
+                                        item.Items.Clear();
+                                        foreach (IResultTreeItem child in cachedItems)
+                                        {
+                                            item.Items.Add(lastItem = CreateTreeItem(child, level + 1));
+                                        }
+
+                                        // Check if we need to fix empty list item width
+                                        if (lastItem != null && double.IsNaN(emptyListItem.Width))
+                                        {
+                                            item.Dispatcher.BeginInvoke(new Action(() =>
+                                            {
+                                                emptyListItem.Width = item.ActualWidth - lastItem.ActualWidth;
+                                            }), System.Windows.Threading.DispatcherPriority.Background);
+                                        }
+                                    }
+                                    catch (Exception ex3)
+                                    {
+                                        MessageBox.Show(ex3.ToString());
+                                    }
+                                });
+                            }
                         }
                         catch (Exception ex2)
                         {
