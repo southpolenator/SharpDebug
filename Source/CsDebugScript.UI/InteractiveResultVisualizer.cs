@@ -437,7 +437,17 @@ namespace CsDebugScript.UI
                 this.interactiveResultVisualizer = interactiveResultVisualizer;
                 Name = name;
                 Image = image;
-                valueString = SimpleCache.Create(() => Value.ToString());
+                valueString = SimpleCache.Create(() =>
+                {
+                    try
+                    {
+                        return Value.ToString();
+                    }
+                    catch
+                    {
+                        return "<Exception during evaluation>";
+                    }
+                });
             }
 
             public virtual bool IsExpandable

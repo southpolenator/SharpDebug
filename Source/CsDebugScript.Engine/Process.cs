@@ -461,7 +461,14 @@ namespace CsDebugScript
         /// </returns>
         public override string ToString()
         {
-            return $"({Id}:{SystemId}) - {ExecutableName}";
+            try
+            {
+                return $"({Id}:{SystemId}) - {ExecutableName}";
+            }
+            catch
+            {
+                return $"({Id}:{SystemId})";
+            }
         }
 
         /// <summary>
