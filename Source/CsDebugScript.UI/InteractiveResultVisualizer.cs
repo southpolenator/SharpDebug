@@ -475,6 +475,10 @@ namespace CsDebugScript.UI
                     {
                         yield return Tuple.Create("[Dynamic]", OrderItems(DynamicChildren));
                     }
+                    if (EnumerationChildren.Any())
+                    {
+                        yield return Tuple.Create("[Enumeration]", OrderItems(EnumerationChildren));
+                    }
                 }
             }
 
@@ -606,7 +610,27 @@ namespace CsDebugScript.UI
 
                             foreach (string memberName in dynamicObject.GetDynamicMemberNames())
                             {
-                                yield return ResultTreeItem.Create(GetValue(() => Dynamic.InvokeGet(dynamicObject, memberName)), typeof(DynamicObject), memberName, CompletionData.GetImage(CompletionDataType.StaticVariable), interactiveResultVisualizer);
+                                yield return ResultTreeItem.Create(GetValue(() => Dynamic.InvokeGet(dynamicObject, memberName)), typeof(DynamicObject), memberName, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                            }
+                        }
+                    }
+                }
+            }
+
+            public virtual IEnumerable<IResultTreeItem> EnumerationChildren
+            {
+                get
+                {
+                    if (obj != null)
+                    {
+                        if (typeof(IEnumerable).IsAssignableFrom(obj.GetType()))
+                        {
+                            IEnumerable enumeration = (IEnumerable)obj;
+                            int index = 0;
+
+                            foreach (object value in enumeration)
+                            {
+                                yield return ResultTreeItem.Create(value, value?.GetType(), $"[{index++}]", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
                             }
                         }
                     }
