@@ -446,7 +446,9 @@ namespace CsDebugScript.UI
                 {
                     if (obj != null && objType != null)
                     {
-                        return Children.Any();
+                        Type type = obj.GetType();
+
+                        return !type.IsEnum && !type.IsPrimitive;
                     }
 
                     return false;
