@@ -64,6 +64,8 @@ namespace CsDebugScript.UI
             IEnumerable<Tuple<string, IEnumerable<IResultTreeItem>>> Children { get; }
 
             string ValueString { get; }
+
+            void Initialize();
         }
 
         private class ResultTreeItem
@@ -661,6 +663,36 @@ namespace CsDebugScript.UI
                 }
             }
 
+            public void Initialize()
+            {
+                try
+                {
+                    string name = Name;
+                }
+                catch
+                {
+                }
+
+                if (!(Value is UIElement))
+                {
+                    try
+                    {
+                        string value = ValueString;
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                try
+                {
+                    string type = Type;
+                }
+                catch
+                {
+                }
+            }
+
             public virtual ImageSource Image { get; private set; }
 
             public virtual string Name { get; private set; }
@@ -730,13 +762,16 @@ namespace CsDebugScript.UI
             }
 
             // All other should be visualized in a table
-            return new LazyUIResult(() => Visualize(obj));
+            IResultTreeItem resultTreeItem = ResultTreeItem.Create(obj, obj.GetType(), "result", null, this);
+
+            resultTreeItem.Initialize();
+            return new LazyUIResult(() => Visualize(resultTreeItem));
         }
 
         TreeViewItem emptyListItem;
         System.Windows.Threading.Dispatcher dispatcher;
 
-        private UIElement Visualize(object obj)
+        private UIElement Visualize(IResultTreeItem resultTreeItem)
         {
             // Create top level table grid
             Grid tableGrid = new Grid();
@@ -777,7 +812,6 @@ namespace CsDebugScript.UI
 
             // Create table tree
             TreeView tree = new TreeView();
-            IResultTreeItem resultTreeItem = ResultTreeItem.Create(obj, obj.GetType(), "result", null, this);
             TreeViewItem resultItem = CreateTreeItem(resultTreeItem, 0);
 
             tree.PreviewMouseWheel += Tree_PreviewMouseWheel;
@@ -1074,16 +1108,7 @@ namespace CsDebugScript.UI
                                             customChildren.Add(Tuple.Create(customChild.Item1, (IEnumerable<IResultTreeItem>)cachedItems));
                                             foreach (IResultTreeItem child in cachedItems)
                                             {
-                                                if (!(child.Value is UIElement))
-                                                {
-                                                    try
-                                                    {
-                                                        string ss = child.ValueString;
-                                                    }
-                                                    catch
-                                                    {
-                                                    }
-                                                }
+                                                child.Initialize();
                                             }
                                         }
                                         else
@@ -1146,16 +1171,7 @@ namespace CsDebugScript.UI
 
                                 foreach (IResultTreeItem child in children)
                                 {
-                                    if (!(child.Value is UIElement))
-                                    {
-                                        try
-                                        {
-                                            string ss = child.ValueString;
-                                        }
-                                        catch
-                                        {
-                                        }
-                                    }
+                                    child.Initialize();
                                 }
 
                                 item.Dispatcher.InvokeAsync(() =>
