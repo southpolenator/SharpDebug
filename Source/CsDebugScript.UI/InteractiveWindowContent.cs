@@ -64,8 +64,8 @@ namespace CsDebugScript.UI
             promptBlock = new TextBlock();
             promptBlock.HorizontalAlignment = HorizontalAlignment.Left;
             promptBlock.VerticalAlignment = VerticalAlignment.Top;
-            promptBlock.FontFamily = new FontFamily("Consolas");
-            promptBlock.FontSize = 14;
+            promptBlock.FontFamily = new FontFamily(fontFamily);
+            promptBlock.FontSize = fontSize;
             promptBlock.Text = ExecutingPrompt;
             promptBlock.SizeChanged += PromptBlock_SizeChanged;
             panel.Children.Add(promptBlock);
@@ -276,8 +276,8 @@ namespace CsDebugScript.UI
             }
 
             var textBox = new TextBox();
-            textBox.FontFamily = new FontFamily("Consolas");
-            textBox.FontSize = 14;
+            textBox.FontFamily = new FontFamily(fontFamily);
+            textBox.FontSize = fontSize;
             textBox.Text = textOutput;
             textBox.IsReadOnly = true;
             textBox.Background = Brushes.Transparent;
@@ -299,8 +299,8 @@ namespace CsDebugScript.UI
         private UIElement CreateDbgCode(string text)
         {
             var textBlock = new TextBlock();
-            textBlock.FontFamily = new FontFamily("Consolas");
-            textBlock.FontSize = 14;
+            textBlock.FontFamily = new FontFamily(fontFamily);
+            textBlock.FontSize = fontSize;
             textBlock.Text = "#dbg> " + text;
             textBlock.Background = Brushes.Transparent;
             return textBlock;
@@ -312,8 +312,8 @@ namespace CsDebugScript.UI
             panel.Orientation = Orientation.Horizontal;
 
             var textBlock = new TextBlock();
-            textBlock.FontFamily = new FontFamily("Consolas");
-            textBlock.FontSize = 14;
+            textBlock.FontFamily = new FontFamily(fontFamily);
+            textBlock.FontSize = fontSize;
             textBlock.Text = InteractiveExecution.DefaultPrompt;
             panel.Children.Add(textBlock);
 
