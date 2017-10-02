@@ -1,11 +1,7 @@
-﻿using CsDebugScript.Engine.Utility;
-using CsDebugScript.UI.CodeWindow;
+﻿using CsDebugScript.UI.CodeWindow;
 using CsDebugScript.UI.ResultVisualizers;
-using Dynamitey;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -85,52 +81,61 @@ namespace CsDebugScript.UI
             return new LazyUIResult(() => Visualize(resultTreeItem));
         }
 
-        TreeViewItem emptyListItem;
         System.Windows.Threading.Dispatcher dispatcher;
 
-        private UIElement Visualize(IResultVisualizer resultTreeItem)
+        private static FrameworkElementFactory CreateStackPanelFactory(string name)
         {
-            // Create top level table grid
-            Grid tableGrid = new Grid();
-            dispatcher = tableGrid.Dispatcher;
+            FrameworkElementFactory stackPanel = new FrameworkElementFactory(typeof(StackPanel));
 
-            Grid.SetIsSharedSizeScope(tableGrid, true);
-            tableGrid.RowDefinitions.Add(new RowDefinition()
+            stackPanel.SetValue(FrameworkElement.NameProperty, name);
+
+            FrameworkElementFactory border = new FrameworkElementFactory(typeof(Border));
+
+            border.AppendChild(stackPanel);
+            border.SetValue(Border.BorderBrushProperty, Brushes.LightGray);
+            border.SetValue(Border.BorderThicknessProperty, new Thickness(0, 0, 1, 0));
+            border.SetValue(Border.MarginProperty, new Thickness(-6, 0, -6, 0));
+            stackPanel.SetValue(Border.MarginProperty, new Thickness(6, 0, 0, 0));
+            return border;
+        }
+
+        private UIElement Visualize(IResultVisualizer resultVisualizer)
+        {
+            // Create tree and its columns
+            TreeListView tree = new TreeListView();
+            tree.Columns.Add(new GridViewColumn()
             {
-                Height = new GridLength(1, GridUnitType.Auto),
+                Header = "Name",
+                CellTemplate = new DataTemplate() { VisualTree = CreateStackPanelFactory("Name") },
+                Width = 200,
+            });
+            tree.Columns.Add(new GridViewColumn()
+            {
+                Header = "Value",
+                CellTemplate = new DataTemplate() { VisualTree = CreateStackPanelFactory("Value") },
+                Width = 600,
+            });
+            tree.Columns.Add(new GridViewColumn()
+            {
+                Header = "Type",
+                CellTemplate = new DataTemplate() { VisualTree = CreateStackPanelFactory("Type") },
+                Width = 200,
             });
 
-            // Create table header
+            // Create header row
             TreeViewItem header = new TreeViewItem();
-            Grid headerGrid = CreateTreeItemGrid(0);
-            TextBlock name = new TextBlock();
-            name.Text = "Name";
-            name.FontWeight = FontWeights.Bold;
-            Grid.SetColumn(name, NameColumnIndex);
-            headerGrid.Children.Add(name);
-            TextBlock value = new TextBlock();
-            value.Text = "Value";
-            value.FontWeight = FontWeights.Bold;
-            Grid.SetColumn(value, ValueColumnIndex);
-            headerGrid.Children.Add(value);
-            TextBlock type = new TextBlock();
-            type.Text = "Type";
-            type.FontWeight = FontWeights.Bold;
-            Grid.SetColumn(type, TypeColumnIndex);
-            headerGrid.Children.Add(type);
-            emptyListItem = new TreeViewItem();
-            emptyListItem.Padding = new Thickness(0);
-            emptyListItem.Focusable = false;
-            Grid.SetColumn(emptyListItem, 1);
-            emptyListItem.Focusable = false;
-            headerGrid.Children.Add(emptyListItem);
-            header.Focusable = false;
-            header.Header = headerGrid;
+            header.Header = new GridViewHeaderRowPresenter()
+            {
+                Columns = tree.Columns,
+            };
+            tree.Items.Add(header);
 
-            // Create table tree
-            TreeView tree = new TreeView();
-            TreeViewItem resultItem = CreateTreeItem(resultTreeItem, 0);
+            // Create result item
+            TreeViewItem resultItem = CreateTreeItem(tree, resultVisualizer, 0);
+            tree.Items.Add(resultItem);
+            resultItem.IsExpanded = true;
 
+            // Initialize tree events
             tree.PreviewMouseWheel += Tree_PreviewMouseWheel;
             tree.PreviewKeyDown += Tree_PreviewKeyDown;
             tree.LostFocus += (a, b) =>
@@ -174,11 +179,8 @@ namespace CsDebugScript.UI
                     }
                 }
             };
-            tree.Items.Add(header);
-            tree.Items.Add(resultItem);
-            resultItem.IsExpanded = true;
-            tableGrid.Children.Add(tree);
-            return tableGrid;
+            dispatcher = tree.Dispatcher;
+            return tree;
         }
 
         private void Tree_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -204,7 +206,9 @@ namespace CsDebugScript.UI
 
                 // if item is expanded and has items, then this item is not the last one :)
                 if (item.HasItems && item.IsExpanded)
+                {
                     return;
+                }
 
                 // Check inside the parent
                 TreeViewItem parent = item.Parent as TreeViewItem;
@@ -228,7 +232,7 @@ namespace CsDebugScript.UI
             }
             else if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.None)
             {
-                TreeView tree = (TreeView)sender;
+                TreeListView tree = (TreeListView)sender;
                 TreeViewItem item = e.OriginalSource as TreeViewItem;
 
                 // Check inside the parent
@@ -245,48 +249,6 @@ namespace CsDebugScript.UI
             }
         }
 
-        const int NameColumnIndex = 0;
-        const int SpacingColumns = 10;
-        const int ValueColumnIndex = SpacingColumns + 1;
-        const int TypeColumnIndex = SpacingColumns + 2;
-
-        private static Grid CreateTreeItemGrid(int level)
-        {
-            Grid grid = new Grid();
-
-            grid.ColumnDefinitions.Add(new ColumnDefinition()
-            {
-                Name = "Name",
-                Width = new GridLength(0, GridUnitType.Auto),
-                MinWidth = 100,
-                SharedSizeGroup = "Name",
-            });
-            for (int i = 0; i < level; i++)
-                grid.ColumnDefinitions.Add(new ColumnDefinition());
-            for (int i = level; i < SpacingColumns; i++)
-                grid.ColumnDefinitions.Add(new ColumnDefinition()
-                {
-                    Name = "Spacing",
-                    Width = new GridLength(0, GridUnitType.Auto),
-                    SharedSizeGroup = "Spacing",
-                });
-            grid.ColumnDefinitions.Add(new ColumnDefinition()
-            {
-                Name = "Value",
-                Width = new GridLength(0, GridUnitType.Auto),
-                MinWidth = 100,
-                SharedSizeGroup = "Value",
-            });
-            grid.ColumnDefinitions.Add(new ColumnDefinition()
-            {
-                Name = "Type",
-                Width = new GridLength(0, GridUnitType.Auto),
-                MinWidth = 100,
-                SharedSizeGroup = "Type",
-            });
-            return grid;
-        }
-
         private class TreeViewItemTag
         {
             public object ResultTreeItem { get; set; }
@@ -294,79 +256,138 @@ namespace CsDebugScript.UI
             public int Level { get; set; }
         }
 
+        private static childItem FindVisualChild<childItem>(DependencyObject obj, string name = null)
+            where childItem : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(obj, i);
+
+                if (child != null && child is childItem)
+                {
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        FrameworkElement fe = child as FrameworkElement;
+
+                        if (fe == null || fe.Name != name)
+                        {
+                            continue;
+                        }
+                    }
+                    return (childItem)child;
+                }
+                else
+                {
+                    childItem childOfChild = FindVisualChild<childItem>(child, name);
+
+                    if (childOfChild != null)
+                        return childOfChild;
+                }
+            }
+
+            return null;
+        }
+
         internal UIElement CreateTextWithIcon(string text, ImageSource icon, object tooltip = null, bool italic = false, bool bold = false)
         {
             return dispatcher.Invoke(() =>
             {
-                StackPanel stackPanel = new StackPanel();
-                stackPanel.Orientation = Orientation.Horizontal;
-                Grid.SetColumn(stackPanel, NameColumnIndex);
-                TextBlock textBlock = new TextBlock();
-                if (italic)
+                StackPanel stackPanel = new StackPanel()
                 {
-                    textBlock.FontStyle = FontStyles.Italic;
-                }
-                if (bold)
+                    Orientation = Orientation.Horizontal,
+                };
+                stackPanel.Children.Add(new Image()
                 {
-                    textBlock.FontWeight = FontWeights.Bold;
-                }
-                textBlock.VerticalAlignment = VerticalAlignment.Center;
-                textBlock.Text = text;
-                Image image = new Image();
-                image.Width = image.Height = 16;
-                image.Source = icon;
-                image.ToolTip = tooltip;
-                stackPanel.Children.Add(image);
-                stackPanel.Children.Add(textBlock);
+                    Width = 16,
+                    Height = 16,
+                    Source = icon,
+                    ToolTip = tooltip,
+                });
+                stackPanel.Children.Add(new TextBlock()
+                {
+                    FontStyle = italic ? FontStyles.Italic : FontStyles.Normal,
+                    FontWeight = bold ? FontWeights.Bold : FontWeights.Normal,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Text = text,
+                    ToolTip = tooltip,
+                });
                 return stackPanel;
             });
         }
 
-        private TreeViewItem CreateSimpleTreeItem(string name, ImageSource image, int level, bool italic)
-        {
-            Grid grid;
-
-            return CreateSimpleTreeItem(name, image, level, out grid, italic: italic);
-        }
-
-        private TreeViewItem CreateSimpleTreeItem(string name, ImageSource image, int level, out Grid grid, bool italic = false)
+        private TreeViewItem CreateTreeItem(TreeListView tree, string name, ImageSource imageSource, int level, UIElement value = null, string typeString = null, bool nameItalic = false)
         {
             TreeViewItem item = new TreeViewItem();
+            GridViewRowPresenter rowPresenter = new GridViewRowPresenter()
+            {
+                Columns = tree.Columns,
+                Content = level,
+            };
+            item.Header = rowPresenter;
+            item.Loaded += (sender, e) =>
+            {
+                FrameworkElement expander = item.Template.FindName("Expander", item) as FrameworkElement;
+                StackPanel nameStackPanel = FindVisualChild<StackPanel>(rowPresenter, "Name");
+                StackPanel valueStackPanel = FindVisualChild<StackPanel>(rowPresenter, "Value");
+                StackPanel typeStackPanel = FindVisualChild<StackPanel>(rowPresenter, "Type");
 
-            grid = CreateTreeItemGrid(level);
-            grid.Children.Add(CreateTextWithIcon(name, image, italic: italic));
-            item.Header = grid;
+                if (expander != null && nameStackPanel != null)
+                {
+                    Panel expanderParent = expander.Parent as Panel;
+
+                    if (expanderParent != null)
+                    {
+                        if (level > 0)
+                        {
+                            expanderParent.Margin = new Thickness(-19, 0, 0, 0);
+                            nameStackPanel.Margin = new Thickness(10 * (level - 1), 0, 0, 0);
+                        }
+                        else
+                        {
+                            nameStackPanel.Margin = new Thickness(-19, 0, 0, 0);
+                        }
+                        nameStackPanel.Orientation = Orientation.Horizontal;
+                        expanderParent.Children.Remove(expander);
+                        nameStackPanel.Children.Add(expander);
+                        nameStackPanel.Children.Add(CreateTextWithIcon(name, imageSource, italic: nameItalic));
+                    }
+                }
+                if (valueStackPanel != null && value != null)
+                {
+                    valueStackPanel.Orientation = Orientation.Horizontal;
+                    valueStackPanel.Children.Add(value);
+                }
+                if (typeStackPanel != null && typeString != null)
+                {
+                    typeStackPanel.Orientation = Orientation.Horizontal;
+                    typeStackPanel.Children.Add(new TextBlock()
+                    {
+                        Text = typeString,
+                    });
+                }
+            };
             return item;
         }
 
-        private TreeViewItem CreateTreeItem(IResultVisualizer resultTreeItem, int level)
+        private TreeViewItem CreateTreeItem(TreeListView tree, IResultVisualizer resultVisualizer, int level)
         {
-            Grid grid;
-            TreeViewItem item = CreateSimpleTreeItem(resultTreeItem.Name, resultTreeItem.Image, level, out grid);
-            object itemValue = resultTreeItem.Value;
-            if (itemValue is UIElement)
+            UIElement value = resultVisualizer.Value as UIElement;
+
+            if (value == null)
             {
-                Grid.SetColumn((UIElement)itemValue, ValueColumnIndex);
-                grid.Children.Add((UIElement)itemValue);
-            }
-            else
-            {
-                TextBlock value = new TextBlock();
-                value.Text = resultTreeItem.ValueString;
-                Grid.SetColumn(value, ValueColumnIndex);
-                grid.Children.Add(value);
+                value = new TextBlock()
+                {
+                    Text = resultVisualizer.ValueString,
+                };
             }
 
-            TextBlock type = new TextBlock();
-            type.Text = resultTreeItem.Type;
-            Grid.SetColumn(type, TypeColumnIndex);
-            grid.Children.Add(type);
+            TreeViewItem item = CreateTreeItem(tree, resultVisualizer.Name, resultVisualizer.Image, level, value, resultVisualizer.Type);
             item.Tag = new TreeViewItemTag()
             {
-                ResultTreeItem = resultTreeItem,
+                ResultTreeItem = resultVisualizer,
                 Level = level,
             };
-            if (resultTreeItem.IsExpandable)
+            if (resultVisualizer.IsExpandable)
             {
                 item.Items.Add(ExpandingItemText);
                 item.Expanded += TreeViewItem_Expanded;
@@ -379,6 +400,14 @@ namespace CsDebugScript.UI
             try
             {
                 TreeViewItem item = e.Source as TreeViewItem;
+                TreeListView tree = null;
+                FrameworkElement parent = item?.Parent as FrameworkElement;
+
+                while (tree == null && parent != null)
+                {
+                    tree = parent as TreeListView;
+                    parent = parent.Parent as FrameworkElement;
+                }
 
                 if ((item.Items.Count == 1) && (item.Items[0].ToString() == ExpandingItemText))
                 {
@@ -421,7 +450,6 @@ namespace CsDebugScript.UI
                                     try
                                     {
                                         int level = tag.Level;
-                                        TreeViewItem lastItem = null;
 
                                         item.Items.Clear();
                                         foreach (Tuple<string, IEnumerable<IResultVisualizer>> customChild in customChildren)
@@ -430,12 +458,12 @@ namespace CsDebugScript.UI
                                             {
                                                 foreach (IResultVisualizer child in customChild.Item2)
                                                 {
-                                                    item.Items.Add(lastItem = CreateTreeItem(child, level + 1));
+                                                    item.Items.Add(CreateTreeItem(tree, child, level + 1));
                                                 }
                                             }
                                             else
                                             {
-                                                TreeViewItem customItem = CreateSimpleTreeItem(customChild.Item1, CompletionData.GetImage(CompletionDataType.Namespace), level + 1, italic: true);
+                                                TreeViewItem customItem = CreateTreeItem(tree, customChild.Item1, CompletionData.GetImage(CompletionDataType.Namespace), level + 1, nameItalic: true);
 
                                                 customItem.Tag = new TreeViewItemTag()
                                                 {
@@ -444,17 +472,8 @@ namespace CsDebugScript.UI
                                                 };
                                                 customItem.Items.Add(ExpandingItemText);
                                                 customItem.Expanded += TreeViewItem_Expanded;
-                                                item.Items.Add(lastItem = customItem);
+                                                item.Items.Add(customItem);
                                             }
-                                        }
-
-                                        // Check if we need to fix empty list item width
-                                        if (lastItem != null && double.IsNaN(emptyListItem.Width))
-                                        {
-                                            item.Dispatcher.BeginInvoke(new Action(() =>
-                                            {
-                                                emptyListItem.Width = item.ActualWidth - lastItem.ActualWidth;
-                                            }), System.Windows.Threading.DispatcherPriority.Background);
                                         }
                                     }
                                     catch (Exception ex3)
@@ -477,21 +496,11 @@ namespace CsDebugScript.UI
                                     try
                                     {
                                         int level = tag.Level;
-                                        TreeViewItem lastItem = null;
 
                                         item.Items.Clear();
                                         foreach (IResultVisualizer child in cachedItems)
                                         {
-                                            item.Items.Add(lastItem = CreateTreeItem(child, level + 1));
-                                        }
-
-                                        // Check if we need to fix empty list item width
-                                        if (lastItem != null && double.IsNaN(emptyListItem.Width))
-                                        {
-                                            item.Dispatcher.BeginInvoke(new Action(() =>
-                                            {
-                                                emptyListItem.Width = item.ActualWidth - lastItem.ActualWidth;
-                                            }), System.Windows.Threading.DispatcherPriority.Background);
+                                            item.Items.Add(CreateTreeItem(tree, child, level + 1));
                                         }
                                     }
                                     catch (Exception ex3)
@@ -513,5 +522,12 @@ namespace CsDebugScript.UI
                 MessageBox.Show(ex.ToString());
             }
         }
+    }
+
+    internal class TreeListView : TreeView
+    {
+        private GridViewColumnCollection columns = new GridViewColumnCollection();
+
+        public GridViewColumnCollection Columns => columns;
     }
 }
