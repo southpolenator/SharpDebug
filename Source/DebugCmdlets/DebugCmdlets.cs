@@ -62,23 +62,10 @@ namespace PowershellDebugSession
                 SymbolPath = "srv*";
             }
 
-            IDebugClient client = DebugClient.DebugCreateEx(0x60);
-
-            ((IDebugSymbols5)client).SetSymbolPathWide(SymbolPath);
-            ((IDebugClient7)client).CreateProcessAndAttach(0, ProcessPath, DebugCreateProcess.DebugOnlyThisProcess, 0, DebugAttach.Default);
-            ((IDebugControl7)client).WaitForEvent(0, uint.MaxValue);
-
-            // For live debugging disable caching.
-            //
-            Context.EnableUserCastedVariableCaching = false;
-            Context.EnableVariableCaching = false;
-
-            IDebuggerEngine debugger = new DbgEngDll(client);
-            ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.CreateDefaultSymbolProvider());
-            Context.InitializeDebugger(debugger, symbolProvider);
-
+            IDebugClient client = DebugClient.OpenProcess(ProcessPath, null, SymbolPath, (uint)(Defines.DebugEngoptInitialBreak | Defines.DebugEngoptFinalBreak));
             WriteDebug("Connection successfully initialized");
 
+            DbgEngDll.InitializeContext(client);
         }
     }
 
