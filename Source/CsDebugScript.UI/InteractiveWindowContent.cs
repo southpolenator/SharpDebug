@@ -19,6 +19,8 @@ namespace CsDebugScript.UI
         private string fontFamily;
         private double fontSize;
         private int indentationSize;
+        private List<string> previousCommands = new List<string>();
+        private int previousCommandsIndex = -1;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindowContent" /> class.
@@ -62,14 +64,14 @@ namespace CsDebugScript.UI
             promptBlock = new TextBlock();
             promptBlock.HorizontalAlignment = HorizontalAlignment.Left;
             promptBlock.VerticalAlignment = VerticalAlignment.Top;
-            promptBlock.FontFamily = new FontFamily("Consolas");
-            promptBlock.FontSize = 14;
+            promptBlock.FontFamily = new FontFamily(fontFamily);
+            promptBlock.FontSize = fontSize;
             promptBlock.Text = ExecutingPrompt;
             promptBlock.SizeChanged += PromptBlock_SizeChanged;
             panel.Children.Add(promptBlock);
 
             // Add text editor
-            textEditor = new InteractiveCodeEditor(fontFamily, fontSize, indentationSize, highlightingColors);
+            textEditor = new InteractiveCodeEditor(new InteractiveResultVisualizer(this), fontFamily, fontSize, indentationSize, highlightingColors);
             textEditor.HorizontalAlignment = HorizontalAlignment.Stretch;
             textEditor.Background = Brushes.Transparent;
             textEditor.CommandExecuted += TextEditor_CommandExecuted;
@@ -92,6 +94,85 @@ namespace CsDebugScript.UI
             }
         }
 
+        internal string PreviousCommand
+        {
+            get
+            {
+                if (previousCommandsIndex >= 0 && previousCommandsIndex < previousCommands.Count)
+                {
+                    return previousCommands[previousCommandsIndex];
+                }
+
+                return null;
+            }
+        }
+
+        public FocusNavigationDirection? TraverseDirection { get; private set; }
+
+        public FrameworkElement GetFocusedResultItem()
+        {
+            FrameworkElement elementWithFocus = Keyboard.FocusedElement as FrameworkElement;
+
+            while (elementWithFocus != null && elementWithFocus != textEditor.TextArea && elementWithFocus.Parent != resultsPanel)
+            {
+                elementWithFocus = elementWithFocus.Parent as FrameworkElement;
+            }
+
+            if (elementWithFocus == textEditor.TextArea)
+            {
+                return textEditor;
+            }
+
+            return elementWithFocus;
+        }
+
+        public void TraverseNext(FrameworkElement focus)
+        {
+            FrameworkElement elementWithFocus = Keyboard.FocusedElement as FrameworkElement;
+
+            focus = focus ?? GetFocusedResultItem();
+            if (focus == null)
+            {
+                textEditor.Focus();
+                return;
+            }
+
+            if (focus != textEditor)
+            {
+                TraverseDirection = FocusNavigationDirection.Next;
+                focus.MoveFocus(new TraversalRequest(FocusNavigationDirection.Down));
+                if (elementWithFocus == Keyboard.FocusedElement as FrameworkElement)
+                {
+                    elementWithFocus.MoveFocus(new TraversalRequest(FocusNavigationDirection.Down));
+                }
+                TraverseDirection = null;
+            }
+        }
+
+        public void TraversePrevious(FrameworkElement focus)
+        {
+            FrameworkElement elementWithFocus = Keyboard.FocusedElement as FrameworkElement;
+
+            focus = focus ?? GetFocusedResultItem();
+            if (focus == null)
+            {
+                textEditor.Focus();
+                return;
+            }
+
+            TraverseDirection = FocusNavigationDirection.Previous;
+            focus.MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
+            if (elementWithFocus == Keyboard.FocusedElement as FrameworkElement)
+            {
+                elementWithFocus.MoveFocus(new TraversalRequest(FocusNavigationDirection.Down));
+            }
+            if (Keyboard.FocusedElement == textEditor.TextArea)
+            {
+                focus.Focus();
+            }
+            TraverseDirection = null;
+        }
+
         private void PromptBlock_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             textEditor.Padding = new Thickness(promptBlock.ActualWidth, 0, 0, 0);
@@ -99,7 +180,37 @@ namespace CsDebugScript.UI
 
         private void TextArea_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            scrollViewer.ScrollToEnd();
+            if (textEditor.IsFocused)
+            {
+                scrollViewer.ScrollToEnd();
+            }
+        }
+
+        private void SetCommandFromBuffer(bool forward)
+        {
+            if (forward)
+            {
+                previousCommandsIndex++;
+            }
+            else
+            {
+                previousCommandsIndex--;
+            }
+
+            if (previousCommandsIndex >= previousCommands.Count)
+            {
+                previousCommandsIndex = previousCommands.Count - 1;
+            }
+            else if (previousCommandsIndex < 0)
+            {
+                previousCommandsIndex = 0;
+            }
+
+            if (textEditor.Text != PreviousCommand)
+            {
+                textEditor.Text = PreviousCommand;
+                textEditor.SelectionStart = textEditor.Text.Length;
+            }
         }
 
         private void TextEditor_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -109,8 +220,14 @@ namespace CsDebugScript.UI
                 if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == 1)
                 {
                     e.Handled = true;
-                    MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
-                    textEditor.MoveFocus(new TraversalRequest(FocusNavigationDirection.Previous));
+                    if (textEditor.Text == PreviousCommand || string.IsNullOrEmpty(textEditor.Text))
+                    {
+                        SetCommandFromBuffer(false);
+                    }
+                    else
+                    {
+                        TraversePrevious(textEditor);
+                    }
                 }
             }
             else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.None)
@@ -118,8 +235,35 @@ namespace CsDebugScript.UI
                 if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == textEditor.LineCount)
                 {
                     e.Handled = true;
-                    MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                    if (textEditor.Text == PreviousCommand || string.IsNullOrEmpty(textEditor.Text))
+                    {
+                        SetCommandFromBuffer(true);
+                    }
+                    else
+                    {
+                        TraverseNext(textEditor);
+                    }
                 }
+            }
+            else if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.Alt)
+            {
+                e.Handled = true;
+                SetCommandFromBuffer(false);
+            }
+            else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.Alt)
+            {
+                e.Handled = true;
+                SetCommandFromBuffer(true);
+            }
+            else if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+            {
+                e.Handled = true;
+                TraversePrevious(textEditor);
+            }
+            else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+            {
+                e.Handled = true;
+                TraverseNext(textEditor);
             }
         }
 
@@ -132,8 +276,8 @@ namespace CsDebugScript.UI
             }
 
             var textBox = new TextBox();
-            textBox.FontFamily = new FontFamily("Consolas");
-            textBox.FontSize = 14;
+            textBox.FontFamily = new FontFamily(fontFamily);
+            textBox.FontSize = fontSize;
             textBox.Text = textOutput;
             textBox.IsReadOnly = true;
             textBox.Background = Brushes.Transparent;
@@ -155,8 +299,8 @@ namespace CsDebugScript.UI
         private UIElement CreateDbgCode(string text)
         {
             var textBlock = new TextBlock();
-            textBlock.FontFamily = new FontFamily("Consolas");
-            textBlock.FontSize = 14;
+            textBlock.FontFamily = new FontFamily(fontFamily);
+            textBlock.FontSize = fontSize;
             textBlock.Text = "#dbg> " + text;
             textBlock.Background = Brushes.Transparent;
             return textBlock;
@@ -168,8 +312,8 @@ namespace CsDebugScript.UI
             panel.Orientation = Orientation.Horizontal;
 
             var textBlock = new TextBlock();
-            textBlock.FontFamily = new FontFamily("Consolas");
-            textBlock.FontSize = 14;
+            textBlock.FontFamily = new FontFamily(fontFamily);
+            textBlock.FontSize = fontSize;
             textBlock.Text = InteractiveExecution.DefaultPrompt;
             panel.Children.Add(textBlock);
 
@@ -180,6 +324,31 @@ namespace CsDebugScript.UI
             codeControl.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
             codeControl.Background = Brushes.Transparent;
             panel.Children.Add(codeControl);
+            codeControl.PreviewKeyDown += (object sender, KeyEventArgs e) =>
+            {
+                if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+                {
+                    if (codeControl.Document.GetLocation(codeControl.CaretOffset).Line == 1)
+                    {
+                        e.Handled = true;
+                        TraversePrevious(codeControl);
+                    }
+                }
+                else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+                {
+                    if (codeControl.Document.GetLocation(codeControl.CaretOffset).Line == codeControl.LineCount)
+                    {
+                        e.Handled = true;
+                        TraverseNext(codeControl);
+                    }
+                }
+            };
+
+            if (previousCommands.Count == 0 || previousCommands.Last() != code)
+            {
+                previousCommands.Add(code);
+                previousCommandsIndex = previousCommands.Count;
+            }
 
             return panel;
         }
@@ -203,16 +372,12 @@ namespace CsDebugScript.UI
             {
                 if (objectOutput != null)
                 {
-                    UIElement elementOutput = objectOutput as UIElement;
                     LazyUIResult lazyUI = objectOutput as LazyUIResult;
+                    UIElement elementOutput = objectOutput as UIElement ?? lazyUI?.UIElement;
 
                     if (elementOutput != null)
                     {
                         resultsPanel.Children.Insert(textEditorIndex, elementOutput);
-                    }
-                    else if (lazyUI != null)
-                    {
-                        resultsPanel.Children.Insert(textEditorIndex, lazyUI.UIElement);
                     }
                     else
                     {

@@ -908,6 +908,21 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             return instance.GetEnumerator();
         }
     }
+
+    /// <summary>
+    /// Simplification class for creating <see cref="map{TKey, TValue}"/> with TKey and TValue being <see cref="Variable"/>.
+    /// </summary>
+    public class map : map<Variable, Variable>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="map"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public map(Variable variable)
+            : base(variable)
+        {
+        }
+    }
 }
 
 namespace System.Linq

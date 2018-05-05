@@ -62,7 +62,7 @@ namespace CsDebugScript
             /// <returns>
             /// The result of the conversion.
             /// </returns>
-            public static implicit operator Module (ModuleGlobalsDynamicObject helper)
+            public static implicit operator Module(ModuleGlobalsDynamicObject helper)
             {
                 return helper.module;
             }
@@ -151,6 +151,39 @@ namespace CsDebugScript
             get
             {
                 return Process.Current.Threads;
+            }
+        }
+
+        /// <summary>
+        /// Gets the array of all frames in the current thread.
+        /// </summary>
+        public static StackFrame[] Frames
+        {
+            get
+            {
+                return StackTrace.Current.Frames;
+            }
+        }
+
+        /// <summary>
+        /// Gets the variable collection of arguemnts from current stack frame.
+        /// </summary>
+        public static VariableCollection Arguments
+        {
+            get
+            {
+                return StackFrame.Current.Arguments;
+            }
+        }
+
+        /// <summary>
+        /// Gets the variable collection of local variables from current stack frame.
+        /// </summary>
+        public static VariableCollection Locals
+        {
+            get
+            {
+                return StackFrame.Current.Locals;
             }
         }
 

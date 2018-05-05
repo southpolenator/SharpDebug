@@ -77,4 +77,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             return true;
         }
     }
+
+    /// <summary>
+    /// Simplification class for creating <see cref="pair{TFirst, TSecond}"/> with TFirst and TSecond being <see cref="Variable"/>.
+    /// </summary>
+    public class pair : pair<Variable, Variable>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="pair"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public pair(Variable variable)
+            : base(variable)
+        {
+        }
+    }
 }

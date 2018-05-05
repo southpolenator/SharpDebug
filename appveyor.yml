@@ -1,26 +1,99 @@
-version: '1.1.{build}'
-
-configuration:
-  - Release
-  - Debug
-
-platform:
-  - Any CPU
-#  - x86
-#  - x64
-
-assembly_info:
-  patch: true
-  file: Properties\SharedAssemblyInfo.cs
-  assembly_version: '{version}'
-  assembly_file_version: '{version}'
-  assembly_informational_version: '{version}-rc1'
-
-# Restore nuget packages before running the build
+version: 1.3.0.{build}
+image: Visual Studio 2017
+configuration: Release
+platform: Any CPU
+environment:
+  PROJECT_ROOT: C:\projects\windbgcs
+  DEAFULT_TARGET_FRAMEWORK: net461
+  NUGET_PACKAGES: C:\Users\appveyor\.nuget\packages
+  OPENCOVER: $(NUGET_PACKAGES)\OpenCover\4.6.519\tools\OpenCover.Console.exe
+  XUNIT_TOOLS: $(NUGET_PACKAGES)\xunit.runner.console\2.2.0\tools
+  TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
+  TESTS_DLL: $(TARGET_DIR)\CsDebugScript.Tests.dll
+  UITESTS_DLL: $(TARGET_DIR)\CsDebugScript.UITests.dll
+  GITHUB_PAGES: $(PROJECT_ROOT)\GitHubPages
+  GITHUB_PAGES_REFERENCES: WinDbgCsReference
+  HELP_OUTPUT_PATH: $(PROJECT_ROOT)\Utility\CsDebugScript.Reference\Help
+  GITHUB_USERNAME: southpolenator
+  GITHUB_PASSWORD:
+    secure: 2KQWKwkpAyvIjNLzJS6g4SY9URejpaumcJuJLTqvppYB4+aINA3ElJC7n8UoD0zd
+  GITHUB_PAGES_URL: https://$(GITHUB_PASSWORD)@github.com/$(GITHUB_USERNAME)/$(GITHUB_USERNAME).github.io.git
+init:
+ - git config --global user.email "auto_publish@appveyor.com"
+ - git config --global user.name %GITHUB_PASSWORD%
+install:
+  - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
+  - ps: (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/WinDbgCs/master/GetShipFiles.ps1") | iex
+  - ps: choco install codecov --limitoutput --no-progress
 before_build:
-  - nuget restore
-
+  - ps: Vsix-IncrementVsixVersion
+  - ps: |-
+        Vsix-TokenReplacement Source\CsDebugScript.VS\VSInteractiveWindowPackage.cs 'productId: "([0-9\\.]+)"' 'productId: "{version}"'
+  - ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<AssemblyVersion>([0-9\\.]+)</AssemblyVersion>' '<AssemblyVersion>{version}</AssemblyVersion>'
+  - ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<FileVersion>([0-9\\.]+)</FileVersion>' '<FileVersion>{version}</FileVersion>'
+  - ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<VersionPrefix>([0-9\\.]+)</VersionPrefix>' '<VersionPrefix>{version}</VersionPrefix>'
+  - ps: nuget restore
+  - ps: pushd $env:PROJECT_ROOT\dumps\
+  - ps: .\download.ps1
+  - ps: popd
+  - ps: msbuild WinDbgCs.sln /t:Utility\ExceptionDumper32 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
 build:
-  verbosity: minimal
-  parallel: true
   project: WinDbgCs.sln
+  verbosity: minimal
+after_build:
+  - cmd: dotnet pack --no-build & exit 0
+  - ps: pushd $env:PROJECT_ROOT\Source\CsDebugScript.DbgEng\
+  - ps: dotnet pack --no-build
+  - ps: popd
+  - ps: pushd $env:PROJECT_ROOT\bin\$env:CONFIGURATION\$env:DEAFULT_TARGET_FRAMEWORK\
+  - ps: 7z a CsDebugScript.WinDbgCs-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@("CsDebugScript.CommonUserTypes.dll", "CsDebugScript.DwarfSymbolProvider.dll", "CsDebugScript.WinDbg.x64.dll", "CsDebugScript.WinDbg.x86.dll")))
+  - ps: if ($env:CONFIGURATION -eq "Release") { Vsix-PushArtifacts | Vsix-PublishToGallery }
+  - ps: popd
+  - ps: |-
+        if ($env:CONFIGURATION -eq "Release") {
+            msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
+            if ($env:APPVEYOR_REPO_BRANCH -eq "master") {
+                git clone $env:GITHUB_PAGES_URL $env:GITHUB_PAGES
+                git config --global core.autocrlf false
+                pushd $env:GITHUB_PAGES
+                Remove-Item -Recurse -Force $env:GITHUB_PAGES_REFERENCES
+                mkdir $env:GITHUB_PAGES_REFERENCES | Out-Null
+                $files = "index.html", "SearchHelp.aspx", "SearchHelp.inc.php", "SearchHelp.php", "Web.Config", "WebKI.xml", "WebTOC.xml", "fti", "html", "icons", "scripts", "styles", "toc"
+                foreach ($file in $files) {
+                    Copy-Item $env:HELP_OUTPUT_PATH\$file -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES\$file -Recurse
+                }
+                git add .
+                git commit -m "Automatic update of code reference with build {version}"
+                git push
+                popd
+            }
+        }
+test_script:
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%UITESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.UI.xml -targetdir:%TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.xml -targetdir:%TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%UITESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.UI.xml -targetdir:%TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.xml -targetdir:%TARGET_DIR%'
+  - cmd: codecov -f code_coverage_x64.xml
+  - cmd: codecov -f code_coverage_x64.UI.xml
+  - cmd: codecov -f code_coverage_x86.xml
+  - cmd: codecov -f code_coverage_x86.UI.xml
+artifacts:
+- path: bin\**\*.nupkg
+  name: NuGets
+- path: Utility\CsDebugScript.Reference\Help\CsScripts.chm
+  name: Help file
+- path: bin\**\CsDebugScript.VS.vsix
+  name: Visual Studio Extension
+- path: bin\**\*.trx
+  name: Test Results
+- path: bin\**\*.zip
+  name: WinDbg Extension
+deploy:
+- provider: NuGet
+  api_key:
+    secure: K2TRMJKDiZjaD7yaL42c0MQvldSO1AiXGJCynFyaYZgzpyYJ1w5PTzN9EteCZPYB
+  skip_symbols: false
+  artifact: NuGets
+  on:
+    branch: master
+    CONFIGURATION: Release

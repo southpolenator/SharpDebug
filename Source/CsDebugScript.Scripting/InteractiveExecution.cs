@@ -80,7 +80,7 @@ namespace CsDebugScript
             scriptOptions = scriptOptions.WithMetadataResolver(metadataResolver);
             scriptOptions = scriptOptions.WithSourceResolver(sourceResolver);
 
-            scriptState = CSharpScript.RunAsync("", scriptOptions, scriptBase).Result;
+            scriptState = CSharpScript.RunAsync(string.Join("\n", ScriptCompiler.DefaultAliases.Select(s => $"using {s};")), scriptOptions, scriptBase).Result;
             scriptBase.ObjectWriter = new DefaultObjectWriter();
             scriptBase._InternalObjectWriter_ = new ConsoleObjectWriter();
         }
@@ -235,7 +235,7 @@ namespace CsDebugScript
                     scriptBase._InternalObjectWriter_ = oldScriptBase._InternalObjectWriter_;
 
                     // TODO: Changing globals, but we need to store previous variables
-                    scriptState = CSharpScript.RunAsync("", scriptState.Script.Options, scriptBase).Result;
+                    scriptState = CSharpScript.RunAsync(string.Join("\n", ScriptCompiler.DefaultAliases.Select(s => $"using {s};")), scriptState.Script.Options, scriptBase).Result;
                 }
 
                 if (scriptBase._CodeGenCode_.Count > 0)
@@ -386,8 +386,31 @@ namespace CsDebugScript
 
         internal static string GetCodeName(Type type)
         {
-            string typeString = type.FullName;
+            Dictionary<Type, string> builtinTypes = new Dictionary<Type, string>()
+            {
+                { typeof(sbyte), "sbyte" },
+                { typeof(short), "short" },
+                { typeof(int), "int" },
+                { typeof(long), "long" },
+                { typeof(byte), "byte" },
+                { typeof(ushort), "ushort" },
+                { typeof(uint), "uint" },
+                { typeof(ulong), "ulong" },
+                { typeof(float), "float" },
+                { typeof(double), "double" },
+                { typeof(decimal), "decimal" },
+                { typeof(bool), "bool" },
+                { typeof(string), "string" },
+                { typeof(object), "object" },
+            };
+            string typeString;
 
+            if (builtinTypes.TryGetValue(type, out typeString))
+            {
+                return typeString;
+            }
+
+            typeString = type.FullName;
             if (typeString.Contains(".<") || typeString.Contains("+<"))
             {
                 // TODO: Probably not the best one, but good enough for now

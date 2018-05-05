@@ -106,6 +106,22 @@ namespace CsDebugScript.UI.CodeWindow
 
         private static ImageSource CreateImage(CompletionDataType completionDataType)
         {
+            try
+            {
+                using (System.IO.Stream stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream($"CsDebugScript.UI.Icons.{completionDataType}.png"))
+                {
+                    BitmapImage imageSource = new BitmapImage();
+
+                    imageSource.BeginInit();
+                    imageSource.StreamSource = stream;
+                    imageSource.EndInit();
+                    return imageSource;
+                }
+            }
+            catch
+            {
+            }
+
             string text;
             Brush textColor;
 

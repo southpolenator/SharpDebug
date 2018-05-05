@@ -221,9 +221,8 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the code type tag of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public CodeTypeTag GetTypeTag(Module module, uint typeId)
+        public CodeTypeTag GetTypeTag(uint typeId)
         {
             SymTagEnum symTag = GetTypeFromId(typeId).symTag;
 
@@ -233,9 +232,8 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the size of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public uint GetTypeSize(Module module, uint typeId)
+        public uint GetTypeSize(uint typeId)
         {
             return (uint)GetTypeFromId(typeId).length;
         }
@@ -243,9 +241,8 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the type identifier.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeName">Name of the type.</param>
-        public uint GetTypeId(Module module, string typeName)
+        public uint GetTypeId(string typeName)
         {
             IDiaSymbol type;
 
@@ -322,9 +319,8 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the name of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string GetTypeName(Module module, uint typeId)
+        public string GetTypeName(uint typeId)
         {
             return TypeToString.GetTypeString(GetTypeFromId(typeId));
         }
@@ -332,9 +328,8 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the element type of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public uint GetTypeElementTypeId(Module module, uint typeId)
+        public uint GetTypeElementTypeId(uint typeId)
         {
             return GetTypeFromId(typeId).typeId;
         }
@@ -342,9 +337,8 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the type pointer to type of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public uint GetTypePointerToTypeId(Module module, uint typeId)
+        public uint GetTypePointerToTypeId(uint typeId)
         {
             var symbol = GetTypeFromId(typeId);
             var pointer = symbol.objectPointerType;
@@ -354,15 +348,14 @@ namespace CsDebugScript.Engine.SymbolProviders
                 return pointer.symIndexId;
             }
 
-            return GetTypeId(module, symbol.name + "*");
+            return GetTypeId(symbol.name + "*");
         }
 
         /// <summary>
         /// Gets the names of all fields of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string[] GetTypeAllFieldNames(Module module, uint typeId)
+        public string[] GetTypeAllFieldNames(uint typeId)
         {
             return GetTypeAllFieldNames(GetTypeFromId(typeId));
         }
@@ -386,10 +379,9 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the field type id and offset of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
-        public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(Module module, uint typeId, string fieldName)
+        public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(uint typeId, string fieldName)
         {
             return GetTypeFieldTypeAndOffset(GetTypeFromId(typeId), fieldName);
         }
@@ -424,15 +416,13 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the source file name and line for the specified stack frame.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="processAddress">The process address.</param>
         /// <param name="address">The address.</param>
         /// <param name="sourceFileName">Name of the source file.</param>
         /// <param name="sourceFileLine">The source file line.</param>
         /// <param name="displacement">The displacement.</param>
         /// <exception cref="System.Exception">Address not found</exception>
         /// <exception cref="Exception">Address not found</exception>
-        public void GetSourceFileNameAndLine(Process process, ulong processAddress, uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
+        public void GetSourceFileNameAndLine(uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
             IDiaSymbol function = session.findSymbolByRVA(address, SymTagEnum.Function);
             IDiaEnumLineNumbers lineNumbers = session.findLinesByRVA(address, (uint)function.length);
@@ -454,12 +444,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the name of the function for the specified stack frame.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="processAddress">The process address.</param>
         /// <param name="address">The address.</param>
         /// <param name="functionName">Name of the function.</param>
         /// <param name="displacement">The displacement.</param>
-        public void GetFunctionNameAndDisplacement(Process process, ulong processAddress, uint address, out string functionName, out ulong displacement)
+        public void GetFunctionNameAndDisplacement(uint address, out string functionName, out ulong displacement)
         {
             int innerDisplacement;
             IDiaSymbol function;
@@ -472,13 +460,11 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Determines whether the specified process address is function type public symbol.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="processAddress">The process address.</param>
         /// <param name="address">The address.</param>
         /// <returns>
         ///   <c>true</c> if the specified process address is function type public symbol; otherwise, <c>false</c>.
         /// </returns>
-        public bool IsFunctionAddressPublicSymbol(Process process, ulong processAddress, uint address)
+        public bool IsFunctionAddressPublicSymbol(uint address)
         {
             int innerDisplacement;
             IDiaSymbol function;
@@ -491,17 +477,16 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// Gets the stack frame locals.
         /// </summary>
         /// <param name="frame">The frame.</param>
-        /// <param name="module">The module.</param>
         /// <param name="relativeAddress">The relative address.</param>
         /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
-        public VariableCollection GetFrameLocals(StackFrame frame, Module module, uint relativeAddress, bool arguments)
+        public VariableCollection GetFrameLocals(StackFrame frame, uint relativeAddress, bool arguments)
         {
             IDiaSymbol function;
             int displacement;
             List<Variable> variables = new List<Variable>();
 
             session.findSymbolByRVAEx(relativeAddress, SymTagEnum.Function, out function, out displacement);
-            GetFrameLocals(function, relativeAddress, variables, frame, module, arguments);
+            GetFrameLocals(function, relativeAddress, variables, frame, Module, arguments);
             if (!arguments)
             {
                 IDiaSymbol block;
@@ -514,7 +499,7 @@ namespace CsDebugScript.Engine.SymbolProviders
                     // Traverse blocks till we reach function.
                     while (block.symTag != SymTagEnum.Function)
                     {
-                        GetFrameLocals(block, uint.MaxValue, variables, frame, module, arguments);
+                        GetFrameLocals(block, uint.MaxValue, variables, frame, Module, arguments);
                         block = block.lexicalParent;
                     }
                 }
@@ -637,21 +622,19 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the global variable address.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="globalVariableName">Name of the global variable.</param>
-        public ulong GetGlobalVariableAddress(Module module, string globalVariableName)
+        public ulong GetGlobalVariableAddress(string globalVariableName)
         {
             var globalVariable = GetGlobalVariable(globalVariableName);
 
-            return globalVariable.relativeVirtualAddress + module.Offset;
+            return globalVariable.relativeVirtualAddress + Module.Offset;
         }
 
         /// <summary>
         /// Gets the global variable type identifier.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="globalVariableName">Name of the global variable.</param>
-        public uint GetGlobalVariableTypeId(Module module, string globalVariableName)
+        public uint GetGlobalVariableTypeId(string globalVariableName)
         {
             var globalVariable = GetGlobalVariable(globalVariableName);
 
@@ -692,9 +675,8 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the names of fields of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public string[] GetTypeFieldNames(Module module, uint typeId)
+        public string[] GetTypeFieldNames(uint typeId)
         {
             var type = GetTypeFromId(typeId);
 
@@ -711,10 +693,9 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the field type id and offset of the specified type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
-        public Tuple<uint, int> GetTypeFieldTypeAndOffset(Module module, uint typeId, string fieldName)
+        public Tuple<uint, int> GetTypeFieldTypeAndOffset(uint typeId, string fieldName)
         {
             var type = GetTypeFromId(typeId);
 
@@ -741,10 +722,9 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the type's base class type and offset.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="className">Name of the class.</param>
-        public Tuple<uint, int> GetTypeBaseClass(Module module, uint typeId, string className)
+        public Tuple<uint, int> GetTypeBaseClass(uint typeId, string className)
         {
             var type = GetTypeFromId(typeId);
 
@@ -773,7 +753,7 @@ namespace CsDebugScript.Engine.SymbolProviders
 
                     if (CodeType.TypeNameMatches(b.name, className))
                     {
-                        return Tuple.Create(GetTypeId(module, b.name), offset);
+                        return Tuple.Create(GetTypeId(b.name), offset);
                     }
 
                     classes.Push(Tuple.Create(b, offset));
@@ -786,10 +766,9 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the name of the enumeration value.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="enumTypeId">The enumeration type identifier.</param>
         /// <param name="enumValue">The enumeration value.</param>
-        public string GetEnumName(Module module, uint enumTypeId, ulong enumValue)
+        public string GetEnumName(uint enumTypeId, ulong enumValue)
         {
             return enumTypeNames[enumTypeId][enumValue];
         }
@@ -826,12 +805,11 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the type's built-in type.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public BuiltinType GetTypeBuiltinType(Module module, uint typeId)
+        public BuiltinType GetTypeBuiltinType(uint typeId)
         {
             BasicType basicType = GetTypeFromId(typeId).baseType;
-            uint size = GetTypeSize(module, typeId);
+            uint size = GetTypeSize(typeId);
 
             switch (basicType)
             {
@@ -905,9 +883,8 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the type's direct base classes type and offset.
         /// </summary>
-        /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
-        public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(Module module, uint typeId)
+        public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(uint typeId)
         {
             var type = GetTypeFromId(typeId);
 
@@ -923,7 +900,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             {
                 int offset = b.offset;
 
-                result.Add(b.name, Tuple.Create(GetTypeId(module, b.name), offset));
+                result.Add(b.name, Tuple.Create(GetTypeId(b.name), offset));
             }
 
             return result;
@@ -932,27 +909,23 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <summary>
         /// Gets the symbol name by address.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="address">The address.</param>
-        /// <param name="distance">The distance within the module.</param>
-        public Tuple<string, ulong> GetSymbolNameByAddress(Process process, ulong address, uint distance)
+        /// <param name="address">The address within the module.</param>
+        public Tuple<string, ulong> GetSymbolNameByAddress(uint address)
         {
-            return symbolNamesByAddress[distance];
+            return symbolNamesByAddress[address];
         }
 
         /// <summary>
         /// Gets the runtime code type and offset to original code type.
         /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="vtableAddress">The vtable address.</param>
-        /// <param name="distance">The distance within the module.</param>
-        public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress, uint distance)
+        /// <param name="vtableAddress">The vtable address within the module.</param>
+        public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(uint vtableAddress)
         {
             IDiaSymbol symbol;
             int displacement;
             string fullyUndecoratedName, partiallyUndecoratedName;
 
-            session.findSymbolByRVAEx(distance, SymTagEnum.Null, out symbol, out displacement);
+            session.findSymbolByRVAEx(vtableAddress, SymTagEnum.Null, out symbol, out displacement);
             fullyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu) ?? symbol.name;
             partiallyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NoEscu) ?? symbol.name;
 

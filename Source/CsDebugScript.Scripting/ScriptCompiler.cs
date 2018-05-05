@@ -36,9 +36,14 @@ namespace CsDebugScript
         internal static readonly string[] DefaultAssemblyReferences = GetDefaultAssemblyReferences();
 
         /// <summary>
-        /// The default list of using commands used by the compiler
+        /// The default list of using commands used by the compiler.
         /// </summary>
         internal static readonly string[] DefaultUsings = new string[] { "System", "System.Linq", "CsDebugScript" };
+
+        /// <summary>
+        /// The default list of using alias commands used by the compiler.
+        /// </summary>
+        internal static readonly string[] DefaultAliases = new string[] { "std = CsDebugScript.CommonUserTypes.NativeTypes.std" };
 
         /// <summary>
         /// Gets the default assembly references used by the compiler.
@@ -78,6 +83,13 @@ namespace CsDebugScript
         internal static string GenerateCode(IEnumerable<string> usings, string importedCode, string scriptCode, string scriptBaseClassName = "CsDebugScript.ScriptBase")
         {
             StringBuilder codeBuilder = new StringBuilder();
+
+            foreach (var alias in DefaultAliases)
+            {
+                codeBuilder.Append("using ");
+                codeBuilder.Append(alias);
+                codeBuilder.AppendLine(";");
+            }
 
             foreach (var u in usings.OrderBy(a => a))
             {

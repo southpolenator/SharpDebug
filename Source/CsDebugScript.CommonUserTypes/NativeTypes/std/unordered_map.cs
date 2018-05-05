@@ -534,4 +534,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             return instance.GetEnumerator();
         }
     }
+
+    /// <summary>
+    /// Simplification class for creating <see cref="unordered_map{TKey, TValue}"/> with TKey and TValue being <see cref="Variable"/>.
+    /// </summary>
+    public class unordered_map : unordered_map<Variable, Variable>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="unordered_map"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public unordered_map(Variable variable)
+            : base(variable)
+        {
+        }
+    }
 }

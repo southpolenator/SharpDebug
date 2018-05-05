@@ -398,4 +398,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             }
         }
     }
+
+    /// <summary>
+    /// Simplification class for creating <see cref="shared_ptr{T}"/> with T being <see cref="Variable"/>.
+    /// </summary>
+    public class shared_ptr : shared_ptr<Variable>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="shared_ptr"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public shared_ptr(Variable variable)
+            : base(variable)
+        {
+        }
+    }
 }

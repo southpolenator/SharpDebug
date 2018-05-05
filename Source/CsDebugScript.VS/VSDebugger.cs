@@ -39,7 +39,7 @@ namespace CsDebugScript.VS
             }
         }
 
-        public Engine.ISymbolProvider CreateDefaultSymbolProvider()
+        public Engine.ISymbolProvider GetDefaultSymbolProvider()
         {
             throw new NotImplementedException();
         }

@@ -82,6 +82,15 @@ namespace CsDebugScript.Engine
         }
 
         /// <summary>
+        /// Initializes the Context with the specified debugger engine interface.
+        /// </summary>
+        /// <param name="debuggerEngine">The debugger engine interface.</param>
+        public static void InitializeDebugger(IDebuggerEngine debuggerEngine)
+        {
+            InitializeDebugger(debuggerEngine, debuggerEngine.GetDefaultSymbolProvider());
+        }
+
+        /// <summary>
         /// Clears the internal Engine caches.
         /// </summary>
         public static void ClearCache()

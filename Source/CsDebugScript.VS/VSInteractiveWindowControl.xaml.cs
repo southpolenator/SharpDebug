@@ -45,7 +45,7 @@ namespace CsDebugScript.VS
                 int indentationSize = 4; // TODO:
 
                 result.Add(CreateColor("#RegularText#", colors.Item("Plain Text")));
-                result.Add(CreateColor("#CurrentLine#", colors.Item("CurrentLineActiveFormat")));
+                result.Add(CreateColor("#CurrentLine#", colors.Item("CurrentLineActiveFormat"), colors.Item("Plain Text")));
                 result.Add(CreateColor("#TooltipText#", colors.Item("Plain Text"), colors.Item("Peek Highlighted Text Unfocused")));
                 result.Add(CreateColor("#CompletionText#", colors.Item("Plain Text"), colors.Item("Peek Background Unfocused")));
 
@@ -112,7 +112,7 @@ namespace CsDebugScript.VS
                 MessageBox.Show(sb.ToString());
 #endif
 
-                return new InteractiveWindowContent(fontFamily, fontSize * 1.4, indentationSize, result.ToArray());
+                    return new InteractiveWindowContent(fontFamily, fontSize * 1.4, indentationSize, result.ToArray());
             }
             catch
             {

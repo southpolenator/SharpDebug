@@ -334,7 +334,7 @@ namespace CsDebugScript.CodeGen
                     compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
                 }
 
-                var filesToCompile = generatedFiles.Values.Union(includedFiles.Select(f => f.Path)).ToArray();
+                var filesToCompile = generatedFiles.Values.Concat(includedFiles.Select(f => f.Path)).ToArray();
                 var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);
 
                 if (compileResult.Errors.Count > 0)
@@ -927,7 +927,7 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Resolves the specified assembly path if it is not rooted.
         /// </summary>
-        /// <param name="path">Original assembly path./param>
+        /// <param name="path">Original assembly path.</param>
         /// <returns>Rooted assembly path if found.</returns>
         private static string ResolveAssemblyPath(string path)
         {

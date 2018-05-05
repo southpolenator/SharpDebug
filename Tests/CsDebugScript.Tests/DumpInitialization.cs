@@ -43,7 +43,7 @@ namespace CsDebugScript.Tests
         {
             IDebuggerEngine engine = new ElfCoreDumpDebuggingEngine(DumpPath);
 
-            Context.InitializeDebugger(engine, engine.CreateDefaultSymbolProvider());
+            Context.InitializeDebugger(engine);
         }
     }
 
@@ -57,7 +57,7 @@ namespace CsDebugScript.Tests
             DbgEngDll.InitializeContext(client);
             if (!useDia && !useDwarf)
             {
-                Context.InitializeDebugger(Context.Debugger, Context.Debugger.CreateDefaultSymbolProvider());
+                Context.InitializeDebugger(Context.Debugger);
             }
             else if (useDwarf)
             {

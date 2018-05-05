@@ -306,17 +306,17 @@ namespace CsDebugScript
         {
             try
             {
-                return string.Format("{4,3}  {0}+0x{1:x}   ({2}:{3})", FunctionName, FunctionDisplacement, SourceFileName, SourceFileLine, FrameNumber);
+                return $"{FrameNumber}  {FunctionName}+0x{FunctionDisplacement:x}   ({SourceFileName}:{SourceFileLine})";
             }
             catch
             {
                 try
                 {
-                    return string.Format("{2,3}  {0}+0x{1:x}", FunctionName, FunctionDisplacement, FrameNumber);
+                    return $"{FrameNumber}  {FunctionName}+0x{FunctionDisplacement:x}";
                 }
                 catch
                 {
-                    return string.Format("{1,3}  0x{0:x}", InstructionOffset, FrameNumber);
+                    return $"{FrameNumber}  0x{InstructionOffset:x}";
                 }
             }
         }

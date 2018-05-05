@@ -26,6 +26,11 @@ namespace CsDebugScript.Engine.Debuggers
         private IDebugClient originalClient;
 
         /// <summary>
+        /// Default symbol provider cache.
+        /// </summary>
+        private SimpleCache<DbgEngSymbolProvider> dbgEngSymbolProvider;
+
+        /// <summary>
         /// The thread debug client interface
         /// </summary>
         [ThreadStatic]
@@ -48,6 +53,7 @@ namespace CsDebugScript.Engine.Debuggers
         public DbgEngDll(IDebugClient debugClient)
         {
             originalClient = debugClient;
+            dbgEngSymbolProvider = SimpleCache.Create(() => new DbgEngSymbolProvider(this));
             stateCache = new System.Threading.ThreadLocal<StateCache>(() => new StateCache(this));
 
             // Populate flow controllers lazily.
@@ -192,7 +198,7 @@ namespace CsDebugScript.Engine.Debuggers
             if (client != null)
             {
                 IDebuggerEngine debugger = new DbgEngDll(client);
-                ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.CreateDefaultSymbolProvider());
+                ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.GetDefaultSymbolProvider());
 
                 Context.InitializeDebugger(debugger, symbolProvider);
             }
@@ -1072,11 +1078,11 @@ namespace CsDebugScript.Engine.Debuggers
         }
 
         /// <summary>
-        /// Creates new instance of default symbol provider.
+        /// Gets instance of default symbol provider.
         /// </summary>
-        public ISymbolProvider CreateDefaultSymbolProvider()
+        public ISymbolProvider GetDefaultSymbolProvider()
         {
-            return new DbgEngSymbolProvider(this);
+            return dbgEngSymbolProvider.Value;
         }
 
         /// <summary>
