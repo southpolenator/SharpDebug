@@ -463,13 +463,33 @@ namespace CsDebugScript.VS
             });
         }
 
+        private static string ReadMemoryString(DkmProcess process, ulong address, int length, ushort charSize, System.Text.Encoding encoding)
+        {
+            bool trimNullTermination = false;
+
+            if (length < 0)
+            {
+                length = ushort.MaxValue;
+                trimNullTermination = true;
+            }
+
+            byte[] bytes = process.ReadMemoryString(address, DkmReadMemoryFlags.None, charSize, length);
+
+            if (trimNullTermination && bytes[bytes.Length - 1] == 0)
+            {
+                return encoding.GetString(bytes, 0, bytes.Length - 1);
+            }
+
+            return encoding.GetString(bytes);
+        }
+
         public string ReadAnsiString(uint processId, ulong address, int length)
         {
             return ExecuteOnDkmInitializedThread(() =>
             {
                 DkmProcess process = GetProcess(processId);
 
-                return System.Text.ASCIIEncoding.Default.GetString(process.ReadMemoryString(address, DkmReadMemoryFlags.None, 1, length));
+                return ReadMemoryString(process, address, length, 1, System.Text.ASCIIEncoding.Default);
             });
         }
 
@@ -479,7 +499,7 @@ namespace CsDebugScript.VS
             {
                 DkmProcess process = GetProcess(processId);
 
-                return System.Text.UnicodeEncoding.Default.GetString(process.ReadMemoryString(address, DkmReadMemoryFlags.None, 2, length));
+                return ReadMemoryString(process, address, length, 2, System.Text.UnicodeEncoding.Default);
             });
         }
 
@@ -489,7 +509,7 @@ namespace CsDebugScript.VS
             {
                 DkmProcess process = GetProcess(processId);
 
-                return System.Text.Encoding.UTF32.GetString(process.ReadMemoryString(address, DkmReadMemoryFlags.None, 4, length));
+                return ReadMemoryString(process, address, length, 4, System.Text.Encoding.UTF32);
             });
         }
 
