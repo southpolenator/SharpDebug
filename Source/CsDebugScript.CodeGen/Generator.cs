@@ -307,6 +307,7 @@ namespace CsDebugScript.CodeGen
                     IncludeDebugInformation = !xmlConfig.DisablePdbGeneration,
                     OutputAssembly = outputDirectory + xmlConfig.GeneratedAssemblyName,
                 };
+                List<string> assembliesList = new List<string>();
 
                 foreach (var assemblyPath in AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location))
                 {
@@ -314,7 +315,7 @@ namespace CsDebugScript.CodeGen
 
                     if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(assemblyName)))
                     {
-                        compilerParameters.ReferencedAssemblies.Add(assemblyPath);
+                        assembliesList.Add(assemblyPath);
                     }
                 }
 
@@ -322,17 +323,31 @@ namespace CsDebugScript.CodeGen
                 {
                     if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
                     {
-                        compilerParameters.ReferencedAssemblies.Add(ResolveAssemblyPath(dependentAssembly));
+                        assembliesList.Add(ResolveAssemblyPath(dependentAssembly));
                     }
                 }
-                compilerParameters.ReferencedAssemblies.AddRange(xmlConfig.ReferencedAssemblies.Select(r => ResolveAssemblyPath(r.Path)).ToArray());
+                assembliesList.AddRange(xmlConfig.ReferencedAssemblies.Select(r => ResolveAssemblyPath(r.Path)).ToArray());
 
                 const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
 
-                if (!compilerParameters.ReferencedAssemblies.Cast<string>().Where(a => a.Contains(MicrosoftCSharpDll)).Any())
+                if (!assembliesList.Where(a => a.Contains(MicrosoftCSharpDll)).Any())
                 {
-                    compilerParameters.ReferencedAssemblies.Add(MicrosoftCSharpDll);
+                    assembliesList.Add(MicrosoftCSharpDll);
                 }
+
+                Dictionary<string, string> uniqueAssemblies = new Dictionary<string, string>();
+
+                foreach (string assemblyString in assembliesList)
+                {
+                    string key = Path.GetFileName(assemblyString);
+
+                    if (!uniqueAssemblies.ContainsKey(key))
+                    {
+                        uniqueAssemblies.Add(key, assemblyString);
+                    }
+                }
+
+                compilerParameters.ReferencedAssemblies.AddRange(uniqueAssemblies.Values.ToArray());
 
                 var filesToCompile = generatedFiles.Values.Concat(includedFiles.Select(f => f.Path)).ToArray();
                 var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);
