@@ -44,7 +44,7 @@ namespace CsDebugScript.CommonUserTypes.CLR.System
         /// Gets a collection of key/value pairs that provide additional user-defined information about the exception.
         /// </summary>
         /// <remarks>This property is marked as virtual in System.Exception. Here, we are just reading what is saved in System.Exception and that might not be what you are expecting.</remarks>
-        /// <exception cref="System.NotImplementedException"></exception>
+        /// <exception cref="NotImplementedException"></exception>
         public new IDictionary Data
         {
             get

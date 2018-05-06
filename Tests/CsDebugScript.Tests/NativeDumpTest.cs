@@ -63,7 +63,7 @@ ImportUserTypes(options, true);
         [Fact]
         public void CurrentProcessContainsDefaultModule()
         {
-            Assert.True(Module.All.Any(module => module.Name == DefaultModuleName));
+            Assert.Contains(Module.All, module => module.Name == DefaultModuleName);
         }
 
         [SkippableFact(SkipOnFailurePropertyName = nameof(LinuxDump))]
@@ -74,7 +74,7 @@ ImportUserTypes(options, true);
             Console.WriteLine("Architecture type: {0}", process.ArchitectureType);
             Console.WriteLine("SystemId: {0}", process.SystemId);
             Assert.NotEqual(0U, process.SystemId);
-            Assert.NotEqual(0, Process.All.Length);
+            Assert.NotEmpty(Process.All);
             Assert.NotEqual(-1, process.FindMemoryRegion(DefaultModule.Address));
             Assert.Equal(DefaultModule.ImageName, process.ExecutableName);
             Assert.NotNull(process.PEB);
@@ -86,7 +86,7 @@ ImportUserTypes(options, true);
         {
             Thread thread = Thread.Current;
 
-            Assert.NotEqual(0, Thread.All.Length);
+            Assert.NotEmpty(Thread.All);
             Assert.NotNull(thread.Locals);
             Assert.NotNull(thread.TEB);
             Assert.NotNull(thread.ThreadContext);
@@ -103,7 +103,7 @@ ImportUserTypes(options, true);
             Assert.Equal($"{DefaultModuleName}!DefaultTestCase", defaultTestCaseFunction.FunctionName);
             Assert.Equal($"DefaultTestCase", defaultTestCaseFunction.FunctionNameWithoutModule);
             Assert.Equal(Process.Current, defaultTestCaseFunction.Process);
-            Assert.True(defaultTestCaseFunction.SourceFileName.ToLower().Contains(MainSourceFileName));
+            Assert.Contains(MainSourceFileName, defaultTestCaseFunction.SourceFileName.ToLower());
             Assert.NotEqual(0U, defaultTestCaseFunction.SourceFileLine);
             Console.WriteLine("SourceFileDisplacement: {0}", defaultTestCaseFunction.SourceFileDisplacement);
 
@@ -166,7 +166,7 @@ ImportUserTypes(options, true);
             }
 
             string command = arguments["argv"].GetArrayElement(0).ToString();
-            Assert.True(command.Contains("NativeDumpTest"));
+            Assert.Contains("NativeDumpTest", command);
 
             Variable p;
             Assert.False(arguments.TryGetValue("p", out p));

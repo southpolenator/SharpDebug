@@ -44,7 +44,7 @@ namespace CsDebugScript.VS
         private const string DomainName = "CsDebugScript";
 
         private AppDomain scriptDomain;
-        private VSInteractiveWindowProxy proxy;
+        private VSInteractiveWindowProxy proxy = null;
         private TextBlock unloadedDomainControl;
         private Grid grid;
 

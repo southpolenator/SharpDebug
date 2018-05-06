@@ -57,7 +57,7 @@ namespace CsDebugScript.Tests
             Assert.Equal(array1.Length, array2.Length);
             for (int i = 0; i < array1.Length; i++)
             {
-                Assert.True(array2.Contains(array1[i]));
+                Assert.Contains(array1[i], array2);
             }
         }
     }

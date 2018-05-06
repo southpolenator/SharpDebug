@@ -94,7 +94,7 @@ namespace CsDebugScript.Tests.CLR
                 System.Diagnostics.Debugger.Break();
             }
 
-            Assert.Equal(0, cr.Errors.Count);
+            Assert.Empty(cr.Errors);
 
             return cr.PathToAssembly;
         }

@@ -18,7 +18,7 @@ namespace CsDebugScript.Tests.CLR
             Variable s_i = typesModule.GetVariable("Types.s_i");
 
             Assert.Equal(42, (int)s_i);
-            Assert.True(heap.EnumerateObjects().Contains(s_i));
+            Assert.Contains(s_i, heap.EnumerateObjects());
         }
 
         [Fact]
@@ -32,10 +32,10 @@ namespace CsDebugScript.Tests.CLR
             Assert.Equal(fooType, s_foo.GetCodeType());
             Assert.Equal(42, (int)s_foo.GetField("i"));
             Assert.Equal("string", new ClrString(s_foo.GetField("s")).Text);
-            Assert.Equal(true, (bool)s_foo.GetField("b"));
+            Assert.True((bool)s_foo.GetField("b"));
             Assert.Equal(4.2f, (float)s_foo.GetField("f"));
             Assert.Equal(8.4, (double)s_foo.GetField("d"));
-            Assert.True(heap.EnumerateObjects().Contains(s_foo));
+            Assert.Contains(s_foo, heap.EnumerateObjects());
         }
 
         [Fact]

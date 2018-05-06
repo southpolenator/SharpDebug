@@ -19,7 +19,7 @@ namespace CsDebugScript.Tests.CLR
             Microsoft.Diagnostics.Runtime.VirtualQueryData vq;
 
             Assert.False(dataReader.CanReadAsync);
-            Assert.NotEqual(0, dataReader.EnumerateAllThreads().Count());
+            Assert.NotEmpty(dataReader.EnumerateAllThreads());
             Assert.True(dataReader.GetThreadContext(thread.SystemId, 0, (uint)contextLength, new byte[contextLength]));
             Assert.Equal(thread.TebAddress, dataReader.GetThreadTeb(thread.SystemId));
             Assert.Equal((uint)0, dataReader.ReadDwordUnsafe(0));
