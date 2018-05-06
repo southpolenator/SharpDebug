@@ -428,7 +428,7 @@ void AreEqual<T>(T value1, T value2)
 }
                 " + code;
 
-            DumpInitialization.InteractiveExecution.UnsafeInterpret(code);
+            ExecuteMTA(() => { DumpInitialization.InteractiveExecution.UnsafeInterpret(code); });
         }
     }
 
