@@ -2134,6 +2134,11 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 index = functionsCache.Count - 1;
             }
+            if (index < 0)
+            {
+                displacement = address;
+                return null;
+            }
             if (functionAddressesCache[index] > address && index > 0)
             {
                 index--;
