@@ -125,6 +125,28 @@ namespace CsDebugScript
                 return path;
             }
 
+            // Try to find path relative to current assembly location
+            try
+            {
+                string folder = typeof(ScriptExecution).Assembly.Location;
+
+                if (!Path.IsPathRooted(baseFilePath))
+                {
+                    folder = Path.GetFullPath(baseFilePath);
+                }
+
+                folder = Path.GetDirectoryName(folder);
+                path = Path.Combine(folder, reference);
+                path = Path.GetFullPath(path);
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+            catch
+            {
+            }
+
             // Look into search folders
             foreach (string folder in ScriptCompiler.SearchFolders)
             {

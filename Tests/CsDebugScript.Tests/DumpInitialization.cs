@@ -11,6 +11,8 @@ namespace CsDebugScript.Tests
     {
         public const string DefaultDumpPath = @"..\..\..\dumps\";
 
+        private static CommonUserTypes.NativeTypes.std.vector vector = InitializeCommonUserTypes();
+
         public DumpInitialization(string dumpPath, string defaultModuleName, string symbolPath)
         {
             if (!Path.IsPathRooted(dumpPath))
@@ -34,6 +36,18 @@ namespace CsDebugScript.Tests
         public InteractiveExecution InteractiveExecution { get; private set; } = new InteractiveExecution();
 
         internal bool CodeGenExecuted { get; set; }
+
+        private static CommonUserTypes.NativeTypes.std.vector InitializeCommonUserTypes()
+        {
+            try
+            {
+                return new CommonUserTypes.NativeTypes.std.vector(null);
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 
     public class ElfCoreDumpInitialization : DumpInitialization

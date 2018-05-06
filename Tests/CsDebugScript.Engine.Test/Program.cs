@@ -55,7 +55,7 @@ namespace CsDebugScript.Engine.Test
             {
                 Action action = () =>
                 {
-                    ScriptExecution.Execute(@"..\..\..\samples\script.csx", args);
+                    ScriptExecution.Execute(@"..\..\samples\script.csx", args);
                 };
                 DbgEngDll dbgEngDll = Context.Debugger as DbgEngDll;
 
