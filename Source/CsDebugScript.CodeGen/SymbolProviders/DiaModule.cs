@@ -57,7 +57,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             // Example on how else it can be created.
             // Guid clsid = new Guid("E6756135-1E65-4D17-8576-610761398C3C");
             // IDiaDataSource dia = (IDiaDataSource)Activator.CreateInstance(Type.GetTypeFromCLSID(clsid));
-            IDiaDataSource dia = new DiaSource();
+            IDiaDataSource dia = DiaLoader.CreateDiaSource();
             IDiaSession session;
             string moduleName = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.PdbPath).ToLower();
 

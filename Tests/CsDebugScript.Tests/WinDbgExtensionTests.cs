@@ -41,7 +41,7 @@ namespace CsDebugScript.Tests
         {
             string output = Execute("!execute invalid_path_to_script arg1 arg2");
 
-            Assert.True(output.Contains("Compile error"));
+            Assert.Contains("Compile error", output);
         }
 
         private string Execute(string command, params string[] parameters)

@@ -192,7 +192,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             }
 
             /// <summary>
-            /// Gets the <see cref="TValue"/> with the specified key.
+            /// Gets the <c>TValue</c> with the specified key.
             /// </summary>
             /// <param name="key">The key to locate.</param>
             /// <returns>The element that has the specified key in the read-only dictionary.</returns>
@@ -617,7 +617,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             }
 
             /// <summary>
-            /// Gets the <see cref="TValue"/> with the specified key.
+            /// Gets the <c>TValue</c> with the specified key.
             /// </summary>
             /// <param name="key">The key to locate.</param>
             /// <returns>The element that has the specified key in the read-only dictionary.</returns>
@@ -848,7 +848,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
-        /// Gets the <see cref="TValue"/> with the specified key.
+        /// Gets the <c>TValue</c> with the specified key.
         /// </summary>
         /// <param name="key">The key to locate.</param>
         /// <returns>The element that has the specified key in the read-only dictionary.</returns>

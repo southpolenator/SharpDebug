@@ -625,7 +625,7 @@ namespace CsDebugScript
     /// <summary>
     /// Options class that determines how user types are imported from modules.
     /// </summary>
-    /// <seealso cref="System.IEquatable{CsDebugScript.ImportUserTypeOptions}" />
+    /// <seealso cref="System.IEquatable{T}" />
     public class ImportUserTypeOptions : IEquatable<ImportUserTypeOptions>
     {
         /// <summary>

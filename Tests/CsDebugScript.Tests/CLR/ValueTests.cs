@@ -31,7 +31,7 @@ namespace CsDebugScript.Tests.CLR
 
             Assert.Equal(42, (int)fooObject.GetField("SetValue").GetField("i"));
             Assert.True(fooObject.GetField("NullValue").IsNullPointer());
-            Assert.True(clrThread.EnumerateStackObjects().Contains(fooObject));
+            Assert.Contains(fooObject, clrThread.EnumerateStackObjects());
         }
 
         [Fact]
@@ -52,7 +52,7 @@ namespace CsDebugScript.Tests.CLR
             Assert.Equal('c', (char)frame.Locals["c"]);
             Assert.Equal("hello world", new ClrString(frame.Locals["s"]).Text);
             Assert.Equal(42, (int)frame.Locals["st"].GetField("i"));
-            Assert.True(clrThread.EnumerateStackObjects().Contains(frame.Locals["s"]));
+            Assert.Contains(frame.Locals["s"], clrThread.EnumerateStackObjects());
 
             frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Middle(")).Single();
             Assert.Equal(0x42, (byte)frame.Locals["b"]);
@@ -76,11 +76,11 @@ namespace CsDebugScript.Tests.CLR
             StackFrame frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Main(")).Single();
             Variable foo = frame.Locals["foo"];
 
-            Assert.True(clrThread.EnumerateStackObjects().Contains(foo));
+            Assert.Contains(foo, clrThread.EnumerateStackObjects());
             Assert.Equal(42, (int)foo.GetField("i"));
             Assert.Equal(0x42u, (uint)foo.GetField("ui"));
             Assert.Equal("string", new ClrString(foo.GetField("s")).Text);
-            Assert.Equal(true, (bool)foo.GetField("b"));
+            Assert.True((bool)foo.GetField("b"));
             Assert.Equal(4.2f, (float)foo.GetField("f"));
             Assert.Equal(8.4, (double)foo.GetField("d"));
             Assert.Equal('c', (char)foo.GetField("c"));
@@ -133,7 +133,7 @@ namespace CsDebugScript.Tests.CLR
         {
             Assert.Equal(42, (int)s.GetField("i"));
             Assert.Equal("string", new ClrString(s.GetField("s")).Text);
-            Assert.Equal(true, (bool)s.GetField("b"));
+            Assert.True((bool)s.GetField("b"));
             Assert.Equal(4.2f, (float)s.GetField("f"));
             Assert.Equal(8.4, (double)s.GetField("d"));
             Assert.Equal("System.Object", s.GetField("o").GetCodeType().Name);

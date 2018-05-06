@@ -43,7 +43,7 @@ namespace CsDebugScript.Tests.CLR
             IClrAppDomain sharedDomain = runtime.SharedDomain;
             Assert.Equal("Shared Domain", sharedDomain.Name);
 
-            Assert.Equal(null, systemDomain.ApplicationBase);
+            Assert.Null(systemDomain.ApplicationBase);
             Assert.True(string.IsNullOrEmpty(systemDomain.ConfigurationFile));
             Assert.Equal("0: System Domain", systemDomain.ToString());
 
@@ -64,13 +64,13 @@ namespace CsDebugScript.Tests.CLR
             IClrRuntime runtime = Process.Current.ClrRuntimes.Single();
 
             IClrAppDomain systemDomain = runtime.SystemDomain;
-            Assert.Equal(0, systemDomain.Modules.Length);
+            Assert.Empty(systemDomain.Modules);
 
             IClrAppDomain sharedDomain = runtime.SharedDomain;
             Assert.Equal(1, sharedDomain.Modules.Length);
 
             IClrModule mscorlib = sharedDomain.Modules.Single();
-            Assert.True(Path.GetFileName(mscorlib.Module.ImageName).Equals("mscorlib.dll", System.StringComparison.OrdinalIgnoreCase));
+            Assert.Equal("mscorlib.dll", Path.GetFileName(mscorlib.Module.ImageName), ignoreCase:true);
         }
 
         [Fact]
@@ -114,7 +114,7 @@ namespace CsDebugScript.Tests.CLR
         {
             foreach (IClrAppDomain domain in domainList)
             {
-                Assert.False(domain.Modules.Contains(module));
+                Assert.DoesNotContain(module, domain.Modules);
             }
         }
 
@@ -122,7 +122,7 @@ namespace CsDebugScript.Tests.CLR
         {
             foreach (IClrAppDomain domain in domainList)
             {
-                Assert.True(domain.Modules.Contains(module));
+                Assert.Contains(module, domain.Modules);
             }
             Assert.Equal(domainList.Length, domainList[0].Runtime.AllAppDomains.Count(ad => ad.Modules.Contains(module)));
         }

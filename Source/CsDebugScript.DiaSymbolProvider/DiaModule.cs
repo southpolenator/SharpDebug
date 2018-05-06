@@ -61,7 +61,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         {
             IDiaSession diaSession;
 
-            dia = new DiaSource();
+            dia = DiaLoader.CreateDiaSource();
             dia.loadDataFromPdb(pdbPath);
             dia.openSession(out diaSession);
             Initialize(diaSession, module);
