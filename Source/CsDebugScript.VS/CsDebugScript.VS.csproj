@@ -63,6 +63,7 @@
     <Compile Include="$(EnlistmentRoot)\Properties\SharedAssemblyInfo.cs" />
     <Compile Include="VSContext.cs" />
     <Compile Include="VSCustomVisualizer.cs" />
+    <Compile Include="VSCustomVisualizerEvaluator.cs" />
     <Compile Include="VSDebugger.cs" />
     <Compile Include="VSDebuggerProxy.cs" />
     <Compile Include="VSInteractiveWindow.cs" />
