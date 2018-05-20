@@ -112,6 +112,7 @@ namespace CsDebugScript
         {
             Address = address;
             Process = process;
+            Id = uint.MaxValue;
             name = SimpleCache.Create(() =>
             {
                 string name = Context.Debugger.GetModuleName(this);
