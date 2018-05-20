@@ -146,6 +146,7 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public string GetModuleImageName(Module module)
         {
+            InitializeModuleId(module);
             return proxy.GetModuleImageName(module.Id);
         }
 
@@ -175,6 +176,7 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public string GetModuleName(Module module)
         {
+            InitializeModuleId(module);
             return proxy.GetModuleName(module.Id);
         }
 
@@ -185,6 +187,7 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public string GetModuleSymbolFile(Module module)
         {
+            InitializeModuleId(module);
             return proxy.GetModuleSymbolName(module.Id);
         }
 
@@ -197,6 +200,7 @@ namespace CsDebugScript.VS
         /// </returns>
         public IDiaSession GetModuleDiaSession(Module module)
         {
+            InitializeModuleId(module);
             return proxy.GetModuleDiaSession(module.Id) as IDiaSession;
         }
 
@@ -206,6 +210,7 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public Tuple<DateTime, ulong> GetModuleTimestampAndSize(Module module)
         {
+            InitializeModuleId(module);
             return proxy.GetModuleTimestampAndSize(module.Id);
         }
 
@@ -219,6 +224,7 @@ namespace CsDebugScript.VS
         /// <param name="patch">The version patch number.</param>
         public void GetModuleVersion(Module module, out int major, out int minor, out int revision, out int patch)
         {
+            InitializeModuleId(module);
             proxy.GetModuleVersion(module.Id, out major, out minor, out revision, out patch);
         }
 
@@ -465,6 +471,20 @@ namespace CsDebugScript.VS
             // This should update cache with new values. For now, just clear everything
             proxy.ClearCache();
             Engine.Context.ClearCache();
+        }
+
+        /// <summary>
+        /// Initializes module id if it wasn't already.
+        /// </summary>
+        /// <param name="module">Module to be initialized.</param>
+        private void InitializeModuleId(Module module)
+        {
+            if (module == null || module.Id != uint.MaxValue)
+            {
+                return;
+            }
+
+            module.Id = proxy.GetModuleId(module.Process.Id, module.Address);
         }
 
         #region Unsupported functionality

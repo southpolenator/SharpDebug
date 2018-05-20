@@ -47,7 +47,7 @@ namespace CsDebugScript.VS
         private static System.Threading.ThreadLocal<bool> initializationForThread;
 
         /// <summary>
-        /// Initializes the <see cref="VSDebugger"/> class.
+        /// Initializes the <see cref="VSDebuggerProxy"/> class.
         /// </summary>
         static VSDebuggerProxy()
         {
@@ -58,15 +58,23 @@ namespace CsDebugScript.VS
                     DkmComponentManager.InitializeThread(DkmComponentManager.IdeComponentId);
                     return true;
                 }
-                catch (Exception)
+                catch (DkmException ex)
                 {
-                    return false;
+                    if (ex.Code == DkmExceptionCode.E_XAPI_ALREADY_INITIALIZED)
+                        return true;
                 }
+                catch
+                {
+                }
+                return false;
             });
+            System.Threading.Thread thread = new System.Threading.Thread(() => StaThreadLoop() );
+            thread.SetApartmentState(System.Threading.ApartmentState.STA);
+            thread.Start();
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="VSDebugger"/> class.
+        /// Initializes a new instance of the <see cref="VSDebuggerProxy"/> class.
         /// </summary>
         public VSDebuggerProxy()
         {
@@ -117,7 +125,7 @@ namespace CsDebugScript.VS
 
         public int GetCurrentStackFrameNumber(int threadId)
         {
-            DkmStackWalkFrame frame = ExecuteOnMainThread(() => DkmStackFrame.ExtractFromDTEObject(VSContext.DTE.Debugger.CurrentStackFrame));
+            DkmStackWalkFrame frame = ExecuteOnDkmInitializedThread(() => DkmStackFrame.ExtractFromDTEObject(VSContext.DTE.Debugger.CurrentStackFrame));
             DkmStackWalkFrame[] frames = threads[threadId].Frames.Value;
 
             for (int i = 0; i < frames.Length; i++)
@@ -177,7 +185,7 @@ namespace CsDebugScript.VS
 
         public object GetModuleDiaSession(uint moduleId)
         {
-            return ExecuteOnDkmInitializedThread(() =>
+            Func<object> executor = () =>
             {
                 try
                 {
@@ -189,7 +197,15 @@ namespace CsDebugScript.VS
                 {
                     return null;
                 }
-            });
+            };
+
+            object result = executor();
+
+            if (result == null)
+            {
+                result = ExecuteOnDkmInitializedThread(executor);
+            }
+            return result;
         }
 
         public Tuple<DateTime, ulong> GetModuleTimestampAndSize(uint moduleId)
@@ -292,6 +308,22 @@ namespace CsDebugScript.VS
                 }
 
                 return result.ToArray();
+            });
+        }
+
+        public uint GetModuleId(uint processId, ulong address)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+                var module = process.GetRuntimeInstances().SelectMany(r => r.GetModuleInstances()).First(m => m.BaseAddress == address);
+
+                lock (modules)
+                {
+                    uint id = (uint)modules.Count;
+                    modules.Add(module);
+                    return id;
+                }
             });
         }
 
@@ -604,6 +636,82 @@ namespace CsDebugScript.VS
 
         #region Executing evaluators on correct thread
         /// <summary>
+        /// Signal event when there is something new in STA thread queue.
+        /// </summary>
+        private static System.Threading.AutoResetEvent staThreadActionAvailable = new System.Threading.AutoResetEvent(false);
+
+        /// <summary>
+        /// Signal event when STA thread should stop.
+        /// </summary>
+        private static System.Threading.AutoResetEvent staThreadShouldStop = new System.Threading.AutoResetEvent(false);
+
+        /// <summary>
+        /// Queue of STA thread actions.
+        /// </summary>
+        private static Queue<Action> staThreadActions = new Queue<Action>();
+
+        /// <summary>
+        /// Local thread storage for signal event when STA thread process' action.
+        /// </summary>
+        private static System.Threading.ThreadLocal<System.Threading.AutoResetEvent> threadSyncEvent = new System.Threading.ThreadLocal<System.Threading.AutoResetEvent>(() => new System.Threading.AutoResetEvent(false));
+
+        /// <summary>
+        /// STA thread loop function.
+        /// </summary>
+        private static void StaThreadLoop()
+        {
+            System.Threading.WaitHandle[] handles = new System.Threading.WaitHandle[] { staThreadShouldStop, staThreadActionAvailable };
+            Queue<Action> nextActions = new Queue<Action>();
+
+            while (true)
+            {
+                // Wait for next operation
+                int id = System.Threading.WaitHandle.WaitAny(handles);
+
+                if (handles[id] == staThreadShouldStop)
+                    break;
+
+                // Swap actions queue
+                lock (staThreadActions)
+                {
+                    var actions = staThreadActions;
+                    staThreadActions = nextActions;
+                    nextActions = actions;
+                }
+
+                // Execute all actions
+                bool initialized = initializationForThread.Value;
+
+                while (nextActions.Count > 0)
+                {
+                    Action action = nextActions.Dequeue();
+
+                    action();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Executes the specified action on STA thread.
+        /// </summary>
+        /// <param name="action"></param>
+        private static void ExecuteOnStaThread(Action action)
+        {
+            System.Threading.AutoResetEvent syncEvent = threadSyncEvent.Value;
+
+            lock (staThreadActions)
+            {
+                staThreadActions.Enqueue(() =>
+                {
+                    action();
+                    syncEvent.Set();
+                });
+            }
+            staThreadActionAvailable.Set();
+            syncEvent.WaitOne();
+        }
+
+        /// <summary>
         /// Executes the specified evaluator on DKM initialized thread. It will try to initialize current thread and if it fails it will fall-back to the main thread.
         /// </summary>
         /// <typeparam name="T">The evaluator result type</typeparam>
@@ -616,7 +724,7 @@ namespace CsDebugScript.VS
             }
             else
             {
-                ExecuteOnMainThread(evaluator);
+                ExecuteOnStaThread(evaluator);
             }
         }
 
@@ -634,60 +742,12 @@ namespace CsDebugScript.VS
             }
             else
             {
-                return ExecuteOnMainThread(evaluator);
-            }
-        }
-
-        /// <summary>
-        /// Executes the specified evaluator on main thread.
-        /// </summary>
-        /// <typeparam name="T">The evaluator result type</typeparam>
-        /// <param name="evaluator">The evaluator.</param>
-        private static void ExecuteOnMainThread(Action evaluator)
-        {
-            if (System.Windows.Application.Current != null && System.Windows.Application.Current.Dispatcher != null)
-            {
-                System.Windows.Application.Current.Dispatcher.Invoke(evaluator);
-            }
-            else
-            {
-                System.Threading.Thread thread = new System.Threading.Thread(() =>
-                {
-                    bool initialized = initializationForThread.Value;
-
-                    evaluator();
-                });
-                thread.SetApartmentState(System.Threading.ApartmentState.STA);
-                thread.Start();
-                thread.Join();
-            }
-        }
-
-        /// <summary>
-        /// Executes the specified evaluator on main thread.
-        /// </summary>
-        /// <typeparam name="T">The evaluator result type</typeparam>
-        /// <param name="evaluator">The evaluator.</param>
-        /// <returns>The evaluator result.</returns>
-        private static T ExecuteOnMainThread<T>(Func<T> evaluator)
-        {
-            if (System.Windows.Application.Current != null && System.Windows.Application.Current.Dispatcher != null)
-            {
-                return System.Windows.Application.Current.Dispatcher.Invoke(evaluator);
-            }
-            else
-            {
                 T result = default(T);
 
-                System.Threading.Thread thread = new System.Threading.Thread(() =>
+                ExecuteOnStaThread(() =>
                 {
-                    bool initialized = initializationForThread.Value;
-
                     result = evaluator();
                 });
-                thread.SetApartmentState(System.Threading.ApartmentState.STA);
-                thread.Start();
-                thread.Join();
                 return result;
             }
         }
