@@ -2,7 +2,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Windows.Media;
 
 namespace CsDebugScript.UI.ResultVisualizers
 {
@@ -22,10 +21,10 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// <param name="dictionary">Dictionary to be visualized.</param>
         /// <param name="dictionaryType">Type of the resulting object that should be visualized.</param>
         /// <param name="name">Name of the variable / property.</param>
-        /// <param name="image">Image that represents icon of the variable / property</param>
+        /// <param name="dataType">Data type that will be used to generate icon of the variable / property</param>
         /// <param name="interactiveResultVisualizer">Interactive result visualizer that can be used for creating UI elements.</param>
-        public DictionaryResultVisualizer(IDictionary dictionary, Type dictionaryType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
-            : base(dictionary, dictionaryType, name, image, interactiveResultVisualizer)
+        public DictionaryResultVisualizer(IDictionary dictionary, Type dictionaryType, string name, CompletionDataType dataType, InteractiveResultVisualizer interactiveResultVisualizer)
+            : base(dictionary, dictionaryType, name, dataType, interactiveResultVisualizer)
         {
             this.dictionary = dictionary;
         }
@@ -38,7 +37,7 @@ namespace CsDebugScript.UI.ResultVisualizers
         {
             get
             {
-                yield return Create(dictionary.Count, null, "Count", CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                yield return Create(dictionary.Count, null, "Count", CompletionDataType.Property, interactiveResultVisualizer);
                 foreach (IResultVisualizer item in OrderItems(ExtractItems()))
                 {
                     yield return item;
@@ -62,7 +61,7 @@ namespace CsDebugScript.UI.ResultVisualizers
         {
             foreach (DictionaryEntry entry in dictionary)
             {
-                yield return Create(GetValue(() => entry.Value), resultType.GetElementType(), entry.Key.ToString(), CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                yield return Create(GetValue(() => entry.Value), resultType.GetElementType(), entry.Key.ToString(), CompletionDataType.Variable, interactiveResultVisualizer);
             }
         }
     }

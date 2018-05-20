@@ -75,7 +75,7 @@ namespace CsDebugScript.UI
             }
 
             // All other should be visualized in a table
-            IResultVisualizer resultTreeItem = ResultVisualizer.Create(obj, obj.GetType(), "result", null, this);
+            IResultVisualizer resultTreeItem = ResultVisualizer.Create(obj, obj.GetType(), "result", CompletionDataType.Unknown, this);
 
             resultTreeItem.Initialize();
             return new LazyUIResult(() => Visualize(resultTreeItem));
@@ -424,11 +424,11 @@ namespace CsDebugScript.UI
                             {
                                 List<Tuple<string, IEnumerable<IResultVisualizer>>> customChildren = new List<Tuple<string, IEnumerable<IResultVisualizer>>>();
 
-                                foreach (Tuple<string, IEnumerable<IResultVisualizer>> customChild in resultTreeItem.Children)
+                                foreach (Tuple<string, IEnumerable<IResultVisualizer>> customChild in resultTreeItem.ChildrenGroups)
                                 {
                                     if (customChild.Item2.Any())
                                     {
-                                        if (customChild.Item1 == "[Expanded]")
+                                        if (customChild.Item1 == ResultVisualizer.ExpandedGroupName)
                                         {
                                             List<IResultVisualizer> cachedItems = customChild.Item2.ToList();
 
@@ -454,7 +454,7 @@ namespace CsDebugScript.UI
                                         item.Items.Clear();
                                         foreach (Tuple<string, IEnumerable<IResultVisualizer>> customChild in customChildren)
                                         {
-                                            if (customChild.Item1 == "[Expanded]")
+                                            if (customChild.Item1 == ResultVisualizer.ExpandedGroupName)
                                             {
                                                 foreach (IResultVisualizer child in customChild.Item2)
                                                 {

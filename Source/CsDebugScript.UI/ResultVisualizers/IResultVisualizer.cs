@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.UI.CodeWindow;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
@@ -32,14 +33,24 @@ namespace CsDebugScript.UI.ResultVisualizers
         ImageSource Image { get; }
 
         /// <summary>
+        /// Data type that will be used to generate icon of the variable / property.
+        /// </summary>
+        CompletionDataType DataType { get; }
+
+        /// <summary>
         /// Checks if this item has child elements and should be expandable.
         /// </summary>
         bool IsExpandable { get; }
 
         /// <summary>
-        /// Gets the child elements in groups.
+        /// Gets the child elements in groups (Tuple of group name and elements).
         /// </summary>
-        IEnumerable<Tuple<string, IEnumerable<IResultVisualizer>>> Children { get; }
+        IEnumerable<Tuple<string, IEnumerable<IResultVisualizer>>> ChildrenGroups { get; }
+
+        /// <summary>
+        /// Get child elements and groups.
+        /// </summary>
+        IEnumerable<IResultVisualizer> Children { get; }
 
         /// <summary>
         /// Gets the string that describes value of the variable / property.

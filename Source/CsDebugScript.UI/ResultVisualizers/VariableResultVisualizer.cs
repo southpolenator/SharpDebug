@@ -2,7 +2,6 @@
 using CsDebugScript.UI.CodeWindow;
 using System;
 using System.Collections.Generic;
-using System.Windows.Media;
 
 namespace CsDebugScript.UI.ResultVisualizers
 {
@@ -27,10 +26,10 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// <param name="variable">Variable to be visualized.</param>
         /// <param name="variableType">Type of the resulting object that should be visualized.</param>
         /// <param name="name">Name of the variable / property.</param>
-        /// <param name="image">Image that represents icon of the variable / property</param>
+        /// <param name="dataType">Data type that will be used to generate icon of the variable / property</param>
         /// <param name="interactiveResultVisualizer">Interactive result visualizer that can be used for creating UI elements.</param>
-        public VariableResultVisualizer(Variable variable, Type variableType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
-            : base(variable, variableType, name, image, interactiveResultVisualizer)
+        public VariableResultVisualizer(Variable variable, Type variableType, string name, CompletionDataType dataType, InteractiveResultVisualizer interactiveResultVisualizer)
+            : base(variable, variableType, name, dataType, interactiveResultVisualizer)
         {
             this.variable = variable;
             try
@@ -68,11 +67,11 @@ namespace CsDebugScript.UI.ResultVisualizers
 
                 if (codeType.IsPointer && (codeType.ElementType.IsSimple || codeType.ElementType.IsPointer || codeType.ElementType.IsArray || codeType.ElementType.IsEnum))
                 {
-                    yield return Create(GetValue(() => variable.DereferencePointer()), typeof(Variable), "*", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                    yield return Create(GetValue(() => variable.DereferencePointer()), typeof(Variable), "*", CompletionDataType.Variable, interactiveResultVisualizer);
                 }
                 else if (codeType.IsArray)
                 {
-                    yield return Create(variable.GetArrayLength(), typeof(int), "Length", CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                    yield return Create(variable.GetArrayLength(), typeof(int), "Length", CompletionDataType.Property, interactiveResultVisualizer);
                     if (variable.GetArrayLength() <= ArrayElementsVisualized)
                     {
                         foreach (IResultVisualizer element in GetArrayElements(0, variable.GetArrayLength()))
@@ -88,7 +87,7 @@ namespace CsDebugScript.UI.ResultVisualizers
                     {
                         yield return item;
                     }
-                    yield return Create(codeType, codeType.GetType(), "CodeType", CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                    yield return Create(codeType, codeType.GetType(), "CodeType", CompletionDataType.Property, interactiveResultVisualizer);
                 }
             }
         }
@@ -97,16 +96,16 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// Gets the child elements in groups.
         /// Since we can have too many array elements, we would like to "page" them into groups.
         /// </summary>
-        public override IEnumerable<Tuple<string, IEnumerable<IResultVisualizer>>> Children
+        public override IEnumerable<Tuple<string, IEnumerable<IResultVisualizer>>> ChildrenGroups
         {
             get
             {
                 bool elementsReturned = !variable.GetCodeType().IsArray || variable.GetArrayLength() <= ArrayElementsVisualized;
 
-                foreach (Tuple<string, IEnumerable<IResultVisualizer>> children in base.Children)
+                foreach (Tuple<string, IEnumerable<IResultVisualizer>> children in base.ChildrenGroups)
                 {
                     yield return children;
-                    if (!elementsReturned && children.Item1 == "[Expanded]")
+                    if (!elementsReturned && children.Item1 == ExpandedGroupName)
                     {
                         elementsReturned = true;
                         for (int j = 0; j < variable.GetArrayLength(); j += ArrayElementsVisualized)
@@ -157,7 +156,7 @@ namespace CsDebugScript.UI.ResultVisualizers
         {
             for (int i = start; i < end; i++)
             {
-                yield return Create(GetValue(() => variable.GetArrayElement(i)), typeof(Variable), $"[{i}]", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                yield return Create(GetValue(() => variable.GetArrayElement(i)), typeof(Variable), $"[{i}]", CompletionDataType.Variable, interactiveResultVisualizer);
             }
         }
 
@@ -178,24 +177,24 @@ namespace CsDebugScript.UI.ResultVisualizers
 
                     if (baseClassVariable != null)
                     {
-                        yield return new VariableResultVisualizer(baseClassVariable, typeof(Variable), $"[{baseClass}]", CompletionData.GetImage(CompletionDataType.Class), interactiveResultVisualizer);
+                        yield return new VariableResultVisualizer(baseClassVariable, typeof(Variable), $"[{baseClass}]", CompletionDataType.Class, interactiveResultVisualizer);
                     }
                     else
                     {
-                        yield return Create(baseClassValue, typeof(Variable), $"[{baseClass}]", CompletionData.GetImage(CompletionDataType.Class), interactiveResultVisualizer);
+                        yield return Create(baseClassValue, typeof(Variable), $"[{baseClass}]", CompletionDataType.Class, interactiveResultVisualizer);
                     }
                 }
 
                 foreach (string fieldName in codeType.ClassFieldNames)
                 {
-                    yield return Create(GetValue(() => variable.GetClassField(fieldName)), typeof(Variable), fieldName, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                    yield return Create(GetValue(() => variable.GetClassField(fieldName)), typeof(Variable), fieldName, CompletionDataType.Variable, interactiveResultVisualizer);
                 }
             }
             else
             {
                 foreach (string fieldName in codeType.FieldNames)
                 {
-                    yield return Create(GetValue(() => variable.GetField(fieldName)), typeof(Variable), fieldName, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                    yield return Create(GetValue(() => variable.GetField(fieldName)), typeof(Variable), fieldName, CompletionDataType.Variable, interactiveResultVisualizer);
                 }
             }
         }

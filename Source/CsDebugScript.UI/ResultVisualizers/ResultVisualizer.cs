@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.Engine.Utility;
+using CsDebugScript.UI.CodeWindow;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,6 +18,31 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// Number of array elements that should be visualized in a group.
         /// </summary>
         public const int ArrayElementsVisualized = 100;
+
+        /// <summary>
+        /// [Expanded] group name.
+        /// </summary>
+        public const string ExpandedGroupName = "[Expanded]";
+
+        /// <summary>
+        /// [Internal] group name.
+        /// </summary>
+        public const string InternalGroupName = "[Internal]";
+
+        /// <summary>
+        /// [Static] group name.
+        /// </summary>
+        public const string StaticGroupName = "[Static]";
+
+        /// <summary>
+        /// [Dynamic] group name.
+        /// </summary>
+        public const string DynamicGroupName = "[Dynamic]";
+
+        /// <summary>
+        /// [Enumeration] group name.
+        /// </summary>
+        public const string EnumerationGroupName = "[Enumeration]";
 
         /// <summary>
         /// Resulting object that should be visualized.
@@ -54,15 +80,15 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// <param name="result">Resulting object that should be visualized.</param>
         /// <param name="resultType">Type of the resulting object that should be visualized.</param>
         /// <param name="name">Name of the variable / property.</param>
-        /// <param name="image">Image that represents icon of the variable / property</param>
+        /// <param name="dataType">Data type that will be used to generate icon of the variable / property</param>
         /// <param name="interactiveResultVisualizer">Interactive result visualizer that can be used for creating UI elements.</param>
-        public ResultVisualizer(object result, Type resultType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
+        public ResultVisualizer(object result, Type resultType, string name, CompletionDataType dataType, InteractiveResultVisualizer interactiveResultVisualizer)
         {
             this.result = result;
             this.resultType = resultType;
             this.interactiveResultVisualizer = interactiveResultVisualizer;
             Name = name;
-            Image = image;
+            DataType = dataType;
             value = SimpleCache.Create(GetValue);
             typeString = SimpleCache.Create(GetTypeString);
             valueString = SimpleCache.Create(GetValueString);
@@ -76,7 +102,12 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// <summary>
         /// Gets the image that represents icon of the variable / property.
         /// </summary>
-        public ImageSource Image { get; private set; }
+        public ImageSource Image => CompletionData.GetImage(DataType);
+
+        /// <summary>
+        /// Data type that will be used to generate icon of the variable / property.
+        /// </summary>
+        public CompletionDataType DataType { get; private set; }
 
         /// <summary>
         /// Gets the value of the property that will be visualized.
@@ -102,29 +133,29 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// <summary>
         /// Gets the child elements in groups.
         /// </summary>
-        public virtual IEnumerable<Tuple<string, IEnumerable<IResultVisualizer>>> Children
+        public virtual IEnumerable<Tuple<string, IEnumerable<IResultVisualizer>>> ChildrenGroups
         {
             get
             {
                 if (ExpandedChildren.Any())
                 {
-                    yield return Tuple.Create("[Expanded]", ExpandedChildren);
+                    yield return Tuple.Create(ExpandedGroupName, ExpandedChildren);
                 }
                 if (NonPublicChildren.Any())
                 {
-                    yield return Tuple.Create("[Internal]", OrderItems(NonPublicChildren));
+                    yield return Tuple.Create(InternalGroupName, OrderItems(NonPublicChildren));
                 }
                 if (StaticChildren.Any())
                 {
-                    yield return Tuple.Create("[Static]", OrderItems(StaticChildren));
+                    yield return Tuple.Create(StaticGroupName, OrderItems(StaticChildren));
                 }
                 if (DynamicChildren.Any())
                 {
-                    yield return Tuple.Create("[Dynamic]", OrderItems(DynamicChildren));
+                    yield return Tuple.Create(DynamicGroupName, OrderItems(DynamicChildren));
                 }
                 if (EnumerationChildren.Any())
                 {
-                    yield return Tuple.Create("[Enumeration]", OrderItems(EnumerationChildren));
+                    yield return Tuple.Create(EnumerationGroupName, OrderItems(EnumerationChildren));
                 }
             }
         }
@@ -170,6 +201,30 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// It usualy represents list of items that are available in result if it is enumeration.
         /// </summary>
         public virtual IEnumerable<IResultVisualizer> EnumerationChildren => Enumerable.Empty<IResultVisualizer>();
+
+        /// <summary>
+        /// Get child elements and groups.
+        /// </summary>
+        public IEnumerable<IResultVisualizer> Children
+        {
+            get
+            {
+                foreach (var childGroup in ChildrenGroups)
+                {
+                    if (childGroup.Item1 == ExpandedGroupName)
+                    {
+                        foreach (IResultVisualizer item in childGroup.Item2)
+                        {
+                            yield return item;
+                        }
+                    }
+                    else
+                    {
+                        yield return new GroupResultVisualizer(childGroup.Item1, childGroup.Item2);
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Gets the value of the property that will be visualized.
@@ -236,31 +291,31 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// <param name="result">Resulting object that should be visualized.</param>
         /// <param name="resultType">Type of the resulting object that should be visualized.</param>
         /// <param name="name">Name of the variable / property.</param>
-        /// <param name="image">Image that represents icon of the variable / property</param>
+        /// <param name="dataType">Data type that will be used to generate icon of the variable / property</param>
         /// <param name="interactiveResultVisualizer">Interactive result visualizer that can be used for creating UI elements.</param>
         /// <returns>Instance of <see cref="IResultVisualizer"/> interface that can be used to visualize resulting object.</returns>
-        public static IResultVisualizer Create(object result, Type resultType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
+        public static IResultVisualizer Create(object result, Type resultType, string name, CompletionDataType dataType, InteractiveResultVisualizer interactiveResultVisualizer)
         {
             if (result != null)
             {
                 if (result.GetType().IsArray)
                 {
-                    return new ArrayResultVisualizer((Array)result, resultType, name, image, interactiveResultVisualizer);
+                    return new ArrayResultVisualizer((Array)result, resultType, name, dataType, interactiveResultVisualizer);
                 }
                 else if (typeof(IDictionary).IsAssignableFrom(result.GetType()))
                 {
-                    return new DictionaryResultVisualizer((IDictionary)result, resultType, name, image, interactiveResultVisualizer);
+                    return new DictionaryResultVisualizer((IDictionary)result, resultType, name, dataType, interactiveResultVisualizer);
                 }
                 else if (result.GetType() == typeof(Variable))
                 {
-                    return new VariableResultVisualizer(((Variable)result).DowncastInterface(), resultType, name, image, interactiveResultVisualizer);
+                    return new VariableResultVisualizer(((Variable)result).DowncastInterface(), resultType, name, dataType, interactiveResultVisualizer);
                 }
                 else if (result.GetType() == typeof(VariableCollection))
                 {
-                    return new VariableCollectionResultVisualizer((VariableCollection)result, resultType, name, image, interactiveResultVisualizer);
+                    return new VariableCollectionResultVisualizer((VariableCollection)result, resultType, name, dataType, interactiveResultVisualizer);
                 }
             }
-            return new ObjectResultVisualizer(result, resultType, name, image, interactiveResultVisualizer);
+            return new ObjectResultVisualizer(result, resultType, name, dataType, interactiveResultVisualizer);
         }
 
         /// <summary>
