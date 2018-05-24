@@ -110,12 +110,15 @@ namespace CsDebugScript.UI.CodeWindow
             {
                 using (System.IO.Stream stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream($"CsDebugScript.UI.Icons.{completionDataType}.png"))
                 {
-                    BitmapImage imageSource = new BitmapImage();
+                    if (stream != null)
+                    {
+                        BitmapImage imageSource = new BitmapImage();
 
-                    imageSource.BeginInit();
-                    imageSource.StreamSource = stream;
-                    imageSource.EndInit();
-                    return imageSource;
+                        imageSource.BeginInit();
+                        imageSource.StreamSource = stream;
+                        imageSource.EndInit();
+                        return imageSource;
+                    }
                 }
             }
             catch
