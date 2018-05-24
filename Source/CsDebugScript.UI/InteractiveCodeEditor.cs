@@ -69,9 +69,9 @@ namespace CsDebugScript.UI
             };
             interactiveExecution.scriptBase.ObjectWriter = objectWriter;
 
-            // Run initialization of the window in background task
+            // Run initialization of the window in background STA thread
             IsEnabled = false;
-            Task.Run(() =>
+            System.Threading.Thread thread = new System.Threading.Thread(() =>
             {
                 try
                 {
@@ -98,6 +98,8 @@ namespace CsDebugScript.UI
                     MessageBox.Show(ex.ToString());
                 }
             });
+            thread.SetApartmentState(System.Threading.ApartmentState.STA);
+            thread.Start();
         }
 
         public event CommandExecutedHandler CommandExecuted;
