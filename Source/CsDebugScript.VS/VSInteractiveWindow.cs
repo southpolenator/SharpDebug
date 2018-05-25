@@ -41,6 +41,7 @@ namespace CsDebugScript.VS
     [Guid("774827b1-2776-4746-bacd-2cd95407f32a")]
     public class VSInteractiveWindow : ToolWindowPane
     {
+        internal const string CaptionText = "C# Debug Scripting";
         private const string DomainName = "CsDebugScript";
 
         private AppDomain scriptDomain;
@@ -53,7 +54,7 @@ namespace CsDebugScript.VS
         /// </summary>
         public VSInteractiveWindow() : base(null)
         {
-            this.Caption = "C# Debug Scripting";
+            this.Caption = CaptionText;
 
             grid = new Grid();
             this.Content = grid;

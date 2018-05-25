@@ -87,7 +87,7 @@ namespace CsDebugScript.VS
                     hasAddress = true;
                 }
 
-                if (typeString.Length == 0 || moduleName.Length == 0 || !hasAddress)
+                if (string.IsNullOrEmpty(typeString) || string.IsNullOrEmpty(moduleName) || !hasAddress)
                 {
                     string displayString = "{...CsDebugScript failure...}";
 
@@ -144,7 +144,7 @@ namespace CsDebugScript.VS
                     DkmEvaluationResultStorageType.None,
                     DkmEvaluationResultTypeModifierFlags.None,
                     dkmDataAddress,
-                    null,
+                    VSUIVisualizerService.GetUIVisualizers(ResultVisualizer),
                     null,
                     null);
                 return;
@@ -161,7 +161,7 @@ namespace CsDebugScript.VS
         /// <param name="module">The module where type is defined.</param>
         /// <param name="codeTypeName">The code type name.</param>
         /// <returns>Resolved code type.</returns>
-        private static CodeType ResolveCodeType(Process process, Module module, string codeTypeName)
+        internal static CodeType ResolveCodeType(Process process, Module module, string codeTypeName)
         {
             CodeType codeType;
             int pointer = 0;

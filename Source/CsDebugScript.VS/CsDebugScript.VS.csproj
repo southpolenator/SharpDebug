@@ -72,6 +72,7 @@
       <DependentUpon>VSInteractiveWindowControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="VSInteractiveWindowPackage.cs" />
+    <Compile Include="VSUIVisualizerService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(EnlistmentRoot)\Key.snk" />

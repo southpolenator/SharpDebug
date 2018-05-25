@@ -77,22 +77,22 @@ namespace CsDebugScript.VS
                 }
 
                 DkmSuccessEvaluationResult result = DkmSuccessEvaluationResult.Create(
-                        visualizedExpression.InspectionContext,
-                        visualizedExpression.StackFrame,
-                        item.Name, // Name - Left column
-                        "[fullname]", // TODO: FullName - What is being copied when "Add to watch"
-                        DkmEvaluationResultFlags.ReadOnly | (item.IsExpandable ? DkmEvaluationResultFlags.Expandable : DkmEvaluationResultFlags.None),
-                        item.ValueString, // Value - Middle column
-                        "",
-                        item.Type ?? "", // Type - Right column
-                        category,
-                        DkmEvaluationResultAccessType.None,
-                        DkmEvaluationResultStorageType.None,
-                        DkmEvaluationResultTypeModifierFlags.None,
-                        null,
-                        null,
-                        null,
-                        null);
+                    visualizedExpression.InspectionContext,
+                    visualizedExpression.StackFrame,
+                    item.Name, // Name - Left column
+                    "[fullname]", // TODO: FullName - What is being copied when "Add to watch"
+                    DkmEvaluationResultFlags.ReadOnly | (item.IsExpandable ? DkmEvaluationResultFlags.Expandable : DkmEvaluationResultFlags.None),
+                    item.ValueString, // Value - Middle column
+                    "",
+                    item.Type ?? "", // Type - Right column
+                    category,
+                    DkmEvaluationResultAccessType.None,
+                    DkmEvaluationResultStorageType.None,
+                    DkmEvaluationResultTypeModifierFlags.None,
+                    null,
+                    VSUIVisualizerService.GetUIVisualizers(item),
+                    null,
+                    null);
 
                 var expression = DkmChildVisualizedExpression.Create(
                     visualizedExpression.InspectionContext,

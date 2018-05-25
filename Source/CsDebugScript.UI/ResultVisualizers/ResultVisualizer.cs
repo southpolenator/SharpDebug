@@ -227,6 +227,11 @@ namespace CsDebugScript.UI.ResultVisualizers
         }
 
         /// <summary>
+        /// Gets the resulting object that should be visualized.
+        /// </summary>
+        internal object Result => result;
+
+        /// <summary>
         /// Gets the value of the property that will be visualized.
         /// If it is not <see cref="UIElement"/>, it will be added as a string (<see cref="ValueString"/>).
         /// </summary>
