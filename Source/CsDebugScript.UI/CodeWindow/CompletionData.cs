@@ -12,7 +12,7 @@ namespace CsDebugScript.UI.CodeWindow
 {
     internal class CompletionData : ICSharpCode.AvalonEdit.CodeCompletion.ICompletionData, ICSharpCode.NRefactory.Completion.ICompletionData
     {
-        private static Dictionary<CompletionDataType, ImageSource> Images = CreateImages();
+        private static System.Threading.ThreadLocal<Dictionary<CompletionDataType, ImageSource>> Images = new System.Threading.ThreadLocal<Dictionary<CompletionDataType, ImageSource>>(() => CreateImages());
 
         public CompletionData(CompletionDataType completionDataType, object content, double priority = 1, object description = null, string text = null)
         {
@@ -66,7 +66,7 @@ namespace CsDebugScript.UI.CodeWindow
         {
             ImageSource image;
 
-            Images.TryGetValue(completionDataType, out image);
+            Images.Value.TryGetValue(completionDataType, out image);
             return image;
         }
 

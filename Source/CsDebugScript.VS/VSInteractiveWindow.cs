@@ -45,14 +45,19 @@ namespace CsDebugScript.VS
         private const string DomainName = "CsDebugScript";
 
         private AppDomain scriptDomain;
+#if USE_APP_DOMAIN
         private VSInteractiveWindowProxy proxy = null;
+#else
+        private VSInteractiveWindowControl interactiveControl;
+#endif
         private TextBlock unloadedDomainControl;
         private Grid grid;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VSInteractiveWindow"/> class.
         /// </summary>
-        public VSInteractiveWindow() : base(null)
+        public VSInteractiveWindow()
+            : base(null)
         {
             this.Caption = CaptionText;
 
@@ -72,12 +77,26 @@ namespace CsDebugScript.VS
             }
         }
 
+        internal VSInteractiveWindowControl InteractiveControl
+        {
+            get
+            {
+#if USE_APP_DOMAIN
+                throw new NotImplementedException();
+#else
+                return interactiveControl;
+#endif
+            }
+        }
+
         private void UnloadDomain()
         {
             if (scriptDomain != null)
             {
                 var domain = scriptDomain;
+#if USE_APP_DOMAIN
                 var proxy = this.proxy;
+#endif
                 scriptDomain = null;
                 grid.Children.Clear();
                 grid.Children.Add(unloadedDomainControl);
@@ -116,13 +135,13 @@ namespace CsDebugScript.VS
                     VSContext.InitializeAppDomain(scriptDomain);
 #if USE_APP_DOMAIN
                     proxy = (VSInteractiveWindowProxy)scriptDomain.CreateInstanceAndUnwrap(typeof(VSInteractiveWindowProxy).Assembly.FullName, typeof(VSInteractiveWindowProxy).FullName);
-                    var control = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl());
+                    var interactiveControl = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl());
 #else
-                    var control = new VSInteractiveWindowControl();
+                    interactiveControl = new VSInteractiveWindowControl();
 #endif
 
                     grid.Children.Clear();
-                    grid.Children.Add(control);
+                    grid.Children.Add(interactiveControl);
                 }
                 catch (Exception ex)
                 {

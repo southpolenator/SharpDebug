@@ -11,7 +11,6 @@ namespace CsDebugScript.UI
     internal class InteractiveWindowContent : UserControl
     {
         private const string ExecutingPrompt = "...> ";
-        private InteractiveCodeEditor textEditor;
         private StackPanel resultsPanel;
         private TextBlock promptBlock;
         private ScrollViewer scrollViewer;
@@ -71,28 +70,22 @@ namespace CsDebugScript.UI
             panel.Children.Add(promptBlock);
 
             // Add text editor
-            textEditor = new InteractiveCodeEditor(new InteractiveResultVisualizer(this), fontFamily, fontSize, indentationSize, highlightingColors);
-            textEditor.HorizontalAlignment = HorizontalAlignment.Stretch;
-            textEditor.Background = Brushes.Transparent;
-            textEditor.CommandExecuted += TextEditor_CommandExecuted;
-            textEditor.CommandFailed += TextEditor_CommandFailed;
-            textEditor.Executing += TextEditor_Executing;
-            textEditor.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
-            textEditor.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
-            textEditor.TextArea.PreviewKeyDown += TextEditor_PreviewKeyDown;
-            textEditor.TextArea.SizeChanged += TextArea_SizeChanged;
-            panel.Children.Add(textEditor);
+            TextEditor = new InteractiveCodeEditor(new InteractiveResultVisualizer(this), fontFamily, fontSize, indentationSize, highlightingColors);
+            TextEditor.HorizontalAlignment = HorizontalAlignment.Stretch;
+            TextEditor.Background = Brushes.Transparent;
+            TextEditor.CommandExecuted += TextEditor_CommandExecuted;
+            TextEditor.CommandFailed += TextEditor_CommandFailed;
+            TextEditor.Executing += TextEditor_Executing;
+            TextEditor.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            TextEditor.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            TextEditor.TextArea.PreviewKeyDown += TextEditor_PreviewKeyDown;
+            TextEditor.TextArea.SizeChanged += TextArea_SizeChanged;
+            panel.Children.Add(TextEditor);
 
             Content = scrollViewer;
         }
 
-        internal InteractiveCodeEditor TextEditor
-        {
-            get
-            {
-                return textEditor;
-            }
-        }
+        internal InteractiveCodeEditor TextEditor { get; private set; }
 
         internal string PreviousCommand
         {
@@ -113,14 +106,14 @@ namespace CsDebugScript.UI
         {
             FrameworkElement elementWithFocus = Keyboard.FocusedElement as FrameworkElement;
 
-            while (elementWithFocus != null && elementWithFocus != textEditor.TextArea && elementWithFocus.Parent != resultsPanel)
+            while (elementWithFocus != null && elementWithFocus != TextEditor.TextArea && elementWithFocus.Parent != resultsPanel)
             {
                 elementWithFocus = elementWithFocus.Parent as FrameworkElement;
             }
 
-            if (elementWithFocus == textEditor.TextArea)
+            if (elementWithFocus == TextEditor.TextArea)
             {
-                return textEditor;
+                return TextEditor;
             }
 
             return elementWithFocus;
@@ -133,11 +126,11 @@ namespace CsDebugScript.UI
             focus = focus ?? GetFocusedResultItem();
             if (focus == null)
             {
-                textEditor.Focus();
+                TextEditor.Focus();
                 return;
             }
 
-            if (focus != textEditor)
+            if (focus != TextEditor)
             {
                 TraverseDirection = FocusNavigationDirection.Next;
                 focus.MoveFocus(new TraversalRequest(FocusNavigationDirection.Down));
@@ -156,7 +149,7 @@ namespace CsDebugScript.UI
             focus = focus ?? GetFocusedResultItem();
             if (focus == null)
             {
-                textEditor.Focus();
+                TextEditor.Focus();
                 return;
             }
 
@@ -166,7 +159,7 @@ namespace CsDebugScript.UI
             {
                 elementWithFocus.MoveFocus(new TraversalRequest(FocusNavigationDirection.Down));
             }
-            if (Keyboard.FocusedElement == textEditor.TextArea)
+            if (Keyboard.FocusedElement == TextEditor.TextArea)
             {
                 focus.Focus();
             }
@@ -175,12 +168,12 @@ namespace CsDebugScript.UI
 
         private void PromptBlock_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            textEditor.Padding = new Thickness(promptBlock.ActualWidth, 0, 0, 0);
+            TextEditor.Padding = new Thickness(promptBlock.ActualWidth, 0, 0, 0);
         }
 
         private void TextArea_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (textEditor.IsFocused)
+            if (TextEditor.IsFocused)
             {
                 scrollViewer.ScrollToEnd();
             }
@@ -206,10 +199,10 @@ namespace CsDebugScript.UI
                 previousCommandsIndex = 0;
             }
 
-            if (textEditor.Text != PreviousCommand)
+            if (TextEditor.Text != PreviousCommand)
             {
-                textEditor.Text = PreviousCommand;
-                textEditor.SelectionStart = textEditor.Text.Length;
+                TextEditor.Text = PreviousCommand;
+                TextEditor.SelectionStart = TextEditor.Text.Length;
             }
         }
 
@@ -217,31 +210,31 @@ namespace CsDebugScript.UI
         {
             if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.None)
             {
-                if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == 1)
+                if (TextEditor.Document.GetLocation(TextEditor.CaretOffset).Line == 1)
                 {
                     e.Handled = true;
-                    if (textEditor.Text == PreviousCommand || string.IsNullOrEmpty(textEditor.Text))
+                    if (TextEditor.Text == PreviousCommand || string.IsNullOrEmpty(TextEditor.Text))
                     {
                         SetCommandFromBuffer(false);
                     }
                     else
                     {
-                        TraversePrevious(textEditor);
+                        TraversePrevious(TextEditor);
                     }
                 }
             }
             else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.None)
             {
-                if (textEditor.Document.GetLocation(textEditor.CaretOffset).Line == textEditor.LineCount)
+                if (TextEditor.Document.GetLocation(TextEditor.CaretOffset).Line == TextEditor.LineCount)
                 {
                     e.Handled = true;
-                    if (textEditor.Text == PreviousCommand || string.IsNullOrEmpty(textEditor.Text))
+                    if (TextEditor.Text == PreviousCommand || string.IsNullOrEmpty(TextEditor.Text))
                     {
                         SetCommandFromBuffer(true);
                     }
                     else
                     {
-                        TraverseNext(textEditor);
+                        TraverseNext(TextEditor);
                     }
                 }
             }
@@ -258,12 +251,12 @@ namespace CsDebugScript.UI
             else if (e.Key == Key.Up && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
             {
                 e.Handled = true;
-                TraversePrevious(textEditor);
+                TraversePrevious(TextEditor);
             }
             else if (e.Key == Key.Down && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
             {
                 e.Handled = true;
-                TraverseNext(textEditor);
+                TraverseNext(TextEditor);
             }
         }
 
@@ -290,7 +283,7 @@ namespace CsDebugScript.UI
             }
             else
             {
-                textBox.Foreground = textEditor.Foreground;
+                textBox.Foreground = TextEditor.Foreground;
             }
 
             return textBox;
@@ -391,7 +384,7 @@ namespace CsDebugScript.UI
                 resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
             }
 
-            resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(textEditor.Text) : CreateDbgCode(textEditor.Text));
+            resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(TextEditor.Text) : CreateDbgCode(TextEditor.Text));
             AddSpacing(resultsPanel.Children[textEditorIndex]);
             if (resultsPanel.Children.Count - initialLength > 1)
             {
@@ -410,7 +403,7 @@ namespace CsDebugScript.UI
                 resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
             }
 
-            resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(textEditor.Text) : CreateDbgCode(textEditor.Text));
+            resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(TextEditor.Text) : CreateDbgCode(TextEditor.Text));
             AddSpacing(resultsPanel.Children[textEditorIndex]);
             AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
         }
@@ -419,7 +412,7 @@ namespace CsDebugScript.UI
         {
             if (!started)
             {
-                textEditor.TextArea.Focus();
+                TextEditor.TextArea.Focus();
                 promptBlock.Text = InteractiveExecution.DefaultPrompt;
             }
             else

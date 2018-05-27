@@ -11,7 +11,6 @@ namespace CsDebugScript.UI
     public class InteractiveWindow : Window
     {
         internal const string WindowTitle = "C# Interactive Window";
-        private InteractiveWindowContent contentControl;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindow"/> class.
@@ -25,10 +24,12 @@ namespace CsDebugScript.UI
             // Add content
             Grid grid = new Grid();
             Content = grid;
-            contentControl = new InteractiveWindowContent();
-            contentControl.TextEditor.CloseRequested += TextEditor_CloseRequested;
-            grid.Children.Add(contentControl);
+            ContentControl = new InteractiveWindowContent();
+            ContentControl.TextEditor.CloseRequested += TextEditor_CloseRequested;
+            grid.Children.Add(ContentControl);
         }
+
+        internal InteractiveWindowContent ContentControl { get; private set; }
 
         private void TextEditor_CloseRequested()
         {
@@ -38,15 +39,17 @@ namespace CsDebugScript.UI
         /// <summary>
         /// Shows the window as modal dialog.
         /// </summary>
-        public static void ShowModalWindow()
+        /// <param name="initializer">Action that will initialize <see cref="InteractiveWindow"/> before showing it.</param>
+        public static void ShowModalWindow(Action<InteractiveWindow> initializer = null)
         {
             ExecuteInSTA(() =>
             {
-                Window window = null;
+                InteractiveWindow window = null;
 
                 try
                 {
                     window = new InteractiveWindow();
+                    initializer?.Invoke(window);
                     window.ShowDialog();
                 }
                 catch (Exception ex)
@@ -62,17 +65,19 @@ namespace CsDebugScript.UI
         /// <summary>
         /// Shows the window.
         /// </summary>
-        public static void ShowWindow()
+        /// <param name="initializer">Action that will initialize <see cref="InteractiveWindow"/> before showing it.</param>
+        public static void ShowWindow(Action<InteractiveWindow> initializer = null)
         {
             System.Threading.AutoResetEvent windowShown = new System.Threading.AutoResetEvent(false);
 
             ExecuteInSTA(() =>
             {
-                Window window = null;
+                InteractiveWindow window = null;
 
                 try
                 {
                     window = new InteractiveWindow();
+                    initializer?.Invoke(window);
                     window.Show();
                     windowShown.Set();
 

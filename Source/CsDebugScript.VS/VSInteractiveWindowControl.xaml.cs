@@ -13,8 +13,6 @@ namespace CsDebugScript.VS
     /// </summary>
     public partial class VSInteractiveWindowControl : UserControl
     {
-        private InteractiveWindowContent contentControl;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="VSInteractiveWindowControl"/> class.
         /// </summary>
@@ -23,15 +21,18 @@ namespace CsDebugScript.VS
             this.InitializeComponent();
 
             Grid grid = new Grid();
-            contentControl = CreateInteractiveWindowContent();
-            grid.Children.Add(contentControl);
+            ContentControl = CreateInteractiveWindowContent();
+            grid.Children.Add(ContentControl);
             this.Content = grid;
 
             MakeEnabled(VSContext.CurrentDebugMode == EnvDTE.dbgDebugMode.dbgBreakMode);
+            // TODO: Once we don't use this control, we should remove our actions from the events
             VSContext.DebuggerEnteredBreakMode += () => MakeEnabled(true);
             VSContext.DebuggerEnteredDesignMode += () => MakeEnabled(false);
             VSContext.DebuggerEnteredRunMode += () => MakeEnabled(false);
         }
+
+        internal InteractiveWindowContent ContentControl { get; private set; }
 
         private static InteractiveWindowContent CreateInteractiveWindowContent()
         {
@@ -148,7 +149,7 @@ namespace CsDebugScript.VS
 
         private void MakeEnabled(bool enabled)
         {
-            contentControl.IsEnabled = enabled;
+            ContentControl.IsEnabled = enabled;
         }
     }
 }

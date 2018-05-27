@@ -1,4 +1,5 @@
-﻿using CsDebugScript.UI.ResultVisualizers;
+﻿using CsDebugScript.UI;
+using CsDebugScript.UI.ResultVisualizers;
 using Microsoft.VisualStudio.Debugger.Evaluation;
 using Microsoft.VisualStudio.Debugger.Interop;
 using System;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace CsDebugScript.VS
 {
@@ -84,11 +86,17 @@ namespace CsDebugScript.VS
                     switch (visualizerType)
                     {
                         case VSUIVisualizerType.InteractiveWindow:
-                            // TODO: Add this variable to interactive window and make it visible.
+                            // Add this variable to interactive window and make it visible.
+                            VSInteractiveWindowCommand.Instance.ShowToolWindow();
+                            AddVariable("temp", variable, VSInteractiveWindowCommand.Instance.InteractiveWindowTool.InteractiveControl.ContentControl);
                             break;
                         default:
                         case VSUIVisualizerType.ModalWindow:
-                            // TODO: Open new modal window that will visualize this variable
+                            // Open new modal window that will visualize this variable
+                            UI.InteractiveWindow.ShowModalWindow((interactiveWindow) =>
+                            {
+                                AddVariable("result", variable, interactiveWindow.ContentControl);
+                            });
                             break;
                     }
                 }
@@ -98,6 +106,49 @@ namespace CsDebugScript.VS
                 return ex.HResult;
             }
             return 0;
+        }
+
+        private static void AddVariable(string name, Variable variable, InteractiveWindowContent contentControl)
+        {
+            CodeType codeType = variable.GetCodeType();
+            CodeType baseCodeType = codeType;
+            int pointer = 0;
+
+            while (baseCodeType.IsPointer)
+            {
+                baseCodeType = baseCodeType.ElementType;
+                pointer++;
+            }
+
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append("var ");
+            sb.Append(name);
+            sb.Append(" = ");
+            sb.Append(pointer > 0 ? "Variable.CreatePointer(" : "Variable.Create(");
+            sb.Append("CodeType.Create(");
+            if (baseCodeType.Module.Process != Process.Current)
+            {
+                sb.Append($"Process.All.First(p => p.SystemId == {baseCodeType.Module.Process.SystemId}), ");
+            }
+            sb.Append('"');
+            sb.Append(baseCodeType.Module.Name);
+            sb.Append("!");
+            sb.Append(baseCodeType.Name);
+            sb.Append('"');
+            sb.Append(")");
+            for (int i = 0; i < pointer; i++)
+            {
+                sb.Append(".PointerToType");
+            }
+            sb.Append(", ");
+            sb.Append(variable.GetPointerAddress());
+            sb.Append(");");
+            sb.AppendLine();
+            sb.Append(name);
+
+            contentControl.TextEditor.Text = sb.ToString();
+            contentControl.TextEditor.TextArea_ExecuteCSharpScript(null, null);
         }
 
         /// <summary>

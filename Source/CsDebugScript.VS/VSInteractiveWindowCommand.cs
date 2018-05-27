@@ -63,6 +63,17 @@ namespace CsDebugScript.VS
             private set;
         }
 
+        internal VSInteractiveWindow InteractiveWindowTool
+        {
+            get
+            {
+                // Get the instance number 0 of this tool window. This window is single instance so this instance
+                // is actually the only one.
+                // The last flag is set to true so that if the tool window does not exists it will be created.
+                return (VSInteractiveWindow)package.FindToolWindow(typeof(VSInteractiveWindow), 0, true);
+            }
+        }
+
         /// <summary>
         /// Gets the service provider from the owner package.
         /// </summary>
@@ -84,16 +95,11 @@ namespace CsDebugScript.VS
         }
 
         /// <summary>
-        /// Shows the tool window when the menu item is clicked.
+        /// Shows tool window.
         /// </summary>
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event args.</param>
-        private void ShowToolWindow(object sender, EventArgs e)
+        internal void ShowToolWindow()
         {
-            // Get the instance number 0 of this tool window. This window is single instance so this instance
-            // is actually the only one.
-            // The last flag is set to true so that if the tool window does not exists it will be created.
-            ToolWindowPane window = this.package.FindToolWindow(typeof(VSInteractiveWindow), 0, true);
+            ToolWindowPane window = InteractiveWindowTool;
             if ((null == window) || (null == window.Frame))
             {
                 throw new NotSupportedException("Cannot create tool window");
@@ -101,6 +107,16 @@ namespace CsDebugScript.VS
 
             IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
             Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
+        }
+
+        /// <summary>
+        /// Shows the tool window when the menu item is clicked.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event args.</param>
+        private void ShowToolWindow(object sender, EventArgs e)
+        {
+            ShowToolWindow();
         }
     }
 }
