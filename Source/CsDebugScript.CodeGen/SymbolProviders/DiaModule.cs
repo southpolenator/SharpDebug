@@ -54,9 +54,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <param name="module">The XML module description.</param>
         public static Module Open(XmlModule module)
         {
-            // Example on how else it can be created.
-            // Guid clsid = new Guid("E6756135-1E65-4D17-8576-610761398C3C");
-            // IDiaDataSource dia = (IDiaDataSource)Activator.CreateInstance(Type.GetTypeFromCLSID(clsid));
             IDiaDataSource dia = DiaLoader.CreateDiaSource();
             IDiaSession session;
             string moduleName = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.PdbPath).ToLower();

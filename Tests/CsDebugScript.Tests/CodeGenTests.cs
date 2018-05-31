@@ -78,7 +78,7 @@ namespace CsDebugScript.Tests
                     }
 
                     Console.SetError(writer);
-                    generator.Generate(xmlConfig);
+                    ExecuteMTA(() => { generator.Generate(xmlConfig); });
                     writer.Flush();
                     string errorText = writer.GetStringBuilder().ToString();
 
