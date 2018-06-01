@@ -471,13 +471,13 @@ namespace CsDebugScript.DwarfSymbolProvider
                         if (child.Tag == DwarfTag.Member && child.Name == fieldName)
                         {
                             uint fieldTypeId = GetTypeId(GetType(child));
-                            int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
+                            int offset = DecodeDataMemberLocation(child);
 
                             return Tuple.Create(fieldTypeId, typeOffset + offset);
                         }
                         else if (child.Tag == DwarfTag.Inheritance)
                         {
-                            int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
+                            int offset = DecodeDataMemberLocation(child);
 
                             baseClasses.Enqueue(Tuple.Create(GetType(child), typeOffset + offset));
                         }
@@ -488,7 +488,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                             if (unionType.Tag == DwarfTag.UnionType)
                             {
-                                int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
+                                int offset = DecodeDataMemberLocation(child);
 
                                 baseClasses.Enqueue(Tuple.Create(unionType, typeOffset + offset));
                             }
@@ -784,7 +784,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                         if (baseClass.Name == className || baseClass.FullName == className)
                         {
-                            int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
+                            int offset = DecodeDataMemberLocation(child);
 
                             return Tuple.Create(GetTypeId(baseClass), offset);
                         }
@@ -815,7 +815,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                         if (!string.IsNullOrEmpty(baseClass.Name))
                         {
                             DwarfVirtuality virtuality = (DwarfVirtuality)child.GetConstantAttribute(DwarfAttribute.Virtuality, (ulong)DwarfVirtuality.None);
-                            int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
+                            int offset = DecodeDataMemberLocation(child);
 
                             result.Add(baseClass.FullName, Tuple.Create(GetTypeId(baseClass), offset));
                         }
@@ -904,7 +904,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                         if (child.Tag == DwarfTag.Member && child.Name == fieldName)
                         {
                             uint fieldTypeId = GetTypeId(GetType(child));
-                            int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
+                            int offset = DecodeDataMemberLocation(child);
 
                             return Tuple.Create(fieldTypeId, typeOffset + offset);
                         }
@@ -915,7 +915,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                             if (unionType.Tag == DwarfTag.UnionType)
                             {
-                                int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
+                                int offset = DecodeDataMemberLocation(child);
 
                                 baseClasses.Enqueue(Tuple.Create(unionType, typeOffset + offset));
                             }
@@ -1523,11 +1523,18 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
-        /// Decodes <see cref="DwarfAttribute.DataMemberLocation"/> from the specified attribute value.
+        /// Decodes <see cref="DwarfAttribute.DataMemberLocation"/> attribute from the specified symbol.
         /// </summary>
-        /// <param name="value">The location attribute value.</param>
-        private int DecodeDataMemberLocation(DwarfAttributeValue value)
+        /// <param name="symbol">Symbol that should have <see cref="DwarfAttribute.DataMemberLocation"/> attribute.</param>
+        private int DecodeDataMemberLocation(DwarfSymbol symbol)
         {
+            DwarfAttributeValue value;
+
+            if (!symbol.Attributes.TryGetValue(DwarfAttribute.DataMemberLocation, out value))
+            {
+                return 0;
+            }
+
             Location location = DecodeLocationStatic(value, isDataMemberLocation: true);
 
             if (location.Type == LocationType.AbsoluteAddress)
