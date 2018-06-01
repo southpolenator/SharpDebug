@@ -471,13 +471,13 @@ namespace CsDebugScript.DwarfSymbolProvider
                         if (child.Tag == DwarfTag.Member && child.Name == fieldName)
                         {
                             uint fieldTypeId = GetTypeId(GetType(child));
-                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                            int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
 
                             return Tuple.Create(fieldTypeId, typeOffset + offset);
                         }
                         else if (child.Tag == DwarfTag.Inheritance)
                         {
-                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                            int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
 
                             baseClasses.Enqueue(Tuple.Create(GetType(child), typeOffset + offset));
                         }
@@ -488,7 +488,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                             if (unionType.Tag == DwarfTag.UnionType)
                             {
-                                int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                                int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
 
                                 baseClasses.Enqueue(Tuple.Create(unionType, typeOffset + offset));
                             }
@@ -784,7 +784,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                         if (baseClass.Name == className || baseClass.FullName == className)
                         {
-                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                            int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
 
                             return Tuple.Create(GetTypeId(baseClass), offset);
                         }
@@ -814,7 +814,8 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                         if (!string.IsNullOrEmpty(baseClass.Name))
                         {
-                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                            DwarfVirtuality virtuality = (DwarfVirtuality)child.GetConstantAttribute(DwarfAttribute.Virtuality, (ulong)DwarfVirtuality.None);
+                            int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
 
                             result.Add(baseClass.FullName, Tuple.Create(GetTypeId(baseClass), offset));
                         }
@@ -903,7 +904,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                         if (child.Tag == DwarfTag.Member && child.Name == fieldName)
                         {
                             uint fieldTypeId = GetTypeId(GetType(child));
-                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                            int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
 
                             return Tuple.Create(fieldTypeId, typeOffset + offset);
                         }
@@ -914,7 +915,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                             if (unionType.Tag == DwarfTag.UnionType)
                             {
-                                int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                                int offset = DecodeDataMemberLocation(child.Attributes[DwarfAttribute.DataMemberLocation]);
 
                                 baseClasses.Enqueue(Tuple.Create(unionType, typeOffset + offset));
                             }
@@ -1522,12 +1523,31 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Decodes <see cref="DwarfAttribute.DataMemberLocation"/> from the specified attribute value.
+        /// </summary>
+        /// <param name="value">The location attribute value.</param>
+        private int DecodeDataMemberLocation(DwarfAttributeValue value)
+        {
+            Location location = DecodeLocationStatic(value, isDataMemberLocation: true);
+
+            if (location.Type == LocationType.AbsoluteAddress)
+            {
+                return (int)location.Address;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
         /// Decodes location from the specified attribute value.
         /// </summary>
         /// <param name="value">The location attribute value.</param>
         /// <param name="frameContext">Optional frame context used for resolving register values.</param>
         /// <param name="frameBase">The frame base location.</param>
-        private Location DecodeLocationStatic(DwarfAttributeValue value, ThreadContext frameContext = null, Location? frameBase = null)
+        /// <param name="isDataMemberLocation">Flag if we are decoding location for <see cref="DwarfAttribute.DataMemberLocation"/></param>
+        private Location DecodeLocationStatic(DwarfAttributeValue value, ThreadContext frameContext = null, Location? frameBase = null, bool isDataMemberLocation = false)
         {
             if (value.Type == DwarfAttributeValueType.Constant)
             {
@@ -1543,9 +1563,10 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 Stack<Location> stack = new Stack<Location>();
 
-                // TODO:
-                //if (at == DW_AT_data_member_location)
-                //    stack[stackDepth++] = mkAbs(0);
+                if (isDataMemberLocation)
+                {
+                    stack.Push(Location.Absolute(0));
+                }
 
                 while (!reader.IsEnd)
                 {
@@ -1652,6 +1673,14 @@ namespace CsDebugScript.DwarfSymbolProvider
                         case DwarfOperation.lit21:
                         case DwarfOperation.lit22:
                         case DwarfOperation.lit23:
+                        case DwarfOperation.lit24:
+                        case DwarfOperation.lit25:
+                        case DwarfOperation.lit26:
+                        case DwarfOperation.lit27:
+                        case DwarfOperation.lit28:
+                        case DwarfOperation.lit29:
+                        case DwarfOperation.lit30:
+                        case DwarfOperation.lit31:
                             stack.Push(Location.Absolute((ulong)(operation - DwarfOperation.lit0)));
                             break;
                         case DwarfOperation.breg0:
@@ -1716,6 +1745,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                             }
                             break;
                         case DwarfOperation.deref:
+                            if (!isDataMemberLocation)
                             {
                                 if (frameContext == null)
                                 {
@@ -1727,6 +1757,27 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                                 address = UserType.ReadPointer(buffer, 0, (int)Module.PointerSize);
                                 stack.Push(Location.Absolute(address));
+                            }
+                            break;
+                        case DwarfOperation.Duplicate:
+                            stack.Push(stack.Peek());
+                            break;
+                        case DwarfOperation.Minus:
+                            {
+                                Location b = stack.Pop();
+                                Location a = stack.Pop();
+                                Location c = Location.Absolute(a.Address - b.Address);
+
+                                stack.Push(c);
+                            }
+                            break;
+                        case DwarfOperation.Plus:
+                            {
+                                Location b = stack.Pop();
+                                Location a = stack.Pop();
+                                Location c = Location.Absolute(a.Address + b.Address);
+
+                                stack.Push(c);
                             }
                             break;
                         default:
