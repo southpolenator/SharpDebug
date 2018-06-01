@@ -277,6 +277,30 @@ ImportUserTypes(options, true);
         }
 
         [Fact]
+        public void SimpleMultiClassInheritance()
+        {
+            Variable c = DefaultModule.GetVariable("simpleMultiClassInheritanceTest");
+            Assert.Equal(42.0f, (float)c.GetField("c"));
+            Assert.Equal(42.0, (double)c.GetField("b"));
+            Assert.Equal(42, (byte)c.GetField("a"));
+            Variable a = c.GetBaseClass("SimpleMultiClassInheritanceA");
+            Assert.Equal(42, (byte)a.GetField("a"));
+            Variable b = c.GetBaseClass("SimpleMultiClassInheritanceB");
+            Assert.Equal(42.0, (double)b.GetField("b"));
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+Variable global = Process.Current.GetGlobal(""{DefaultModuleName}!simpleMultiClassInheritanceTest"");
+var c = new SimpleMultiClassInheritanceC(global);
+AreEqual(42.0f, c.c);
+AreEqual(42, c.BaseClass_SimpleMultiClassInheritanceA.a);
+AreEqual(42.0, c.BaseClass_SimpleMultiClassInheritanceB.b);
+                    ");
+            }
+        }
+
+        [Fact]
         public void TestBasicTemplateType()
         {
             StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestBasicTemplateType");
@@ -428,7 +452,7 @@ void AreEqual<T>(T value1, T value2)
 }
                 " + code;
 
-            ExecuteMTA(() => { DumpInitialization.InteractiveExecution.UnsafeInterpret(code); });
+            DumpInitialization.InteractiveExecution.UnsafeInterpret(code);
         }
     }
 

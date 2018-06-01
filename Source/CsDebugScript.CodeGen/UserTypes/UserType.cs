@@ -315,7 +315,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             // Prepare data for ExtractFieldInternal
             bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
             bool isStatic = field.DataKind == DataKind.StaticMember || forceIsStatic;
-            TypeTree fieldType = GetFieldTypeTree(field, factory, extractingBaseClass, field.Size);
+            TypeTree fieldType = GetFieldTypeTree(field, factory, extractingBaseClass, field.BitSize);
             string fieldName = field.Name;
             string gettingField = "variable.GetField";
             string simpleFieldValue;
@@ -425,7 +425,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             string castingTypeString = GetCastingString(fieldType);
             string constructorText;
             bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
-            bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.ContainsSymbol(Symbol.Module, castingTypeString);
+            bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.ContainsSymbol(Symbol.Module, castingTypeString) && !extractingBaseClass;
             var fieldTypeString = fieldType.GetTypeString();
             bool isConstant = field.LocationType == LocationType.Constant;
             string constantString = "";
@@ -636,7 +636,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 var pointerField = userTypeArray.Key;
                 var counterField = userTypeArray.Value;
 
-                TypeTree fieldType = GetSymbolTypeTree(pointerField.Type, factory, pointerField.Size);
+                TypeTree fieldType = GetSymbolTypeTree(pointerField.Type, factory, pointerField.BitSize);
 
                 if (fieldType is ArrayTypeTree)
                     continue;

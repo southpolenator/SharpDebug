@@ -25,6 +25,15 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             // TODO: BitPosition, LocationType, DataKind, Value
             DataKind = DIA.DataKind.Member;
             LocationType = DIA.LocationType.RegRel;
+
+            if (LocationType == DIA.LocationType.BitField)
+            {
+                BitSize = Size;
+            }
+            else
+            {
+                BitSize = Size * 8;
+            }
         }
 
         /// <summary>

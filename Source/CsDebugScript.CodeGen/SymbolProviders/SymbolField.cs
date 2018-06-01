@@ -65,7 +65,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         public string Name { get; protected set; }
 
         /// <summary>
-        /// Gets the size.
+        /// Gets the size in bytes.
         /// </summary>
         public int Size { get; protected set; }
 
@@ -78,6 +78,11 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// Gets the bit position.
         /// </summary>
         public int BitPosition { get; protected set; }
+
+        /// <summary>
+        /// Gets the size in bits.
+        /// </summary>
+        public int BitSize { get; protected set; }
 
         /// <summary>
         /// Gets the type of the location.
