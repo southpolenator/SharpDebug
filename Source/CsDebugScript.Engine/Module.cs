@@ -167,6 +167,11 @@ namespace CsDebugScript
         internal uint Id { get; set; }
 
         /// <summary>
+        /// Gets or sets the module load offset. Used only for ELF core dumps.
+        /// </summary>
+        internal ulong LoadOffset { get; set; }
+
+        /// <summary>
         /// Types by the name
         /// </summary>
         internal DictionaryCache<string, CodeType> TypesByName { get; private set; }

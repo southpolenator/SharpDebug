@@ -34,7 +34,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 try
                 {
-                    IDwarfImage image = LoadImage(location);
+                    IDwarfImage image = LoadImage(location, module.LoadOffset);
                     var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, image.DebugDataStrings, image.CodeSegmentOffset);
                     var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.CodeSegmentOffset);
                     var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.EhFrame, new DwarfExceptionHandlingFrameParsingInput(image));
@@ -52,8 +52,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Loads the specified image.
         /// </summary>
         /// <param name="path">The image path.</param>
+        /// <param name="loadOffset">Offset from where image was loaded.</param>
         /// <returns>Loaded image interface.</returns>
-        private IDwarfImage LoadImage(string path)
+        private IDwarfImage LoadImage(string path, ulong loadOffset)
         {
             try
             {
@@ -61,7 +62,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
             catch
             {
-                return new ElfImage(path);
+                return new ElfImage(path, loadOffset);
             }
         }
 

@@ -32,6 +32,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         private elf_note_file[] files = new elf_note_file[0];
 
         /// <summary>
+        /// AUX vector.
+        /// </summary>
+        private List<AuxvEntry> auxVector = new List<AuxvEntry>();
+
+        /// <summary>
         /// Memory reader for ELF core dump files.
         /// </summary>
         /// <seealso cref="CsDebugScript.Engine.Utility.DumpFileMemoryReader" />
@@ -116,6 +121,32 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                             files = elf_note_file.Parse(data, Is64bit);
                         }
+                        else if (note.n_type == elf_note_type.Auxv)
+                        {
+                            DwarfMemoryReader data = new DwarfMemoryReader(content);
+                            uint addressSize = elf.Class == Class.Bit32 ? 4U : 8U;
+
+                            while (!data.IsEnd)
+                            {
+                                AuxvEntry entry = new AuxvEntry
+                                {
+                                    Type = (AuxvEntryType)data.ReadUlong(addressSize),
+                                    Value = data.ReadUlong(addressSize)
+                                };
+
+                                if (entry.Type == AuxvEntryType.Null)
+                                {
+                                    break;
+                                }
+
+                                if (entry.Type == AuxvEntryType.Ignore)
+                                {
+                                    continue;
+                                }
+
+                                auxVector.Add(entry);
+                            }
+                        }
                     }
                 }
             }
@@ -184,21 +215,47 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <returns>Array of base addresses.</returns>
         public ulong[] GetModulesBaseAddresses()
         {
-            Dictionary<string, ulong> baseAddresses = new Dictionary<string, ulong>();
+            // Return list of files where offset is start of the file
+            return files.Where(f => f.file_ofs == 0).Select(f => f.start).ToArray();
+        }
 
-            foreach (elf_note_file file in files)
+        /// <summary>
+        /// Gets the module load offset.
+        /// </summary>
+        /// <param name="baseAddress">The module base address.</param>
+        public ulong GetModuleLoadOffset(ulong baseAddress)
+        {
+            // Check if we are looking for load offset of main module
+            if (baseAddress == files[0].start)
             {
-                if (!baseAddresses.ContainsKey(file.name))
+                // Find file with symbols for main module
+                string mainModulePath = files[0].name;
+
+                if (!string.IsNullOrEmpty(mainModulePath))
                 {
-                    baseAddresses.Add(file.name, file.start);
+                    mainModulePath = ElfCoreDumpDebuggingEngine.GetModuleMappedImage(this, mainModulePath);
                 }
-                else
+
+                // Find offset for main module
+                ulong offset = 0;
+
+                if (!string.IsNullOrEmpty(mainModulePath))
                 {
-                    baseAddresses[file.name] = Math.Min(file.start, baseAddresses[file.name]);
+                    var elf = ELFReader.Load<ulong>(mainModulePath);
+                    foreach (AuxvEntry entry in auxVector)
+                    {
+                        if (entry.Type == AuxvEntryType.Entry)
+                        {
+                            offset = elf.EntryPoint - entry.Value;
+                            break;
+                        }
+                    }
                 }
+
+                return offset;
             }
 
-            return baseAddresses.Values.ToArray();
+            return 0;
         }
 
         /// <summary>
@@ -208,6 +265,14 @@ namespace CsDebugScript.DwarfSymbolProvider
         public ulong GetModuleSize(ulong baseAddress)
         {
             string name = files.First(f => f.start == baseAddress).name;
+            string imagePath = ElfCoreDumpDebuggingEngine.GetModuleMappedImage(this, name);
+
+            if (!string.IsNullOrEmpty(imagePath))
+            {
+                // Return file size
+                return (ulong)(new FileInfo(imagePath).Length);
+            }
+
             ulong endAddress = 0;
 
             foreach (elf_note_file file in files)
@@ -958,6 +1023,166 @@ namespace CsDebugScript.DwarfSymbolProvider
                 }
             }
             #endregion
+        }
+
+        private enum AuxvEntryType
+        {
+            /// <summary>
+            /// [AUXV_AT_NULL] End of auxv.
+            /// </summary>
+            Null = 0,
+
+            /// <summary>
+            /// [AUXV_AT_IGNORE] Ignore entry.
+            /// </summary>
+            Ignore = 1,
+
+            /// <summary>
+            /// [AUXV_AT_EXECFD] File descriptor of program.
+            /// </summary>
+            ExecFileDescriptor = 2,
+
+            /// <summary>
+            /// [AUXV_AT_PHDR] Program headers.
+            /// </summary>
+            ProgramHeaders = 3,
+
+            /// <summary>
+            /// [AUXV_AT_PHENT] Size of program header.
+            /// </summary>
+            ProgramHeadersSize = 4,
+
+            /// <summary>
+            /// [AUXV_AT_PHNUM] Number of program headers.
+            /// </summary>
+            ProgramHeadersCount = 5,
+
+            /// <summary>
+            /// [AUXV_AT_PAGESZ] Page size.
+            /// </summary>
+            PageSize = 6,
+
+            /// <summary>
+            /// [AUXV_AT_BASE] Interpreter base address.
+            /// </summary>
+            Base = 7,
+
+            /// <summary>
+            /// [AUXV_AT_FLAGS] Flags.
+            /// </summary>
+            Flags = 8,
+
+            /// <summary>
+            /// [AUXV_AT_ENTRY] Program entry point.
+            /// </summary>
+            Entry = 9,
+
+            /// <summary>
+            /// [AUXV_AT_NOTELF] Set if program is not an ELF.
+            /// </summary>
+            NotElf = 10,
+
+            /// <summary>
+            /// [AUXV_AT_UID] UID.
+            /// </summary>
+            UID = 11,
+
+            /// <summary>
+            /// [AUXV_AT_EUID] Effective UID.
+            /// </summary>
+            EffectiveUID = 12,
+
+            /// <summary>
+            /// [AUXV_AT_GID] GID.
+            /// </summary>
+            GID = 13,
+
+            /// <summary>
+            /// [AUXV_AT_EGID] Effective GID.
+            /// </summary>
+            EffectiveGID = 14,
+
+            /// <summary>
+            /// [AUXV_AT_PLATFORM] String identifying platform.
+            /// </summary>
+            Platform = 15,
+
+            /// <summary>
+            /// [AUXV_AT_HWCAP] Machine dependent hints about processor capabilities.
+            /// </summary>
+            HardwareCapabilities = 16,
+
+            /// <summary>
+            /// [AUXV_AT_CLKTCK] Clock frequency (e.g. times(2)).
+            /// </summary>
+            ClockTicks = 17,
+
+            /// <summary>
+            /// [AUXV_AT_FPUCW] Used FPU control word.
+            /// </summary>
+            FPUControlWord = 18,
+
+            /// <summary>
+            /// [AUXV_AT_DCACHEBSIZE] Data cache block size.
+            /// </summary>
+            DataCacheBlockSize = 19,
+
+            /// <summary>
+            /// [AUXV_AT_ICACHEBSIZE] Instruction cache block size.
+            /// </summary>
+            InstructionCacheBlokSize = 20,
+
+            /// <summary>
+            /// [AUXV_AT_UCACHEBSIZE] Unified cache block size.
+            /// </summary>
+            UnifiedCacheBlockSize = 21,
+
+            /// <summary>
+            /// [AUXV_AT_IGNOREPPC] Entry should be ignored.
+            /// </summary>
+            IgnorePPC = 22,
+
+            /// <summary>
+            /// [AUXV_AT_SECURE] Boolean, was exec setuid-like?
+            /// </summary>
+            Secure = 23,
+
+            /// <summary>
+            /// [AUXV_AT_BASE_PLATFORM] String identifying real platforms.
+            /// </summary>
+            BasePlatform = 24,
+
+            /// <summary>
+            /// [AUXV_AT_RANDOM] Address of 16 random bytes.
+            /// </summary>
+            Random = 25,
+
+            /// <summary>
+            /// [AUXV_AT_EXECFN] Filename of executable.
+            /// </summary>
+            ExecutableFileName = 31,
+
+            /// <summary>
+            /// [AUXV_AT_SYSINFO] Pointer to the global system page used for system calls and other nice things.
+            /// </summary>
+            SystemInfo = 32,
+
+            AUXV_AT_SYSINFO_EHDR = 33,
+            AUXV_AT_L1I_CACHESHAPE = 34, // Shapes of the caches.
+            AUXV_AT_L1D_CACHESHAPE = 35,
+            AUXV_AT_L2_CACHESHAPE = 36,
+            AUXV_AT_L3_CACHESHAPE = 37,
+        };
+
+        private struct AuxvEntry
+        {
+            public AuxvEntryType Type;
+            public ulong Value;
+
+            public override string ToString()
+            {
+                return $"{Type}: {Value}";
+            }
         }
 
         #region Native structures
