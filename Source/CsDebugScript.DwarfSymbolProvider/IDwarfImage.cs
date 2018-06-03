@@ -115,5 +115,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         ///   <c>true</c> if is 64 bit image; otherwise, <c>false</c>.
         /// </value>
         bool Is64bit { get; }
+
+        /// <summary>
+        /// Gets address offset within module when it is loaded.
+        /// </summary>
+        /// <param name="address">Virtual address that points where something should be loaded.</param>
+        ulong NormalizeAddress(ulong address);
     }
 }

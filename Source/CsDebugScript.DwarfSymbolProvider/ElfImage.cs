@@ -24,11 +24,12 @@ namespace CsDebugScript.DwarfSymbolProvider
         public ElfImage(string path, ulong loadOffset = 0)
         {
             elf = ELFReader.Load<ulong>(path);
+            LoadOffset = loadOffset;
             foreach (var segment in elf.Segments)
             {
                 if (segment.Type == ELFSharp.ELF.Segments.SegmentType.ProgramHeader)
                 {
-                    CodeSegmentOffset = segment.Address - (ulong)segment.Offset + loadOffset;
+                    CodeSegmentOffset = segment.Address - (ulong)segment.Offset;
                     break;
                 }
             }
@@ -60,6 +61,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Gets the code segment offset.
         /// </summary>
         public ulong CodeSegmentOffset { get; private set; }
+
+        /// <summary>
+        /// Gets the image load offset.
+        /// </summary>
+        public ulong LoadOffset { get; private set; }
 
         /// <summary>
         /// Gets the debug data.
@@ -175,6 +181,22 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Gets address offset within module when it is loaded.
+        /// </summary>
+        /// <param name="address">Virtual address that points where something should be loaded.</param>
+        public ulong NormalizeAddress(ulong address)
+        {
+            var section = elf.Sections.FirstOrDefault(s => s.LoadAddress <= address && s.LoadAddress + s.Size > address);
+
+            if (section != null && section.Flags.HasFlag(SectionFlags.Allocatable))
+            {
+                return address - CodeSegmentOffset + LoadOffset;
+            }
+
+            return address - CodeSegmentOffset;
+        }
+
+        /// <summary>
         /// Loads the section bytes specified by the name.
         /// </summary>
         /// <param name="sectionName">Name of the section.</param>
@@ -203,7 +225,9 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 if (section.Name == sectionName)
                 {
-                    return section.Offset + CodeSegmentOffset;
+                    ulong loadOffset = section.Flags.HasFlag(SectionFlags.Allocatable) ? LoadOffset : 0;
+
+                    return section.Offset + CodeSegmentOffset + loadOffset;
                 }
             }
 

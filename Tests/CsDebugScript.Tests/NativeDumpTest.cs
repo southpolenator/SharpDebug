@@ -110,6 +110,7 @@ ImportUserTypes(options, true);
             Variable codeFunctionVariable = DefaultModule.GetVariable($"{DefaultModuleName}!defaultTestCaseAddress");
 
             Assert.True(codeFunctionVariable.GetCodeType().IsPointer);
+            Assert.True(!codeFunctionVariable.IsNullPointer());
 
             CodeFunction codeFunction = new CodePointer<CodeFunction>(new NakedPointer(codeFunctionVariable)).Element;
 

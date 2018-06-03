@@ -246,7 +246,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                     {
                         if (entry.Type == AuxvEntryType.Entry)
                         {
-                            offset = elf.EntryPoint - entry.Value;
+                            offset = entry.Value - elf.EntryPoint;
                             break;
                         }
                     }

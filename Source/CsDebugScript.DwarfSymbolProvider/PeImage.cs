@@ -118,6 +118,15 @@ namespace CsDebugScript.DwarfSymbolProvider
         public IReadOnlyList<PublicSymbol> PublicSymbols { get; private set; }
 
         /// <summary>
+        /// Gets address offset within module when it is loaded.
+        /// </summary>
+        /// <param name="address">Virtual address that points where something should be loaded.</param>
+        public ulong NormalizeAddress(ulong address)
+        {
+            return address - CodeSegmentOffset;
+        }
+
+        /// <summary>
         /// Parses the specified data.
         /// </summary>
         /// <param name="data">The PE image data.</param>
