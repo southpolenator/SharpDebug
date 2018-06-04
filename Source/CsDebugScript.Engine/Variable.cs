@@ -241,6 +241,11 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator char (Variable v)
         {
+            if ((v.codeType.IsSimple || v.codeType.IsEnum) && v.codeType.Size == 1)
+            {
+                return (char)(byte)v.Data;
+            }
+
             if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 2)
             {
                 return char.Parse(v.ToString());
