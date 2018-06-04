@@ -387,7 +387,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
                 else
                 {
-                    userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("variable.GetField", "GetBaseClass");
+                    userTypeField.ConstructorText = userTypeField.ConstructorText
+                        .Replace("variable.GetField", "GetBaseClass")
+                        .Replace("GetField", "GetBaseClass");
                 }
             }
 
