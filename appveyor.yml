@@ -88,6 +88,8 @@ artifacts:
   name: Test Results
 - path: bin\**\*.zip
   name: WinDbg Extension
+- path: Utility\CsDebugScript.Reference\Help\LastBuild.log
+  name: Reference build log
 deploy:
 - provider: NuGet
   api_key:
