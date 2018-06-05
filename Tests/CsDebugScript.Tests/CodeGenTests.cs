@@ -100,7 +100,7 @@ namespace CsDebugScript.Tests
 
             return new XmlConfig()
             {
-                UseDiaSymbolProvider = true,
+                UseDirectClassAccess = true,
                 MultiFileExport = false,
                 GeneratedAssemblyName = "NativeDumpTestExported.dll",
                 GeneratedPropsFileName = "NativeDumpTestExported.props",

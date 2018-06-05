@@ -313,7 +313,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         protected virtual UserTypeField ExtractField(SymbolField field, UserTypeFactory factory, UserTypeGenerationFlags generationFlags, bool extractingBaseClass = false, bool forceIsStatic = false)
         {
             // Prepare data for ExtractFieldInternal
-            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
+            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess);
             bool isStatic = field.DataKind == DataKind.StaticMember || forceIsStatic;
             TypeTree fieldType = GetFieldTypeTree(field, factory, extractingBaseClass, field.BitSize);
             string fieldName = field.Name;
@@ -426,7 +426,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             string fieldName = field.Name;
             string castingTypeString = GetCastingString(fieldType);
             string constructorText;
-            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
+            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess);
             bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.ContainsSymbol(Symbol.Module, castingTypeString) && !extractingBaseClass;
             var fieldTypeString = fieldType.GetTypeString();
             bool isConstant = field.LocationType == LocationType.Constant;
@@ -517,7 +517,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         protected virtual IEnumerable<UserTypeField> ExtractFields(UserTypeFactory factory, UserTypeGenerationFlags generationFlags)
         {
             bool hasNonStatic = false;
-            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
+            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess);
 
             if (ExportDynamicFields)
             {

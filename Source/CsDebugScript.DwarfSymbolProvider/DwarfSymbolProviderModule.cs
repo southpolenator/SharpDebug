@@ -306,8 +306,42 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="vtableAddress">The vtable address within the module.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(uint vtableAddress)
         {
+            // Try to find what is the first function at virtual table address
+            MemoryBuffer memoryBuffer = Debugger.ReadMemory(Module.Process, vtableAddress + Module.Address, Module.PointerSize);
+            ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)Module.Process.GetPointerSize());
+            ulong displacement;
+            DwarfSymbol firstFunction = FindFunction(firstFunctionAddress - Module.Address, out displacement);
+
+            // If function symbol doesn't point to specification, resolve it
+            if (firstFunction.Attributes.ContainsKey(DwarfAttribute.Specification))
+            {
+                firstFunction = firstFunction.Attributes[DwarfAttribute.Specification].Reference;
+            }
+
+            // Resolve code type that is implicit argument to first function
+            DwarfSymbol implicitArgument = firstFunction.Attributes[DwarfAttribute.ObjectPointer].Reference;
+            DwarfSymbol abstractOrigin = implicitArgument.Attributes.ContainsKey(DwarfAttribute.AbstractOrigin) ? implicitArgument.Attributes[DwarfAttribute.AbstractOrigin].Reference : implicitArgument;
+            DwarfSymbol type = GetType(abstractOrigin);
+
+            if (type.Tag == DwarfTag.PointerType)
+            {
+                type = GetType(type);
+            }
+
+            CodeType originalCodeType = Module.TypesById[GetTypeId(type)];
+            Location originalCodeTypeLocation = DecodeLocationStatic(firstFunction.Attributes[DwarfAttribute.VtableElemLocation]);
+            int originalCodeTypeOffset;
+
+            if (originalCodeTypeLocation.Type == LocationType.AbsoluteAddress)
+            {
+                originalCodeTypeOffset = (int)(Module.PointerSize * originalCodeTypeLocation.Address);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
             // Try to locate address in public symbols and see if it is virtual table
-            CodeType codeType;
             PublicSymbol publicSymbol;
             int publicSymbolIndex = publicSymbolsAddresses.BinarySearch(vtableAddress);
 
@@ -332,27 +366,20 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                 if (typeNameToType.TryGetValue(name, out symbol))
                 {
-                    codeType = Module.TypesById[GetTypeId(symbol)];
-                    return Tuple.Create(codeType, 0);
+                    CodeType codeType = Module.TypesById[GetTypeId(symbol)];
+                    int offset = originalCodeTypeOffset;
+
+                    if (codeType != originalCodeType)
+                    {
+                        offset += codeType.BaseClasses[originalCodeType.Name].Item2;
+                    }
+
+                    return Tuple.Create(codeType, offset);
                 }
             }
 
             // We failed to find it in public symbols, try to see if function pointer is stored at vtable address
-            MemoryBuffer memoryBuffer =  Debugger.ReadMemory(Module.Process, vtableAddress, Module.Process.GetPointerSize());
-            ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)Module.Process.GetPointerSize());
-            ulong displacement;
-            DwarfSymbol firstFunction = FindFunction(firstFunctionAddress - Module.Address, out displacement);
-            DwarfSymbol implicitArgument = firstFunction.Attributes[DwarfAttribute.ObjectPointer].Reference;
-            DwarfSymbol abstractOrigin = implicitArgument.Attributes.ContainsKey(DwarfAttribute.AbstractOrigin) ? implicitArgument.Attributes[DwarfAttribute.AbstractOrigin].Reference : implicitArgument;
-            DwarfSymbol type = GetType(abstractOrigin);
-
-            if (type.Tag == DwarfTag.PointerType)
-            {
-                type = GetType(type);
-            }
-
-            codeType = Module.TypesById[GetTypeId(type)];
-            return Tuple.Create(codeType, 0);
+            return Tuple.Create(originalCodeType, originalCodeTypeOffset);
         }
 
         /// <summary>

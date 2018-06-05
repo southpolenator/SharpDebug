@@ -302,6 +302,37 @@ AreEqual(42.0, c.BaseClass_SimpleMultiClassInheritanceB.b);
         }
 
         [Fact]
+        public void MultiClassInheritance()
+        {
+            Variable c = DefaultModule.GetVariable("multiClassInheritanceTest");
+            Assert.Equal(42, (int)c.GetField("c"));
+            Assert.Equal(42, (int)c.GetField("b"));
+            Assert.Equal(42, (int)c.GetField("a"));
+            Variable a = c.GetBaseClass("MultiClassInheritanceA");
+            Assert.Equal(42, (int)a.GetField("a"));
+            Variable b = c.GetBaseClass("MultiClassInheritanceB");
+            Assert.Equal(42, (int)b.GetField("b"));
+            Assert.Equal(c.GetPointerAddress(), a.DowncastInterface().GetPointerAddress());
+            Assert.Equal(c.GetPointerAddress(), b.DowncastInterface().GetPointerAddress());
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+Variable global = Process.Current.GetGlobal(""{DefaultModuleName}!multiClassInheritanceTest"");
+var c = new MultiClassInheritanceC(global);
+var a = c.BaseClass_MultiClassInheritanceA;
+var b = c.BaseClass_MultiClassInheritanceB;
+AreEqual(42, c.c);
+AreEqual(42, a.a);
+AreEqual(42, b.b);
+IsTrue(a.GetDowncast() is MultiClassInheritanceC);
+IsTrue(b.GetDowncast() is MultiClassInheritanceC);
+AreEqual(42, a.As<MultiClassInheritanceB>().b);
+                    ");
+            }
+        }
+
+        [Fact]
         public void TestBasicTemplateType()
         {
             StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestBasicTemplateType");
@@ -450,6 +481,12 @@ void AreEqual<T>(T value1, T value2)
     {
         throw new Exception($""Not equal. value1 = {value1}, value2 = {value2}"");
     }
+}
+
+void IsTrue(bool value)
+{
+    if (!value)
+        throw new Exception(""Expected value to be true"");
 }
                 " + code;
 
