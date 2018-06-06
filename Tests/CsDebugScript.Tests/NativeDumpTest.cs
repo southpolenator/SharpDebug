@@ -305,11 +305,11 @@ AreEqual(42.0, c.BaseClass_SimpleMultiClassInheritanceB.b);
         public void MultiClassInheritance()
         {
             Variable c = DefaultModule.GetVariable("multiClassInheritanceTest");
-            Assert.Equal(42, (int)c.GetField("c"));
+            Assert.Equal(42, (double)c.GetField("c"));
             Assert.Equal(42, (int)c.GetField("b"));
-            Assert.Equal(42, (int)c.GetField("a"));
+            Assert.Equal(42, (float)c.GetField("a"));
             Variable a = c.GetBaseClass("MultiClassInheritanceA");
-            Assert.Equal(42, (int)a.GetField("a"));
+            Assert.Equal(42, (float)a.GetField("a"));
             Variable b = c.GetBaseClass("MultiClassInheritanceB");
             Assert.Equal(42, (int)b.GetField("b"));
             Assert.Equal(c.GetPointerAddress(), a.DowncastInterface().GetPointerAddress());
@@ -327,6 +327,37 @@ AreEqual(42, a.a);
 AreEqual(42, b.b);
 IsTrue(a.GetDowncast() is MultiClassInheritanceC);
 IsTrue(b.GetDowncast() is MultiClassInheritanceC);
+AreEqual(42, a.As<MultiClassInheritanceB>().b);
+                    ");
+            }
+        }
+
+        [Fact]
+        public void MultiClassInheritance2()
+        {
+            Variable d = DefaultModule.GetVariable("multiClassInheritanceTest2");
+            Assert.Equal(42, (double)d.GetField("d"));
+            Assert.Equal(42, (int)d.GetField("b"));
+            Assert.Equal(42, (float)d.GetField("a"));
+            Variable a = d.GetBaseClass("MultiClassInheritanceA");
+            Assert.Equal(42, (float)a.GetField("a"));
+            Variable b = d.GetBaseClass("MultiClassInheritanceB");
+            Assert.Equal(42, (int)b.GetField("b"));
+            Assert.Equal(d.GetPointerAddress(), a.DowncastInterface().GetPointerAddress());
+            Assert.Equal(d.GetPointerAddress(), b.DowncastInterface().GetPointerAddress());
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+Variable global = Process.Current.GetGlobal(""{DefaultModuleName}!multiClassInheritanceTest2"");
+var d = new MultiClassInheritanceD(global);
+var a = d.BaseClass_MultiClassInheritanceA;
+var b = d.BaseClass_MultiClassInheritanceB;
+AreEqual(42, d.d);
+AreEqual(42, a.a);
+AreEqual(42, b.b);
+IsTrue(a.GetDowncast() is MultiClassInheritanceD);
+IsTrue(b.GetDowncast() is MultiClassInheritanceD);
 AreEqual(42, a.As<MultiClassInheritanceB>().b);
                     ");
             }

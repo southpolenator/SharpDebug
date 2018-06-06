@@ -80,6 +80,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         private SimpleCache<MemoryRegionFinder> frameDescriptionEntryFinderFromExceptionHandlingStream;
 
         /// <summary>
+        /// Dictionary of type to virtual table size.
+        /// </summary>
+        private DictionaryCache<DwarfSymbol, int> virtualTableSizes;
+
+        /// <summary>
         /// The code segment offset (read from the image)
         /// </summary>
         private ulong codeSegmentOffset;
@@ -161,6 +166,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                 return result;
             });
             frameDescriptionEntryFinderFromExceptionHandlingStream = SimpleCache.Create(() => new MemoryRegionFinder(frameDescriptionEntriesFromExceptionHandlingStream.Value.Select(f => new MemoryRegion { BaseAddress = f.InitialLocation, RegionSize = f.AddressRange }).ToList()));
+            virtualTableSizes = new DictionaryCache<DwarfSymbol, int>(GetVirtualTableSize);
             this.codeSegmentOffset = codeSegmentOffset;
         }
 
@@ -328,22 +334,49 @@ namespace CsDebugScript.DwarfSymbolProvider
                 type = GetType(type);
             }
 
-            CodeType originalCodeType = Module.TypesById[GetTypeId(type)];
-            int originalCodeTypeOffset = 0;
-
+            // Find class that has defined found function for the first time.
             if (firstFunction.Attributes.ContainsKey(DwarfAttribute.VtableElemLocation))
             {
-                Location originalCodeTypeLocation = DecodeLocationStatic(firstFunction.Attributes[DwarfAttribute.VtableElemLocation]);
+                Location location = DecodeLocationStatic(firstFunction.Attributes[DwarfAttribute.VtableElemLocation]);
+                int desiredVirtualFunction;
 
-                if (originalCodeTypeLocation.Type == LocationType.AbsoluteAddress)
+                if (location.Type == LocationType.AbsoluteAddress)
                 {
-                    originalCodeTypeOffset = (int)(Module.PointerSize * originalCodeTypeLocation.Address);
+                    desiredVirtualFunction = (int)location.Address;
                 }
                 else
                 {
                     throw new NotImplementedException();
                 }
+
+                while (desiredVirtualFunction > 0)
+                {
+                    // Search through base classes until you find base class that is using exact virtual table entry that we need.
+                    var baseClasses = type.Children.Where(c => c.Tag == DwarfTag.Inheritance).Select(c => Tuple.Create(GetType(c), DecodeDataMemberLocation(c))).OrderBy(t => t.Item2).ToArray();
+                    int totalVirtualFunctions = 0;
+                    bool found = false;
+
+                    for (int i = 0; i < baseClasses.Length; i++)
+                    {
+                        int virtualTableSize = virtualTableSizes[baseClasses[i].Item1];
+
+                        if (virtualTableSize + totalVirtualFunctions > desiredVirtualFunction)
+                        {
+                            type = baseClasses[i].Item1;
+                            desiredVirtualFunction -= totalVirtualFunctions;
+                            found = true;
+                            break;
+                        }
+                        totalVirtualFunctions += virtualTableSize;
+                    }
+
+                    if (!found)
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
             }
+            CodeType originalCodeType = Module.TypesById[GetTypeId(type)];
 
             // Try to locate address in public symbols and see if it is virtual table
             PublicSymbol publicSymbol;
@@ -371,19 +404,59 @@ namespace CsDebugScript.DwarfSymbolProvider
                 if (typeNameToType.TryGetValue(name, out symbol))
                 {
                     CodeType codeType = Module.TypesById[GetTypeId(symbol)];
-                    int offset = originalCodeTypeOffset;
 
                     if (codeType != originalCodeType)
                     {
-                        offset += codeType.BaseClasses[originalCodeType.Name].Item2;
+                        return codeType.BaseClasses[originalCodeType.Name];
                     }
 
-                    return Tuple.Create(codeType, offset);
+                    return Tuple.Create(codeType, 0);
                 }
             }
 
             // We failed to find it in public symbols, try to see if function pointer is stored at vtable address
-            return Tuple.Create(originalCodeType, originalCodeTypeOffset);
+            return Tuple.Create(originalCodeType, 0);
+        }
+
+        /// <summary>
+        /// Gets the virtual table size for the specified type.
+        /// </summary>
+        /// <param name="type">Symbol that represents type.</param>
+        /// <returns>Virtual table size in number of entries.</returns>
+        private int GetVirtualTableSize(DwarfSymbol type)
+        {
+            int childrenSum = 0;
+            int maxFunctionEntry = -1;
+
+            foreach (DwarfSymbol child in type.Children)
+            {
+                if (child.Tag == DwarfTag.Inheritance)
+                {
+                    childrenSum += GetVirtualTableSize(child);
+                }
+                else if (child.Tag == DwarfTag.Subprogram)
+                {
+                    if (child.GetConstantAttribute(DwarfAttribute.Virtuality) != 0)
+                    {
+                        maxFunctionEntry = Math.Max(maxFunctionEntry, 0);
+                        if (child.Attributes.ContainsKey(DwarfAttribute.VtableElemLocation))
+                        {
+                            Location location = DecodeLocationStatic(child.Attributes[DwarfAttribute.VtableElemLocation]);
+
+                            if (location.Type == LocationType.AbsoluteAddress)
+                            {
+                                maxFunctionEntry = Math.Max(maxFunctionEntry, (int)location.Address);
+                            }
+                            else
+                            {
+                                throw new NotImplementedException();
+                            }
+                        }
+                    }
+                }
+            }
+
+            return Math.Max(childrenSum, maxFunctionEntry + 1);
         }
 
         /// <summary>
