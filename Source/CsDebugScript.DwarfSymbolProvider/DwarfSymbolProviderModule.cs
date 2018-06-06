@@ -329,16 +329,20 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             CodeType originalCodeType = Module.TypesById[GetTypeId(type)];
-            Location originalCodeTypeLocation = DecodeLocationStatic(firstFunction.Attributes[DwarfAttribute.VtableElemLocation]);
-            int originalCodeTypeOffset;
+            int originalCodeTypeOffset = 0;
 
-            if (originalCodeTypeLocation.Type == LocationType.AbsoluteAddress)
+            if (firstFunction.Attributes.ContainsKey(DwarfAttribute.VtableElemLocation))
             {
-                originalCodeTypeOffset = (int)(Module.PointerSize * originalCodeTypeLocation.Address);
-            }
-            else
-            {
-                throw new NotImplementedException();
+                Location originalCodeTypeLocation = DecodeLocationStatic(firstFunction.Attributes[DwarfAttribute.VtableElemLocation]);
+
+                if (originalCodeTypeLocation.Type == LocationType.AbsoluteAddress)
+                {
+                    originalCodeTypeOffset = (int)(Module.PointerSize * originalCodeTypeLocation.Address);
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
             }
 
             // Try to locate address in public symbols and see if it is virtual table
