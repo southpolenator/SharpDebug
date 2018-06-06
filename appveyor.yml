@@ -66,12 +66,6 @@ after_build:
                 git commit -m "Automatic update of code reference with build {version}"
                 git push
                 popd
-            } else {
-                try {
-                    msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
-                }
-                catch {
-                }
             }
         }
 test_script:
