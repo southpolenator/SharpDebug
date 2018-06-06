@@ -925,7 +925,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             int displacement;
             string fullyUndecoratedName, partiallyUndecoratedName;
 
-            session.findSymbolByRVAEx(vtableAddress, SymTagEnum.Null, out symbol, out displacement);
+            session.findSymbolByRVAEx(vtableAddress, SymTagEnum.PublicSymbol, out symbol, out displacement);
             fullyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu) ?? symbol.name;
             partiallyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NoEscu) ?? symbol.name;
 
