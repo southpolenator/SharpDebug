@@ -801,6 +801,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             DwarfSymbol type = GetType(typeId);
 
+            if (CodeType.TypeNameMatches(type.Name, className) || CodeType.TypeNameMatches(type.FullName, className))
+            {
+                return Tuple.Create(typeId, 0);
+            }
+
             if (type.Children != null)
             {
                 foreach (DwarfSymbol child in type.Children)
