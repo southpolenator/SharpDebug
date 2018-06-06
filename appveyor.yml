@@ -67,7 +67,7 @@ after_build:
                 git push
                 popd
             } else {
-                cmd /c "msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:^`"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll^`" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
+                cmd /c "msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:^`"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll^`" /p:Configuration=$env:CONFIGURATION /verbosity:minimal"
             }
         }
 test_script:
