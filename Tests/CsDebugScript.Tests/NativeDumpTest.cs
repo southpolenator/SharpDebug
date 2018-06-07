@@ -33,6 +33,8 @@ ImportUserTypes(options, true);
 
         public bool LinuxDump { get; set; }
 
+        public bool NoRtti { get; set; }
+
         [Fact]
         public void CurrentThreadContainsMainSourceFileName()
         {
@@ -251,7 +253,10 @@ ImportUserTypes(options, true);
             Assert.True(ewptr1.IsEmpty);
             Assert.Equal(0, ewptr1.SharedCount);
             Assert.Equal(1, ewptr1.WeakCount);
-            Assert.Equal(42, ewptr1.UnsafeElement);
+            if (!LinuxDump || !NoRtti)
+            {
+                Assert.Equal(42, ewptr1.UnsafeElement);
+            }
             Assert.True(ewptr1.IsCreatedWithMakeShared);
 
             Assert.True(esptr2.IsEmpty);
@@ -672,6 +677,7 @@ void IsTrue(bool value)
             : base(initialization)
         {
             LinuxDump = true;
+            NoRtti = true;
         }
     }
 
@@ -684,6 +690,7 @@ void IsTrue(bool value)
             : base(initialization)
         {
             LinuxDump = true;
+            NoRtti = true;
         }
     }
 
@@ -696,6 +703,7 @@ void IsTrue(bool value)
             : base(initialization)
         {
             LinuxDump = true;
+            NoRtti = true;
         }
     }
     #endregion
