@@ -662,5 +662,41 @@ void IsTrue(bool value)
             LinuxDump = true;
         }
     }
+
+    [Collection("NativeDumpTest.linux.x86.gcc.nortti.coredump")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class NativeDumpTest_x86_Linux_gcc_nortti : NativeDumpTest
+    {
+        public NativeDumpTest_x86_Linux_gcc_nortti(NativeDumpTest_linux_x86_gcc_nortti_Initialization initialization)
+            : base(initialization)
+        {
+            LinuxDump = true;
+        }
+    }
+
+    [Collection("NativeDumpTest.linux.x64.gcc.nortti.coredump")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class NativeDumpTest_x64_Linux_gcc_nortti : NativeDumpTest
+    {
+        public NativeDumpTest_x64_Linux_gcc_nortti(NativeDumpTest_linux_x64_gcc_nortti_Initialization initialization)
+            : base(initialization)
+        {
+            LinuxDump = true;
+        }
+    }
+
+    [Collection("NativeDumpTest.linux.x64.clang.nortti.coredump")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class NativeDumpTest_x64_Linux_clang_nortti : NativeDumpTest
+    {
+        public NativeDumpTest_x64_Linux_clang_nortti(NativeDumpTest_linux_x64_clang_nortti_Initialization initialization)
+            : base(initialization, executeCodeGen: false)
+        {
+            LinuxDump = true;
+        }
+    }
     #endregion
 }
