@@ -217,7 +217,30 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 element = UserMember.Create(() => pointer.Value.DereferencePointer().CastAs<T>());
                 sharedCount = UserMember.Create(() => (int)variable.GetField("_M_refcount").GetField("_M_pi").GetField("_M_use_count"));
                 weakCount = UserMember.Create(() => (int)variable.GetField("_M_refcount").GetField("_M_pi").GetField("_M_weak_count"));
-                isCreatedWithMakeShared = UserMember.Create(() => variable.GetField("_M_refcount").GetField("_M_pi").DowncastInterface().GetCodeType().Name.StartsWith("std::_Sp_counted_ptr_inplace<"));
+                isCreatedWithMakeShared = UserMember.Create(() =>
+                {
+                    CodeType codeType = variable.GetField("_M_refcount").GetField("_M_pi").DowncastInterface().GetCodeType();
+
+                    if (codeType.Name.StartsWith("std::_Sp_counted_ptr_inplace<"))
+                    {
+                        return true;
+                    }
+
+                    if (!codeType.Name.StartsWith("std::_Sp_counted_deleter<"))
+                    {
+                        return false;
+                    }
+
+                    try
+                    {
+                        codeType = (CodeType)codeType.TemplateArguments[1];
+                        return codeType.Name.StartsWith("std::__shared_ptr<") && codeType.Name.Contains("::_Deleter<");
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                });
             }
 
             /// <summary>

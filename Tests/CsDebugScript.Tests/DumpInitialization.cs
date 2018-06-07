@@ -197,4 +197,31 @@ namespace CsDebugScript.Tests
         {
         }
     }
+
+    [CollectionDefinition("NativeDumpTest.linux.x86.gcc.nortti.coredump")]
+    public class NativeDumpTest_linux_x86_gcc_nortti_Initialization : ElfCoreDumpInitialization, ICollectionFixture<NativeDumpTest_linux_x86_gcc_nortti_Initialization>
+    {
+        public NativeDumpTest_linux_x86_gcc_nortti_Initialization()
+            : base("NativeDumpTest.linux.x86.gcc.nortti.coredump", "NativeDumpTest.linux.x86.gcc.nortti")
+        {
+        }
+    }
+
+    [CollectionDefinition("NativeDumpTest.linux.x64.gcc.nortti.coredump")]
+    public class NativeDumpTest_linux_x64_gcc_nortti_Initialization : ElfCoreDumpInitialization, ICollectionFixture<NativeDumpTest_linux_x64_gcc_nortti_Initialization>
+    {
+        public NativeDumpTest_linux_x64_gcc_nortti_Initialization()
+            : base("NativeDumpTest.linux.x64.gcc.nortti.coredump", "NativeDumpTest.linux.x64.gcc.nortti")
+        {
+        }
+    }
+
+    [CollectionDefinition("NativeDumpTest.linux.x64.clang.nortti.coredump")]
+    public class NativeDumpTest_linux_x64_clang_nortti_Initialization : ElfCoreDumpInitialization, ICollectionFixture<NativeDumpTest_linux_x64_clang_nortti_Initialization>
+    {
+        public NativeDumpTest_linux_x64_clang_nortti_Initialization()
+            : base("NativeDumpTest.linux.x64.clang.nortti.coredump", "NativeDumpTest.linux.x64.clang.nortti")
+        {
+        }
+    }
 }

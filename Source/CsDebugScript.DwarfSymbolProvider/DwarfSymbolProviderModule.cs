@@ -312,71 +312,85 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="vtableAddress">The vtable address within the module.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(uint vtableAddress)
         {
-            // Try to find what is the first function at virtual table address
-            MemoryBuffer memoryBuffer = Debugger.ReadMemory(Module.Process, vtableAddress + Module.Address, Module.PointerSize);
-            ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)Module.Process.GetPointerSize());
-            ulong displacement;
-            DwarfSymbol firstFunction = FindFunction(firstFunctionAddress - Module.Address, out displacement);
+            // Try to find original code type that is using this vtable by inspecting first vtable function entry
+            CodeType originalCodeType = null;
+            bool originalCodeTypeNoVirtuality = true;
 
-            // If function symbol doesn't point to specification, resolve it
-            if (firstFunction.Attributes.ContainsKey(DwarfAttribute.Specification))
+            try
             {
-                firstFunction = firstFunction.Attributes[DwarfAttribute.Specification].Reference;
-            }
+                // TODO: Add test for virtual inheritance: class that inherits virtual class, but doesn't have any virtual functions
 
-            // Resolve code type that is implicit argument to first function
-            DwarfSymbol implicitArgument = firstFunction.Attributes[DwarfAttribute.ObjectPointer].Reference;
-            DwarfSymbol abstractOrigin = implicitArgument.Attributes.ContainsKey(DwarfAttribute.AbstractOrigin) ? implicitArgument.Attributes[DwarfAttribute.AbstractOrigin].Reference : implicitArgument;
-            DwarfSymbol type = GetType(abstractOrigin);
+                // Try to find what is the first function at virtual table address
+                MemoryBuffer memoryBuffer = Debugger.ReadMemory(Module.Process, vtableAddress + Module.Address, Module.PointerSize);
+                ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)Module.Process.GetPointerSize());
+                ulong displacement;
+                DwarfSymbol firstFunction = FindFunction(firstFunctionAddress - Module.Address, out displacement);
 
-            if (type.Tag == DwarfTag.PointerType)
-            {
-                type = GetType(type);
-            }
-
-            // Find class that has defined found function for the first time.
-            if (firstFunction.Attributes.ContainsKey(DwarfAttribute.VtableElemLocation))
-            {
-                Location location = DecodeLocationStatic(firstFunction.Attributes[DwarfAttribute.VtableElemLocation]);
-                int desiredVirtualFunction;
-
-                if (location.Type == LocationType.AbsoluteAddress)
+                // If function symbol doesn't point to specification, resolve it
+                if (firstFunction.Attributes.ContainsKey(DwarfAttribute.Specification))
                 {
-                    desiredVirtualFunction = (int)location.Address;
-                }
-                else
-                {
-                    throw new NotImplementedException();
+                    firstFunction = firstFunction.Attributes[DwarfAttribute.Specification].Reference;
                 }
 
-                while (desiredVirtualFunction > 0)
-                {
-                    // Search through base classes until you find base class that is using exact virtual table entry that we need.
-                    var baseClasses = type.Children.Where(c => c.Tag == DwarfTag.Inheritance).Select(c => Tuple.Create(GetType(c), DecodeDataMemberLocation(c))).OrderBy(t => t.Item2).ToArray();
-                    int totalVirtualFunctions = 0;
-                    bool found = false;
+                // Resolve code type that is implicit argument to first function
+                DwarfSymbol implicitArgument = firstFunction.Attributes[DwarfAttribute.ObjectPointer].Reference;
+                DwarfSymbol abstractOrigin = implicitArgument.Attributes.ContainsKey(DwarfAttribute.AbstractOrigin) ? implicitArgument.Attributes[DwarfAttribute.AbstractOrigin].Reference : implicitArgument;
+                DwarfSymbol type = GetType(abstractOrigin);
 
-                    for (int i = 0; i < baseClasses.Length; i++)
+                if (type.Tag == DwarfTag.PointerType)
+                {
+                    type = GetType(type);
+                }
+
+                // Find class that has defined found function for the first time.
+                if (firstFunction.Attributes.ContainsKey(DwarfAttribute.VtableElemLocation))
+                {
+                    Location location = DecodeLocationStatic(firstFunction.Attributes[DwarfAttribute.VtableElemLocation]);
+                    int desiredVirtualFunction;
+
+                    originalCodeTypeNoVirtuality = false;
+                    if (location.Type == LocationType.AbsoluteAddress)
                     {
-                        int virtualTableSize = virtualTableSizes[baseClasses[i].Item1];
-
-                        if (virtualTableSize + totalVirtualFunctions > desiredVirtualFunction)
-                        {
-                            type = baseClasses[i].Item1;
-                            desiredVirtualFunction -= totalVirtualFunctions;
-                            found = true;
-                            break;
-                        }
-                        totalVirtualFunctions += virtualTableSize;
+                        desiredVirtualFunction = (int)location.Address;
                     }
-
-                    if (!found)
+                    else
                     {
                         throw new NotImplementedException();
                     }
+
+                    while (desiredVirtualFunction > 0)
+                    {
+                        // Search through base classes until you find base class that is using exact virtual table entry that we need.
+                        var baseClasses = type.Children.Where(c => c.Tag == DwarfTag.Inheritance).Select(c => Tuple.Create(GetType(c), DecodeDataMemberLocation(c))).OrderBy(t => t.Item2).ToArray();
+                        int totalVirtualFunctions = 0;
+                        bool found = false;
+
+                        for (int i = 0; i < baseClasses.Length; i++)
+                        {
+                            int virtualTableSize = virtualTableSizes[baseClasses[i].Item1];
+
+                            if (virtualTableSize + totalVirtualFunctions > desiredVirtualFunction)
+                            {
+                                type = baseClasses[i].Item1;
+                                desiredVirtualFunction -= totalVirtualFunctions;
+                                found = true;
+                                break;
+                            }
+                            totalVirtualFunctions += virtualTableSize;
+                        }
+
+                        if (!found)
+                        {
+                            throw new NotImplementedException();
+                        }
+                    }
                 }
+                originalCodeType = Module.TypesById[GetTypeId(type)];
             }
-            CodeType originalCodeType = Module.TypesById[GetTypeId(type)];
+            catch
+            {
+                // We have failed to get original code type
+            }
 
             // Try to locate address in public symbols and see if it is virtual table
             PublicSymbol publicSymbol;
@@ -405,16 +419,69 @@ namespace CsDebugScript.DwarfSymbolProvider
                 {
                     CodeType codeType = Module.TypesById[GetTypeId(symbol)];
 
-                    if (codeType != originalCodeType)
+                    // Using original code type has priority if first function had virtuality set (not defaulted to 0).
+                    if (originalCodeType != null && !originalCodeTypeNoVirtuality)
                     {
-                        return codeType.BaseClasses[originalCodeType.Name];
+                        // Maybe runtime code type doesn't inherit original code type - we found original code type incorrectly,
+                        // so if getting base class throws, we can fall back to reading offset from the vtable.
+                        try
+                        {
+                            if (codeType != originalCodeType)
+                            {
+                                return codeType.BaseClasses[originalCodeType.Name];
+                            }
+
+                            return Tuple.Create(codeType, 0);
+                        }
+                        catch
+                        {
+                        }
                     }
 
-                    return Tuple.Create(codeType, 0);
+                    // If we failed to get original code type, try looking at class start offset
+                    // Layout of vtable:
+                    // -2: object start offset
+                    // -1: RTTI definition
+                    // 0: first function address
+                    MemoryBuffer memoryBuffer = Debugger.ReadMemory(Module.Process, vtableAddress + Module.Address - 2 * Module.PointerSize, Module.PointerSize);
+                    long offset;
+
+                    if (Module.PointerSize == 8)
+                    {
+                        offset = UserType.ReadLong(memoryBuffer, 0);
+                    }
+                    else if (Module.PointerSize == 4)
+                    {
+                        offset = UserType.ReadInt(memoryBuffer, 0);
+                    }
+                    else
+                    {
+                        // Unexpected pointer size
+                        throw new NotImplementedException();
+                    }
+
+                    if (offset > 0)
+                    {
+                        // If we haven't tested original code type because its first function didn't have virtuality set, we will now do the test.
+                        if (originalCodeType != null && originalCodeTypeNoVirtuality)
+                        {
+                            if (codeType != originalCodeType)
+                            {
+                                return codeType.BaseClasses[originalCodeType.Name];
+                            }
+
+                            return Tuple.Create(codeType, 0);
+                        }
+
+                        // Something went wrong. Either we are not on the begining of the vtable, or compiler generated vtable differently.
+                        throw new NotImplementedException();
+                    }
+
+                    return Tuple.Create(codeType, (int)-offset);
                 }
             }
 
-            // We failed to find it in public symbols, try to see if function pointer is stored at vtable address
+            // We failed to find it in public symbols, just return found original code type
             return Tuple.Create(originalCodeType, 0);
         }
 
