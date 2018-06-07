@@ -657,7 +657,7 @@ void IsTrue(bool value)
     public class NativeDumpTest_x64_Linux_clang : NativeDumpTest
     {
         public NativeDumpTest_x64_Linux_clang(NativeDumpTest_linux_x64_clang_Initialization initialization)
-            : base(initialization, executeCodeGen: false)
+            : base(initialization)
         {
             LinuxDump = true;
         }
@@ -693,7 +693,7 @@ void IsTrue(bool value)
     public class NativeDumpTest_x64_Linux_clang_nortti : NativeDumpTest
     {
         public NativeDumpTest_x64_Linux_clang_nortti(NativeDumpTest_linux_x64_clang_nortti_Initialization initialization)
-            : base(initialization, executeCodeGen: false)
+            : base(initialization)
         {
             LinuxDump = true;
         }
