@@ -371,10 +371,10 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 CodeType codeType = variable.GetCodeType();
                 CodeType _Rep = CodeType.Create($"{codeType.Name}::_Rep", codeType.Module);
-                header = UserMember.Create(() => variable.AdjustPointer(-(int)_Rep.Size).CastAs(_Rep));
+                header = UserMember.Create(() => text.Value.AdjustPointer(-(int)_Rep.Size).CastAs(_Rep));
                 length = UserMember.Create(() => (int)header.Value.GetField("_M_length"));
                 text = UserMember.Create(() => variable.GetField("_M_dataplus").GetField("_M_p"));
-                capacity = UserMember.Create(() => (int)variable.GetField("_M_capacity"));
+                capacity = UserMember.Create(() => (int)header.Value.GetField("_M_capacity"));
             }
 
             /// <summary>
