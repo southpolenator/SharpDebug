@@ -339,6 +339,130 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
+        /// libstdc++ 6 implementations of std::basic_string with _GLIBCXX_USE_CXX11_ABI not defined.
+        /// </summary>
+        public class LibStdCpp6_NoAbi : IBasicString
+        {
+            /// <summary>
+            /// The text inside the string buffer
+            /// </summary>
+            private UserMember<Variable> text;
+
+            /// <summary>
+            /// The length of the string
+            /// </summary>
+            private UserMember<int> length;
+
+            /// <summary>
+            /// The string buffer capacity
+            /// </summary>
+            private UserMember<int> capacity;
+
+            /// <summary>
+            /// Header that holds extra info about string
+            /// </summary>
+            private UserMember<Variable> header;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="LibStdCpp6_NoAbi"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public LibStdCpp6_NoAbi(Variable variable)
+            {
+                CodeType codeType = variable.GetCodeType();
+                CodeType _Rep = CodeType.Create($"{codeType.Name}::_Rep", codeType.Module);
+                header = UserMember.Create(() => variable.AdjustPointer(-(int)_Rep.Size).CastAs(_Rep));
+                length = UserMember.Create(() => (int)header.Value.GetField("_M_length"));
+                text = UserMember.Create(() => variable.GetField("_M_dataplus").GetField("_M_p"));
+                capacity = UserMember.Create(() => (int)variable.GetField("_M_capacity"));
+            }
+
+            /// <summary>
+            /// Gets the string length.
+            /// </summary>
+            public int Length
+            {
+                get
+                {
+                    return length.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the reserved space in buffer (number of characters).
+            /// </summary>
+            public int Reserved
+            {
+                get
+                {
+                    return capacity.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the string text.
+            /// </summary>
+            public string Text
+            {
+                get
+                {
+                    return text.Value.ToString();
+                }
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether basic_string is using local data.
+            /// </summary>
+            /// <value>
+            /// <c>true</c> if basic_string is using local data; otherwise, <c>false</c>.
+            /// </value>
+            private bool IsLocalData
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // _M_dataplus
+                // | _M_p
+                // basic_string<>::_Rep type
+                // _M_length
+                // _M_capacity
+                // _M_refcount
+                CodeType _M_dataplus, _M_p, _Rep, _M_length, _M_capacity, _M_refcount;
+
+                try
+                {
+                    _Rep = CodeType.Create($"{codeType.Name}::_Rep", codeType.Module);
+                }
+                catch
+                {
+                    return false;
+                }
+
+                if (!codeType.GetFieldTypes().TryGetValue("_M_dataplus", out _M_dataplus))
+                    return false;
+                if (!_M_dataplus.GetFieldTypes().TryGetValue("_M_p", out _M_p))
+                    return false;
+                if (!_Rep.GetFieldTypes().TryGetValue("_M_length", out _M_length))
+                    return false;
+                if (!_Rep.GetFieldTypes().TryGetValue("_M_capacity", out _M_capacity))
+                    return false;
+                if (!_Rep.GetFieldTypes().TryGetValue("_M_refcount", out _M_refcount))
+                    return false;
+                return true;
+            }
+        }
+
+        /// <summary>
         /// The type selector
         /// </summary>
         private static TypeSelector<IBasicString> typeSelector = new TypeSelector<IBasicString>(new[]
@@ -346,6 +470,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2013), VisualStudio2013.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2015), VisualStudio2015.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6_NoAbi), LibStdCpp6_NoAbi.VerifyCodeType),
         });
 
         /// <summary>
@@ -426,7 +551,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// Returns a hash code for this instance.
         /// </summary>
         /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
         /// </returns>
         public override int GetHashCode()
         {
