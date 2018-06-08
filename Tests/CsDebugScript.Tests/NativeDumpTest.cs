@@ -5,6 +5,7 @@ using Xunit;
 using System.Collections.Generic;
 using CsDebugScript.Engine;
 using CsDebugScript.Tests.Utils;
+using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
 
 namespace CsDebugScript.Tests
 {
@@ -34,6 +35,14 @@ ImportUserTypes(options, true);
         public bool LinuxDump { get; set; }
 
         public bool NoRtti { get; set; }
+
+        public bool UsingDbgEngSymbolProvider
+        {
+            get
+            {
+                return Context.SymbolProvider is DbgEngSymbolProvider;
+            }
+        }
 
         [Fact]
         public void CurrentThreadContainsMainSourceFileName()
@@ -282,7 +291,7 @@ ImportUserTypes(options, true);
             }
         }
 
-        [Fact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
         public void SimpleMultiClassInheritance()
         {
             Variable c = DefaultModule.GetVariable("simpleMultiClassInheritanceTest");
@@ -306,7 +315,7 @@ AreEqual(42.0, c.BaseClass_SimpleMultiClassInheritanceB.b);
             }
         }
 
-        [Fact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
         public void MultiClassInheritance()
         {
             Variable c = DefaultModule.GetVariable("multiClassInheritanceTest");
@@ -337,7 +346,7 @@ AreEqual(42, a.As<MultiClassInheritanceB>().b);
             }
         }
 
-        [Fact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
         public void MultiClassInheritance2()
         {
             Variable d = DefaultModule.GetVariable("multiClassInheritanceTest2");
