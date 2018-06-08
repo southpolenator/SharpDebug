@@ -207,7 +207,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             private UserMember<bool> isCreatedWithMakeShared;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="VisualStudio"/> class.
+            /// Initializes a new instance of the <see cref="LibStdCpp6"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
             public LibStdCpp6(Variable variable)
@@ -363,7 +363,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             private UserMember<bool> isCreatedWithMakeShared;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="VisualStudio"/> class.
+            /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
             public ClangLibCpp(Variable variable)
