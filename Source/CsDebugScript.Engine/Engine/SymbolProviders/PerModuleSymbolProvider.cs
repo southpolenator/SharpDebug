@@ -536,6 +536,25 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
+        /// Gets the virtual base class start address.
+        /// </summary>
+        /// <param name="originalCodeType">Code type of the object.</param>
+        /// <param name="objectAddress">Object address.</param>
+        /// <param name="virtualCodeType">Virtual class code type.</param>
+        /// <returns>Address of the object which code type is virtual class.</returns>
+        public ulong GetVirtualClassBaseAddress(CodeType originalCodeType, ulong objectAddress, CodeType virtualCodeType)
+        {
+            ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(originalCodeType.Module);
+
+            if (symbolProviderModule == null)
+            {
+                return FallbackSymbolProvider.GetVirtualClassBaseAddress(originalCodeType, objectAddress, virtualCodeType);
+            }
+
+            return symbolProviderModule.GetVirtualClassBaseAddress(((NativeCodeType)originalCodeType).TypeId, objectAddress, ((NativeCodeType)virtualCodeType).TypeId);
+        }
+
+        /// <summary>
         /// Gets the runtime code type and offset to original code type.
         /// </summary>
         /// <param name="tuple">The tuple containing process and vtable address.</param>

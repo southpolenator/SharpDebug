@@ -78,7 +78,7 @@ namespace CsDebugScript.Tests
                     }
 
                     Console.SetError(writer);
-                    ExecuteMTA(() => { generator.Generate(xmlConfig); });
+                    generator.Generate(xmlConfig);
                     writer.Flush();
                     string errorText = writer.GetStringBuilder().ToString();
 
@@ -100,7 +100,7 @@ namespace CsDebugScript.Tests
 
             return new XmlConfig()
             {
-                UseDiaSymbolProvider = true,
+                UseDirectClassAccess = true,
                 MultiFileExport = false,
                 GeneratedAssemblyName = "NativeDumpTestExported.dll",
                 GeneratedPropsFileName = "NativeDumpTestExported.props",

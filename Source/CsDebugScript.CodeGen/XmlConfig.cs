@@ -28,12 +28,12 @@ namespace CsDebugScript.CodeGen
         public bool MultiLineProperties { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether generated code will use DIA symbol provider.
+        /// Gets or sets a value indicating whether generated code that will use class members directly (not using GetField, but GetClassField).
         /// </summary>
         /// <value>
-        /// <c>true</c> if generated code will use DIA symbol provider; otherwise, <c>false</c>.
+        /// <c>true</c> if generated code that will use class members directly; otherwise, <c>false</c>.
         /// </value>
-        public bool UseDiaSymbolProvider { get; set; }
+        public bool UseDirectClassAccess { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether generated code should be compressed.
@@ -264,9 +264,9 @@ namespace CsDebugScript.CodeGen
             {
                 generationFlags |= UserTypeGenerationFlags.SingleLineProperty;
             }
-            if (UseDiaSymbolProvider)
+            if (UseDirectClassAccess)
             {
-                generationFlags |= UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider;
+                generationFlags |= UserTypeGenerationFlags.UseDirectClassAccess;
             }
             if (ForceUserTypesToNewInsteadOfCasting)
             {

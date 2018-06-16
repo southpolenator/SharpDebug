@@ -203,5 +203,14 @@ namespace CsDebugScript.Engine
         /// <param name="process">The process.</param>
         /// <param name="vtableAddress">The vtable address.</param>
         Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(Process process, ulong vtableAddress);
+
+        /// <summary>
+        /// Gets the virtual base class start address.
+        /// </summary>
+        /// <param name="originalCodeType">Code type of the object.</param>
+        /// <param name="objectAddress">Object address.</param>
+        /// <param name="virtualCodeType">Virtual class code type.</param>
+        /// <returns>Address of the object which code type is virtual class.</returns>
+        ulong GetVirtualClassBaseAddress(CodeType originalCodeType, ulong objectAddress, CodeType virtualCodeType);
     }
 }

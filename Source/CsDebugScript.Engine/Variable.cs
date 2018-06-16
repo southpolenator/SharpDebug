@@ -241,6 +241,11 @@ namespace CsDebugScript
         /// </returns>
         public static explicit operator char (Variable v)
         {
+            if ((v.codeType.IsSimple || v.codeType.IsEnum) && v.codeType.Size == 1)
+            {
+                return (char)(byte)v.Data;
+            }
+
             if ((!v.codeType.IsSimple && !v.codeType.IsEnum) || v.codeType.Size != 2)
             {
                 return char.Parse(v.ToString());
@@ -565,7 +570,7 @@ namespace CsDebugScript
 
                     Tuple<CodeType, int> runtimeCodeType = Context.SymbolProvider.GetRuntimeCodeTypeAndOffset(codeType.Module.Process, vtableAddress);
 
-                    if (runtimeCodeType != null)
+                    if (runtimeCodeType != null && runtimeCodeType.Item1 != null)
                     {
                         return runtimeCodeType;
                     }
@@ -963,13 +968,25 @@ namespace CsDebugScript
                 return this;
             }
 
-            if (newCodeType.IsPointer)
+            // Check if it virtual inheritance
+            ulong newAddress;
+
+            if (baseClassCodeTypeAndOffset.Item2 < 0)
             {
-                return CreatePointerNoCast(newCodeType, GetPointerAddress() + (uint)baseClassCodeTypeAndOffset.Item2, name, path);
+                newAddress = Context.SymbolProvider.GetVirtualClassBaseAddress(codeType, GetPointerAddress(), baseClassCodeTypeAndOffset.Item1);
             }
             else
             {
-                return CreateNoCast(newCodeType, GetPointerAddress() + (uint)baseClassCodeTypeAndOffset.Item2, name, path);
+                newAddress = GetPointerAddress() + (uint)baseClassCodeTypeAndOffset.Item2;
+            }
+
+            if (newCodeType.IsPointer)
+            {
+                return CreatePointerNoCast(newCodeType, newAddress, name, path);
+            }
+            else
+            {
+                return CreateNoCast(newCodeType, newAddress, name, path);
             }
         }
 
@@ -1033,7 +1050,16 @@ namespace CsDebugScript
         private Variable GetOriginalField(string name)
         {
             CodeType fieldType = codeType.GetFieldType(name);
-            ulong fieldAddress = GetPointerAddress() + (ulong)codeType.GetFieldOffset(name);
+            int fieldOffset = codeType.GetFieldOffset(name);
+
+            // Check if it is field comming from virtual inheritance class
+            if (fieldOffset < 0)
+            {
+                // We need to first get base class and then get field from it.
+                return GetBaseClass(Tuple.Create(fieldType, fieldOffset)).GetOriginalField(name);
+            }
+
+            ulong fieldAddress = GetPointerAddress() + (ulong)fieldOffset;
             Variable field = CreateNoCast(fieldType, fieldAddress, name, GenerateNewPath(".{0}", path));
 
             return UpcastClrVariable(field);

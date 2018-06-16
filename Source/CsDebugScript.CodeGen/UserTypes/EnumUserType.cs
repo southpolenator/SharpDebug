@@ -34,6 +34,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             // Check if we need to write namespace
             string nameSpace = (DeclaredInType as NamespaceUserType)?.FullClassName ?? Namespace;
+            string enumBasicType = GetEnumBasicType(Symbol);
 
             if ((DeclaredInType == null || (!generationFlags.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType)) && !string.IsNullOrEmpty(nameSpace))
             {
@@ -53,7 +54,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
             if (Symbol.Size != 0)
             {
-                output.WriteLine(indentation, @"public enum {0} : {1}", ClassName, GetEnumBasicType(Symbol));
+                output.WriteLine(indentation, @"public enum {0} : {1}", ClassName, enumBasicType);
             }
             else
             {
@@ -64,7 +65,16 @@ namespace CsDebugScript.CodeGen.UserTypes
             // Write values
             foreach (var enumValue in Symbol.EnumValues)
             {
-                output.WriteLine(indentation, "{0} = {1},", enumValue.Item1, enumValue.Item2);
+                string value = enumValue.Item2;
+
+                if (!FitsBasicType(enumBasicType, ref value))
+                {
+                    output.WriteLine(indentation, "{0} = ({1}){2},", enumValue.Item1, enumBasicType, value);
+                }
+                else
+                {
+                    output.WriteLine(indentation, "{0} = {1},", enumValue.Item1, value);
+                }
             }
 
             // Enumeration end
@@ -72,6 +82,120 @@ namespace CsDebugScript.CodeGen.UserTypes
             if ((DeclaredInType == null || (!generationFlags.HasFlag(UserTypeGenerationFlags.SingleFileExport) && DeclaredInType is NamespaceUserType)) && !string.IsNullOrEmpty(nameSpace))
             {
                 output.WriteLine(--indentation, "}}");
+            }
+        }
+
+        /// <summary>
+        /// Checks whether value can be stored inside the specified enumeration basic type
+        /// </summary>
+        /// <param name="enumBasicType">Enumeration basic type</param>
+        /// <param name="value">Value of the element</param>
+        /// <returns><c>true</c> if no cast is needed to store value; <c>false</c> otherwise.</returns>
+        private static bool FitsBasicType(string enumBasicType, ref string value)
+        {
+            ulong ulongValue;
+
+            switch (enumBasicType)
+            {
+                case null:
+                    return true;
+                case "sbyte":
+                    {
+                        if (sbyte.TryParse(value, out sbyte unused))
+                        {
+                            return true;
+                        }
+                        if (ulong.TryParse(value, out ulongValue))
+                        {
+                            value = ((sbyte)ulongValue).ToString();
+                            return true;
+                        }
+                        return false;
+                    }
+                case "byte":
+                    {
+                        if (byte.TryParse(value, out byte unused))
+                        {
+                            return true;
+                        }
+                        if (ulong.TryParse(value, out ulongValue))
+                        {
+                            value = ((byte)ulongValue).ToString();
+                            return true;
+                        }
+                        return false;
+                    }
+                case "short":
+                    {
+                        if (short.TryParse(value, out short unused))
+                        {
+                            return true;
+                        }
+                        if (ulong.TryParse(value, out ulongValue))
+                        {
+                            value = ((short)ulongValue).ToString();
+                            return true;
+                        }
+                        return false;
+                    }
+                case "ushort":
+                    {
+                        if (ushort.TryParse(value, out ushort unused))
+                        {
+                            return true;
+                        }
+                        if (ulong.TryParse(value, out ulongValue))
+                        {
+                            value = ((ushort)ulongValue).ToString();
+                            return true;
+                        }
+                        return false;
+                    }
+                case "int":
+                    {
+                        if (int.TryParse(value, out int unused))
+                        {
+                            return true;
+                        }
+                        if (ulong.TryParse(value, out ulongValue))
+                        {
+                            value = ((int)ulongValue).ToString();
+                            return true;
+                        }
+                        return false;
+                    }
+                case "uint":
+                    {
+                        if (uint.TryParse(value, out uint unused))
+                        {
+                            return true;
+                        }
+                        if (ulong.TryParse(value, out ulongValue))
+                        {
+                            value = ((uint)ulongValue).ToString();
+                            return true;
+                        }
+                        return false;
+                    }
+                case "long":
+                    {
+                        if (long.TryParse(value, out long unused))
+                        {
+                            return true;
+                        }
+                        if (ulong.TryParse(value, out ulongValue))
+                        {
+                            value = ((long)ulongValue).ToString();
+                            return true;
+                        }
+                        return false;
+                    }
+                case "ulong":
+                    {
+                        return ulong.TryParse(value, out ulong unused);
+                    }
+                default:
+                    return false;
             }
         }
 

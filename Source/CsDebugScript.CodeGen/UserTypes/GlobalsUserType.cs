@@ -45,7 +45,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             ExportStaticFields = true;
 
             var fields = Symbol.Fields.OrderBy(s => s.Name).ToArray();
-            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
+            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess);
             HashSet<string> usedNames = new HashSet<string>();
 
             foreach (var field in fields)

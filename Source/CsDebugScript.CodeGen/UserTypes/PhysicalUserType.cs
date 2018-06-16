@@ -135,11 +135,6 @@ namespace CsDebugScript.CodeGen.UserTypes
                 CacheResult = true,
             };
 
-            if (baseClassOffset < 0)
-            {
-                throw new NotImplementedException();
-            }
-
             // If base class offset is not 0, we have generated variables for getting memory bufffer
             if (baseClassOffset > 0)
             {

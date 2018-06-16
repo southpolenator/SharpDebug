@@ -49,6 +49,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
                 throw new ArgumentException("Symbol size is unexpected");
             }
             Size = (int)size;
+            IsVirtualInheritance = symbol.virtualBaseClass;
         }
 
         /// <summary>

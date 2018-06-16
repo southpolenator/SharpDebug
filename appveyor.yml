@@ -51,8 +51,8 @@ after_build:
   - ps: popd
   - ps: |-
         if ($env:CONFIGURATION -eq "Release") {
-            msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
             if ($env:APPVEYOR_REPO_BRANCH -eq "master") {
+                msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
                 git clone $env:GITHUB_PAGES_URL $env:GITHUB_PAGES
                 git config --global core.autocrlf false
                 pushd $env:GITHUB_PAGES
@@ -88,6 +88,8 @@ artifacts:
   name: Test Results
 - path: bin\**\*.zip
   name: WinDbg Extension
+- path: Utility\CsDebugScript.Reference\Help\LastBuild.log
+  name: Reference build log
 deploy:
 - provider: NuGet
   api_key:

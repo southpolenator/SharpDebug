@@ -24,9 +24,9 @@ namespace CsDebugScript.CodeGen
         GenerateFieldTypeInfoComment = 2,
 
         /// <summary>
-        /// Generated code will use DIA symbol provider
+        /// Generated code that will use class members directly (not using GetField, but GetClassField).
         /// </summary>
-        UseClassFieldsFromDiaSymbolProvider = 4,
+        UseDirectClassAccess = 4,
 
         /// <summary>
         /// Generated code should use operator new for creating user types instead of casting.

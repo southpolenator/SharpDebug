@@ -182,22 +182,32 @@ namespace CsDebugScript.DwarfSymbolProvider
         public string GetModuleMappedImage(Module module)
         {
             ElfCoreDump dump = GetDump(module.Process);
-            string name = dump.GetModuleOriginalPath(module.Address);
+            string modulePath = dump.GetModuleOriginalPath(module.Address);
 
-            if (File.Exists(name))
+            return GetModuleMappedImage(dump, modulePath);
+        }
+
+        /// <summary>
+        /// Gets local path of the module from the dump.
+        /// </summary>
+        /// <param name="dump">Elf core dump instance.</param>
+        /// <param name="modulePath">Path of the module read from the dump.</param>
+        internal static string GetModuleMappedImage(ElfCoreDump dump, string modulePath)
+        {
+            if (File.Exists(modulePath))
             {
                 // TODO: Verify that it is correct file
-                return name;
+                return modulePath;
             }
 
-            string fileName = Path.GetFileName(name);
+            string fileName = Path.GetFileName(modulePath);
 
-            name = Path.Combine(Path.GetDirectoryName(dump.Path), fileName);
+            modulePath = Path.Combine(Path.GetDirectoryName(dump.Path), fileName);
 
-            if (File.Exists(name))
+            if (File.Exists(modulePath))
             {
                 // TODO: Verify that it is correct file
-                return name;
+                return modulePath;
             }
 
             return fileName;
@@ -341,6 +351,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 modules[i] = process.ModulesById[moduleBaseAddresses[i]];
                 modules[i].Id = (uint)i;
+                modules[i].LoadOffset = dump.GetModuleLoadOffset(moduleBaseAddresses[i]);
             }
 
             return modules;

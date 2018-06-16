@@ -80,6 +80,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         private SimpleCache<MemoryRegionFinder> frameDescriptionEntryFinderFromExceptionHandlingStream;
 
         /// <summary>
+        /// Dictionary of type to virtual table size.
+        /// </summary>
+        private DictionaryCache<DwarfSymbol, int> virtualTableSizes;
+
+        /// <summary>
         /// The code segment offset (read from the image)
         /// </summary>
         private ulong codeSegmentOffset;
@@ -161,6 +166,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                 return result;
             });
             frameDescriptionEntryFinderFromExceptionHandlingStream = SimpleCache.Create(() => new MemoryRegionFinder(frameDescriptionEntriesFromExceptionHandlingStream.Value.Select(f => new MemoryRegion { BaseAddress = f.InitialLocation, RegionSize = f.AddressRange }).ToList()));
+            virtualTableSizes = new DictionaryCache<DwarfSymbol, int>(GetVirtualTableSize);
             this.codeSegmentOffset = codeSegmentOffset;
         }
 
@@ -306,8 +312,88 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="vtableAddress">The vtable address within the module.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(uint vtableAddress)
         {
+            // Try to find original code type that is using this vtable by inspecting first vtable function entry
+            CodeType originalCodeType = null;
+            bool originalCodeTypeNoVirtuality = true;
+
+            try
+            {
+                // Try to find what is the first function at virtual table address
+                MemoryBuffer memoryBuffer = Debugger.ReadMemory(Module.Process, vtableAddress + Module.Address, Module.PointerSize);
+                ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)Module.Process.GetPointerSize());
+                ulong displacement;
+                DwarfSymbol firstFunction = FindFunction(firstFunctionAddress - Module.Address, out displacement);
+
+                if (displacement == 0)
+                {
+                    // If function symbol doesn't point to specification, resolve it
+                    if (firstFunction.Attributes.ContainsKey(DwarfAttribute.Specification))
+                    {
+                        firstFunction = firstFunction.Attributes[DwarfAttribute.Specification].Reference;
+                    }
+
+                    // Resolve code type that is implicit argument to first function
+                    DwarfSymbol implicitArgument = firstFunction.Attributes[DwarfAttribute.ObjectPointer].Reference;
+                    DwarfSymbol abstractOrigin = implicitArgument.Attributes.ContainsKey(DwarfAttribute.AbstractOrigin) ? implicitArgument.Attributes[DwarfAttribute.AbstractOrigin].Reference : implicitArgument;
+                    DwarfSymbol type = GetType(abstractOrigin);
+
+                    if (type.Tag == DwarfTag.PointerType)
+                    {
+                        type = GetType(type);
+                    }
+
+                    // Find class that has defined found function for the first time.
+                    if (firstFunction.Attributes.ContainsKey(DwarfAttribute.VtableElemLocation))
+                    {
+                        Location location = DecodeLocationStatic(firstFunction.Attributes[DwarfAttribute.VtableElemLocation]);
+                        int desiredVirtualFunction;
+
+                        originalCodeTypeNoVirtuality = false;
+                        if (location.Type == LocationType.AbsoluteAddress)
+                        {
+                            desiredVirtualFunction = (int)location.Address;
+                        }
+                        else
+                        {
+                            throw new NotImplementedException();
+                        }
+
+                        while (desiredVirtualFunction > 0)
+                        {
+                            // Search through base classes until you find base class that is using exact virtual table entry that we need.
+                            var baseClasses = type.Children.Where(c => c.Tag == DwarfTag.Inheritance).Select(c => Tuple.Create(GetType(c), DecodeDataMemberLocation(c))).OrderBy(t => t.Item2).ToArray();
+                            int totalVirtualFunctions = 0;
+                            bool found = false;
+
+                            for (int i = 0; i < baseClasses.Length; i++)
+                            {
+                                int virtualTableSize = virtualTableSizes[baseClasses[i].Item1];
+
+                                if (virtualTableSize + totalVirtualFunctions > desiredVirtualFunction)
+                                {
+                                    type = baseClasses[i].Item1;
+                                    desiredVirtualFunction -= totalVirtualFunctions;
+                                    found = true;
+                                    break;
+                                }
+                                totalVirtualFunctions += virtualTableSize;
+                            }
+
+                            if (!found)
+                            {
+                                throw new NotImplementedException();
+                            }
+                        }
+                    }
+                    originalCodeType = Module.TypesById[GetTypeId(type)];
+                }
+            }
+            catch
+            {
+                // We have failed to get original code type
+            }
+
             // Try to locate address in public symbols and see if it is virtual table
-            CodeType codeType;
             PublicSymbol publicSymbol;
             int publicSymbolIndex = publicSymbolsAddresses.BinarySearch(vtableAddress);
 
@@ -325,34 +411,131 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             publicSymbol = publicSymbols[publicSymbolIndex];
+            string publicSymbolName = null;
             if (publicSymbol.DemangledName.StartsWith("vtable for "))
             {
-                DwarfSymbol symbol;
-                string name = publicSymbol.DemangledName.Substring(11);
+                publicSymbolName = publicSymbol.DemangledName.Substring(11);
+            }
+            else if (publicSymbol.DemangledName.StartsWith("VTT for "))
+            {
+                publicSymbolName = publicSymbol.DemangledName.Substring(8);
+            }
 
-                if (typeNameToType.TryGetValue(name, out symbol))
+            if (!string.IsNullOrEmpty(publicSymbolName))
+            {
+                DwarfSymbol symbol;
+
+                if (typeNameToType.TryGetValue(publicSymbolName, out symbol))
                 {
-                    codeType = Module.TypesById[GetTypeId(symbol)];
-                    return Tuple.Create(codeType, 0);
+                    CodeType codeType = Module.TypesById[GetTypeId(symbol)];
+
+                    // Using original code type has priority if first function had virtuality set (not defaulted to 0).
+                    if (originalCodeType != null && !originalCodeTypeNoVirtuality)
+                    {
+                        // Maybe runtime code type doesn't inherit original code type - we found original code type incorrectly,
+                        // so if getting base class throws, we can fall back to reading offset from the vtable.
+                        try
+                        {
+                            if (codeType != originalCodeType)
+                            {
+                                return codeType.BaseClasses[originalCodeType.Name];
+                            }
+
+                            return Tuple.Create(codeType, 0);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    // If we failed to get original code type, try looking at class start offset
+                    // Layout of vtable:
+                    // -2: object start offset
+                    // -1: RTTI definition
+                    // 0: first function address
+                    MemoryBuffer memoryBuffer = Debugger.ReadMemory(Module.Process, vtableAddress + Module.Address - 2 * Module.PointerSize, Module.PointerSize);
+                    long offset;
+
+                    if (Module.PointerSize == 8)
+                    {
+                        offset = UserType.ReadLong(memoryBuffer, 0);
+                    }
+                    else if (Module.PointerSize == 4)
+                    {
+                        offset = UserType.ReadInt(memoryBuffer, 0);
+                    }
+                    else
+                    {
+                        // Unexpected pointer size
+                        throw new NotImplementedException();
+                    }
+
+                    if (offset > 0)
+                    {
+                        // If we haven't tested original code type because its first function didn't have virtuality set, we will now do the test.
+                        if (originalCodeType != null && originalCodeTypeNoVirtuality)
+                        {
+                            if (codeType != originalCodeType)
+                            {
+                                return codeType.BaseClasses[originalCodeType.Name];
+                            }
+
+                            return Tuple.Create(codeType, 0);
+                        }
+
+                        // Something went wrong. Either we are not on the begining of the vtable, or compiler generated vtable differently.
+                        throw new NotImplementedException();
+                    }
+
+                    return Tuple.Create(codeType, (int)-offset);
                 }
             }
 
-            // We failed to find it in public symbols, try to see if function pointer is stored at vtable address
-            MemoryBuffer memoryBuffer =  Debugger.ReadMemory(Module.Process, vtableAddress, Module.Process.GetPointerSize());
-            ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)Module.Process.GetPointerSize());
-            ulong displacement;
-            DwarfSymbol firstFunction = FindFunction(firstFunctionAddress - Module.Address, out displacement);
-            DwarfSymbol implicitArgument = firstFunction.Attributes[DwarfAttribute.ObjectPointer].Reference;
-            DwarfSymbol abstractOrigin = implicitArgument.Attributes.ContainsKey(DwarfAttribute.AbstractOrigin) ? implicitArgument.Attributes[DwarfAttribute.AbstractOrigin].Reference : implicitArgument;
-            DwarfSymbol type = GetType(abstractOrigin);
+            // We failed to find it in public symbols, just return found original code type
+            return Tuple.Create(originalCodeType, 0);
+        }
 
-            if (type.Tag == DwarfTag.PointerType)
+        /// <summary>
+        /// Gets the virtual table size for the specified type.
+        /// </summary>
+        /// <param name="type">Symbol that represents type.</param>
+        /// <returns>Virtual table size in number of entries.</returns>
+        private int GetVirtualTableSize(DwarfSymbol type)
+        {
+            int childrenSum = 0;
+            int maxFunctionEntry = -1;
+
+            foreach (DwarfSymbol child in type.Children)
             {
-                type = GetType(type);
+                if (child.Tag == DwarfTag.Inheritance)
+                {
+                    childrenSum += GetVirtualTableSize(child);
+                }
+                else if (child.Tag == DwarfTag.Subprogram)
+                {
+                    DwarfVirtuality virtuality = (DwarfVirtuality)child.GetConstantAttribute(DwarfAttribute.Virtuality, (ulong)DwarfVirtuality.None);
+
+                    if (virtuality != DwarfVirtuality.None)
+                    {
+                        maxFunctionEntry = Math.Max(maxFunctionEntry, 0);
+                        if (child.Attributes.ContainsKey(DwarfAttribute.VtableElemLocation))
+                        {
+                            Location location = DecodeLocationStatic(child.Attributes[DwarfAttribute.VtableElemLocation]);
+
+                            if (location.Type == LocationType.AbsoluteAddress)
+                            {
+                                maxFunctionEntry = Math.Max(maxFunctionEntry, (int)location.Address);
+                            }
+                            else
+                            {
+                                throw new NotImplementedException();
+                            }
+                        }
+                    }
+                }
             }
 
-            codeType = Module.TypesById[GetTypeId(type)];
-            return Tuple.Create(codeType, 0);
+            return Math.Max(childrenSum, maxFunctionEntry + 1);
         }
 
         /// <summary>
@@ -455,49 +638,125 @@ namespace CsDebugScript.DwarfSymbolProvider
                 type = GetType(type);
             }
 
-            Queue<Tuple<DwarfSymbol, int>> baseClasses = new Queue<Tuple<DwarfSymbol, int>>();
+            var value = GetTypeAllFieldTypeAndOffset(type, fieldName);
 
-            baseClasses.Enqueue(Tuple.Create(type, 0));
-            while (baseClasses.Count > 0)
+            if (value != null)
             {
-                Tuple<DwarfSymbol, int> typeAndOffset = baseClasses.Dequeue();
-                int typeOffset = typeAndOffset.Item2;
+                return Tuple.Create(GetTypeId(value.Item1), value.Item2);
+            }
 
-                type = typeAndOffset.Item1;
-                if (type.Children != null)
+            throw new Exception("Field name not found");
+        }
+
+        /// <summary>
+        /// Gets the field type id and offset of the specified type.
+        /// </summary>
+        /// <param name="type">Type symbol.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        private Tuple<DwarfSymbol, int> GetTypeAllFieldTypeAndOffset(DwarfSymbol type, string fieldName)
+        {
+            if (type.Children != null)
+            {
+                foreach (DwarfSymbol child in type.Children)
                 {
-                    foreach (DwarfSymbol child in type.Children)
+                    if (child.Tag == DwarfTag.Member && child.Name == fieldName)
                     {
-                        if (child.Tag == DwarfTag.Member && child.Name == fieldName)
-                        {
-                            uint fieldTypeId = GetTypeId(GetType(child));
-                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                        DwarfSymbol fieldType = GetType(child);
+                        int offset = DecodeDataMemberLocation(child);
 
-                            return Tuple.Create(fieldTypeId, typeOffset + offset);
-                        }
-                        else if (child.Tag == DwarfTag.Inheritance)
-                        {
-                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                        return Tuple.Create(fieldType, offset);
+                    }
+                    else if (child.Tag == DwarfTag.Inheritance)
+                    {
+                        var result = GetTypeAllFieldTypeAndOffset(GetType(child), fieldName);
 
-                            baseClasses.Enqueue(Tuple.Create(GetType(child), typeOffset + offset));
-                        }
-                        else if (child.Tag == DwarfTag.Member && string.IsNullOrEmpty(child.Name))
+                        if (result != null)
                         {
-                            // We want to add unnamed unions
-                            DwarfSymbol unionType = GetType(child);
+                            DwarfVirtuality virtuality = (DwarfVirtuality)child.GetConstantAttribute(DwarfAttribute.Virtuality, (ulong)DwarfVirtuality.None);
 
-                            if (unionType.Tag == DwarfTag.UnionType)
+                            if (virtuality != DwarfVirtuality.None)
                             {
-                                int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                                return Tuple.Create(GetType(child), int.MinValue);
+                            }
+                            else
+                            {
+                                int offset = DecodeDataMemberLocation(child);
 
-                                baseClasses.Enqueue(Tuple.Create(unionType, typeOffset + offset));
+                                return Tuple.Create(result.Item1, offset + result.Item2);
+                            }
+                        }
+                    }
+                    else if (child.Tag == DwarfTag.Member && string.IsNullOrEmpty(child.Name))
+                    {
+                        // We want to add unnamed unions
+                        DwarfSymbol unionType = GetType(child);
+
+                        if (unionType.Tag == DwarfTag.UnionType)
+                        {
+                            var result = GetTypeAllFieldTypeAndOffset(GetType(child), fieldName);
+
+                            if (result != null)
+                            {
+                                int offset = DecodeDataMemberLocation(child);
+
+                                return Tuple.Create(result.Item1, offset + result.Item2);
                             }
                         }
                     }
                 }
             }
 
-            throw new Exception("Field name not found");
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the virtual base class start address.
+        /// </summary>
+        /// <param name="objectTypeId">Object type identifier.</param>
+        /// <param name="objectAddress">Object address.</param>
+        /// <param name="virtualTypeId">Virtual class type identifier.</param>
+        /// <returns>Address of the object which code type is virtual class.</returns>
+        public ulong GetVirtualClassBaseAddress(uint objectTypeId, ulong objectAddress, uint virtualTypeId)
+        {
+            DwarfSymbol objectType = GetType(objectTypeId);
+            DwarfSymbol virtualType = GetType(virtualTypeId);
+
+            return GetVirtualClassBaseAddress(objectType, objectAddress, virtualType);
+        }
+
+        /// <summary>
+        /// Gets the virtual base class start address.
+        /// </summary>
+        /// <param name="objectType">Object type symbol.</param>
+        /// <param name="objectAddress">Object address.</param>
+        /// <param name="virtualType">Virtual class type symbol.</param>
+        /// <returns>Address of the object which code type is virtual class.</returns>
+        private ulong GetVirtualClassBaseAddress(DwarfSymbol objectType, ulong objectAddress, DwarfSymbol virtualType)
+        {
+            if (objectType.Children != null)
+            {
+                foreach (DwarfSymbol child in objectType.Children)
+                {
+                    if (child.Tag == DwarfTag.Inheritance)
+                    {
+                        ulong newAddress = DecodeDataMemberLocation(child, objectAddress);
+                        DwarfSymbol childType = GetType(child);
+
+                        if (childType == virtualType)
+                        {
+                            return newAddress;
+                        }
+
+                        newAddress = GetVirtualClassBaseAddress(childType, newAddress, virtualType);
+                        if (newAddress != 0)
+                        {
+                            return newAddress;
+                        }
+                    }
+                }
+            }
+
+            return 0;
         }
 
         /// <summary>
@@ -774,6 +1033,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             DwarfSymbol type = GetType(typeId);
 
+            if (CodeType.TypeNameMatches(type.Name, className) || CodeType.TypeNameMatches(type.FullName, className))
+            {
+                return Tuple.Create(typeId, 0);
+            }
+
             if (type.Children != null)
             {
                 foreach (DwarfSymbol child in type.Children)
@@ -784,9 +1048,18 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                         if (baseClass.Name == className || baseClass.FullName == className)
                         {
-                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                            DwarfVirtuality virtuality = (DwarfVirtuality)child.GetConstantAttribute(DwarfAttribute.Virtuality, (ulong)DwarfVirtuality.None);
 
-                            return Tuple.Create(GetTypeId(baseClass), offset);
+                            if (virtuality != DwarfVirtuality.None)
+                            {
+                                return Tuple.Create(GetTypeId(baseClass), int.MinValue);
+                            }
+                            else
+                            {
+                                int offset = DecodeDataMemberLocation(child);
+
+                                return Tuple.Create(GetTypeId(baseClass), offset);
+                            }
                         }
                     }
                 }
@@ -814,7 +1087,8 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                         if (!string.IsNullOrEmpty(baseClass.Name))
                         {
-                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                            DwarfVirtuality virtuality = (DwarfVirtuality)child.GetConstantAttribute(DwarfAttribute.Virtuality, (ulong)DwarfVirtuality.None);
+                            int offset = virtuality == DwarfVirtuality.None ? DecodeDataMemberLocation(child) : int.MinValue;
 
                             result.Add(baseClass.FullName, Tuple.Create(GetTypeId(baseClass), offset));
                         }
@@ -903,7 +1177,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                         if (child.Tag == DwarfTag.Member && child.Name == fieldName)
                         {
                             uint fieldTypeId = GetTypeId(GetType(child));
-                            int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                            int offset = DecodeDataMemberLocation(child);
 
                             return Tuple.Create(fieldTypeId, typeOffset + offset);
                         }
@@ -914,7 +1188,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                             if (unionType.Tag == DwarfTag.UnionType)
                             {
-                                int offset = (int)child.GetConstantAttribute(DwarfAttribute.DataMemberLocation);
+                                int offset = DecodeDataMemberLocation(child);
 
                                 baseClasses.Enqueue(Tuple.Create(unionType, typeOffset + offset));
                             }
@@ -1522,16 +1796,76 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Decodes <see cref="DwarfAttribute.DataMemberLocation"/> attribute from the specified symbol.
+        /// </summary>
+        /// <param name="symbol">Symbol that should have <see cref="DwarfAttribute.DataMemberLocation"/> attribute.</param>
+        private int DecodeDataMemberLocation(DwarfSymbol symbol)
+        {
+            DwarfAttributeValue value;
+
+            if (!symbol.Attributes.TryGetValue(DwarfAttribute.DataMemberLocation, out value))
+            {
+                return 0;
+            }
+
+            Location location = DecodeLocationStatic(value, isDataMemberLocation: true);
+
+            if (location.Type == LocationType.AbsoluteAddress)
+            {
+                return (int)location.Address;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Decodes <see cref="DwarfAttribute.DataMemberLocation"/> attribute from the specified symbol.
+        /// </summary>
+        /// <param name="symbol">Symbol that should have <see cref="DwarfAttribute.DataMemberLocation"/> attribute.</param>
+        /// <param name="objectAddress">Address of the object from which decoding expression should start.</param>
+        private ulong DecodeDataMemberLocation(DwarfSymbol symbol, ulong objectAddress)
+        {
+            DwarfAttributeValue value;
+
+            if (!symbol.Attributes.TryGetValue(DwarfAttribute.DataMemberLocation, out value))
+            {
+                return 0;
+            }
+
+            Location location = DecodeLocationStatic(value, isDataMemberLocation: true, objectAddress: objectAddress);
+
+            if (location.Type == LocationType.AbsoluteAddress)
+            {
+                return location.Address;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
         /// Decodes location from the specified attribute value.
         /// </summary>
         /// <param name="value">The location attribute value.</param>
         /// <param name="frameContext">Optional frame context used for resolving register values.</param>
         /// <param name="frameBase">The frame base location.</param>
-        private Location DecodeLocationStatic(DwarfAttributeValue value, ThreadContext frameContext = null, Location? frameBase = null)
+        /// <param name="isDataMemberLocation">Flag if we are decoding location for <see cref="DwarfAttribute.DataMemberLocation"/></param>
+        /// <param name="objectAddress">Address of the object that contains this data member. It is used only when <paramref name="isDataMemberLocation"/> is set to <c>true</c>.</param>
+        private Location DecodeLocationStatic(DwarfAttributeValue value, ThreadContext frameContext = null, Location? frameBase = null, bool isDataMemberLocation = false, ulong objectAddress = 0)
         {
             if (value.Type == DwarfAttributeValueType.Constant)
             {
-                return Location.Absolute(value.Constant);
+                if (!isDataMemberLocation)
+                {
+                    return Location.Absolute(value.Constant);
+                }
+                else
+                {
+                    return Location.Absolute(value.Constant + objectAddress);
+                }
             }
 
             if (value.Type != DwarfAttributeValueType.ExpressionLocation && value.Type != DwarfAttributeValueType.Block)
@@ -1543,9 +1877,10 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 Stack<Location> stack = new Stack<Location>();
 
-                // TODO:
-                //if (at == DW_AT_data_member_location)
-                //    stack[stackDepth++] = mkAbs(0);
+                if (isDataMemberLocation)
+                {
+                    stack.Push(Location.Absolute(objectAddress));
+                }
 
                 while (!reader.IsEnd)
                 {
@@ -1652,6 +1987,14 @@ namespace CsDebugScript.DwarfSymbolProvider
                         case DwarfOperation.lit21:
                         case DwarfOperation.lit22:
                         case DwarfOperation.lit23:
+                        case DwarfOperation.lit24:
+                        case DwarfOperation.lit25:
+                        case DwarfOperation.lit26:
+                        case DwarfOperation.lit27:
+                        case DwarfOperation.lit28:
+                        case DwarfOperation.lit29:
+                        case DwarfOperation.lit30:
+                        case DwarfOperation.lit31:
                             stack.Push(Location.Absolute((ulong)(operation - DwarfOperation.lit0)));
                             break;
                         case DwarfOperation.breg0:
@@ -1717,16 +2060,39 @@ namespace CsDebugScript.DwarfSymbolProvider
                             break;
                         case DwarfOperation.deref:
                             {
-                                if (frameContext == null)
+                                Location location = stack.Pop();
+
+                                if (frameContext == null && location.Type != LocationType.AbsoluteAddress)
                                 {
                                     return Location.Invalid;
                                 }
 
-                                ulong address = ResolveLocation(stack.Pop(), frameContext);
+                                ulong address = ResolveLocation(location, frameContext);
                                 MemoryBuffer buffer = Debugger.ReadMemory(Module.Process, address, Module.PointerSize);
 
                                 address = UserType.ReadPointer(buffer, 0, (int)Module.PointerSize);
                                 stack.Push(Location.Absolute(address));
+                            }
+                            break;
+                        case DwarfOperation.Duplicate:
+                            stack.Push(stack.Peek());
+                            break;
+                        case DwarfOperation.Minus:
+                            {
+                                Location b = stack.Pop();
+                                Location a = stack.Pop();
+                                Location c = Location.Absolute(a.Address - b.Address);
+
+                                stack.Push(c);
+                            }
+                            break;
+                        case DwarfOperation.Plus:
+                            {
+                                Location b = stack.Pop();
+                                Location a = stack.Pop();
+                                Location c = Location.Absolute(a.Address + b.Address);
+
+                                stack.Push(c);
                             }
                             break;
                         default:

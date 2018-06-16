@@ -170,7 +170,9 @@ namespace CsDebugScript.Engine.SymbolProviders
 
             foreach (var b in bases)
             {
-                GetTypeAllFields(b, typeFields, offset + b.offset);
+                int newOffset = b.virtualBaseClass || offset == int.MinValue ? int.MinValue : offset + b.offset;
+
+                GetTypeAllFields(b, typeFields, newOffset);
             }
 
             // Get type fields
@@ -182,7 +184,10 @@ namespace CsDebugScript.Engine.SymbolProviders
                     continue;
                 }
 
-                typeFields.Add(Tuple.Create(field.name, field.typeId, offset + field.offset));
+                int newOffset = offset == int.MinValue ? int.MinValue : offset + field.offset;
+                uint typeId = offset == int.MinValue ? type.typeId : field.typeId;
+
+                typeFields.Add(Tuple.Create(field.name, typeId, newOffset));
             }
         }
 
@@ -720,6 +725,66 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
+        /// Gets the virtual base class start address.
+        /// </summary>
+        /// <param name="objectTypeId">Object type identifier.</param>
+        /// <param name="objectAddress">Object address.</param>
+        /// <param name="virtualTypeId">Virtual class type identifier.</param>
+        /// <returns>Address of the object which code type is virtual class.</returns>
+        public ulong GetVirtualClassBaseAddress(uint objectTypeId, ulong objectAddress, uint virtualTypeId)
+        {
+            IDiaSymbol objectType = GetTypeFromId(objectTypeId);
+            IDiaSymbol virtualType = GetTypeFromId(virtualTypeId);
+
+            return GetVirtualClassBaseAddress(objectType, objectAddress, virtualType.name);
+        }
+
+        /// <summary>
+        /// Gets the virtual base class start address.
+        /// </summary>
+        /// <param name="objectType">Object type as <see cref="IDiaSymbol"/>.</param>
+        /// <param name="objectAddress">Object address.</param>
+        /// <param name="virtualTypeName">Virtual class type name.</param>
+        /// <returns>Address of the object which code type is virtual class.</returns>
+        private ulong GetVirtualClassBaseAddress(IDiaSymbol objectType, ulong objectAddress, string virtualTypeName)
+        {
+            var baseClasses = objectType.GetBaseClasses();
+
+            foreach (IDiaSymbol b in baseClasses)
+            {
+                int offset;
+
+                if (b.virtualBaseClass)
+                {
+                    ulong vttAddress = objectAddress + (ulong)b.virtualBasePointerOffset;
+                    MemoryBuffer memoryBuffer = Debugger.ReadMemory(Module.Process, vttAddress, Module.PointerSize);
+                    ulong vbAddress = UserType.ReadPointer(memoryBuffer, 0, (int)Module.Process.GetPointerSize());
+                    MemoryBuffer buffer = Debugger.ReadMemory(Module.Process, vbAddress + b.virtualBaseDispIndex * 4, 4);
+                    offset = UserType.ReadInt(buffer, 0);
+                }
+                else
+                {
+                    offset = b.offset;
+                }
+
+                ulong newAddress = objectAddress + (ulong)offset;
+
+                if (CodeType.TypeNameMatches(b.name, virtualTypeName))
+                {
+                    return newAddress;
+                }
+
+                newAddress = GetVirtualClassBaseAddress(b, newAddress, virtualTypeName);
+                if (newAddress != 0)
+                {
+                    return newAddress;
+                }
+            }
+
+            return 0;
+        }
+
+        /// <summary>
         /// Gets the type's base class type and offset.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
@@ -750,6 +815,11 @@ namespace CsDebugScript.Engine.SymbolProviders
                 foreach (var b in bases.Reverse())
                 {
                     int offset = tuple.Item2 + b.offset;
+
+                    if (b.virtualBaseClass || tuple.Item2 == int.MinValue)
+                    {
+                        offset = int.MinValue;
+                    }
 
                     if (CodeType.TypeNameMatches(b.name, className))
                     {
@@ -898,7 +968,7 @@ namespace CsDebugScript.Engine.SymbolProviders
 
             foreach (var b in bases.Reverse())
             {
-                int offset = b.offset;
+                int offset = b.virtualBaseClass ? int.MinValue : b.offset;
 
                 result.Add(b.name, Tuple.Create(GetTypeId(b.name), offset));
             }
@@ -925,24 +995,30 @@ namespace CsDebugScript.Engine.SymbolProviders
             int displacement;
             string fullyUndecoratedName, partiallyUndecoratedName;
 
-            session.findSymbolByRVAEx(vtableAddress, SymTagEnum.Null, out symbol, out displacement);
+            session.findSymbolByRVAEx(vtableAddress, SymTagEnum.PublicSymbol, out symbol, out displacement);
             fullyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu) ?? symbol.name;
             partiallyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NoEscu) ?? symbol.name;
 
-            // Fully undecorated name should be in form: "DerivedClass::`vftable'"
+            // Fully undecorated name should be in form: "DerivedClass::`vftable'" or  "DerivedClass::`vbtable'"
             const string vftableString = "::`vftable'";
+            const string vbtableString = "::`vbtable'";
+            string vtableString = vftableString;
 
             if (string.IsNullOrEmpty(fullyUndecoratedName) || !fullyUndecoratedName.EndsWith(vftableString))
             {
-                // Pointer is not vtable.
-                return null;
+                vtableString = vbtableString;
+                if (string.IsNullOrEmpty(fullyUndecoratedName) || !fullyUndecoratedName.EndsWith(vbtableString))
+                {
+                    // Pointer is not vtable.
+                    return null;
+                }
             }
 
-            string codeTypeName = fullyUndecoratedName.Substring(0, fullyUndecoratedName.Length - vftableString.Length);
+            string codeTypeName = fullyUndecoratedName.Substring(0, fullyUndecoratedName.Length - vtableString.Length);
             CodeType codeType = CodeType.Create(codeTypeName, Module);
 
             // Partially undecorated name should be in form: "const DerivedClass::`vftable'{for `BaseClass'}"
-            string partiallyUndecoratedNameStart = string.Format("const {0}{1}{{for `", codeTypeName, vftableString);
+            string partiallyUndecoratedNameStart = string.Format("const {0}{1}{{for `", codeTypeName, vtableString);
 
             if (!partiallyUndecoratedName.StartsWith(partiallyUndecoratedNameStart))
             {

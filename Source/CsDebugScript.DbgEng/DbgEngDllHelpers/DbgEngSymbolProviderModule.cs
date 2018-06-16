@@ -285,6 +285,18 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         }
 
         /// <summary>
+        /// Gets the virtual base class start address.
+        /// </summary>
+        /// <param name="objectTypeId">Object type identifier.</param>
+        /// <param name="objectAddress">Object address.</param>
+        /// <param name="virtualTypeId">Virtual class type identifier.</param>
+        /// <returns>Address of the object which code type is virtual class.</returns>
+        public ulong GetVirtualClassBaseAddress(uint objectTypeId, ulong objectAddress, uint virtualTypeId)
+        {
+            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+        }
+
+        /// <summary>
         /// Gets the type's built-in type.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
