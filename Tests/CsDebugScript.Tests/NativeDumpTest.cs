@@ -377,6 +377,107 @@ AreEqual(42, a.As<MultiClassInheritanceB>().b);
             }
         }
 
+        [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
+        public void VirtualMultiClassInheritance()
+        {
+            Variable d = DefaultModule.GetVariable("virtualMultiClassInheritanceTest");
+            Assert.Equal(42, (int)d.GetField("d"));
+            Assert.Equal(42, (double)d.GetField("b"));
+            Assert.Equal(42, (float)d.GetField("c"));
+            Assert.Equal(42, (sbyte)d.GetField("a"));
+            Variable b = d.GetBaseClass("VirtualMultiClassInheritanceB");
+            Assert.Equal(42, (double)b.GetField("b"));
+            Variable ba = b.GetBaseClass("VirtualMultiClassInheritanceA");
+            Assert.Equal(42, (sbyte)ba.GetField("a"));
+            Variable c = d.GetBaseClass("VirtualMultiClassInheritanceC");
+            Assert.Equal(42, (float)c.GetField("c"));
+            Variable ca = c.GetBaseClass("VirtualMultiClassInheritanceA");
+            Assert.Equal(42, (sbyte)ca.GetField("a"));
+            Assert.Equal(ca.GetPointerAddress(), ba.GetPointerAddress());
+            Assert.Equal(d.GetPointerAddress(), b.DowncastInterface().GetPointerAddress());
+            Assert.Equal(ba.GetPointerAddress(), ba.DowncastInterface().GetPointerAddress());
+            Assert.Equal(d.GetPointerAddress(), c.DowncastInterface().GetPointerAddress());
+            Assert.Equal(ca.GetPointerAddress(), ca.DowncastInterface().GetPointerAddress());
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+Variable global = Process.Current.GetGlobal(""{DefaultModuleName}!virtualMultiClassInheritanceTest"");
+var d = new VirtualMultiClassInheritanceD(global);
+var b = d.BaseClass_VirtualMultiClassInheritanceB;
+var ba = b.BaseClass;
+var c = d.BaseClass_VirtualMultiClassInheritanceC;
+var ca = c.BaseClass;
+AreEqual(42, d.d);
+AreEqual(42, b.b);
+AreEqual(42, ba.a);
+AreEqual(42, c.c);
+AreEqual(42, ca.a);
+IsTrue(b.GetDowncast() is VirtualMultiClassInheritanceD);
+IsTrue(ba.GetDowncast() is VirtualMultiClassInheritanceD);
+IsTrue(c.GetDowncast() is VirtualMultiClassInheritanceD);
+IsTrue(ca.GetDowncast() is VirtualMultiClassInheritanceD);
+AreEqual(42, b.As<VirtualMultiClassInheritanceC>().c);
+AreEqual(42, ba.As<VirtualMultiClassInheritanceC>().c);
+AreEqual(42, ca.As<VirtualMultiClassInheritanceB>().b);
+                    ");
+            }
+        }
+
+        [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
+        public void VirtualMultiClassInheritance2()
+        {
+            Variable e = DefaultModule.GetVariable("virtualMultiClassInheritanceTest2");
+            Assert.Equal(42, (int)e.GetField("e"));
+            Assert.Equal(42, (double)e.GetField("b"));
+            Assert.Equal(42, (float)e.GetField("c"));
+            Assert.Equal(42, (sbyte)e.GetField("a"));
+            Variable a = e.GetBaseClass("VirtualMultiClassInheritanceA");
+            Assert.Equal(42, (sbyte)a.GetField("a"));
+            Variable b = e.GetBaseClass("VirtualMultiClassInheritanceB");
+            Assert.Equal(42, (double)b.GetField("b"));
+            Variable ba = b.GetBaseClass("VirtualMultiClassInheritanceA");
+            Assert.Equal(42, (sbyte)ba.GetField("a"));
+            Variable c = e.GetBaseClass("VirtualMultiClassInheritanceC");
+            Assert.Equal(42, (float)c.GetField("c"));
+            Variable ca = c.GetBaseClass("VirtualMultiClassInheritanceA");
+            Assert.Equal(42, (sbyte)ca.GetField("a"));
+            Assert.Equal(a.GetPointerAddress(), ba.GetPointerAddress());
+            Assert.Equal(ca.GetPointerAddress(), ba.GetPointerAddress());
+            Assert.Equal(e.GetPointerAddress(), b.DowncastInterface().GetPointerAddress());
+            Assert.Equal(ba.GetPointerAddress(), ba.DowncastInterface().GetPointerAddress());
+            Assert.Equal(e.GetPointerAddress(), c.DowncastInterface().GetPointerAddress());
+            Assert.Equal(ca.GetPointerAddress(), ca.DowncastInterface().GetPointerAddress());
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+Variable global = Process.Current.GetGlobal(""{DefaultModuleName}!virtualMultiClassInheritanceTest2"");
+var e = new VirtualMultiClassInheritanceE(global);
+var a = e.BaseClass_VirtualMultiClassInheritanceA;
+var b = e.BaseClass_VirtualMultiClassInheritanceB;
+var ba = b.BaseClass;
+var c = e.BaseClass_VirtualMultiClassInheritanceC;
+var ca = c.BaseClass;
+AreEqual(42, e.e);
+AreEqual(42, a.a);
+AreEqual(42, b.b);
+AreEqual(42, ba.a);
+AreEqual(42, c.c);
+AreEqual(42, ca.a);
+IsTrue(a.GetDowncast() is VirtualMultiClassInheritanceE);
+IsTrue(b.GetDowncast() is VirtualMultiClassInheritanceE);
+IsTrue(ba.GetDowncast() is VirtualMultiClassInheritanceE);
+IsTrue(c.GetDowncast() is VirtualMultiClassInheritanceE);
+IsTrue(ca.GetDowncast() is VirtualMultiClassInheritanceE);
+AreEqual(42, b.As<VirtualMultiClassInheritanceC>().c);
+AreEqual(42, a.As<VirtualMultiClassInheritanceB>().b);
+AreEqual(42, ba.As<VirtualMultiClassInheritanceC>().c);
+AreEqual(42, ca.As<VirtualMultiClassInheritanceB>().b);
+                    ");
+            }
+        }
+
         [Fact]
         public void TestBasicTemplateType()
         {

@@ -189,6 +189,11 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         public int Offset { get; protected set; }
 
         /// <summary>
+        /// Gets flag whether this base class is virtually inherited.
+        /// </summary>
+        public bool IsVirtualInheritance { get; protected set; }
+
+        /// <summary>
         /// Gets the tag.
         /// </summary>
         public CodeTypeTag Tag { get; protected set; }

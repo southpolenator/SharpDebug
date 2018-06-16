@@ -1053,7 +1053,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     UserType userType;
                     Symbol baseClassSymbol = baseClasses.First(t => !t.IsEmpty);
 
-                    if (factory.GetUserType(baseClassSymbol, out userType) && !(userType is TemplateArgumentUserType))
+                    if (!baseClassSymbol.IsVirtualInheritance && factory.GetUserType(baseClassSymbol, out userType) && !(userType is TemplateArgumentUserType))
                     {
                         baseClassOffset = baseClassSymbol.Offset;
                         return new SingleClassInheritanceWithInterfacesTypeTree(userType, factory);
@@ -1067,8 +1067,16 @@ namespace CsDebugScript.CodeGen.UserTypes
             // Single class inheritance
             if (baseClasses.Length == 1)
             {
-                // Check if base class type should be transformed
+                // Check if base class type is virtual inheritance
                 Symbol baseClassType = baseClasses[0];
+
+                if (baseClassType.IsVirtualInheritance)
+                {
+                    baseClassOffset = 0;
+                    return new MultiClassInheritanceTypeTree();
+                }
+
+                // Check if base class type should be transformed
                 UserTypeTransformation transformation = factory.FindTransformation(baseClassType, this);
 
                 if (transformation != null)
