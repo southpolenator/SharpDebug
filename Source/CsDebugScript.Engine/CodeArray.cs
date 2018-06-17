@@ -288,20 +288,13 @@ namespace CsDebugScript
             var elementType = variable.GetCodeType().ElementType;
             var type = typeof(T);
 
-            if (!elementType.IsPointer)
+            if (!elementType.IsPointer) // TODO: Will this work for single pointers?
             {
                 if (type.GetTypeInfo().IsSubclassOf(typeof(UserType)))
                 {
-                    var process = variable.GetCodeType().Module.Process;
-
-                    // Verify that CodeType for this user type is exactly elementType
-                    var descriptions = process.TypeToUserTypeDescription[type];
-
-                    foreach (var description in descriptions)
+                    foreach (Type ut in elementType.UserTypes)
                     {
-                        CodeType newType = description.UserType;
-
-                        if (newType == elementType)
+                        if (ut == type)
                         {
                             return UserTypeDelegates<T>.Instance;
                         }

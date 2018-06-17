@@ -775,35 +775,6 @@ namespace CsDebugScript
                 return null;
             }
 
-            Variable activatorParameter = this;
-
-            // Check if we should do CastAs
-            if (conversionType.GetTypeInfo().IsSubclassOf(typeof(Variable)))
-            {
-                var description = codeType.Module.Process.TypeToUserTypeDescription[conversionType].FromModuleOrFirst(codeType.Module);
-                if (description != null)
-                {
-                    CodeType newType = description.UserType;
-
-                    // Check if it was non-unique generics type
-                    if (newType != null)
-                    {
-                        // If type is already in the metadata cache, use it
-                        if (newType.Module.Process.UserTypes.Contains(description))
-                        {
-                            return CastAs(newType);
-                        }
-
-                        if (codeType.IsPointer && !newType.IsPointer)
-                        {
-                            newType = newType.PointerToType;
-                        }
-
-                        activatorParameter = CastAs(newType);
-                    }
-                }
-            }
-
             // Check if type has constructor with one argument and that argument is inherited from Variable
             IUserTypeDelegates delegates = UserTypeDelegates.Delegates[conversionType];
 
@@ -812,7 +783,7 @@ namespace CsDebugScript
                 throw new InvalidCastException("Cannot cast Variable to " + conversionType);
             }
 
-            return delegates.SymbolicConstructor(activatorParameter);
+            return delegates.SymbolicConstructor(this);
         }
 
         /// <summary>
@@ -1140,23 +1111,17 @@ namespace CsDebugScript
                 return originalVariable;
             }
 
-            // Get user type descriptions to be used by this process
-            var userTypes = originalVariable.codeType.Module.Process.UserTypes;
+            CodeType codeType = originalVariable.GetCodeType();
 
-            // Look at the type and see if it should be converted to user type
-            var typesBasedOnModule = userTypes.Where(t => t.Module == originalVariable.codeType.Module);
-            var typesBasedOnName = typesBasedOnModule.Where(t => t.UserType == (originalVariable.codeType.IsPointer ? originalVariable.codeType.ElementType : originalVariable.codeType));
-
-            var types = typesBasedOnName.ToArray();
-
-            if (types.Length > 1)
+            foreach (Type type in codeType.UserTypes)
             {
-                throw new Exception(string.Format("Multiple types ({0}) are targeting same type {1}", string.Join(", ", types.Select(t => t.Type.FullName)), originalVariable.codeType.Name));
-            }
+                // Create new instance of user defined type
+                IUserTypeDelegates delegates = UserTypeDelegates.Delegates[type];
 
-            if (types.Length == 0)
-            {
-                return originalVariable;
+                if (delegates.SymbolicConstructor != null)
+                {
+                    return (Variable)delegates.SymbolicConstructor(originalVariable);
+                }
             }
 
             // Check if it is null
@@ -1165,16 +1130,7 @@ namespace CsDebugScript
                 return null;
             }
 
-            // Create new instance of user defined type
-            var conversionType = types[0].Type;
-            IUserTypeDelegates delegates = UserTypeDelegates.Delegates[conversionType];
-
-            if (delegates.SymbolicConstructor == null)
-            {
-                throw new InvalidCastException("Cannot cast Variable to " + conversionType);
-            }
-
-            return (Variable)delegates.SymbolicConstructor(originalVariable);
+            return originalVariable;
         }
 
         /// <summary>

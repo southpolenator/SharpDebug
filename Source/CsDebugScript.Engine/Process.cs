@@ -49,11 +49,6 @@ namespace CsDebugScript
         private SimpleCache<Module[]> modules;
 
         /// <summary>
-        /// The user types
-        /// </summary>
-        private SimpleCache<List<UserTypeDescription>> userTypes;
-
-        /// <summary>
         /// The architecture type
         /// </summary>
         private SimpleCache<ArchitectureType> architectureType;
@@ -113,7 +108,6 @@ namespace CsDebugScript
             architectureType = SimpleCache.Create(() => Context.Debugger.GetProcessArchitectureType(this));
             threads = SimpleCache.Create(() => Context.Debugger.GetProcessThreads(this));
             modules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
-            userTypes = SimpleCache.Create(GetUserTypes);
             clrRuntimes = SimpleCache.Create(() =>
             {
                 try
@@ -183,7 +177,6 @@ namespace CsDebugScript
                 }
             });
             memoryRegionFinder = SimpleCache.Create(() => new MemoryRegionFinder(MemoryRegions));
-            TypeToUserTypeDescription = new DictionaryCache<Type, UserTypeDescription[]>(GetUserTypeDescription);
             ansiStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadAnsiString);
             unicodeStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadUnicodeString);
             wideUnicodeStringCache = new DictionaryCache<Tuple<ulong, int>, string>(DoReadWideUnicodeString);
@@ -240,22 +233,6 @@ namespace CsDebugScript
         /// Gets the user type casted variables.
         /// </summary>
         private DictionaryCache<Variable, Variable> UserTypeCastedVariables { get; set; }
-
-        /// <summary>
-        /// Gets the type to user type description cache.
-        /// </summary>
-        internal DictionaryCache<Type, UserTypeDescription[]> TypeToUserTypeDescription { get; private set; }
-
-        /// <summary>
-        /// Gets the user types.
-        /// </summary>
-        internal List<UserTypeDescription> UserTypes
-        {
-            get
-            {
-                return userTypes.Value;
-            }
-        }
 
         /// <summary>
         /// Gets the dump file memory reader.
@@ -544,14 +521,6 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Clears the process metadata cache.
-        /// </summary>
-        internal void ClearMetadataCache()
-        {
-            userTypes.Cached = false;
-        }
-
-        /// <summary>
         /// Casts the specified variable to a user type.
         /// </summary>
         /// <param name="variable">The variable.</param>
@@ -611,50 +580,6 @@ namespace CsDebugScript
         private Module GetModuleByAddress(ulong moduleAddress)
         {
             return new Module(this, moduleAddress);
-        }
-
-        /// <summary>
-        /// Gets the user types.
-        /// </summary>
-        private List<UserTypeDescription> GetUserTypes()
-        {
-            if (Context.UserTypeMetadata != null && Context.UserTypeMetadata.Length > 0)
-            {
-                List<UserTypeDescription> userTypes = new List<UserTypeDescription>(Context.UserTypeMetadata.Length);
-
-                for (int i = 0; i < userTypes.Count; i++)
-                {
-                    userTypes.Add(Context.UserTypeMetadata[i].ConvertToDescription());
-                }
-
-                return userTypes;
-            }
-
-            return new List<UserTypeDescription>();
-        }
-
-        /// <summary>
-        /// Gets the user type description from the specified type.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        private UserTypeDescription[] GetUserTypeDescription(Type type)
-        {
-            UserTypeMetadata[] metadata = UserTypeMetadata.ReadFromType(type);
-            List<UserTypeDescription> descriptions = new List<UserTypeDescription>();
-
-            for (int i = 0; i < metadata.Length; i++)
-            {
-                try
-                {
-                    descriptions.Add(metadata[i].ConvertToDescription(this));
-                }
-                catch
-                {
-                    // ignore if module is not loaded
-                }
-            }
-
-            return descriptions.ToArray();
         }
 
         /// <summary>

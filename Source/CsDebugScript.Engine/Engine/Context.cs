@@ -104,44 +104,6 @@ namespace CsDebugScript.Engine
         }
 
         /// <summary>
-        /// Clears the metadata cache.
-        /// </summary>
-        internal static void ClearMetadataCache()
-        {
-            // Clear metadata from processes
-            foreach (var process in GlobalCache.Processes.Values)
-            {
-                process.ClearMetadataCache();
-            }
-
-            // Clear user types metadata
-            UserTypeMetadata = new UserTypeMetadata[0];
-            foreach (var cacheEntry in GlobalCache.VariablesUserTypeCastedFields)
-            {
-                cacheEntry.Cached = false;
-            }
-
-            foreach (var cacheEntry in GlobalCache.VariablesUserTypeCastedFieldsByName)
-            {
-                cacheEntry.Clear();
-            }
-
-            foreach (var cacheEntry in GlobalCache.UserTypeCastedVariableCollections)
-            {
-                cacheEntry.Cached = false;
-            }
-
-            foreach (var cacheEntry in GlobalCache.UserTypeCastedVariables)
-            {
-                cacheEntry.Clear();
-            }
-
-            GlobalCache.VariablesUserTypeCastedFields.Clear();
-            GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
-            GlobalCache.UserTypeCastedVariableCollections.Clear();
-        }
-
-        /// <summary>
         /// Gets the assembly directory.
         /// </summary>
         internal static string GetAssemblyDirectory()

@@ -24,8 +24,6 @@ namespace CsDebugScript
                 return null;
             }
 
-            variable = variable.DowncastInterface();
-
             CodeType runtimeType = variable.GetRuntimeType();
 
             if (runtimeType.IsPointer)
@@ -35,6 +33,9 @@ namespace CsDebugScript
 
             if (runtimeType.Inherits<T>())
             {
+                variable = variable.DowncastInterface();
+
+                // Figure out what is code type we need to cast to.
                 CodeType baseClassCodeType = variable.CastAs<T>().GetCodeType();
 
                 if (baseClassCodeType.IsPointer)
@@ -42,7 +43,7 @@ namespace CsDebugScript
                     baseClassCodeType = baseClassCodeType.ElementType;
                 }
 
-                // Cast to base class.
+                // Cast to base class as it is only way to get offset set correctly.
                 return variable.GetBaseClass<T>(baseClassCodeType.Name);
             }
             else

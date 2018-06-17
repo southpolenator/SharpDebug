@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using CsDebugScript.Engine;
 using CsDebugScript.Tests.Utils;
 using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
+using CsDebugScript.CommonUserTypes;
 
 namespace CsDebugScript.Tests
 {
@@ -552,6 +553,43 @@ for (int i = 0; i < intTemplate.values.Length; i++)
             Assert.NotNull(nativeCodeType);
             Assert.True(nativeCodeType.Tag == CodeTypeTag.BuiltinType || nativeCodeType.Tag == CodeTypeTag.Enum);
             VerifyBuiltinType(nativeCodeType, expected);
+        }
+
+        [UserType(TypeName = "DoubleTest")]
+        public class DoubleTest : DynamicSelfUserType
+        {
+            public DoubleTest(Variable variable)
+                : base(variable)
+            {
+            }
+
+            public double d => (double)self.d;
+
+            public float f => (float)self.f;
+
+            public int i => (int)self.i;
+        }
+
+        [Fact]
+        public void UserTypeAutoCast()
+        {
+            Context.ClearCache();
+            Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
+            {
+                typeof(DoubleTest).Assembly,
+            });
+
+            Variable doubleTestVariable = DefaultModule.GetVariable("doubleTest");
+
+            Assert.IsType<DoubleTest>(doubleTestVariable);
+
+            DoubleTest doubleTest = (DoubleTest)doubleTestVariable;
+
+            Assert.Equal(3.5, doubleTest.d);
+            Assert.Equal(2.5, doubleTest.f);
+            Assert.Equal(5, doubleTest.i);
+
+            Context.ClearCache();
         }
 
         private void VerifyBuiltinType(NativeCodeType codeType, params BuiltinType[] expected)

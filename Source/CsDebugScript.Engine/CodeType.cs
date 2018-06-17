@@ -84,6 +84,11 @@ namespace CsDebugScript
         protected internal SimpleCache<string[]> templateArgumentsStrings;
 
         /// <summary>
+        /// Array of user types associated with this code type.
+        /// </summary>
+        private SimpleCache<Type[]> userTypes;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CodeType" /> class.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -104,6 +109,7 @@ namespace CsDebugScript
             baseClassesAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>(GetBaseClassAndOffset);
             templateArgumentsStrings = SimpleCache.Create(GetTemplateArgumentsStrings);
             templateArguments = SimpleCache.Create(GetTemplateArguments);
+            userTypes = SimpleCache.Create(GetUserTypes);
         }
 
         /// <summary>
@@ -379,6 +385,17 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the array of user types associated with this code type.
+        /// </summary>
+        internal Type[] UserTypes
+        {
+            get
+            {
+                return userTypes.Value;
+            }
+        }
+
+        /// <summary>
         /// Gets the type of the class field.
         /// </summary>
         /// <param name="classFieldName">Name of the class field.</param>
@@ -606,22 +623,50 @@ namespace CsDebugScript
         {
             if (type.GetTypeInfo().IsSubclassOf(typeof(Variable)))
             {
-                UserTypeDescription[] descriptions = Module.Process.TypeToUserTypeDescription[type];
-
-                foreach (var description in descriptions)
+                // Check types associated with this code type and all of its inherited code types.
+                if (InheritsPrivate(type))
                 {
-                    CodeType newType = description.UserType;
-
-                    // Check if it was non-unique generics type
-                    if (newType != null && Inherits(newType))
-                        return true;
+                    return true;
                 }
 
+                // Check metadata that wasn't extracted from the debugger context.
                 UserTypeMetadata[] metadatas = UserTypeMetadata.ReadFromType(type);
 
                 foreach (var metadata in metadatas)
+                {
                     if (Inherits(metadata.TypeName))
+                    {
                         return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if this instance inherits the specified type by scaning array of user types and recursive for all inherited classes.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns><c>true</c> if this instance inherits the specified type; otherwise <c>false</c></returns>
+        private bool InheritsPrivate(Type type)
+        {
+            // Check user types
+            foreach (Type ut in UserTypes)
+            {
+                if (ut == type)
+                {
+                    return true;
+                }
+            }
+
+            // Check inherited classes
+            foreach (var tuple in InheritedClasses.Values)
+            {
+                if (tuple.Item1.InheritsPrivate(type))
+                {
+                    return true;
+                }
             }
 
             return false;
@@ -636,15 +681,12 @@ namespace CsDebugScript
         {
             if (type.IsSubclassOf(typeof(Variable)))
             {
-                UserTypeDescription[] descriptions = Module.Process.TypeToUserTypeDescription[type];
-
-                foreach (var description in descriptions)
+                foreach (Type ut in UserTypes)
                 {
-                    CodeType newType = description.UserType;
-
-                    // Check if it was non-unique generics type
-                    if (newType != null && this == newType)
+                    if (ut == type)
+                    {
                         return true;
+                    }
                 }
 
                 UserTypeMetadata[] metadatas = UserTypeMetadata.ReadFromType(type);
@@ -789,6 +831,42 @@ namespace CsDebugScript
         /// </summary>
         /// <returns>The template arguments strings.</returns>
         protected abstract string[] GetTemplateArgumentsStrings();
+
+        /// <summary>
+        /// Finds all user types that can be created/converted from this code type.
+        /// </summary>
+        private Type[] GetUserTypes()
+        {
+            // Check if it pointer, but element is not pointer
+            if (IsPointer && !ElementType.IsPointer)
+            {
+                return ElementType.UserTypes;
+            }
+
+            // Search Context.UserTypeMetadata for this CodeType
+            // TODO: Speed this up with search caches
+            List<Type> types = new List<Type>();
+
+            foreach (var metadata in Context.UserTypeMetadata)
+            {
+                // Check module name
+                if (metadata.ModuleName != null && metadata.ModuleName != Module.Name)
+                {
+                    continue;
+                }
+
+                // Check type name
+                if (!CodeType.TypeNameMatches(Name, metadata.TypeName))
+                {
+                    continue;
+                }
+
+                // Add type to the list
+                types.Add(metadata.Type);
+            }
+
+            return types.ToArray();
+        }
     }
 
     /// <summary>

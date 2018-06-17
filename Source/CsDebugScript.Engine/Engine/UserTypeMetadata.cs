@@ -85,23 +85,6 @@ namespace CsDebugScript.Engine
         }
 
         /// <summary>
-        /// Converts metadata to description using the current process.
-        /// </summary>
-        public UserTypeDescription ConvertToDescription()
-        {
-            return new UserTypeDescription(ModuleName, TypeName, Type);
-        }
-
-        /// <summary>
-        /// Converts metadata to description.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        public UserTypeDescription ConvertToDescription(Process process)
-        {
-            return new UserTypeDescription(process, ModuleName, TypeName, Type);
-        }
-
-        /// <summary>
         /// Determines whether type is derived from the specified type.
         /// </summary>
         /// <param name="type">The type.</param>
