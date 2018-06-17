@@ -79,6 +79,10 @@ namespace CsDebugScript.VS
         public VSDebuggerProxy()
         {
             processes = new List<DkmProcess>();
+            Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
+            {
+                typeof(CsDebugScript.CommonUserTypes.NativeTypes.cv.Mat).Assembly, // CsDebugScript.CommonUserTypes.dll
+            });
         }
 
         /// <summary>
