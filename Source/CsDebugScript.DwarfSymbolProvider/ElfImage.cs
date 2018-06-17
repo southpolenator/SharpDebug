@@ -20,9 +20,20 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Initializes a new instance of the <see cref="ElfImage"/> class.
         /// </summary>
         /// <param name="path">The image path.</param>
-        public ElfImage(string path)
+        /// <param name="loadOffset">Offset from where image was loaded.</param>
+        public ElfImage(string path, ulong loadOffset = 0)
         {
             elf = ELFReader.Load<ulong>(path);
+            LoadOffset = loadOffset;
+            foreach (var segment in elf.Segments)
+            {
+                if (segment.Type == ELFSharp.ELF.Segments.SegmentType.ProgramHeader)
+                {
+                    CodeSegmentOffset = segment.Address - (ulong)segment.Offset;
+                    break;
+                }
+            }
+
             List<PublicSymbol> publicSymbols = new List<PublicSymbol>();
             SymbolTable<ulong> symbols = elf.Sections.FirstOrDefault(s => s.Type == SectionType.SymbolTable) as SymbolTable<ulong>;
 
@@ -33,11 +44,9 @@ namespace CsDebugScript.DwarfSymbolProvider
 
             if (symbols != null)
             {
-                ulong codeSegmentOffset = CodeSegmentOffset;
-
                 foreach (SymbolEntry<ulong> symbol in symbols.Entries)
                 {
-                    publicSymbols.Add(new PublicSymbol(symbol.Name, symbol.Value - codeSegmentOffset));
+                    publicSymbols.Add(new PublicSymbol(symbol.Name, symbol.Value - CodeSegmentOffset));
                 }
             }
             PublicSymbols = publicSymbols;
@@ -51,21 +60,12 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Gets the code segment offset.
         /// </summary>
-        public ulong CodeSegmentOffset
-        {
-            get
-            {
-                foreach (var segment in elf.Segments)
-                {
-                    if (segment.Type == ELFSharp.ELF.Segments.SegmentType.ProgramHeader)
-                    {
-                        return segment.Address - (ulong)segment.Offset;
-                    }
-                }
+        public ulong CodeSegmentOffset { get; private set; }
 
-                return 0;
-            }
-        }
+        /// <summary>
+        /// Gets the image load offset.
+        /// </summary>
+        public ulong LoadOffset { get; private set; }
 
         /// <summary>
         /// Gets the debug data.
@@ -181,6 +181,22 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Gets address offset within module when it is loaded.
+        /// </summary>
+        /// <param name="address">Virtual address that points where something should be loaded.</param>
+        public ulong NormalizeAddress(ulong address)
+        {
+            var section = elf.Sections.FirstOrDefault(s => s.LoadAddress <= address && s.LoadAddress + s.Size > address);
+
+            if (section != null && section.Flags.HasFlag(SectionFlags.Allocatable))
+            {
+                return address - CodeSegmentOffset + LoadOffset;
+            }
+
+            return address - CodeSegmentOffset;
+        }
+
+        /// <summary>
         /// Loads the section bytes specified by the name.
         /// </summary>
         /// <param name="sectionName">Name of the section.</param>
@@ -209,7 +225,9 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 if (section.Name == sectionName)
                 {
-                    return section.Offset + CodeSegmentOffset;
+                    ulong loadOffset = section.Flags.HasFlag(SectionFlags.Allocatable) ? LoadOffset : 0;
+
+                    return section.Offset + CodeSegmentOffset + loadOffset;
                 }
             }
 

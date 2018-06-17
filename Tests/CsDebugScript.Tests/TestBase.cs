@@ -60,21 +60,6 @@ namespace CsDebugScript.Tests
                 Assert.Contains(array1[i], array2);
             }
         }
-
-        public static void ExecuteMTA(Action action)
-        {
-            if (System.Threading.Thread.CurrentThread.GetApartmentState() != System.Threading.ApartmentState.MTA)
-            {
-                System.Threading.Thread thread = new System.Threading.Thread(() => action());
-                thread.SetApartmentState(System.Threading.ApartmentState.MTA);
-                thread.Start();
-                thread.Join();
-            }
-            else
-            {
-                action();
-            }
-        }
     }
 
     public class DumpTestBase : TestBase

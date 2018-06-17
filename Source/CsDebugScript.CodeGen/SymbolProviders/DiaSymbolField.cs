@@ -34,6 +34,14 @@ namespace CsDebugScript.CodeGen.SymbolProviders
                 throw new ArgumentException("Symbol size is unexpected");
             }
             Size = (int)size;
+            if (LocationType == LocationType.BitField)
+            {
+                BitSize = Size;
+            }
+            else
+            {
+                BitSize = Size * 8;
+            }
 
             uint bitPosition = symbol.bitPosition;
             if (bitPosition > int.MaxValue)

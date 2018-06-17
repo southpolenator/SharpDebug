@@ -19,8 +19,8 @@ namespace CsDebugScript.CodeGen.App
         [Option("multi-line-properties", Default = false, HelpText = "Generate properties as multi line", Required = false, SetName = "cmdSettings")]
         public bool MultiLineProperties { get; set; }
 
-        [Option("use-dia-symbol-provider", Default = false, HelpText = "Use DIA symbol provider and access fields for specific type", Required = false, SetName = "cmdSettings")]
-        public bool UseDiaSymbolProvider { get; set; }
+        [Option("use-direct-class-access", Default = false, HelpText = "Generated code that will use class members directly (not using GetField, but GetClassField).", Required = false, SetName = "cmdSettings")]
+        public bool UseDirectClassAccess { get; set; }
 
         [Option("force-user-types-to-new-instead-of-casting", Default = false, HelpText = "Force using new during type casting instead of direct casting", Required = false, SetName = "cmdSettings")]
         public bool ForceUserTypesToNewInsteadOfCasting { get; set; }
@@ -75,7 +75,7 @@ namespace CsDebugScript.CodeGen.App
                     DontGenerateFieldTypeInfoComment = options.DontGenerateFieldTypeInfoComment,
                     ForceUserTypesToNewInsteadOfCasting = options.ForceUserTypesToNewInsteadOfCasting,
                     MultiLineProperties = options.MultiLineProperties,
-                    UseDiaSymbolProvider = options.UseDiaSymbolProvider,
+                    UseDirectClassAccess = options.UseDirectClassAccess,
                     GeneratedAssemblyName = options.GeneratedAssemblyName,
                     GeneratedPropsFileName = options.GeneratedPropsFileName,
                     CacheStaticUserTypeFields = options.CacheStaticUserTypeFields,

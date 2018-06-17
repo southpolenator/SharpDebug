@@ -416,7 +416,7 @@ namespace CsDebugScript.DwarfSymbolProvider
     }
 
     /// <summary>
-    /// DWARF expression operation.
+    /// DWARF expression operation (DW_OP_xxx).
     /// </summary>
     internal enum DwarfOperation
     {
@@ -433,7 +433,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         const8s = 0x0f,
         constu = 0x10,
         consts = 0x11,
-        dup = 0x12,
+
+        /// <summary>
+        /// The DW_OP_dup operation duplicates the value (including its type identifier) at the top of the stack.
+        /// </summary>
+        Duplicate = 0x12,
         drop = 0x13,
         over = 0x14,
         pick = 0x15,
@@ -443,13 +447,22 @@ namespace CsDebugScript.DwarfSymbolProvider
         abs = 0x19,
         and = 0x1a,
         div = 0x1b,
-        minus = 0x1c,
+
+        /// <summary>
+        /// The DW_OP_minus operation pops the top two stack values, subtracts the former
+        /// top of the stack from the former second entry, and pushes the result.
+        /// </summary>
+        Minus = 0x1c,
         mod = 0x1d,
         mul = 0x1e,
         neg = 0x1f,
         not = 0x20,
         or = 0x21,
-        plus = 0x22,
+
+        /// <summary>
+        /// The DW_OP_plus operation pops the top two stack entries, adds them together, and pushes the result.
+        /// </summary>
+        Plus = 0x22,
         plus_uconst = 0x23,
         shl = 0x24,
         shr = 0x25,
@@ -736,5 +749,27 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Higher part of encoding that are modifiers.
         /// </summary>
         Modifiers = 0x70,
+    }
+
+    /// <summary>
+    /// C++ provides for virtual and pure virtual structure or class member functions and for virtual base classes.
+    /// This enum represents possible values for <see cref="DwarfAttribute.Virtuality"/> attribute.
+    /// </summary>
+    internal enum DwarfVirtuality
+    {
+        /// <summary>
+        /// None is equivalent to the absence of the <see cref="DwarfAttribute.Virtuality"/> attribute.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// Virtual
+        /// </summary>
+        Virtual = 1,
+
+        /// <summary>
+        /// Pure virtual
+        /// </summary>
+        PureVirtual = 2,
     }
 }

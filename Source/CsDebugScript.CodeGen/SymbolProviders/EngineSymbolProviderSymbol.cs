@@ -50,6 +50,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         {
             Offset = offset;
             Tag = tag;
+            IsVirtualInheritance = offset < 0;
         }
 
         /// <summary>
