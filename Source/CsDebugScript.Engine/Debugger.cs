@@ -683,6 +683,17 @@ namespace CsDebugScript
         {
             Context.Debugger.Terminate(process);
         }
+
+        /// <summary>
+        /// Adds breakpoint to current process.
+        /// </summary>
+        /// <param name="expression">Expression to be evaluated into breakpoint.</param>
+        /// <param name="action">Action to be executed when breakpoint is hit.</param>
+        /// <returns></returns>
+        public static IBreakpoint AddBreakpoint(string expression, Action action)
+        {
+            return Context.Debugger.AddBreakpoint(Process.Current, expression, action);
+        }
         #endregion
 
         /// <summary>

@@ -118,10 +118,16 @@ namespace ExceptionDumper
             // Do nothing
         }
         #endregion
+        int IDebugEventCallbacks.Breakpoint(IDebugBreakpoint Bp)
+        {
+            // Do nothing. 
+            return 0;
+        }
 
         public void Dispose()
         {
             client.SetEventCallbacks(null);
         }
+
     }
 }

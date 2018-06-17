@@ -6,6 +6,7 @@ using Xunit;
 using DbgEng;
 using CsDebugScript.Engine.Debuggers;
 using System.IO;
+using Xunit.Abstractions;
 
 namespace CsDebugScript.Tests
 {
@@ -15,14 +16,29 @@ namespace CsDebugScript.Tests
     /// </summary>
     [Trait("x64", "true")]
     [Trait("x86", "true")]
+    [Collection("Sequential")]
     public class DebugControlTest : TestBase
     {
-        private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
+        private TimeSpan DefaultTimeout
+        {
+            get
+            {
+                if (Diagnostics.Debugger.IsAttached)
+                {
+                    return TimeSpan.FromSeconds(10 * 1000);
+                }
+                else
+                {
+                    return TimeSpan.FromSeconds(10);
+                }
+            }
+        }
 
         private const string TestProcessPathx64 = "NativeDumpTest.x64.exe";
         private const string TestProcessPathx86 = "NativeDumpTest.x86.exe";
 
         private const string DefaultSymbolPath = DumpInitialization.DefaultDumpPath;
+        private readonly ITestOutputHelper testOutputHelper;
 
         /// <summary>
         /// Test case id to be run.
@@ -35,6 +51,11 @@ namespace CsDebugScript.Tests
             {
                 return Path.Combine(DumpInitialization.DefaultDumpPath, Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86);
             }
+        }
+
+        public DebugControlTest(ITestOutputHelper testOutputHelper)
+        {
+            this.testOutputHelper = testOutputHelper;
         }
 
         static Thread FindThreadHostingMain()
@@ -134,13 +155,56 @@ namespace CsDebugScript.Tests
             }
         }
 
+        static void BreakpointSanityTestBody()
+        {
+            InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
+            Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
+
+            System.Threading.AutoResetEvent are = new System.Threading.AutoResetEvent(false);
+
+            Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () =>
+            {
+                are.Set();
+            });
+
+            Debugger.ContinueExecution();
+            are.WaitOne();
+        }
+        static void BreakpointBreakAndContinueTestBody()
+        {
+            InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
+            Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
+
+            System.Threading.AutoResetEvent are = new System.Threading.AutoResetEvent(false);
+            int breakpointHitCount = 0;
+
+            Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () =>
+            {
+                Thread mainThread = FindThreadHostingMain();
+                int recursionDepthCount = 
+                    mainThread.StackTrace.Frames.
+                    Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
+
+                breakpointHitCount++;
+                Assert.Equal(breakpointHitCount, recursionDepthCount);
+
+                if (recursionDepthCount == 10)
+                {
+                    are.Set();
+                }
+            });
+
+            Debugger.ContinueExecution();
+            are.WaitOne();
+        }
+
         /// <summary>
         /// Wrapper around actual tests which runs them in separate MTA thread
         /// in order to avoid problems with COM object sharing.
         /// </summary>
         /// <param name="test"></param>
         /// <param name="timeout"></param>
-        static void ContinousTestExecutionWrapper(Action test, TimeSpan timeout)
+        void ContinousTestExecutionWrapper(Action test, TimeSpan timeout)
         {
             Action cleanup = () =>
             {
@@ -149,10 +213,31 @@ namespace CsDebugScript.Tests
                     Debugger.Terminate(process);
             };
 
-            var testWithCleanup = test + cleanup;
-
+            Action testWithCleanup = () =>
+            {
+                try
+                {
+                    test();
+                    testOutputHelper.WriteLine("Test completed without exceptions.");
+                }
+                finally
+                {
+                    testOutputHelper.WriteLine("Starting cleanup.");
+                    cleanup();
+                    testOutputHelper.WriteLine("Cleanup completed without exceptions.");
+                }
+            };
+            
             var testTask = System.Threading.Tasks.Task.Factory.StartNew(testWithCleanup);
-            Assert.True(testTask.Wait(timeout), "Test timeout");
+
+            bool waitForTaskCompleteSuccess = testTask.Wait(timeout);
+            if (!waitForTaskCompleteSuccess)
+            {
+                // break here
+                testOutputHelper.WriteLine("Wait for task complete failure.");
+            }
+
+            Assert.True(waitForTaskCompleteSuccess, "Test timeout");
             Assert.True(testTask.Exception == null, "Exception happened while running the test");
         }
 
@@ -167,6 +252,12 @@ namespace CsDebugScript.Tests
         {
             ContinousTestExecutionWrapper(GoBreakContinousVariablesChangeBody, DefaultTimeout);
         }
+
+        [Fact]
+        public void BreakpointSanityTest() => ContinousTestExecutionWrapper(BreakpointSanityTestBody, DefaultTimeout);
+
+        [Fact]
+        public void BreakpointBreakAndContinue() => ContinousTestExecutionWrapper(BreakpointBreakAndContinueTestBody, DefaultTimeout);
 
         [Fact]
         public void MultipleProcesses()

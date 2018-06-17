@@ -42,9 +42,15 @@ namespace CsDebugScript.Engine.Debuggers
         private System.Threading.ThreadLocal<StateCache> stateCache;
 
         /// <summary>
-        /// Dictionary of all debugee flow controllers. Key is process id that is being debugged.
+        /// Dictionary of all debuggee flow controllers. Key is process id that is being debugged.
         /// </summary>
-        private DictionaryCache<uint, DebuggeeFlowController> debugeeFlowControllers;
+        private DebuggeeFlowController debuggeeFlowController;
+
+        /// <summary>
+        /// Collection of all the breakpoints defined under this DebuggerEngine.
+        /// </summary>
+        /// <remarks>I don't like storing process id here. Shouldn't this go to the breakpoint object?</remarks>
+        private Dictionary<uint, DbgEngBreakpoint> breakpoints = new Dictionary<uint, DbgEngBreakpoint>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbgEngDll"/> class.
@@ -55,13 +61,7 @@ namespace CsDebugScript.Engine.Debuggers
             originalClient = debugClient;
             dbgEngSymbolProvider = SimpleCache.Create(() => new DbgEngSymbolProvider(this));
             stateCache = new System.Threading.ThreadLocal<StateCache>(() => new StateCache(this));
-
-            // Populate flow controllers lazily.
-            //
-            // NOTE: Client passed needs to be set to process with selected processId.
-            debugeeFlowControllers =
-                    new DictionaryCache<uint, DebuggeeFlowController>(
-                        (processId) => new DebuggeeFlowController(this));
+            debuggeeFlowController = new DebuggeeFlowController(this);
         }
 
         /// <summary>
@@ -1320,9 +1320,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                DebuggeeFlowController flowControler = debugeeFlowControllers[process.Id];
-                flowControler.DebugStatusBreak.WaitOne();
-                Control.Execute(0, "g", 0);
+                debuggeeFlowController.DebugStatusGo.Set();
             }
         }
 
@@ -1333,10 +1331,13 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                DebuggeeFlowController flowControler = debugeeFlowControllers[process.Id];
+                DebuggeeFlowController flowControler = debuggeeFlowController;
                 flowControler.DebugStatusBreak.Reset();
                 Control.SetInterrupt(0);
+
+                // We wait here to be sure that event got processed. Signal immediately after.
                 flowControler.DebugStatusBreak.WaitOne();
+                flowControler.DebugStatusBreak.Set();
 
                 // Drop the cache.
                 // TODO: When support for debugging multiple processes is added.
@@ -1353,15 +1354,14 @@ namespace CsDebugScript.Engine.Debuggers
         {
             Client.EndSession(DebugEnd.ActiveTerminate);
 
-            DebuggeeFlowController flowControler;
-            debugeeFlowControllers.RemoveEntry(process.Id, out flowControler);
 
             // Release any threads that are waiting.
             //
-            flowControler.DebugStatusGo.Set();
-            flowControler.DebugStatusBreak.Set();
+            debuggeeFlowController.DebugStatusGo.Set();
+            debuggeeFlowController.DebugStatusBreak.Set();
 
-            flowControler.WaitForDebuggerLoopToExit();
+            debuggeeFlowController.WaitForDebuggerLoopToExit();
+            debuggeeFlowController = null;
         }
 
         #region Native methods
@@ -1669,6 +1669,27 @@ namespace CsDebugScript.Engine.Debuggers
             ulong AddrBase,
             ReadProcessMemoryProc64 ReadMemoryRoutine,
             GetModuleBaseProc64 GetModuleBaseRoutine);
+
+        public IBreakpoint AddBreakpoint(Process process, string expression)
+        {
+            // TODO: Add default action for breakpoint without an action.
+            //
+            throw new NotImplementedException();
+        }
+
+        public IBreakpoint AddBreakpoint(Process process, string expression, Action action)
+        {
+            using (var processSwitcher = new ProcessSwitcher(StateCache, process))
+            {
+                DbgEngBreakpoint breakpoint = new DbgEngBreakpoint(expression, action, () => process.InvalidateProcessCache(), Control);
+
+                // TODO: Add it to the list?
+                debuggeeFlowController.AddBreakpoint(breakpoint);
+
+                return breakpoint;
+            }
+
+        }
 #pragma warning restore CS0649
         #endregion
     }

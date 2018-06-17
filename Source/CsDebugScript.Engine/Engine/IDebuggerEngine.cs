@@ -284,5 +284,22 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="process">Process to Terminate.</param>
         void Terminate(Process process);
+
+        /// <summary>
+        /// Adds new breakpoint to the given process.
+        /// </summary>
+        /// <param name="process">Process.</param>
+        /// <param name="expression">Expression to be evaluated into breakpoint.</param>
+        /// <returns>New breakpoint.</returns>
+        IBreakpoint AddBreakpoint(Process process, string expression);
+
+        /// <summary>
+        /// Adds new breakpoint with assosiated action.
+        /// </summary>
+        /// <param name="process">Process.</param>
+        /// <param name="expression">Expression to be evaluated into breakpoint.</param>
+        /// <param name="action">Action to be executed when breakpoint is hit.</param>
+        /// <returns>New breakpoint.</returns>
+        IBreakpoint AddBreakpoint(Process process, string expression, Action action);
     }
 }
