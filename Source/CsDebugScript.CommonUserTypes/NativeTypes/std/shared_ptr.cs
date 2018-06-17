@@ -114,7 +114,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 get
                 {
-                    return pointer.Value.IsNullPointer();
+                    return pointer.Value == null || pointer.Value.IsNullPointer();
                 }
             }
 
@@ -267,7 +267,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 get
                 {
-                    return pointer.Value.IsNullPointer();
+                    return pointer.Value == null || pointer.Value.IsNullPointer();
                 }
             }
 
@@ -400,7 +400,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 get
                 {
-                    return pointer.Value.IsNullPointer();
+                    return pointer.Value == null || pointer.Value.IsNullPointer();
                 }
             }
 
