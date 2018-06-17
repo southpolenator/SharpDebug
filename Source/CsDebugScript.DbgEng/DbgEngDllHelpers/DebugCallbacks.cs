@@ -72,8 +72,6 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
             }
             else
             {
-                // TODO: Wait for break to get processed.
-                //
                 return (int)Defines.DebugStatusBreak;
             }
 

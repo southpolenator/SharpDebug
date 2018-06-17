@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using DbgEng;
 
 namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
@@ -31,6 +32,8 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// </summary>
         private IDebugControl7 debugControlInterface;
 
+        private AutoResetEvent breakpointHitEvent = new AutoResetEvent(false);
+
         /// <summary>
         /// Constructor for creating new breakpoints.
         /// </summary>
@@ -54,8 +57,6 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
                 breakpoint = debugControlInterface.AddBreakpoint2((uint)Defines.DebugBreakpointCode, (uint)Defines.DebugAnyId);
             }
 
-            // TODO: String isn't the nicest interface. Think about abstracting this.
-            //
             breakpoint.SetOffsetExpressionWide(breakpointExpression);
             breakpoint.SetFlags((uint)Defines.DebugBreakpointEnabled);
         }
@@ -82,7 +83,10 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         public OnBreakpointHit ExecuteAction()
         {
             invalidateCache();
-            return breakpointAction();
+            OnBreakpointHit bpHitState = breakpointAction();
+            breakpointHitEvent.Set();
+
+            return bpHitState;
         }
 
         /// <summary>
@@ -101,6 +105,14 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         public void SetAction(Func<OnBreakpointHit> action)
         {
             breakpointAction = action;
+        }
+
+        /// <summary>
+        /// Wait until breakpoint gets hit.
+        /// </summary>
+        public void WaitForHit()
+        {
+            breakpointHitEvent.WaitOne();
         }
     }
 }

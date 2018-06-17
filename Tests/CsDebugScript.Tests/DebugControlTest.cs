@@ -72,17 +72,17 @@ namespace CsDebugScript.Tests
             Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
 
             int lastStackDepth = -1;
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 3; i++)
             {
                 Debugger.ContinueExecution();
                 Diagnostics.Debug.WriteLine($"Process continue iteration {i}.");
 
-                System.Threading.Thread.Sleep(1000);
+                System.Threading.Thread.Sleep(300);
                 Debugger.BreakExecution();
 
                 int depthOfMainThread = FindThreadHostingMain().StackTrace.Frames.Length;
 
-                // Ensure that thread depth grows between the executions.
+                // Ensure that thread depth grew between the executions.
                 //
                 Assert.True(depthOfMainThread > lastStackDepth, "Stack did not grow between the executions");
                 lastStackDepth = depthOfMainThread;
@@ -102,12 +102,12 @@ namespace CsDebugScript.Tests
 
             int lastArgument = -1;
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 3; i++)
             {
                 Debugger.ContinueExecution();
                 Diagnostics.Debug.WriteLine($"Process continue iteration {i}.");
 
-                System.Threading.Thread.Sleep(1000);
+                System.Threading.Thread.Sleep(300);
                 Debugger.BreakExecution();
 
                 Thread mainThread = FindThreadHostingMain();
@@ -158,35 +158,24 @@ namespace CsDebugScript.Tests
         static void BreakpointSanityTestBody()
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
-            Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
 
-            System.Threading.AutoResetEvent are = new System.Threading.AutoResetEvent(false);
-
-            Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () =>
-            {
-                are.Set();
-                return OnBreakpointHit.Continue;
-            });
+            var bp = Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () => { return OnBreakpointHit.Continue; });
 
             Debugger.ContinueExecution();
-            are.WaitOne();
+            bp.WaitForHit();
         }
 
         static void BreakpointWithBreakAfterHitBody()
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
-            Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
 
-            System.Threading.AutoResetEvent are = new System.Threading.AutoResetEvent(false);
-
-            Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () =>
+            var bp = Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () =>
             {
-                are.Set();
                 return OnBreakpointHit.Break;
             });
 
             Debugger.ContinueExecution();
-            are.WaitOne();
+            bp.WaitForHit();
 
             int funcCallCount =
                 FindThreadHostingMain()
@@ -195,8 +184,7 @@ namespace CsDebugScript.Tests
             Assert.Equal(1, funcCallCount);
 
             Debugger.ContinueExecution();
-
-            are.WaitOne();
+            bp.WaitForHit();
 
             funcCallCount =
                 FindThreadHostingMain()

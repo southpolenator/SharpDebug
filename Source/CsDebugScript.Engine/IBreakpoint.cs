@@ -38,5 +38,10 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="action">Action to be executed when this breakpoint is hit.</param>
         void SetAction(Func<OnBreakpointHit> action);
+
+        /// <summary>
+        /// Wait for breakpoint to get hit.
+        /// </summary>
+        void WaitForHit();
     }
 }
