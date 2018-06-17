@@ -122,7 +122,7 @@ ImportUserTypes(options, true);
             Variable codeFunctionVariable = DefaultModule.GetVariable($"{DefaultModuleName}!defaultTestCaseAddress");
 
             Assert.True(codeFunctionVariable.GetCodeType().IsPointer);
-            Assert.True(!codeFunctionVariable.IsNullPointer());
+            Assert.True(!codeFunctionVariable.IsNull());
 
             CodeFunction codeFunction = new CodePointer<CodeFunction>(new NakedPointer(codeFunctionVariable)).Element;
 
@@ -175,7 +175,7 @@ ImportUserTypes(options, true);
             {
                 Variable argument = arguments[i];
 
-                Assert.False(argument.IsNullPointer());
+                Assert.False(argument.IsNull());
             }
 
             string command = arguments["argv"].GetArrayElement(0).ToString();

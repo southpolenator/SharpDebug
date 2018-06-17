@@ -51,7 +51,7 @@ namespace CsDebugScript.UI.ResultVisualizers
             {
                 CodeType codeType = variable.GetCodeType();
 
-                return !codeType.IsSimple && !codeType.IsEnum && variable != null && !variable.IsNullPointer();
+                return !codeType.IsSimple && !codeType.IsEnum && !variable.IsNull();
             }
         }
 

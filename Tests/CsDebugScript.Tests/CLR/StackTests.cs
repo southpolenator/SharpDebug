@@ -26,7 +26,7 @@ namespace CsDebugScript.Tests.CLR
             Variable foo = frame.Locals.Single();
 
             Assert.NotNull(foo);
-            Assert.False(foo.IsNullPointer());
+            Assert.False(foo.IsNull());
             Assert.Equal("Foo", foo.GetCodeType().Name);
             Assert.Equal("foo", foo.GetName());
 

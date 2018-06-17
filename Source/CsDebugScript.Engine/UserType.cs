@@ -12,6 +12,15 @@ namespace CsDebugScript
     public static class VariableCastExtender
     {
         /// <summary>
+        /// Safely determines whether this variable is null pointer.
+        /// </summary>
+        /// <returns><c>true</c> if variable is null pointer;<c>false</c> otherwise</returns>
+        public static bool IsNull(this Variable variable)
+        {
+            return variable == null || variable.IsNullPointer();
+        }
+
+        /// <summary>
         /// Does the dynamic cast, cast with type check.
         /// </summary>
         /// <typeparam name="T">New type to cast variable to.</typeparam>

@@ -151,7 +151,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.Windows
                     Variable heaps = self.ProcessHeaps;
                     List<Heap> result = new List<Heap>();
 
-                    for (int i = 0; heaps.GetArrayElement(i) != null && !heaps.GetArrayElement(i).IsNullPointer(); i++)
+                    for (int i = 0; !heaps.GetArrayElement(i).IsNull(); i++)
                     {
                         result.Add(CastHeap(heaps.GetArrayElement(i)));
                     }

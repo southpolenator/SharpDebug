@@ -360,7 +360,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 {
                     Variable element = bucket;
 
-                    while (element != null && !element.IsNullPointer())
+                    while (!element.IsNull())
                     {
                         if (element.GetPointerAddress() != beforeBegin.Value.GetPointerAddress())
                         {

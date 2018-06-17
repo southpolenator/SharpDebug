@@ -470,19 +470,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     {
                         Variable field = variable.GetField("_M_left");
 
-                        return field == null || field.IsNullPointer() ? null : new item(field, pairCodeType);
+                        return field.IsNull() ? null : new item(field, pairCodeType);
                     });
                     right = UserMember.Create(() =>
                     {
                         Variable field = variable.GetField("_M_right");
 
-                        return field == null || field.IsNullPointer() ? null : new item(field, pairCodeType);
+                        return field.IsNull() ? null : new item(field, pairCodeType);
                     });
                     parent = UserMember.Create(() =>
                     {
                         Variable field = variable.GetField("_M_parent");
 
-                        return field == null || field.IsNullPointer() ? null : new item(field, pairCodeType);
+                        return field.IsNull() ? null : new item(field, pairCodeType);
                     });
                     pair = UserMember.Create(() =>
                     {
