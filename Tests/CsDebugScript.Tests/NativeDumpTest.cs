@@ -589,6 +589,7 @@ for (int i = 0; i < intTemplate.values.Length; i++)
             Assert.Equal(2.5, doubleTest.f);
             Assert.Equal(5, doubleTest.i);
 
+            Context.UserTypeMetadata = new UserTypeMetadata[0];
             Context.ClearCache();
         }
 
