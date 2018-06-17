@@ -16,16 +16,20 @@ namespace CsDebugScript.Tests
     /// </summary>
     [Trait("x64", "true")]
     [Trait("x86", "true")]
-    [Collection("Sequential")]
     public class DebugControlTest : TestBase
     {
+        /// <summary>
+        /// Default timeout a test to complete.
+        /// </summary>
         private TimeSpan DefaultTimeout
         {
             get
             {
                 if (Diagnostics.Debugger.IsAttached)
                 {
-                    return TimeSpan.FromSeconds(10 * 1000);
+                    // In debug mode give it enough time for investigation.
+                    //
+                    return TimeSpan.FromMinutes(10);
                 }
                 else
                 {
@@ -36,9 +40,7 @@ namespace CsDebugScript.Tests
 
         private const string TestProcessPathx64 = "NativeDumpTest.x64.exe";
         private const string TestProcessPathx86 = "NativeDumpTest.x86.exe";
-
         private const string DefaultSymbolPath = DumpInitialization.DefaultDumpPath;
-        private readonly ITestOutputHelper testOutputHelper;
 
         /// <summary>
         /// Test case id to be run.
@@ -51,11 +53,6 @@ namespace CsDebugScript.Tests
             {
                 return Path.Combine(DumpInitialization.DefaultDumpPath, Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86);
             }
-        }
-
-        public DebugControlTest(ITestOutputHelper testOutputHelper)
-        {
-            this.testOutputHelper = testOutputHelper;
         }
 
         static Thread FindThreadHostingMain()
@@ -155,6 +152,9 @@ namespace CsDebugScript.Tests
             }
         }
 
+        /// <summary>
+        /// Test that verifies that set breakpoint gets hit.
+        /// </summary>
         static void BreakpointSanityTestBody()
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
@@ -170,6 +170,10 @@ namespace CsDebugScript.Tests
             Debugger.ContinueExecution();
             are.WaitOne();
         }
+
+        /// <summary>
+        /// Test that verifies that breakpoint can get hit multiple times.
+        /// </summary>
         static void BreakpointBreakAndContinueTestBody()
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
@@ -218,25 +222,16 @@ namespace CsDebugScript.Tests
                 try
                 {
                     test();
-                    testOutputHelper.WriteLine("Test completed without exceptions.");
                 }
                 finally
                 {
-                    testOutputHelper.WriteLine("Starting cleanup.");
                     cleanup();
-                    testOutputHelper.WriteLine("Cleanup completed without exceptions.");
                 }
             };
             
             var testTask = System.Threading.Tasks.Task.Factory.StartNew(testWithCleanup);
 
             bool waitForTaskCompleteSuccess = testTask.Wait(timeout);
-            if (!waitForTaskCompleteSuccess)
-            {
-                // break here
-                testOutputHelper.WriteLine("Wait for task complete failure.");
-            }
-
             Assert.True(waitForTaskCompleteSuccess, "Test timeout");
             Assert.True(testTask.Exception == null, "Exception happened while running the test");
         }

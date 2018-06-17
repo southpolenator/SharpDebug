@@ -47,12 +47,6 @@ namespace CsDebugScript.Engine.Debuggers
         private DebuggeeFlowController debuggeeFlowController;
 
         /// <summary>
-        /// Collection of all the breakpoints defined under this DebuggerEngine.
-        /// </summary>
-        /// <remarks>I don't like storing process id here. Shouldn't this go to the breakpoint object?</remarks>
-        private Dictionary<uint, DbgEngBreakpoint> breakpoints = new Dictionary<uint, DbgEngBreakpoint>();
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="DbgEngDll"/> class.
         /// </summary>
         /// <param name="debugClient">The debugger client interface.</param>

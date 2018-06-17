@@ -128,6 +128,5 @@ namespace ExceptionDumper
         {
             client.SetEventCallbacks(null);
         }
-
     }
 }
