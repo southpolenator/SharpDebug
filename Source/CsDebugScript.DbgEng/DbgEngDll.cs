@@ -1666,23 +1666,23 @@ namespace CsDebugScript.Engine.Debuggers
 
         public IBreakpoint AddBreakpoint(Process process, string expression)
         {
-            // TODO: Add default action for breakpoint without an action.
-            //
-            throw new NotImplementedException();
+            DbgEngBreakpoint breakpoint = new DbgEngBreakpoint(expression, () => OnBreakpointHit.Break, () => process.InvalidateProcessCache(), Control);
+            debuggeeFlowController.AddBreakpoint(breakpoint);
+            return breakpoint;
         }
 
-        public IBreakpoint AddBreakpoint(Process process, string expression, Action action)
+        public IBreakpoint AddBreakpoint(Process process, string expression, Func<OnBreakpointHit> action)
         {
+            //TODO: Don't need process switch here.
+            //
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
                 DbgEngBreakpoint breakpoint = new DbgEngBreakpoint(expression, action, () => process.InvalidateProcessCache(), Control);
 
-                // TODO: Add it to the list?
                 debuggeeFlowController.AddBreakpoint(breakpoint);
 
                 return breakpoint;
             }
-
         }
 #pragma warning restore CS0649
         #endregion

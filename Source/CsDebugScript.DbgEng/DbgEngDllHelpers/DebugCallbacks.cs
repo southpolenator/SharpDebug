@@ -63,11 +63,20 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         public int Breakpoint(IDebugBreakpoint Bp)
         {
             uint bpId = Bp.GetId();
-            breakpoints[bpId].ExecuteAction();
+            OnBreakpointHit actionStatus = breakpoints[bpId].ExecuteAction();
 
-            debugStatusGoEvent.Set();
+            if (actionStatus == OnBreakpointHit.Continue)
+            {
+                debugStatusGoEvent.Set();
+                return (int)Defines.DebugStatusGo;
+            }
+            else
+            {
+                // TODO: Wait for break to get processed.
+                //
+                return (int)Defines.DebugStatusBreak;
+            }
 
-            return (int)Defines.DebugStatusGo;
         }
 
         /// <summary>

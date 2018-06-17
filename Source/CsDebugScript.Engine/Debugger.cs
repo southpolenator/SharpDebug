@@ -690,7 +690,7 @@ namespace CsDebugScript
         /// <param name="expression">Expression to be evaluated into breakpoint.</param>
         /// <param name="action">Action to be executed when breakpoint is hit.</param>
         /// <returns></returns>
-        public static IBreakpoint AddBreakpoint(string expression, Action action)
+        public static IBreakpoint AddBreakpoint(string expression, Func<OnBreakpointHit> action)
         {
             return Context.Debugger.AddBreakpoint(Process.Current, expression, action);
         }

@@ -3,7 +3,23 @@
 namespace CsDebugScript
 {
     /// <summary>
-    /// Interace for breakpoints.
+    /// Status of action execution on breakpoint hit.
+    /// </summary>
+    public enum OnBreakpointHit
+    {
+        /// <summary>
+        /// Break the execution. Debuggee stays in break mode.
+        /// </summary>
+        Break,
+
+        /// <summary>
+        /// Continue execution.
+        /// </summary>
+        Continue,
+    }
+
+    /// <summary>
+    /// Interface for breakpoints.
     /// </summary>
     public interface IBreakpoint
     {
@@ -21,6 +37,6 @@ namespace CsDebugScript
         /// Change action associated  to this breakpoint.
         /// </summary>
         /// <param name="action">Action to be executed when this breakpoint is hit.</param>
-        void SetAction(Action action);
+        void SetAction(Func<OnBreakpointHit> action);
     }
 }

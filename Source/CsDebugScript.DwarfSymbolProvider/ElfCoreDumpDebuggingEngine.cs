@@ -623,7 +623,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="expression">Expression to be evaluated into breakpoint.</param>
         /// <param name="action">Action to be executed when breakpoint is hit.</param>
         /// <returns>New breakpoint.</returns>
-        public IBreakpoint AddBreakpoint(Process process, string expression, Action action)
+        public IBreakpoint AddBreakpoint(Process process, string expression, Func<OnBreakpointHit> action)
         {
             throw new NotImplementedException();
         }

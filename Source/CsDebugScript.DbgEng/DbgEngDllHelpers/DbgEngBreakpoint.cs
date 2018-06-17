@@ -16,7 +16,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <summary>
         /// Action to be executed when this breakpoint is hit.
         /// </summary>
-        private Action breakpointAction;
+        private Func<OnBreakpointHit> breakpointAction;
 
         /// <summary>
         /// Invalidate all the needed caches when break happens on this breakpoint.
@@ -41,7 +41,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <remarks>
         /// This about adding some sort of factory pattern here.
         /// </remarks>
-        public DbgEngBreakpoint(string breakpointExpression, Action breakpointAction, Action invalidateCache, IDebugControl7 debugControlInterface)
+        public DbgEngBreakpoint(string breakpointExpression, Func<OnBreakpointHit> breakpointAction, Action invalidateCache, IDebugControl7 debugControlInterface)
         {
             this.debugControlInterface = debugControlInterface;
             this.breakpointAction = breakpointAction;
@@ -79,10 +79,10 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <summary>
         /// Execute action when this breakpoint is hit.
         /// </summary>
-        public void ExecuteAction()
+        public OnBreakpointHit ExecuteAction()
         {
             invalidateCache();
-            breakpointAction();
+            return breakpointAction();
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// Set new action.
         /// </summary>
         /// <param name="action">New action to be set.</param>
-        public void SetAction(Action action)
+        public void SetAction(Func<OnBreakpointHit> action)
         {
             breakpointAction = action;
         }

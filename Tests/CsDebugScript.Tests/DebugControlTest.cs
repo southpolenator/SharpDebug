@@ -165,10 +165,44 @@ namespace CsDebugScript.Tests
             Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () =>
             {
                 are.Set();
+                return OnBreakpointHit.Continue;
             });
 
             Debugger.ContinueExecution();
             are.WaitOne();
+        }
+
+        static void BreakpointWithBreakAfterHitBody()
+        {
+            InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
+            Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
+
+            System.Threading.AutoResetEvent are = new System.Threading.AutoResetEvent(false);
+
+            Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () =>
+            {
+                are.Set();
+                return OnBreakpointHit.Break;
+            });
+
+            Debugger.ContinueExecution();
+            are.WaitOne();
+
+            int funcCallCount =
+                FindThreadHostingMain()
+                .StackTrace.Frames
+                .Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
+            Assert.Equal(1, funcCallCount);
+
+            Debugger.ContinueExecution();
+
+            are.WaitOne();
+
+            funcCallCount =
+                FindThreadHostingMain()
+                .StackTrace.Frames
+                .Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
+            Assert.Equal(2, funcCallCount);
         }
 
         /// <summary>
@@ -196,6 +230,8 @@ namespace CsDebugScript.Tests
                 {
                     are.Set();
                 }
+
+                return OnBreakpointHit.Continue;
             });
 
             Debugger.ContinueExecution();
@@ -253,6 +289,9 @@ namespace CsDebugScript.Tests
 
         [Fact]
         public void BreakpointBreakAndContinue() => ContinousTestExecutionWrapper(BreakpointBreakAndContinueTestBody, DefaultTimeout);
+
+        [Fact]
+        public void BreakpointWithBreakAfterHit() => ContinousTestExecutionWrapper(BreakpointWithBreakAfterHitBody, DefaultTimeout);
 
         [Fact]
         public void MultipleProcesses()
