@@ -132,6 +132,7 @@ namespace CsDebugScript
             baseClassesAndOffsets = originalCodeType.baseClassesAndOffsets;
             templateArgumentsStrings = originalCodeType.templateArgumentsStrings;
             templateArguments = originalCodeType.templateArguments;
+            userTypes = originalCodeType.userTypes;
         }
 
         /// <summary>
