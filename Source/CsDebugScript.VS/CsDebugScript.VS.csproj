@@ -14,12 +14,6 @@
     <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
     <StartArguments>/rootsuffix Exp</StartArguments>
   </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>$(EnlistmentRoot)\Key.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -84,7 +78,6 @@
     <Compile Include="VSUIVisualizerService.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(EnlistmentRoot)\Key.snk" />
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
