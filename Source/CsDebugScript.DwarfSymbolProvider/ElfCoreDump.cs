@@ -311,7 +311,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             try
             {
-                return segment.GetContents();
+                return segment.GetFileContents();
             }
             catch
             {
