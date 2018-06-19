@@ -19,8 +19,6 @@
     <EnlistmentRoot>$(MSBuildThisFileDirectory)</EnlistmentRoot>
     <OutputPath>$(EnlistmentRoot)\bin\$(Configuration)\</OutputPath>
     <DocumentationFile>$(OutputPath)\$(AssemblyName).XML</DocumentationFile>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(EnlistmentRoot)\Key.snk</AssemblyOriginatorKeyFile>
     <DebugType>full</DebugType>
     <DebugSymbols>True</DebugSymbols>
 

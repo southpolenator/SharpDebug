@@ -187,16 +187,6 @@ namespace CsDebugScript.Engine
             moduleBuilder = SimpleCache.Create(() =>
             {
                 AssemblyName assemblyName = new AssemblyName("CsDebugScript.DynamicAssembly");
-                byte[] bytes;
-
-                using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CsDebugScript.Key.snk"))
-                {
-                    bytes = new byte[stream.Length];
-                    stream.Read(bytes, 0, bytes.Length);
-                }
-
-                assemblyName.KeyPair = new StrongNameKeyPair(bytes);
-
                 AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
 
                 return assemblyBuilder.DefineDynamicModule("CsDebugScript.Dynamic");
