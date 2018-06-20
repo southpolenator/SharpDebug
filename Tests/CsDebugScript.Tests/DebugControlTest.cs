@@ -71,23 +71,51 @@ namespace CsDebugScript.Tests
         }
 
         /// <summary>
-        ///  Start process in inactive mode, release it, break it, print state in the loop.
-        ///  Test runs a sample exe which recursivly calls the same function and increments the argument.
-        ///  Test checks whether stack trully grows between the continue/break calls.
+        /// Wrapper around actual tests which runs them in separate MTA thread
+        /// in order to avoid problems with COM object sharing.
         /// </summary>
-        static void GoBreakContinuosTestDepthBody()
+        /// <param name="test"></param>
+        /// <param name="timeout"></param>
+        void ContinousTestExecutionWrapper(Action test, TimeSpan timeout)
+        {
+            void testWithCleanup()
+            {
+                try
+                {
+                    test();
+                }
+                finally
+                {
+                    foreach (var process in Process.All)
+                    {
+                        Debugger.Terminate(process);
+                    }
+                }
+            }
+
+            var testTask = System.Threading.Tasks.Task.Factory.StartNew(testWithCleanup);
+
+            bool waitForTaskCompleteSuccess = testTask.Wait(timeout);
+            Assert.True(waitForTaskCompleteSuccess, "Test timeout");
+            Assert.True(testTask.Exception == null, "Exception happened while running the test");
+        }
+
+        /// <summary>
+        ///  Start process in inactive mode, release it, break it, print state in the loop.
+        ///  Test runs a sample exe which recursively calls the same function and increments the argument.
+        ///  Test checks whether stack truly grows between the continue/break calls.
+        /// </summary>
+        [Fact]
+        public void GoBreakContinuosTestDepth() => ContinousTestExecutionWrapper(() =>
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
-
-            Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
 
             int lastStackDepth = -1;
             for (int i = 0; i < 3; i++)
             {
                 Debugger.ContinueExecution();
-                Diagnostics.Debug.WriteLine($"Process continue iteration {i}.");
 
-                System.Threading.Thread.Sleep(300);
+                System.Threading.Thread.Sleep(1000);
                 Debugger.BreakExecution();
 
                 int depthOfMainThread = FindThreadHostingMain().StackTrace.Frames.Length;
@@ -97,25 +125,23 @@ namespace CsDebugScript.Tests
                 Assert.True(depthOfMainThread > lastStackDepth, "Stack did not grow between the executions");
                 lastStackDepth = depthOfMainThread;
             }
-        }
+        }, DefaultTimeout);
 
         /// <summary>
         /// Start process in inactive mode, release it, break it, print state in the loop.
         /// Test checks whether argument on stack changes.
         /// Also test asserts whether argument matches the stack lenght.
         /// </summary>
-        static void GoBreakContinousVariablesChangeBody()
+        [Fact]
+        public void GoBreakContinousVariablesChange() => ContinousTestExecutionWrapper(() =>
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
-
-            Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
 
             int lastArgument = -1;
 
             for (int i = 0; i < 3; i++)
             {
                 Debugger.ContinueExecution();
-                Diagnostics.Debug.WriteLine($"Process continue iteration {i}.");
 
                 System.Threading.Thread.Sleep(300);
                 Debugger.BreakExecution();
@@ -132,53 +158,32 @@ namespace CsDebugScript.Tests
 
                 int depthOfMainThread = mainThread.StackTrace.Frames.Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
 
-                Diagnostics.Debug.WriteLine($"Depth of main thread is {depthOfMainThread}");
                 Assert.Equal(depthOfMainThread, lastArgument + 1);
             }
-        }
-
-        /// <summary>
-        /// Tests running multiple processes.
-        /// </summary>
-        static void GoBreakMultipleProcessesBody()
-        {
-            InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
-            InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
-
-            var ps = CsDebugScript.Process.All;
-            Context.Debugger.ContinueExecution(ps[1]);
-            Context.Debugger.ContinueExecution(ps[0]);
-
-            foreach (var process in CsDebugScript.Process.All)
-            {
-                Debugger.ContinueExecution(process);
-            }
-
-            System.Threading.Thread.Sleep(1000);
-
-            foreach (var process in CsDebugScript.Process.All)
-            {
-                Debugger.BreakExecution(process);
-            }
-        }
+        }, DefaultTimeout);
 
         /// <summary>
         /// Test that verifies that set breakpoint gets hit.
         /// </summary>
-        static void BreakpointSanityTestBody()
+        [Fact]
+        public void BreakpointSanityTest() => ContinousTestExecutionWrapper(() =>
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
             ulong functionAddress = Debugger.GetSymbolAddress($"{TargetModuleName}!InfiniteRecursionTestCase");
-            BreakpointSpec bpSpec = new BreakpointSpec(functionAddress, () => BreakpointHitResult.Continue);
+            BreakpointSpec bpSpec = new BreakpointSpec(functionAddress);
 
             var bp = Debugger.AddBreakpoint(bpSpec);
 
             Debugger.ContinueExecution();
             bp.WaitForHit();
-        }
+        }, DefaultTimeout);
 
-        static void BreakpointWithBreakAfterHitBody()
+        /// <summary>
+        /// Test that verifies that set breakpoint gets hit with break after hit.
+        /// </summary>
+        [Fact]
+        public void BreakpointBreakAndContinue() => ContinousTestExecutionWrapper(() =>
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
@@ -203,12 +208,13 @@ namespace CsDebugScript.Tests
                 .StackTrace.Frames
                 .Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
             Assert.Equal(2, funcCallCount);
-        }
+        }, DefaultTimeout);
 
         /// <summary>
-        /// Test that verifies that breakpoint can get hit multiple times.
+        /// Test that verifies that breakpoint can get hit multiple times with action executed on every hit.
         /// </summary>
-        static void BreakpointBreakAndContinueTestBody()
+        [Fact]
+        public void BreakpointWithBreakAfterHit() => ContinousTestExecutionWrapper(() =>
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
             Diagnostics.Debug.WriteLine($"Process {TestProcessPath} started.");
@@ -217,97 +223,41 @@ namespace CsDebugScript.Tests
             int breakpointHitCount = 0;
 
             ulong functionAddress = Debugger.GetSymbolAddress($"{TargetModuleName}!InfiniteRecursionTestCase");
-            BreakpointSpec bpSpec = new BreakpointSpec(functionAddress);
-            bpSpec.BreakpointAction = () =>
+            BreakpointSpec bpSpec = new BreakpointSpec(functionAddress)
             {
-                Thread mainThread = FindThreadHostingMain();
-                int recursionDepthCount =
-                    mainThread.StackTrace.Frames.
-                    Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
-
-                // Insure that top of main thread points to the same location as breakpoint address.
-                //
-                Assert.Equal(functionAddress, mainThread.StackTrace.Frames[0].InstructionOffset);
-
-                breakpointHitCount++;
-                Assert.Equal(breakpointHitCount, recursionDepthCount);
-
-                if (recursionDepthCount == 10)
+                BreakpointAction = () =>
                 {
-                    are.Set();
-                }
+                    Thread mainThread = FindThreadHostingMain();
+                    int recursionDepthCount =
+                        mainThread.StackTrace.Frames.
+                        Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
 
-                return BreakpointHitResult.Continue;
+                    // Insure that top of main thread points to the same location as breakpoint address.
+                    //
+                    Assert.Equal(functionAddress, mainThread.StackTrace.Frames[0].InstructionOffset);
+
+                        breakpointHitCount++;
+                        Assert.Equal(breakpointHitCount, recursionDepthCount);
+
+                        if (recursionDepthCount == 5)
+                        {
+                            are.Set();
+                        }
+
+                        return BreakpointHitResult.Continue;
+                    }
             };
 
             Debugger.AddBreakpoint(bpSpec);
 
             Debugger.ContinueExecution();
             are.WaitOne();
-        }
+            Debugger.BreakExecution();
+        }, DefaultTimeout);
 
         /// <summary>
-        /// Wrapper around actual tests which runs them in separate MTA thread
-        /// in order to avoid problems with COM object sharing.
+        /// Test that checks that live debugging flag is on for active process debugging.
         /// </summary>
-        /// <param name="test"></param>
-        /// <param name="timeout"></param>
-        void ContinousTestExecutionWrapper(Action test, TimeSpan timeout)
-        {
-            Action cleanup = () =>
-            {
-                Diagnostics.Debug.WriteLine("Issuing process terminate for all the processes.");
-                foreach (var process in Process.All)
-                    Debugger.Terminate(process);
-            };
-
-            Action testWithCleanup = () =>
-            {
-                try
-                {
-                    test();
-                }
-                finally
-                {
-                    cleanup();
-                }
-            };
-            
-            var testTask = System.Threading.Tasks.Task.Factory.StartNew(testWithCleanup);
-
-            bool waitForTaskCompleteSuccess = testTask.Wait(timeout);
-            Assert.True(waitForTaskCompleteSuccess, "Test timeout");
-            Assert.True(testTask.Exception == null, "Exception happened while running the test");
-        }
-
-        [Fact]
-        public void GoBreakContinuosTestDepth()
-        {
-            ContinousTestExecutionWrapper(GoBreakContinuosTestDepthBody, DefaultTimeout);
-        }
-
-        [Fact]
-        public void GoBreakContinousVariablesChange()
-        {
-            ContinousTestExecutionWrapper(GoBreakContinousVariablesChangeBody, DefaultTimeout);
-        }
-
-        [Fact]
-        public void BreakpointSanityTest() => ContinousTestExecutionWrapper(BreakpointSanityTestBody, DefaultTimeout);
-
-        [Fact]
-        public void BreakpointBreakAndContinue() => ContinousTestExecutionWrapper(BreakpointBreakAndContinueTestBody, DefaultTimeout);
-
-        [Fact]
-        public void BreakpointWithBreakAfterHit() => ContinousTestExecutionWrapper(BreakpointWithBreakAfterHitBody, DefaultTimeout);
-
-        [Fact]
-        public void MultipleProcesses()
-        {
-            // Not yet implemented.
-            // ContinousTestExecutionWrapper(GoBreakMultipleProcessesBody, DefaultTimeout);
-        }
-
         [Fact]
         public void CheckIsLiveModeDebugging() => ContinousTestExecutionWrapper(() =>
         {

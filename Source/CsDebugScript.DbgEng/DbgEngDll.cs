@@ -1390,13 +1390,9 @@ namespace CsDebugScript.Engine.Debuggers
         /// </summary>
         public void Terminate(Process process)
         {
-            Client.EndSession(DebugEnd.ActiveTerminate);
-
-
-            // Release any threads that are waiting.
-            //
-            debuggeeFlowController.DebugStatusGo.Set();
+            debuggeeFlowController.DebuggerLoopExitSignal = true;
             debuggeeFlowController.DebugStatusBreak.Set();
+            debuggeeFlowController.DebugStatusGo.Set();
 
             debuggeeFlowController.WaitForDebuggerLoopToExit();
             debuggeeFlowController = null;

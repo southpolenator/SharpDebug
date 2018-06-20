@@ -20,6 +20,11 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         public System.Threading.AutoResetEvent DebugStatusBreak { get; private set; }
 
         /// <summary>
+        /// Property signaling that flow controller should be terminated.
+        /// </summary>
+        public volatile bool DebuggerLoopExitSignal = false;
+
+        /// <summary>
         /// Loop responsible for catching debug events and signaling debugee state.
         /// </summary>
         private System.Threading.Thread debuggerStateLoop;
@@ -82,7 +87,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
             }
 
             // Default is to start in break mode, wait for the release.
-            // TODO: Needs to be changes with support for non-intrusive debugigng.
+            // TODO: Needs to be changes with support for non-intrusive debugging.
             //
             DebugStatusGo.WaitOne();
 
@@ -98,7 +103,15 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
                     DebugStatusBreak.Set();
                     DebugStatusGo.WaitOne();
 
-                    loopControl.Execute(0, "g", 0);
+                    if (DebuggerLoopExitSignal)
+                    {
+                        dbgEngDll.ThreadClient.EndSession(DebugEnd.ActiveTerminate);
+                    }
+                    else
+                    {
+                        loopControl.Execute(0, "g", 0);
+                    }
+
                     dbgEngDll.ThreadClient.DispatchCallbacks(200);
                 }
 
