@@ -493,7 +493,7 @@ namespace CsDebugScript.Engine.Debuggers
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
             {
-                DbgEngBreakpoint breakpoint = new DbgEngBreakpoint(breakpointSpec, () => process.InvalidateProcessCache(), Control);
+                DbgEngBreakpoint breakpoint = new DbgEngBreakpoint(breakpointSpec, () => process.InvalidateProcessCache(), this);
                 debuggeeFlowController.AddBreakpoint(breakpoint);
                 return breakpoint;
             }

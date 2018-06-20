@@ -5,7 +5,7 @@ using DbgEng;
 namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
-    /// IBreakpoint implemenation for dbgeng.
+    /// IBreakpoint implementation for dbgeng.
     /// </summary>
     public class DbgEngBreakpoint : IBreakpoint
     {
@@ -28,24 +28,26 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         private Action invalidateCache;
 
         /// <summary>
-        /// Debug Control interface to dbgeng.
+        /// Event to be signaled when breakpoint is hit.
         /// </summary>
-        private IDebugControl7 debugControlInterface;
-
         private AutoResetEvent breakpointHitEvent = new AutoResetEvent(false);
+
+        /// <summary>
+        /// Internal status of this point.
+        /// </summary>
+        private bool breakpointStatusEnabled;
 
         /// <summary>
         /// Constructor for creating new breakpoints.
         /// </summary>
         /// <param name="breakpointSpec">Spec describing this breakpoint.</param>
         /// <param name="invalidateCache">Invalidate cache action.</param>
-        /// <param name="debugControlInterface">Debug control interface.</param>
+        /// <param name="dbgEngDll">DbgEngDll interface.</param>
         /// <remarks>
         /// This about adding some sort of factory pattern here.
         /// </remarks>
-        public DbgEngBreakpoint(BreakpointSpec breakpointSpec, Action invalidateCache, IDebugControl7 debugControlInterface)
+        public DbgEngBreakpoint(BreakpointSpec breakpointSpec, Action invalidateCache, DbgEngDll dbgEngDll)
         {
-            this.debugControlInterface = debugControlInterface;
             this.breakpointAction = breakpointSpec.BreakpointAction;
             this.invalidateCache = invalidateCache;
 
@@ -53,7 +55,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
             {
                 if (breakpointSpec.BreakpointType == BreakpointType.Code)
                 {
-                    breakpoint = debugControlInterface.AddBreakpoint2((uint)Defines.DebugBreakpointCode, (uint)Defines.DebugAnyId);
+                    breakpoint = dbgEngDll.Control.AddBreakpoint2((uint)Defines.DebugBreakpointCode, (uint)Defines.DebugAnyId);
                 }
                 else
                 {
@@ -66,10 +68,6 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
             breakpointStatusEnabled = true;
         }
 
-        /// <summary>
-        /// Internal status of this point.
-        /// </summary>
-        private bool breakpointStatusEnabled;
 
         /// <summary>
         /// Gets or sets status of this breakpoint.
