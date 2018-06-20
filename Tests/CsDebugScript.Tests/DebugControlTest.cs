@@ -266,6 +266,9 @@ namespace CsDebugScript.Tests
 
             Assert.NotNull(debugger);
             Assert.True(debugger.IsLiveDebugging);
+
+            Debugger.ContinueExecution();
+            Debugger.BreakExecution();
         }, DefaultTimeout);
 
         /// <summary>
