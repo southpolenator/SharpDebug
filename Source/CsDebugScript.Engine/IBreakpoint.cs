@@ -8,14 +8,9 @@ namespace CsDebugScript
     public interface IBreakpoint
     {
         /// <summary>
-        /// Enable breakpoint.
+        /// Get or set whether this breakpoint is enabled.
         /// </summary>
-        void Enable();
-
-        /// <summary>
-        /// Disable breakpoint.
-        /// </summary>
-        void Disable();
+        bool Enabled { get; set; }
 
         /// <summary>
         /// Change action associated  to this breakpoint.

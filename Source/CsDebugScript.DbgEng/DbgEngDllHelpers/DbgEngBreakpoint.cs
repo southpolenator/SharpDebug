@@ -63,22 +63,36 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 
             breakpoint.SetOffset(breakpointSpec.BreakpointAddress);
             breakpoint.SetFlags((uint)Defines.DebugBreakpointEnabled);
+            breakpointStatusEnabled = true;
         }
 
         /// <summary>
-        /// Enable breakpoint.
+        /// Internal status of this point.
         /// </summary>
-        public void Enable()
-        {
-            breakpoint.AddFlags((uint)Defines.DebugBreakpointEnabled);
-        }
+        private bool breakpointStatusEnabled;
 
         /// <summary>
-        /// Disable breakpoint.
+        /// Gets or sets status of this breakpoint.
         /// </summary>
-        public void Disable()
+        public bool Enabled
         {
-            breakpoint.RemoveFlags((uint)Defines.DebugBreakpointEnabled);
+            get
+            {
+                return breakpointStatusEnabled;
+            }
+            set
+            {
+                breakpointStatusEnabled = value;
+
+                if (breakpointStatusEnabled)
+                {
+                    breakpoint.AddFlags((uint)Defines.DebugBreakpointEnabled);
+                }
+                else
+                {
+                    breakpoint.RemoveFlags((uint)Defines.DebugBreakpointEnabled);
+                }
+            }
         }
 
         /// <summary>
