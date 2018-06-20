@@ -19,10 +19,10 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Initializes a new instance of the <see cref="DwarfLineNumberProgram"/> class.
         /// </summary>
         /// <param name="debugLine">The debug line data stream.</param>
-        /// <param name="codeSegmentOffset">The code segment offset.</param>
-        public DwarfLineNumberProgram(DwarfMemoryReader debugLine, ulong codeSegmentOffset)
+        /// <param name="addressNormalizer">Normalize address delegate (<see cref="NormalizeAddressDelegate"/>)</param>
+        public DwarfLineNumberProgram(DwarfMemoryReader debugLine, NormalizeAddressDelegate addressNormalizer)
         {
-            Files = ReadData(debugLine, (uint)codeSegmentOffset);
+            Files = ReadData(debugLine, addressNormalizer);
         }
 
         /// <summary>
@@ -169,9 +169,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Reads the data for single instance.
         /// </summary>
         /// <param name="debugLine">The debug line data stream.</param>
-        /// <param name="codeSegmentOffset">The code segment offset.</param>
+        /// <param name="addressNormalizer">Normalize address delegate (<see cref="NormalizeAddressDelegate"/>)</param>
         /// <returns>List of file information.</returns>
-        private static List<DwarfFileInformation> ReadData(DwarfMemoryReader debugLine, uint codeSegmentOffset)
+        private static List<DwarfFileInformation> ReadData(DwarfMemoryReader debugLine, NormalizeAddressDelegate addressNormalizer)
         {
             // Read header
             bool is64bit;
@@ -329,10 +329,9 @@ namespace CsDebugScript.DwarfSymbolProvider
             // Fix lines in files...
             foreach (DwarfFileInformation file in files)
             {
-                file.Lines = file.Lines.Where(l => l.Address >= codeSegmentOffset).ToList();
                 for (int i = 0; i < file.Lines.Count; i++)
                 {
-                    file.Lines[i].Address -= codeSegmentOffset;
+                    file.Lines[i].Address = (uint)addressNormalizer(file.Lines[i].Address);
                 }
             }
             return files;

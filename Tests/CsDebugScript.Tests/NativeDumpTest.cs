@@ -5,6 +5,7 @@ using Xunit;
 using System.Collections.Generic;
 using CsDebugScript.Engine;
 using CsDebugScript.Tests.Utils;
+using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
 
 namespace CsDebugScript.Tests
 {
@@ -32,6 +33,16 @@ ImportUserTypes(options, true);
         public bool ReleaseDump { get; set; }
 
         public bool LinuxDump { get; set; }
+
+        public bool NoRtti { get; set; }
+
+        public bool UsingDbgEngSymbolProvider
+        {
+            get
+            {
+                return Context.SymbolProvider is DbgEngSymbolProvider;
+            }
+        }
 
         [Fact]
         public void CurrentThreadContainsMainSourceFileName()
@@ -110,6 +121,7 @@ ImportUserTypes(options, true);
             Variable codeFunctionVariable = DefaultModule.GetVariable($"{DefaultModuleName}!defaultTestCaseAddress");
 
             Assert.True(codeFunctionVariable.GetCodeType().IsPointer);
+            Assert.True(!codeFunctionVariable.IsNullPointer());
 
             CodeFunction codeFunction = new CodePointer<CodeFunction>(new NakedPointer(codeFunctionVariable)).Element;
 
@@ -250,7 +262,10 @@ ImportUserTypes(options, true);
             Assert.True(ewptr1.IsEmpty);
             Assert.Equal(0, ewptr1.SharedCount);
             Assert.Equal(1, ewptr1.WeakCount);
-            Assert.Equal(42, ewptr1.UnsafeElement);
+            if (!LinuxDump || !NoRtti)
+            {
+                Assert.Equal(42, ewptr1.UnsafeElement);
+            }
             Assert.True(ewptr1.IsCreatedWithMakeShared);
 
             Assert.True(esptr2.IsEmpty);
@@ -273,6 +288,193 @@ ImportUserTypes(options, true);
             foreach (int value in testArray)
             {
                 Assert.Equal(0x12121212, value);
+            }
+        }
+
+        [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
+        public void SimpleMultiClassInheritance()
+        {
+            Variable c = DefaultModule.GetVariable("simpleMultiClassInheritanceTest");
+            Assert.Equal(42.0f, (float)c.GetField("c"));
+            Assert.Equal(42.0, (double)c.GetField("b"));
+            Assert.Equal(42, (byte)c.GetField("a"));
+            Variable a = c.GetBaseClass("SimpleMultiClassInheritanceA");
+            Assert.Equal(42, (byte)a.GetField("a"));
+            Variable b = c.GetBaseClass("SimpleMultiClassInheritanceB");
+            Assert.Equal(42.0, (double)b.GetField("b"));
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+Variable global = Process.Current.GetGlobal(""{DefaultModuleName}!simpleMultiClassInheritanceTest"");
+var c = new SimpleMultiClassInheritanceC(global);
+AreEqual(42.0f, c.c);
+AreEqual(42, c.BaseClass_SimpleMultiClassInheritanceA.a);
+AreEqual(42.0, c.BaseClass_SimpleMultiClassInheritanceB.b);
+                    ");
+            }
+        }
+
+        [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
+        public void MultiClassInheritance()
+        {
+            Variable c = DefaultModule.GetVariable("multiClassInheritanceTest");
+            Assert.Equal(42, (double)c.GetField("c"));
+            Assert.Equal(42, (int)c.GetField("b"));
+            Assert.Equal(42, (float)c.GetField("a"));
+            Variable a = c.GetBaseClass("MultiClassInheritanceA");
+            Assert.Equal(42, (float)a.GetField("a"));
+            Variable b = c.GetBaseClass("MultiClassInheritanceB");
+            Assert.Equal(42, (int)b.GetField("b"));
+            Assert.Equal(c.GetPointerAddress(), a.DowncastInterface().GetPointerAddress());
+            Assert.Equal(c.GetPointerAddress(), b.DowncastInterface().GetPointerAddress());
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+Variable global = Process.Current.GetGlobal(""{DefaultModuleName}!multiClassInheritanceTest"");
+var c = new MultiClassInheritanceC(global);
+var a = c.BaseClass_MultiClassInheritanceA;
+var b = c.BaseClass_MultiClassInheritanceB;
+AreEqual(42, c.c);
+AreEqual(42, a.a);
+AreEqual(42, b.b);
+IsTrue(a.GetDowncast() is MultiClassInheritanceC);
+IsTrue(b.GetDowncast() is MultiClassInheritanceC);
+AreEqual(42, a.As<MultiClassInheritanceB>().b);
+                    ");
+            }
+        }
+
+        [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
+        public void MultiClassInheritance2()
+        {
+            Variable d = DefaultModule.GetVariable("multiClassInheritanceTest2");
+            Assert.Equal(42, (double)d.GetField("d"));
+            Assert.Equal(42, (int)d.GetField("b"));
+            Assert.Equal(42, (float)d.GetField("a"));
+            Variable a = d.GetBaseClass("MultiClassInheritanceA");
+            Assert.Equal(42, (float)a.GetField("a"));
+            Variable b = d.GetBaseClass("MultiClassInheritanceB");
+            Assert.Equal(42, (int)b.GetField("b"));
+            Assert.Equal(d.GetPointerAddress(), a.DowncastInterface().GetPointerAddress());
+            Assert.Equal(d.GetPointerAddress(), b.DowncastInterface().GetPointerAddress());
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+Variable global = Process.Current.GetGlobal(""{DefaultModuleName}!multiClassInheritanceTest2"");
+var d = new MultiClassInheritanceD(global);
+var a = d.BaseClass_MultiClassInheritanceA;
+var b = d.BaseClass_MultiClassInheritanceB;
+AreEqual(42, d.d);
+AreEqual(42, a.a);
+AreEqual(42, b.b);
+IsTrue(a.GetDowncast() is MultiClassInheritanceD);
+IsTrue(b.GetDowncast() is MultiClassInheritanceD);
+AreEqual(42, a.As<MultiClassInheritanceB>().b);
+                    ");
+            }
+        }
+
+        [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
+        public void VirtualMultiClassInheritance()
+        {
+            Variable d = DefaultModule.GetVariable("virtualMultiClassInheritanceTest");
+            Assert.Equal(42, (int)d.GetField("d"));
+            Assert.Equal(42, (double)d.GetField("b"));
+            Assert.Equal(42, (float)d.GetField("c"));
+            Assert.Equal(42, (sbyte)d.GetField("a"));
+            Variable b = d.GetBaseClass("VirtualMultiClassInheritanceB");
+            Assert.Equal(42, (double)b.GetField("b"));
+            Variable ba = b.GetBaseClass("VirtualMultiClassInheritanceA");
+            Assert.Equal(42, (sbyte)ba.GetField("a"));
+            Variable c = d.GetBaseClass("VirtualMultiClassInheritanceC");
+            Assert.Equal(42, (float)c.GetField("c"));
+            Variable ca = c.GetBaseClass("VirtualMultiClassInheritanceA");
+            Assert.Equal(42, (sbyte)ca.GetField("a"));
+            Assert.Equal(ca.GetPointerAddress(), ba.GetPointerAddress());
+            Assert.Equal(d.GetPointerAddress(), b.DowncastInterface().GetPointerAddress());
+            Assert.Equal(ba.GetPointerAddress(), ba.DowncastInterface().GetPointerAddress());
+            Assert.Equal(d.GetPointerAddress(), c.DowncastInterface().GetPointerAddress());
+            Assert.Equal(ca.GetPointerAddress(), ca.DowncastInterface().GetPointerAddress());
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+Variable global = Process.Current.GetGlobal(""{DefaultModuleName}!virtualMultiClassInheritanceTest"");
+var d = new VirtualMultiClassInheritanceD(global);
+var b = d.BaseClass_VirtualMultiClassInheritanceB;
+var ba = b.BaseClass;
+var c = d.BaseClass_VirtualMultiClassInheritanceC;
+var ca = c.BaseClass;
+AreEqual(42, d.d);
+AreEqual(42, b.b);
+AreEqual(42, ba.a);
+AreEqual(42, c.c);
+AreEqual(42, ca.a);
+IsTrue(b.GetDowncast() is VirtualMultiClassInheritanceD);
+IsTrue(ba.GetDowncast() is VirtualMultiClassInheritanceD);
+IsTrue(c.GetDowncast() is VirtualMultiClassInheritanceD);
+IsTrue(ca.GetDowncast() is VirtualMultiClassInheritanceD);
+AreEqual(42, b.As<VirtualMultiClassInheritanceC>().c);
+AreEqual(42, ba.As<VirtualMultiClassInheritanceC>().c);
+AreEqual(42, ca.As<VirtualMultiClassInheritanceB>().b);
+                    ");
+            }
+        }
+
+        [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
+        public void VirtualMultiClassInheritance2()
+        {
+            Variable e = DefaultModule.GetVariable("virtualMultiClassInheritanceTest2");
+            Assert.Equal(42, (int)e.GetField("e"));
+            Assert.Equal(42, (double)e.GetField("b"));
+            Assert.Equal(42, (float)e.GetField("c"));
+            Assert.Equal(42, (sbyte)e.GetField("a"));
+            Variable a = e.GetBaseClass("VirtualMultiClassInheritanceA");
+            Assert.Equal(42, (sbyte)a.GetField("a"));
+            Variable b = e.GetBaseClass("VirtualMultiClassInheritanceB");
+            Assert.Equal(42, (double)b.GetField("b"));
+            Variable ba = b.GetBaseClass("VirtualMultiClassInheritanceA");
+            Assert.Equal(42, (sbyte)ba.GetField("a"));
+            Variable c = e.GetBaseClass("VirtualMultiClassInheritanceC");
+            Assert.Equal(42, (float)c.GetField("c"));
+            Variable ca = c.GetBaseClass("VirtualMultiClassInheritanceA");
+            Assert.Equal(42, (sbyte)ca.GetField("a"));
+            Assert.Equal(a.GetPointerAddress(), ba.GetPointerAddress());
+            Assert.Equal(ca.GetPointerAddress(), ba.GetPointerAddress());
+            Assert.Equal(e.GetPointerAddress(), b.DowncastInterface().GetPointerAddress());
+            Assert.Equal(ba.GetPointerAddress(), ba.DowncastInterface().GetPointerAddress());
+            Assert.Equal(e.GetPointerAddress(), c.DowncastInterface().GetPointerAddress());
+            Assert.Equal(ca.GetPointerAddress(), ca.DowncastInterface().GetPointerAddress());
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+Variable global = Process.Current.GetGlobal(""{DefaultModuleName}!virtualMultiClassInheritanceTest2"");
+var e = new VirtualMultiClassInheritanceE(global);
+var a = e.BaseClass_VirtualMultiClassInheritanceA;
+var b = e.BaseClass_VirtualMultiClassInheritanceB;
+var ba = b.BaseClass;
+var c = e.BaseClass_VirtualMultiClassInheritanceC;
+var ca = c.BaseClass;
+AreEqual(42, e.e);
+AreEqual(42, a.a);
+AreEqual(42, b.b);
+AreEqual(42, ba.a);
+AreEqual(42, c.c);
+AreEqual(42, ca.a);
+IsTrue(a.GetDowncast() is VirtualMultiClassInheritanceE);
+IsTrue(b.GetDowncast() is VirtualMultiClassInheritanceE);
+IsTrue(ba.GetDowncast() is VirtualMultiClassInheritanceE);
+IsTrue(c.GetDowncast() is VirtualMultiClassInheritanceE);
+IsTrue(ca.GetDowncast() is VirtualMultiClassInheritanceE);
+AreEqual(42, b.As<VirtualMultiClassInheritanceC>().c);
+AreEqual(42, a.As<VirtualMultiClassInheritanceB>().b);
+AreEqual(42, ba.As<VirtualMultiClassInheritanceC>().c);
+AreEqual(42, ca.As<VirtualMultiClassInheritanceB>().b);
+                    ");
             }
         }
 
@@ -426,9 +628,15 @@ void AreEqual<T>(T value1, T value2)
         throw new Exception($""Not equal. value1 = {value1}, value2 = {value2}"");
     }
 }
+
+void IsTrue(bool value)
+{
+    if (!value)
+        throw new Exception(""Expected value to be true"");
+}
                 " + code;
 
-            ExecuteMTA(() => { DumpInitialization.InteractiveExecution.UnsafeInterpret(code); });
+            DumpInitialization.InteractiveExecution.UnsafeInterpret(code);
         }
     }
 
@@ -564,9 +772,48 @@ void AreEqual<T>(T value1, T value2)
     public class NativeDumpTest_x64_Linux_clang : NativeDumpTest
     {
         public NativeDumpTest_x64_Linux_clang(NativeDumpTest_linux_x64_clang_Initialization initialization)
-            : base(initialization, executeCodeGen: false)
+            : base(initialization)
         {
             LinuxDump = true;
+        }
+    }
+
+    [Collection("NativeDumpTest.linux.x86.gcc.nortti.coredump")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class NativeDumpTest_x86_Linux_gcc_nortti : NativeDumpTest
+    {
+        public NativeDumpTest_x86_Linux_gcc_nortti(NativeDumpTest_linux_x86_gcc_nortti_Initialization initialization)
+            : base(initialization)
+        {
+            LinuxDump = true;
+            NoRtti = true;
+        }
+    }
+
+    [Collection("NativeDumpTest.linux.x64.gcc.nortti.coredump")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class NativeDumpTest_x64_Linux_gcc_nortti : NativeDumpTest
+    {
+        public NativeDumpTest_x64_Linux_gcc_nortti(NativeDumpTest_linux_x64_gcc_nortti_Initialization initialization)
+            : base(initialization)
+        {
+            LinuxDump = true;
+            NoRtti = true;
+        }
+    }
+
+    [Collection("NativeDumpTest.linux.x64.clang.nortti.coredump")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class NativeDumpTest_x64_Linux_clang_nortti : NativeDumpTest
+    {
+        public NativeDumpTest_x64_Linux_clang_nortti(NativeDumpTest_linux_x64_clang_nortti_Initialization initialization)
+            : base(initialization)
+        {
+            LinuxDump = true;
+            NoRtti = true;
         }
     }
     #endregion

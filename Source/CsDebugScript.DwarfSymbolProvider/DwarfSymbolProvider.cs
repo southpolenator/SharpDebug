@@ -6,6 +6,12 @@ using System.IO;
 namespace CsDebugScript.DwarfSymbolProvider
 {
     /// <summary>
+    /// Gets address offset within module when it is loaded.
+    /// </summary>
+    /// <param name="address">Virtual address that points where something should be loaded.</param>
+    public delegate ulong NormalizeAddressDelegate(ulong address);
+
+    /// <summary>
     /// DWARF symbol provider that can be used with the <see cref="Context"/>.
     /// </summary>
     /// <seealso cref="CsDebugScript.Engine.SymbolProviders.PerModuleSymbolProvider" />
@@ -34,12 +40,15 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 try
                 {
-                    IDwarfImage image = LoadImage(location);
-                    var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, image.DebugDataStrings, image.CodeSegmentOffset);
-                    var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.CodeSegmentOffset);
+                    IDwarfImage image = LoadImage(location, module.LoadOffset);
+                    var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, image.DebugDataStrings, image.NormalizeAddress);
+                    var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.NormalizeAddress);
                     var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.EhFrame, new DwarfExceptionHandlingFrameParsingInput(image));
 
-                    return new DwarfSymbolProviderModule(module, compilationUnits, lineNumberPrograms, commonInformationEntries, image.PublicSymbols, image.CodeSegmentOffset, image.Is64bit);
+                    if (compilationUnits.Length != 0 || lineNumberPrograms.Length != 0 || commonInformationEntries.Length != 0)
+                    {
+                        return new DwarfSymbolProviderModule(module, compilationUnits, lineNumberPrograms, commonInformationEntries, image.PublicSymbols, image.CodeSegmentOffset, image.Is64bit);
+                    }
                 }
                 catch
                 {
@@ -52,8 +61,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Loads the specified image.
         /// </summary>
         /// <param name="path">The image path.</param>
+        /// <param name="loadOffset">Offset from where image was loaded.</param>
         /// <returns>Loaded image interface.</returns>
-        private IDwarfImage LoadImage(string path)
+        private IDwarfImage LoadImage(string path, ulong loadOffset)
         {
             try
             {
@@ -61,7 +71,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
             catch
             {
-                return new ElfImage(path);
+                return new ElfImage(path, loadOffset);
             }
         }
 
@@ -71,8 +81,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="debugData">The debug data.</param>
         /// <param name="debugDataDescription">The debug data description.</param>
         /// <param name="debugStrings">The debug strings.</param>
-        /// <param name="codeSegmentOffset">The code segment offset.</param>
-        private static DwarfCompilationUnit[] ParseCompilationUnits(byte[] debugData, byte[] debugDataDescription, byte[] debugStrings, ulong codeSegmentOffset)
+        /// <param name="addressNormalizer">Normalize address delegate (<see cref="NormalizeAddressDelegate"/>)</param>
+        private static DwarfCompilationUnit[] ParseCompilationUnits(byte[] debugData, byte[] debugDataDescription, byte[] debugStrings, NormalizeAddressDelegate addressNormalizer)
         {
             using (DwarfMemoryReader debugDataReader = new DwarfMemoryReader(debugData))
             using (DwarfMemoryReader debugDataDescriptionReader = new DwarfMemoryReader(debugDataDescription))
@@ -82,7 +92,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                 while (!debugDataReader.IsEnd)
                 {
-                    DwarfCompilationUnit compilationUnit = new DwarfCompilationUnit(debugDataReader, debugDataDescriptionReader, debugStringsReader, codeSegmentOffset);
+                    DwarfCompilationUnit compilationUnit = new DwarfCompilationUnit(debugDataReader, debugDataDescriptionReader, debugStringsReader, addressNormalizer);
 
                     compilationUnits.Add(compilationUnit);
                 }
@@ -95,8 +105,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Parses the line number programs.
         /// </summary>
         /// <param name="debugLine">The debug line.</param>
-        /// <param name="codeSegmentOffset">The code segment offset.</param>
-        private static DwarfLineNumberProgram[] ParseLineNumberPrograms(byte[] debugLine, ulong codeSegmentOffset)
+        /// <param name="addressNormalizer">Normalize address delegate (<see cref="NormalizeAddressDelegate"/>)</param>
+        private static DwarfLineNumberProgram[] ParseLineNumberPrograms(byte[] debugLine, NormalizeAddressDelegate addressNormalizer)
         {
             using (DwarfMemoryReader debugLineReader = new DwarfMemoryReader(debugLine))
             {
@@ -104,7 +114,7 @@ namespace CsDebugScript.DwarfSymbolProvider
 
                 while (!debugLineReader.IsEnd)
                 {
-                    DwarfLineNumberProgram program = new DwarfLineNumberProgram(debugLineReader, codeSegmentOffset);
+                    DwarfLineNumberProgram program = new DwarfLineNumberProgram(debugLineReader, addressNormalizer);
 
                     programs.Add(program);
                 }

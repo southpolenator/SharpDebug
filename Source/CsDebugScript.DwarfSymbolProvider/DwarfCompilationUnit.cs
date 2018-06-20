@@ -19,10 +19,10 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="debugData">The debug data stream.</param>
         /// <param name="debugDataDescription">The debug data description stream.</param>
         /// <param name="debugStrings">The debug strings.</param>
-        /// <param name="codeSegmentOffset">The code segment offset.</param>
-        public DwarfCompilationUnit(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, DwarfMemoryReader debugStrings, ulong codeSegmentOffset)
+        /// <param name="addressNormalizer">Normalize address delegate (<see cref="NormalizeAddressDelegate"/>)</param>
+        public DwarfCompilationUnit(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, DwarfMemoryReader debugStrings, NormalizeAddressDelegate addressNormalizer)
         {
-            ReadData(debugData, debugDataDescription, debugStrings, codeSegmentOffset);
+            ReadData(debugData, debugDataDescription, debugStrings, addressNormalizer);
         }
 
         /// <summary>
@@ -47,8 +47,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="debugData">The debug data.</param>
         /// <param name="debugDataDescription">The debug data description.</param>
         /// <param name="debugStrings">The debug strings.</param>
-        /// <param name="codeSegmentOffset">The code segment offset.</param>
-        private void ReadData(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, DwarfMemoryReader debugStrings, ulong codeSegmentOffset)
+        /// <param name="addressNormalizer">Normalize address delegate (<see cref="NormalizeAddressDelegate"/>)</param>
+        private void ReadData(DwarfMemoryReader debugData, DwarfMemoryReader debugDataDescription, DwarfMemoryReader debugStrings, NormalizeAddressDelegate addressNormalizer)
         {
             // Read header
             bool is64bit;
@@ -267,7 +267,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                         }
                         else if (value.Type == DwarfAttributeValueType.Address)
                         {
-                            value.Value = value.Address - codeSegmentOffset;
+                            value.Value = addressNormalizer(value.Address);
                         }
                     }
 

@@ -63,16 +63,17 @@ namespace CsDebugScript.Engine
         uint GetTypePointerToTypeId(uint typeId);
 
         /// <summary>
-        /// Gets the names of all fields of the specified type.
+        /// Gets the names of all fields of the specified type. It searches all inherited classes too.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
         string[] GetTypeAllFieldNames(uint typeId);
 
         /// <summary>
-        /// Gets the field type id and offset of the specified type.
+        /// Gets the field type id and offset of the specified type. It searches all inherited classes too.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="fieldName">Name of the field.</param>
+        /// <returns>Tuple of filed type id and its offset. In case of field being part of virtual inheritance class, returns Tuple of virtual inheritance class type id and negative of its index entry in the virtual table.</returns>
         Tuple<uint, int> GetTypeAllFieldTypeAndOffset(uint typeId, string fieldName);
 
         /// <summary>
@@ -160,6 +161,15 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="vtableAddress">The vtable address within the module.</param>
         Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(uint vtableAddress);
+
+        /// <summary>
+        /// Gets the virtual base class start address.
+        /// </summary>
+        /// <param name="objectTypeId">Object type identifier.</param>
+        /// <param name="objectAddress">Object address.</param>
+        /// <param name="virtualTypeId">Virtual class type identifier.</param>
+        /// <returns>Address of the object which code type is virtual class.</returns>
+        ulong GetVirtualClassBaseAddress(uint objectTypeId, ulong objectAddress, uint virtualTypeId);
 
         #region CodeGen needed functionality
         /// <summary>

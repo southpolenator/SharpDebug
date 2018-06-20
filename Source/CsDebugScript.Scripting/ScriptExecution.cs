@@ -1,7 +1,7 @@
 ﻿using CsDebugScript.CodeGen;
 using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.Engine;
-using CsDebugScript.Engine.SymbolProviders;
+using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
@@ -192,18 +192,18 @@ namespace CsDebugScript
                 });
             }
 
-            // Check if we are using DIA as symbol provider
-            bool useDia = Context.SymbolProvider is DiaSymbolProvider;
+            // Check if we are using direct class access.
+            bool useDirectClassAccess = !(Context.SymbolProvider is DbgEngSymbolProvider);
 
             // Create configuration
             return new XmlConfig()
             {
                 Types = types.ToArray(),
                 Modules = modules.ToArray(),
-                UseDiaSymbolProvider = useDia,
+                UseDirectClassAccess = useDirectClassAccess,
                 CompressedOutput = true,
                 ForceUserTypesToNewInsteadOfCasting = true,
-                GeneratePhysicalMappingOfUserTypes = useDia,
+                GeneratePhysicalMappingOfUserTypes = useDirectClassAccess,
                 MultiFileExport = false,
                 Transformations = DefaultTransformations,
             };

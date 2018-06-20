@@ -313,9 +313,9 @@ namespace CsDebugScript.CodeGen.UserTypes
         protected virtual UserTypeField ExtractField(SymbolField field, UserTypeFactory factory, UserTypeGenerationFlags generationFlags, bool extractingBaseClass = false, bool forceIsStatic = false)
         {
             // Prepare data for ExtractFieldInternal
-            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
+            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess);
             bool isStatic = field.DataKind == DataKind.StaticMember || forceIsStatic;
-            TypeTree fieldType = GetFieldTypeTree(field, factory, extractingBaseClass, field.Size);
+            TypeTree fieldType = GetFieldTypeTree(field, factory, extractingBaseClass, field.BitSize);
             string fieldName = field.Name;
             string gettingField = "variable.GetField";
             string simpleFieldValue;
@@ -387,7 +387,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
                 else
                 {
-                    userTypeField.ConstructorText = userTypeField.ConstructorText.Replace("variable.GetField", "GetBaseClass");
+                    userTypeField.ConstructorText = userTypeField.ConstructorText
+                        .Replace("variable.GetField", "GetBaseClass")
+                        .Replace("GetField", "GetBaseClass");
                 }
             }
 
@@ -424,8 +426,8 @@ namespace CsDebugScript.CodeGen.UserTypes
             string fieldName = field.Name;
             string castingTypeString = GetCastingString(fieldType);
             string constructorText;
-            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
-            bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.ContainsSymbol(Symbol.Module, castingTypeString);
+            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess);
+            bool castWithNewInsteadOfCasting = forceUserTypesToNewInsteadOfCasting && factory.ContainsSymbol(Symbol.Module, castingTypeString) && !extractingBaseClass;
             var fieldTypeString = fieldType.GetTypeString();
             bool isConstant = field.LocationType == LocationType.Constant;
             string constantString = "";
@@ -515,7 +517,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         protected virtual IEnumerable<UserTypeField> ExtractFields(UserTypeFactory factory, UserTypeGenerationFlags generationFlags)
         {
             bool hasNonStatic = false;
-            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseClassFieldsFromDiaSymbolProvider);
+            bool useThisClass = generationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess);
 
             if (ExportDynamicFields)
             {
@@ -636,7 +638,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 var pointerField = userTypeArray.Key;
                 var counterField = userTypeArray.Value;
 
-                TypeTree fieldType = GetSymbolTypeTree(pointerField.Type, factory, pointerField.Size);
+                TypeTree fieldType = GetSymbolTypeTree(pointerField.Type, factory, pointerField.BitSize);
 
                 if (fieldType is ArrayTypeTree)
                     continue;
@@ -1051,7 +1053,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     UserType userType;
                     Symbol baseClassSymbol = baseClasses.First(t => !t.IsEmpty);
 
-                    if (factory.GetUserType(baseClassSymbol, out userType) && !(userType is TemplateArgumentUserType))
+                    if (!baseClassSymbol.IsVirtualInheritance && factory.GetUserType(baseClassSymbol, out userType) && !(userType is TemplateArgumentUserType))
                     {
                         baseClassOffset = baseClassSymbol.Offset;
                         return new SingleClassInheritanceWithInterfacesTypeTree(userType, factory);
@@ -1065,8 +1067,16 @@ namespace CsDebugScript.CodeGen.UserTypes
             // Single class inheritance
             if (baseClasses.Length == 1)
             {
-                // Check if base class type should be transformed
+                // Check if base class type is virtual inheritance
                 Symbol baseClassType = baseClasses[0];
+
+                if (baseClassType.IsVirtualInheritance)
+                {
+                    baseClassOffset = 0;
+                    return new MultiClassInheritanceTypeTree();
+                }
+
+                // Check if base class type should be transformed
                 UserTypeTransformation transformation = factory.FindTransformation(baseClassType, this);
 
                 if (transformation != null)

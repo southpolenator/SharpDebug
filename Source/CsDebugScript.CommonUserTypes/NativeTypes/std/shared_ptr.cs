@@ -207,7 +207,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             private UserMember<bool> isCreatedWithMakeShared;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="VisualStudio"/> class.
+            /// Initializes a new instance of the <see cref="LibStdCpp6"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
             public LibStdCpp6(Variable variable)
@@ -217,7 +217,30 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 element = UserMember.Create(() => pointer.Value.DereferencePointer().CastAs<T>());
                 sharedCount = UserMember.Create(() => (int)variable.GetField("_M_refcount").GetField("_M_pi").GetField("_M_use_count"));
                 weakCount = UserMember.Create(() => (int)variable.GetField("_M_refcount").GetField("_M_pi").GetField("_M_weak_count"));
-                isCreatedWithMakeShared = UserMember.Create(() => variable.GetField("_M_refcount").GetField("_M_pi").DowncastInterface().GetCodeType().Name.StartsWith("std::_Sp_counted_ptr_inplace<"));
+                isCreatedWithMakeShared = UserMember.Create(() =>
+                {
+                    CodeType codeType = variable.GetField("_M_refcount").GetField("_M_pi").DowncastInterface().GetCodeType();
+
+                    if (codeType.Name.StartsWith("std::_Sp_counted_ptr_inplace<"))
+                    {
+                        return true;
+                    }
+
+                    if (!codeType.Name.StartsWith("std::_Sp_counted_deleter<"))
+                    {
+                        return false;
+                    }
+
+                    try
+                    {
+                        codeType = (CodeType)codeType.TemplateArguments[1];
+                        return codeType.Name.StartsWith("std::__shared_ptr<") && codeType.Name.Contains("::_Deleter<");
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                });
             }
 
             /// <summary>
@@ -310,12 +333,143 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
+        /// Clang libc++ implementation of std::shared_ptr
+        /// </summary>
+        public class ClangLibCpp : Ishared_ptr
+        {
+            /// <summary>
+            /// The pointer field
+            /// </summary>
+            private UserMember<Variable> pointer;
+
+            /// <summary>
+            /// The dereferenced pointer
+            /// </summary>
+            private UserMember<T> element;
+
+            /// <summary>
+            /// The shared count
+            /// </summary>
+            private UserMember<int> sharedCount;
+
+            /// <summary>
+            /// The weak count
+            /// </summary>
+            private UserMember<int> weakCount;
+
+            /// <summary>
+            /// Flag that indicated whether this instance was created with make shared
+            /// </summary>
+            private UserMember<bool> isCreatedWithMakeShared;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public ClangLibCpp(Variable variable)
+            {
+                // Initialize members
+                pointer = UserMember.Create(() => variable.GetField("__ptr_"));
+                element = UserMember.Create(() => pointer.Value.DereferencePointer().CastAs<T>());
+                sharedCount = UserMember.Create(() => (int)variable.GetField("__cntrl_").GetField("__shared_owners_") + 1);
+                weakCount = UserMember.Create(() => (int)variable.GetField("__cntrl_").GetField("__shared_weak_owners_") + 1);
+                isCreatedWithMakeShared = UserMember.Create(() => variable.GetField("__cntrl_").DowncastInterface().GetCodeType().Name.StartsWith("std::__1::__shared_ptr_emplace<"));
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether this instance is created with make shared.
+            /// </summary>
+            /// <value>
+            /// <c>true</c> if this instance is created with make shared; otherwise, <c>false</c>.
+            /// </value>
+            public bool IsCreatedWithMakeShared
+            {
+                get
+                {
+                    return isCreatedWithMakeShared.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether this instance is empty.
+            /// </summary>
+            /// <value>
+            ///   <c>true</c> if this instance is empty; otherwise, <c>false</c>.
+            /// </value>
+            public bool IsEmpty
+            {
+                get
+                {
+                    return pointer.Value.IsNullPointer();
+                }
+            }
+
+            /// <summary>
+            /// Gets the dereferenced pointer.
+            /// </summary>
+            public T Element
+            {
+                get
+                {
+                    return element.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the shared count.
+            /// </summary>
+            public int SharedCount
+            {
+                get
+                {
+                    return sharedCount.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the weak count.
+            /// </summary>
+            public int WeakCount
+            {
+                get
+                {
+                    return weakCount.Value;
+                }
+            }
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // __ptr_
+                // __cntrl_
+                // | __shared_owners_
+                // | __shared_weak_owners_
+                CodeType __ptr_, __cntrl_, __shared_owners_, __shared_weak_owners_;
+
+                if (!codeType.GetFieldTypes().TryGetValue("__ptr_", out __ptr_))
+                    return false;
+                if (!codeType.GetFieldTypes().TryGetValue("__cntrl_", out __cntrl_))
+                    return false;
+                if (!__cntrl_.GetFieldTypes().TryGetValue("__shared_owners_", out __shared_owners_))
+                    return false;
+                if (!__cntrl_.GetFieldTypes().TryGetValue("__shared_weak_owners_", out __shared_weak_owners_))
+                    return false;
+                return true;
+            }
+        }
+
+        /// <summary>
         /// The type selector
         /// </summary>
         private static TypeSelector<Ishared_ptr> typeSelector = new TypeSelector<Ishared_ptr>(new[]
         {
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio), VisualStudio.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, bool>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
 
         /// <summary>

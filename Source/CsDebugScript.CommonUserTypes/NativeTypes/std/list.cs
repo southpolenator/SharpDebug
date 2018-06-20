@@ -350,9 +350,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 CodeType codeType = variable.GetCodeType();
                 CodeType templateCodeType = (CodeType)codeType.TemplateArguments[0];
-                CodeType intCodeType = (CodeType)codeType.GetFieldType("_M_impl").GetFieldType("_M_node").GetFieldType("_M_storage").TemplateArguments[0];
+                CodeType dataCodeType = (CodeType)codeType.GetFieldType("_M_impl").GetFieldType("_M_node").GetFieldType("_M_storage").TemplateArguments[0];
 
-                count = UserMember.Create(() => new list<int>.LibStdCpp6.item(variable.GetField("_M_impl").GetField("_M_node"), intCodeType).Value);
+                count = UserMember.Create(() => new list<int>.LibStdCpp6.item(variable.GetField("_M_impl").GetField("_M_node"), dataCodeType).Value);
                 head = UserMember.Create(() => new item(variable.GetField("_M_impl").GetField("_M_node"), templateCodeType).Next);
             }
 
@@ -433,6 +433,222 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
+        /// libstdc++ 6 implementations of std::basic_string with _GLIBCXX_USE_CXX11_ABI not defined.
+        /// </summary>
+        public class LibStdCpp6_NoAbi : IReadOnlyCollection<T>
+        {
+            /// <summary>
+            /// std::list item
+            /// </summary>
+            private class item
+            {
+                /// <summary>
+                /// The next item
+                /// </summary>
+                private UserMember<item> next;
+
+                /// <summary>
+                /// The previous item
+                /// </summary>
+                private UserMember<item> previous;
+
+                /// <summary>
+                /// The value
+                /// </summary>
+                private UserMember<T> value;
+
+                /// <summary>
+                /// Initializes a new instance of the <see cref="item" /> class.
+                /// </summary>
+                /// <param name="variable">The variable.</param>
+                /// <param name="templateCodeType">Template code type.</param>
+                public item(Variable variable, CodeType templateCodeType)
+                {
+                    next = UserMember.Create(() => new item(variable.GetField("_M_next").CastAs(variable.GetCodeType()), templateCodeType));
+                    previous = UserMember.Create(() => new item(variable.GetField("_M_prev").CastAs(variable.GetCodeType()), templateCodeType));
+                    value = UserMember.Create(() => variable.GetField("_M_storage").GetField("_M_storage").CastAs(templateCodeType).CastAs<T>());
+                }
+
+                /// <summary>
+                /// Gets the next item in the list.
+                /// </summary>
+                public item Next
+                {
+                    get
+                    {
+                        return next.Value;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the previous item in the list.
+                /// </summary>
+                public item Previous
+                {
+                    get
+                    {
+                        return previous.Value;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the value stored in the item.
+                /// </summary>
+                public T Value
+                {
+                    get
+                    {
+                        return value.Value;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// The number of elements
+            /// </summary>
+            UserMember<int> count;
+
+            /// <summary>
+            /// The anchor of the list
+            /// </summary>
+            UserMember<Variable> anchor;
+
+            /// <summary>
+            /// The head of the list
+            /// </summary>
+            UserMember<item> head;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="LibStdCpp6_NoAbi"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public LibStdCpp6_NoAbi(Variable variable)
+            {
+                CodeType codeType = variable.GetCodeType();
+                CodeType templateCodeType = (CodeType)codeType.TemplateArguments[0];
+                CodeType listNodeCodeType = GetListNodeCodeType(codeType);
+
+                count = UserMember.Create(() =>
+                {
+                    int count = 0;
+                    Variable start = anchor.Value;
+                    Variable next = start.GetField("_M_next");
+
+                    while (next.GetPointerAddress() != start.GetPointerAddress())
+                    {
+                        next = next.GetField("_M_next");
+                        count++;
+                    }
+                    return count;
+                });
+                anchor = UserMember.Create(() => variable.GetField("_M_impl").GetField("_M_node"));
+                head = UserMember.Create(() => new item(anchor.Value.GetField("_M_next").CastAs(listNodeCodeType), templateCodeType));
+            }
+
+            private item Head
+            {
+                get
+                {
+                    return head.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the number of elements in the collection.
+            /// </summary>
+            public int Count
+            {
+                get
+                {
+                    return count.Value;
+                }
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through the collection.
+            /// </summary>
+            public IEnumerator<T> GetEnumerator()
+            {
+                return Enumerate().GetEnumerator();
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through a collection.
+            /// </summary>
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return Enumerate().GetEnumerator();
+            }
+
+            /// <summary>
+            /// Enumerates this list.
+            /// </summary>
+            private IEnumerable<T> Enumerate()
+            {
+                item item = Head;
+                for (int i = 0; i < Count; i++)
+                {
+                    yield return item.Value;
+                    item = item.Next;
+                }
+            }
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // _M_impl
+                // | _M_node
+                //   | _M_next
+                //   | _M_prev
+                // _List_node code type needs to exist in the same domain where code type for _M_node exists, just class name should be changed to _List_node
+                // | _M_storage
+                CodeType _M_impl, _M_node, _M_next, _M_prev, _List_node, _M_storage;
+
+                if (!codeType.GetFieldTypes().TryGetValue("_M_impl", out _M_impl))
+                    return false;
+                if (!_M_impl.GetFieldTypes().TryGetValue("_M_node", out _M_node))
+                    return false;
+
+                var _M_node_Fields = _M_node.GetFieldTypes();
+
+                if (!_M_node_Fields.TryGetValue("_M_next", out _M_next) || !_M_node_Fields.TryGetValue("_M_prev", out _M_prev))
+                    return false;
+
+                try
+                {
+                    _List_node = GetListNodeCodeType(codeType);
+                }
+                catch
+                {
+                    return false;
+                }
+
+                if (!_List_node.GetFieldTypes().TryGetValue("_M_storage", out _M_storage))
+                    return false;
+                return true;
+            }
+
+            /// <summary>
+            /// Finds _List_node code type for the specified list code type.
+            /// </summary>
+            /// <param name="codeType">std::list code type</param>
+            private static CodeType GetListNodeCodeType(CodeType codeType)
+            {
+                string elementTypeName = codeType.TemplateArgumentsStrings[0];
+                string listNodeCodeTypeName;
+                if (elementTypeName.EndsWith(">"))
+                    listNodeCodeTypeName = $"std::_List_node<{elementTypeName} >";
+                else
+                    listNodeCodeTypeName = $"std::_List_node<{elementTypeName}>";
+                return CodeType.Create(listNodeCodeTypeName, codeType.Module);
+            }
+        }
+
+        /// <summary>
         /// The type selector
         /// </summary>
         private static TypeSelector<IReadOnlyCollection<T>> typeSelector = new TypeSelector<IReadOnlyCollection<T>>(new[]
@@ -440,6 +656,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2013), VisualStudio2013.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2015), VisualStudio2015.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6_NoAbi), LibStdCpp6_NoAbi.VerifyCodeType),
         });
 
         /// <summary>
