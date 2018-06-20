@@ -262,6 +262,12 @@ namespace CsDebugScript.Engine
         void GetModuleVersion(Module module, out int major, out int minor, out int revision, out int patch);
 
         /// <summary>
+        /// Returns address of requested symbol.
+        /// </summary>
+        /// <param name="symbol">The symbol.</param>
+        ulong GetSymbolAddress(string symbol);
+
+        /// <summary>
         /// Determines whether the specified process is being debugged as minidump without heap.
         /// </summary>
         /// <param name="process">The process.</param>
@@ -289,17 +295,8 @@ namespace CsDebugScript.Engine
         /// Adds new breakpoint to the given process.
         /// </summary>
         /// <param name="process">Process.</param>
-        /// <param name="expression">Expression to be evaluated into breakpoint.</param>
+        /// <param name="breakpointSpec">Description of this breakpoint.</param>
         /// <returns>New breakpoint.</returns>
-        IBreakpoint AddBreakpoint(Process process, string expression);
-
-        /// <summary>
-        /// Adds new breakpoint with assosiated action.
-        /// </summary>
-        /// <param name="process">Process.</param>
-        /// <param name="expression">Expression to be evaluated into breakpoint.</param>
-        /// <param name="action">Action to be executed when breakpoint is hit.</param>
-        /// <returns>New breakpoint.</returns>
-        IBreakpoint AddBreakpoint(Process process, string expression, Func<OnBreakpointHit> action);
+        IBreakpoint AddBreakpoint(Process process, BreakpointSpec breakpointSpec);
     }
 }

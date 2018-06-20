@@ -504,21 +504,18 @@ namespace CsDebugScript.VS
         /// Adds new breakpoint to the given process.
         /// </summary>
         /// <param name="process">Process.</param>
-        /// <param name="expression">Expression to be evaluated into breakpoint.</param>
+        /// <param name="breakpointSpec">Description of this breakpoint.</param>
         /// <returns>New breakpoint.</returns>
-        public IBreakpoint AddBreakpoint(Process process, string expression)
+        public IBreakpoint AddBreakpoint(Process process, BreakpointSpec breakpointSpec)
         {
             throw new NotImplementedException();
         }
 
         /// <summary>
-        /// Adds new breakpoint with associated action.
+        /// Returns address of requested symbol.
         /// </summary>
-        /// <param name="process">Process.</param>
-        /// <param name="expression">Expression to be evaluated into breakpoint.</param>
-        /// <param name="action">Action to be executed when breakpoint is hit.</param>
-        /// <returns>New breakpoint.</returns>
-        public IBreakpoint AddBreakpoint(Process process, string expression, Func<OnBreakpointHit> action)
+        /// <param name="symbol">The symbol.</param>
+        public ulong GetSymbolAddress(string symbol)
         {
             throw new NotImplementedException();
         }

@@ -559,6 +559,16 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Returns address of requested symbol or throws exception if the symbol can't be found.
+        /// </summary>
+        /// <param name="symbol">Symbol to search against.</param>
+        /// <returns></returns>
+        public static ulong GetSymbolAddress(string symbol)
+        {
+            return Context.Debugger.GetSymbolAddress(symbol);
+        }
+
+        /// <summary>
         /// Reads the memory from the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
@@ -687,12 +697,11 @@ namespace CsDebugScript
         /// <summary>
         /// Adds breakpoint to current process.
         /// </summary>
-        /// <param name="expression">Expression to be evaluated into breakpoint.</param>
-        /// <param name="action">Action to be executed when breakpoint is hit.</param>
+        /// <param name="breakpointSpec">Description of breakpoint to be added.</param>
         /// <returns></returns>
-        public static IBreakpoint AddBreakpoint(string expression, Func<OnBreakpointHit> action)
+        public static IBreakpoint AddBreakpoint(BreakpointSpec breakpointSpec)
         {
-            return Context.Debugger.AddBreakpoint(Process.Current, expression, action);
+            return Context.Debugger.AddBreakpoint(Process.Current, breakpointSpec);
         }
         #endregion
 

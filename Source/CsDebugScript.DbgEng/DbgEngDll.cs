@@ -55,7 +55,11 @@ namespace CsDebugScript.Engine.Debuggers
             originalClient = debugClient;
             dbgEngSymbolProvider = SimpleCache.Create(() => new DbgEngSymbolProvider(this));
             stateCache = new System.Threading.ThreadLocal<StateCache>(() => new StateCache(this));
-            debuggeeFlowController = new DebuggeeFlowController(this);
+
+            if (IsLiveDebugging)
+            {
+                debuggeeFlowController = new DebuggeeFlowController(this);
+            }
         }
 
         /// <summary>
@@ -452,6 +456,46 @@ namespace CsDebugScript.Engine.Debuggers
                     }
                 }
                 return sb.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Returns address of requested symbol.
+        /// </summary>
+        /// <param name="symbol">Symbol name.</param>
+        /// <returns>Address of symbol.</returns>
+        public ulong GetSymbolAddress(string symbol)
+        {
+            try
+            {
+                return Symbols.GetOffsetByNameWide(symbol);
+            }
+            catch (Exception ex)
+            {
+                if (ex.HResult == -2147467259)
+                {
+                    throw new NoSymbolWithGivenNameFound(symbol);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Add new breakpoint.
+        /// </summary>
+        /// <param name="process">Target process for breakpoint.</param>
+        /// <param name="breakpointSpec">Description of this breakpoint.</param>
+        /// <returns></returns>
+        public IBreakpoint AddBreakpoint(Process process, BreakpointSpec breakpointSpec)
+        {
+            using (var processSwitcher = new ProcessSwitcher(StateCache, process))
+            {
+                DbgEngBreakpoint breakpoint = new DbgEngBreakpoint(breakpointSpec, () => process.InvalidateProcessCache(), Control);
+                debuggeeFlowController.AddBreakpoint(breakpoint);
+                return breakpoint;
             }
         }
 
@@ -1664,26 +1708,7 @@ namespace CsDebugScript.Engine.Debuggers
             ReadProcessMemoryProc64 ReadMemoryRoutine,
             GetModuleBaseProc64 GetModuleBaseRoutine);
 
-        public IBreakpoint AddBreakpoint(Process process, string expression)
-        {
-            DbgEngBreakpoint breakpoint = new DbgEngBreakpoint(expression, () => OnBreakpointHit.Break, () => process.InvalidateProcessCache(), Control);
-            debuggeeFlowController.AddBreakpoint(breakpoint);
-            return breakpoint;
-        }
 
-        public IBreakpoint AddBreakpoint(Process process, string expression, Func<OnBreakpointHit> action)
-        {
-            //TODO: Don't need process switch here.
-            //
-            using (var processSwitcher = new ProcessSwitcher(StateCache, process))
-            {
-                DbgEngBreakpoint breakpoint = new DbgEngBreakpoint(expression, action, () => process.InvalidateProcessCache(), Control);
-
-                debuggeeFlowController.AddBreakpoint(breakpoint);
-
-                return breakpoint;
-            }
-        }
 #pragma warning restore CS0649
         #endregion
     }

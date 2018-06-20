@@ -40,6 +40,8 @@ namespace CsDebugScript.Tests
 
         private const string TestProcessPathx64 = "NativeDumpTest.x64.exe";
         private const string TestProcessPathx86 = "NativeDumpTest.x86.exe";
+        private const string ModuleNamex64 = "NativeDumpTest_x64";
+        private const string ModuleNamex86 = "NativeDumpTest_x86";
         private const string DefaultSymbolPath = DumpInitialization.DefaultDumpPath;
 
         /// <summary>
@@ -52,6 +54,14 @@ namespace CsDebugScript.Tests
             get
             {
                 return Path.Combine(DumpInitialization.DefaultDumpPath, Environment.Is64BitProcess ? TestProcessPathx64 : TestProcessPathx86);
+            }
+        }
+
+        private static string TargetModuleName
+        {
+            get
+            {
+                return Environment.Is64BitProcess ? ModuleNamex64 : ModuleNamex86;
             }
         }
 
@@ -159,7 +169,10 @@ namespace CsDebugScript.Tests
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
-            var bp = Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () => { return OnBreakpointHit.Continue; });
+            ulong functionAddress = Debugger.GetSymbolAddress($"{TargetModuleName}!InfiniteRecursionTestCase");
+            BreakpointSpec bpSpec = new BreakpointSpec(functionAddress, () => BreakpointHitResult.Continue);
+
+            var bp = Debugger.AddBreakpoint(bpSpec);
 
             Debugger.ContinueExecution();
             bp.WaitForHit();
@@ -169,10 +182,9 @@ namespace CsDebugScript.Tests
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
-            var bp = Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () =>
-            {
-                return OnBreakpointHit.Break;
-            });
+            ulong functionAddress = Debugger.GetSymbolAddress($"{TargetModuleName}!InfiniteRecursionTestCase");
+            BreakpointSpec bpSpec = new BreakpointSpec(functionAddress);
+            var bp = Debugger.AddBreakpoint(bpSpec);
 
             Debugger.ContinueExecution();
             bp.WaitForHit();
@@ -204,12 +216,18 @@ namespace CsDebugScript.Tests
             System.Threading.AutoResetEvent are = new System.Threading.AutoResetEvent(false);
             int breakpointHitCount = 0;
 
-            Debugger.AddBreakpoint("NativeDumpTest_x64!InfiniteRecursionTestCase", () =>
+            ulong functionAddress = Debugger.GetSymbolAddress($"{TargetModuleName}!InfiniteRecursionTestCase");
+            BreakpointSpec bpSpec = new BreakpointSpec(functionAddress);
+            bpSpec.BreakpointAction = () =>
             {
                 Thread mainThread = FindThreadHostingMain();
-                int recursionDepthCount = 
+                int recursionDepthCount =
                     mainThread.StackTrace.Frames.
                     Where(frame => frame.FunctionName.Contains("InfiniteRecursionTestCase")).Count();
+
+                // Insure that top of main thread points to the same location as breakpoint address.
+                //
+                Assert.Equal(functionAddress, mainThread.StackTrace.Frames[0].InstructionOffset);
 
                 breakpointHitCount++;
                 Assert.Equal(breakpointHitCount, recursionDepthCount);
@@ -219,8 +237,10 @@ namespace CsDebugScript.Tests
                     are.Set();
                 }
 
-                return OnBreakpointHit.Continue;
-            });
+                return BreakpointHitResult.Continue;
+            };
+
+            Debugger.AddBreakpoint(bpSpec);
 
             Debugger.ContinueExecution();
             are.WaitOne();
@@ -287,6 +307,16 @@ namespace CsDebugScript.Tests
             // Not yet implemented.
             // ContinousTestExecutionWrapper(GoBreakMultipleProcessesBody, DefaultTimeout);
         }
+
+        [Fact]
+        public void CheckIsLiveModeDebugging() => ContinousTestExecutionWrapper(() =>
+        {
+            InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
+            DbgEngDll debugger = Context.Debugger as DbgEngDll;
+
+            Assert.NotNull(debugger);
+            Assert.True(debugger.IsLiveDebugging);
+        }, DefaultTimeout);
 
         /// <summary>
         /// Initializes the test class with the specified process file.

@@ -17,7 +17,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <summary>
         /// Action to be executed when this breakpoint is hit.
         /// </summary>
-        private Func<OnBreakpointHit> breakpointAction;
+        private Func<BreakpointHitResult> breakpointAction;
 
         /// <summary>
         /// Invalidate all the needed caches when break happens on this breakpoint.
@@ -37,27 +37,31 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <summary>
         /// Constructor for creating new breakpoints.
         /// </summary>
-        /// <param name="breakpointExpression">Breakpoint expression.</param>
-        /// <param name="breakpointAction">Breakpoint action.</param>
+        /// <param name="breakpointSpec">Spec describing this breakpoint.</param>
         /// <param name="invalidateCache">Invalidate cache action.</param>
         /// <param name="debugControlInterface">Debug control interface.</param>
         /// <remarks>
         /// This about adding some sort of factory pattern here.
         /// </remarks>
-        public DbgEngBreakpoint(string breakpointExpression, Func<OnBreakpointHit> breakpointAction, Action invalidateCache, IDebugControl7 debugControlInterface)
+        public DbgEngBreakpoint(BreakpointSpec breakpointSpec, Action invalidateCache, IDebugControl7 debugControlInterface)
         {
             this.debugControlInterface = debugControlInterface;
-            this.breakpointAction = breakpointAction;
+            this.breakpointAction = breakpointSpec.BreakpointAction;
             this.invalidateCache = invalidateCache;
 
             unchecked
             {
-                // TODO: Add support for data breakpoints.
-                //
-                breakpoint = debugControlInterface.AddBreakpoint2((uint)Defines.DebugBreakpointCode, (uint)Defines.DebugAnyId);
+                if (breakpointSpec.BreakpointType == BreakpointType.Code)
+                {
+                    breakpoint = debugControlInterface.AddBreakpoint2((uint)Defines.DebugBreakpointCode, (uint)Defines.DebugAnyId);
+                }
+                else
+                {
+                    throw new NotImplementedException("Only supports Code breakpoints");
+                }
             }
 
-            breakpoint.SetOffsetExpressionWide(breakpointExpression);
+            breakpoint.SetOffset(breakpointSpec.BreakpointAddress);
             breakpoint.SetFlags((uint)Defines.DebugBreakpointEnabled);
         }
 
@@ -80,10 +84,10 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <summary>
         /// Execute action when this breakpoint is hit.
         /// </summary>
-        public OnBreakpointHit ExecuteAction()
+        public BreakpointHitResult ExecuteAction()
         {
             invalidateCache();
-            OnBreakpointHit bpHitState = breakpointAction();
+            BreakpointHitResult bpHitState = breakpointAction();
             breakpointHitEvent.Set();
 
             return bpHitState;
@@ -102,7 +106,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// Set new action.
         /// </summary>
         /// <param name="action">New action to be set.</param>
-        public void SetAction(Func<OnBreakpointHit> action)
+        public void SetAction(Func<BreakpointHitResult> action)
         {
             breakpointAction = action;
         }

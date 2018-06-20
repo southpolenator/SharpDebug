@@ -609,9 +609,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Adds new breakpoint to the given process.
         /// </summary>
         /// <param name="process">Process.</param>
-        /// <param name="expression">Expression to be evaluated into breakpoint.</param>
+        /// <param name="address">Expression to be evaluated into breakpoint.</param>
         /// <returns>New breakpoint.</returns>
-        public IBreakpoint AddBreakpoint(Process process, string expression)
+        public IBreakpoint AddBreakpointCode(Process process, ulong address)
         {
             throw new NotImplementedException();
         }
@@ -620,10 +620,18 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Adds new breakpoint with assosiated action.
         /// </summary>
         /// <param name="process">Process.</param>
-        /// <param name="expression">Expression to be evaluated into breakpoint.</param>
-        /// <param name="action">Action to be executed when breakpoint is hit.</param>
+        /// <param name="breakpointSpec">Description of this breakpoint.</param>
         /// <returns>New breakpoint.</returns>
-        public IBreakpoint AddBreakpoint(Process process, string expression, Func<OnBreakpointHit> action)
+        public IBreakpoint AddBreakpoint(Process process, BreakpointSpec breakpointSpec)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Returns address of requested symbol.
+        /// </summary>
+        /// <param name="symbol">The symbol.</param>
+        public ulong GetSymbolAddress(string symbol)
         {
             throw new NotImplementedException();
         }
