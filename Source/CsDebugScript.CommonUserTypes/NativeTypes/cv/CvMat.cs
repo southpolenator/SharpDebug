@@ -1,4 +1,5 @@
-﻿using CsDebugScript.Exceptions;
+﻿using CsDebugScript.Drawing.Interfaces;
+using CsDebugScript.Exceptions;
 
 namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
 {
@@ -6,7 +7,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
     /// Implementation of CvMat class.
     /// </summary>
     [UserType(TypeName = "CvMat")]
-    public class CvMat : DynamicSelfUserType
+    public class CvMat : DynamicSelfUserType, IDrawingVisualizerObject
     {
         /// <summary>
         /// Magic value used to verify that CvMat type is correct.
@@ -106,6 +107,25 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
         /// Gets the step (or stride) in bytes.
         /// </summary>
         public int Step => (int)self.step;
+
+        /// <summary>
+        /// Cheks if data is correct and object can be visualized as a drawing.
+        /// </summary>
+        /// <returns><c>true</c> if data is correct and object can be visualized as a drawing.</returns>
+        public bool CanVisualize()
+        {
+            return IsCorrect && Rows > 0 && Columns > 0 && !Data.IsNull;
+        }
+
+        /// <summary>
+        /// Creates drawing that should be visualized.
+        /// </summary>
+        /// <param name="graphics">Graphics object used to create drawings.</param>
+        /// <returns>Drawing object that should be visualized.</returns>
+        public IDrawing CreateDrawing(IGraphics graphics)
+        {
+            return Mat.CreateDrawing(graphics, Columns, Rows, Data, Step, Type);
+        }
 
         /// <summary>
         /// Verifies if the specified code type is correct for this class.

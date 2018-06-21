@@ -1,4 +1,6 @@
-﻿using CsDebugScript.Exceptions;
+﻿using CsDebugScript.Drawing.Interfaces;
+using CsDebugScript.Exceptions;
+using System;
 using System.Linq;
 
 namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
@@ -7,7 +9,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
     /// Implementation of cv::Mat class.
     /// </summary>
     [UserType(TypeName = "cv::Mat")]
-    public class Mat : DynamicSelfUserType
+    public class Mat : DynamicSelfUserType, IDrawingVisualizerObject
     {
         /// <summary>
         /// Magic value used to verify that cv::Mat flags is correct.
@@ -106,6 +108,125 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
             {
                 result[i] = (int)array.GetArrayElement(i);
             }
+            return result;
+        }
+
+        /// <summary>
+        /// Cheks if data is correct and object can be visualized as a drawing.
+        /// </summary>
+        /// <returns><c>true</c> if data is correct and object can be visualized as a drawing.</returns>
+        public bool CanVisualize()
+        {
+            return IsCorrect && Dimensions == 2 && Sizes[0] > 0 && Sizes[1] > 0 && !Data.IsNull;
+        }
+
+        /// <summary>
+        /// Creates drawing that should be visualized.
+        /// </summary>
+        /// <param name="graphics">Graphics object used to create drawings.</param>
+        /// <returns>Drawing object that should be visualized.</returns>
+        public IDrawing CreateDrawing(IGraphics graphics)
+        {
+            return CreateDrawing(graphics, Sizes[0], Sizes[1], Data, Steps[0], Type);
+        }
+
+        /// <summary>
+        /// Creates drawing that should be visualized based on cv::Mat data.
+        /// </summary>
+        /// <param name="graphics">Graphics object used to create drawings.</param>
+        /// <param name="width">Bitmap width.</param>
+        /// <param name="height">Bitmap height.</param>
+        /// <param name="data">Pointer to where start of the data is.</param>
+        /// <param name="stride">Row stride in bytes.</param>
+        /// <param name="type">Matrix element type.</param>
+        /// <returns>Drawing object that should be visualized.</returns>
+        internal static IDrawing CreateDrawing(IGraphics graphics, int width, int height, NakedPointer data, int stride, MatType type)
+        {
+            ChannelType[] channels;
+
+            if (type.Channels == 3)
+            {
+                channels = Channels.BGR;
+            }
+            else if (type.Channels == 1)
+            {
+                channels = Channels.Grayscale;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            if (type.Type == typeof(byte))
+            {
+                return graphics.CreateBitmap(width, height, channels, ReadPixels<byte>(width, height, data, stride, type));
+            }
+            else if (type.Type == typeof(sbyte))
+            {
+                return graphics.CreateBitmap(width, height, channels, ReadPixels<sbyte>(width, height, data, stride, type));
+            }
+            else if (type.Type == typeof(ushort))
+            {
+                return graphics.CreateBitmap(width, height, channels, ReadPixels<ushort>(width, height, data, stride, type));
+            }
+            else if (type.Type == typeof(short))
+            {
+                return graphics.CreateBitmap(width, height, channels, ReadPixels<short>(width, height, data, stride, type));
+            }
+            else if (type.Type == typeof(int))
+            {
+                return graphics.CreateBitmap(width, height, channels, ReadPixels<int>(width, height, data, stride, type));
+            }
+            else if (type.Type == typeof(float))
+            {
+                return graphics.CreateBitmap(width, height, channels, ReadPixels<float>(width, height, data, stride, type));
+            }
+            else if (type.Type == typeof(double))
+            {
+                return graphics.CreateBitmap(width, height, channels, ReadPixels<double>(width, height, data, stride, type));
+            }
+
+            throw new System.NotImplementedException();
+        }
+
+        /// <summary>
+        /// Reads pixels data into single array of pixels.
+        /// </summary>
+        /// <typeparam name="T">Type of the pixel element.</typeparam>
+        /// <param name="width">Bitmap width.</param>
+        /// <param name="height">Bitmap height.</param>
+        /// <param name="data">Pointer to where start of the data is.</param>
+        /// <param name="stride">Row stride in bytes.</param>
+        /// <param name="type">Matrix element type.</param>
+        /// <returns>Array of pixels.</returns>
+        internal static T[] ReadPixels<T>(int width, int height, NakedPointer data, int stride, MatType type)
+        {
+            T[] result = new T[width * height * type.Channels];
+
+            if (stride == type.Bits * type.Channels * width)
+            {
+                CodeArray<T> array = new CodeArray<T>(data, width * height * type.Channels);
+
+                for (int i = 0; i < result.Length; i++)
+                {
+                    result[i] = array[i];
+                }
+            }
+            else
+            {
+                int rowElements = width * type.Channels;
+
+                for (int y = 0, j = 0; y < height; y++)
+                {
+                    CodeArray<T> array = new CodeArray<T>(data.AdjustPointer(stride * y), rowElements);
+
+                    for (int x = 0; x < rowElements; x++, j++)
+                    {
+                        result[j] = array[x];
+                    }
+                }
+            }
+
             return result;
         }
 
