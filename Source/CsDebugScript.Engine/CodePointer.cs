@@ -151,14 +151,32 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="variable">The variable.</param>
         public CodePointer(Variable variable)
-            : base(variable)
+            : base(CastIfNecessary(variable))
         {
             if (!GetCodeType().IsPointer)
             {
                 throw new WrongCodeTypeException(variable, nameof(variable), "pointer");
             }
 
-            element = UserMember.Create(() => variable.DereferencePointer().CastAs<T>());
+            element = UserMember.Create(() => DereferencePointer().CastAs<T>());
+        }
+
+        /// <summary>
+        /// Casts the specified variable to type that is usable by this class if it was naked pointer.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        internal static Variable CastIfNecessary(Variable variable)
+        {
+            if (variable.GetCodeType() is NakedPointerCodeType)
+            {
+                // TODO: CodeType newCodeType = CodeType.Create<T>();
+                CodeType newCodeType = BuiltinCodeTypes.GetCodeType<T>(variable.GetCodeType().Module);
+
+                newCodeType = newCodeType.PointerToType;
+                return variable.CastAs(newCodeType);
+            }
+
+            return variable;
         }
 
         /// <summary>

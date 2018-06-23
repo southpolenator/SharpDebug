@@ -267,6 +267,7 @@ namespace CsDebugScript
         /// <param name="length">The array length.</param>
         private void Initialize(Variable variable, int length)
         {
+            variable = CodePointer<T>.CastIfNecessary(variable);
             this.variable = variable;
             Length = length;
             preCalculatedArray = ReadArray();

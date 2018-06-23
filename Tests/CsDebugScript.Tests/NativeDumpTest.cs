@@ -555,6 +555,36 @@ for (int i = 0; i < intTemplate.values.Length; i++)
             VerifyBuiltinType(nativeCodeType, expected);
         }
 
+        [Fact]
+        public void TestReadingBuiltinTypes()
+        {
+            Variable var = DefaultModule.GetVariable("builtinTypesTest");
+            TestReading<bool>(var.GetField("b"), false);
+            TestReading<sbyte>(var.GetField("i8"), 0);
+            TestReading<short>(var.GetField("i16"), 0);
+            TestReading<int>(var.GetField("i32"), 0);
+            TestReading<long>(var.GetField("i64"), 0);
+            TestReading<byte>(var.GetField("u8"), 0);
+            TestReading<ushort>(var.GetField("u16"), 0);
+            TestReading<uint>(var.GetField("u32"), 0);
+            TestReading<ulong>(var.GetField("u64"), 0);
+            TestReading<float>(var.GetField("f32"), 0);
+            TestReading<double>(var.GetField("f64"), 0);
+        }
+
+        private static void TestReading<T>(Variable var, T expectedValue)
+        {
+            Assert.Equal(expectedValue, var.CastAs<T>());
+            Assert.Equal(expectedValue, (T)Convert.ChangeType(var, typeof(T)));
+            NakedPointer pointer = new NakedPointer(var.GetPointerAddress());
+            CodePointer<T> codePointer = new CodePointer<T>(pointer);
+            Assert.Equal(expectedValue, codePointer.Element);
+            codePointer = new CodePointer<T>(pointer.GetPointer());
+            Assert.Equal(expectedValue, codePointer.Element);
+            CodeArray<T> codeArray = new CodeArray<T>(pointer, 1);
+            Assert.Equal(expectedValue, codeArray[0]);
+        }
+
         [UserType(TypeName = "DoubleTest")]
         public class DoubleTest : DynamicSelfUserType
         {

@@ -494,6 +494,10 @@ namespace CsDebugScript
             {
                 return new NakedPointerCodeType(this);
             }
+            else if (name.StartsWith(BuiltinCodeTypes.FakeNameStart))
+            {
+                return BuiltinCodeTypes.CreateCodeType(this, name.Substring(BuiltinCodeTypes.FakeNameStart.Length));
+            }
 
             CodeType codeType = null;
             bool clrSearched = false;

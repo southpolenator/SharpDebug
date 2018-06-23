@@ -1116,40 +1116,53 @@ namespace CsDebugScript
         /// </summary>
         protected override CodeType GetPointerToType()
         {
-            try
+            if (!Module.IsFakeCodeTypeId(TypeId))
             {
-                uint elementTypeId = Context.SymbolProvider.GetTypePointerToTypeId(Module, TypeId);
-                return Module.TypesById[elementTypeId];
+                try
+                {
+                    uint elementTypeId = Context.SymbolProvider.GetTypePointerToTypeId(Module, TypeId);
+                    return Module.TypesById[elementTypeId];
+                }
+                catch
+                {
+                }
             }
-            catch (Exception)
+            return CreateFakePointerType(this);
+        }
+
+        /// <summary>
+        /// Creates fake pointer code type from the specified code type.
+        /// </summary>
+        /// <param name="originalCodeType">Element code type for generated code type.</param>
+        /// <returns>Pointer code type to the specified code type.</returns>
+        internal static CodeType CreateFakePointerType(CodeType originalCodeType)
+        {
+            NativeCodeType codeType = new NativeCodeType(originalCodeType.Module, originalCodeType.Module.GetNextFakeCodeTypeId(), CodeTypeTag.Pointer, BuiltinType.NoType);
+
+            codeType.elementType.Value = originalCodeType;
+            codeType.name.Value = originalCodeType.name.Value + "*";
+            codeType.size.Value = originalCodeType.Module.Process.GetPointerSize();
+            if (!originalCodeType.IsPointer)
             {
-                NativeCodeType codeType = new NativeCodeType(Module, Module.GetNextFakeCodeTypeId(), CodeTypeTag.Pointer, BuiltinType.NoType);
-
-                codeType.elementType.Value = this;
-                codeType.name.Value = name.Value + "*";
-                codeType.size.Value = Module.Process.GetPointerSize();
-                if (!IsPointer)
-                {
-                    codeType.allFieldNames = allFieldNames;
-                    codeType.allFieldTypesAndOffsets = allFieldTypesAndOffsets;
-                    codeType.fieldNames = fieldNames;
-                    codeType.fieldTypeAndOffsets = fieldTypeAndOffsets;
-                    codeType.baseClassesAndOffsets = baseClassesAndOffsets;
-                    codeType.directBaseClassesAndOffsets = directBaseClassesAndOffsets;
-                    codeType.templateArguments = templateArguments;
-                    codeType.templateArgumentsStrings = templateArgumentsStrings;
-                }
-                else
-                {
-                    codeType.allFieldNames.Value = new string[0];
-                    codeType.fieldNames.Value = new string[0];
-                    codeType.directBaseClassesAndOffsets.Value = new Dictionary<string, Tuple<CodeType, int>>();
-                    codeType.templateArguments.Value = new object[0];
-                    codeType.templateArgumentsStrings.Value = new string[0];
-                }
-
-                return codeType;
+                codeType.allFieldNames = originalCodeType.allFieldNames;
+                codeType.allFieldTypesAndOffsets = originalCodeType.allFieldTypesAndOffsets;
+                codeType.fieldNames = originalCodeType.fieldNames;
+                codeType.fieldTypeAndOffsets = originalCodeType.fieldTypeAndOffsets;
+                codeType.baseClassesAndOffsets = originalCodeType.baseClassesAndOffsets;
+                codeType.directBaseClassesAndOffsets = originalCodeType.directBaseClassesAndOffsets;
+                codeType.templateArguments = originalCodeType.templateArguments;
+                codeType.templateArgumentsStrings = originalCodeType.templateArgumentsStrings;
             }
+            else
+            {
+                codeType.allFieldNames.Value = new string[0];
+                codeType.fieldNames.Value = new string[0];
+                codeType.directBaseClassesAndOffsets.Value = new Dictionary<string, Tuple<CodeType, int>>();
+                codeType.templateArguments.Value = new object[0];
+                codeType.templateArgumentsStrings.Value = new string[0];
+            }
+
+            return codeType;
         }
 
         /// <summary>
@@ -1324,6 +1337,640 @@ namespace CsDebugScript
         public override Variable GetClrStaticField(string staticFieldName, CLR.IClrAppDomain appDomain)
         {
             throw new NotImplementedException("You cannot get CLR variable from Native code type");
+        }
+    }
+
+    /// <summary>
+    /// Helper base class for all builtin code type that can be used directly in .NET (sbyte, byte, int, long, etc.).
+    /// </summary>
+    /// <seealso cref="CsDebugScript.CodeType" />
+    internal abstract class NativeBuiltinCodeType : CodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeBuiltinCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public NativeBuiltinCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is ANSI string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsAnsiString { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is array.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is array; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsArray { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is double.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is double; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsDouble { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is enum.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is enum; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsEnum { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is float.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is float; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFloat { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is function type.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is function type; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFunction { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is pointer.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is pointer; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsPointer { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is floating point number (float or double).
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is floating point number; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsReal { get { return IsFloat || IsDouble; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is simple type.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is simple type; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsSimple { get { return true; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is ANSI or wide string.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this type is string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsString { get { return false; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type is wide string.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this type is wide string; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsWideString { get { return false; } }
+
+        /// <summary>
+        /// Gets the static field from this type.
+        /// </summary>
+        /// <param name="staticFieldName">Name of the static field.</param>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public override Variable GetStaticField(string staticFieldName)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the static field from CLR type.
+        /// </summary>
+        /// <param name="staticFieldName">Name of the static field.</param>
+        /// <param name="appDomain">The CLR application domain.</param>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public override Variable GetClrStaticField(string staticFieldName, CLR.IClrAppDomain appDomain)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets field type and offset from all fields (including all base classes).
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override Tuple<CodeType, int> GetAllFieldTypeAndOffset(string fieldName)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the base class and offset.
+        /// </summary>
+        /// <param name="className">Name of the class.</param>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override Tuple<CodeType, int> GetBaseClassAndOffset(string className)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the direct base classes and offsets.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override Dictionary<string, Tuple<CodeType, int>> GetDirectBaseClassesAndOffsets()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the element type.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override CodeType GetElementType()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the field type and offset.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override Tuple<CodeType, int> GetFieldTypeAndOffset(string fieldName)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the pointer to type.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override CodeType GetPointerToType()
+        {
+            return NativeCodeType.CreateFakePointerType(this);
+        }
+
+        /// <summary>
+        /// Gets the template arguments.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override object[] GetTemplateArguments()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the template arguments strings.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override string[] GetTemplateArgumentsStrings()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the type all field names (including all base classes).
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override string[] GetTypeAllFieldNames()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets the type field names.
+        /// </summary>
+        /// <exception cref="System.NotSupportedException"></exception>
+        protected override string[] GetTypeFieldNames()
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# bool type as native code type.
+    /// </summary>
+    internal class BoolCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BoolCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public BoolCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "bool";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 1;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# byte type as native code type.
+    /// </summary>
+    internal class ByteCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ByteCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public ByteCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "unsigned char";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 1;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# sbyte type as native code type.
+    /// </summary>
+    internal class SbyteCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SbyteCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public SbyteCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "char";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 1;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# short type as native code type.
+    /// </summary>
+    internal class ShortCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShortCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public ShortCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "short";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 2;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# ushort type as native code type.
+    /// </summary>
+    internal class UshortCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UshortCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public UshortCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "unsigned short";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 2;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# int type as native code type.
+    /// </summary>
+    internal class IntCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IntCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public IntCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "int";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 4;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# uint type as native code type.
+    /// </summary>
+    internal class UintCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UintCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public UintCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "unsigned int";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 4;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# long type as native code type.
+    /// </summary>
+    internal class LongCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LongCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public LongCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "long long";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 8;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# ulong type as native code type.
+    /// </summary>
+    internal class UlongCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UlongCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public UlongCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "unsigned long long";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 8;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# float type as native code type.
+    /// </summary>
+    internal class FloatCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FloatCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public FloatCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is float.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is float; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsFloat { get { return true; } }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "float";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 4;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that represents C# double type as native code type.
+    /// </summary>
+    internal class DoubleCodeType : NativeBuiltinCodeType
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DoubleCodeType"/> class.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        public DoubleCodeType(Module module)
+            : base(module)
+        {
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is double.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is double; otherwise, <c>false</c>.
+        /// </value>
+        public override bool IsDouble { get { return true; } }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        protected override string GetTypeName()
+        {
+            return "double";
+        }
+
+        /// <summary>
+        /// Gets the size of the type.
+        /// </summary>
+        protected override uint GetTypeSize()
+        {
+            return 8;
+        }
+    }
+
+    /// <summary>
+    /// Helper class that creates built-in code types.
+    /// </summary>
+    internal static class BuiltinCodeTypes
+    {
+        /// <summary>
+        /// String that represents code type being built by this class.
+        /// </summary>
+        public const string FakeNameStart = "~BuiltinCodeTypes~";
+
+        /// <summary>
+        /// Gets built-in code type from the specified module.
+        /// </summary>
+        /// <typeparam name="T">Type that should be represented by newly created code type.</typeparam>
+        /// <param name="module">The module.</param>
+        /// <returns>Built-in code type.</returns>
+        public static CodeType GetCodeType<T>(Module module)
+        {
+            return module.TypesByName[$"{FakeNameStart}{typeof(T).Name}"];
+        }
+
+        /// <summary>
+        /// Creates built-in code type from the specified .NET type name. It only works for built-in .NET types.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="name">Name of the .NET type.</param>
+        /// <returns>Built-in code type.</returns>
+        internal static CodeType CreateCodeType(Module module, string name)
+        {
+            switch (name)
+            {
+                case "Boolean":
+                    return new BoolCodeType(module);
+                case "Byte":
+                    return new ByteCodeType(module);
+                case "SByte":
+                    return new SbyteCodeType(module);
+                case "Int16":
+                    return new ShortCodeType(module);
+                case "UInt16":
+                    return new UshortCodeType(module);
+                case "Int32":
+                    return new IntCodeType(module);
+                case "UInt32":
+                    return new UintCodeType(module);
+                case "Int64":
+                    return new LongCodeType(module);
+                case "UInt64":
+                    return new UlongCodeType(module);
+                case "Single":
+                    return new FloatCodeType(module);
+                case "Double":
+                    return new DoubleCodeType(module);
+                default:
+                    throw new NotImplementedException();
+            }
         }
     }
 
