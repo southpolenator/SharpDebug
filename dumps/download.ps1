@@ -1,3 +1,4 @@
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $webClient = New-Object System.Net.WebClient
 $json = $webClient.DownloadString("https://api.bintray.com/packages/southpolenator/WinDbgCs_dumps/NativeDumpTest/files");
 $files = ConvertFrom-Json $json
