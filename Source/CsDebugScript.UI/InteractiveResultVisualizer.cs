@@ -1,4 +1,6 @@
-﻿using CsDebugScript.UI.CodeWindow;
+﻿using CsDebugScript.Drawing.Interfaces;
+using CsDebugScript.UI.CodeWindow;
+using CsDebugScript.UI.Drawing;
 using CsDebugScript.UI.ResultVisualizers;
 using System;
 using System.Collections.Generic;
@@ -47,10 +49,12 @@ namespace CsDebugScript.UI
         internal const string ExpandingItemText = "Loading...";
 
         private InteractiveWindowContent interactiveWindowContent;
+        System.Windows.Threading.Dispatcher dispatcher;
 
         public InteractiveResultVisualizer(InteractiveWindowContent interactiveWindowContent)
         {
             this.interactiveWindowContent = interactiveWindowContent;
+            dispatcher = interactiveWindowContent?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
         }
 
 
@@ -78,10 +82,34 @@ namespace CsDebugScript.UI
             IResultVisualizer resultTreeItem = ResultVisualizer.Create(obj, obj.GetType(), "result", CompletionDataType.Unknown, this);
 
             resultTreeItem.Initialize();
+
+            // Check if we can also represent resulting object as a drawing
+            IDrawingVisualizerObject drawingVisualizerObject = obj as IDrawingVisualizerObject;
+            UIElement drawing = null;
+
+            if (drawingVisualizerObject != null && drawingVisualizerObject.CanVisualize())
+            {
+                Graphics graphics = new Graphics(dispatcher);
+
+                drawing = drawingVisualizerObject.CreateDrawing(graphics).UIObject as UIElement;
+            }
+
+            if (drawing != null)
+            {
+                // Create panel that will hold both elements.
+                return new LazyUIResult(() =>
+                {
+                    StackPanel panel = new StackPanel();
+
+                    panel.Orientation = Orientation.Vertical;
+                    panel.Children.Add(Visualize(resultTreeItem));
+                    panel.Children.Add(drawing);
+                    return panel;
+                });
+            }
+
             return new LazyUIResult(() => Visualize(resultTreeItem));
         }
-
-        System.Windows.Threading.Dispatcher dispatcher;
 
         private static FrameworkElementFactory CreateStackPanelFactory(string name)
         {
@@ -179,7 +207,6 @@ namespace CsDebugScript.UI
                     }
                 }
             };
-            dispatcher = tree.Dispatcher;
             return tree;
         }
 

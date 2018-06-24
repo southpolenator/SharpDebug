@@ -127,7 +127,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
         /// <returns>Drawing object that should be visualized.</returns>
         public IDrawing CreateDrawing(IGraphics graphics)
         {
-            return CreateDrawing(graphics, Sizes[0], Sizes[1], Data, Steps[0], Type);
+            return CreateDrawing(graphics, Sizes[1], Sizes[0], Data, Steps[0], Type);
         }
 
         /// <summary>
@@ -201,19 +201,13 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
         /// <returns>Array of pixels.</returns>
         internal static T[] ReadPixels<T>(int width, int height, NakedPointer data, int stride, MatType type)
         {
-            T[] result = new T[width * height * type.Channels];
-
-            if (stride == type.Bits * type.Channels * width)
+            if (stride == type.Bits * type.Channels * width / 8)
             {
-                CodeArray<T> array = new CodeArray<T>(data, width * height * type.Channels);
-
-                for (int i = 0; i < result.Length; i++)
-                {
-                    result[i] = array[i];
-                }
+                return new CodeArray<T>(data, width * height * type.Channels).ToArray();
             }
             else
             {
+                T[] result = new T[width * height * type.Channels];
                 int rowElements = width * type.Channels;
 
                 for (int y = 0, j = 0; y < height; y++)
@@ -225,9 +219,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
                         result[j] = array[x];
                     }
                 }
-            }
 
-            return result;
+                return result;
+            }
         }
 
         /// <summary>

@@ -18,6 +18,6 @@
         /// <summary>
         /// Number of channels.
         /// </summary>
-        int Channels { get; }
+        int ChannelsCount { get; }
     }
 }

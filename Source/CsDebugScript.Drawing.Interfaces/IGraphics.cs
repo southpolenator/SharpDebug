@@ -77,11 +77,6 @@
         public static readonly ChannelType[] BGRA = new[] { ChannelType.Blue, ChannelType.Green, ChannelType.Red, ChannelType.Alpha };
 
         /// <summary>
-        /// Alpha-Blue-Green-Red. See https://en.wikipedia.org/wiki/RGBA_color_space.
-        /// </summary>
-        public static readonly ChannelType[] ABGR = new[] { ChannelType.Alpha, ChannelType.Blue, ChannelType.Green, ChannelType.Red };
-
-        /// <summary>
         /// Gray shades from black to white. See https://en.wikipedia.org/wiki/Grayscale.
         /// </summary>
         public static readonly ChannelType[] Grayscale = new[] { ChannelType.Grayscale };
@@ -90,6 +85,30 @@
         /// Cyan-Magenta-Yellow-Key. See https://en.wikipedia.org/wiki/CMYK_color_model.
         /// </summary>
         public static readonly ChannelType[] CMYK = new[] { ChannelType.Cyan, ChannelType.Magenta, ChannelType.Yellow, ChannelType.Key };
+
+        /// <summary>
+        /// Checks whether two channel arrays are the same.
+        /// </summary>
+        /// <param name="channels1">First array of channels</param>
+        /// <param name="channels2">Second array of channels</param>
+        /// <returns><c>true</c> if two channel arrays are the same; <c>false</c> otherwise.</returns>
+        public static bool AreSame(ChannelType[] channels1, ChannelType[] channels2)
+        {
+            if (channels1.Length != channels2.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < channels1.Length; i++)
+            {
+                if (channels1[i] != channels2[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 
     /// <summary>

@@ -309,8 +309,9 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the precalculated array.
         /// </summary>
-        private IReadOnlyList<T> ReadArray()
+        private unsafe IReadOnlyList<T> ReadArray()
         {
+            // Check if we have phisical constructor in delegates
             var delegates = GetDelegates();
 
             if (delegates != null && delegates.PhysicalConstructor != null)
@@ -328,7 +329,82 @@ namespace CsDebugScript
                 return new ElementCreatorReadOnlyList(delegates, elementType, address);
             }
 
+            // Check if type is basic type and we can read it directly with marshaler.
+            Type type = typeof(T);
+
+            if (type.IsPrimitive)
+            {
+                // Try to use binary conversion of memory blocks
+                try
+                {
+                    CodeType builtinCodeType = BuiltinCodeTypes.GetCodeType<T>(variable.GetCodeType().Module);
+                    CodeType elementType = variable.GetCodeType().ElementType;
+
+                    if ((builtinCodeType == elementType)
+                       || (builtinCodeType.Size == elementType.Size && elementType.IsSimple && builtinCodeType.IsDouble == elementType.IsDouble && builtinCodeType.IsFloat == elementType.IsFloat))
+                    {
+                        var address = variable.GetPointerAddress();
+                        uint bytesCount = (uint)(Length * elementType.Size);
+                        var buffer = Debugger.ReadMemory(elementType.Module.Process, address, bytesCount);
+
+                        if (elementType.Module.Process.DumpFileMemoryReader == null)
+                        {
+                            if (type != typeof(byte))
+                            {
+                                T[] result = new T[Length];
+
+                                Buffer.BlockCopy(buffer.Bytes, 0, result, 0, buffer.Bytes.Length);
+                                return result;
+                            }
+
+                            return (T[])(object)buffer.Bytes;
+                        }
+                        else
+                        {
+                            T[] result = new T[Length];
+
+                            var handle = System.Runtime.InteropServices.GCHandle.Alloc(result, System.Runtime.InteropServices.GCHandleType.Pinned);
+                            try
+                            {
+                                void* pointer = handle.AddrOfPinnedObject().ToPointer();
+
+                                MemoryBuffer.MemCpy(pointer, buffer.BytePointer, bytesCount);
+                            }
+                            finally
+                            {
+                                handle.Free();
+                            }
+                            return result;
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
             return null;
+        }
+
+        /// <summary>
+        /// Reads all data to managed array.
+        /// </summary>
+        /// <returns>Managed array.</returns>
+        public T[] ToArray()
+        {
+            if (preCalculatedArray != null && preCalculatedArray is T[])
+            {
+                return (T[])preCalculatedArray;
+            }
+
+            T[] result = new T[Length];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = this[i];
+            }
+
+            return result;
         }
 
         /// <summary>

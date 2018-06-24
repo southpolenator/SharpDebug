@@ -612,8 +612,8 @@ for (int i = 0; i < intTemplate.values.Length; i++)
                 Context.ClearCache();
                 Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
                 {
-                typeof(DoubleTest).Assembly,
-            });
+                    typeof(DoubleTest).Assembly,
+                });
 
                 Variable doubleTestVariable = DefaultModule.GetVariable("doubleTest");
 
