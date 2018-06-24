@@ -560,16 +560,16 @@ for (int i = 0; i < intTemplate.values.Length; i++)
         {
             Variable var = DefaultModule.GetVariable("builtinTypesTest");
             TestReading<bool>(var.GetField("b"), false);
-            TestReading<sbyte>(var.GetField("i8"), 0);
-            TestReading<short>(var.GetField("i16"), 0);
-            TestReading<int>(var.GetField("i32"), 0);
-            TestReading<long>(var.GetField("i64"), 0);
-            TestReading<byte>(var.GetField("u8"), 0);
-            TestReading<ushort>(var.GetField("u16"), 0);
-            TestReading<uint>(var.GetField("u32"), 0);
-            TestReading<ulong>(var.GetField("u64"), 0);
-            TestReading<float>(var.GetField("f32"), 0);
-            TestReading<double>(var.GetField("f64"), 0);
+            TestReading<sbyte>(var.GetField("i8"), 42);
+            TestReading<short>(var.GetField("i16"), 42);
+            TestReading<int>(var.GetField("i32"), 42);
+            TestReading<long>(var.GetField("i64"), 42);
+            TestReading<byte>(var.GetField("u8"), 42);
+            TestReading<ushort>(var.GetField("u16"), 42);
+            TestReading<uint>(var.GetField("u32"), 42);
+            TestReading<ulong>(var.GetField("u64"), 42);
+            TestReading<float>(var.GetField("f32"), 42);
+            TestReading<double>(var.GetField("f64"), 42);
         }
 
         private static void TestReading<T>(Variable var, T expectedValue)
@@ -579,7 +579,9 @@ for (int i = 0; i < intTemplate.values.Length; i++)
             NakedPointer pointer = new NakedPointer(var.GetPointerAddress());
             CodePointer<T> codePointer = new CodePointer<T>(pointer);
             Assert.Equal(expectedValue, codePointer.Element);
-            codePointer = new CodePointer<T>(pointer.GetPointer());
+            codePointer = new CodePointer<T>(pointer.GetPointerAddress());
+            Assert.Equal(expectedValue, codePointer.Element);
+            codePointer = new CodePointer<T>(var.GetPointer());
             Assert.Equal(expectedValue, codePointer.Element);
             CodeArray<T> codeArray = new CodeArray<T>(pointer, 1);
             Assert.Equal(expectedValue, codeArray[0]);
@@ -603,24 +605,31 @@ for (int i = 0; i < intTemplate.values.Length; i++)
         [Fact]
         public void UserTypeAutoCast()
         {
-            Context.ClearCache();
-            Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
+            var originalUserTypeMetadata = Context.UserTypeMetadata;
+
+            try
             {
+                Context.ClearCache();
+                Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
+                {
                 typeof(DoubleTest).Assembly,
             });
 
-            Variable doubleTestVariable = DefaultModule.GetVariable("doubleTest");
+                Variable doubleTestVariable = DefaultModule.GetVariable("doubleTest");
 
-            Assert.IsType<DoubleTest>(doubleTestVariable);
+                Assert.IsType<DoubleTest>(doubleTestVariable);
 
-            DoubleTest doubleTest = (DoubleTest)doubleTestVariable;
+                DoubleTest doubleTest = (DoubleTest)doubleTestVariable;
 
-            Assert.Equal(3.5, doubleTest.d);
-            Assert.Equal(2.5, doubleTest.f);
-            Assert.Equal(5, doubleTest.i);
-
-            Context.UserTypeMetadata = new UserTypeMetadata[0];
-            Context.ClearCache();
+                Assert.Equal(3.5, doubleTest.d);
+                Assert.Equal(2.5, doubleTest.f);
+                Assert.Equal(5, doubleTest.i);
+            }
+            finally
+            {
+                Context.UserTypeMetadata = originalUserTypeMetadata;
+                Context.ClearCache();
+            }
         }
 
         private void VerifyBuiltinType(NativeCodeType codeType, params BuiltinType[] expected)

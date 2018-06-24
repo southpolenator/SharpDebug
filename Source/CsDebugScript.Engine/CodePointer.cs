@@ -167,7 +167,7 @@ namespace CsDebugScript
         /// <param name="variable">The variable.</param>
         internal static Variable CastIfNecessary(Variable variable)
         {
-            if (variable.GetCodeType() is NakedPointerCodeType)
+            if (variable.GetCodeType() is NakedPointerCodeType && !variable.IsNull())
             {
                 // TODO: CodeType newCodeType = CodeType.Create<T>();
                 CodeType newCodeType = BuiltinCodeTypes.GetCodeType<T>(variable.GetCodeType().Module);
