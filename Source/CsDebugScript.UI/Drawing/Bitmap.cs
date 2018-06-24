@@ -46,6 +46,123 @@ namespace CsDebugScript.UI.Drawing
         public Bitmap(int width, int height, ChannelType[] channels, byte[] pixels, double dpiX = 96, double dpiY = 96)
             : this(width, height, channels.Length)
         {
+            Initialize(channels, pixels, dpiX, dpiY);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// </summary>
+        /// <param name="width">Image width</param>
+        /// <param name="height">Image height</param>
+        /// <param name="channels">Array of channels</param>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
+        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
+        public Bitmap(int width, int height, ChannelType[] channels, sbyte[] pixels, double dpiX = 96, double dpiY = 96)
+            : this(width, height, channels, ConvertToByte(pixels), dpiX, dpiY)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// </summary>
+        /// <param name="width">Image width</param>
+        /// <param name="height">Image height</param>
+        /// <param name="channels">Array of channels</param>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
+        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
+        public Bitmap(int width, int height, ChannelType[] channels, ushort[] pixels, double dpiX = 96, double dpiY = 96)
+            : this(width, height, channels.Length)
+        {
+            Initialize(channels, pixels, dpiX, dpiY);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// </summary>
+        /// <param name="width">Image width</param>
+        /// <param name="height">Image height</param>
+        /// <param name="channels">Array of channels</param>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
+        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
+        public Bitmap(int width, int height, ChannelType[] channels, short[] pixels, double dpiX = 96, double dpiY = 96)
+            : this(width, height, channels, ConvertToUshort(pixels), dpiX, dpiY)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// </summary>
+        /// <param name="width">Image width</param>
+        /// <param name="height">Image height</param>
+        /// <param name="channels">Array of channels</param>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
+        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
+        public Bitmap(int width, int height, ChannelType[] channels, int[] pixels, double dpiX = 96, double dpiY = 96)
+            : this(width, height, channels, ConvertToUshort(pixels), dpiX, dpiY)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// </summary>
+        /// <param name="width">Image width</param>
+        /// <param name="height">Image height</param>
+        /// <param name="channels">Array of channels</param>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
+        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
+        public Bitmap(int width, int height, ChannelType[] channels, float[] pixels, double dpiX = 96, double dpiY = 96)
+            : this(width, height, channels, ConvertToUshort(pixels), dpiX, dpiY)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// </summary>
+        /// <param name="width">Image width</param>
+        /// <param name="height">Image height</param>
+        /// <param name="channels">Array of channels</param>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
+        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
+        public Bitmap(int width, int height, ChannelType[] channels, double[] pixels, double dpiX = 96, double dpiY = 96)
+            : this(width, height, channels, ConvertToUshort(pixels), dpiX, dpiY)
+        {
+        }
+
+        /// <summary>
+        /// Bitmap width.
+        /// </summary>
+        public int Width { get; private set; }
+
+        /// <summary>
+        /// Bitmap height.
+        /// </summary>
+        public int Height { get; private set; }
+
+        /// <summary>
+        /// Number of channels.
+        /// </summary>
+        public int ChannelsCount { get; private set; }
+
+        /// <summary>
+        /// UI object that should be added to visualization window.
+        /// </summary>
+        public object UIObject { get { return image; } }
+
+        /// <summary>
+        /// Initializes bitmap object with the specified parameters.
+        /// </summary>
+        /// <param name="channels">Array of channels</param>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
+        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
+        private void Initialize(ChannelType[] channels, byte[] pixels, double dpiX, double dpiY)
+        {
             PixelFormat format;
 
             // Check format
@@ -71,132 +188,216 @@ namespace CsDebugScript.UI.Drawing
             }
             else if (Channels.AreSame(channels, Channels.RGBA))
             {
-                // TODO:
-                //format = PixelFormats.Rgba32;
-                throw new NotImplementedException();
+                format = PixelFormats.Bgra32;
+                pixels = BGRA2RGBA(pixels);
             }
             else
             {
                 throw new ArgumentOutOfRangeException(nameof(channels), $"Unsupported channels: {string.Join(", ", channels)}");
             }
 
-            imageSource = BitmapSource.Create(width, height, dpiX, dpiY, format, null, pixels, width * channels.Length * 1);
+            Initialize(dpiX, dpiY, format, pixels, Width * channels.Length * 1);
+        }
+
+        /// <summary>
+        /// Initializes bitmap object with the specified parameters.
+        /// </summary>
+        /// <param name="channels">Array of channels</param>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
+        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
+        private void Initialize(ChannelType[] channels, ushort[] pixels, double dpiX, double dpiY)
+        {
+            PixelFormat format;
+
+            // Check format
+            if (Channels.AreSame(channels, Channels.Grayscale))
+            {
+                format = PixelFormats.Gray16;
+            }
+            else if (Channels.AreSame(channels, Channels.BGR))
+            {
+                format = PixelFormats.Rgb48;
+                pixels = BGR2RGB(pixels);
+            }
+            else if (Channels.AreSame(channels, Channels.RGB))
+            {
+                format = PixelFormats.Rgb48;
+            }
+            else if (Channels.AreSame(channels, Channels.BGRA))
+            {
+                format = PixelFormats.Rgba64;
+                pixels = BGRA2RGBA(pixels);
+            }
+            else if (Channels.AreSame(channels, Channels.RGBA))
+            {
+                format = PixelFormats.Rgba64;
+            }
+            else if (Channels.AreSame(channels, Channels.CMYK))
+            {
+                Initialize(channels, ConvertToByte(pixels), dpiX, dpiY);
+                return;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(channels), $"Unsupported channels: {string.Join(", ", channels)}");
+            }
+
+            Initialize(dpiX, dpiY, format, pixels, Width * channels.Length * 2);
+        }
+
+        /// <summary>
+        /// Converts data from BGR channels to RGB channels.
+        /// </summary>
+        /// <typeparam name="T">Type of the pixel channel.</typeparam>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <returns>Converted pixel data.</returns>
+        private T[] BGR2RGB<T>(T[] pixels)
+        {
+            T[] result = new T[pixels.Length];
+
+            for (int i = 0; i < pixels.Length; i += 3)
+            {
+                result[i] = pixels[i + 2];
+                result[i + 1] = pixels[i + 1];
+                result[i + 2] = pixels[i];
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Converts data from BGRA channels to RGBA channels.
+        /// </summary>
+        /// <typeparam name="T">Type of the pixel channel.</typeparam>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <returns>Converted pixel data.</returns>
+        private T[] BGRA2RGBA<T>(T[] pixels)
+        {
+            T[] result = new T[pixels.Length];
+
+            for (int i = 0; i < pixels.Length; i += 4)
+            {
+                result[i] = pixels[i + 2];
+                result[i + 1] = pixels[i + 1];
+                result[i + 2] = pixels[i];
+                result[i + 3] = pixels[i + 3];
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Initializes bitmap object with the specified parameters.
+        /// </summary>
+        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
+        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
+        /// <param name="format">Pixel format.</param>
+        /// <param name="pixels">Buffer with pixels</param>
+        /// <param name="stride">Stride in bytes.</param>
+        private void Initialize(double dpiX, double dpiY, PixelFormat format, Array pixels, int stride)
+        {
+            imageSource = BitmapSource.Create(Width, Height, dpiX, dpiY, format, null, pixels, stride);
             image = new Image()
             {
-                Width = width,
-                Height = height,
+                Width = Width,
+                Height = Height,
                 Source = imageSource,
             };
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// Converts pixels buffer to byte array.
         /// </summary>
-        /// <param name="width">Image width</param>
-        /// <param name="height">Image height</param>
-        /// <param name="channels">Array of channels</param>
         /// <param name="pixels">Buffer with pixels</param>
-        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
-        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
-        public Bitmap(int width, int height, ChannelType[] channels, sbyte[] pixels, double dpiX = 96, double dpiY = 96)
-            : this(width, height, channels.Length)
+        private static byte[] ConvertToByte(sbyte[] pixels)
         {
-            throw new NotImplementedException();
+            byte[] result = new byte[pixels.Length];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = (byte)(pixels[i] ^ 0x80);
+            }
+
+            return result;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// Converts pixels buffer to byte array.
         /// </summary>
-        /// <param name="width">Image width</param>
-        /// <param name="height">Image height</param>
-        /// <param name="channels">Array of channels</param>
         /// <param name="pixels">Buffer with pixels</param>
-        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
-        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
-        public Bitmap(int width, int height, ChannelType[] channels, ushort[] pixels, double dpiX = 96, double dpiY = 96)
-            : this(width, height, channels.Length)
+        private static byte[] ConvertToByte(ushort[] pixels)
         {
-            throw new NotImplementedException();
+            byte[] result = new byte[pixels.Length];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = (byte)(pixels[i] >> 8);
+            }
+
+            return result;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// Converts pixels buffer to ushort array.
         /// </summary>
-        /// <param name="width">Image width</param>
-        /// <param name="height">Image height</param>
-        /// <param name="channels">Array of channels</param>
         /// <param name="pixels">Buffer with pixels</param>
-        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
-        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
-        public Bitmap(int width, int height, ChannelType[] channels, short[] pixels, double dpiX = 96, double dpiY = 96)
-            : this(width, height, channels.Length)
+        private static ushort[] ConvertToUshort(short[] pixels)
         {
-            throw new NotImplementedException();
+            ushort[] result = new ushort[pixels.Length];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = (ushort)(pixels[i] ^ 0x8000);
+            }
+
+            return result;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// Converts pixels buffer to ushort array.
         /// </summary>
-        /// <param name="width">Image width</param>
-        /// <param name="height">Image height</param>
-        /// <param name="channels">Array of channels</param>
         /// <param name="pixels">Buffer with pixels</param>
-        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
-        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
-        public Bitmap(int width, int height, ChannelType[] channels, int[] pixels, double dpiX = 96, double dpiY = 96)
-            : this(width, height, channels.Length)
+        private static ushort[] ConvertToUshort(int[] pixels)
         {
-            throw new NotImplementedException();
+            ushort[] result = new ushort[pixels.Length];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = (ushort)((uint)(pixels[i] ^ 0x80000000) >> 16);
+            }
+
+            return result;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// Converts pixels buffer to ushort array.
         /// </summary>
-        /// <param name="width">Image width</param>
-        /// <param name="height">Image height</param>
-        /// <param name="channels">Array of channels</param>
         /// <param name="pixels">Buffer with pixels</param>
-        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
-        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
-        public Bitmap(int width, int height, ChannelType[] channels, float[] pixels, double dpiX = 96, double dpiY = 96)
-            : this(width, height, channels.Length)
+        private static ushort[] ConvertToUshort(float[] pixels)
         {
-            throw new NotImplementedException();
+            ushort[] result = new ushort[pixels.Length];
+
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                result[i] = (ushort)(pixels[i] * (ushort.MaxValue - 1));
+            }
+
+            return result;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Bitmap" /> class.
+        /// Converts pixels buffer to ushort array.
         /// </summary>
-        /// <param name="width">Image width</param>
-        /// <param name="height">Image height</param>
-        /// <param name="channels">Array of channels</param>
         /// <param name="pixels">Buffer with pixels</param>
-        /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
-        /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
-        public Bitmap(int width, int height, ChannelType[] channels, double[] pixels, double dpiX = 96, double dpiY = 96)
-            : this(width, height, channels.Length)
+        private static ushort[] ConvertToUshort(double[] pixels)
         {
-            throw new NotImplementedException();
+            ushort[] result = new ushort[pixels.Length];
+
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                result[i] = (ushort)(pixels[i] * (ushort.MaxValue - 1));
+            }
+
+            return result;
         }
-
-        /// <summary>
-        /// Bitmap width.
-        /// </summary>
-        public int Width { get; private set; }
-
-        /// <summary>
-        /// Bitmap height.
-        /// </summary>
-        public int Height { get; private set; }
-
-        /// <summary>
-        /// Number of channels.
-        /// </summary>
-        public int ChannelsCount { get; private set; }
-
-        /// <summary>
-        /// UI object that should be added to visualization window.
-        /// </summary>
-        public object UIObject { get { return image; } }
     }
 }
