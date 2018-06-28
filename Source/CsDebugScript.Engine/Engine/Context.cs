@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.CLR;
+using CsDebugScript.Drawing.Interfaces;
 using CsDebugScript.Engine.Utility;
 using System;
 using System.IO;
@@ -54,6 +55,11 @@ namespace CsDebugScript.Engine
         /// <c>true</c> if variable path tracking is enabled; otherwise, <c>false</c>.
         /// </value>
         public static bool EnableVariablePathTracking { get; set; } = true;
+
+        /// <summary>
+        /// Gets graphics object used for creating drawing objects.
+        /// </summary>
+        public static IGraphics Graphics { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether debugger is currently in live debugging.

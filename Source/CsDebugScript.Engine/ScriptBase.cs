@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Dynamic;
 using System.Collections.Generic;
+using CsDebugScript.Drawing.Interfaces;
+using CsDebugScript.Engine;
 
 namespace CsDebugScript
 {
@@ -135,57 +137,32 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the array of all processes being debugged.
         /// </summary>
-        public static Process[] Processes
-        {
-            get
-            {
-                return Process.All;
-            }
-        }
+        public static Process[] Processes => Process.All;
 
         /// <summary>
         /// Gets the array of all threads in the current process.
         /// </summary>
-        public static Thread[] Threads
-        {
-            get
-            {
-                return Process.Current.Threads;
-            }
-        }
+        public static Thread[] Threads => Process.Current.Threads;
 
         /// <summary>
         /// Gets the array of all frames in the current thread.
         /// </summary>
-        public static StackFrame[] Frames
-        {
-            get
-            {
-                return StackTrace.Current.Frames;
-            }
-        }
+        public static StackFrame[] Frames => StackTrace.Current.Frames;
 
         /// <summary>
         /// Gets the variable collection of arguemnts from current stack frame.
         /// </summary>
-        public static VariableCollection Arguments
-        {
-            get
-            {
-                return StackFrame.Current.Arguments;
-            }
-        }
+        public static VariableCollection Arguments => StackFrame.Current.Arguments;
 
         /// <summary>
         /// Gets the variable collection of local variables from current stack frame.
         /// </summary>
-        public static VariableCollection Locals
-        {
-            get
-            {
-                return StackFrame.Current.Locals;
-            }
-        }
+        public static VariableCollection Locals => StackFrame.Current.Locals;
+
+        /// <summary>
+        /// Gets graphics object used for creating drawing objects.
+        /// </summary>
+        public static IGraphics Graphics => Context.Graphics;
 
         /// <summary>
         /// Helper function for writing onto console (shorter version for scripts).

@@ -22,4 +22,8 @@
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Drawing.Interfaces\CsDebugScript.Drawing.Interfaces.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -13,6 +13,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using CsDebugScript.Engine.Debuggers;
+using CsDebugScript.Engine;
+using CsDebugScript.UI.Drawing;
 
 namespace CsDebugScript.UI
 {
@@ -134,9 +136,11 @@ namespace CsDebugScript.UI
                     // Execution code
                     var oldOut = Console.Out;
                     var oldError = Console.Error;
+                    var oldGraphics = Context.Graphics;
 
                     try
                     {
+                        Context.Graphics = new Graphics(Dispatcher);
                         using (StringWriter writer = new StringWriter())
                         {
                             Console.SetOut(writer);
@@ -198,6 +202,7 @@ namespace CsDebugScript.UI
                     {
                         Console.SetError(oldError);
                         Console.SetOut(oldOut);
+                        Context.Graphics = oldGraphics;
                         result = results;
                         results = new List<object>();
                         InteractiveExecution.scriptBase._UiActionExecutor_ = null;
