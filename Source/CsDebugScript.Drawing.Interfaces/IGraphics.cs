@@ -1,4 +1,6 @@
-﻿namespace CsDebugScript.Drawing.Interfaces
+﻿using System.Collections.Generic;
+
+namespace CsDebugScript.Drawing.Interfaces
 {
     /// <summary>
     /// Channel type used when creating bitmap.
@@ -117,6 +119,13 @@
     public interface IGraphics
     {
         /// <summary>
+        /// Creates canvas object that contains the specified list of drawings.
+        /// </summary>
+        /// <param name="drawings">Drawing objects.</param>
+        /// <returns>Canvas object.</returns>
+        ICanvas CreateCanvas(IEnumerable<IDrawing> drawings = null);
+
+        /// <summary>
         /// Creates bitmap from parameters. Pixels are bytes.
         /// </summary>
         /// <param name="width">Bitmap width.</param>
@@ -185,5 +194,67 @@
         /// <param name="pixels">Array of pixel data.</param>
         /// <returns>Bitmap object.</returns>
         IBitmap CreateBitmap(int width, int height, ChannelType[] channels, double[] pixels);
+
+        /// <summary>
+        /// Creates solid color brush.
+        /// </summary>
+        /// <param name="color">Brush solid color.</param>
+        /// <param name="opacity">Brush opacity.</param>
+        /// <returns>Solid color brush object.</returns>
+        ISolidColorBrush CreateSolidColorBrush(Color color, double opacity = 1);
+
+        /// <summary>
+        /// Creates pen object.
+        /// </summary>
+        /// <param name="brush">Brush object.</param>
+        /// <param name="thickness">Pen thickness.</param>
+        /// <returns>Pen object.</returns>
+        IPen CreatePen(IBrush brush, double thickness = 1);
+
+        /// <summary>
+        /// Creates line as drawing object.
+        /// </summary>
+        /// <param name="pen">Pen that should be used to draw the line.</param>
+        /// <param name="x1">First point X coordinate.</param>
+        /// <param name="y1">First point Y coordinate.</param>
+        /// <param name="x2">Second point X coordinate.</param>
+        /// <param name="y2">Second point Y coordinate.</param>
+        /// <returns>Line as drawing object.</returns>
+        ILine CreateLine(IPen pen, double x1, double y1, double x2, double y2);
+
+        /// <summary>
+        /// Creates rectangle as drawing object.
+        /// </summary>
+        /// <param name="pen">Pen used to draw edges.</param>
+        /// <param name="left">Left coordinate of top left corner.</param>
+        /// <param name="top">Top coordinate of top left corner.</param>
+        /// <param name="width">Rectangle width.</param>
+        /// <param name="height">Rectangle height.</param>
+        /// <param name="fillBrush">Brush used to fill the content.</param>
+        /// <returns>Rectangle as drawing object.</returns>
+        IRectangle CreateRectangle(IPen pen, double left, double top, double width, double height, IBrush fillBrush = null);
+
+        /// <summary>
+        /// Creates ellipse as drawing object.
+        /// </summary>
+        /// <param name="pen">Pen used to draw the line.</param>
+        /// <param name="left">Left coordinate of top left corner.</param>
+        /// <param name="top">Top coordinate of top left corner.</param>
+        /// <param name="width">Ellipse rectangle width.</param>
+        /// <param name="height">Ellipse rectangle height.</param>
+        /// <param name="fillBrush">Brush used to fill the content.</param>
+        /// <returns>Ellipse as drawing object.</returns>
+        IEllipse CreateEllipse(IPen pen, double left, double top, double width, double height, IBrush fillBrush = null);
+
+        /// <summary>
+        /// Creates circle as drawing object.
+        /// </summary>
+        /// <param name="pen">Pen used to draw the line.</param>
+        /// <param name="centerX">Circle center X coordinate.</param>
+        /// <param name="centerY">Circle center Y coordinate.</param>
+        /// <param name="radius">Circle radius.</param>
+        /// <param name="fillBrush">Brush used to fill the content.</param>
+        /// <returns>Circle as drawing object.</returns>
+        ICircle CreateCircle(IPen pen, double centerX, double centerY, double radius, IBrush fillBrush = null);
     }
 }

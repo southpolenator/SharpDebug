@@ -9,7 +9,7 @@ namespace CsDebugScript.UI.Drawing
     /// <summary>
     /// Implementation of <see cref="IBitmap"/> for WPF.
     /// </summary>
-    internal class Bitmap : IBitmap
+    internal class Bitmap : Drawing, IBitmap
     {
         /// <summary>
         /// Image source for this bitmap.
@@ -152,7 +152,7 @@ namespace CsDebugScript.UI.Drawing
         /// <summary>
         /// UI object that should be added to visualization window.
         /// </summary>
-        public object UIObject { get { return image; } }
+        public override object UIObject => image;
 
         /// <summary>
         /// Initializes bitmap object with the specified parameters.
