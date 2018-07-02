@@ -22,6 +22,12 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// Gets the reserved space in buffer (number of elements).
             /// </summary>
             int Reserved { get; }
+
+            /// <summary>
+            /// Creates <see cref="CodeArray{T}"/> for better performance access to buffer data (for example byte arrays when reading images).
+            /// </summary>
+            /// <returns>An <see cref="CodeArray{T}"/> instance.</returns>
+            CodeArray<T> ToCodeArray();
         }
 
         /// <summary>
@@ -163,6 +169,15 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 }
 
                 return Enumerate().GetEnumerator();
+            }
+
+            /// <summary>
+            /// Creates <see cref="CodeArray{T}"/> for better performance access to buffer data (for example byte arrays when reading images).
+            /// </summary>
+            /// <returns>An <see cref="CodeArray{T}"/> instance.</returns>
+            public CodeArray<T> ToCodeArray()
+            {
+                return new CodeArray<T>(First, Length);
             }
 
             /// <summary>
@@ -455,6 +470,15 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             }
 
             /// <summary>
+            /// Creates <see cref="CodeArray{T}"/> for better performance access to buffer data (for example byte arrays when reading images).
+            /// </summary>
+            /// <returns>An <see cref="CodeArray{T}"/> instance.</returns>
+            public CodeArray<T> ToCodeArray()
+            {
+                return new CodeArray<T>(First, Length);
+            }
+
+            /// <summary>
             /// Gets enumerable of specialized types (like byte[]).
             /// </summary>
             private IEnumerable<T> GetSpecializedEnumerable()
@@ -632,6 +656,24 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         IEnumerator IEnumerable.GetEnumerator()
         {
             return instance.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Creates <see cref="CodeArray{T}"/> for better performance access to buffer data (for example byte arrays when reading images).
+        /// </summary>
+        /// <returns>An <see cref="CodeArray{T}"/> instance.</returns>
+        public CodeArray<T> ToCodeArray()
+        {
+            return instance.ToCodeArray();
+        }
+
+        /// <summary>
+        /// Reads all data to managed array.
+        /// </summary>
+        /// <returns>Managed array.</returns>
+        public T[] ToArray()
+        {
+            return ToCodeArray().ToArray();
         }
     }
 
