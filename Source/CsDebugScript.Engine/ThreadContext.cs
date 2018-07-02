@@ -53,6 +53,11 @@ namespace CsDebugScript
         public byte[] Bytes { get; private set; }
 
         /// <summary>
+        /// Interface that allows access to register values. It has different implementation for different symbol provider.
+        /// </summary>
+        internal object Registers { get; set; }
+
+        /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <returns>

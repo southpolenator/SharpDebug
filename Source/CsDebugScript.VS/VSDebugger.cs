@@ -362,6 +362,7 @@ namespace CsDebugScript.VS
                     ReturnOffset = 0, // Populated in the loop after this one
                     Virtual = false, // TODO:
                 };
+                threadContext.Registers = new RegistersAccess(thread.Id, frames[i].FrameNumber, proxy);
             }
 
             for (int i = frames.Length - 2; i >= 0; i--)
@@ -370,6 +371,50 @@ namespace CsDebugScript.VS
             }
 
             return stackTrace;
+        }
+
+        /// <summary>
+        /// Helper class for accessing register values
+        /// </summary>
+        private class RegistersAccess : IRegistersAccess
+        {
+            /// <summary>
+            /// Thread identifier.
+            /// </summary>
+            private uint threadId;
+
+            /// <summary>
+            /// Stack frame identifier.
+            /// </summary>
+            private uint frameId;
+
+            /// <summary>
+            /// VS debugger proxy.
+            /// </summary>
+            private VSDebuggerProxy proxy;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="RegisterAccess"/> class.
+            /// </summary>
+            /// <param name="threadId">Thread identifier.</param>
+            /// <param name="frameId">Stack frame identifier.</param>
+            /// <param name="proxy">VS debugger proxy.</param>
+            public RegistersAccess(uint threadId, uint frameId, VSDebuggerProxy proxy)
+            {
+                this.threadId = threadId;
+                this.frameId = frameId;
+                this.proxy = proxy;
+            }
+
+            /// <summary>
+            /// Gets register value.
+            /// </summary>
+            /// <param name="registerId">Register index.</param>
+            /// <returns>Register value.</returns>
+            public ulong GetRegisterValue(CV_HREG_e registerId)
+            {
+                return proxy.GetRegisterValue(threadId, frameId, (uint)registerId);
+            }
         }
 
         public bool IsMinidump(Process process)

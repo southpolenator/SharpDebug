@@ -178,6 +178,11 @@ namespace CsDebugScript
             {
                 return data.Value;
             }
+
+            set
+            {
+                data.Value = value;
+            }
         }
 
         #region Simple casts
@@ -1140,18 +1145,14 @@ namespace CsDebugScript
         internal static VariableCollection CastVariableCollectionToUserType(VariableCollection originalCollection)
         {
             Variable[] variables = new Variable[originalCollection?.Count ?? 0];
-            Dictionary<string, Variable> variablesByName = new Dictionary<string, Variable>();
+            string[] names = originalCollection?.Names ?? new string[0];
 
-            for (int i = 0; i < variables.Length; i++)
+            for (int i = variables.Length - 1; i >= 0; i--)
             {
                 variables[i] = originalCollection[i].codeType.Module.Process.CastVariableToUserType(originalCollection[i]);
-                if (!string.IsNullOrEmpty(originalCollection[i].name))
-                {
-                    variablesByName.Add(originalCollection[i].name, variables[i]);
-                }
             }
 
-            return new VariableCollection(variables, variablesByName);
+            return new VariableCollection(variables, names);
         }
 
         /// <summary>

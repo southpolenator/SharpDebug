@@ -537,6 +537,10 @@ namespace CsDebugScript.Engine.SymbolProviders
                 symbols = block.GetChildren(SymTagEnum.Data);
             }
 
+            string previousName = null;
+            uint previousCountLiveRanges = 0;
+            uint previousOffsetInUdt = 0;
+
             foreach (var symbol in symbols)
             {
                 SymTagEnum tag = symbol.symTag;
@@ -555,11 +559,41 @@ namespace CsDebugScript.Engine.SymbolProviders
                     continue;
                 }
 
-                CodeType codeType = module.TypesById[symbol.typeId];
-                ulong address = ResolveAddress(module.Process, symbol, frame.FrameContext);
-                var variableName = symbol.name;
+                try
+                {
+                    CodeType codeType = module.TypesById[symbol.typeId];
+                    string variableName = symbol.name;
+                    uint countLiveRanges = symbol.countLiveRanges;
+                    uint offsetInUdt = symbol.offsetInUdt;
+                    ulong address = ResolveAddress(module.Process, symbol, frame.FrameContext);
+                    Variable variable;
+                    bool hasData = symbol.locationType == LocationType.Enregistered;
 
-                variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
+                    if (codeType.IsPointer && hasData)
+                    {
+                        variable = Variable.CreatePointerNoCast(codeType, address, variableName, variableName);
+                    }
+                    else
+                    {
+                        variable = Variable.CreateNoCast(codeType, address, variableName, variableName);
+                    }
+                    if (!codeType.IsPointer && hasData)
+                    {
+                        variable.Data = address;
+                    }
+
+                    if (previousName != variableName || previousOffsetInUdt != offsetInUdt || previousCountLiveRanges != countLiveRanges)
+                    {
+                        variables.Add(variable);
+                    }
+                    previousName = variableName;
+                    previousCountLiveRanges = countLiveRanges;
+                    previousOffsetInUdt = offsetInUdt;
+                }
+                catch
+                {
+                    // TODO: Surface error to the user ...somehow...
+                }
             }
         }
 
@@ -576,6 +610,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             switch (symbol.locationType)
             {
                 case LocationType.RegRel:
+                case LocationType.Enregistered:
                     switch (symbol.registerId)
                     {
                         case CV_HREG_e.CV_AMD64_ESP:
@@ -600,10 +635,22 @@ namespace CsDebugScript.Engine.SymbolProviders
                             }
                             break;
                         default:
-                            throw new Exception("Unknown register id" + symbol.registerId);
+                            {
+                                IRegistersAccess registersAccess = frameContext.Registers as IRegistersAccess;
+
+                                if (registersAccess == null)
+                                {
+                                    throw new Exception("Unknown register id" + symbol.registerId);
+                                }
+                                address = registersAccess.GetRegisterValue(symbol.registerId);
+                            }
+                            break;
                     }
 
-                    address += (ulong)symbol.offset;
+                    if (symbol.locationType == LocationType.RegRel)
+                    {
+                        address += (ulong)symbol.offset;
+                    }
                     return address;
 
                 case LocationType.Static:

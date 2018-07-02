@@ -39,7 +39,7 @@ namespace CsDebugScript.UI.ResultVisualizers
                 yield return Create(variableCollection.Count, null, "Count", CompletionDataType.Property, interactiveResultVisualizer);
                 for (int i = 0; i < variableCollection.Count; i++)
                 {
-                    yield return Create(GetValue(() => variableCollection[i]), typeof(Variable), variableCollection[i].GetName(), CompletionDataType.Variable, interactiveResultVisualizer);
+                    yield return Create(GetValue(() => variableCollection[i]), typeof(Variable), variableCollection.Names[i], CompletionDataType.Variable, interactiveResultVisualizer);
                 }
             }
         }
