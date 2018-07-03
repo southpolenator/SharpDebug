@@ -183,11 +183,12 @@ namespace CsDebugScript.UI.Drawing
         /// <param name="top">Top coordinate of top left corner.</param>
         /// <param name="width">Ellipse rectangle width.</param>
         /// <param name="height">Ellipse rectangle height.</param>
+        /// <param name="rotation">Ellipse clockwise rotation in radians.</param>
         /// <param name="fillBrush">Brush used to fill the content.</param>
         /// <returns>Ellipse as drawing object.</returns>
-        public IEllipse CreateEllipse(IPen pen, double left, double top, double width, double height, IBrush fillBrush = null)
+        public IEllipse CreateEllipse(IPen pen, double left, double top, double width, double height, double rotation, IBrush fillBrush = null)
         {
-            return dispatcher.Invoke(() => new Ellipse(pen, fillBrush, left, top , width, height));
+            return dispatcher.Invoke(() => new Ellipse(pen, fillBrush, left, top , width, height, rotation));
         }
 
         /// <summary>

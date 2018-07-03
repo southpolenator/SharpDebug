@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using CsDebugScript.Drawing.Interfaces;
 
 namespace CsDebugScript.UI.Drawing
@@ -20,7 +21,7 @@ namespace CsDebugScript.UI.Drawing
         /// <param name="drawings">Drawing objects.</param>
         public Canvas(IEnumerable<IDrawing> drawings)
         {
-            UICanvas = new System.Windows.Controls.Canvas();
+            UICanvas = new CanvasAutoSize();
             if (drawings != null)
             {
                 foreach (IDrawing drawing in drawings)
@@ -84,7 +85,10 @@ namespace CsDebugScript.UI.Drawing
                 d.Container.RemoveDrawing(drawing);
             }
 
-            UICanvas.Children.Add((System.Windows.UIElement)drawing.UIObject);
+            UICanvas.Dispatcher.Invoke(() =>
+            {
+                UICanvas.Children.Add((System.Windows.UIElement)drawing.UIObject);
+            });
             drawings.Add(drawing);
             d.Container = this;
         }
@@ -109,9 +113,47 @@ namespace CsDebugScript.UI.Drawing
                 throw new ArgumentException("Drawing object is not part of this canvas.", nameof(drawing));
             }
 
-            UICanvas.Children.Remove((System.Windows.UIElement)drawing.UIObject);
+            UICanvas.Dispatcher.Invoke(() =>
+            {
+                UICanvas.Children.Remove((System.Windows.UIElement)drawing.UIObject);
+            });
             ((Drawing)drawing).Container = null;
             drawings.RemoveAt(index);
+        }
+
+        /// <summary>
+        /// Helper class that provides auto size feature to the canvas control.
+        /// </summary>
+        public class CanvasAutoSize : System.Windows.Controls.Canvas
+        {
+            /// <summary>
+            /// Measures the child elements of a System.Windows.Controls.Canvas in anticipation
+            /// of arranging them during the <see cref="System.Windows.Controls.Canvas.ArrangeOverride(System.Windows.Size)"/> pass.
+            /// </summary>
+            /// <param name="constraint">An upper limit <see cref="System.Windows.Size"/> that should not be exceeded.</param>
+            /// <returns>A <see cref="System.Windows.Size"/> that represents the size that is required to arrange child content.</returns>
+            protected override System.Windows.Size MeasureOverride(System.Windows.Size constraint)
+            {
+                base.MeasureOverride(constraint);
+                double width = base
+                    .InternalChildren
+                    .OfType<System.Windows.UIElement>()
+                    .Max(i => i.DesiredSize.Width + GetValue(i, LeftProperty));
+
+                double height = base
+                    .InternalChildren
+                    .OfType<System.Windows.UIElement>()
+                    .Max(i => i.DesiredSize.Height + GetValue(i, TopProperty));
+
+                return new System.Windows.Size(width, height);
+            }
+
+            private static double GetValue(System.Windows.DependencyObject obj, System.Windows.DependencyProperty property, double defaultValue = 0)
+            {
+                double value = (double)obj.GetValue(property);
+
+                return !double.IsNaN(value) ? value : defaultValue;
+            }
         }
     }
 }

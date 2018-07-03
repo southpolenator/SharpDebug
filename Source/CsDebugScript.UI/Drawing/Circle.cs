@@ -31,7 +31,7 @@ namespace CsDebugScript.UI.Drawing
         /// <param name="centerY">Circle center Y coordinate.</param>
         /// <param name="radius">Circle radius.</param>
         public Circle(IPen pen, IBrush fillBrush, double centerX, double centerY, double radius)
-            : base(pen, fillBrush, centerX - radius / 2, centerY - radius / 2, radius, radius)
+            : base(pen, fillBrush, centerX - radius / 2, centerY - radius / 2, radius, radius, 0)
         {
         }
     }

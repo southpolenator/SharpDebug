@@ -78,6 +78,12 @@ namespace CsDebugScript.UI
                 return obj;
             }
 
+            // Drawing objects should be resurfaced back.
+            if (obj is IDrawing)
+            {
+                return ((IDrawing)obj).UIObject;
+            }
+
             // All other should be visualized in a table
             IResultVisualizer resultTreeItem = ResultVisualizer.Create(obj, obj.GetType(), "result", CompletionDataType.Unknown, this);
 
@@ -345,6 +351,7 @@ namespace CsDebugScript.UI
         private TreeViewItem CreateTreeItem(TreeListView tree, string name, ImageSource imageSource, int level, UIElement value = null, string typeString = null, bool nameItalic = false)
         {
             TreeViewItem item = new TreeViewItem();
+            bool alreadyLoaded = false;
             GridViewRowPresenter rowPresenter = new GridViewRowPresenter()
             {
                 Columns = tree.Columns,
@@ -353,6 +360,12 @@ namespace CsDebugScript.UI
             item.Header = rowPresenter;
             item.Loaded += (sender, e) =>
             {
+                if (alreadyLoaded)
+                {
+                    return;
+                }
+                alreadyLoaded = true;
+
                 FrameworkElement expander = item.Template.FindName("Expander", item) as FrameworkElement;
                 StackPanel nameStackPanel = FindVisualChild<StackPanel>(rowPresenter, "Name");
                 StackPanel valueStackPanel = FindVisualChild<StackPanel>(rowPresenter, "Value");

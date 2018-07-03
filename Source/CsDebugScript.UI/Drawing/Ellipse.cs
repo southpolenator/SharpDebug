@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.Drawing.Interfaces;
+using System;
 
 namespace CsDebugScript.UI.Drawing
 {
@@ -56,7 +57,8 @@ namespace CsDebugScript.UI.Drawing
         /// <param name="top">Top coordinate of top left corner.</param>
         /// <param name="width">Ellipse rectangle width.</param>
         /// <param name="height">Ellipse rectangle height.</param>
-        public Ellipse(IPen pen, IBrush fillBrush, double left, double top, double width, double height)
+        /// <param name="rotation">Ellipse clockwise rotation in radians.</param>
+        public Ellipse(IPen pen, IBrush fillBrush, double left, double top, double width, double height, double rotation)
         {
             Pen = pen;
             FillBrush = fillBrush;
@@ -70,6 +72,11 @@ namespace CsDebugScript.UI.Drawing
                 Height = height,
                 Fill = (fillBrush as Brush)?.UIBrush,
             };
+            if (rotation != 0)
+            {
+                UIEllipse.RenderTransform = new System.Windows.Media.RotateTransform(rotation * 180 / Math.PI);
+                UIEllipse.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
+            }
             System.Windows.Controls.Canvas.SetLeft(UIEllipse, left);
             System.Windows.Controls.Canvas.SetTop(UIEllipse, top);
             UIEllipse.SetPen(pen);

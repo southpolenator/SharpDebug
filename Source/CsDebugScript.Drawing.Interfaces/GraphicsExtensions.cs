@@ -19,6 +19,19 @@ namespace CsDebugScript.Drawing.Interfaces
         }
 
         /// <summary>
+        /// Creates canvas object that contains the specified list of drawings.
+        /// </summary>
+        /// <param name="graphics"><see cref="IGraphics"/> object.</param>
+        /// <param name="drawingObjects">Drawing visualizer objects.</param>
+        /// <returns>Canvas object.</returns>
+        public static ICanvas CreateCanvas(this IGraphics graphics, params IDrawingVisualizerObject[] drawingObjects)
+        {
+            IDrawing[] drawings = drawingObjects.Where(d => d.CanVisualize()).Select(d => d.CreateDrawing(graphics)).ToArray();
+
+            return graphics.CreateCanvas(drawings);
+        }
+
+        /// <summary>
         /// Combines two drawing objects into single canvas object.
         /// If both drawing objects are canvas, first canvas will get all second canvas drawing objects and second canvas will be cleared.
         /// If only one of the objects is canvas, second object will be added to the canvas.
@@ -139,13 +152,14 @@ namespace CsDebugScript.Drawing.Interfaces
         /// <param name="top">Top coordinate of top left corner.</param>
         /// <param name="width">Ellipse rectangle width.</param>
         /// <param name="height">Ellipse rectangle height.</param>
+        /// <param name="rotation">Ellipse clockwise rotation in radians.</param>
         /// <param name="penThickness">Pen thickness.</param>
         /// <returns>Ellipse as drawing object.</returns>
-        public static IEllipse CreateEllipse(this IGraphics graphics, Color penColor, double left, double top, double width, double height, double penThickness = 1)
+        public static IEllipse CreateEllipse(this IGraphics graphics, Color penColor, double left, double top, double width, double height, double rotation = 0, double penThickness = 1)
         {
             IPen pen = CreatePen(graphics, penColor, penThickness);
 
-            return graphics.CreateEllipse(pen, left, top, width, height);
+            return graphics.CreateEllipse(pen, left, top, width, height, rotation);
         }
 
         /// <summary>
@@ -157,15 +171,16 @@ namespace CsDebugScript.Drawing.Interfaces
         /// <param name="top">Top coordinate of top left corner.</param>
         /// <param name="width">Ellipse rectangle width.</param>
         /// <param name="height">Ellipse rectangle height.</param>
+        /// <param name="rotation">Ellipse clockwise rotation in radians.</param>
         /// <param name="fillBrushColor">Color of the brush used to fill the content.</param>
         /// <param name="penThickness">Pen thickness.</param>
         /// <returns>Ellipse as drawing object.</returns>
-        public static IEllipse CreateEllipse(this IGraphics graphics, Color penColor, double left, double top, double width, double height, Color fillBrushColor, double penThickness = 1)
+        public static IEllipse CreateEllipse(this IGraphics graphics, Color penColor, double left, double top, double width, double height, double rotation, Color fillBrushColor, double penThickness = 1)
         {
             IPen pen = CreatePen(graphics, penColor, penThickness);
             IBrush brush = graphics.CreateSolidColorBrush(fillBrushColor);
 
-            return graphics.CreateEllipse(pen, left, top, width, height, brush);
+            return graphics.CreateEllipse(pen, left, top, width, height, rotation, brush);
         }
 
         /// <summary>

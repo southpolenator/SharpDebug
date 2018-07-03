@@ -243,8 +243,9 @@ namespace CsDebugScript.Drawing.Interfaces
         /// <param name="width">Ellipse rectangle width.</param>
         /// <param name="height">Ellipse rectangle height.</param>
         /// <param name="fillBrush">Brush used to fill the content.</param>
+        /// <param name="rotation">Ellipse clockwise rotation in radians.</param>
         /// <returns>Ellipse as drawing object.</returns>
-        IEllipse CreateEllipse(IPen pen, double left, double top, double width, double height, IBrush fillBrush = null);
+        IEllipse CreateEllipse(IPen pen, double left, double top, double width, double height, double rotation, IBrush fillBrush = null);
 
         /// <summary>
         /// Creates circle as drawing object.
