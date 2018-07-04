@@ -483,20 +483,7 @@ namespace CsDebugScript.CodeGen
                     symbols.Where(t => t.Tag == CodeTypeTag.Class || t.Tag == CodeTypeTag.Structure || t.Tag == CodeTypeTag.Union || t.Tag == CodeTypeTag.Enum).ToArray());
             });
 
-            List<Symbol> allSymbols = new List<Symbol>();
-            Symbol[][] symbolsPerModule = globalTypesPerModule.Select(ss => ss.Value).ToArray();
-            int maxSymbols = symbolsPerModule.Max(ss => ss.Length);
-
-            for (int i = 0; i < maxSymbols; i++)
-            {
-                for (int j = 0; j < symbolsPerModule.Length; j++)
-                {
-                    if (i < symbolsPerModule[j].Length)
-                    {
-                        allSymbols.Add(symbolsPerModule[j][i]);
-                    }
-                }
-            }
+            List<Symbol> allSymbols = globalTypesPerModule.SelectMany(ss => ss.Value).ToList();
 
             logger.WriteLine(" {0}", stopwatch.Elapsed);
 
@@ -528,8 +515,10 @@ namespace CsDebugScript.CodeGen
 
                 bool found = false;
 
-                foreach (var s in symbols.ToArray())
+                for (int i = 0; i < symbols.Count; i++)
                 {
+                    Symbol s = symbols[i];
+
                     if (s.Size != 0 && symbol.Size != 0 && s.Size != symbol.Size)
                     {
 #if DEBUG
@@ -574,8 +563,9 @@ namespace CsDebugScript.CodeGen
                 if (symbols.Count <= 1)
                     continue;
 
-                foreach (var s in symbols.ToArray())
+                for (int i = 0, n = symbols.Count; i < n; i++)
                 {
+                    Symbol s = symbols[i];
                     List<Symbol> duplicates;
 
                     if (!duplicatedSymbols.TryGetValue(s, out duplicates))
