@@ -1,21 +1,21 @@
 ﻿using CsDebugScript.CodeGen.UserTypes;
 using System;
 
-namespace CsDebugScript.CodeGen.TypeTrees
+namespace CsDebugScript.CodeGen.TypeInstances
 {
     using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
 
     /// <summary>
-    /// Type tree that represents UserType.
+    /// Type instance that represents user type.
     /// </summary>
-    /// <seealso cref="TypeTree" />
-    internal class UserTypeTree : TypeTree
+    /// <seealso cref="TypeInstance" />
+    internal class UserTypeInstance : TypeInstance
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="UserTypeTree"/> class.
+        /// Initializes a new instance of the <see cref="UserTypeInstance"/> class.
         /// </summary>
         /// <param name="userType">The user type.</param>
-        protected UserTypeTree(UserType userType)
+        protected UserTypeInstance(UserType userType)
         {
             UserType = userType;
         }
@@ -26,12 +26,10 @@ namespace CsDebugScript.CodeGen.TypeTrees
         public UserType UserType { get; private set; }
 
         /// <summary>
-        /// Gets the string representing this type tree in C# code.
+        /// Gets the string representing this type instance in generated code.
         /// </summary>
-        /// <param name="truncateNamespace">if set to <c>true</c> namespace will be truncated from generating type string.</param>
-        /// <returns>
-        /// The string representing this type tree in C# code.
-        /// </returns>
+        /// <param name="truncateNamespace">If set to <c>true</c> namespace won't be added to the generated type string.</param>
+        /// <returns>The string representing this type instance in generated code.</returns>
         public override string GetTypeString(bool truncateNamespace = false)
         {
             return truncateNamespace ? UserType.ClassName : UserType.FullClassName;
@@ -43,7 +41,7 @@ namespace CsDebugScript.CodeGen.TypeTrees
         /// <param name="userType">The user type.</param>
         /// <param name="factory">The user type factory.</param>
         /// <returns>Type tree that represents UserType</returns>
-        internal static UserTypeTree Create(UserType userType, UserTypeFactory factory)
+        internal static UserTypeInstance Create(UserType userType, UserTypeFactory factory)
         {
             // Check arguments
             if (userType == null)
@@ -58,7 +56,7 @@ namespace CsDebugScript.CodeGen.TypeTrees
                 var templateType = type as TemplateUserType;
 
                 if (templateType != null)
-                    return new TemplateTypeTree(userType, factory);
+                    return new TemplateTypeInstance(userType, factory);
                 type = type.DeclaredInType;
             }
 
@@ -66,10 +64,10 @@ namespace CsDebugScript.CodeGen.TypeTrees
             var enumType = userType as EnumUserType;
 
             if (enumType != null)
-                return new EnumTreeType(enumType);
+                return new EnumTreeInstance(enumType);
 
             // We are now certain that it is regular user type
-            return new UserTypeTree(userType);
+            return new UserTypeInstance(userType);
         }
     }
 }

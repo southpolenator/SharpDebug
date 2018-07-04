@@ -4,23 +4,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.CodeGen.TypeTrees
+namespace CsDebugScript.CodeGen.TypeInstances
 {
     using SymbolProviders;
     using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
 
     /// <summary>
-    /// Type tree that represents template user type.
+    /// Type instance that represents template user type.
     /// </summary>
-    /// <seealso cref="UserTypeTree" />
-    internal class TemplateTypeTree : UserTypeTree
+    /// <seealso cref="UserTypeInstance" />
+    internal class TemplateTypeInstance : UserTypeInstance
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="TemplateTypeTree"/> class.
+        /// Initializes a new instance of the <see cref="TemplateTypeInstance"/> class.
         /// </summary>
         /// <param name="templateSpecialization">The template specialization user type.</param>
         /// <param name="factory">The user type factory.</param>
-        public TemplateTypeTree(UserType templateSpecialization, UserTypeFactory factory)
+        public TemplateTypeInstance(UserType templateSpecialization, UserTypeFactory factory)
             : base(templateSpecialization)
         {
             // Get all "parent" types
@@ -38,7 +38,7 @@ namespace CsDebugScript.CodeGen.TypeTrees
 
             // Extract all template types and check if we can instantiate this instance
             CanInstantiate = true;
-            SpecializedArguments = new TypeTree[DeclaredInTypeHierarchy.Length][];
+            SpecializedArguments = new TypeInstance[DeclaredInTypeHierarchy.Length][];
             for (int j = 0; j < DeclaredInTypeHierarchy.Length; j++)
             {
                 // Check if current type in hierarchy is template type
@@ -49,7 +49,7 @@ namespace CsDebugScript.CodeGen.TypeTrees
 
                 // Try to find specialized arguments for template type
                 IReadOnlyList<Symbol> arguments = templateType.TemplateArgumentsAsSymbols;
-                TypeTree[] specializedArguments = new TypeTree[arguments.Count];
+                TypeInstance[] specializedArguments = new TypeInstance[arguments.Count];
 
                 for (int i = 0; i < arguments.Count; i++)
                 {
@@ -58,8 +58,8 @@ namespace CsDebugScript.CodeGen.TypeTrees
                     factory.GetUserType(arguments[i], out userType);
                     if (userType != null)
                     {
-                        specializedArguments[i] = UserTypeTree.Create(userType, factory);
-                        TemplateTypeTree templateTypeTree = specializedArguments[i] as TemplateTypeTree;
+                        specializedArguments[i] = UserTypeInstance.Create(userType, factory);
+                        TemplateTypeInstance templateTypeTree = specializedArguments[i] as TemplateTypeInstance;
 
                         if (templateTypeTree != null && !templateTypeTree.CanInstantiate)
                             CanInstantiate = false;
@@ -100,15 +100,13 @@ namespace CsDebugScript.CodeGen.TypeTrees
         /// <summary>
         /// Gets the array of arrays of specialized arguments for each type in DeclaredInType hierarchy.
         /// </summary>
-        public TypeTree[][] SpecializedArguments { get; private set; }
+        public TypeInstance[][] SpecializedArguments { get; private set; }
 
         /// <summary>
-        /// Gets the string representing this type tree in C# code.
+        /// Gets the string representing this type instance in generated code.
         /// </summary>
-        /// <param name="truncateNamespace">if set to <c>true</c> namespace will be truncated from generating type string.</param>
-        /// <returns>
-        /// The string representing this type tree in C# code.
-        /// </returns>
+        /// <param name="truncateNamespace">If set to <c>true</c> namespace won't be added to the generated type string.</param>
+        /// <returns>The string representing this type instance in generated code.</returns>
         public override string GetTypeString(bool truncateNamespace = false)
         {
             StringBuilder sb = new StringBuilder();

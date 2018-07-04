@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.CodeGen.TypeTrees;
+using CsDebugScript.CodeGen.TypeInstances;
 using CsDebugScript.Engine;
 using System;
 using System.Collections.Generic;
@@ -463,7 +463,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="bitLength">Number of bits used for this symbol.</param>
-        internal override TypeTree GetSymbolTypeTree(Symbol type, UserTypeFactory factory, int bitLength = 0)
+        internal override TypeInstance GetSymbolTypeTree(Symbol type, UserTypeFactory factory, int bitLength = 0)
         {
             return base.GetSymbolTypeTree(type, CreateFactory(factory), bitLength);
         }
@@ -476,12 +476,12 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type for which we are getting base class.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="baseClassOffset">The base class offset.</param>
-        protected override TypeTree GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected override TypeInstance GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
-            TypeTree baseType = base.GetBaseClassTypeTree(error, type, CreateFactory(factory), out baseClassOffset);
+            TypeInstance baseType = base.GetBaseClassTypeTree(error, type, CreateFactory(factory), out baseClassOffset);
 
             // Check if base type is template argument. It if is, export it as if it is multi class inheritance.
-            UserTypeTree userBaseType = baseType as UserTypeTree;
+            UserTypeInstance userBaseType = baseType as UserTypeInstance;
             TemplateArgumentUserType primitiveUserType = userBaseType != null ? userBaseType.UserType as TemplateArgumentUserType : null;
             if (userBaseType != null && primitiveUserType != null)
             {
@@ -489,10 +489,10 @@ namespace CsDebugScript.CodeGen.UserTypes
                 string commonBaseClass;
 
                 if (dict.TryGetValue(primitiveUserType.ClassName, out commonBaseClass))
-                    return UserTypeTree.Create(new TemplateArgumentUserType(commonBaseClass, null), factory);
+                    return UserTypeInstance.Create(new TemplateArgumentUserType(commonBaseClass, null), factory);
 
                 baseClassOffset = 0;
-                return new MultiClassInheritanceTypeTree();
+                return new MultiClassInheritanceTypeInstance();
             }
 
             return baseType;
@@ -672,7 +672,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                             // In order to use template as specialization, we need to have all arguments coming from our template arguments.
                             // If not, we cannot trust them and should continue with the base classes.
-                            var tree = new TemplateTypeTree(templateCommonType, factory);
+                            var tree = new TemplateTypeInstance(templateCommonType, factory);
                             bool ok = true;
 
                             do
@@ -682,7 +682,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                                 foreach (var args in tree.SpecializedArguments)
                                     if (args != null)
                                         foreach (var arg in args)
-                                            if (!(arg is TemplateArgumentTreeType) && !(arg is UserTypeTree && ((UserTypeTree)arg).UserType is TemplateArgumentUserType))
+                                            if (!(arg is TemplateArgumentTreeInstance) && !(arg is UserTypeInstance && ((UserTypeInstance)arg).UserType is TemplateArgumentUserType))
                                             {
                                                 ok = false;
                                                 break;
@@ -722,7 +722,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                                     {
                                         // Base class is template, continue with checks
                                         templateCommonType = (TemplateUserType)nextBaseClass;
-                                        tree = new TemplateTypeTree(templateCommonType, factory);
+                                        tree = new TemplateTypeInstance(templateCommonType, factory);
                                     }
                                     else
                                     {
@@ -834,7 +834,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="factory">The user type factory.</param>
         /// <param name="extractingBaseClass">if set to <c>true</c> user type field is being generated for getting base class.</param>
         /// <param name="bitLength">Number of bits used for this symbol.</param>
-        protected override TypeTree GetFieldTypeTree(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
+        protected override TypeInstance GetFieldTypeTree(SymbolField field, UserTypeFactory factory, bool extractingBaseClass, int bitLength = 0)
         {
             // Do not match specializations when getting type for base class.
             if (extractingBaseClass || NumberOfTemplateArguments == 0)
@@ -856,15 +856,15 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
 
             // Try to get type tree
-            TypeTree result = GetSymbolTypeTree(field.Type, factory, bitLength);
+            TypeInstance result = GetSymbolTypeTree(field.Type, factory, bitLength);
 
             return FixTypeTree(result, field.Type, factory);
         }
 
-        private TypeTree FixTypeTree(TypeTree typeTree, Symbol type, UserTypeFactory factory)
+        private TypeInstance FixTypeTree(TypeInstance typeTree, Symbol type, UserTypeFactory factory)
         {
             // Check basic type
-            BasicTypeTree basicTypeTree = typeTree as BasicTypeTree;
+            BasicTypeInstance basicTypeTree = typeTree as BasicTypeInstance;
 
             if (basicTypeTree != null)
             {
@@ -873,7 +873,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (CreateFactory(factory).GetUserType(type, out basicUserType))
                 {
-                    TypeTree tree = UserTypeTree.Create(basicUserType, factory);
+                    TypeInstance tree = UserTypeInstance.Create(basicUserType, factory);
 
                     if (tree != null)
                     {
@@ -883,34 +883,34 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 // Failed to match the type
                 // TODO: Look for typedeclared. Class is using different types than in template specialization. We cannot support it right now.
-                return new VariableTypeTree();
+                return new VariableTypeInstance();
             }
 
             // Check array type
-            ArrayTypeTree arrayTypeTree = typeTree as ArrayTypeTree;
+            ArrayTypeInstance arrayTypeTree = typeTree as ArrayTypeInstance;
 
             if (arrayTypeTree != null)
             {
-                TypeTree elementTypeTree = FixTypeTree(arrayTypeTree.ElementType, type.ElementType, factory);
+                TypeInstance elementTypeTree = FixTypeTree(arrayTypeTree.ElementType, type.ElementType, factory);
 
                 if (elementTypeTree != arrayTypeTree.ElementType)
                 {
-                    return new ArrayTypeTree(elementTypeTree);
+                    return new ArrayTypeInstance(elementTypeTree);
                 }
 
                 return arrayTypeTree;
             }
 
             // Check pointer type
-            PointerTypeTree pointerTypeTree = typeTree as PointerTypeTree;
+            PointerTypeInstance pointerTypeTree = typeTree as PointerTypeInstance;
 
             if (pointerTypeTree != null)
             {
-                TypeTree elementTypeTree = FixTypeTree(pointerTypeTree.ElementType, type.ElementType, factory);
+                TypeInstance elementTypeTree = FixTypeTree(pointerTypeTree.ElementType, type.ElementType, factory);
 
                 if (elementTypeTree != pointerTypeTree.ElementType)
                 {
-                    return new PointerTypeTree(elementTypeTree);
+                    return new PointerTypeInstance(elementTypeTree);
                 }
 
                 return pointerTypeTree;

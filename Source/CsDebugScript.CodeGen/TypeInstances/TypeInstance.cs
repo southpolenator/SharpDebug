@@ -1,15 +1,15 @@
-﻿namespace CsDebugScript.CodeGen.TypeTrees
+﻿namespace CsDebugScript.CodeGen.TypeInstances
 {
     /// <summary>
     /// Base class for converting symbol name into typed structured tree
     /// </summary>
-    internal abstract class TypeTree
+    internal abstract class TypeInstance
     {
         /// <summary>
-        /// Gets the string representing this type tree in C# code.
+        /// Gets the string representing this type instance in generated code.
         /// </summary>
-        /// <param name="truncateNamespace">if set to <c>true</c> namespace will be truncated from generating type string.</param>
-        /// <returns>The string representing this type tree in C# code.</returns>
+        /// <param name="truncateNamespace">If set to <c>true</c> namespace won't be added to the generated type string.</param>
+        /// <returns>The string representing this type instance in generated code.</returns>
         public abstract string GetTypeString(bool truncateNamespace = false);
 
         /// <summary>

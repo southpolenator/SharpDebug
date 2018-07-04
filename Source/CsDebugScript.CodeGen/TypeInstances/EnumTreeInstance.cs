@@ -1,18 +1,18 @@
 ﻿using CsDebugScript.CodeGen.UserTypes;
 
-namespace CsDebugScript.CodeGen.TypeTrees
+namespace CsDebugScript.CodeGen.TypeInstances
 {
     /// <summary>
-    /// Type tree that represents enumeration user type.
+    /// Type instance that represents enumeration user type.
     /// </summary>
-    /// <seealso cref="UserTypeTree" />
-    internal class EnumTreeType : UserTypeTree
+    /// <seealso cref="UserTypeInstance" />
+    internal class EnumTreeInstance : UserTypeInstance
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="EnumTreeType"/> class.
+        /// Initializes a new instance of the <see cref="EnumTreeInstance"/> class.
         /// </summary>
         /// <param name="enumUserType">The enumeration user type.</param>
-        public EnumTreeType(EnumUserType enumUserType)
+        public EnumTreeInstance(EnumUserType enumUserType)
             : base(enumUserType)
         {
         }

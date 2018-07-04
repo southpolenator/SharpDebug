@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.CodeGen.TypeTrees;
+using CsDebugScript.CodeGen.TypeInstances;
 using CsDebugScript.Engine;
 using System.Collections.Generic;
 using System.IO;
@@ -109,10 +109,10 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type for which we are getting base class.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="baseClassOffset">The base class offset.</param>
-        protected override TypeTree GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected override TypeInstance GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
             baseClassOffset = 0;
-            return new StaticClassTypeTree();
+            return new StaticClassTypeInstance();
         }
 
         /// <summary>

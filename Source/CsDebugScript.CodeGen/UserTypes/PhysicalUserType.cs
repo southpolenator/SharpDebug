@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.CodeGen.TypeTrees;
+using CsDebugScript.CodeGen.TypeInstances;
 using CsDebugScript.Engine;
 using DIA;
 using System;
@@ -71,9 +71,9 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="type">The type for which we are getting base class.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="baseClassOffset">The base class offset.</param>
-        protected override TypeTree GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
+        protected override TypeInstance GetBaseClassTypeTree(TextWriter error, Symbol type, UserTypeFactory factory, out int baseClassOffset)
         {
-            TypeTree baseType = base.GetBaseClassTypeTree(error, type, factory, out baseClassOffset);
+            TypeInstance baseType = base.GetBaseClassTypeTree(error, type, factory, out baseClassOffset);
 
             this.baseClassOffset = baseClassOffset;
             return baseType;
@@ -244,7 +244,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="isStatic">if set to <c>true</c> generated field should be static.</param>
         /// <param name="generationFlags">The user type generation flags.</param>
         /// <param name="extractingBaseClass">if set to <c>true</c> user type field is being generated for getting base class.</param>
-        protected override UserTypeField ExtractFieldInternal(SymbolField field, TypeTree fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags generationFlags, bool extractingBaseClass)
+        protected override UserTypeField ExtractFieldInternal(SymbolField field, TypeInstance fieldType, UserTypeFactory factory, string simpleFieldValue, string gettingField, bool isStatic, UserTypeGenerationFlags generationFlags, bool extractingBaseClass)
         {
             // Physical code generation make sense only for non-static fields
             if (!isStatic)
@@ -255,10 +255,10 @@ namespace CsDebugScript.CodeGen.UserTypes
                 string constructorText = "";
                 string fieldName = field.Name;
                 string fieldTypeString = fieldType.GetTypeString();
-                BasicTypeTree baseType = fieldType as BasicTypeTree;
-                ArrayTypeTree codeArrayType = fieldType as ArrayTypeTree;
-                UserTypeTree userType = fieldType as UserTypeTree;
-                TransformationTypeTree transformationType = fieldType as TransformationTypeTree;
+                BasicTypeInstance baseType = fieldType as BasicTypeInstance;
+                ArrayTypeInstance codeArrayType = fieldType as ArrayTypeInstance;
+                UserTypeInstance userType = fieldType as UserTypeInstance;
+                TransformationTypeInstance transformationType = fieldType as TransformationTypeInstance;
                 bool isEmbedded = field.Type.Tag != CodeTypeTag.Pointer;
 
                 // Specialization for basic types
@@ -281,9 +281,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                 // Specialization for arrays
                 else if (codeArrayType != null)
                 {
-                    if (codeArrayType.ElementType is BasicTypeTree)
+                    if (codeArrayType.ElementType is BasicTypeInstance)
                     {
-                        baseType = (BasicTypeTree)codeArrayType.ElementType;
+                        baseType = (BasicTypeInstance)codeArrayType.ElementType;
                         if (baseType != null && baseType.BasicType != "string" && baseType.BasicType != "NakedPointer")
                         {
                             int arraySize = field.Type.Size;
