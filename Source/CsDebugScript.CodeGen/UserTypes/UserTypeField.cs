@@ -99,7 +99,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
 
             if (FieldType == "bool")
-                return (int.Parse(ConstantValue) != 0).ToString().ToLower();
+                return (int.Parse(ConstantValue) != 0) ? "true" : "false";
             return "(" + ConstantValue + ")";
         }
 
@@ -205,7 +205,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             if (fieldName == userType.Symbol.Name) // TODO: Check if this should be userType.ConstructorName
             {
                 // Property name cannot be equal to the class name
-                return string.Format("_{0}", fieldName);
+                return $"_{fieldName}";
             }
 
             // Check if field name is the same as any inner type name
@@ -214,36 +214,14 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (fieldName == className)
                 {
                     // Property name cannot be equal to the class name
-                    return string.Format("_{0}", fieldName);
+                    return $"_{fieldName}";
                 }
             }
 
             fieldName = fieldName.Replace("::", "_");
 
-            switch (fieldName)
-            {
-                case "lock":
-                case "base":
-                case "params":
-                case "enum":
-                case "in":
-                case "object":
-                case "event":
-                case "string":
-                case "fixed":
-                case "internal":
-                case "out":
-                case "override":
-                case "virtual":
-                case "namespace":
-                case "public":
-                case "private":
-                case "decimal":
-                    return string.Format("_{0}", fieldName);
-                default:
-                    break;
-            }
-
+            if (UserType.CSharpKeywords.Contains(fieldName))
+                return $"_{fieldName}";
             return fieldName;
         }
     }

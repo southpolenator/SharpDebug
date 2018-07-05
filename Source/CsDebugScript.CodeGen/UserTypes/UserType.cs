@@ -15,9 +15,14 @@ namespace CsDebugScript.CodeGen.UserTypes
     /// </summary>
     internal class UserType
     {
-        private static string[] Keywords = new string[]
+        /// <summary>
+        /// List of keywords in generated code that shouldn't be used.
+        /// </summary>
+        internal static readonly HashSet<string> CSharpKeywords = new HashSet<string>()
             {
-                "lock", "base", "params", "enum", "in", "object", "event", "string", "private", "public", "internal",
+                "lock", "base", "params", "enum", "in", "object", "event", "string", "fixed",
+                "internal", "out", "override", "virtual", "namespace", "private", "public", "decimal",
+                "using", "get", "set", "true", "false",
             };
 
         /// <summary>
@@ -163,7 +168,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 symbolName = NormalizeSymbolName(symbolName);
 
-                if (Keywords.Contains(symbolName))
+                if (CSharpKeywords.Contains(symbolName))
                 {
                     return string.Format("@{0}", symbolName);
                 }
@@ -284,7 +289,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             string normalized = symbolNamespace.Replace("::", "_").Replace("*", "").Replace('&', '_').Replace("$", "").Replace('-', '_').Replace('<', '_').Replace('>', '_').Replace(' ', '_').Replace(',', '_').Replace('(', '_').Replace(')', '_').Replace('[', '_').Replace(']', '_').Replace('`', '_').Replace('\'', '_');
 
-            if (Keywords.Contains(normalized))
+            if (CSharpKeywords.Contains(normalized))
             {
                 return string.Format("@{0}", normalized);
             }
