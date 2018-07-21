@@ -170,8 +170,9 @@ namespace CsDebugScript.Tests
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
-            ulong functionAddress = Debugger.GetSymbolAddress($"{TargetModuleName}!InfiniteRecursionTestCase");
-            BreakpointSpec bpSpec = new BreakpointSpec(functionAddress);
+            Module module = Process.Current.ModulesByName[TargetModuleName];
+            Variable funcForBreakpoint = module.GetVariable($"{TargetModuleName}!InfiniteRecursionTestCase");
+            BreakpointSpec bpSpec = new BreakpointSpec(funcForBreakpoint.Address);
 
             var bp = Debugger.AddBreakpoint(bpSpec);
 
@@ -187,8 +188,9 @@ namespace CsDebugScript.Tests
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
-            ulong functionAddress = Debugger.GetSymbolAddress($"{TargetModuleName}!InfiniteRecursionTestCase");
-            BreakpointSpec bpSpec = new BreakpointSpec(functionAddress);
+            Module module = Process.Current.ModulesByName[TargetModuleName];
+            Variable funcForBreakpoint = module.GetVariable($"{TargetModuleName}!InfiniteRecursionTestCase");
+            BreakpointSpec bpSpec = new BreakpointSpec(funcForBreakpoint.Address);
             var bp = Debugger.AddBreakpoint(bpSpec);
 
             Debugger.ContinueExecution();
@@ -222,8 +224,10 @@ namespace CsDebugScript.Tests
             System.Threading.AutoResetEvent are = new System.Threading.AutoResetEvent(false);
             int breakpointHitCount = 0;
 
-            ulong functionAddress = Debugger.GetSymbolAddress($"{TargetModuleName}!InfiniteRecursionTestCase");
-            BreakpointSpec bpSpec = new BreakpointSpec(functionAddress)
+            Module module = Process.Current.ModulesByName[TargetModuleName];
+            Variable funcForBreakpoint = module.GetVariable($"{TargetModuleName}!InfiniteRecursionTestCase");
+
+            BreakpointSpec bpSpec = new BreakpointSpec(funcForBreakpoint.Address)
             {
                 BreakpointAction = () =>
                 {
@@ -234,7 +238,7 @@ namespace CsDebugScript.Tests
 
                     // Insure that top of main thread points to the same location as breakpoint address.
                     //
-                    Assert.Equal(functionAddress, mainThread.StackTrace.Frames[0].InstructionOffset);
+                    Assert.Equal(funcForBreakpoint.Address, mainThread.StackTrace.Frames[0].InstructionOffset);
 
                         breakpointHitCount++;
                         Assert.Equal(breakpointHitCount, recursionDepthCount);
