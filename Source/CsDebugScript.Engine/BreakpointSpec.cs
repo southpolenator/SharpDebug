@@ -50,14 +50,14 @@ namespace CsDebugScript
         public Func<BreakpointHitResult> BreakpointAction { get; set; }
 
         /// <summary>
-        /// Address on whic this breakpoint is to be set.
+        /// Address on which this breakpoint is to be set.
         /// </summary>
         public ulong BreakpointAddress { get; set; }
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="breakpointAddress">Address of this breakpoint.</param>
+        /// <param name="breakpointAddress">Address that will trigger this breakpoint.</param>
         /// <param name="breakpointAction">Action to be executed when breakpoint is hit. If not specified default is break on hit.</param>
         /// <param name="breakpointType">Breakpoint type.</param>
         public BreakpointSpec(

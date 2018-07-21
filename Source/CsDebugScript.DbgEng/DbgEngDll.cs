@@ -464,7 +464,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// </summary>
         /// <param name="process">Target process for breakpoint.</param>
         /// <param name="breakpointSpec">Description of this breakpoint.</param>
-        /// <returns></returns>
+        /// <returns>Newly added breakpoint.</returns>
         public IBreakpoint AddBreakpoint(Process process, BreakpointSpec breakpointSpec)
         {
             using (var processSwitcher = new ProcessSwitcher(StateCache, process))
