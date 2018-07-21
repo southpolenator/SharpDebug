@@ -511,14 +511,6 @@ namespace CsDebugScript.VS
             throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Returns address of requested symbol.
-        /// </summary>
-        /// <param name="symbol">The symbol.</param>
-        public ulong GetSymbolAddress(string symbol)
-        {
-            throw new NotImplementedException();
-        }
         #endregion
     }
 }

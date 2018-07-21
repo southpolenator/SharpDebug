@@ -559,16 +559,6 @@ namespace CsDebugScript
         }
 
         /// <summary>
-        /// Returns address of requested symbol or throws exception if the symbol can't be found.
-        /// </summary>
-        /// <param name="symbol">Symbol to search against.</param>
-        /// <returns></returns>
-        public static ulong GetSymbolAddress(string symbol)
-        {
-            return Context.Debugger.GetSymbolAddress(symbol);
-        }
-
-        /// <summary>
         /// Reads the memory from the specified process.
         /// </summary>
         /// <param name="process">The process.</param>

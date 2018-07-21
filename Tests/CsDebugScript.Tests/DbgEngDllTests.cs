@@ -109,23 +109,5 @@ namespace CsDebugScript.Tests
             Assert.Equal(Process.Current, lastEvent.Process);
             Assert.Equal(Thread.Current, lastEvent.Thread);
         }
-
-        [Fact]
-        public void GetSymbolWhenSymbolExists()
-        {
-            DbgEngDll debugger = Context.Debugger as DbgEngDll;
-
-            Assert.NotNull(debugger);
-            Assert.NotEqual<ulong>(0, debugger.GetSymbolAddress($"{DefaultModuleName}!InfiniteRecursionTestCase"));
-        }
-
-        [Fact]
-        public void GetSymbolWhenDoesntSymbolExists()
-        {
-            DbgEngDll debugger = Context.Debugger as DbgEngDll;
-
-            Assert.NotNull(debugger);
-            Assert.Throws<CsDebugScript.Exceptions.NoSymbolWithGivenNameFound>(() => debugger.GetSymbolAddress($"{DefaultModuleName}!InvalidSymbolName"));
-        }
     }
 }

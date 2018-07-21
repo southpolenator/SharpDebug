@@ -262,12 +262,6 @@ namespace CsDebugScript.Engine
         void GetModuleVersion(Module module, out int major, out int minor, out int revision, out int patch);
 
         /// <summary>
-        /// Returns address of requested symbol.
-        /// </summary>
-        /// <param name="symbol">The symbol.</param>
-        ulong GetSymbolAddress(string symbol);
-
-        /// <summary>
         /// Determines whether the specified process is being debugged as minidump without heap.
         /// </summary>
         /// <param name="process">The process.</param>

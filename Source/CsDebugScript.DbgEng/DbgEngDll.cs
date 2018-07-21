@@ -460,30 +460,6 @@ namespace CsDebugScript.Engine.Debuggers
         }
 
         /// <summary>
-        /// Returns address of requested symbol.
-        /// </summary>
-        /// <param name="symbol">Symbol name.</param>
-        /// <returns>Address of symbol.</returns>
-        public ulong GetSymbolAddress(string symbol)
-        {
-            try
-            {
-                return Symbols.GetOffsetByNameWide(symbol);
-            }
-            catch (Exception ex)
-            {
-                if (ex.HResult == -2147467259)
-                {
-                    throw new NoSymbolWithGivenNameFound(symbol);
-                }
-                else
-                {
-                    throw;
-                }
-            }
-        }
-
-        /// <summary>
         /// Add new breakpoint.
         /// </summary>
         /// <param name="process">Target process for breakpoint.</param>
