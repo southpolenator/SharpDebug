@@ -19,8 +19,11 @@ environment:
     secure: 2KQWKwkpAyvIjNLzJS6g4SY9URejpaumcJuJLTqvppYB4+aINA3ElJC7n8UoD0zd
   GITHUB_PAGES_URL: https://$(GITHUB_PASSWORD)@github.com/$(GITHUB_USERNAME)/$(GITHUB_USERNAME).github.io.git
 init:
- - git config --global user.email "auto_publish@appveyor.com"
- - git config --global user.name %GITHUB_PASSWORD%
+- ps: |-
+         if(-not $env:APPVEYOR_PULL_REQUEST_NUMBER){
+             git config --global user.email "auto_publish@appveyor.com"
+             git config --global user.name %GITHUB_PASSWORD%
+         }
 install:
   - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
   - ps: (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/WinDbgCs/master/GetShipFiles.ps1") | iex
