@@ -53,7 +53,7 @@ after_build:
   - ps: if ($env:CONFIGURATION -eq "Release") { Vsix-PushArtifacts | Vsix-PublishToGallery }
   - ps: popd
   - ps: |-
-          if (($env:CONFIGURATION -eq "Release") -and (-not $env:APPVEYOR_PULL_REQUEST_NUMBER)) {
+        if ($env:CONFIGURATION -eq "Release") {
             if ($env:APPVEYOR_REPO_BRANCH -eq "master") {
                 msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
                 git clone $env:GITHUB_PAGES_URL $env:GITHUB_PAGES
