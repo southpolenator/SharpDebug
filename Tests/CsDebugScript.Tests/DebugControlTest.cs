@@ -101,6 +101,20 @@ namespace CsDebugScript.Tests
         }
 
         /// <summary>
+        /// Gets address of InfiniteRecursionTestCase function.
+        /// Current implementation extracts the address by fetching it as global variable.
+        /// This works with dbgeng but is questionable whether it will work with other debuggers.
+        /// Should be re-tested/changed when adding support for them.
+        /// </summary>
+        /// <returns>Address of the function.</returns>
+        ulong GetFunctionAddress(string funcName)
+        {
+            Module module = Process.Current.ModulesByName[TargetModuleName];
+            Variable funcForBreakpoint = module.GetVariable($"{TargetModuleName}!{funcName}");
+            return funcForBreakpoint.Address;
+        }
+
+        /// <summary>
         ///  Start process in inactive mode, release it, break it, print state in the loop.
         ///  Test runs a sample exe which recursively calls the same function and increments the argument.
         ///  Test checks whether stack truly grows between the continue/break calls.
@@ -170,10 +184,7 @@ namespace CsDebugScript.Tests
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
-            Module module = Process.Current.ModulesByName[TargetModuleName];
-            Variable funcForBreakpoint = module.GetVariable($"{TargetModuleName}!InfiniteRecursionTestCase");
-            BreakpointSpec bpSpec = new BreakpointSpec(funcForBreakpoint.Address);
-
+            BreakpointSpec bpSpec = new BreakpointSpec(GetFunctionAddress("InfiniteRecursionTestCase"));
             var bp = Debugger.AddBreakpoint(bpSpec);
 
             Debugger.ContinueExecution();
@@ -188,9 +199,7 @@ namespace CsDebugScript.Tests
         {
             InitializeProcess(TestProcessPath, ProcessArguments, DefaultSymbolPath);
 
-            Module module = Process.Current.ModulesByName[TargetModuleName];
-            Variable funcForBreakpoint = module.GetVariable($"{TargetModuleName}!InfiniteRecursionTestCase");
-            BreakpointSpec bpSpec = new BreakpointSpec(funcForBreakpoint.Address);
+            BreakpointSpec bpSpec = new BreakpointSpec(GetFunctionAddress("InfiniteRecursionTestCase"));
             var bp = Debugger.AddBreakpoint(bpSpec);
 
             Debugger.ContinueExecution();
@@ -224,10 +233,8 @@ namespace CsDebugScript.Tests
             System.Threading.AutoResetEvent are = new System.Threading.AutoResetEvent(false);
             int breakpointHitCount = 0;
 
-            Module module = Process.Current.ModulesByName[TargetModuleName];
-            Variable funcForBreakpoint = module.GetVariable($"{TargetModuleName}!InfiniteRecursionTestCase");
-
-            BreakpointSpec bpSpec = new BreakpointSpec(funcForBreakpoint.Address)
+            ulong bpAddress = GetFunctionAddress("InfiniteRecursionTestCase");
+            BreakpointSpec bpSpec = new BreakpointSpec(bpAddress)
             {
                 BreakpointAction = () =>
                 {
@@ -238,7 +245,7 @@ namespace CsDebugScript.Tests
 
                     // Insure that top of main thread points to the same location as breakpoint address.
                     //
-                    Assert.Equal(funcForBreakpoint.Address, mainThread.StackTrace.Frames[0].InstructionOffset);
+                    Assert.Equal(bpAddress, mainThread.StackTrace.Frames[0].InstructionOffset);
 
                         breakpointHitCount++;
                         Assert.Equal(breakpointHitCount, recursionDepthCount);
