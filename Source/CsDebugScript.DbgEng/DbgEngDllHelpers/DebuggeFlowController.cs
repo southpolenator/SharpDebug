@@ -1,5 +1,6 @@
 ﻿using DbgEng;
 using System;
+using System.Runtime.InteropServices;
 
 namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 {
@@ -19,6 +20,11 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         public System.Threading.AutoResetEvent DebugStatusBreak { get; private set; }
 
         /// <summary>
+        /// Property signaling that flow controller should be terminated.
+        /// </summary>
+        public volatile bool DebuggerLoopExitSignal = false;
+
+        /// <summary>
         /// Loop responsible for catching debug events and signaling debugee state.
         /// </summary>
         private System.Threading.Thread debuggerStateLoop;
@@ -27,6 +33,11 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// Reference to <see cref="DbgEngDll"/>.
         /// </summary>
         private DbgEngDll dbgEngDll;
+
+        /// <summary>
+        /// Debug callbacks executed on events received from the dbg loop.
+        /// </summary>
+        private DebugCallbacks debugCallbacks;
 
         /// <summary>
         /// Synchronization signaling that debug callbacks are installed.
@@ -67,31 +78,44 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         {
             bool hasClientExited = false;
             IDebugControl7 loopControl = dbgEngDll.Control;
-            DebugCallbacks eventCallbacks = new DebugCallbacks(dbgEngDll.ThreadClient, DebugStatusGo);
+            debugCallbacks = new DebugCallbacks(loopControl, DebugStatusGo);
+            dbgEngDll.ThreadClient.SetEventCallbacks(debugCallbacks);
 
             lock (eventCallbacksReady)
             {
                 System.Threading.Monitor.Pulse(eventCallbacksReady);
             }
 
-            // Default is to start in break mode, wait for release.
+            // Default is to start in break mode, wait for the release.
+            // TODO: Needs to be changes with support for non-intrusive debugging.
             //
             DebugStatusGo.WaitOne();
 
             while (!hasClientExited)
             {
-                loopControl.WaitForEvent(0, UInt32.MaxValue);
-                uint executionStatus = loopControl.GetExecutionStatus();
+                // Need to check hr return value.
+                //
+                loopControl.WaitForEvent(0, uint.MaxValue);
 
-                while (executionStatus == (uint)Defines.DebugStatusBreak)
+                if ((uint)Defines.DebugStatusBreak == loopControl.GetExecutionStatus())
                 {
+                    dbgEngDll.ThreadClient.DispatchCallbacks(200);
                     DebugStatusBreak.Set();
                     DebugStatusGo.WaitOne();
 
-                    executionStatus = loopControl.GetExecutionStatus();
+                    if (DebuggerLoopExitSignal)
+                    {
+                        dbgEngDll.ThreadClient.EndSession(DebugEnd.ActiveTerminate);
+                    }
+                    else
+                    {
+                        loopControl.Execute(0, "g", 0);
+                    }
+
+                    dbgEngDll.ThreadClient.DispatchCallbacks(200);
                 }
 
-                hasClientExited = executionStatus == (uint)Defines.DebugStatusNoDebuggee;
+                hasClientExited = loopControl.GetExecutionStatus() == (uint)Defines.DebugStatusNoDebuggee;
             }
         }
 
@@ -101,6 +125,15 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         public void WaitForDebuggerLoopToExit()
         {
             debuggerStateLoop.Join();
+        }
+
+        /// <summary>
+        /// Adds new breakpoint to the debug callbacks.
+        /// </summary>
+        /// <param name="breakpoint"></param>
+        public void AddBreakpoint(DbgEngBreakpoint breakpoint)
+        {
+            debugCallbacks.AddBreakpoint(breakpoint);
         }
     }
 }

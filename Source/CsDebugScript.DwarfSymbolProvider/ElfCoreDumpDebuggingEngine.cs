@@ -615,6 +615,29 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Adds new breakpoint to the given process.
+        /// </summary>
+        /// <param name="process">Process.</param>
+        /// <param name="address">Expression to be evaluated into breakpoint.</param>
+        /// <returns>New breakpoint.</returns>
+        public IBreakpoint AddBreakpointCode(Process process, ulong address)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Adds new breakpoint with assosiated action.
+        /// </summary>
+        /// <param name="process">Process.</param>
+        /// <param name="breakpointSpec">Description of this breakpoint.</param>
+        /// <returns>New breakpoint.</returns>
+        public IBreakpoint AddBreakpoint(Process process, BreakpointSpec breakpointSpec)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
     }
 }

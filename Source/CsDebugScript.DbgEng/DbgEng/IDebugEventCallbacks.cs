@@ -8,7 +8,7 @@ namespace DbgEng
     {
         uint GetInterestMask();
 
-        void Breakpoint(
+        int Breakpoint(
             [In, MarshalAs(UnmanagedType.Interface)] IDebugBreakpoint Bp);
 
         void Exception(

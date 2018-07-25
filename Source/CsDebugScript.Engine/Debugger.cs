@@ -683,6 +683,16 @@ namespace CsDebugScript
         {
             Context.Debugger.Terminate(process);
         }
+
+        /// <summary>
+        /// Adds breakpoint to current process.
+        /// </summary>
+        /// <param name="breakpointSpec">Description of breakpoint to be added.</param>
+        /// <returns></returns>
+        public static IBreakpoint AddBreakpoint(BreakpointSpec breakpointSpec)
+        {
+            return Context.Debugger.AddBreakpoint(Process.Current, breakpointSpec);
+        }
         #endregion
 
         /// <summary>

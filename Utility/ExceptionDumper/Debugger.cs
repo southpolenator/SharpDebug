@@ -48,9 +48,10 @@ namespace ExceptionDumper
                 | DebugEvent.LoadModule | DebugEvent.UnloadModule);
         }
 
-        public void Breakpoint(IDebugBreakpoint Bp)
+        int IDebugEventCallbacks.Breakpoint(IDebugBreakpoint Bp)
         {
-            // Do nothing
+            // Do nothing. 
+            return 0;
         }
 
         public void Exception(ref _EXCEPTION_RECORD64 Exception, uint FirstChance)
