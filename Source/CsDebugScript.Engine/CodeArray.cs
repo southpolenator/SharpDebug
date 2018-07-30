@@ -571,4 +571,68 @@ namespace CsDebugScript
             #endregion
         }
     }
+
+    /// <summary>
+    /// Simple wrapper class for handling unknown element type of array as <see cref="CodeArray{Variable}"/>.
+    /// </summary>
+    public class CodeArray : CodeArray<Variable>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public CodeArray(Variable variable)
+            : base(variable)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="preCalculatedArray">The pre-calculated array.</param>
+        public CodeArray(Variable[] preCalculatedArray)
+            : base(preCalculatedArray)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, int length)
+            : base(variable, length)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, uint length)
+            : base(variable, length)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, ulong length)
+            : base(variable, length)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, long length)
+            : base(variable, length)
+        {
+        }
+    }
 }
