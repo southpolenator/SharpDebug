@@ -568,7 +568,7 @@ namespace CsDebugScript.Engine.SymbolProviders
 
             if (symbolProviderModule == null)
             {
-                return FallbackSymbolProvider.GetRuntimeCodeTypeAndOffset(tuple.Item1, tuple.Item2);
+                return FallbackSymbolProvider?.GetRuntimeCodeTypeAndOffset(tuple.Item1, tuple.Item2);
             }
 
             return symbolProviderModule?.GetRuntimeCodeTypeAndOffset((uint)distance);

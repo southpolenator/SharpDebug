@@ -134,13 +134,22 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override IEnumerable<SymbolField> GetFields()
         {
-            // TODO: Static fields are missing
+            // Non-static fields
             foreach (string fieldName in EngineModuleProvider.GetTypeFieldNames(Id))
             {
                 Tuple<uint, int> fieldTypeAndOffset = EngineModuleProvider.GetTypeFieldTypeAndOffset(Id, fieldName);
                 Symbol fieldType = Module.GetSymbol(fieldTypeAndOffset.Item1);
 
                 yield return new EngineSymbolProviderSymbolField(this, fieldName, fieldType, fieldTypeAndOffset.Item2);
+            }
+
+            // Static fields
+            foreach (string fieldName in EngineModuleProvider.GetTypeStaticFieldNames(Id))
+            {
+                Tuple<uint, ulong> fieldTypeAndAddress = EngineModuleProvider.GetTypeStaticFieldTypeAndAddress(Id, fieldName);
+                Symbol fieldType = Module.GetSymbol(fieldTypeAndAddress.Item1);
+
+                yield return new EngineSymbolProviderSymbolField(this, fieldName, fieldType, int.MinValue);
             }
         }
 

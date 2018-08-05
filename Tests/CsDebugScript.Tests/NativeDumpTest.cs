@@ -230,6 +230,23 @@ ImportUserTypes(options, true);
             Assert.Equal(2, (int)pEnumeration);
             Assert.Equal("simple4", pInnerEnumeration.ToString());
             Assert.Equal(4, (int)pInnerEnumeration);
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+MyTestClass global = ModuleGlobals.globalVariable;
+AreEqual(1212121212, MyTestClass.staticVariable);
+AreEqual(""qwerty"", global.string1.Text);
+AreEqual(2, global.strings.Count);
+AreEqual(""Foo"", global.strings.ElementAt(0).Text);
+AreEqual(""Bar"", global.strings.ElementAt(1).Text);
+AreEqual(2, global.ansiStrings.Count);
+AreEqual(""AnsiFoo"", global.ansiStrings[0].Text);
+AreEqual(""AnsiBar"", global.ansiStrings[1].Text);
+AreEqual(MyEnum.enumEntry2, global.enumeration);
+AreEqual(MyTestClass.MyEnumInner.simple4, global.innerEnumeration);
+                    ");
+            }
         }
 
         [Fact]
@@ -699,9 +716,8 @@ StackFrame GetFrame(string functionName)
 }
 
 void AreEqual<T>(T value1, T value2)
-    where T : IEquatable<T>
 {
-    if (!value1.Equals(value2))
+    if (!System.Collections.Generic.EqualityComparer<T>.Default.Equals(value1, value2))
     {
         throw new Exception($""Not equal. value1 = {value1}, value2 = {value2}"");
     }

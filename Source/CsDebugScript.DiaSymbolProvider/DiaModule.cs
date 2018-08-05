@@ -33,9 +33,14 @@ namespace CsDebugScript.Engine.SymbolProviders
         private DictionaryCache<uint, List<Tuple<string, uint, int>>> typeAllFields;
 
         /// <summary>
-        /// The cache of type all fields
+        /// The cache of type fields
         /// </summary>
         private DictionaryCache<uint, List<Tuple<string, uint, int>>> typeFields;
+
+        /// <summary>
+        /// The cache of type static fields
+        /// </summary>
+        private DictionaryCache<uint, List<Tuple<string, uint, ulong>>> typeStaticFields;
 
         /// <summary>
         /// The basic types
@@ -89,6 +94,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             globalScope = session.globalScope;
             typeAllFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeAllFields);
             typeFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);
+            typeStaticFields = new DictionaryCache<uint, List<Tuple<string, uint, ulong>>>(GetTypeStaticFields);
             basicTypes = SimpleCache.Create(() =>
             {
                 var types = new Dictionary<string, IDiaSymbol>();
@@ -209,6 +215,29 @@ namespace CsDebugScript.Engine.SymbolProviders
                 }
 
                 typeFields.Add(Tuple.Create(field.name, field.typeId, field.offset));
+            }
+
+            return typeFields;
+        }
+
+        /// <summary>
+        /// Gets the type static fields.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        private List<Tuple<string, uint, ulong>> GetTypeStaticFields(uint typeId)
+        {
+            var type = GetTypeFromId(typeId);
+            List<Tuple<string, uint, ulong>> typeFields = new List<Tuple<string, uint, ulong>>();
+            var fields = type.GetChildren(SymTagEnum.Data);
+
+            foreach (var field in fields)
+            {
+                if (field.dataKind != DataKind.StaticMember && field.dataKind != DataKind.Constant)
+                {
+                    continue;
+                }
+
+                typeFields.Add(Tuple.Create(field.name, field.typeId, field.relativeVirtualAddress + Module.Offset));
             }
 
             return typeFields;
@@ -757,6 +786,53 @@ namespace CsDebugScript.Engine.SymbolProviders
             }
 
             var fields = typeFields[type.symIndexId];
+
+            foreach (var field in fields)
+            {
+                if (field.Item1 != fieldName)
+                {
+                    continue;
+                }
+
+                return Tuple.Create(field.Item2, field.Item3);
+            }
+
+            throw new Exception("Field not found");
+        }
+
+        /// <summary>
+        /// Gets the names of static fields of the specified type.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public string[] GetTypeStaticFieldNames(uint typeId)
+        {
+            var type = GetTypeFromId(typeId);
+
+            if (type.symTag == SymTagEnum.PointerType)
+            {
+                type = type.type;
+            }
+
+            var fields = typeStaticFields[type.symIndexId];
+
+            return fields.Select(t => t.Item1).ToArray();
+        }
+
+        /// <summary>
+        /// Gets the static field type id and address of the specified type.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        public Tuple<uint, ulong> GetTypeStaticFieldTypeAndAddress(uint typeId, string fieldName)
+        {
+            var type = GetTypeFromId(typeId);
+
+            if (type.symTag == SymTagEnum.PointerType)
+            {
+                type = type.type;
+            }
+
+            var fields = typeStaticFields[type.symIndexId];
 
             foreach (var field in fields)
             {

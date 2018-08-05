@@ -472,6 +472,25 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         }
 
         /// <summary>
+        /// Gets the names of static fields of the specified type.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public string[] GetTypeStaticFieldNames(uint typeId)
+        {
+            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+        }
+
+        /// <summary>
+        /// Gets the static field type id and address of the specified type.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        public Tuple<uint, ulong> GetTypeStaticFieldTypeAndAddress(uint typeId, string fieldName)
+        {
+            throw new Exception("This is not supported using DbgEng.dll. Please use DIA symbol provider.");
+        }
+
+        /// <summary>
         /// Gets the type identifier.
         /// </summary>
         /// <param name="typeName">Name of the type.</param>

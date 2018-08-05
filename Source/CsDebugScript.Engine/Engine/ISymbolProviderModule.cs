@@ -90,6 +90,19 @@ namespace CsDebugScript.Engine
         Tuple<uint, int> GetTypeFieldTypeAndOffset(uint typeId, string fieldName);
 
         /// <summary>
+        /// Gets the names of static fields of the specified type.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        string[] GetTypeStaticFieldNames(uint typeId);
+
+        /// <summary>
+        /// Gets the static field type id and address of the specified type.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        Tuple<uint, ulong> GetTypeStaticFieldTypeAndAddress(uint typeId, string fieldName);
+
+        /// <summary>
         /// Gets the type's base class type and offset.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>

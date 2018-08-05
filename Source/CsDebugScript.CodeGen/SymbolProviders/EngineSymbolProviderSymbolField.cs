@@ -25,6 +25,8 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             // TODO: BitPosition, LocationType, DataKind, Value
             DataKind = DIA.DataKind.Member;
             LocationType = DIA.LocationType.RegRel;
+            if (offset < 0)
+                LocationType = DIA.LocationType.Static;
 
             if (LocationType == DIA.LocationType.BitField)
             {
