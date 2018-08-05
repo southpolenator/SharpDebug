@@ -9,42 +9,38 @@ namespace CsDebugScript.CodeGen.UserTypes
     internal class TemplateArgumentUserType : UserType
     {
         /// <summary>
-        /// The template argument type name
-        /// </summary>
-        private string typeName;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="TemplateArgumentUserType"/> class.
         /// </summary>
         /// <param name="typeName">The template argument type name.</param>
         /// <param name="symbol">The symbol we are generating this user type from.</param>
-        public TemplateArgumentUserType(string typeName, Symbol symbol)
-            : base(symbol, null, null)
+        /// <param name="factory">User type factory that contains this element.</param>
+        public TemplateArgumentUserType(string typeName, Symbol symbol, UserTypeFactory factory)
+            : base(symbol, null, null, factory)
         {
-            this.typeName = typeName;
-            ClassName = typeName;
+            TemplateArgumentName = typeName;
         }
 
         /// <summary>
-        /// Gets the class name for this user type. Class name doesn't contain namespace.
+        /// The template argument type name
         /// </summary>
-        public override string OriginalClassName
+        public string TemplateArgumentName { get; private set; }
+
+        /// <summary>
+        /// Function that should evaluate <see cref="UserType.TypeName"/> property.
+        /// </summary>
+        /// <returns>User type name.</returns>
+        protected override string GetTypeName()
         {
-            get
-            {
-                return typeName;
-            }
+            return TemplateArgumentName;
         }
 
         /// <summary>
-        /// Gets the full name of the class, including namespace and "parent" type it is declared into.
+        /// Function that should evaluate <see cref="UserType.FullTypeName"/> property.
         /// </summary>
-        public override string FullClassName
+        /// <returns>User type full name.</returns>
+        protected override string GetFullTypeName()
         {
-            get
-            {
-                return typeName;
-            }
+            return TemplateArgumentName;
         }
     }
 }

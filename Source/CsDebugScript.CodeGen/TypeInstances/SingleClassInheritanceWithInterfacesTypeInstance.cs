@@ -16,6 +16,7 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <param name="baseClassUserType">The base class user type.</param>
         /// <param name="factory">The user type factory.</param>
         public SingleClassInheritanceWithInterfacesTypeInstance(UserType baseClassUserType, UserTypeFactory factory)
+            : base(factory.CodeWriter)
         {
             BaseClassUserType = UserTypeInstance.Create(baseClassUserType, factory);
         }
@@ -33,6 +34,15 @@ namespace CsDebugScript.CodeGen.TypeInstances
         public override string GetTypeString(bool truncateNamespace = false)
         {
             return BaseClassUserType.GetTypeString(truncateNamespace);
+        }
+
+        /// <summary>
+        /// Checks whether this type instance is using undefined type (a.k.a. <see cref="Variable"/> or <see cref="UserType"/>).
+        /// </summary>
+        /// <returns><c>true</c> if this type instance is using undefined type;<c>false</c> otherwise.</returns>
+        public override bool ContainsUndefinedType()
+        {
+            return BaseClassUserType.ContainsUndefinedType();
         }
     }
 }

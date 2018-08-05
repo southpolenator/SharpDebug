@@ -33,7 +33,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             if (symTag != SymTagEnum.Exe)
             {
                 Name = TypeToString.GetTypeString(symbol);
-                Name = Name.Replace("<enum ", "<").Replace(",enum ", ",");
             }
             else
             {

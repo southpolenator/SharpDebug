@@ -11,6 +11,7 @@
         /// </summary>
         /// <param name="elementType">The element type instance.</param>
         public PointerTypeInstance(TypeInstance elementType)
+            : base(elementType.CodeWriter)
         {
             ElementType = elementType;
         }
@@ -29,7 +30,16 @@
         {
             string elementTypeString = ElementType.GetTypeString(truncateNamespace);
 
-            return $"CodePointer<{elementTypeString}>";
+            return $"{CodeWriter.ToString(typeof(CodePointer))}<{elementTypeString}>";
+        }
+
+        /// <summary>
+        /// Checks whether this type instance is using undefined type (a.k.a. <see cref="Variable"/> or <see cref="UserType"/>).
+        /// </summary>
+        /// <returns><c>true</c> if this type instance is using undefined type;<c>false</c> otherwise.</returns>
+        public override bool ContainsUndefinedType()
+        {
+            return ElementType.ContainsUndefinedType();
         }
     }
 }

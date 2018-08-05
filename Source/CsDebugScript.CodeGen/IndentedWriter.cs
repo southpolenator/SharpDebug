@@ -45,6 +45,11 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
+        /// Current indentation that will increase indentation specified to the <see cref="WriteLine(int, string, object[])"/> function.
+        /// </summary>
+        public int CurrentIndent { get; set; }
+
+        /// <summary>
         /// Writes the formatted line to the output.
         /// </summary>
         /// <param name="indentation">The indentation.</param>
@@ -52,8 +57,40 @@ namespace CsDebugScript.CodeGen
         /// <param name="parameters">The parameters.</param>
         public void WriteLine(int indentation, string format, params object[] parameters)
         {
-            output.Write(new string(' ', indentation * indentSpaces));
+            WriteIndentation(indentation);
             output.WriteLine(format, parameters);
+        }
+
+        /// <summary>
+        /// Writes the formatted line to the output.
+        /// </summary>
+        /// <param name="indentation">The indentation.</param>
+        /// <param name="text">The text to be written.</param>
+        public void WriteLine(int indentation, string text)
+        {
+            WriteIndentation(indentation);
+            output.WriteLine(text);
+        }
+
+        /// <summary>
+        /// Writes the formatted line to the output.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <param name="parameters">The parameters.</param>
+        public void WriteLine(string format, params object[] parameters)
+        {
+            WriteIndentation(0);
+            output.WriteLine(format, parameters);
+        }
+
+        /// <summary>
+        /// Writes the formatted line to the output.
+        /// </summary>
+        /// <param name="text">The text to be written.</param>
+        public void WriteLine(string text)
+        {
+            WriteIndentation(0);
+            output.WriteLine(text);
         }
 
         /// <summary>
@@ -65,6 +102,17 @@ namespace CsDebugScript.CodeGen
             {
                 output.WriteLine();
             }
+        }
+
+        /// <summary>
+        /// Writed indentation to the output.
+        /// </summary>
+        /// <param name="indentation">The indentation.</param>
+        private void WriteIndentation(int indentation)
+        {
+            indentation += CurrentIndent;
+            if (indentation > 0)
+                output.Write(new string(' ', indentation * indentSpaces));
         }
     }
 }

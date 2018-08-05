@@ -18,7 +18,7 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <summary>
         /// Initializes a new instance of the <see cref="TemplateTypeInstance"/> class.
         /// </summary>
-        /// <param name="templateSpecialization">The template specialization user type.</param>
+        /// <param name="templateSpecialization">The user type that is either template specialization user type or declared in one.</param>
         /// <param name="factory">The user type factory.</param>
         public TemplateTypeInstance(UserType templateSpecialization, UserTypeFactory factory)
             : base(templateSpecialization)
@@ -42,7 +42,7 @@ namespace CsDebugScript.CodeGen.TypeInstances
             for (int j = 0; j < DeclaredInTypeHierarchy.Length; j++)
             {
                 // Check if current type in hierarchy is template type
-                TemplateUserType templateType = DeclaredInTypeHierarchy[j] as TemplateUserType;
+                SpecializedTemplateUserType templateType = DeclaredInTypeHierarchy[j] as SpecializedTemplateUserType;
 
                 if (templateType == null)
                     continue;
@@ -53,31 +53,11 @@ namespace CsDebugScript.CodeGen.TypeInstances
 
                 for (int i = 0; i < arguments.Count; i++)
                 {
-                    UserType userType;
+                    TypeInstance ti = factory.GetSymbolTypeInstance(templateSpecialization, arguments[i]);
 
-                    factory.GetUserType(arguments[i], out userType);
-                    if (userType != null)
-                    {
-                        specializedArguments[i] = UserTypeInstance.Create(userType, factory);
-                        TemplateTypeInstance templateTypeTree = specializedArguments[i] as TemplateTypeInstance;
-
-                        if (templateTypeTree != null && !templateTypeTree.CanInstantiate)
-                            CanInstantiate = false;
-                    }
-                    else
-                    {
-                        // TODO: Check why do we go one more round trip through module for getting argument symbol
-                        Symbol symbol = templateSpecialization.Symbol.Module.GetSymbol(arguments[i].Name);
-
-                        if (symbol.Tag != CodeTypeTag.BuiltinType)
-                        {
-                            // Built-in types can be used for specialization
-                            CanInstantiate = false;
-                        }
-
-                        // #fixme can't deal with it
-                        specializedArguments[i] = templateType.GetSymbolTypeTree(arguments[i], factory);
-                    }
+                    specializedArguments[i] = ti;
+                    if (ti.ContainsUndefinedType())
+                        CanInstantiate = false;
                 }
 
                 SpecializedArguments[j] = specializedArguments;
@@ -103,41 +83,71 @@ namespace CsDebugScript.CodeGen.TypeInstances
         public TypeInstance[][] SpecializedArguments { get; private set; }
 
         /// <summary>
+        /// Checks whether this type instance is using undefined type (a.k.a. <see cref="Variable"/> or <see cref="UserType"/>).
+        /// </summary>
+        /// <returns><c>true</c> if this type instance is using undefined type;<c>false</c> otherwise.</returns>
+        public override bool ContainsUndefinedType()
+        {
+            return !CanInstantiate;
+        }
+
+        /// <summary>
         /// Gets the string representing this type instance in generated code.
         /// </summary>
         /// <param name="truncateNamespace">If set to <c>true</c> namespace won't be added to the generated type string.</param>
         /// <returns>The string representing this type instance in generated code.</returns>
         public override string GetTypeString(bool truncateNamespace = false)
         {
-            StringBuilder sb = new StringBuilder();
+            bool hasTemplateArgument = truncateNamespace;
 
-            if (!truncateNamespace && DeclaredInTypeHierarchy[0].Namespace != null)
+            for (int i = 0; i < SpecializedArguments.Length && !hasTemplateArgument; i++)
+                if (SpecializedArguments[i] != null)
+                    for (int j = 0; j < SpecializedArguments[i].Length && !hasTemplateArgument; j++)
+                        hasTemplateArgument = SpecializedArguments[i][j] is TemplateArgumentTypeInstance;
+            if (hasTemplateArgument)
             {
-                sb.Append(DeclaredInTypeHierarchy[0].Namespace);
-                sb.Append('.');
-            }
+                StringBuilder sb = new StringBuilder();
+                string baseName = DeclaredInTypeHierarchy[0].FullTypeName;
+                int templateIndex = baseName.IndexOf('<');
 
-            for (int j = 0; j < DeclaredInTypeHierarchy.Length; j++)
-            {
-                UserType userType = DeclaredInTypeHierarchy[j];
-                TemplateUserType templateType = userType as TemplateUserType;
-                NamespaceUserType namespaceType = userType as NamespaceUserType;
-
-                if (templateType != null)
-                    sb.Append(templateType.GetSpecializedStringVersion(SpecializedArguments[j].Select(t => t.GetTypeString(truncateNamespace)).ToArray()));
-                else if (namespaceType != null)
+                if (!truncateNamespace)
                 {
-                    if (j == 0 || truncateNamespace)
-                        continue;
-                    sb.Append(namespaceType.Namespace);
+                    sb.Append(templateIndex >= 0 ? baseName.Substring(0, templateIndex) : baseName);
+                    AppendSpecializedArguments(sb, 0, truncateNamespace);
                 }
-                else
-                    sb.Append(userType.ClassName);
-                sb.Append('.');
+                for (int i = !truncateNamespace ? 1 : SpecializedArguments.Length - 1; i < SpecializedArguments.Length; i++)
+                {
+                    sb.Append('.');
+                    baseName = DeclaredInTypeHierarchy[i].TypeName;
+                    templateIndex = baseName.IndexOf('<');
+                    sb.Append(templateIndex >= 0 ? baseName.Substring(0, templateIndex) : baseName);
+                    AppendSpecializedArguments(sb, i, truncateNamespace);
+                }
+                return sb.ToString();
             }
 
-            sb.Length--;
-            return sb.ToString();
+            return base.GetTypeString(truncateNamespace);
+        }
+
+        /// <summary>
+        /// Appends specialized arguments of user type.
+        /// </summary>
+        /// <param name="sb">The string builder where arguments will be appended.</param>
+        /// <param name="userTypeIndex">Index of user type which arguments should be appended.</param>
+        /// <param name="truncateNamespace">If set to <c>true</c> namespace won't be added to the generated type string.</param>
+        private void AppendSpecializedArguments(StringBuilder sb, int userTypeIndex, bool truncateNamespace)
+        {
+            if (SpecializedArguments[userTypeIndex] != null && SpecializedArguments[userTypeIndex].Length > 0)
+            {
+                sb.Append('<');
+                for (int i = 0; i < SpecializedArguments[userTypeIndex].Length; i++)
+                {
+                    if (i > 0)
+                        sb.Append(", ");
+                    sb.Append(SpecializedArguments[userTypeIndex][i].GetTypeString(truncateNamespace));
+                }
+                sb.Append('>');
+            }
         }
     }
 }

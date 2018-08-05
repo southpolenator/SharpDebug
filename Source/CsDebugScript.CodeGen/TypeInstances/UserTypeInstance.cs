@@ -16,6 +16,7 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// </summary>
         /// <param name="userType">The user type.</param>
         protected UserTypeInstance(UserType userType)
+            : base(userType.CodeWriter)
         {
             UserType = userType;
         }
@@ -32,7 +33,7 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <returns>The string representing this type instance in generated code.</returns>
         public override string GetTypeString(bool truncateNamespace = false)
         {
-            return truncateNamespace ? UserType.ClassName : UserType.FullClassName;
+            return truncateNamespace ? UserType.TypeName : UserType.FullTypeName;
         }
 
         /// <summary>
@@ -53,7 +54,7 @@ namespace CsDebugScript.CodeGen.TypeInstances
 
             while (type != null)
             {
-                var templateType = type as TemplateUserType;
+                var templateType = type as SpecializedTemplateUserType;
 
                 if (templateType != null)
                     return new TemplateTypeInstance(userType, factory);
@@ -64,10 +65,19 @@ namespace CsDebugScript.CodeGen.TypeInstances
             var enumType = userType as EnumUserType;
 
             if (enumType != null)
-                return new EnumTreeInstance(enumType);
+                return new EnumTypeInstance(enumType);
 
             // We are now certain that it is regular user type
             return new UserTypeInstance(userType);
+        }
+
+        /// <summary>
+        /// Checks whether this type instance is using undefined type (a.k.a. <see cref="Variable"/> or <see cref="UserType"/>).
+        /// </summary>
+        /// <returns><c>true</c> if this type instance is using undefined type;<c>false</c> otherwise.</returns>
+        public override bool ContainsUndefinedType()
+        {
+            return false;
         }
     }
 }

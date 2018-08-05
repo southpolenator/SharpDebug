@@ -1,4 +1,7 @@
-﻿namespace CsDebugScript.CodeGen.TypeInstances
+﻿using CsDebugScript.CodeGen.CodeWriters;
+using System;
+
+namespace CsDebugScript.CodeGen.TypeInstances
 {
     /// <summary>
     /// Type instance that represents basic type.
@@ -9,16 +12,18 @@
         /// <summary>
         /// Initializes a new instance of the <see cref="BasicTypeInstance"/> class.
         /// </summary>
-        /// <param name="basicType">The basic type string.</param>
-        public BasicTypeInstance(string basicType)
+        /// <param name="codeWriter">Code writer used to output generated code.</param>
+        /// <param name="basicType">The basic type.</param>
+        public BasicTypeInstance(ICodeWriter codeWriter, Type basicType)
+            : base(codeWriter)
         {
             BasicType = basicType;
         }
 
         /// <summary>
-        /// Gets the basic type string.
+        /// Gets the basic type.
         /// </summary>
-        public string BasicType { get; private set; }
+        public Type BasicType { get; private set; }
 
         /// <summary>
         /// Gets the string representing this type instance in generated code.
@@ -27,7 +32,16 @@
         /// <returns>The string representing this type instance in generated code.</returns>
         public override string GetTypeString(bool truncateNamespace = false)
         {
-            return BasicType;
+            return CodeWriter.ToString(BasicType);
+        }
+
+        /// <summary>
+        /// Checks whether this type instance is using undefined type (a.k.a. <see cref="Variable"/> or <see cref="UserType"/>).
+        /// </summary>
+        /// <returns><c>true</c> if this type instance is using undefined type;<c>false</c> otherwise.</returns>
+        public override bool ContainsUndefinedType()
+        {
+            return false;
         }
     }
 }

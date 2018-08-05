@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 
 namespace CsDebugScript.CodeGen
 {
+    using CsDebugScript.CodeGen.CodeWriters;
     using SymbolProviders;
     using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
 
@@ -82,6 +83,11 @@ namespace CsDebugScript.CodeGen
         /// The module provider
         /// </summary>
         private IModuleProvider moduleProvider;
+
+        /// <summary>
+        /// The code writer used to output generated code
+        /// </summary>
+        private ICodeWriter codeWriter;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Generator"/> class.
@@ -203,7 +209,7 @@ namespace CsDebugScript.CodeGen
                 Parallel.ForEach(userTypes,
                     (symbolEntry) =>
                     {
-                        Tuple<string, string> result = GenerateCode(symbolEntry, userTypeFactory, outputDirectory, errorLogger, generationOptions, generatedFiles);
+                        Tuple<string, string> result = GenerateCode(codeWriter, symbolEntry, userTypeFactory, outputDirectory, errorLogger, generationOptions, generatedFiles);
                         string text = result.Item1;
                         string filename = result.Item2;
 
@@ -400,7 +406,8 @@ namespace CsDebugScript.CodeGen
             includedFiles = xmlConfig.IncludedFiles;
             referencedAssemblies = xmlConfig.ReferencedAssemblies;
             generationOptions = xmlConfig.GetGenerationFlags();
-            userTypeFactory = new UserTypeFactory(xmlConfig.Transformations);
+            codeWriter = new CSharpCodeWriter(generationOptions);
+            userTypeFactory = new UserTypeFactory(xmlConfig.Transformations, codeWriter);
             userTypes = new List<UserType>();
         }
 
@@ -614,7 +621,7 @@ namespace CsDebugScript.CodeGen
             logger.Write("Collecting types...");
 
             foreach (var module in modules.Keys)
-                userTypes.Add(userTypeFactory.AddSymbol(module.GlobalScope, new XmlType() { Name = "ModuleGlobals" }, modules[module].Namespace, generationOptions));
+                userTypes.Add(userTypeFactory.AddSymbol(module.GlobalScope, null, modules[module].Namespace, generationOptions));
 
             ConcurrentBag<Symbol> simpleSymbols = new ConcurrentBag<Symbol>();
             Dictionary<Tuple<string, string>, List<Symbol>> templateSymbols = new Dictionary<Tuple<string, string>, List<Symbol>>();
@@ -701,7 +708,7 @@ namespace CsDebugScript.CodeGen
             logger.Write("Updating template arguments...");
             foreach (TemplateUserType templateUserType in userTypes.OfType<TemplateUserType>())
             {
-                foreach (TemplateUserType specializedTemplateUserType in templateUserType.SpecializedTypes)
+                foreach (SpecializedTemplateUserType specializedTemplateUserType in templateUserType.Specializations)
                     if (!specializedTemplateUserType.UpdateTemplateArguments(userTypeFactory))
                     {
 #if DEBUG
@@ -726,25 +733,8 @@ namespace CsDebugScript.CodeGen
         /// <returns>Generated C# code</returns>
         private string GenerateSingleFile()
         {
-            HashSet<string> usings = new HashSet<string>();
-
-            foreach (var symbolEntry in userTypes)
-            {
-                foreach (var u in symbolEntry.Usings)
-                {
-                    usings.Add(u);
-                }
-            }
-
             using (StringWriter stringOutput = new StringWriter())
             {
-                foreach (var u in usings.OrderBy(s => s))
-                {
-                    stringOutput.WriteLine("using {0};", u);
-                }
-
-                stringOutput.WriteLine();
-
                 ObjectPool<StringWriter> stringWriterPool = new ObjectPool<StringWriter>(() => new StringWriter());
 
                 Parallel.ForEach(userTypes,
@@ -753,7 +743,7 @@ namespace CsDebugScript.CodeGen
                         var output = stringWriterPool.GetObject();
 
                         output.GetStringBuilder().Clear();
-                        GenerateCodeInSingleFile(output, symbolEntry, userTypeFactory, errorLogger, generationOptions);
+                        GenerateCodeInSingleFile(codeWriter, output, symbolEntry, userTypeFactory, errorLogger, generationOptions);
                         string text = output.ToString();
 
                         if (!string.IsNullOrEmpty(text))
@@ -833,6 +823,7 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Generates the code for user type and creates a file for it.
         /// </summary>
+        /// <param name="codeWriter">The code writer used to output generated code.</param>
         /// <param name="userType">The user type.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="outputDirectory">The output directory where code file will be stored.</param>
@@ -840,7 +831,7 @@ namespace CsDebugScript.CodeGen
         /// <param name="generationFlags">The user type generation flags.</param>
         /// <param name="generatedFiles">The list of already generated files.</param>
         /// <returns>Tuple of generated code and filename</returns>
-        private static Tuple<string, string> GenerateCode(UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationFlags, ConcurrentDictionary<string, string> generatedFiles)
+        private static Tuple<string, string> GenerateCode(ICodeWriter codeWriter, UserType userType, UserTypeFactory factory, string outputDirectory, TextWriter errorOutput, UserTypeGenerationFlags generationFlags, ConcurrentDictionary<string, string> generatedFiles)
         {
             Symbol symbol = userType.Symbol;
 
@@ -863,7 +854,7 @@ namespace CsDebugScript.CodeGen
             }
 
             string classOutputDirectory = outputDirectory;
-            string nameSpace = (userType.DeclaredInType as NamespaceUserType)?.FullClassName ?? userType.Namespace;
+            string nameSpace = (userType.DeclaredInType as NamespaceUserType)?.FullTypeName ?? userType.Namespace;
 
             if (!string.IsNullOrEmpty(nameSpace))
             {
@@ -891,7 +882,7 @@ namespace CsDebugScript.CodeGen
 
             using (StringWriter stringOutput = new StringWriter())
             {
-                userType.WriteCode(new IndentedWriter(stringOutput, generationFlags.HasFlag(UserTypeGenerationFlags.CompressedOutput)), errorOutput, factory, generationFlags);
+                codeWriter.WriteUserType(userType, stringOutput);
                 string text = stringOutput.ToString();
                 if (!generationFlags.HasFlag(UserTypeGenerationFlags.DontSaveGeneratedCodeFiles))
                 {
@@ -904,13 +895,14 @@ namespace CsDebugScript.CodeGen
         /// <summary>
         /// Generates the code for user type in single file.
         /// </summary>
+        /// <param name="codeWriter">The code writer used to output generated code.</param>
         /// <param name="output">The output text writer.</param>
         /// <param name="userType">The user type.</param>
         /// <param name="factory">The user type factory.</param>
         /// <param name="errorOutput">The error output.</param>
         /// <param name="generationFlags">The user type generation flags.</param>
         /// <returns><c>true</c> if code was generated for the type; otherwise <c>false</c></returns>
-        private static bool GenerateCodeInSingleFile(TextWriter output, UserType userType, UserTypeFactory factory, TextWriter errorOutput, UserTypeGenerationFlags generationFlags)
+        private static bool GenerateCodeInSingleFile(ICodeWriter codeWriter, TextWriter output, UserType userType, UserTypeFactory factory, TextWriter errorOutput, UserTypeGenerationFlags generationFlags)
         {
             Symbol symbol = userType.Symbol;
 
@@ -925,7 +917,7 @@ namespace CsDebugScript.CodeGen
                 return false;
             }
 
-            userType.WriteCode(new IndentedWriter(output, generationFlags.HasFlag(UserTypeGenerationFlags.CompressedOutput)), errorOutput, factory, generationFlags);
+            codeWriter.WriteUserType(userType, output);
             return true;
         }
 
