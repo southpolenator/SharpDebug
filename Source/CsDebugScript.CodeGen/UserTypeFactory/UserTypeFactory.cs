@@ -490,7 +490,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (tr != null)
                 {
-                    return tr.TransformType(inputType, ownerUserType.TypeName, typeConverter);
+                    return tr.TransformType(inputType, typeConverter);
                 }
 
                 UserType userType;

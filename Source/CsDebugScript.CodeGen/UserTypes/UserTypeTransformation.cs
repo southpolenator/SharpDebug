@@ -42,7 +42,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             this.typeConverter = typeConverter;
             this.ownerUserType = ownerUserType;
             this.type = type;
-            typeStringCache = SimpleCache.CreateStruct(() => Transformation.TransformType(type.Name, ownerUserType.TypeName, typeConverter));
+            typeStringCache = SimpleCache.CreateStruct(() => Transformation.TransformType(type.Name, typeConverter));
         }
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             string originalFieldTypeString = type.Name;
 
-            return Transformation.TransformConstructor(originalFieldTypeString, simpleFieldValue, fieldOffset, ownerUserType.TypeName, typeConverter);
+            return Transformation.TransformConstructor(originalFieldTypeString, simpleFieldValue, fieldOffset, typeConverter);
         }
     }
 }
