@@ -235,9 +235,10 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             string className = Symbol.Namespaces.Last();
 
+            className = CodeWriter.FixUserNaming(className);
             if (!string.IsNullOrEmpty(ConstructorNameSuffix))
                 className += ConstructorNameSuffix;
-            return CodeWriter.FixUserNaming(className);
+            return className;
         }
 
         /// <summary>

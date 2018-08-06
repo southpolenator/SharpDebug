@@ -71,15 +71,22 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// Initializes a new instance of the <see cref="CSharpCodeWriter"/> class.
         /// </summary>
         /// <param name="generationFlags">The code generation options</param>
-        public CSharpCodeWriter(UserTypeGenerationFlags generationFlags)
+        /// <param name="nameLimit">Maximum number of characters that generated name can have.</param>
+        public CSharpCodeWriter(UserTypeGenerationFlags generationFlags, int nameLimit)
         {
             GenerationFlags = generationFlags;
+            NameLimit = nameLimit;
         }
 
         /// <summary>
         /// The code generation options
         /// </summary>
         public UserTypeGenerationFlags GenerationFlags { get; private set; }
+
+        /// <summary>
+        /// Maximum number of characters that generated name can have.
+        /// </summary>
+        public int NameLimit { get; private set; }
 
         /// <summary>
         /// Converts built-in type to string.
@@ -162,6 +169,10 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 }
             }
 
+            // Fixed name cannot be longer than some limit
+            if (sb.Length > NameLimit)
+                sb.Length = NameLimit;
+
             // Keywords should be prefixed with @...
             name = sb.ToString();
             if (Keywords.Contains(name))
@@ -208,7 +219,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
             if (type.DeclaredInType == null && !string.IsNullOrEmpty(type.Namespace))
             {
-                output.WriteLine($"namespace {FixUserNaming(type.Namespace)}");
+                output.WriteLine($"namespace {type.Namespace}");
                 StartBlock(output);
                 shouldCloseNamespaceBlock = true;
             }
@@ -504,7 +515,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             // Write members that are constants
             foreach (var member in type.Members.OfType<ConstantUserTypeMember>())
                 if (!(member.Type is TemplateArgumentTypeInstance))
-                    output.WriteLine($"{ToString(member.AccessLevel)}const {member.Type.GetTypeString()} {FixUserNaming(member.Name)} = {ConstantValue(member)};");
+                    output.WriteLine($"{ToString(member.AccessLevel)}const {member.Type.GetTypeString()} {member.Name} = {ConstantValue(member)};");
 
             // Write cache fields for data fields properties
             bool hasDataFields = type.BaseClass is MultiClassInheritanceTypeInstance
@@ -580,7 +591,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     arguments.Length -= 2;
 
                     output.WriteLine();
-                    output.WriteLine($"{ToString(constructor.AccessLevel)}{FixUserNaming(type.ConstructorName)}({arguments})");
+                    output.WriteLine($"{ToString(constructor.AccessLevel)}{type.ConstructorName}({arguments})");
 
                     // Write constructor initialization
                     if (constructor == UserTypeConstructor.Simple)

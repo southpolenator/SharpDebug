@@ -123,9 +123,9 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             if (index > 0)
                 className = className.Substring(0, index);
+            className = CodeWriter.FixUserNaming(className);
             if (!string.IsNullOrEmpty(ConstructorNameSuffix))
                 className += ConstructorNameSuffix;
-            className = CodeWriter.FixUserNaming(className);
             if (NumberOfTemplateArguments > 0)
             {
                 StringBuilder sb = new StringBuilder();

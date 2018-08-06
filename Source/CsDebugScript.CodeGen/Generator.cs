@@ -406,7 +406,8 @@ namespace CsDebugScript.CodeGen
             includedFiles = xmlConfig.IncludedFiles;
             referencedAssemblies = xmlConfig.ReferencedAssemblies;
             generationOptions = xmlConfig.GetGenerationFlags();
-            codeWriter = new CSharpCodeWriter(generationOptions);
+            int nameLimit = xmlConfig.GenerateAssemblyWithRoslyn ? 1000 : 250;
+            codeWriter = new CSharpCodeWriter(generationOptions, nameLimit);
             userTypeFactory = new UserTypeFactory(xmlConfig.Transformations, codeWriter);
             userTypes = new List<UserType>();
         }
