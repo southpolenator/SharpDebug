@@ -1002,7 +1002,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             {
                 foreach (var kvp in enumUserType.Symbol.EnumValues)
                     if (kvp.Item2 == constant.Value.ToString())
-                        return $"{enumUserType.FullTypeName}.{kvp.Item1}";
+                        return $"{constant.Type.GetTypeString()}.{kvp.Item1}";
 
                 Type enumBasicType = enumUserType.BasicType;
 
