@@ -186,6 +186,17 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="output">Output indented writer.</param>
         public void WriteUserType(UserType type, IndentedWriter output)
         {
+            WriteUserType(type, output, recursive: false);
+        }
+
+        /// <summary>
+        /// Generates code for user type and writes it to the specified output.
+        /// </summary>
+        /// <param name="type">User type for which code should be generated.</param>
+        /// <param name="output">Output indented writer.</param>
+        /// <param name="recursive">Is this recursive call from printing inner type?</param>
+        private void WriteUserType(UserType type, IndentedWriter output, bool recursive)
+        {
             if (type is NamespaceUserType)
             {
                 WriteNamespace((NamespaceUserType)type, output);
@@ -193,10 +204,24 @@ namespace CsDebugScript.CodeGen.CodeWriters
             }
 
             // Write namespace for user type
+            bool shouldCloseNamespaceBlock = false;
+
             if (type.DeclaredInType == null && !string.IsNullOrEmpty(type.Namespace))
             {
                 output.WriteLine($"namespace {FixUserNaming(type.Namespace)}");
                 StartBlock(output);
+                shouldCloseNamespaceBlock = true;
+            }
+            else if (!recursive && !GenerationFlags.HasFlag(UserTypeGenerationFlags.SingleFileExport))
+            {
+                string nameSpace = (type.DeclaredInType as NamespaceUserType)?.FullTypeName ?? type.Namespace;
+
+                if (!string.IsNullOrEmpty(nameSpace))
+                {
+                    output.WriteLine($"namespace {nameSpace}");
+                    StartBlock(output);
+                    shouldCloseNamespaceBlock = true;
+                }
             }
 
             if (type is EnumUserType)
@@ -205,7 +230,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 WriteRegular(type, output);
 
             // Close namespace for user type
-            if (type.DeclaredInType == null && !string.IsNullOrEmpty(type.Namespace))
+            if (shouldCloseNamespaceBlock)
                 EndBlock(output);
         }
 
@@ -683,7 +708,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 }
 
                 output.WriteLine();
-                WriteUserType(innerType, output);
+                WriteUserType(innerType, output, recursive: true);
             }
         }
 
