@@ -44,7 +44,7 @@ namespace CsDebugScript.Tests
         [InlineData("NativeDumpTest.x64.gcc.exe", true, true, false, true)]
         [InlineData("NativeDumpTest.linux.x64.gcc", true, true, true, true)]
         [InlineData("NativeDumpTest.linux.x64.gcc", false, true, true, true)]
-        //[InlineData("NativeDumpTest.linux.x64.gcc", true, false, true, true)] // TODO: Once ModuleGlobals are implemented for DwarfSymbolProvider, enable this test case...
+        [InlineData("NativeDumpTest.linux.x64.gcc", true, false, true, true)]
         [InlineData("NativeDumpTest.linux.x64.gcc", true, true, false, true)]
         public void Generation(string pdbFile, bool singleFileExport, bool compileWithRoslyn, bool transformations, bool useDwarf)
         {
