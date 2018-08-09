@@ -449,7 +449,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     UserType userType;
                     Symbol baseClassSymbol = baseClasses.First(t => !t.IsEmpty);
 
-                    if (!baseClassSymbol.IsVirtualInheritance && Factory.GetUserType(baseClassSymbol, out userType) && !(userType is TemplateArgumentUserType))
+                    if (!baseClassSymbol.IsVirtualInheritance && Factory.GetUserType(baseClassSymbol, out userType) && !(Factory.GetSymbolTypeInstance(this, baseClassSymbol) is TemplateArgumentTypeInstance))
                     {
                         baseClassOffset = baseClassSymbol.Offset;
                         baseClass = new SingleClassInheritanceWithInterfacesTypeInstance(userType, Factory);

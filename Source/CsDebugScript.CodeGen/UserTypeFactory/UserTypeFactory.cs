@@ -617,22 +617,16 @@ namespace CsDebugScript.CodeGen.UserTypes
                         Symbol pointerType = symbol.ElementType;
                         UserType pointerUserType;
 
-                        GetUserType(pointerType, out pointerUserType);
-
                         // When exporting pointer from Global Modules, always export types as code pointer.
-                        if (parentType is GlobalsUserType && pointerUserType != null)
-                        {
-                            return new PointerTypeInstance(UserTypeInstance.Create(pointerUserType, this));
-                        }
-
-                        // TODO: Describe the condition.
-                        if (pointerUserType is TemplateArgumentUserType)
+                        if (parentType is GlobalsUserType && GetUserType(pointerType, out pointerUserType))
                         {
                             return new PointerTypeInstance(UserTypeInstance.Create(pointerUserType, this));
                         }
 
                         TypeInstance innerType = GetSymbolTypeInstance(parentType, pointerType);
 
+                        if (innerType is TemplateArgumentTypeInstance)
+                            return new PointerTypeInstance(innerType);
                         switch (pointerType.Tag)
                         {
                             case CodeTypeTag.BuiltinType:

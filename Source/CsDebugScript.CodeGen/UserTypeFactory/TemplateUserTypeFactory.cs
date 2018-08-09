@@ -33,48 +33,6 @@ namespace CsDebugScript.CodeGen.UserTypes
         public UserTypeFactory OriginalFactory { get; private set; }
 
         /// <summary>
-        /// Look up for user type based on the specified symbol.
-        /// </summary>
-        /// <param name="type">The symbol.</param>
-        /// <param name="userType">The found user type.</param>
-        /// <returns><c>true</c> if user type was found.</returns>
-        internal override bool GetUserType(Symbol type, out UserType userType)
-        {
-            string argumentName;
-            string typeString = type.Name;
-
-            if (TryGetTemplateArgument(typeString, out argumentName))
-            {
-                // TODO: #fixme investigate this
-                userType = new TemplateArgumentUserType(argumentName, type, this);
-                return true;
-            }
-
-            return base.GetUserType(type, out userType);
-        }
-
-        /// <summary>
-        /// Look up for user type based on the specified module and type string.
-        /// </summary>
-        /// <param name="module">The module.</param>
-        /// <param name="typeString">The type string.</param>
-        /// <param name="userType">The found user type.</param>
-        /// <returns><c>true</c> if user type was found.</returns>
-        internal override bool GetUserType(SymbolProviders.Module module, string typeString, out UserType userType)
-        {
-            string argumentName;
-
-            if (TryGetTemplateArgument(typeString, out argumentName))
-            {
-                // TODO: #fixme investigate this
-                userType = new TemplateArgumentUserType(argumentName, null, this);
-                return true;
-            }
-
-            return base.GetUserType(module, typeString, out userType);
-        }
-
-        /// <summary>
         /// Gets the type instance for the specified symbol.
         /// </summary>
         /// <param name="parentType">The user type from which this symbol comes from (examples: field type, template type...).</param>

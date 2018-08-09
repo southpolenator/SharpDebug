@@ -91,7 +91,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         public override void InitializeCache()
         {
-            // TODO: Do nothing?
         }
 
         /// <summary>
