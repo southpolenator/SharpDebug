@@ -42,7 +42,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
             if (!WronglyFormed)
             {
-                AllTemplateArguments = allTemplateArguments.Select(s => s.Name).ToList();
+                AllTemplateArguments = allTemplateArguments;
                 TemplateArgumentsAsSymbols = templateArgumentsAsSymbols;
             }
         }
@@ -69,9 +69,9 @@ namespace CsDebugScript.CodeGen.UserTypes
         public IReadOnlyList<Symbol> TemplateArgumentsAsSymbols { get; private set; }
 
         /// <summary>
-        /// Gets the list of all parsed template arguments (including "parent" user types) as strings.
+        /// Gets the list of all parsed template arguments (including "parent" user types) as symbols.
         /// </summary>
-        public IReadOnlyList<string> AllTemplateArguments { get; private set; }
+        public IReadOnlyList<Symbol> AllTemplateArguments { get; private set; }
 
         /// <summary>
         /// Gets the number of template arguments.
@@ -193,8 +193,13 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                     arguments.Add(extractedType);
 
-                    // Try to see if argument is number (constants are removed from the template arguments as they cannot be used in C#)
-                    if (!module.IsConstant(extractedType))
+                    // Try to see if argument is constant
+                    if (module.IsConstant(extractedType))
+                    {
+                        // Create constant symbol for this string
+                        result.Add(module.GetConstantSymbol(extractedType));
+                    }
+                    else
                     {
                         // Check if type is existing type (symbol)
                         Symbol symbol = GlobalCache.GetSymbol(extractedType, module);

@@ -3,6 +3,7 @@ using CsDebugScript.Engine.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace CsDebugScript
 {
@@ -641,6 +642,101 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Dictionary of possible conversions from .NET built-in type into C++ compiler generated string.
+        /// </summary>
+        private static readonly Dictionary<Type, string[]> builtinTypesToStringsMapping = new Dictionary<Type, string[]>()
+        {
+            { typeof(bool), new[] { "bool" } },
+            { typeof(char), new[] { "signed char", "char", "char16_t", "char32_t", "wchar_t" } },
+            { typeof(byte), new[] { "unsigned char", "uint8_t", "__uint8", "byte" } },
+            { typeof(sbyte), new[] { "char", "int8_t", "__int8" } },
+            { typeof(short), new[] { "short", "int16_t", "__int16" } },
+            { typeof(ushort), new[] { "unsigned short", "uint16_t", "__uint16", "ushort" } },
+            { typeof(int), new[] { "int", "int32_t", "__int32" } },
+            { typeof(uint), new[] { "unsigned", "unsigned int", "uint32_t", "__uint32", "uint" } },
+            { typeof(long), new[] { "long long", "int64_t", "__int64" } },
+            { typeof(ulong), new[] { "unsigned long long", "uint64_t", "__uint64", "unsigned __int64", "ulong" } },
+            { typeof(float), new[] { "float" } },
+            { typeof(double), new[] { "double" } },
+        };
+
+        /// <summary>
+        /// Gets <see cref="UserTypeMetadata"/> instance for the specified type instance.
+        /// </summary>
+        /// <param name="type">Type that has <see cref="UserTypeAttribute"/> with info about <see cref="CodeType"/>.</param>
+        private static UserTypeMetadata GetTypeMetadataInstance(Type type)
+        {
+            UserTypeMetadata[] allMetadata = UserTypeMetadata.ReadFromType(type);
+
+            if (!type.IsGenericType)
+            {
+                UserTypeMetadata metadata = allMetadata[0];
+
+                return metadata;
+            }
+
+            // Convert all arguments to strings
+            string[] argumentsAsStrings = new string[type.GenericTypeArguments.Length];
+
+            for (int i = 0; i < argumentsAsStrings.Length; i++)
+            {
+                Type argumentType = type.GenericTypeArguments[i];
+
+                if (argumentType.GetTypeInfo().IsSubclassOf(typeof(ITemplateConstant)))
+                {
+                    TemplateConstantAttribute attribute = argumentType.GetCustomAttribute<TemplateConstantAttribute>();
+
+                    argumentsAsStrings[i] = attribute.String;
+                }
+                else if (argumentType == typeof(Variable))
+                    continue;
+                else if (argumentType.IsSubclassOf(typeof(Variable)))
+                    argumentsAsStrings[i] = GetBaseClassString(argumentType);
+                else // Built-in type
+                    continue;
+            }
+
+            // Find one that matches them all
+            foreach (UserTypeMetadata metadata in allMetadata)
+            {
+                string[] args = NativeCodeType.GetTemplateArgumentsStrings(metadata.TypeName);
+
+                if (args.Length != argumentsAsStrings.Length)
+                    continue;
+
+                bool matches = true;
+
+                for (int i = 0; i < args.Length && matches; i++)
+                    if (argumentsAsStrings[i] != null)
+                        matches = argumentsAsStrings[i] == args[i];
+                for (int i = 0; i < args.Length && matches; i++)
+                    if (argumentsAsStrings[i] == null)
+                    {
+                        Type argumentType = type.GenericTypeArguments[i];
+
+                        if (argumentType == typeof(Variable))
+                            continue; // Variable matches anything :)
+                        else
+                        {
+                            string[] expectedStrings;
+
+                            if (builtinTypesToStringsMapping.TryGetValue(argumentType, out expectedStrings))
+                                if (expectedStrings.Contains(args[i]))
+                                    continue;
+                        }
+
+                        // TODO: Fallback to searching symbol from module (metadata contains ModuleName, and later try to match code type with .NET type)
+                        matches = false;
+                    }
+                if (matches)
+                    return metadata;
+            }
+
+            // Not found :(
+            return null;
+        }
+
+        /// <summary>
         /// Gets the base class string.
         /// </summary>
         /// <param name="baseClassType">Type of the base class.</param>
@@ -649,10 +745,30 @@ namespace CsDebugScript
             if (!baseClassType.IsSubclassOf(typeof(Variable)))
                 throw new Exception("Specified type doesn't inherit Variable class");
 
-            // TODO: Make it work with exported template classes
-            UserTypeMetadata metadata = UserTypeMetadata.ReadFromType(baseClassType).First();
+            UserTypeMetadata metadata = GetTypeMetadataInstance(baseClassType);
 
-            return metadata.TypeName;
+            if (metadata != null)
+                return metadata.TypeName;
+
+            // Fallback to old code path: MyType<>
+            UserTypeMetadata[] allMetadata = UserTypeMetadata.ReadFromType(baseClassType);
+            string typeName = allMetadata[0].TypeName;
+
+            return typeName.Substring(0, typeName.IndexOf('<')) + "<>";
+        }
+
+        /// <summary>
+        /// Gets the <see cref="CodeType"/> for the specified <see cref="UserType"/> type instance.
+        /// </summary>
+        /// <param name="userType"><see cref="UserType"/> type instance.</param>
+        /// <returns><see cref="CodeType"/> of the specified type instance.</returns>
+        public static CodeType GetClassCodeType(Type userType)
+        {
+            UserTypeMetadata metadata = GetTypeMetadataInstance(userType);
+
+            if (metadata != null && !string.IsNullOrEmpty(metadata.ModuleName) && !string.IsNullOrEmpty(metadata.TypeName))
+                return CodeType.Create($"{metadata.ModuleName}!{metadata.TypeName}");
+            return null;
         }
 
         /// <summary>

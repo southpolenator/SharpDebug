@@ -43,37 +43,18 @@ namespace CsDebugScript.Engine
             UserTypeAttribute[] attributes = type.GetCustomAttributes<UserTypeAttribute>(false).ToArray();
             bool derivedFromUserType = IsDerivedFrom(type, typeof(UserType));
 
-            /* #fixme temp workaround for genertic types
-            if (type.IsGenericType)
-            {
-                foreach(Type genericArgument in type.GetGenericArguments())
-                {
-                    UserTypeAttribute genericAttribute = genericArgument.GetCustomAttribute<UserTypeAttribute>();
-                    if (genericAttribute != null)
-                    {
-                        string moduleName = genericAttribute.ModuleName;
-                        // #fixme temp workaround
-                        string typeName = type.Name + "<>";
-
-                        return new UserTypeMetadata(moduleName, typeName, type);
-                    }
-                }
-            }
-            */
-
             if (attributes.Length > 0 && !derivedFromUserType)
-            {
-                throw new Exception(string.Format("Type {0} has defined UserTypeAttribute, but it does not inherit UserType", type.FullName));
-            }
+                throw new Exception($"Type {type.FullName} has defined UserTypeAttribute, but it does not inherit UserType");
             else if (derivedFromUserType)
             {
                 UserTypeMetadata[] metadata = new UserTypeMetadata[attributes.Length];
+                string defaultTypeName = type.Name; // TODO: Form better name for generics type
 
                 for (int i = 0; i < metadata.Length; i++)
                 {
                     UserTypeAttribute attribute = attributes[i];
-                    string moduleName = attribute != null ? attribute.ModuleName : null;
-                    string typeName = attribute != null ? attribute.TypeName : !type.IsGenericType ? type.Name : type.Name.Substring(0, type.Name.IndexOf('`')) + "<>"; // TODO: Form better name for generics type
+                    string moduleName = attribute?.ModuleName;
+                    string typeName = attribute?.TypeName ?? defaultTypeName;
 
                     metadata[i] = new UserTypeMetadata(moduleName, typeName, type);
                 }

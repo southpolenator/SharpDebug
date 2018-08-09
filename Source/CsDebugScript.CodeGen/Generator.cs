@@ -662,7 +662,7 @@ namespace CsDebugScript.CodeGen
 
                     lock (templateSymbols)
                     {
-                        if (templateSymbols.ContainsKey(symbolId) == false)
+                        if (!templateSymbols.ContainsKey(symbolId))
                             templateSymbols[symbolId] = new List<Symbol>() { symbol };
                         else
                             templateSymbols[symbolId].Add(symbol);
@@ -684,14 +684,7 @@ namespace CsDebugScript.CodeGen
             foreach (List<Symbol> symbols in templateSymbols.Values)
             {
                 Symbol symbol = symbols.First();
-                string symbolName = SymbolNameHelper.CreateLookupNameForSymbol(symbol);
-
-                XmlType type = new XmlType()
-                {
-                    Name = symbolName
-                };
-
-                userTypes.AddRange(userTypeFactory.AddSymbols(symbols, type, symbolNamespaces[symbol], generationOptions));
+                userTypes.AddRange(userTypeFactory.AddTemplateSymbols(symbols, symbolNamespaces[symbol], generationOptions));
             }
 
             logger.WriteLine(" {0}", stopwatch.Elapsed);
@@ -722,7 +715,7 @@ namespace CsDebugScript.CodeGen
 
             // Post processing user types (filling DeclaredInType)
             logger.Write("Post processing user types...");
-            var namespaceTypes = userTypeFactory.ProcessTypes(userTypes, symbolNamespaces).ToArray();
+            var namespaceTypes = userTypeFactory.ProcessTypes(userTypes, symbolNamespaces, xmlConfig.CommonTypesNamespace ?? modules.First().Key.Namespace).ToArray();
             userTypes.AddRange(namespaceTypes);
 
             logger.WriteLine(" {0}", stopwatch.Elapsed);

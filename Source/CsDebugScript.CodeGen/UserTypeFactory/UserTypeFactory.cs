@@ -133,131 +133,112 @@ namespace CsDebugScript.CodeGen.UserTypes
         }
 
         /// <summary>
-        /// Adds the symbols to user type factory and generates the user types.
+        /// Adds template symbols to user type factory and generates template user types.
         /// </summary>
         /// <param name="symbols">The template symbols grouped around the same template type.</param>
-        /// <param name="type">The XML type description.</param>
         /// <param name="nameSpace">The namespace.</param>
         /// <param name="generationFlags">The user type generation flags.</param>
         /// <returns>Generated user types for the specified symbols.</returns>
-        internal IEnumerable<UserType> AddSymbols(IEnumerable<Symbol> symbols, XmlType type, string nameSpace, UserTypeGenerationFlags generationFlags)
+        internal IEnumerable<UserType> AddTemplateSymbols(IEnumerable<Symbol> symbols, string nameSpace, UserTypeGenerationFlags generationFlags)
         {
-            if (!type.IsTemplate && symbols.Count() > 1)
-                throw new Exception("Type has more than one symbol for " + type.Name);
+            // Bucketize template user types based on number of template arguments
+            var buckets = new Dictionary<int, List<SpecializedTemplateUserType>>();
 
-            if (!type.IsTemplate)
+            foreach (Symbol symbol in symbols)
             {
-                yield return AddSymbol(symbols.First(), type, nameSpace, generationFlags);
-            }
-            else
-            {
-                // Bucketize template user types based on number of template arguments
-                var buckets = new Dictionary<int, List<SpecializedTemplateUserType>>();
+                UserType userType = null;
 
-                foreach (Symbol symbol in symbols)
+                // We want to ignore "empty" generic classes (for now)
+                if (symbol.Name == null || symbol.Size == 0)
+                    continue;
+
+                // Generate template user type
+                SpecializedTemplateUserType templateType = new SpecializedTemplateUserType(symbol, null, nameSpace, this);
+
+                if (!templateType.WronglyFormed)
                 {
-                    UserType userType = null;
-
-                    // We want to ignore "empty" generic classes (for now)
-                    if (symbol.Name == null || symbol.Size == 0)
-                        continue;
-
-                    // Generate template user type
-                    SpecializedTemplateUserType templateType = new SpecializedTemplateUserType(symbol, type, nameSpace, this);
-
-                    if (!templateType.WronglyFormed)
-                    {
 #if false // TODO: Verify if we want to use simple user type instead of template user type
-                        if (templateType.AllTemplateArguments.Count == 0)
-                        {
-                            // Template does not have arguments that can be used by generic
-                            // Make it specialized type
-                            userType = this.AddSymbol(symbol, null, moduleName, generationOptions);
-                        }
-                        else
-#endif
-                        {
-                            List<SpecializedTemplateUserType> templates;
-
-                            symbol.UserType = templateType;
-                            if (!buckets.TryGetValue(templateType.AllTemplateArguments.Count, out templates))
-                                buckets.Add(templateType.AllTemplateArguments.Count, templates = new List<SpecializedTemplateUserType>());
-                            templates.Add(templateType);
-                        }
+                    if (templateType.AllTemplateArguments.Count == 0)
+                    {
+                        // Template does not have arguments that can be used by generic
+                        // Make it specialized type
+                        userType = this.AddSymbol(symbol, null, moduleName, generationOptions);
                     }
+                    else
+#endif
+                    {
+                        List<SpecializedTemplateUserType> templates;
 
-                    if (userType != null)
-                        yield return userType;
+                        symbol.UserType = templateType;
+                        if (!buckets.TryGetValue(templateType.AllTemplateArguments.Count, out templates))
+                            buckets.Add(templateType.AllTemplateArguments.Count, templates = new List<SpecializedTemplateUserType>());
+                        templates.Add(templateType);
+                    }
                 }
 
-                // Add newly generated types
-                foreach (List<SpecializedTemplateUserType> templatesInBucket in buckets.Values)
+                if (userType != null)
+                    yield return userType;
+            }
+
+            // Add newly generated types
+            foreach (List<SpecializedTemplateUserType> templatesInBucket in buckets.Values)
+            {
+                // TODO: Verify that all templates in the list can be described by the same class (also do check for inner-types)
+
+                // Sort Templates by Class Name.
+                // This removes ambiguity caused by parallel type processing.
+                //
+                List<SpecializedTemplateUserType> templates = templatesInBucket.OrderBy(t => t.Symbol.Name.Count(c => c == '*'))
+                    .ThenBy(t => t.Symbol.Name.Count(c => c == '<'))
+                    .ThenBy(t => t.Symbol.Name).ToList();
+
+                // Select best suited type for template
+                SpecializedTemplateUserType template = templates.First();
+
+                foreach (var specializedTemplate in templates)
                 {
-                    // TODO: Verify that all templates in the list can be described by the same class (also do check for inner-types)
+                    var arguments = specializedTemplate.AllTemplateArguments;
 
-                    // Sort Templates by Class Name.
-                    // This removes ambiguity caused by parallel type processing.
-                    //
-                    List<SpecializedTemplateUserType> templates = templatesInBucket.OrderBy(t => t.Symbol.Name.Count(c => c == '*'))
-                        .ThenBy(t => t.Symbol.Name.Count(c => c == '<'))
-                        .ThenBy(t => t.Symbol.Name).ToList();
-
-                    // Select best suited type for template
-                    SpecializedTemplateUserType template = templates.First();
-
-                    foreach (var specializedTemplate in templates)
+                    // Check if all arguments are different
+                    if (arguments.Distinct().Count() == arguments.Count())
                     {
-                        var arguments = specializedTemplate.AllTemplateArguments;
+                        // Check if all arguments are simple user type
+                        bool simpleUserType = true;
 
-                        // Check if all arguments are different
-                        if (arguments.Distinct().Count() == arguments.Count())
-                        {
-                            // Check if all arguments are simple user type
-                            bool simpleUserType = true;
-
-                            foreach (var argument in arguments)
+                        foreach (var argument in arguments)
+                            if ((argument.Tag != CodeTypeTag.Class && argument.Tag != CodeTypeTag.Structure && argument.Tag != CodeTypeTag.Union) || argument.Name.Contains("<"))
                             {
-                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
-
-                                if ((argumentSymbol.Tag != CodeTypeTag.Class && argumentSymbol.Tag != CodeTypeTag.Structure && argumentSymbol.Tag != CodeTypeTag.Union) || argumentSymbol.Name.Contains("<"))
-                                {
-                                    simpleUserType = false;
-                                    break;
-                                }
-                            }
-
-                            if (simpleUserType)
-                            {
-                                template = specializedTemplate;
+                                simpleUserType = false;
                                 break;
                             }
 
-                            // Check if none of the arguments is template user type
-                            bool noneIsTemplate = true;
-
-                            foreach (var argument in arguments)
-                            {
-                                var argumentSymbol = GlobalCache.GetSymbol(argument, specializedTemplate.Module);
-
-                                if (argumentSymbol != null && (argumentSymbol.Tag == CodeTypeTag.Class || argumentSymbol.Tag == CodeTypeTag.Structure || argumentSymbol.Tag == CodeTypeTag.Union) && argumentSymbol.Name.Contains("<"))
-                                {
-                                    noneIsTemplate = false;
-                                    break;
-                                }
-                            }
-
-                            if (noneIsTemplate)
-                            {
-                                template = specializedTemplate;
-                                continue;
-                            }
+                        if (simpleUserType)
+                        {
+                            template = specializedTemplate;
+                            break;
                         }
 
-                        // This one is as good as any...
+                        // Check if none of the arguments is template user type
+                        bool noneIsTemplate = true;
+
+                        foreach (var argument in arguments)
+                            if (argument != null && (argument.Tag == CodeTypeTag.Class || argument.Tag == CodeTypeTag.Structure || argument.Tag == CodeTypeTag.Union) && argument.Name.Contains("<"))
+                            {
+                                noneIsTemplate = false;
+                                break;
+                            }
+
+                        if (noneIsTemplate)
+                        {
+                            template = specializedTemplate;
+                            continue;
+                        }
                     }
 
-                    yield return new TemplateUserType(template, templates, this);
+                    // This one is as good as any...
                 }
+
+                yield return new TemplateUserType(template, templates, this);
             }
         }
 
@@ -269,9 +250,49 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="userTypes">The list of user types.</param>
         /// <param name="symbolNamespaces">The symbol namespaces.</param>
         /// <returns>Newly generated user types.</returns>
-        internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, Dictionary<Symbol, string> symbolNamespaces)
+        internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, Dictionary<Symbol, string> symbolNamespaces, string commonNamespace)
         {
             ConcurrentBag<UserType> newTypes = new ConcurrentBag<UserType>();
+
+            // Collect all constants used by template types
+            Dictionary<string, Symbol> constantsDictionary = new Dictionary<string, Symbol>();
+
+            foreach (TemplateUserType templateType in userTypes.OfType<TemplateUserType>())
+                foreach (SpecializedTemplateUserType specialization in templateType.Specializations)
+                    foreach (Symbol symbol in specialization.AllTemplateArguments)
+                    {
+                        if (symbol.Tag != CodeTypeTag.TemplateArgumentConstant)
+                            continue;
+                        if (!constantsDictionary.ContainsKey(symbol.Name))
+                            constantsDictionary.Add(symbol.Name, symbol);
+                    }
+
+            // Create user types for template type constants
+            if (constantsDictionary.Count > 0)
+            {
+                // Create namespace that will contain all constants (TemplateConstants)
+                NamespaceUserType templateConstants = new NamespaceUserType(new[] { "TemplateConstants" }, commonNamespace, this);
+
+                newTypes.Add(templateConstants);
+
+                // Foreach constant, create new user type
+                foreach (Symbol symbol in constantsDictionary.Values)
+                {
+                    symbol.UserType = new TemplateArgumentConstantUserType(symbol, this);
+                    symbol.UserType.UpdateDeclaredInType(templateConstants);
+                    newTypes.Add(symbol.UserType);
+                }
+            }
+
+            // Assign generated user types to template type constant arguments
+            foreach (TemplateUserType templateType in userTypes.OfType<TemplateUserType>())
+                foreach (SpecializedTemplateUserType specialization in templateType.Specializations)
+                    foreach (Symbol symbol in specialization.AllTemplateArguments)
+                    {
+                        if (symbol.Tag != CodeTypeTag.TemplateArgumentConstant || symbol.UserType != null)
+                            continue;
+                        symbol.UserType = constantsDictionary[symbol.Name].UserType;
+                    }
 
             // Split user types that have static members in more than one module
             Parallel.ForEach(Partitioner.Create(userTypes), (userType) =>
@@ -635,6 +656,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 case CodeTypeTag.Class:
                 case CodeTypeTag.Structure:
                 case CodeTypeTag.Union:
+                case CodeTypeTag.TemplateArgumentConstant:
                     {
                         // Try to apply transformation on the type
                         UserTypeTransformation transformation = FindTransformation(symbol, parentType);

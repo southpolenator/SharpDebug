@@ -85,7 +85,45 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </summary>
         protected override IEnumerable<UserTypeMember> GetMembers()
         {
-            return SpecializedRepresentative.Members;
+            UserTypeMember[] members = SpecializedRepresentative.Members;
+
+            for (int i = 0; i < members.Length; i++)
+            {
+                if (members[i] is ConstantUserTypeMember originalConstant)
+                {
+                    // Verify that value of this constant is the same in all specializations
+                    bool same = true;
+
+                    foreach (SpecializedTemplateUserType specialization in Specializations)
+                    {
+                        UserTypeMember m = specialization.Members.FirstOrDefault(mm => mm.Name == originalConstant.Name);
+
+                        if (m == null)
+                            continue;
+
+                        if (!(m is ConstantUserTypeMember constant) || originalConstant.Value.ToString() != constant.Value.ToString())
+                        {
+                            same = false;
+                            break;
+                        }
+                    }
+
+                    // If constant is not the same in all specializations, it needs to be read from the code type.
+                    if (!same)
+                        yield return new DataFieldUserTypeMember()
+                        {
+                            AccessLevel = originalConstant.AccessLevel,
+                            Symbol = originalConstant.Symbol,
+                            Name = originalConstant.Name,
+                            Type = originalConstant.Type,
+                            UserType = originalConstant.UserType,
+                        };
+                    else
+                        yield return members[i];
+                }
+                else
+                    yield return members[i];
+            }
         }
     }
 }

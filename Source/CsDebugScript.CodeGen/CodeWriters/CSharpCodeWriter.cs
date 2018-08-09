@@ -143,6 +143,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 switch (name[i])
                 {
                     // Replace with _
+                    case '.':
                     case ':':
                     case '&':
                     case '-':
@@ -235,8 +236,10 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 }
             }
 
-            if (type is EnumUserType)
-                WriteEnum((EnumUserType)type, output);
+            if (type is EnumUserType enumType)
+                WriteEnum(enumType, output);
+            else if (type is TemplateArgumentConstantUserType constantType)
+                WriteTemplateConstant(constantType, output);
             else
                 WriteRegular(type, output);
 
@@ -418,6 +421,45 @@ namespace CsDebugScript.CodeGen.CodeWriters
         }
         #endregion
 
+        #region Template argument constant
+        /// <summary>
+        /// Generates code for constant template argument and writes it to the specified output.
+        /// </summary>
+        /// <param name="type">Template argument constant user type for which code should be generated.</param>
+        /// <param name="output">Output indented writer.</param>
+        private void WriteTemplateConstant(TemplateArgumentConstantUserType type, IndentedWriter output)
+        {
+            IntegralConstantSymbol integralConstant = type.Symbol as IntegralConstantSymbol;
+            EnumConstantSymbol enumConstant = type.Symbol as EnumConstantSymbol;
+            string constantCode;
+            string constantType;
+
+            if (enumConstant != null)
+            {
+                constantCode = ConstantValue((EnumUserType)enumConstant.EnumSymbol.UserType, enumConstant.Value);
+                constantType = enumConstant.EnumSymbol.UserType.FullTypeName;
+            }
+            else
+            {
+                constantCode = ConstantValue(integralConstant.Value.GetType(), integralConstant.Value);
+                constantType = ToString(integralConstant.Value.GetType());
+            }
+
+            output.WriteLine($"[{ToString(typeof(TemplateConstantAttribute))}(String = \"{type.Symbol.Name}\", Value = {constantCode})]");
+            output.WriteLine($"public class {type.TypeName} : {ToString(typeof(ITemplateConstant))}<{constantType}>");
+            StartBlock(output);
+
+            // Output property that will return value of the constant
+            string accessLevel = ToString(AccessLevel.Public);
+            string propertyName = "Value";
+            string comment = null;
+
+            WriteProperty(output, comment, accessLevel, false, constantType, propertyName, constantCode);
+
+            EndBlock(output);
+        }
+        #endregion
+
         #region Regular
         /// <summary>
         /// The number of base class arrays created during code generation.
@@ -475,12 +517,15 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     }
 
                 // Write all UserTypeAttributes and class header
-                string userTypeAttributeTypeName = type.Symbol.Name;
-
-                if (type is TemplateUserType || type is SpecializedTemplateUserType)
-                    userTypeAttributeTypeName = SymbolNameHelper.CreateLookupNameForSymbol(type.Symbol);
-                foreach (var moduleName in GlobalCache.GetSymbolModuleNames(type.Symbol))
-                    output.WriteLine($"[{ToString(typeof(UserTypeAttribute))}(ModuleName = \"{moduleName}\", TypeName = \"{userTypeAttributeTypeName}\")]");
+                if (type is TemplateUserType templateType)
+                {
+                    foreach (var specialization in templateType.Specializations)
+                        foreach (var moduleName in GlobalCache.GetSymbolModuleNames(specialization.Symbol))
+                            output.WriteLine($"[{ToString(typeof(UserTypeAttribute))}(ModuleName = \"{moduleName}\", TypeName = \"{specialization.Symbol.Name}\")]");
+                }
+                else
+                    foreach (var moduleName in GlobalCache.GetSymbolModuleNames(type.Symbol))
+                        output.WriteLine($"[{ToString(typeof(UserTypeAttribute))}(ModuleName = \"{moduleName}\", TypeName = \"{type.Symbol.Name}\")]");
 
                 // If we have multi class inheritance, generate attribute for getting static field with base class C# types
                 if (type.BaseClass is MultiClassInheritanceTypeInstance || type.BaseClass is SingleClassInheritanceWithInterfacesTypeInstance)
@@ -505,11 +550,11 @@ namespace CsDebugScript.CodeGen.CodeWriters
             StartBlock(output);
 
             // Write ClassCodeType
-            if (type is PhysicalUserType)
+            if (type is PhysicalUserType || (type is TemplateUserType && type.Members.OfType<DataFieldUserTypeMember>().Any(m => m.IsStatic)))
             {
                 if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                     output.WriteLine("// Code type for user type represented by this class.");
-                output.WriteLine($"public static readonly {ToString(typeof(CodeType))} {ClassCodeTypeFieldName} = {ToString(typeof(CodeType))}.Create(\"{type.Symbol.Module.Name}!{type.Symbol.Name}\");");
+                output.WriteLine($"public static readonly {ToString(typeof(CodeType))} {ClassCodeTypeFieldName} = GetClassCodeType(typeof({type.FullTypeName}));");
             }
 
             // Write members that are constants
@@ -522,6 +567,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 || type.BaseClass is SingleClassInheritanceWithInterfacesTypeInstance
                 || type.Members.OfType<DataFieldUserTypeMember>().Any()
                 || type.Constructors.Contains(UserTypeConstructor.SimplePhysical);
+            bool usesThisClass = type.BaseClass is MultiClassInheritanceTypeInstance
+                || type.BaseClass is SingleClassInheritanceWithInterfacesTypeInstance;
 
             if (cacheUserTypeFields || lazyCacheUserTypeFields)
                 foreach (var dataField in type.Members.OfType<DataFieldUserTypeMember>())
@@ -536,6 +583,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     string propertyName = dataField.Name;
                     string fieldName = GetUserTypeFieldName(propertyName);
 
+                    if (initializationCode.Contains(ThisClassFieldName))
+                        usesThisClass = true;
+
                     if (lazyCacheUserTypeFields)
                     {
                         fieldType = $"{ToString(typeof(UserMember))}<{fieldType}>";
@@ -546,6 +596,13 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     output.WriteLine($"{accessLevel}{fieldType} {fieldName};");
                     fieldConstructorInitialization.Add(fieldName, initializationCode);
                 }
+            else
+                foreach (var dataField in type.Members.OfType<DataFieldUserTypeMember>())
+                    if (GetDataFieldPropertyCode(type, dataField).Contains(ThisClassFieldName))
+                    {
+                        usesThisClass = true;
+                        break;
+                    }
 
             // Write private class initialization
             if (!(type.BaseClass is StaticClassTypeInstance))
@@ -557,9 +614,12 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     output.WriteLine($"private static string {BaseClassStringFieldName} = GetBaseClassString(typeof({type.FullTypeName}));");
                     if (!GenerationFlags.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
                         output.WriteLine();
-                    if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
-                        output.WriteLine("// Cache of variable casted to user type this class was generated for");
-                    output.WriteLine($"private {ToString(typeof(UserMember))}<{ToString(typeof(Variable))}> {ThisClassFieldName};");
+                    if (usesThisClass)
+                    {
+                        if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
+                            output.WriteLine("// Cache of variable casted to user type this class was generated for");
+                        output.WriteLine($"private {ToString(typeof(UserMember))}<{ToString(typeof(Variable))}> {ThisClassFieldName};");
+                    }
                 }
                 if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                     output.WriteLine("// Function that does initialization of user part of partial class");
@@ -625,7 +685,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         }
                     if (constructor != UserTypeConstructor.SimplePhysical)
                     {
-                        if (hasDataFields && GenerationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess))
+                        if (usesThisClass && hasDataFields && GenerationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess))
                             output.WriteLine($"{ThisClassFieldName} = {ToString(typeof(UserMember))}.Create(() => GetBaseClass({BaseClassStringFieldName}));");
                         output.WriteLine("PartialInitialize();");
                     }
@@ -886,7 +946,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
             // Generate property code
             if (dataField.IsStatic)
             {
-                if (string.IsNullOrEmpty(type.Symbol.Name))
+                if (type is TemplateUserType)
+                    propertyCode = $"{ClassCodeTypeFieldName}.GetStaticField(\"{dataField.Name}\")";
+                else if (string.IsNullOrEmpty(type.Symbol.Name))
                     propertyCode = $"{ToString(typeof(Process))}.Current.GetGlobal(\"{type.Module.Name}!{dataField.Name}\")";
                 else
                     propertyCode = $"{ToString(typeof(Process))}.Current.GetGlobal(\"{type.Module.Name}!{type.Symbol.Name}::{dataField.Name}\")";
@@ -967,7 +1029,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         {
             if (!GenerationFlags.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
                 output.WriteLine();
-            if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
+            if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment) && comment != null)
                 output.WriteLine(comment);
             if (!GenerationFlags.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
             {
@@ -1035,17 +1097,32 @@ namespace CsDebugScript.CodeGen.CodeWriters
             EnumUserType enumUserType = (constant.Type as UserTypeInstance)?.UserType as EnumUserType;
 
             if (enumUserType != null)
-            {
-                foreach (var kvp in enumUserType.Symbol.EnumValues)
-                    if (kvp.Item2 == constant.Value.ToString())
-                        return $"{constant.Type.GetTypeString()}.{kvp.Item1}";
-
-                Type enumBasicType = enumUserType.BasicType;
-
-                if (enumBasicType != null)
-                    return $"({constant.Type.GetTypeString()}){ConstantValue(enumBasicType, constant.Value)}";
-            }
+                return ConstantValue(enumUserType, constant.Value, constant.Type.GetTypeString());
             return $"({constant.Type.GetTypeString()})({constant.Value})";
+        }
+
+        /// <summary>
+        /// Generates constant expression code for the specified enumeration constant.
+        /// </summary>
+        /// <param name="enumUserType">Enumeration user type.</param>
+        /// <param name="value">Constant value.</param>
+        /// <param name="fullTypeName">Full type name. If <c>null</c>, full type name of enumeration user type will be used.</param>
+        /// <returns>Constant expression assignment code.</returns>
+        private static string ConstantValue(EnumUserType enumUserType, object value, string fullTypeName = null)
+        {
+            string svalue = value.ToString();
+
+            if (fullTypeName == null)
+                fullTypeName = enumUserType.FullTypeName;
+            foreach (var kvp in enumUserType.Symbol.EnumValues)
+                if (kvp.Item2 == svalue)
+                    return $"{fullTypeName}.{kvp.Item1}";
+
+            Type enumBasicType = enumUserType.BasicType;
+
+            if (enumBasicType != null)
+                return $"({fullTypeName}){ConstantValue(enumBasicType, svalue)}";
+            return $"({fullTypeName})({svalue})";
         }
 
         /// <summary>
@@ -1056,7 +1133,11 @@ namespace CsDebugScript.CodeGen.CodeWriters
         private static string ConstantValue(Type type, object value)
         {
             if (type == value.GetType())
+            {
+                if (type == typeof(bool))
+                    return value.ToString().ToLower();
                 return value.ToString();
+            }
 
             string constantValue = value.ToString();
 
