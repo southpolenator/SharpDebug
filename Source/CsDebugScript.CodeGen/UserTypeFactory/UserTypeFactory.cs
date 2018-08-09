@@ -157,23 +157,12 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (!templateType.WronglyFormed)
                 {
-#if false // TODO: Verify if we want to use simple user type instead of template user type
-                    if (templateType.AllTemplateArguments.Count == 0)
-                    {
-                        // Template does not have arguments that can be used by generic
-                        // Make it specialized type
-                        userType = this.AddSymbol(symbol, null, moduleName, generationOptions);
-                    }
-                    else
-#endif
-                    {
-                        List<SpecializedTemplateUserType> templates;
+                    List<SpecializedTemplateUserType> templates;
 
-                        symbol.UserType = templateType;
-                        if (!buckets.TryGetValue(templateType.AllTemplateArguments.Count, out templates))
-                            buckets.Add(templateType.AllTemplateArguments.Count, templates = new List<SpecializedTemplateUserType>());
-                        templates.Add(templateType);
-                    }
+                    symbol.UserType = templateType;
+                    if (!buckets.TryGetValue(templateType.AllTemplateArguments.Count, out templates))
+                        buckets.Add(templateType.AllTemplateArguments.Count, templates = new List<SpecializedTemplateUserType>());
+                    templates.Add(templateType);
                 }
 
                 if (userType != null)
