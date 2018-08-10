@@ -282,7 +282,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </returns>
         public override int GetHashCode()
         {
-            return Id.GetHashCode();
+            return Id.GetHashCode() ^ Module.GetHashCode();
         }
 
         /// <summary>
@@ -300,7 +300,8 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             {
                 return false;
             }
-            return Id == other.Id;
+
+            return Id == other.Id && Module == other.Module;
         }
 
         /// <summary>
