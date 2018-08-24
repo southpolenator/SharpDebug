@@ -17,37 +17,37 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <summary>
         /// The cache of fields
         /// </summary>
-        private SimpleCache<SymbolField[]> fields;
+        private SimpleCacheStruct<SymbolField[]> fields;
 
         /// <summary>
         /// The cache of base classes
         /// </summary>
-        private SimpleCache<Symbol[]> baseClasses;
+        private SimpleCacheStruct<Symbol[]> baseClasses;
 
         /// <summary>
         /// The cache of element type
         /// </summary>
-        private SimpleCache<Symbol> elementType;
+        private SimpleCacheStruct<Symbol> elementType;
 
         /// <summary>
         /// The cache of pointer type
         /// </summary>
-        private SimpleCache<Symbol> pointerType;
+        private SimpleCacheStruct<Symbol> pointerType;
 
         /// <summary>
         /// The cache of enumeration values
         /// </summary>
-        private SimpleCache<Tuple<string, string>[]> enumValues;
+        private SimpleCacheStruct<Tuple<string, string>[]> enumValues;
 
         /// <summary>
         /// The cache of namespaces
         /// </summary>
-        private SimpleCache<List<string>> namespaces;
+        private SimpleCacheStruct<List<string>> namespaces;
 
         /// <summary>
         /// The user type
         /// </summary>
-        private SimpleCache<UserType> userType;
+        private SimpleCacheStruct<UserType> userType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Symbol"/> class.
@@ -56,13 +56,13 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         public Symbol(Module module)
         {
             Module = module;
-            fields = SimpleCache.Create(() => GetFields().ToArray());
-            baseClasses = SimpleCache.Create(() => GetBaseClasses().ToArray());
-            elementType = SimpleCache.Create(() => GetElementType());
-            pointerType = SimpleCache.Create(() => GetPointerType());
-            enumValues = SimpleCache.Create(() => GetEnumValues().ToArray());
-            namespaces = SimpleCache.Create(() => SymbolNameHelper.GetSymbolNamespaces(Name));
-            userType = SimpleCache.Create(() => (UserType)null);
+            fields = SimpleCache.CreateStruct(() => GetFields().ToArray());
+            baseClasses = SimpleCache.CreateStruct(() => GetBaseClasses().ToArray());
+            elementType = SimpleCache.CreateStruct(() => GetElementType());
+            pointerType = SimpleCache.CreateStruct(() => GetPointerType());
+            enumValues = SimpleCache.CreateStruct(() => GetEnumValues().ToArray());
+            namespaces = SimpleCache.CreateStruct(() => SymbolNameHelper.GetSymbolNamespaces(Name));
+            userType = SimpleCache.CreateStruct(() => (UserType)null);
         }
 
         /// <summary>
@@ -305,11 +305,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         }
 
         /// <summary>
-        /// Casts as symbol field.
-        /// </summary>
-        public abstract SymbolField CastAsSymbolField();
-
-        /// <summary>
         /// Initializes the cache.
         /// </summary>
         public abstract void InitializeCache();
@@ -342,7 +337,10 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <summary>
         /// Gets the pointer type to this symbol.
         /// </summary>
-        protected abstract Symbol GetPointerType();
+        protected virtual Symbol GetPointerType()
+        {
+            return new FakePointerSymbol(this);
+        }
 
         /// <summary>
         /// Links the symbols.

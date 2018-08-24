@@ -153,14 +153,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         }
 
         /// <summary>
-        /// Casts as symbol field.
-        /// </summary>
-        public override SymbolField CastAsSymbolField()
-        {
-            return new EngineSymbolProviderSymbolField(this, Name, this, Offset);
-        }
-
-        /// <summary>
         /// Determines whether symbol has virtual table of functions.
         /// </summary>
         public override bool HasVTable()

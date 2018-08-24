@@ -20,14 +20,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
 
         #region Intentionally not implemented methods
         /// <summary>
-        /// Casts as symbol field.
-        /// </summary>
-        public override SymbolField CastAsSymbolField()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// Determines whether symbol has virtual table of functions.
         /// </summary>
         public override bool HasVTable()

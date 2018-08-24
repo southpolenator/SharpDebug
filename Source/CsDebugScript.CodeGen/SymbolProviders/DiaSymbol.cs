@@ -77,14 +77,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         }
 
         /// <summary>
-        /// Casts as symbol field.
-        /// </summary>
-        public override SymbolField CastAsSymbolField()
-        {
-            return new DiaSymbolField(this, symbol);
-        }
-
-        /// <summary>
         /// Initializes the cache.
         /// </summary>
         public override void InitializeCache()
@@ -159,10 +151,16 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override Symbol GetPointerType()
         {
-            Symbol result = DiaModule.GetSymbol(symbol.objectPointerType);
+            IDiaSymbol pointerType = symbol.objectPointerType;
 
-            result.ElementType = this;
-            return result;
+            if (pointerType != null)
+            {
+                Symbol result = DiaModule.GetSymbol(pointerType);
+
+                result.ElementType = this;
+                return result;
+            }
+            return base.GetPointerType();
         }
 
         /// <summary>
