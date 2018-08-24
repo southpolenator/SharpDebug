@@ -1,5 +1,6 @@
 ﻿using CommandLine;
 using CsDebugScript.DwarfSymbolProvider;
+using CsDebugScript.PdbSymbolProvider;
 using System.Collections.Generic;
 using System.IO;
 
@@ -48,6 +49,9 @@ namespace CsDebugScript.CodeGen.App
 
         [Option("use-dwarf", Default = false, HelpText = "Use DWARF symbol provider")]
         public bool UseDwarfSymbolProvider { get; set; }
+
+        [Option("use-pdb-reader", Default = false, HelpText = "Use PDB reader symbol provider")]
+        public bool UsePDBReaderSymbolProvider { get; set; }
     }
 
     class Program
@@ -105,7 +109,10 @@ namespace CsDebugScript.CodeGen.App
 
             if (!options.UseDwarfSymbolProvider)
             {
-                generator = new Generator();
+                if (!options.UsePDBReaderSymbolProvider)
+                    generator = new Generator();
+                else
+                    generator = new Generator(new PdbModuleProvider());
             }
             else
             {

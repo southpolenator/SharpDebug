@@ -66,6 +66,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Reference.Nug
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Drawing.Interfaces", "Source\CsDebugScript.Drawing.Interfaces\CsDebugScript.Drawing.Interfaces.csproj", "{9CE6DC17-D6A1-4DBF-B83A-B66645711A18}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.PdbSymbolProvider", "Source\CsDebugScript.PdbSymbolProvider\CsDebugScript.PdbSymbolProvider.csproj", "{C2CB7599-B319-45BE-9F37-320E7865DE2D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -358,6 +360,18 @@ Global
 		{9CE6DC17-D6A1-4DBF-B83A-B66645711A18}.Release|x64.Build.0 = Release|Any CPU
 		{9CE6DC17-D6A1-4DBF-B83A-B66645711A18}.Release|x86.ActiveCfg = Release|Any CPU
 		{9CE6DC17-D6A1-4DBF-B83A-B66645711A18}.Release|x86.Build.0 = Release|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Debug|x64.Build.0 = Debug|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Debug|x86.Build.0 = Debug|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|x64.ActiveCfg = Release|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|x64.Build.0 = Release|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|x86.ActiveCfg = Release|Any CPU
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -387,6 +401,7 @@ Global
 		{267C8155-F424-4EF9-A182-3727305B9F77} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 		{7DFFED6E-52CE-4C6D-91EF-568AA5DFC567} = {EF2FD4E0-777D-4E92-A036-4604D0D14868}
 		{9CE6DC17-D6A1-4DBF-B83A-B66645711A18} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
+		{C2CB7599-B319-45BE-9F37-320E7865DE2D} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9EE35CEC-B6D7-4442-BD27-F74972D115AE}
