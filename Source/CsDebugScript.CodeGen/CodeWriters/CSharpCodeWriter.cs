@@ -1087,7 +1087,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// </summary>
         /// <param name="constant">Constant field.</param>
         /// <returns>Constant expression assignment code.</returns>
-        private static string ConstantValue(ConstantUserTypeMember constant)
+        private string ConstantValue(ConstantUserTypeMember constant)
         {
             Type constantType = (constant.Type as BasicTypeInstance)?.BasicType;
 
@@ -1108,7 +1108,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="value">Constant value.</param>
         /// <param name="fullTypeName">Full type name. If <c>null</c>, full type name of enumeration user type will be used.</param>
         /// <returns>Constant expression assignment code.</returns>
-        private static string ConstantValue(EnumUserType enumUserType, object value, string fullTypeName = null)
+        private string ConstantValue(EnumUserType enumUserType, object value, string fullTypeName = null)
         {
             string svalue = value.ToString();
 
@@ -1130,7 +1130,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// </summary>
         /// <param name="type">Built-in type.</param>
         /// <param name="value">Constant value.</param>
-        private static string ConstantValue(Type type, object value)
+        private string ConstantValue(Type type, object value)
         {
             if (type == value.GetType())
             {
@@ -1151,6 +1151,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     return ((ushort)short.Parse(constantValue)).ToString();
                 if (type == typeof(byte))
                     return ((byte)sbyte.Parse(constantValue)).ToString();
+                if (type == typeof(NakedPointer))
+                    return $"new {ToString(type)}({((ulong)long.Parse(constantValue)).ToString()})";
             }
             if (type == typeof(byte))
                 return byte.Parse(constantValue).ToString();
@@ -1176,6 +1178,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 return (int.Parse(constantValue) != 0).ToString().ToLower();
             if (type == typeof(char))
                 return $"(char){int.Parse(constantValue)}";
+            if (type == typeof(NakedPointer))
+                return $"new {ToString(type)}({ulong.Parse(constantValue).ToString()})";
 
             throw new NotImplementedException();
         }
