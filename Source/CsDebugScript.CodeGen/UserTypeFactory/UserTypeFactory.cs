@@ -680,7 +680,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 case CodeTypeTag.BaseClass:
                     {
-                        symbol = symbol.Module.FindGlobalTypeWildcard(symbol.Name).Single();
+                        symbol = symbol.Module.GetSymbol(symbol.Name);
                         return GetSymbolTypeInstance(parentType, symbol, bitLength);
                     }
 
