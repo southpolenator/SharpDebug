@@ -39,7 +39,7 @@ namespace CsDebugScript.PdbSymbolProvider
         /// </summary>
         public override void InitializeCache()
         {
-            // Do nothing
+            var fields = Fields;
         }
 
         /// <summary>
@@ -79,9 +79,7 @@ namespace CsDebugScript.PdbSymbolProvider
                     yield return new PdbSymbolField(this, constant);
 
             // Add global variables
-            SymbolRecordKind[] dataKinds = new[] { SymbolRecordKind.S_LDATA32, SymbolRecordKind.S_GDATA32, SymbolRecordKind.S_LMANDATA, SymbolRecordKind.S_GMANDATA };
-
-            foreach (SymbolRecordKind kind in dataKinds)
+            foreach (SymbolRecordKind kind in DataSymbol.Kinds)
                 foreach (DataSymbol data in PdbModule.PdbFile.PdbSymbolStream[kind].OfType<DataSymbol>())
                     yield return new PdbSymbolField(this, data);
         }

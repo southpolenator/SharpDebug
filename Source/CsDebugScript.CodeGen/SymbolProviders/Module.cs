@@ -254,7 +254,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             value = null;
             enumSymbol = null;
 
-            if (text.StartsWith("("))
+            if (text[0] == '(')
             {
                 int index = text.LastIndexOf(')');
 

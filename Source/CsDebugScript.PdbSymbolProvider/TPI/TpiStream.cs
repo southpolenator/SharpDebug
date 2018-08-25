@@ -42,9 +42,14 @@ namespace CsDebugScript.PdbSymbolProvider.TPI
         private List<RecordReference> references;
 
         /// <summary>
-        /// Dictionary cache of all types by index.
+        /// Array cache of all types by index.
         /// </summary>
-        private DictionaryCache<int, TypeRecord> typesCache;
+        private ArrayCache<TypeRecord> typesCache;
+
+        /// <summary>
+        /// Partitioned stream binary reader for <see cref="TypeRecordsSubStream"/>. This allows not using locking of binary reader when reading types.
+        /// </summary>
+        private System.Threading.ThreadLocal<IBinaryReader> typeRecordsSubStreamPerThread;
 
         /// <summary>
         /// Dictionary cache of type records by its kind.
@@ -91,6 +96,7 @@ namespace CsDebugScript.PdbSymbolProvider.TPI
 
             // The actual type records themselves come from this stream
             TypeRecordsSubStream = Stream.Reader.ReadSubstream(Header.TypeRecordBytes);
+            typeRecordsSubStreamPerThread = new System.Threading.ThreadLocal<IBinaryReader>(() => TypeRecordsSubStream.Duplicate());
 
             IBinaryReader reader = TypeRecordsSubStream;
             long position = reader.Position, end = reader.Length;
@@ -115,7 +121,7 @@ namespace CsDebugScript.PdbSymbolProvider.TPI
                 position += dataLen + RecordPrefix.Size;
                 reader.ReadFake(dataLen);
             }
-            typesCache = new DictionaryCache<int, TypeRecord>(ReadType);
+            typesCache = new ArrayCache<TypeRecord>(references.Count, true, ReadType);
             typesByKindCache = new DictionaryCache<TypeLeafKind, TypeRecord[]>(GetTypesByKind);
 
             // Hash indices, hash values, etc come from the hash stream.
@@ -249,9 +255,8 @@ namespace CsDebugScript.PdbSymbolProvider.TPI
         /// <returns></returns>
         private TypeRecord ReadType(int typeIndex)
         {
-            // Since DictionaryCache is allowing only single thread to call this function, we don't need to lock reader here.
+            IBinaryReader reader = typeRecordsSubStreamPerThread.Value;
             RecordReference reference = references[typeIndex];
-            IBinaryReader reader = TypeRecordsSubStream;
             TypeRecord typeRecord;
             long dataEnd = reference.DataOffset + reference.DataLen;
 

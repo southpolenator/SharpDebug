@@ -1,5 +1,5 @@
 ﻿using System;
-using System.IO;
+using System.Text;
 
 namespace CsDebugScript.CodeGen.CodeWriters
 {
@@ -15,7 +15,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// </summary>
         /// <param name="userType">User type for which code should be generated.</param>
         /// <param name="output">Output text writer.</param>
-        void WriteUserType(UserType userType, TextWriter output);
+        void WriteUserType(UserType userType, StringBuilder output);
 
         /// <summary>
         /// Corrects naming inside user type. Replaces unallowed characters and keywords.

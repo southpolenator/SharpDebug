@@ -5,7 +5,6 @@ using CsDebugScript.CodeGen.UserTypes.Members;
 using DIA;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -68,6 +67,11 @@ namespace CsDebugScript.CodeGen.CodeWriters
             };
 
         /// <summary>
+        /// Longest keyword that we have in set of C# key words.
+        /// </summary>
+        private static readonly int LongestKeyword = Keywords.Max(s => s.Length);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CSharpCodeWriter"/> class.
         /// </summary>
         /// <param name="generationFlags">The code generation options</param>
@@ -127,22 +131,16 @@ namespace CsDebugScript.CodeGen.CodeWriters
         }
 
         /// <summary>
-        /// Corrects naming inside user type. Replaces unallowed characters and keywords.
+        /// Checks whether user naming should be fixed.
         /// </summary>
         /// <param name="name">Name of the type, field, variable, enumeration, etc.</param>
-        /// <returns>Name that can be used in generated code.</returns>
-        public string FixUserNaming(string name)
+        /// <returns><c>true</c> if new string should be created; <c>false</c> if original name can be used.</returns>
+        private static bool ShouldFixUserNaming(string name)
         {
-            if (string.IsNullOrEmpty(name))
-                return name;
-
-            StringBuilder sb = new StringBuilder();
-
             for (int i = 0; i < name.Length; i++)
             {
                 switch (name[i])
                 {
-                    // Replace with _
                     case '.':
                     case ':':
                     case '&':
@@ -158,25 +156,73 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     case '`':
                     case '\'':
                     case '$':
-                        sb.Append('_');
-                        break;
-                    // Ignore
                     case '*':
-                        break;
-                    // Add this character
-                    default:
-                        sb.Append(name[i]);
-                        break;
+                        return true;
                 }
             }
+            return false;
+        }
 
-            // Fixed name cannot be longer than some limit
-            if (sb.Length > NameLimit)
-                sb.Length = NameLimit;
+        /// <summary>
+        /// Corrects naming inside user type. Replaces unallowed characters and keywords.
+        /// </summary>
+        /// <param name="name">Name of the type, field, variable, enumeration, etc.</param>
+        /// <returns>Name that can be used in generated code.</returns>
+        public string FixUserNaming(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return name;
+
+            if (ShouldFixUserNaming(name))
+            {
+                StringBuilder sb = new StringBuilder();
+
+                for (int i = 0; i < name.Length; i++)
+                {
+                    switch (name[i])
+                    {
+                        // Replace with _
+                        case '.':
+                        case ':':
+                        case '&':
+                        case '-':
+                        case '<':
+                        case '>':
+                        case ' ':
+                        case ',':
+                        case '(':
+                        case ')':
+                        case '[':
+                        case ']':
+                        case '`':
+                        case '\'':
+                        case '$':
+                            sb.Append('_');
+                            break;
+                        // Ignore
+                        case '*':
+                            break;
+                        // Add this character
+                        default:
+                            sb.Append(name[i]);
+                            break;
+                    }
+                }
+
+                // Fixed name cannot be longer than some limit
+                if (sb.Length > NameLimit)
+                    sb.Length = NameLimit;
+                name = sb.ToString();
+            }
+            else
+            {
+                // Fixed name cannot be longer than some limit
+                if (name.Length > NameLimit)
+                    name = name.Substring(0, NameLimit);
+            }
 
             // Keywords should be prefixed with @...
-            name = sb.ToString();
-            if (Keywords.Contains(name))
+            if (name.Length <= LongestKeyword && Keywords.Contains(name))
                 return $"@{name}";
             return name;
         }
@@ -186,7 +232,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// </summary>
         /// <param name="userType">User type for which code should be generated.</param>
         /// <param name="output">Output text writer.</param>
-        public void WriteUserType(UserType userType, TextWriter output)
+        public void WriteUserType(UserType userType, StringBuilder output)
         {
             WriteUserType(userType, new IndentedWriter(output, GenerationFlags.HasFlag(UserTypeGenerationFlags.CompressedOutput)));
         }
@@ -220,7 +266,10 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
             if (type.DeclaredInType == null && !string.IsNullOrEmpty(type.Namespace))
             {
-                output.WriteLine($"namespace {type.Namespace}");
+                //output.WriteLine($"namespace {type.Namespace}");
+                output.StartLine("namespace ");
+                output.EndLine(type.Namespace);
+
                 StartBlock(output);
                 shouldCloseNamespaceBlock = true;
             }
@@ -230,7 +279,10 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
                 if (!string.IsNullOrEmpty(nameSpace))
                 {
-                    output.WriteLine($"namespace {nameSpace}");
+                    //output.WriteLine($"namespace {nameSpace}");
+                    output.StartLine("namespace ");
+                    output.EndLine(nameSpace);
+
                     StartBlock(output);
                     shouldCloseNamespaceBlock = true;
                 }
@@ -263,13 +315,19 @@ namespace CsDebugScript.CodeGen.CodeWriters
             {
                 foreach (string innerClass in type.Namespaces)
                 {
-                    output.WriteLine($"public static partial class {innerClass}");
+                    //output.WriteLine($"public static partial class {innerClass}");
+                    output.StartLine("public static partial class ");
+                    output.EndLine(innerClass);
+
                     StartBlock(output);
                 }
             }
             else
             {
-                output.WriteLine($"namespace {type.Namespace}");
+                //output.WriteLine($"namespace {type.Namespace}");
+                output.StartLine("namespace ");
+                output.EndLine(type.Namespace);
+
                 StartBlock(output);
             }
 
@@ -295,15 +353,29 @@ namespace CsDebugScript.CodeGen.CodeWriters
         {
             // Write comment
             if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
-                output.WriteLine($"// {type.TypeName} (original name: {type.Symbol.Name})");
+            {
+                //output.WriteLine($"// {type.TypeName} (original name: {type.Symbol.Name})");
+                output.StartLine("// ");
+                output.Write(type.TypeName);
+                output.Write(" (original name: ");
+                output.Write(type.Symbol.Name);
+                output.EndLine(")");
+            }
 
             // Write type start
             if (type.AreValuesFlags)
                 output.WriteLine("[System.Flags]");
+
+            //output.WriteLine($"public enum {type.TypeName} : {ToString(type.BasicType)}");
+            output.StartLine("public enum ");
+            output.Write(type.TypeName);
             if (type.BasicType != null)
-                output.WriteLine($"public enum {type.TypeName} : {ToString(type.BasicType)}");
-            else
-                output.WriteLine($"public enum {type.TypeName}");
+            {
+                output.Write(" : ");
+                output.Write(ToString(type.BasicType));
+            }
+            output.EndLine();
+
             StartBlock(output);
 
             // Write values
@@ -311,14 +383,17 @@ namespace CsDebugScript.CodeGen.CodeWriters
             {
                 string value = enumValue.Item2;
 
+                //output.WriteLine($"{enumValue.Item1} = ({ToString(type.BasicType)}){value},");
+                output.StartLine(enumValue.Item1);
+                output.Write(" = ");
                 if (!EnumValueFitsBasicType(type.BasicType, ref value))
                 {
-                    output.WriteLine($"{enumValue.Item1} = ({ToString(type.BasicType)}){value},");
+                    output.Write("(");
+                    output.Write(ToString(type.BasicType));
+                    output.Write(")");
                 }
-                else
-                {
-                    output.WriteLine($"{enumValue.Item1} = {value},");
-                }
+                output.Write(value);
+                output.EndLine(",");
             }
 
             // Write type end
@@ -445,8 +520,24 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 constantType = ToString(integralConstant.Value.GetType());
             }
 
-            output.WriteLine($"[{ToString(typeof(TemplateConstantAttribute))}(String = \"{type.Symbol.Name}\", Value = {constantCode})]");
-            output.WriteLine($"public class {type.TypeName} : {ToString(typeof(ITemplateConstant))}<{constantType}>");
+            //output.WriteLine($"[{ToString(typeof(TemplateConstantAttribute))}(String = \"{type.Symbol.Name}\", Value = {constantCode})]");
+            output.StartLine("[");
+            output.Write(ToString(typeof(TemplateConstantAttribute)));
+            output.Write("(String = \"");
+            output.Write(type.Symbol.Name);
+            output.Write("\", Value = ");
+            output.Write(constantCode);
+            output.EndLine(")]");
+
+            //output.WriteLine($"public class {type.TypeName} : {ToString(typeof(ITemplateConstant))}<{constantType}>");
+            output.StartLine("public class ");
+            output.Write(type.TypeName);
+            output.Write(" : ");
+            output.Write(ToString(typeof(ITemplateConstant)));
+            output.Write("<");
+            output.Write(constantType);
+            output.EndLine(">");
+
             StartBlock(output);
 
             // Output property that will return value of the constant
@@ -487,24 +578,49 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
                 if (baseClasses.Length > 0)
                 {
-                    output.WriteLine($"// {type.FullTypeName} (original name: {type.Symbol.Name}) is inherited from:");
+                    //output.WriteLine($"// {type.FullTypeName} (original name: {type.Symbol.Name}) is inherited from:");
+                    output.StartLine("// ");
+                    output.Write(type.FullTypeName);
+                    output.Write(" (original name: ");
+                    output.Write(type.Symbol.Name);
+                    output.EndLine(") is inherited from:");
+
                     foreach (Symbol baseClass in baseClasses)
-                        output.WriteLine($"//   {baseClass.Name}");
+                    {
+                        //output.WriteLine($"//   {baseClass.Name}");
+                        output.StartLine("//   ");
+                        output.EndLine(baseClass.Name);
+                    }
                 }
                 else
-                    output.WriteLine($"// {type.FullTypeName} (original name: {type.Symbol.Name})");
+                {
+                    //output.WriteLine($"// {type.FullTypeName} (original name: {type.Symbol.Name})");
+                    output.StartLine("// ");
+                    output.Write(type.FullTypeName);
+                    output.Write(" (original name: ");
+                    output.Write(type.Symbol.Name);
+                    output.EndLine(")");
+                }
 
                 if (type is TemplateUserType templateType)
                 {
                     output.WriteLine("// Specializations of this class:");
                     foreach (UserType specialization in templateType.Specializations)
-                        output.WriteLine($"//   {specialization.Symbol.Name}");
+                    {
+                        //output.WriteLine($"//   {specialization.Symbol.Name}");
+                        output.StartLine("//   ");
+                        output.EndLine(specialization.Symbol.Name);
+                    }
                 }
             }
 
             // Write type start
             if (type.BaseClass is StaticClassTypeInstance)
-                output.WriteLine($"public static class {type.TypeName}");
+            {
+                //output.WriteLine($"public static class {type.TypeName}");
+                output.StartLine("public static class ");
+                output.EndLine(type.TypeName);
+            }
             else
             {
                 // If symbol has vtable, we would like to add DerivedClassAttribute to it
@@ -513,7 +629,16 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     {
                         string fullClassName = derivedClass.FullTypeName;
 
-                        output.WriteLine($"[{ToString(typeof(DerivedClassAttribute))}(Type = typeof({fullClassName}), Priority = {derivedClass.DerivedClasses.Count}, TypeName = \"{derivedClass.Symbol.Name}\")]");
+                        //output.WriteLine($"[{ToString(typeof(DerivedClassAttribute))}(Type = typeof({fullClassName}), Priority = {derivedClass.DerivedClasses.Count}, TypeName = \"{derivedClass.Symbol.Name}\")]");
+                        output.StartLine("[");
+                        output.Write(ToString(typeof(DerivedClassAttribute)));
+                        output.Write("(Type = typeof(");
+                        output.Write(fullClassName);
+                        output.Write("), Priority = ");
+                        output.Write(derivedClass.DerivedClasses.Count);
+                        output.Write(", TypeName = \"");
+                        output.Write(derivedClass.Symbol.Name);
+                        output.EndLine("\")]");
                     }
 
                 // Write all UserTypeAttributes and class header
@@ -521,27 +646,60 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 {
                     foreach (var specialization in templateType.Specializations)
                         foreach (var moduleName in GlobalCache.GetSymbolModuleNames(specialization.Symbol))
-                            output.WriteLine($"[{ToString(typeof(UserTypeAttribute))}(ModuleName = \"{moduleName}\", TypeName = \"{specialization.Symbol.Name}\")]");
+                        {
+                            //output.WriteLine($"[{ToString(typeof(UserTypeAttribute))}(ModuleName = \"{moduleName}\", TypeName = \"{specialization.Symbol.Name}\")]");
+                            output.StartLine("[");
+                            output.Write(ToString(typeof(UserTypeAttribute)));
+                            output.Write("(ModuleName = \"");
+                            output.Write(moduleName);
+                            output.Write("\", TypeName = \"");
+                            output.Write(specialization.Symbol.Name);
+                            output.EndLine("\")]");
+                        }
                 }
                 else
                     foreach (var moduleName in GlobalCache.GetSymbolModuleNames(type.Symbol))
-                        output.WriteLine($"[{ToString(typeof(UserTypeAttribute))}(ModuleName = \"{moduleName}\", TypeName = \"{type.Symbol.Name}\")]");
+                    {
+                        //output.WriteLine($"[{ToString(typeof(UserTypeAttribute))}(ModuleName = \"{moduleName}\", TypeName = \"{type.Symbol.Name}\")]");
+                        output.StartLine("[");
+                        output.Write(ToString(typeof(UserTypeAttribute)));
+                        output.Write("(ModuleName = \"");
+                        output.Write(moduleName);
+                        output.Write("\", TypeName = \"");
+                        output.Write(type.Symbol.Name);
+                        output.EndLine("\")]");
+                    }
 
                 // If we have multi class inheritance, generate attribute for getting static field with base class C# types
                 if (type.BaseClass is MultiClassInheritanceTypeInstance || type.BaseClass is SingleClassInheritanceWithInterfacesTypeInstance)
                 {
                     baseClassesArrayName = $"RandomlyNamed_BaseClassesArray{System.Threading.Interlocked.Increment(ref baseClassArraysCreated)}";
-                    output.WriteLine($"[{ToString(typeof(BaseClassesArrayAttribute))}(FieldName = \"{baseClassesArrayName}\")]");
+
+                    //output.WriteLine($"[{ToString(typeof(BaseClassesArrayAttribute))}(FieldName = \"{baseClassesArrayName}\")]");
+                    output.StartLine("[");
+                    output.Write(ToString(typeof(BaseClassesArrayAttribute)));
+                    output.Write("(FieldName = \"");
+                    output.Write(baseClassesArrayName);
+                    output.EndLine("\")]");
                 }
 
                 // Write class definition
                 string baseTypeString = type.BaseClass.GetTypeString();
 
-                if (type.Symbol.HasVTable())
-                    baseTypeString += $", {ToString(typeof(ICastableObject))}";
+                //output.WriteLine($"public partial class {type.TypeName} {baseTypeString}");
+                output.StartLine("public partial class ");
+                output.Write(type.TypeName);
                 if (!string.IsNullOrEmpty(baseTypeString))
-                    baseTypeString = ": " + baseTypeString;
-                output.WriteLine($"public partial class {type.TypeName} {baseTypeString}");
+                {
+                    output.Write(" : ");
+                    output.Write(baseTypeString);
+                    if (type.Symbol.HasVTable())
+                    {
+                        output.Write(", ");
+                        output.Write(ToString(typeof(ICastableObject)));
+                    }
+                }
+                output.EndLine();
             }
 
             // TODO: Add constraints to template types
@@ -554,13 +712,31 @@ namespace CsDebugScript.CodeGen.CodeWriters
             {
                 if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                     output.WriteLine("// Code type for user type represented by this class.");
-                output.WriteLine($"public static readonly {ToString(typeof(CodeType))} {ClassCodeTypeFieldName} = GetClassCodeType(typeof({type.FullTypeName}));");
+
+                //output.WriteLine($"public static readonly {ToString(typeof(CodeType))} {ClassCodeTypeFieldName} = GetClassCodeType(typeof({type.FullTypeName}));");
+                output.StartLine("public static readonly ");
+                output.Write(ToString(typeof(CodeType)));
+                output.Write(" ");
+                output.Write(ClassCodeTypeFieldName);
+                output.Write(" = GetClassCodeType(typeof(");
+                output.Write(type.FullTypeName);
+                output.EndLine("));");
             }
 
             // Write members that are constants
             foreach (var member in type.Members.OfType<ConstantUserTypeMember>())
                 if (!(member.Type is TemplateArgumentTypeInstance))
-                    output.WriteLine($"{ToString(member.AccessLevel)}const {member.Type.GetTypeString()} {member.Name} = {ConstantValue(member)};");
+                {
+                    //output.WriteLine($"{ToString(member.AccessLevel)} const {member.Type.GetTypeString()} {member.Name} = {ConstantValue(member)};");
+                    output.StartLine(ToString(member.AccessLevel));
+                    output.Write("const ");
+                    output.Write(member.Type.GetTypeString());
+                    output.Write(" ");
+                    output.Write(member.Name);
+                    output.Write(" = ");
+                    output.Write(ConstantValue(member));
+                    output.EndLine(";");
+                }
 
             // Write cache fields for data fields properties
             bool hasDataFields = type.BaseClass is MultiClassInheritanceTypeInstance
@@ -593,7 +769,13 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     }
 
                     // Write field code
-                    output.WriteLine($"{accessLevel}{fieldType} {fieldName};");
+                    //output.WriteLine($"{accessLevel}{fieldType} {fieldName};");
+                    output.StartLine(accessLevel);
+                    output.Write(fieldType);
+                    output.Write(" ");
+                    output.Write(fieldName);
+                    output.EndLine(";");
+
                     fieldConstructorInitialization.Add(fieldName, initializationCode);
                 }
             else
@@ -611,14 +793,29 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 {
                     if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                         output.WriteLine("// String that will be used to get user type for this class");
-                    output.WriteLine($"private static string {BaseClassStringFieldName} = GetBaseClassString(typeof({type.FullTypeName}));");
+
+                    //output.WriteLine($"private static string {BaseClassStringFieldName} = GetBaseClassString(typeof({type.FullTypeName}));");
+                    output.StartLine("private static string ");
+                    output.Write(BaseClassStringFieldName);
+                    output.Write(" = GetBaseClassString(typeof(");
+                    output.Write(type.FullTypeName);
+                    output.EndLine("));");
+
                     if (!GenerationFlags.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
                         output.WriteLine();
                     if (usesThisClass)
                     {
                         if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                             output.WriteLine("// Cache of variable casted to user type this class was generated for");
-                        output.WriteLine($"private {ToString(typeof(UserMember))}<{ToString(typeof(Variable))}> {ThisClassFieldName};");
+
+                        //output.WriteLine($"private {ToString(typeof(UserMember))}<{ToString(typeof(Variable))}> {ThisClassFieldName};");
+                        output.StartLine("private ");
+                        output.Write(ToString(typeof(UserMember)));
+                        output.Write("<");
+                        output.Write(ToString(typeof(Variable)));
+                        output.Write("> ");
+                        output.Write(ThisClassFieldName);
+                        output.EndLine(";");
                     }
                 }
                 if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
@@ -637,38 +834,69 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 }
                 else
                 {
-                    StringBuilder arguments = new StringBuilder();
+                    output.WriteLine();
 
-                    foreach (var argument in constructor.Arguments)
+                    //output.WriteLine($"{ToString(constructor.AccessLevel)}{type.ConstructorName}({arguments})");
+                    output.StartLine(ToString(constructor.AccessLevel));
+                    output.Write(type.ConstructorName);
+                    output.Write("(");
+                    for (int i = 0; i < constructor.Arguments.Length; i++)
                     {
+                        var argument = constructor.Arguments[i];
                         object defaultValue;
 
+                        output.Write(ToString(argument.Item1));
+                        output.Write(" ");
+                        output.Write(argument.Item2);
                         if (constructor.DefaultValues != null && constructor.DefaultValues.TryGetValue(argument.Item2, out defaultValue))
-                            arguments.Append($"{ToString(argument.Item1)} {argument.Item2} = {ConstructorDefaultValueToString(defaultValue)}, ");
-                        else
-                            arguments.Append($"{ToString(argument.Item1)} {argument.Item2}, ");
+                        {
+                            output.Write(" = ");
+                            output.Write(ConstructorDefaultValueToString(defaultValue));
+                        }
+                        if (i + 1 < constructor.Arguments.Length)
+                            output.Write(", ");
                     }
-                    arguments.Length -= 2;
-
-                    output.WriteLine();
-                    output.WriteLine($"{ToString(constructor.AccessLevel)}{type.ConstructorName}({arguments})");
+                    output.EndLine(")");
 
                     // Write constructor initialization
                     if (constructor == UserTypeConstructor.Simple)
                         output.WriteLine(1, ": base(variable)");
                     else if (constructor == UserTypeConstructor.SimplePhysical)
-                        output.WriteLine(1, $": this(variable.GetBaseClass({BaseClassStringFieldName}), {ToString(typeof(CsDebugScript.Debugger))}.ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass({BaseClassStringFieldName}).GetPointerAddress(), variable.GetBaseClass({BaseClassStringFieldName}).GetCodeType().Size), 0, variable.GetBaseClass({BaseClassStringFieldName}).GetPointerAddress())");
+                    {
+                        //output.WriteLine(1, $": this(variable.GetBaseClass({BaseClassStringFieldName}), {ToString(typeof(CsDebugScript.Debugger))}.ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass({BaseClassStringFieldName}).GetPointerAddress(), variable.GetBaseClass({BaseClassStringFieldName}).GetCodeType().Size), 0, variable.GetBaseClass({BaseClassStringFieldName}).GetPointerAddress())");
+                        output.StartLine(1, ": this(variable.GetBaseClass(");
+                        output.Write(BaseClassStringFieldName);
+                        output.Write("), ");
+                        output.Write(ToString(typeof(CsDebugScript.Debugger)));
+                        output.Write(".ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass(");
+                        output.Write(BaseClassStringFieldName);
+                        output.Write(").GetPointerAddress(), variable.GetBaseClass(");
+                        output.Write(BaseClassStringFieldName);
+                        output.Write(").GetCodeType().Size), 0, variable.GetBaseClass(");
+                        output.Write(BaseClassStringFieldName);
+                        output.EndLine(").GetPointerAddress())");
+                    }
                     else if (constructor == UserTypeConstructor.RegularPhysical)
                     {
                         if (baseClassOffset > 0)
-                            output.WriteLine(1, $": base(variable, buffer, offset + {baseClassOffset}, bufferAddress)");
+                        {
+                            //output.WriteLine(1, $": base(variable, buffer, offset + {baseClassOffset}, bufferAddress)");
+                            output.StartLine(1, ": base(variable, buffer, offset + ");
+                            output.Write(baseClassOffset);
+                            output.EndLine(", bufferAddress)");
+                        }
                         else
                             output.WriteLine(1, ": base(variable, buffer, offset, bufferAddress)");
                     }
                     else if (constructor == UserTypeConstructor.ComplexPhysical)
                     {
                         if (baseClassOffset > 0)
-                            output.WriteLine(1, $": base(buffer, offset + {baseClassOffset}, bufferAddress, codeType, address, name, path)");
+                        {
+                            //output.WriteLine(1, $": base(buffer, offset + {baseClassOffset}, bufferAddress, codeType, address, name, path)");
+                            output.StartLine(1, ": base(buffer, offset + ");
+                            output.Write(baseClassOffset);
+                            output.EndLine(", bufferAddress, codeType, address, name, path)");
+                        }
                         else
                             output.WriteLine(1, ": base(buffer, offset, bufferAddress, codeType, address, name, path)");
                     }
@@ -681,12 +909,24 @@ namespace CsDebugScript.CodeGen.CodeWriters
                             string fieldName = fieldKvp.Key;
                             string fieldInitialization = fieldKvp.Value;
 
-                            output.WriteLine($"{fieldName} = {fieldInitialization};");
+                            //output.WriteLine($"{fieldName} = {fieldInitialization};");
+                            output.StartLine(fieldName);
+                            output.Write(" = ");
+                            output.Write(fieldInitialization);
+                            output.EndLine(";");
                         }
                     if (constructor != UserTypeConstructor.SimplePhysical)
                     {
                         if (usesThisClass && hasDataFields && GenerationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess))
-                            output.WriteLine($"{ThisClassFieldName} = {ToString(typeof(UserMember))}.Create(() => GetBaseClass({BaseClassStringFieldName}));");
+                        {
+                            //output.WriteLine($"{ThisClassFieldName} = {ToString(typeof(UserMember))}.Create(() => GetBaseClass({BaseClassStringFieldName}));");
+                            output.StartLine(ThisClassFieldName);
+                            output.Write(" = ");
+                            output.Write(ToString(typeof(UserMember)));
+                            output.Write(".Create(() => GetBaseClass(");
+                            output.Write(BaseClassStringFieldName);
+                            output.EndLine("));");
+                        }
                         output.WriteLine("PartialInitialize();");
                     }
                     EndBlock(output);
@@ -1033,21 +1273,39 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 output.WriteLine(comment);
             if (!GenerationFlags.HasFlag(UserTypeGenerationFlags.SingleLineProperty))
             {
+                //output.WriteLine($"{accessLevel}static {type} {name}");
+                output.StartLine(accessLevel);
                 if (isStatic)
-                    output.WriteLine($"{accessLevel}static {type} {name}");
-                else
-                    output.WriteLine($"{accessLevel}{type} {name}");
+                    output.Write("static ");
+                output.Write(type);
+                output.Write(" ");
+                output.EndLine(name);
+
                 StartBlock(output);
                 output.WriteLine("get");
                 StartBlock(output);
-                output.WriteLine($"return {code};");
+
+                //output.WriteLine($"return {code};");
+                output.StartLine("return ");
+                output.Write(code);
+                output.EndLine(";");
+
                 EndBlock(output);
                 EndBlock(output);
             }
-            else if (isStatic)
-                output.WriteLine($"{accessLevel}static {type} {name} {{ get {{ return {code}; }} }}");
             else
-                output.WriteLine($"{accessLevel}{type} {name} {{ get {{ return {code}; }} }}");
+            {
+                //output.WriteLine($"{accessLevel}static {type} {name} {{ get {{ return {code}; }} }}");
+                output.StartLine(accessLevel);
+                if (isStatic)
+                    output.Write("static ");
+                output.Write(type);
+                output.Write(" ");
+                output.Write(name);
+                output.Write(" { get { return ");
+                output.Write(code);
+                output.EndLine("; } }");
+            }
         }
 
         /// <summary>
@@ -1114,9 +1372,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
             if (fullTypeName == null)
                 fullTypeName = enumUserType.FullTypeName;
-            foreach (var kvp in enumUserType.Symbol.EnumValues)
-                if (kvp.Item2 == svalue)
-                    return $"{fullTypeName}.{kvp.Item1}";
+
+            if (enumUserType.Symbol.EnumValuesByValue.TryGetValue(svalue, out string entry))
+                return $"{fullTypeName}.{entry}";
 
             Type enumBasicType = enumUserType.BasicType;
 
@@ -1141,7 +1399,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
             string constantValue = value.ToString();
 
-            if (constantValue.StartsWith("-"))
+            if (constantValue[0] == '-')
             {
                 if (type == typeof(ulong))
                     return ((ulong)long.Parse(constantValue)).ToString();
@@ -1157,7 +1415,10 @@ namespace CsDebugScript.CodeGen.CodeWriters
             if (type == typeof(byte))
                 return byte.Parse(constantValue).ToString();
             if (type == typeof(sbyte))
-                return sbyte.Parse(constantValue).ToString();
+                if (sbyte.TryParse(constantValue, out sbyte v))
+                    return v.ToString();
+                else
+                    return $"(sbyte){constantValue}";
             if (type == typeof(short))
                 return short.Parse(constantValue).ToString();
             if (type == typeof(ushort))

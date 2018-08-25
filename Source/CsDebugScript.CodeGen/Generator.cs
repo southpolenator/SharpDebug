@@ -233,6 +233,8 @@ namespace CsDebugScript.CodeGen
 
                 if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
                 {
+                    logger.WriteLine(" {0}", stopwatch.Elapsed);
+                    logger.Write("Parsing generated code with Roslyn...");
                     syntaxTrees.Add(CSharpSyntaxTree.ParseText(code, path: filename, encoding: UTF8Encoding.Default));
                 }
             }
@@ -430,25 +432,30 @@ namespace CsDebugScript.CodeGen
             }
 
             // Loading modules
-            ConcurrentDictionary<Module, XmlModule> modules = new ConcurrentDictionary<Module, XmlModule>();
-            ConcurrentDictionary<XmlModule, Symbol[]> globalTypesPerModule = new ConcurrentDictionary<XmlModule, Symbol[]>();
+            Module[] modulesArray = new Module[xmlModules.Length];
 
             logger.Write("Loading modules...");
-            Parallel.ForEach(xmlModules, (xmlModule) =>
+            Parallel.For(0, xmlModules.Length, (i) =>
             {
-                Module module = moduleProvider.Open(xmlModule);
+                Module module = moduleProvider.Open(xmlModules[i]);
 
-                modules.TryAdd(module, xmlModule);
+                modulesArray[i] = module;
             });
+
+            Dictionary<Module, XmlModule> modules = new Dictionary<Module, XmlModule>();
+            for (int i = 0; i < modulesArray.Length; i++)
+                modules.Add(modulesArray[i], xmlModules[i]);
 
             logger.WriteLine(" {0}", stopwatch.Elapsed);
 
             // Enumerating symbols
+            Symbol[][] globalTypesPerModule = new Symbol[xmlModules.Length][];
+
             logger.Write("Enumerating symbols...");
-            Parallel.ForEach(modules, (mm) =>
+            Parallel.For(0, xmlModules.Length, (i) =>
             {
-                XmlModule xmlModule = mm.Value;
-                Module module = mm.Key;
+                XmlModule xmlModule = xmlModules[i];
+                Module module = modulesArray[i];
                 string moduleName = xmlModule.Name;
                 string nameSpace = xmlModule.Namespace;
                 HashSet<Symbol> symbols = new HashSet<Symbol>();
@@ -458,55 +465,42 @@ namespace CsDebugScript.CodeGen
                     Symbol[] foundSymbols = module.FindGlobalTypeWildcard(type.NameWildcard);
 
                     if (foundSymbols.Length == 0)
-                    {
                         errorLogger.WriteLine("Symbol not found: {0}", type.Name);
-                    }
                     else
-                    {
                         foreach (Symbol symbol in foundSymbols)
-                        {
                             symbols.Add(symbol);
-                        }
-                    }
 
                     if (type.ExportDependentTypes)
-                    {
                         foreach (Symbol symbol in foundSymbols)
-                        {
                             symbol.ExtractDependentSymbols(symbols, xmlConfig.Transformations);
-                        }
-                    }
                 }
 
                 if (symbols.Count == 0)
-                {
                     foreach (Symbol symbol in module.GetAllTypes())
-                    {
                         symbols.Add(symbol);
-                    }
-                }
 
-                globalTypesPerModule.TryAdd(
-                    xmlModule,
-                    symbols.Where(t => t.Tag == CodeTypeTag.Class || t.Tag == CodeTypeTag.Structure || t.Tag == CodeTypeTag.Union || t.Tag == CodeTypeTag.Enum).ToArray());
+                globalTypesPerModule[i] = symbols.Where(t => t.Tag == CodeTypeTag.Class || t.Tag == CodeTypeTag.Structure || t.Tag == CodeTypeTag.Union || t.Tag == CodeTypeTag.Enum).ToArray();
+
+                // Cache global scope
+                if (generationOptions.HasFlag(UserTypeGenerationFlags.InitializeSymbolCaches))
+                {
+                    var globalScope = module.GlobalScope;
+
+                    globalScope.InitializeCache();
+                }
             });
 
-            List<Symbol> allSymbols = globalTypesPerModule.SelectMany(ss => ss.Value).ToList();
+            List<Symbol> allSymbols = globalTypesPerModule.SelectMany(ss => ss).ToList();
 
             logger.WriteLine(" {0}", stopwatch.Elapsed);
 
-#if false
             // Initialize symbol fields and base classes
-            logger.Write("Initializing symbol values...");
-
-            Parallel.ForEach(Partitioner.Create(allSymbols), (symbol) =>
+            if (generationOptions.HasFlag(UserTypeGenerationFlags.InitializeSymbolCaches))
             {
-                var fields = symbol.Fields;
-                var baseClasses = symbol.BaseClasses;
-            });
-
-            logger.WriteLine(" {0}", sw.Elapsed);
-#endif
+                logger.Write("Initializing symbol values...");
+                Parallel.ForEach(Partitioner.Create(allSymbols), symbol => symbol.InitializeCache());
+                logger.WriteLine(" {0}", stopwatch.Elapsed);
+            }
 
             logger.Write("Deduplicating symbols...");
 
@@ -611,7 +605,7 @@ namespace CsDebugScript.CodeGen
             var globalTypes = symbolsByName.SelectMany(s => s.Value).ToArray();
 
             logger.WriteLine(" {0}", stopwatch.Elapsed);
-            logger.WriteLine("  Total symbols: {0}", globalTypesPerModule.Sum(gt => gt.Value.Length));
+            logger.WriteLine("  Total symbols: {0}", globalTypesPerModule.Sum(gt => gt.Length));
             logger.WriteLine("  Unique symbol names: {0}", symbolsByName.Count);
             logger.WriteLine("  Dedupedlicated symbols: {0}", globalTypes.Length);
 
@@ -654,7 +648,7 @@ namespace CsDebugScript.CodeGen
                 }
 
                 // Check if symbol contains template type.
-                if (SymbolNameHelper.ContainsTemplateType(symbolName) && (symbol.Tag == CodeTypeTag.Class || symbol.Tag == CodeTypeTag.Structure || symbol.Tag == CodeTypeTag.Union))
+                if ((symbol.Tag == CodeTypeTag.Class || symbol.Tag == CodeTypeTag.Structure || symbol.Tag == CodeTypeTag.Union) && SymbolNameHelper.ContainsTemplateType(symbolName))
                 {
                     List<string> namespaces = symbol.Namespaces;
                     string className = namespaces.Last();
@@ -727,29 +721,25 @@ namespace CsDebugScript.CodeGen
         /// <returns>Generated C# code</returns>
         private string GenerateSingleFile()
         {
-            using (StringWriter stringOutput = new StringWriter())
+            StringBuilder stringOutput = new StringBuilder();
+            System.Threading.ThreadLocal<StringBuilder> stringWriters = new System.Threading.ThreadLocal<StringBuilder>(() => new StringBuilder());
+            string[] texts = new string[userTypes.Count];
+
+            Parallel.For(0, userTypes.Count, (i) =>
             {
-                ObjectPool<StringWriter> stringWriterPool = new ObjectPool<StringWriter>(() => new StringWriter());
+                var symbolEntry = userTypes[i];
+                var output = stringWriters.Value;
 
-                Parallel.ForEach(userTypes,
-                    (symbolEntry) =>
-                    {
-                        var output = stringWriterPool.GetObject();
+                output.Clear();
+                GenerateCodeInSingleFile(codeWriter, output, symbolEntry, userTypeFactory, errorLogger, generationOptions);
+                string text = output.ToString();
 
-                        output.GetStringBuilder().Clear();
-                        GenerateCodeInSingleFile(codeWriter, output, symbolEntry, userTypeFactory, errorLogger, generationOptions);
-                        string text = output.ToString();
-
-                        if (!string.IsNullOrEmpty(text))
-                            lock (stringOutput)
-                            {
-                                stringOutput.WriteLine(text);
-                            }
-
-                        stringWriterPool.PutObject(output);
-                    });
-                return stringOutput.GetStringBuilder().ToString();
-            }
+                if (!string.IsNullOrEmpty(text))
+                    texts[i] = text;
+            });
+            foreach (string text in texts)
+                stringOutput.AppendLine(text);
+            return stringOutput.ToString();
         }
 
         /// <summary>
@@ -874,16 +864,14 @@ namespace CsDebugScript.CodeGen
                 filename = string.Format(@"{0}\{1}{2}_{3}.exported.cs", classOutputDirectory, userType.ConstructorName, isEnum ? "_enum" : "", index++);
             }
 
-            using (StringWriter stringOutput = new StringWriter())
+            StringBuilder stringOutput = new StringBuilder();
+            codeWriter.WriteUserType(userType, stringOutput);
+            string text = stringOutput.ToString();
+            if (!generationFlags.HasFlag(UserTypeGenerationFlags.DontSaveGeneratedCodeFiles))
             {
-                codeWriter.WriteUserType(userType, stringOutput);
-                string text = stringOutput.ToString();
-                if (!generationFlags.HasFlag(UserTypeGenerationFlags.DontSaveGeneratedCodeFiles))
-                {
-                    File.WriteAllText(filename, text);
-                }
-                return Tuple.Create(text, filename);
+                File.WriteAllText(filename, text);
             }
+            return Tuple.Create(text, filename);
         }
 
         /// <summary>
@@ -896,7 +884,7 @@ namespace CsDebugScript.CodeGen
         /// <param name="errorOutput">The error output.</param>
         /// <param name="generationFlags">The user type generation flags.</param>
         /// <returns><c>true</c> if code was generated for the type; otherwise <c>false</c></returns>
-        private static bool GenerateCodeInSingleFile(ICodeWriter codeWriter, TextWriter output, UserType userType, UserTypeFactory factory, TextWriter errorOutput, UserTypeGenerationFlags generationFlags)
+        private static bool GenerateCodeInSingleFile(ICodeWriter codeWriter, StringBuilder output, UserType userType, UserTypeFactory factory, TextWriter errorOutput, UserTypeGenerationFlags generationFlags)
         {
             Symbol symbol = userType.Symbol;
 

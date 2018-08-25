@@ -23,14 +23,19 @@ namespace CsDebugScript.PdbSymbolProvider
         private SimpleCacheStruct<PdbGlobalScope> globalScopeCache;
 
         /// <summary>
-        /// Dictionary cache of all symbols by index type.
+        /// Dictionary cache of all built-in symbols by index type.
         /// </summary>
-        private DictionaryCache<TypeIndex, PdbSymbol> allSymbolsCache;
+        private DictionaryCache<TypeIndex, PdbSymbol> builtinSymbolsCache;
 
         /// <summary>
-        /// Dictionary cache of defined symbols by index type.
+        /// Array cache of all symbols by index type.
         /// </summary>
-        private DictionaryCache<TypeIndex, PdbSymbol> definedSymbolsCache;
+        private ArrayCache<PdbSymbol> allSymbolsCache;
+
+        /// <summary>
+        /// Array cache of defined symbols by index type.
+        /// </summary>
+        private ArrayCache<PdbSymbol> definedSymbolsCache;
 
         /// <summary>
         /// Cache of defined constants.
@@ -67,8 +72,9 @@ namespace CsDebugScript.PdbSymbolProvider
             Name = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.PdbPath).ToLower();
             Namespace = module.Namespace;
             globalScopeCache = SimpleCache.CreateStruct(() => new PdbGlobalScope(this));
-            allSymbolsCache = new DictionaryCache<TypeIndex, PdbSymbol>(CreateSymbol);
-            definedSymbolsCache = new DictionaryCache<TypeIndex, PdbSymbol>(GetDefinedSymbol);
+            builtinSymbolsCache = new DictionaryCache<TypeIndex, PdbSymbol>(CreateBuiltinSymbol);
+            allSymbolsCache = new ArrayCache<PdbSymbol>(PdbFile.TpiStream.TypeRecordCount, CreateSymbol);
+            definedSymbolsCache = new ArrayCache<PdbSymbol>(PdbFile.TpiStream.TypeRecordCount, true, GetDefinedSymbol);
             constantsCache = SimpleCache.CreateStruct(() =>
             {
                 Dictionary<string, ConstantSymbol> constants = new Dictionary<string, ConstantSymbol>();
@@ -123,7 +129,7 @@ namespace CsDebugScript.PdbSymbolProvider
             foreach (TypeLeafKind kind in kinds)
                 foreach (TypeIndex typeIndex in PdbFile.TpiStream.GetIndexes(kind))
                 {
-                    PdbSymbol symbol = allSymbolsCache[typeIndex], oldSymbol;
+                    PdbSymbol symbol = allSymbolsCache[(int)typeIndex.ArrayIndex] = CreateSymbol((int)typeIndex.ArrayIndex), oldSymbol;
 
                     if (string.IsNullOrEmpty(symbol.UniqueName))
                         selectedSymbols.Add(symbol);
@@ -139,7 +145,7 @@ namespace CsDebugScript.PdbSymbolProvider
             foreach (TypeLeafKind kind in kinds)
                 foreach (TypeIndex typeIndex in PdbFile.TpiStream.GetIndexes(kind))
                 {
-                    PdbSymbol symbol = definedSymbolsCache[typeIndex];
+                    PdbSymbol symbol = definedSymbolsCache[(int)typeIndex.ArrayIndex];
 
                     if (!string.IsNullOrEmpty(symbol.Name) && !symbolsByName.ContainsKey(symbol.Name))
                         symbolsByName.Add(symbol.Name, symbol);
@@ -148,7 +154,7 @@ namespace CsDebugScript.PdbSymbolProvider
             // Add all known built-in types into symbolsByName
             foreach (TypeIndex typeIndex in TypeIndex.BuiltinTypes)
             {
-                PdbSymbol symbol = definedSymbolsCache[typeIndex];
+                PdbSymbol symbol = builtinSymbolsCache[typeIndex];
 
                 if (!string.IsNullOrEmpty(symbol.Name) && !symbolsByName.ContainsKey(symbol.Name))
                     symbolsByName.Add(symbol.Name, symbol);
@@ -158,7 +164,7 @@ namespace CsDebugScript.PdbSymbolProvider
             foreach (TypeIndex t in TypeIndex.BuiltinTypes)
             {
                 TypeIndex typeIndex = new TypeIndex(t.SimpleKind, SimpleTypeMode.NearPointer);
-                PdbSymbol symbol = definedSymbolsCache[typeIndex];
+                PdbSymbol symbol = builtinSymbolsCache[typeIndex];
 
                 if (!string.IsNullOrEmpty(symbol.Name) && !symbolsByName.ContainsKey(symbol.Name))
                     symbolsByName.Add(symbol.Name, symbol);
@@ -227,7 +233,9 @@ namespace CsDebugScript.PdbSymbolProvider
         /// <param name="index">Type index.</param>
         public PdbSymbol GetSymbol(TypeIndex index)
         {
-            return definedSymbolsCache[index];
+            if (index.IsSimple)
+                return builtinSymbolsCache[index];
+            return definedSymbolsCache[(int)index.ArrayIndex];
         }
 
         /// <summary>
@@ -256,7 +264,7 @@ namespace CsDebugScript.PdbSymbolProvider
         /// </summary>
         /// <param name="index">Type index.</param>
         /// <returns>Symbol definition if exists or forward reference.</returns>
-        private PdbSymbol GetDefinedSymbol(TypeIndex index)
+        private PdbSymbol GetDefinedSymbol(int index)
         {
             PdbSymbol symbol = allSymbolsCache[index];
 
@@ -271,13 +279,22 @@ namespace CsDebugScript.PdbSymbolProvider
         }
 
         /// <summary>
+        /// Creates new <see cref="PdbSymbol"/> for the specified built-in type index.
+        /// </summary>
+        /// <param name="index">Built-in type index.</param>
+        private PdbSymbol CreateBuiltinSymbol(TypeIndex typeIndex)
+        {
+            return new PdbSymbol(this, typeIndex);
+        }
+
+        /// <summary>
         /// Creates new <see cref="PdbSymbol"/> for the specified type index.
         /// </summary>
-        /// <param name="typeIndex">Type index in the TPI stream.</param>
-        private PdbSymbol CreateSymbol(TypeIndex typeIndex)
+        /// <param name="index">Type index in the TPI stream.</param>
+        private PdbSymbol CreateSymbol(int index)
         {
-            if (typeIndex.IsSimple || typeIndex.IsNoneType)
-                return new PdbSymbol(this, typeIndex);
+            TypeIndex typeIndex = TypeIndex.FromArrayIndex(index);
+
             return new PdbSymbol(this, typeIndex.Index, PdbFile.TpiStream[typeIndex]);
         }
     }

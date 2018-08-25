@@ -40,6 +40,11 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         private SimpleCacheStruct<Tuple<string, string>[]> enumValues;
 
         /// <summary>
+        /// The cache of enumeration entries by value (first value is taken if there are multiple entries with the same value).
+        /// </summary>
+        private SimpleCacheStruct<Dictionary<string, string>> enumValuesByValue;
+
+        /// <summary>
         /// The cache of namespaces
         /// </summary>
         private SimpleCacheStruct<List<string>> namespaces;
@@ -61,6 +66,15 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             elementType = SimpleCache.CreateStruct(() => GetElementType());
             pointerType = SimpleCache.CreateStruct(() => GetPointerType());
             enumValues = SimpleCache.CreateStruct(() => GetEnumValues().ToArray());
+            enumValuesByValue = SimpleCache.CreateStruct(() =>
+            {
+                Dictionary<string, string> values = new Dictionary<string, string>();
+
+                foreach (var kvp in EnumValues)
+                    if (!values.ContainsKey(kvp.Item2))
+                        values.Add(kvp.Item2, kvp.Item1);
+                return values;
+            });
             namespaces = SimpleCache.CreateStruct(() => SymbolNameHelper.GetSymbolNamespaces(Name));
             userType = SimpleCache.CreateStruct(() => (UserType)null);
         }
@@ -160,6 +174,17 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             get
             {
                 return enumValues.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the enumeration values indexed by value (first entry is taken if multiple entries have the same value).
+        /// </summary>
+        public Dictionary<string, string> EnumValuesByValue
+        {
+            get
+            {
+                return enumValuesByValue.Value;
             }
         }
 

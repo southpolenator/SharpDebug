@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using System;
 
 namespace CsDebugScript.CodeGen
 {
@@ -77,5 +78,10 @@ namespace CsDebugScript.CodeGen
         /// Don't save generated code files if compiling with Roslyn.
         /// </summary>
         DontSaveGeneratedCodeFiles = 4096,
+
+        /// <summary>
+        /// Should we call <see cref="Symbol.InitializeCache()"/> during enumerating symbols.
+        /// </summary>
+        InitializeSymbolCaches = 8192,
     }
 }

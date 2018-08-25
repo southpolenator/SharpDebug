@@ -427,7 +427,25 @@ namespace CsDebugScript.PdbSymbolProvider
         /// </summary>
         public override void InitializeCache()
         {
-            // Do nothing?
+            if (Tag == Engine.CodeTypeTag.Class || Tag == Engine.CodeTypeTag.ModuleGlobals || Tag == Engine.CodeTypeTag.Structure || Tag == Engine.CodeTypeTag.Union)
+            {
+                var fields = Fields;
+            }
+            if (Tag == Engine.CodeTypeTag.Class || Tag == Engine.CodeTypeTag.Structure)
+            {
+                var baseClasses = BaseClasses;
+            }
+            if (Tag == Engine.CodeTypeTag.Pointer || Tag == Engine.CodeTypeTag.Array)
+            {
+                var elementType = ElementType;
+            }
+            //var pointerType = PointerType;
+            if (Tag == Engine.CodeTypeTag.Enum)
+            {
+                var enumValues = EnumValues;
+                var enumValuesByValue = EnumValuesByValue;
+            }
+            var namespaces = Namespaces;
         }
 
         /// <summary>

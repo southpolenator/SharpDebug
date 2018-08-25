@@ -289,9 +289,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (userType.DontExportStaticFields)
                     return;
 
-                Symbol[] symbols = GlobalCache.GetSymbolStaticFieldsSymbols(userType.Symbol).ToArray();
+                List<Symbol> symbols = GlobalCache.GetSymbolStaticFieldsSymbols(userType.Symbol);
 
-                if (symbols.Length == 1)
+                if (symbols == null || symbols.Count <= 1)
                     return;
 
                 bool foundSameNamespace = false;
@@ -484,6 +484,10 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <returns>Transformation if matched one is found; otherwise null.</returns>
         internal UserTypeTransformation FindTransformation(Symbol type, UserType ownerUserType)
         {
+            // Check if we have any transformation
+            if (typeTransformations.Length == 0)
+                return null;
+
             // Find first transformation that matches the specified type
             string originalFieldTypeString = type.Name;
             var transformation = typeTransformations.FirstOrDefault(t => t.Matches(originalFieldTypeString));

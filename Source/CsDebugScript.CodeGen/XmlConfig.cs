@@ -166,6 +166,11 @@ namespace CsDebugScript.CodeGen
         public bool UseHungarianNotation { get; set; }
 
         /// <summary>
+        /// Should we initialize symbol caches during enumeration of symbols?
+        /// </summary>
+        public bool InitializeSymbolCaches { get; set; }
+
+        /// <summary>
         /// Gets or sets the list of modules for which user types should be exported.
         /// </summary>
         [XmlArrayItem("Module")]
@@ -303,6 +308,10 @@ namespace CsDebugScript.CodeGen
             if (DontSaveGeneratedCodeFiles && GenerateAssemblyWithRoslyn)
             {
                 generationFlags |= UserTypeGenerationFlags.DontSaveGeneratedCodeFiles;
+            }
+            if (InitializeSymbolCaches)
+            {
+                generationFlags |= UserTypeGenerationFlags.InitializeSymbolCaches;
             }
             return generationFlags;
         }

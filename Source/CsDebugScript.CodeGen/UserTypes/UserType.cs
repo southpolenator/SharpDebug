@@ -74,7 +74,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             fullTypeNameCache = SimpleCache.CreateStruct(() => GetFullTypeName());
             constructorNameCache = SimpleCache.CreateStruct(() => GetConstructorName());
             namespaceCache = SimpleCache.CreateStruct(() => GetNamespace(nameSpace));
-            membersCache = SimpleCache.CreateStruct(() => GetMembers().OrderBy(m => m.Name).ToArray());
+            membersCache = SimpleCache.CreateStruct(() => GetMembers().ToArray());
             constructorsCache = SimpleCache.CreateStruct(() => GetConstructors().ToArray());
             baseClassCache = SimpleCache.CreateStruct(() => GetBaseClass(Symbol));
             memoryBufferOffsetCache = SimpleCache.CreateStruct(() => GetMemoryBufferOffset());
@@ -266,9 +266,9 @@ namespace CsDebugScript.CodeGen.UserTypes
         protected virtual string GetFullTypeName()
         {
             if (DeclaredInType != null)
-                return $"{DeclaredInType.FullTypeName}.{TypeName}";
+                return DeclaredInType.FullTypeName + "." + TypeName;
             if (!string.IsNullOrEmpty(Namespace))
-                return $"{Namespace}.{TypeName}";
+                return Namespace + "." + TypeName;
             return TypeName;
         }
 
