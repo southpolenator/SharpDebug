@@ -347,9 +347,10 @@ namespace CsDebugScript.CodeGen.UserTypes
                 }
 
                 Dictionary<string, UserType> namespaceTypes;
+                string notNullUserTypeNamespace = userType.Namespace ?? string.Empty;
 
-                if (!namespaceTypesByModuleNamespace.TryGetValue(userType.Namespace, out namespaceTypes))
-                    namespaceTypesByModuleNamespace.Add(userType.Namespace, namespaceTypes = new Dictionary<string, UserType>());
+                if (!namespaceTypesByModuleNamespace.TryGetValue(notNullUserTypeNamespace, out namespaceTypes))
+                    namespaceTypesByModuleNamespace.Add(notNullUserTypeNamespace, namespaceTypes = new Dictionary<string, UserType>());
 
                 StringBuilder currentNamespaceSB = new StringBuilder();
                 UserType previousNamespaceUserType = null;
