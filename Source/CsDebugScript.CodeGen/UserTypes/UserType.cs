@@ -340,12 +340,12 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
 
             // Hungarian notation fields
-            if (!DontExportStaticFields)
+            if (!ExportOnlyStaticFields)
                 foreach (UserTypeMember member in GenerateHungarianNotationFields(fixName))
                     yield return member;
 
             // Base class properties
-            if (!DontExportStaticFields && (BaseClass is MultiClassInheritanceTypeInstance || BaseClass is SingleClassInheritanceWithInterfacesTypeInstance))
+            if (!ExportOnlyStaticFields && (BaseClass is MultiClassInheritanceTypeInstance || BaseClass is SingleClassInheritanceWithInterfacesTypeInstance))
             {
                 Symbol[] baseClasses = Symbol.BaseClasses;
                 Symbol[] baseClassesForProperties = BaseClass is SingleClassInheritanceWithInterfacesTypeInstance ? baseClasses.Where(b => b.IsEmpty).ToArray() : baseClasses;
@@ -400,7 +400,8 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             if (!ExportOnlyStaticFields)
             {
-                if (this is PhysicalUserType || DerivedClasses.OfType<PhysicalUserType>().Any())
+                if (this is PhysicalUserType || DerivedClasses.OfType<PhysicalUserType>().Any()
+                    || DerivedClasses.Any(dc => dc.Constructors.Contains(UserTypeConstructor.SimplePhysical)))
                 {
                     yield return UserTypeConstructor.SimplePhysical;
                     yield return UserTypeConstructor.RegularPhysical;
@@ -421,6 +422,25 @@ namespace CsDebugScript.CodeGen.UserTypes
             Symbol[] baseClasses = symbol.BaseClasses;
             TypeInstance baseClass = null;
             int baseClassOffset = 0;
+
+            // Check if we are exporting only static fields
+            if (ExportOnlyStaticFields)
+            {
+                baseClass = new StaticClassTypeInstance(CodeWriter);
+                return Tuple.Create(baseClass, baseClassOffset);
+            }
+
+            // Check if it is inheriting one of its own template arguments
+            foreach (Symbol baseClassSymbol in baseClasses)
+            {
+                TypeInstance typeInstance = Factory.GetSymbolTypeInstance(this, baseClassSymbol);
+
+                if (typeInstance is TemplateArgumentTypeInstance)
+                {
+                    baseClass = new MultiClassInheritanceTypeInstance(CodeWriter);
+                    return Tuple.Create(baseClass, baseClassOffset);
+                }
+            }
 
             // Check if it is recursively inheriting itself
             foreach (Symbol baseClassSymbol in baseClasses)

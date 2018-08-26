@@ -4,11 +4,9 @@ using CsDebugScript.CodeGen.TypeInstances;
 using CsDebugScript.Engine;
 using DIA;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
@@ -183,48 +181,60 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 // Select best suited type for template
                 SpecializedTemplateUserType template = templates.First();
+                int bestScore = int.MaxValue;
 
                 foreach (var specializedTemplate in templates)
                 {
                     var arguments = specializedTemplate.AllTemplateArguments;
+                    int score = 0;
 
-                    // Check if all arguments are different
-                    if (arguments.Distinct().Count() == arguments.Count())
+                    for (int i = 0; i < arguments.Count; i++)
                     {
-                        // Check if all arguments are simple user type
-                        bool simpleUserType = true;
+                        var argument = arguments[i];
 
-                        foreach (var argument in arguments)
-                            if ((argument.Tag != CodeTypeTag.Class && argument.Tag != CodeTypeTag.Structure && argument.Tag != CodeTypeTag.Union) || argument.Name.Contains("<"))
-                            {
-                                simpleUserType = false;
-                                break;
-                            }
+                        // Check if this is repeated type
+                        bool repeated = false;
 
-                        if (simpleUserType)
+                        for (int j = 0; j < i && !repeated; j++)
+                            repeated = argument == arguments[j];
+                        if (repeated)
+                            score += 100;
+
+                        // Check if argument is constant
+                        if (argument.Tag == CodeTypeTag.TemplateArgumentConstant)
+                            continue;
+
+                        // Check if argument is simple user type
+                        if ((argument.Tag == CodeTypeTag.Class || argument.Tag == CodeTypeTag.Structure || argument.Tag == CodeTypeTag.Union || argument.Tag == CodeTypeTag.Enum) && !argument.Name.Contains("<"))
                         {
-                            template = specializedTemplate;
-                            break;
-                        }
-
-                        // Check if none of the arguments is template user type
-                        bool noneIsTemplate = true;
-
-                        foreach (var argument in arguments)
-                            if (argument != null && (argument.Tag == CodeTypeTag.Class || argument.Tag == CodeTypeTag.Structure || argument.Tag == CodeTypeTag.Union) && argument.Name.Contains("<"))
-                            {
-                                noneIsTemplate = false;
-                                break;
-                            }
-
-                        if (noneIsTemplate)
-                        {
-                            template = specializedTemplate;
+                            score += 1;
                             continue;
                         }
+
+                        // Check if argments is function
+                        if (argument.Tag == CodeTypeTag.Function)
+                        {
+                            score += 2;
+                            continue;
+                        }
+
+                        // Check if argument is template
+                        if (argument.Name.Contains("<"))
+                        {
+                            score += 20;
+                            continue;
+                        }
+
+                        // All others fall into the same category
+                        score += 5;
                     }
 
-                    // This one is as good as any...
+                    // Check if this is the best one
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        template = specializedTemplate;
+                    }
                 }
 
                 yield return new TemplateUserType(template, templates, this);
@@ -241,7 +251,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <returns>Newly generated user types.</returns>
         internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, Dictionary<Symbol, string> symbolNamespaces, string commonNamespace)
         {
-            ConcurrentBag<UserType> newTypes = new ConcurrentBag<UserType>();
+            List<UserType> newTypes = new List<UserType>();
 
             // Collect all constants used by template types
             Dictionary<string, Symbol> constantsDictionary = new Dictionary<string, Symbol>();
@@ -284,15 +294,18 @@ namespace CsDebugScript.CodeGen.UserTypes
                     }
 
             // Split user types that have static members in more than one module
-            Parallel.ForEach(Partitioner.Create(userTypes), (userType) =>
+            List<UserType> staticUserTypes = new List<UserType>();
+            Dictionary<Symbol, UserType> staticUserTypesBySymbol = new Dictionary<Symbol, UserType>();
+
+            foreach (UserType userType in userTypes)
             {
                 if (userType.DontExportStaticFields)
-                    return;
+                    continue;
 
                 List<Symbol> symbols = GlobalCache.GetSymbolStaticFieldsSymbols(userType.Symbol);
 
                 if (symbols == null || symbols.Count <= 1)
-                    return;
+                    continue;
 
                 bool foundSameNamespace = false;
 
@@ -301,18 +314,26 @@ namespace CsDebugScript.CodeGen.UserTypes
                     string nameSpace = symbol.Module.Namespace;
 
                     if (userType.Namespace != nameSpace)
-                        newTypes.Add(new UserType(symbol, null, nameSpace, this) { ExportOnlyStaticFields = true });
+                    {
+                        UserType staticUserType = new UserType(symbol, null, nameSpace, this)
+                        {
+                            ExportOnlyStaticFields = true
+                        };
+                        staticUserTypes.Add(staticUserType);
+                        staticUserTypesBySymbol.Add(symbol, staticUserType);
+                    }
                     else
                         foundSameNamespace = true;
                 }
 
                 if (!foundSameNamespace)
                     userType.DontExportStaticFields = true;
-            });
+            }
+            newTypes.AddRange(staticUserTypes);
 
             // TODO: This needs to happen before template types creation. We need to verify that all types declared in template type are matched correctly.
             // Find parent type/namespace
-            Dictionary<string, UserType> namespaceTypes = new Dictionary<string, UserType>();
+            Dictionary<string, Dictionary<string, UserType>> namespaceTypesByModuleNamespace = new Dictionary<string, Dictionary<string, UserType>>();
             Action<UserType> findParentType = (UserType userType) =>
             {
                 Symbol symbol = userType.Symbol;
@@ -324,6 +345,11 @@ namespace CsDebugScript.CodeGen.UserTypes
                     // Class is not defined in namespace nor in type.
                     return;
                 }
+
+                Dictionary<string, UserType> namespaceTypes;
+
+                if (!namespaceTypesByModuleNamespace.TryGetValue(userType.Namespace, out namespaceTypes))
+                    namespaceTypesByModuleNamespace.Add(userType.Namespace, namespaceTypes = new Dictionary<string, UserType>());
 
                 StringBuilder currentNamespaceSB = new StringBuilder();
                 UserType previousNamespaceUserType = null;
@@ -338,11 +364,17 @@ namespace CsDebugScript.CodeGen.UserTypes
                     UserType namespaceUserType;
 
                     if (!namespaceTypes.TryGetValue(currentNamespace, out namespaceUserType))
+                    {
                         namespaceUserType = GlobalCache.GetUserType(currentNamespace, symbol.Module);
+                        if (namespaceUserType != null && userType.Namespace != namespaceUserType.Namespace)
+                            staticUserTypesBySymbol.TryGetValue(symbol.Module.GetSymbol(currentNamespace), out namespaceUserType);
+                        if (namespaceUserType != null && userType.Namespace != namespaceUserType.Namespace)
+                            namespaceUserType = null;
+                    }
 
                     if (namespaceUserType == null)
                     {
-                        namespaceUserType = new NamespaceUserType(new string[] { namespaces[i] }, previousNamespaceUserType == null ? symbolNamespaces[symbol] : null, this);
+                        namespaceUserType = new NamespaceUserType(new string[] { namespaces[i] }, previousNamespaceUserType == null ? userType.Namespace : null, this);
                         if (previousNamespaceUserType != null)
                             namespaceUserType.UpdateDeclaredInType(previousNamespaceUserType);
                         namespaceTypes.Add(currentNamespace, namespaceUserType);
@@ -355,7 +387,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 userType.UpdateDeclaredInType(previousNamespaceUserType);
             };
 
-            foreach (UserType userType in userTypes)
+            foreach (UserType userType in userTypes.Concat(staticUserTypes))
             {
                 Symbol symbol = userType.Symbol;
 
@@ -466,13 +498,13 @@ namespace CsDebugScript.CodeGen.UserTypes
             foreach (Symbol baseClass in allBaseClasses)
             {
                 UserType baseClassUserType = GlobalCache.GetUserType(baseClass);
-                SpecializedTemplateUserType templateUserType = baseClassUserType as SpecializedTemplateUserType;
-
-                if (templateUserType != null)
-                    baseClassUserType = templateUserType.TemplateType;
 
                 if (baseClassUserType != null)
+                {
                     baseClassUserType.DerivedClasses.Add(userType);
+                    if (baseClassUserType is SpecializedTemplateUserType templateUserType)
+                        templateUserType.TemplateType.DerivedClasses.Add(userType);
+                }
             }
         }
 
@@ -668,9 +700,11 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                         // We were unable to find user type. If it is enum, use its basic type
                         if (symbol.Tag == CodeTypeTag.Enum)
-                        {
                             return new BasicTypeInstance(CodeWriter, EnumUserType.GetEnumBasicType(symbol));
-                        }
+
+                        // Is it template argument constant?
+                        if (symbol.Tag == CodeTypeTag.TemplateArgumentConstant && symbol.UserType is TemplateArgumentConstantUserType constantArgument)
+                            return new TemplateArgumentConstantTypeInstance(constantArgument);
 
                         // Fall-back to Variable
                         return new VariableTypeInstance(CodeWriter);

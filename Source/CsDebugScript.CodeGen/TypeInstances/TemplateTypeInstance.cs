@@ -98,35 +98,24 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <returns>The string representing this type instance in generated code.</returns>
         public override string GetTypeString(bool truncateNamespace = false)
         {
-            bool hasTemplateArgument = truncateNamespace;
+            StringBuilder sb = new StringBuilder();
+            string baseName = DeclaredInTypeHierarchy[0].FullTypeName;
+            int templateIndex = baseName.IndexOf('<');
 
-            for (int i = 0; i < SpecializedArguments.Length && !hasTemplateArgument; i++)
-                if (SpecializedArguments[i] != null)
-                    for (int j = 0; j < SpecializedArguments[i].Length && !hasTemplateArgument; j++)
-                        hasTemplateArgument = SpecializedArguments[i][j] is TemplateArgumentTypeInstance;
-            if (hasTemplateArgument)
+            if (!truncateNamespace)
             {
-                StringBuilder sb = new StringBuilder();
-                string baseName = DeclaredInTypeHierarchy[0].FullTypeName;
-                int templateIndex = baseName.IndexOf('<');
-
-                if (!truncateNamespace)
-                {
-                    sb.Append(templateIndex >= 0 ? baseName.Substring(0, templateIndex) : baseName);
-                    AppendSpecializedArguments(sb, 0, truncateNamespace);
-                }
-                for (int i = !truncateNamespace ? 1 : SpecializedArguments.Length - 1; i < SpecializedArguments.Length; i++)
-                {
-                    sb.Append('.');
-                    baseName = DeclaredInTypeHierarchy[i].TypeName;
-                    templateIndex = baseName.IndexOf('<');
-                    sb.Append(templateIndex >= 0 ? baseName.Substring(0, templateIndex) : baseName);
-                    AppendSpecializedArguments(sb, i, truncateNamespace);
-                }
-                return sb.ToString();
+                sb.Append(templateIndex >= 0 ? baseName.Substring(0, templateIndex) : baseName);
+                AppendSpecializedArguments(sb, 0, truncateNamespace);
             }
-
-            return base.GetTypeString(truncateNamespace);
+            for (int i = !truncateNamespace ? 1 : SpecializedArguments.Length - 1; i < SpecializedArguments.Length; i++)
+            {
+                sb.Append('.');
+                baseName = DeclaredInTypeHierarchy[i].TypeName;
+                templateIndex = baseName.IndexOf('<');
+                sb.Append(templateIndex >= 0 ? baseName.Substring(0, templateIndex) : baseName);
+                AppendSpecializedArguments(sb, i, truncateNamespace);
+            }
+            return sb.ToString();
         }
 
         /// <summary>

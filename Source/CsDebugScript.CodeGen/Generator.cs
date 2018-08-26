@@ -917,9 +917,9 @@ namespace CsDebugScript.CodeGen
                 string binFolder = Path.GetDirectoryName(assembly.Location);
                 string rootedPath = Path.Combine(binFolder, path);
 
-                if (File.Exists(path))
+                if (File.Exists(rootedPath))
                 {
-                    return path;
+                    return rootedPath;
                 }
 
 #if NET461
@@ -939,9 +939,9 @@ namespace CsDebugScript.CodeGen
 
                 binFolder = Path.GetDirectoryName(codeBasePath);
                 rootedPath = Path.Combine(binFolder, path);
-                if (File.Exists(path))
+                if (File.Exists(rootedPath))
                 {
-                    return path;
+                    return rootedPath;
                 }
             }
             return path;

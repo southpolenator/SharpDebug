@@ -156,6 +156,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     case '`':
                     case '\'':
                     case '$':
+                    case '?':
+                    case '@':
                     case '*':
                         return true;
                 }
@@ -197,6 +199,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         case '`':
                         case '\'':
                         case '$':
+                        case '?':
+                        case '@':
                             sb.Append('_');
                             break;
                         // Ignore
@@ -727,14 +731,23 @@ namespace CsDebugScript.CodeGen.CodeWriters
             foreach (var member in type.Members.OfType<ConstantUserTypeMember>())
                 if (!(member.Type is TemplateArgumentTypeInstance))
                 {
+                    if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
+                        output.WriteLine(member.Comment);
+
+                    bool shouldBeStaticReadonly;
+                    string cvalue = ConstantValue(member, out shouldBeStaticReadonly);
+
                     //output.WriteLine($"{ToString(member.AccessLevel)} const {member.Type.GetTypeString()} {member.Name} = {ConstantValue(member)};");
                     output.StartLine(ToString(member.AccessLevel));
-                    output.Write("const ");
+                    if (!shouldBeStaticReadonly)
+                        output.Write("const ");
+                    else
+                        output.Write("static readonly ");
                     output.Write(member.Type.GetTypeString());
                     output.Write(" ");
                     output.Write(member.Name);
                     output.Write(" = ");
-                    output.Write(ConstantValue(member));
+                    output.Write(cvalue);
                     output.EndLine(";");
                 }
 
@@ -789,7 +802,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             // Write private class initialization
             if (!(type.BaseClass is StaticClassTypeInstance))
             {
-                if (hasDataFields && GenerationFlags.HasFlag(UserTypeGenerationFlags.UseDirectClassAccess))
+                if (hasDataFields)
                 {
                     if (GenerationFlags.HasFlag(UserTypeGenerationFlags.GenerateFieldTypeInfoComment))
                         output.WriteLine("// String that will be used to get user type for this class");
@@ -981,17 +994,20 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 }
 
                 // Write array of types for base classes
-                StringBuilder sb = new StringBuilder();
                 string[] baseClassTypeStrings = baseClassProperties.Select(b => b.Type.GetTypeString()).ToArray();
 
-                sb.Append("public static System.Type[] ");
-                sb.Append(baseClassesArrayName);
-                sb.Append(" = new System.Type[] { ");
-                foreach (BaseClassPropertyUserTypeMember baseClassProperty in baseClassProperties)
-                    sb.Append($"typeof({baseClassProperty.Type.GetTypeString()}), ");
-                sb.Length -= 2;
-                sb.Append("};");
-                output.WriteLine(sb.ToString());
+                output.StartLine("public static System.Type[] ");
+                output.Write(baseClassesArrayName);
+                output.Write(" = new System.Type[] { ");
+                for (int i = 0; i < baseClassProperties.Length; i++)
+                {
+                    if (i > 0)
+                        output.Write(", ");
+                    output.Write("typeof(");
+                    output.Write(baseClassProperties[i].Type.GetTypeString());
+                    output.Write(")");
+                }
+                output.EndLine("};");
             }
 
             // Write type end
@@ -1344,13 +1360,22 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// Generates constant expression code for the specified constant field.
         /// </summary>
         /// <param name="constant">Constant field.</param>
+        /// <param name="shouldBeStaticReadonly">Extracts flag if constant value needs to be evaluated in runtime and hense to be static readonly.</param>
         /// <returns>Constant expression assignment code.</returns>
-        private string ConstantValue(ConstantUserTypeMember constant)
+        private string ConstantValue(ConstantUserTypeMember constant, out bool shouldBeStaticReadonly)
         {
+            shouldBeStaticReadonly = false;
+
             Type constantType = (constant.Type as BasicTypeInstance)?.BasicType;
 
             if (constantType != null)
-                return ConstantValue(constantType, constant.Value);
+                return ConstantValue(constantType, constant.Value, out shouldBeStaticReadonly);
+
+            if (constant.Type is PointerTypeInstance pointerType)
+            {
+                shouldBeStaticReadonly = true;
+                return $"new {constant.Type.GetTypeString()}({ConstantValue(typeof(ulong), constant.Value)})";
+            }
 
             EnumUserType enumUserType = (constant.Type as UserTypeInstance)?.UserType as EnumUserType;
 
@@ -1379,7 +1404,13 @@ namespace CsDebugScript.CodeGen.CodeWriters
             Type enumBasicType = enumUserType.BasicType;
 
             if (enumBasicType != null)
-                return $"({fullTypeName}){ConstantValue(enumBasicType, svalue)}";
+            {
+                string cvalue = ConstantValue(enumBasicType, svalue);
+
+                if (cvalue[0] == '-')
+                    return $"({fullTypeName})({cvalue})";
+                return $"({fullTypeName}){cvalue}";
+            }
             return $"({fullTypeName})({svalue})";
         }
 
@@ -1390,6 +1421,20 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="value">Constant value.</param>
         private string ConstantValue(Type type, object value)
         {
+            bool shouldBeStaticReadonly;
+
+            return ConstantValue(type, value, out shouldBeStaticReadonly);
+        }
+
+        /// <summary>
+        /// Generates constant expression code of the specified built-in type for the specified constant value.
+        /// </summary>
+        /// <param name="type">Built-in type.</param>
+        /// <param name="value">Constant value.</param>
+        /// <param name="shouldBeStaticReadonly">Extracts flag if constant value needs to be evaluated in runtime and hense to be static readonly.</param>
+        private string ConstantValue(Type type, object value, out bool shouldBeStaticReadonly)
+        {
+            shouldBeStaticReadonly = false;
             if (type == value.GetType())
             {
                 if (type == typeof(bool))
@@ -1410,7 +1455,10 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 if (type == typeof(byte))
                     return ((byte)sbyte.Parse(constantValue)).ToString();
                 if (type == typeof(NakedPointer))
+                {
+                    shouldBeStaticReadonly = true;
                     return $"new {ToString(type)}({((ulong)long.Parse(constantValue)).ToString()})";
+                }
             }
             if (type == typeof(byte))
                 return byte.Parse(constantValue).ToString();
@@ -1439,6 +1487,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 return (int.Parse(constantValue) != 0).ToString().ToLower();
             if (type == typeof(char))
                 return $"(char){int.Parse(constantValue)}";
+
+            shouldBeStaticReadonly = true;
             if (type == typeof(NakedPointer))
                 return $"new {ToString(type)}({ulong.Parse(constantValue).ToString()})";
 

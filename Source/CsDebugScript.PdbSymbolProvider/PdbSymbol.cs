@@ -85,7 +85,7 @@ namespace CsDebugScript.PdbSymbolProvider
         private void Initialize(ModifierRecord record)
         {
             PdbSymbol symbol = PdbModule.GetSymbol(record.ModifiedType);
-            LinkSymbols(symbol);
+            symbol.LinkSymbols(this);
             Tag = symbol.Tag;
             BasicType = symbol.BasicType;
             Offset = symbol.Offset;
@@ -125,7 +125,7 @@ namespace CsDebugScript.PdbSymbolProvider
         /// </summary>
         private void Initialize(ArrayRecord record)
         {
-            Tag = Engine.CodeTypeTag.Pointer;
+            Tag = Engine.CodeTypeTag.Array;
             BasicType = DIA.BasicType.NoType;
             Size = (int)record.Size;
             Name = ElementType.Name + "[]";
@@ -249,8 +249,11 @@ namespace CsDebugScript.PdbSymbolProvider
                     BasicType = DIA.BasicType.Hresult;
                     Size = 4;
                     break;
-                case SimpleTypeKind.NarrowCharacter:
                 case SimpleTypeKind.UnsignedCharacter:
+                    BasicType = DIA.BasicType.UInt;
+                    Size = 1;
+                    break;
+                case SimpleTypeKind.NarrowCharacter:
                 case SimpleTypeKind.SignedCharacter:
                     BasicType = DIA.BasicType.Char;
                     Size = 1;

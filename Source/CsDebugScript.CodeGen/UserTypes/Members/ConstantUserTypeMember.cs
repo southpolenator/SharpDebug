@@ -15,7 +15,7 @@ namespace CsDebugScript.CodeGen.UserTypes.Members
         /// <summary>
         /// Gets the comment associated with this member.
         /// </summary>
-        public string Comment => $"// {Symbol.Type.Name} {Symbol.Name};";
+        public string Comment => $"// {Symbol.Type.Name} {Symbol.Name} = {Symbol.Value};";
 
         /// <summary>
         /// Gets the constant value.

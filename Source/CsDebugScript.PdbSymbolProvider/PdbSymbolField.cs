@@ -27,7 +27,7 @@ namespace CsDebugScript.PdbSymbolProvider
             {
                 LocationType = DIA.LocationType.BitField;
                 BitPosition = bitFieldRecord.BitOffset;
-                Size = bitFieldRecord.BitSize;
+                BitSize = bitFieldRecord.BitSize;
                 Type = parentType.PdbModule.GetSymbol(bitFieldRecord.Type);
             }
             else
@@ -113,7 +113,7 @@ namespace CsDebugScript.PdbSymbolProvider
         {
             get
             {
-                return IsStatic && Module.PublicSymbols.Contains(ParentType.Name + "::" + Name);
+                return IsStatic && ((ParentType is PdbGlobalScope) || Module.PublicSymbols.Contains(ParentType.Name + "::" + Name));
             }
         }
     }

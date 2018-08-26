@@ -1,5 +1,7 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
+using CsDebugScript.CodeGen.TypeInstances;
 using CsDebugScript.CodeGen.UserTypes.Members;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -124,6 +126,14 @@ namespace CsDebugScript.CodeGen.UserTypes
                 else
                     yield return members[i];
             }
+        }
+
+        /// <summary>
+        /// Function that should evaluate <see cref="UserType.BaseClass"/> and <see cref="UserType.BaseClassOffset"/> properties.
+        /// </summary>
+        protected override Tuple<TypeInstance, int> GetBaseClass(Symbol symbol)
+        {
+            return Tuple.Create(SpecializedRepresentative.BaseClass, SpecializedRepresentative.BaseClassOffset);
         }
     }
 }
