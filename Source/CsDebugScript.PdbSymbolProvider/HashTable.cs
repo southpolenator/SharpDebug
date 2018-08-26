@@ -112,7 +112,9 @@ namespace CsDebugScript.PdbSymbolProvider
         /// <param name="array2">Second bit array.</param>
         private static bool BitsIntersect(uint[] array1, uint[] array2)
         {
-            for (int i = 0; i < array1.Length; i++)
+            int end = Math.Min(array1.Length, array2.Length);
+
+            for (int i = 0; i < end; i++)
                 for (uint j = 0, bit = 1; j < 32; j++, bit <<= 1)
                     if ((array1[i] & bit) != 0 && (array2[i] & bit) != 0)
                         return true;

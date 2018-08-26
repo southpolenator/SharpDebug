@@ -25,10 +25,9 @@ namespace CsDebugScript.PdbSymbolProvider.TypeRecords
         /// </summary>
         /// <param name="reader">Stream binary reader.</param>
         /// <param name="kind">Type record kind.</param>
-        /// <param name="dataLength">Length of the record data.</param>
-        public static StringListRecord Read(IBinaryReader reader, TypeLeafKind kind, uint dataLength)
+        public static StringListRecord Read(IBinaryReader reader, TypeLeafKind kind)
         {
-            uint count = dataLength / TypeIndex.Size;
+            uint count = reader.ReadUint();
             TypeIndex[] strings = new TypeIndex[count];
 
             for (int i = 0; i < strings.Length; i++)

@@ -29,7 +29,7 @@ namespace CsDebugScript.PdbSymbolProvider.TPI
         /// <summary>
         /// Internal type record reference structure.
         /// </summary>
-        private struct RecordReference
+        internal struct RecordReference
         {
             public uint DataOffset;
             public ushort DataLen;
@@ -39,7 +39,7 @@ namespace CsDebugScript.PdbSymbolProvider.TPI
         /// <summary>
         /// List of all type record references in this stream.
         /// </summary>
-        private List<RecordReference> references;
+        internal List<RecordReference> references;
 
         /// <summary>
         /// Array cache of all types by index.
@@ -279,10 +279,10 @@ namespace CsDebugScript.PdbSymbolProvider.TPI
                     typeRecord = MemberFunctionIdRecord.Read(reader, reference.Kind);
                     break;
                 case TypeLeafKind.LF_ARGLIST:
-                    typeRecord = ArgumentListRecord.Read(reader, reference.Kind, reference.DataLen);
+                    typeRecord = ArgumentListRecord.Read(reader, reference.Kind);
                     break;
                 case TypeLeafKind.LF_SUBSTR_LIST:
-                    typeRecord = StringListRecord.Read(reader, reference.Kind, reference.DataLen);
+                    typeRecord = StringListRecord.Read(reader, reference.Kind);
                     break;
                 case TypeLeafKind.LF_POINTER:
                     typeRecord = PointerRecord.Read(reader, reference.Kind);
@@ -315,6 +315,18 @@ namespace CsDebugScript.PdbSymbolProvider.TPI
                     break;
                 case TypeLeafKind.LF_VTSHAPE:
                     typeRecord = VirtualFunctionTableShapeRecord.Read(reader, reference.Kind);
+                    break;
+                case TypeLeafKind.LF_UDT_MOD_SRC_LINE:
+                    typeRecord = UdtModuleSourceLineRecord.Read(reader, reference.Kind);
+                    break;
+                case TypeLeafKind.LF_STRING_ID:
+                    typeRecord = StringIdRecord.Read(reader, reference.Kind);
+                    break;
+                case TypeLeafKind.LF_BUILDINFO:
+                    typeRecord = BuildInfoRecord.Read(reader, reference.Kind);
+                    break;
+                case TypeLeafKind.LF_FUNC_ID:
+                    typeRecord = FunctionIdRecord.Read(reader, reference.Kind);
                     break;
                 default:
                     throw new NotImplementedException($"Unknown reference kind: {reference.Kind}");

@@ -14,7 +14,7 @@ namespace CsDebugScript.PdbSymbolProvider
         /// <summary>
         /// Internal symbol reference structure.
         /// </summary>
-        private struct SymbolReference
+        internal struct SymbolReference
         {
             /// <summary>
             /// Offset of the symbol record data in the stream.
@@ -35,7 +35,7 @@ namespace CsDebugScript.PdbSymbolProvider
         /// <summary>
         /// List of all symbol references in this stream.
         /// </summary>
-        private List<SymbolReference> references;
+        internal List<SymbolReference> references;
 
         /// <summary>
         /// Dictionary cache of symbols by its kind.
