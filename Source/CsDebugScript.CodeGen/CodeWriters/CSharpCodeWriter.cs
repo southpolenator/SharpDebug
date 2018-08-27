@@ -158,6 +158,12 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     case '$':
                     case '?':
                     case '@':
+                    case '+':
+                    case '=':
+                    case '~':
+                    case '%':
+                    case '^':
+                    case '|':
                     case '*':
                         return true;
                 }
@@ -201,6 +207,12 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         case '$':
                         case '?':
                         case '@':
+                        case '+':
+                        case '=':
+                        case '~':
+                        case '%':
+                        case '^':
+                        case '|':
                             sb.Append('_');
                             break;
                         // Ignore
