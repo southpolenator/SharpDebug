@@ -1,7 +1,29 @@
-﻿using CsDebugScript.CodeGen.CodeWriters;
+﻿using System;
+using CsDebugScript.CodeGen.CodeWriters;
 
 namespace CsDebugScript.CodeGen.TypeInstances
 {
+    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+
+    /// <summary>
+    /// Interface for converting user types to types.
+    /// </summary>
+    internal interface ITypeConverter
+    {
+        /// <summary>
+        /// Gets type associated with user type.
+        /// </summary>
+        /// <param name="userType">The user type.</param>
+        Type GetType(UserType userType);
+
+        /// <summary>
+        /// Gets type generic parameter by parameter name.
+        /// </summary>
+        /// <param name="userType">The user type</param>
+        /// <param name="parameter">Parameter name</param>
+        Type GetGenericParameter(UserType userType, string parameter);
+    }
+
     /// <summary>
     /// Base class for converting symbol name into typed structured tree
     /// </summary>
@@ -10,16 +32,16 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <summary>
         /// Initializes a new instance of the <see cref="TypeInstance"/> class.
         /// </summary>
-        /// <param name="codeWriter">Code writer used to output generated code.</param>
-        public TypeInstance(ICodeWriter codeWriter)
+        /// <param name="codeNaming">Code naming used to generate code names.</param>
+        public TypeInstance(ICodeNaming codeNaming)
         {
-            CodeWriter = codeWriter;
+            CodeNaming = codeNaming;
         }
 
         /// <summary>
-        /// Gets the code writer that is used to output generated code.
+        /// Gets the code naming that is used to generate code names.
         /// </summary>
-        public ICodeWriter CodeWriter { get; private set; }
+        public ICodeNaming CodeNaming { get; private set; }
 
         /// <summary>
         /// Gets the string representing this type instance in generated code.
@@ -27,6 +49,12 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <param name="truncateNamespace">If set to <c>true</c> namespace won't be added to the generated type string.</param>
         /// <returns>The string representing this type instance in generated code.</returns>
         public abstract string GetTypeString(bool truncateNamespace = false);
+
+        /// <summary>
+        /// Gets the type of this type instance using the specified type converter.
+        /// </summary>
+        /// <param name="typeConverter">The type converter interface.</param>
+        public abstract Type GetType(ITypeConverter typeConverter);
 
         /// <summary>
         /// Checks whether this type instance is using undefined type (a.k.a. <see cref="Variable"/> or <see cref="UserType"/>).

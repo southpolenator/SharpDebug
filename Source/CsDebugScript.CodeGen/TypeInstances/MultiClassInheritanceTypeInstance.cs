@@ -11,9 +11,9 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiClassInheritanceTypeInstance"/> class.
         /// </summary>
-        /// <param name="codeWriter">Code writer used to output generated code.</param>
-        public MultiClassInheritanceTypeInstance(ICodeWriter codeWriter)
-            : base(codeWriter, false)
+        /// <param name="codeNaming">Code namind used to generate code names.</param>
+        public MultiClassInheritanceTypeInstance(ICodeNaming codeNaming)
+            : base(codeNaming, false)
         {
         }
     }

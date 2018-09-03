@@ -15,232 +15,37 @@ namespace CsDebugScript.CodeGen.CodeWriters
     /// <summary>
     /// Code writer that outputs code in C#.
     /// </summary>
-    internal class CSharpCodeWriter : ICodeWriter
+    internal class CSharpCodeWriter : DotNetCodeWriter
     {
-        /// <summary>
-        /// Name of the field used in code: baseClassString.
-        /// Represents string member that holds this user type class name that can be used to
-        /// get base class from variable specified in the constructor.
-        /// </summary>
-        private const string BaseClassStringFieldName = "ѦbaseClassString";
-
-        /// <summary>
-        /// Name of the field used in code: thisClass.
-        /// Represents member <see cref="Variable"/> that is casted to code type of this class.
-        /// </summary>
-        private const string ThisClassFieldName = "ѦthisClass";
-
-        /// <summary>
-        /// Name of the static field used in code: ClassCodeType.
-        /// Represents static <see cref="CodeType"/> member of this user type. It can be used in physical user types to
-        /// generate <see cref="Variable"/> from memory buffer.
-        /// </summary>
-        private const string ClassCodeTypeFieldName = "ClassCodeType";
-
-        /// <summary>
-        /// Name of the <see cref="CsDebugScript.UserType"/> member field: memoryBuffer.
-        /// It is being used in physical user type to get memory buffer that holds data for instance of this user type.
-        /// </summary>
-        private const string MemoryBufferFieldName = "memoryBuffer";
-
-        /// <summary>
-        /// Name of the <see cref="CsDebugScript.UserType"/> member field: memoryBufferOffset.
-        /// It is being used in physical user type to get memory buffer offset where is the start of instance of this user type.
-        /// </summary>
-        private const string MemoryBufferOffsetFieldName = "memoryBufferOffset";
-
-        /// <summary>
-        /// Name of the <see cref="CsDebugScript.UserType"/> member field: memoryBufferAddress.
-        /// It is being used in physical user type to get process address from which memory buffer starts. <see cref="MemoryBufferFieldName"/>
-        /// </summary>
-        private const string MemoryBufferAddressFieldName = "memoryBufferAddress";
-
-        /// <summary>
-        /// Set of C# keywords that cannot be used as user type names.
-        /// </summary>
-        private static readonly HashSet<string> Keywords = new HashSet<string>()
-            {
-                "lock", "base", "params", "enum", "in", "object", "event", "string", "private", "public", "internal", "namespace",
-                "byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong", "decimal", "fixed", "out", "class", "struct",
-                "base", "this", "static", "readonly", "new", "using", "get", "set", "is", "null", "ref", "var", "typeof", "for",
-                "foreach", "while", "do", "continue", "break", "return",
-            };
-
-        /// <summary>
-        /// Longest keyword that we have in set of C# key words.
-        /// </summary>
-        private static readonly int LongestKeyword = Keywords.Max(s => s.Length);
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpCodeWriter"/> class.
         /// </summary>
         /// <param name="generationFlags">The code generation options</param>
         /// <param name="nameLimit">Maximum number of characters that generated name can have.</param>
         public CSharpCodeWriter(UserTypeGenerationFlags generationFlags, int nameLimit)
+            : base(generationFlags, nameLimit)
         {
-            GenerationFlags = generationFlags;
-            NameLimit = nameLimit;
         }
 
         /// <summary>
-        /// The code generation options
+        /// Returns <c>true</c> if code writer supports binary writer.
         /// </summary>
-        public UserTypeGenerationFlags GenerationFlags { get; private set; }
+        public override bool HasBinaryWriter => false;
 
         /// <summary>
-        /// Maximum number of characters that generated name can have.
+        /// Returns <c>true</c> if code writer supports text writer.
         /// </summary>
-        public int NameLimit { get; private set; }
+        public override bool HasTextWriter => true;
 
         /// <summary>
-        /// Converts built-in type to string.
+        /// Generated binary code for user types. This is used only if <see cref="HasBinaryWriter"/> is <c>true</c>.
         /// </summary>
-        /// <param name="type">Type to be converted.</param>
-        /// <returns>String representation of the type.</returns>
-        public string ToString(Type type)
+        /// <param name="userTypes">User types for which code should be generated.</param>
+        /// <returns>Bytes of the generated assembly.</returns>
+        public override byte[] GenerateBinary(IEnumerable<UserType> userTypes)
         {
-            if (type == typeof(byte))
-                return "byte";
-            if (type == typeof(sbyte))
-                return "sbyte";
-            if (type == typeof(short))
-                return "short";
-            if (type == typeof(ushort))
-                return "ushort";
-            if (type == typeof(int))
-                return "int";
-            if (type == typeof(uint))
-                return "uint";
-            if (type == typeof(long))
-                return "long";
-            if (type == typeof(ulong))
-                return "ulong";
-            if (type == typeof(float))
-                return "float";
-            if (type == typeof(double))
-                return "double";
-            if (type == typeof(bool))
-                return "bool";
-            if (type == typeof(decimal))
-                return "decimal";
-            if (type == typeof(char))
-                return "char";
-            if (type == typeof(string))
-                return "string";
-            return type.ToString();
-        }
-
-        /// <summary>
-        /// Checks whether user naming should be fixed.
-        /// </summary>
-        /// <param name="name">Name of the type, field, variable, enumeration, etc.</param>
-        /// <returns><c>true</c> if new string should be created; <c>false</c> if original name can be used.</returns>
-        private static bool ShouldFixUserNaming(string name)
-        {
-            for (int i = 0; i < name.Length; i++)
-            {
-                switch (name[i])
-                {
-                    case '.':
-                    case ':':
-                    case '&':
-                    case '-':
-                    case '<':
-                    case '>':
-                    case ' ':
-                    case ',':
-                    case '(':
-                    case ')':
-                    case '[':
-                    case ']':
-                    case '`':
-                    case '\'':
-                    case '$':
-                    case '?':
-                    case '@':
-                    case '+':
-                    case '=':
-                    case '~':
-                    case '%':
-                    case '^':
-                    case '|':
-                    case '*':
-                        return true;
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Corrects naming inside user type. Replaces unallowed characters and keywords.
-        /// </summary>
-        /// <param name="name">Name of the type, field, variable, enumeration, etc.</param>
-        /// <returns>Name that can be used in generated code.</returns>
-        public string FixUserNaming(string name)
-        {
-            if (string.IsNullOrEmpty(name))
-                return name;
-
-            if (ShouldFixUserNaming(name))
-            {
-                StringBuilder sb = new StringBuilder();
-
-                for (int i = 0; i < name.Length; i++)
-                {
-                    switch (name[i])
-                    {
-                        // Replace with _
-                        case '.':
-                        case ':':
-                        case '&':
-                        case '-':
-                        case '<':
-                        case '>':
-                        case ' ':
-                        case ',':
-                        case '(':
-                        case ')':
-                        case '[':
-                        case ']':
-                        case '`':
-                        case '\'':
-                        case '$':
-                        case '?':
-                        case '@':
-                        case '+':
-                        case '=':
-                        case '~':
-                        case '%':
-                        case '^':
-                        case '|':
-                            sb.Append('_');
-                            break;
-                        // Ignore
-                        case '*':
-                            break;
-                        // Add this character
-                        default:
-                            sb.Append(name[i]);
-                            break;
-                    }
-                }
-
-                // Fixed name cannot be longer than some limit
-                if (sb.Length > NameLimit)
-                    sb.Length = NameLimit;
-                name = sb.ToString();
-            }
-            else
-            {
-                // Fixed name cannot be longer than some limit
-                if (name.Length > NameLimit)
-                    name = name.Substring(0, NameLimit);
-            }
-
-            // Keywords should be prefixed with @...
-            if (name.Length <= LongestKeyword && Keywords.Contains(name))
-                return $"@{name}";
-            return name;
+            // This should never be called.
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -248,7 +53,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// </summary>
         /// <param name="userType">User type for which code should be generated.</param>
         /// <param name="output">Output text writer.</param>
-        public void WriteUserType(UserType userType, StringBuilder output)
+        public override void WriteUserType(UserType userType, StringBuilder output)
         {
             WriteUserType(userType, new IndentedWriter(output, GenerationFlags.HasFlag(UserTypeGenerationFlags.CompressedOutput)));
         }
@@ -1166,39 +971,6 @@ namespace CsDebugScript.CodeGen.CodeWriters
         }
 
         /// <summary>
-        /// Converts built-in type to <see cref="CsDebugScript.UserType"/> naming of it used in Read functions.
-        /// </summary>
-        /// <param name="type">Built-in type.</param>
-        private static string ToUserTypeName(Type type)
-        {
-            if (type == typeof(byte))
-                return "Byte";
-            if (type == typeof(sbyte))
-                return "Sbyte";
-            if (type == typeof(short))
-                return "Short";
-            if (type == typeof(ushort))
-                return "Ushort";
-            if (type == typeof(int))
-                return "Int";
-            if (type == typeof(uint))
-                return "Uint";
-            if (type == typeof(long))
-                return "Long";
-            if (type == typeof(ulong))
-                return "Ulong";
-            if (type == typeof(float))
-                return "Float";
-            if (type == typeof(double))
-                return "Double";
-            if (type == typeof(bool))
-                return "Bool";
-            if (type == typeof(bool))
-                return "Char";
-            return null;
-        }
-
-        /// <summary>
         /// Generates data field property getter code. It includes both static and non-static fields, but not constants.
         /// </summary>
         /// <param name="type">User type containing data field.</param>
@@ -1334,17 +1106,6 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 output.Write(code);
                 output.EndLine("; } }");
             }
-        }
-
-        /// <summary>
-        /// Gets user type field name for the specified property name.
-        /// </summary>
-        /// <param name="propertyName">Property name.</param>
-        private static string GetUserTypeFieldName(string propertyName)
-        {
-            if (propertyName.StartsWith("@"))
-                return $"Ѧ{propertyName.Substring(1)}";
-            return $"Ѧ{propertyName}";
         }
 
         /// <summary>

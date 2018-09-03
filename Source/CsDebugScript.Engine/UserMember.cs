@@ -28,6 +28,16 @@ namespace CsDebugScript
         {
             return new UserMember<T>(() => (T)Convert.ChangeType(populateAction(), typeof(T)));
         }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="UserMember{Variable}" /> class.
+        /// </summary>
+        /// <param name="populateAction">The function that populates the cache on demand.</param>
+        /// <returns><see cref="UserMember{Variable}" /></returns>
+        public static UserMember<Variable> Create(Func<Variable> populateAction)
+        {
+            return new UserMember<Variable>(populateAction);
+        }
     }
 
     /// <summary>

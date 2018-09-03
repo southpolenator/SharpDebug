@@ -43,7 +43,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             string argumentName;
 
             if (TryGetTemplateArgument(symbol.Name, out argumentName))
-                return new TemplateArgumentTypeInstance(argumentName, this);
+                return new TemplateArgumentTypeInstance(argumentName, TemplateType);
             return base.GetSymbolTypeInstance(parentType, symbol, bitLength);
         }
 

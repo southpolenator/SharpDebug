@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.CodeGen.CodeWriters;
+using System;
 
 namespace CsDebugScript.CodeGen.TypeInstances
 {
@@ -11,9 +12,9 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <summary>
         /// Initializes a new instance of the <see cref="FunctionTypeInstance"/> class.
         /// </summary>
-        /// <param name="codeWriter">Code writer used to output generated code.</param>
-        public FunctionTypeInstance(ICodeWriter codeWriter)
-            : base(codeWriter)
+        /// <param name="codeNaming">Code naming used to generate code names.</param>
+        public FunctionTypeInstance(ICodeNaming codeNaming)
+            : base(codeNaming)
         {
         }
 
@@ -24,7 +25,16 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <returns>The string representing this type instance in generated code.</returns>
         public override string GetTypeString(bool truncateNamespace = false)
         {
-            return CodeWriter.ToString(typeof(CodeFunction));
+            return CodeNaming.ToString(typeof(CodeFunction));
+        }
+
+        /// <summary>
+        /// Gets the type of this type instance using the specified type converter.
+        /// </summary>
+        /// <param name="typeConverter">The type converter interface.</param>
+        public override Type GetType(ITypeConverter typeConverter)
+        {
+            return typeof(CodeFunction);
         }
 
         /// <summary>

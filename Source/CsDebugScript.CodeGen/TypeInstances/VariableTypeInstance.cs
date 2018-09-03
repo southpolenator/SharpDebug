@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.CodeGen.CodeWriters;
+using System;
 
 namespace CsDebugScript.CodeGen.TypeInstances
 {
@@ -11,10 +12,10 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <summary>
         /// Initializes a new instance of the <see cref="VariableTypeInstance"/> class.
         /// </summary>
-        /// <param name="codeWriter">Code writer used to output generated code.</param>
+        /// <param name="codeNaming">Code naming used to generate code names.</param>
         /// <param name="isVariable">if set to <c>true</c> it will be Variable; otherwise it will be UserType.</param>
-        public VariableTypeInstance(ICodeWriter codeWriter, bool isVariable = true)
-            : base(codeWriter)
+        public VariableTypeInstance(ICodeNaming codeNaming, bool isVariable = true)
+            : base(codeNaming)
         {
             IsVariable = isVariable;
         }
@@ -31,7 +32,16 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <returns>The string representing this type instance in generated code.</returns>
         public override string GetTypeString(bool truncateNamespace = false)
         {
-            return IsVariable ? CodeWriter.ToString(typeof(Variable)) : CodeWriter.ToString(typeof(UserType));
+            return IsVariable ? CodeNaming.ToString(typeof(Variable)) : CodeNaming.ToString(typeof(UserType));
+        }
+
+        /// <summary>
+        /// Gets the type of this type instance using the specified type converter.
+        /// </summary>
+        /// <param name="typeConverter">The type converter interface.</param>
+        public override Type GetType(ITypeConverter typeConverter)
+        {
+            return IsVariable ? typeof(Variable) : typeof(UserType);
         }
 
         /// <summary>

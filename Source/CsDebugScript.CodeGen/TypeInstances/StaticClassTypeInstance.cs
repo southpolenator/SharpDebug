@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.CodeGen.CodeWriters;
+using System;
 
 namespace CsDebugScript.CodeGen.TypeInstances
 {
@@ -11,9 +12,9 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <summary>
         /// Initializes a new instance of the <see cref="StaticClassTypeInstance"/> class.
         /// </summary>
-        /// <param name="codeWriter">Code writer used to output generated code.</param>
-        public StaticClassTypeInstance(ICodeWriter codeWriter)
-            : base(codeWriter)
+        /// <param name="codeNaming">Code naming used to output generate code names.</param>
+        public StaticClassTypeInstance(ICodeNaming codeNaming)
+            : base(codeNaming)
         {
         }
 
@@ -25,6 +26,15 @@ namespace CsDebugScript.CodeGen.TypeInstances
         public override string GetTypeString(bool truncateNamespace = false)
         {
             return string.Empty;
+        }
+
+        /// <summary>
+        /// Gets the type of this type instance using the specified type converter.
+        /// </summary>
+        /// <param name="typeConverter">The type converter interface.</param>
+        public override Type GetType(ITypeConverter typeConverter)
+        {
+            throw new System.NotImplementedException();
         }
 
         /// <summary>

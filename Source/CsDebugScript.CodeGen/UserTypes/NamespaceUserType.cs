@@ -26,7 +26,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         internal NamespaceUserType(IEnumerable<string> innerNamespaces, string topLevelNamespace, UserTypeFactory factory)
             : base(symbol: null, xmlType: null, nameSpace: null, factory: factory)
         {
-            namespaces = innerNamespaces.Select(s => CodeWriter.FixUserNaming(s)).ToList();
+            namespaces = innerNamespaces.Select(s => CodeNaming.FixUserNaming(s)).ToList();
             if (topLevelNamespace != null)
                 namespaces.Insert(0, topLevelNamespace);
         }
@@ -91,7 +91,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </summary>
         protected override Tuple<TypeInstance, int> GetBaseClass(Symbol symbol)
         {
-            return Tuple.Create<TypeInstance, int>(new StaticClassTypeInstance(CodeWriter), 0);
+            return Tuple.Create<TypeInstance, int>(new StaticClassTypeInstance(CodeNaming), 0);
         }
     }
 }

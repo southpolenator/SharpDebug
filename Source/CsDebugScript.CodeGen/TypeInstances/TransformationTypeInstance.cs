@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.CodeGen.CodeWriters;
 using CsDebugScript.CodeGen.UserTypes;
+using System;
 
 namespace CsDebugScript.CodeGen.TypeInstances
 {
@@ -12,10 +13,10 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <summary>
         /// Initializes a new instance of the <see cref="TransformationTypeInstance"/> class.
         /// </summary>
-        /// <param name="codeWriter">Code writer used to output generated code.</param>
+        /// <param name="codeNaming">Code naming used to generate code names.</param>
         /// <param name="transformation">The transformation that will be applied.</param>
-        public TransformationTypeInstance(ICodeWriter codeWriter, UserTypeTransformation transformation)
-            : base(codeWriter)
+        public TransformationTypeInstance(ICodeNaming codeNaming, UserTypeTransformation transformation)
+            : base(codeNaming)
         {
             Transformation = transformation;
         }
@@ -33,6 +34,16 @@ namespace CsDebugScript.CodeGen.TypeInstances
         public override string GetTypeString(bool truncateNamespace = false)
         {
             return Transformation.TypeString;
+        }
+
+        /// <summary>
+        /// Gets the type of this type instance using the specified type converter.
+        /// </summary>
+        /// <param name="typeConverter">The type converter interface.</param>
+        public override Type GetType(ITypeConverter typeConverter)
+        {
+            // TODO: What should we do here?
+            return typeof(Variable);
         }
 
         /// <summary>

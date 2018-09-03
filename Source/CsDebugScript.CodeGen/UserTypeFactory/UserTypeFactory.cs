@@ -24,11 +24,11 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// Initializes a new instance of the <see cref="UserTypeFactory"/> class.
         /// </summary>
         /// <param name="transformations">The transformations.</param>
-        /// <param name="codeWriter">The code writer used to output generated code.</param>
-        public UserTypeFactory(XmlTypeTransformation[] transformations, ICodeWriter codeWriter)
+        /// <param name="codeNaming">The code naming used to generate code names.</param>
+        public UserTypeFactory(XmlTypeTransformation[] transformations, ICodeNaming codeNaming)
         {
             typeTransformations = transformations;
-            CodeWriter = codeWriter;
+            CodeNaming = codeNaming;
         }
 
         /// <summary>
@@ -36,14 +36,14 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </summary>
         /// <param name="factory">The user type factory.</param>
         public UserTypeFactory(UserTypeFactory factory)
-            : this(factory.typeTransformations, factory.CodeWriter)
+            : this(factory.typeTransformations, factory.CodeNaming)
         {
         }
 
         /// <summary>
-        /// Gets the code writer that is used to output generated code.
+        /// Gets the code naming that is used to generate code names.
         /// </summary>
-        public ICodeWriter CodeWriter { get; private set; }
+        public ICodeNaming CodeNaming { get; private set; }
 
         /// <summary>
         /// Look up for user type based on the specified module and type string.
@@ -559,7 +559,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     }
                 }
 
-                return new VariableTypeInstance(CodeWriter).GetTypeString();
+                return new VariableTypeInstance(CodeNaming).GetTypeString();
             };
 
             return new UserTypeTransformation(transformation, typeConverter, ownerUserType, type);
@@ -577,38 +577,38 @@ namespace CsDebugScript.CodeGen.UserTypes
             {
                 case CodeTypeTag.BuiltinType:
                     if (bitLength == 1)
-                        return new BasicTypeInstance(CodeWriter, typeof(bool));
+                        return new BasicTypeInstance(CodeNaming, typeof(bool));
                     switch (symbol.BasicType)
                     {
                         case BasicType.Bit:
                         case BasicType.Bool:
-                            return new BasicTypeInstance(CodeWriter, typeof(bool));
+                            return new BasicTypeInstance(CodeNaming, typeof(bool));
                         case BasicType.Char:
                         case BasicType.WChar:
                         case BasicType.Char16:
                         case BasicType.Char32:
-                            return new BasicTypeInstance(CodeWriter, typeof(char));
+                            return new BasicTypeInstance(CodeNaming, typeof(char));
                         case BasicType.BSTR:
-                            return new BasicTypeInstance(CodeWriter, typeof(string));
+                            return new BasicTypeInstance(CodeNaming, typeof(string));
                         case BasicType.Void:
                         case BasicType.NoType:
-                            return new BasicTypeInstance(CodeWriter, typeof(VoidType));
+                            return new BasicTypeInstance(CodeNaming, typeof(VoidType));
                         case BasicType.Float:
-                            return new BasicTypeInstance(CodeWriter, symbol.Size <= 4 ? typeof(float) : typeof(double));
+                            return new BasicTypeInstance(CodeNaming, symbol.Size <= 4 ? typeof(float) : typeof(double));
                         case BasicType.Int:
                         case BasicType.Long:
                             switch (symbol.Size)
                             {
                                 case 0:
-                                    return new BasicTypeInstance(CodeWriter, typeof(VoidType));
+                                    return new BasicTypeInstance(CodeNaming, typeof(VoidType));
                                 case 1:
-                                    return new BasicTypeInstance(CodeWriter, typeof(sbyte));
+                                    return new BasicTypeInstance(CodeNaming, typeof(sbyte));
                                 case 2:
-                                    return new BasicTypeInstance(CodeWriter, typeof(short));
+                                    return new BasicTypeInstance(CodeNaming, typeof(short));
                                 case 4:
-                                    return new BasicTypeInstance(CodeWriter, typeof(int));
+                                    return new BasicTypeInstance(CodeNaming, typeof(int));
                                 case 8:
-                                    return new BasicTypeInstance(CodeWriter, typeof(long));
+                                    return new BasicTypeInstance(CodeNaming, typeof(long));
                                 default:
                                     throw new Exception($"Unexpected type length {symbol.Size}");
                             }
@@ -618,21 +618,21 @@ namespace CsDebugScript.CodeGen.UserTypes
                             switch (symbol.Size)
                             {
                                 case 0:
-                                    return new BasicTypeInstance(CodeWriter, typeof(VoidType));
+                                    return new BasicTypeInstance(CodeNaming, typeof(VoidType));
                                 case 1:
-                                    return new BasicTypeInstance(CodeWriter, typeof(byte));
+                                    return new BasicTypeInstance(CodeNaming, typeof(byte));
                                 case 2:
-                                    return new BasicTypeInstance(CodeWriter, typeof(ushort));
+                                    return new BasicTypeInstance(CodeNaming, typeof(ushort));
                                 case 4:
-                                    return new BasicTypeInstance(CodeWriter, typeof(uint));
+                                    return new BasicTypeInstance(CodeNaming, typeof(uint));
                                 case 8:
-                                    return new BasicTypeInstance(CodeWriter, typeof(ulong));
+                                    return new BasicTypeInstance(CodeNaming, typeof(ulong));
                                 default:
                                     throw new Exception($"Unexpected type length {symbol.Size}");
                             }
 
                         case BasicType.Hresult:
-                            return new BasicTypeInstance(CodeWriter, typeof(uint)); // TODO: Create Hresult type
+                            return new BasicTypeInstance(CodeNaming, typeof(uint)); // TODO: Create Hresult type
 
                         default:
                             throw new Exception($"Unexpected basic type {symbol.BasicType}");
@@ -659,7 +659,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                             case CodeTypeTag.Enum:
                                 {
                                     if ((innerType as BasicTypeInstance)?.BasicType == typeof(VoidType))
-                                        return new BasicTypeInstance(CodeWriter, typeof(NakedPointer));
+                                        return new BasicTypeInstance(CodeNaming, typeof(NakedPointer));
                                     return new PointerTypeInstance(innerType);
                                 }
 
@@ -683,7 +683,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                         if (transformation != null)
                         {
-                            return new TransformationTypeInstance(CodeWriter, transformation);
+                            return new TransformationTypeInstance(CodeNaming, transformation);
                         }
 
                         // Try to find user type that represents current type
@@ -695,27 +695,27 @@ namespace CsDebugScript.CodeGen.UserTypes
                             TemplateTypeInstance genericsTree = type as TemplateTypeInstance;
 
                             if (genericsTree != null && !genericsTree.CanInstantiate)
-                                return new VariableTypeInstance(CodeWriter);
+                                return new VariableTypeInstance(CodeNaming);
                             return type;
                         }
 
                         // We were unable to find user type. If it is enum, use its basic type
                         if (symbol.Tag == CodeTypeTag.Enum)
-                            return new BasicTypeInstance(CodeWriter, EnumUserType.GetEnumBasicType(symbol));
+                            return new BasicTypeInstance(CodeNaming, EnumUserType.GetEnumBasicType(symbol));
 
                         // Is it template argument constant?
                         if (symbol.Tag == CodeTypeTag.TemplateArgumentConstant && symbol.UserType is TemplateArgumentConstantUserType constantArgument)
                             return new TemplateArgumentConstantTypeInstance(constantArgument);
 
                         // Fall-back to Variable
-                        return new VariableTypeInstance(CodeWriter);
+                        return new VariableTypeInstance(CodeNaming);
                     }
 
                 case CodeTypeTag.Array:
                     return new ArrayTypeInstance(GetSymbolTypeInstance(parentType, symbol.ElementType));
 
                 case CodeTypeTag.Function:
-                    return new FunctionTypeInstance(CodeWriter);
+                    return new FunctionTypeInstance(CodeNaming);
 
                 case CodeTypeTag.BaseClass:
                     {

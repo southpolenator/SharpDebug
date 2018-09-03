@@ -1,4 +1,6 @@
-﻿namespace CsDebugScript.CodeGen.TypeInstances
+﻿using System;
+
+namespace CsDebugScript.CodeGen.TypeInstances
 {
     /// <summary>
     /// Type instance that represents pointer to a type.
@@ -11,7 +13,7 @@
         /// </summary>
         /// <param name="elementType">The element type instance.</param>
         public PointerTypeInstance(TypeInstance elementType)
-            : base(elementType.CodeWriter)
+            : base(elementType.CodeNaming)
         {
             ElementType = elementType;
         }
@@ -30,7 +32,18 @@
         {
             string elementTypeString = ElementType.GetTypeString(truncateNamespace);
 
-            return $"{CodeWriter.ToString(typeof(CodePointer))}<{elementTypeString}>";
+            return $"{CodeNaming.ToString(typeof(CodePointer))}<{elementTypeString}>";
+        }
+
+        /// <summary>
+        /// Gets the type of this type instance using the specified type converter.
+        /// </summary>
+        /// <param name="typeConverter">The type converter interface.</param>
+        public override Type GetType(ITypeConverter typeConverter)
+        {
+            Type elementType = ElementType.GetType(typeConverter);
+
+            return typeof(CodePointer<>).MakeGenericType(elementType);
         }
 
         /// <summary>

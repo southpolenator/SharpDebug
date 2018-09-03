@@ -25,10 +25,10 @@ namespace CsDebugScript.CodeGen.UserTypes
         protected override string GetTypeName()
         {
             if (Symbol is EnumConstantSymbol enumConstant)
-                return CodeWriter.FixUserNaming($"{enumConstant.EnumSymbol.UserType.FullTypeName}_{enumConstant.Value}");
+                return CodeNaming.FixUserNaming($"{enumConstant.EnumSymbol.UserType.FullTypeName}_{enumConstant.Value}");
 
             if (Symbol is IntegralConstantSymbol integralConstant)
-                return CodeWriter.FixUserNaming($"{CodeWriter.ToString(integralConstant.Value.GetType())}_{integralConstant.Value}");
+                return CodeNaming.FixUserNaming($"{CodeNaming.ToString(integralConstant.Value.GetType())}_{integralConstant.Value}");
 
             throw new System.NotImplementedException();
         }

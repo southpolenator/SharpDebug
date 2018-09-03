@@ -1,4 +1,6 @@
-﻿namespace CsDebugScript.CodeGen.TypeInstances
+﻿using System;
+
+namespace CsDebugScript.CodeGen.TypeInstances
 {
     /// <summary>
     /// Type instance that represents array type.
@@ -11,7 +13,7 @@
         /// </summary>
         /// <param name="elementType">The element type instance.</param>
         public ArrayTypeInstance(TypeInstance elementType)
-            : base(elementType.CodeWriter)
+            : base(elementType.CodeNaming)
         {
             ElementType = elementType;
         }
@@ -37,7 +39,20 @@
 
             if (IsPhysical)
                 return $"{elementTypeString}[]";
-            return $"{CodeWriter.ToString(typeof(CodeArray))}<{elementTypeString}>";
+            return $"{CodeNaming.ToString(typeof(CodeArray))}<{elementTypeString}>";
+        }
+
+        /// <summary>
+        /// Gets the type of this type instance using the specified type converter.
+        /// </summary>
+        /// <param name="typeConverter">The type converter interface.</param>
+        public override Type GetType(ITypeConverter typeConverter)
+        {
+            Type elementType = ElementType.GetType(typeConverter);
+
+            if (IsPhysical)
+                return elementType.MakeArrayType();
+            return typeof(CodeArray<>).MakeGenericType(elementType);
         }
 
         /// <summary>

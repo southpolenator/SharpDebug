@@ -16,7 +16,7 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// </summary>
         /// <param name="userType">The user type.</param>
         protected UserTypeInstance(UserType userType)
-            : base(userType.CodeWriter)
+            : base(userType.CodeNaming)
         {
             UserType = userType;
         }
@@ -34,6 +34,15 @@ namespace CsDebugScript.CodeGen.TypeInstances
         public override string GetTypeString(bool truncateNamespace = false)
         {
             return truncateNamespace ? UserType.TypeName : UserType.FullTypeName;
+        }
+
+        /// <summary>
+        /// Gets the type of this type instance using the specified type converter.
+        /// </summary>
+        /// <param name="typeConverter">The type converter interface.</param>
+        public override Type GetType(ITypeConverter typeConverter)
+        {
+            return typeConverter.GetType(UserType);
         }
 
         /// <summary>

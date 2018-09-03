@@ -410,7 +410,7 @@ namespace CsDebugScript.CodeGen
             generationOptions = xmlConfig.GetGenerationFlags();
             int nameLimit = xmlConfig.GenerateAssemblyWithRoslyn ? 1000 : 250;
             codeWriter = new CSharpCodeWriter(generationOptions, nameLimit);
-            userTypeFactory = new UserTypeFactory(xmlConfig.Transformations, codeWriter);
+            userTypeFactory = new UserTypeFactory(xmlConfig.Transformations, codeWriter.Naming);
             userTypes = new List<UserType>();
         }
 

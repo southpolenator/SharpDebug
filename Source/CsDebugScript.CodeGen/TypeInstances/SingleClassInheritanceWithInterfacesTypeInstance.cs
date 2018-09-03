@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.CodeGen.UserTypes;
+using System;
 
 namespace CsDebugScript.CodeGen.TypeInstances
 {
@@ -16,7 +17,7 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <param name="baseClassUserType">The base class user type.</param>
         /// <param name="factory">The user type factory.</param>
         public SingleClassInheritanceWithInterfacesTypeInstance(UserType baseClassUserType, UserTypeFactory factory)
-            : base(factory.CodeWriter)
+            : base(factory.CodeNaming)
         {
             BaseClassUserType = UserTypeInstance.Create(baseClassUserType, factory);
         }
@@ -34,6 +35,15 @@ namespace CsDebugScript.CodeGen.TypeInstances
         public override string GetTypeString(bool truncateNamespace = false)
         {
             return BaseClassUserType.GetTypeString(truncateNamespace);
+        }
+
+        /// <summary>
+        /// Gets the type of this type instance using the specified type converter.
+        /// </summary>
+        /// <param name="typeConverter">The type converter interface.</param>
+        public override Type GetType(ITypeConverter typeConverter)
+        {
+            return BaseClassUserType.GetType(typeConverter);
         }
 
         /// <summary>

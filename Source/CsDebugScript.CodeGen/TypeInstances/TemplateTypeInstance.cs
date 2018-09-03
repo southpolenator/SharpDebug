@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.CodeGen.UserTypes;
 using CsDebugScript.Engine;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -116,6 +117,18 @@ namespace CsDebugScript.CodeGen.TypeInstances
                 AppendSpecializedArguments(sb, i, truncateNamespace);
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Gets the type of this type instance using the specified type converter.
+        /// </summary>
+        /// <param name="typeConverter">The type converter interface.</param>
+        public override Type GetType(ITypeConverter typeConverter)
+        {
+            Type genericType = base.GetType(typeConverter);
+            Type[] arguments = SpecializedArguments.Where(sa => sa != null).SelectMany(sa => sa).Select(sa => sa.GetType(typeConverter)).ToArray();
+
+            return genericType.MakeGenericType(arguments);
         }
 
         /// <summary>

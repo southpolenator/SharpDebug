@@ -45,7 +45,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </summary>
         protected override Tuple<TypeInstance, int> GetBaseClass(Symbol symbol)
         {
-            return Tuple.Create<TypeInstance, int>(new StaticClassTypeInstance(CodeWriter), 0);
+            return Tuple.Create<TypeInstance, int>(new StaticClassTypeInstance(CodeNaming), 0);
         }
     }
 }

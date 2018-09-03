@@ -133,9 +133,9 @@ namespace CsDebugScript.CodeGen.UserTypes
         public SymbolProviders.Module Module => Symbol.Module;
 
         /// <summary>
-        /// Gets the code writer used to output generated code.
+        /// Gets the code naming used to generate code names.
         /// </summary>
-        public ICodeWriter CodeWriter => Factory.CodeWriter;
+        public ICodeNaming CodeNaming => Factory.CodeNaming;
 
         /// <summary>
         /// Gets all members this type will provide (constants, static fields, data fields, etc).
@@ -158,7 +158,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         public int BaseClassOffset => baseClassCache.Value.Item2;
 
         /// <summary>
-        /// Gets the memory buffer offset done by base classes. Every base class that offsets <see cref="CSharpCodeWriter.MemoryBufferOffsetFieldName"/> makes
+        /// Gets the memory buffer offset done by base classes. Every base class that offsets <see cref="CSharpCodeNaming.MemoryBufferOffsetFieldName"/> makes
         /// dealing with field offsets harder, so we need to know how much wee need to return back to get this class offset.
         /// </summary>
         public int MemoryBufferOffset => memoryBufferOffsetCache.Value;
@@ -235,7 +235,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             string className = Symbol.Namespaces.Last();
 
-            className = CodeWriter.FixUserNaming(className);
+            className = CodeNaming.FixUserNaming(className);
             if (!string.IsNullOrEmpty(ConstructorNameSuffix))
                 className += ConstructorNameSuffix;
             return className;
@@ -256,7 +256,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (index >= 0)
                     className = className.Substring(0, index);
             }
-            return CodeWriter.FixUserNaming(className);
+            return CodeNaming.FixUserNaming(className);
         }
 
         /// <summary>
@@ -278,7 +278,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <param name="constructorNamespace">Namespace parameter of the constructor of this class.</param>
         protected virtual string GetNamespace(string constructorNamespace)
         {
-            return CodeWriter.FixUserNaming(constructorNamespace);
+            return CodeNaming.FixUserNaming(constructorNamespace);
         }
 
         /// <summary>
@@ -317,7 +317,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (!field.IsStatic && ExportOnlyStaticFields)
                     continue;
 
-                string fieldName = fixName(CodeWriter.FixUserNaming(field.Name));
+                string fieldName = fixName(CodeNaming.FixUserNaming(field.Name));
 
                 if (field.LocationType == LocationType.Constant)
                     yield return new ConstantUserTypeMember()
@@ -355,7 +355,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 {
                     // Generate simplified base class name
                     TypeInstance type = Factory.GetSymbolTypeInstance(this, baseClass);
-                    string baseClassName = CodeWriter.FixUserNaming(type.GetTypeString(truncateNamespace: true));
+                    string baseClassName = CodeNaming.FixUserNaming(type.GetTypeString(truncateNamespace: true));
                     StringBuilder sb = new StringBuilder();
                     int i = baseClassName[0] == '@' ? 1 : 0;
 
@@ -403,9 +403,9 @@ namespace CsDebugScript.CodeGen.UserTypes
                 if (this is PhysicalUserType || DerivedClasses.OfType<PhysicalUserType>().Any()
                     || DerivedClasses.Any(dc => dc.Constructors.Contains(UserTypeConstructor.SimplePhysical)))
                 {
-                    yield return UserTypeConstructor.SimplePhysical;
                     yield return UserTypeConstructor.RegularPhysical;
                     yield return UserTypeConstructor.ComplexPhysical;
+                    yield return UserTypeConstructor.SimplePhysical;
                 }
                 else
                 {
@@ -426,7 +426,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             // Check if we are exporting only static fields
             if (ExportOnlyStaticFields)
             {
-                baseClass = new StaticClassTypeInstance(CodeWriter);
+                baseClass = new StaticClassTypeInstance(CodeNaming);
                 return Tuple.Create(baseClass, baseClassOffset);
             }
 
@@ -437,7 +437,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (typeInstance is TemplateArgumentTypeInstance)
                 {
-                    baseClass = new MultiClassInheritanceTypeInstance(CodeWriter);
+                    baseClass = new MultiClassInheritanceTypeInstance(CodeNaming);
                     return Tuple.Create(baseClass, baseClassOffset);
                 }
             }
@@ -453,7 +453,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                         userType = specialization.TemplateType;
                     if (userType == this || (this is SpecializedTemplateUserType specThis && specThis.TemplateType == userType))
                     {
-                        baseClass = new MultiClassInheritanceTypeInstance(CodeWriter);
+                        baseClass = new MultiClassInheritanceTypeInstance(CodeNaming);
                         return Tuple.Create(baseClass, baseClassOffset);
                     }
                 }
@@ -477,7 +477,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     }
                 }
 
-                baseClass = new MultiClassInheritanceTypeInstance(CodeWriter);
+                baseClass = new MultiClassInheritanceTypeInstance(CodeNaming);
                 return Tuple.Create(baseClass, baseClassOffset);
             }
 
@@ -489,7 +489,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (baseClassType.IsVirtualInheritance)
                 {
-                    baseClass = new MultiClassInheritanceTypeInstance(CodeWriter);
+                    baseClass = new MultiClassInheritanceTypeInstance(CodeNaming);
                     return Tuple.Create(baseClass, baseClassOffset);
                 }
 
@@ -498,7 +498,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
                 if (transformation != null)
                 {
-                    baseClass = new TransformationTypeInstance(CodeWriter, transformation);
+                    baseClass = new TransformationTypeInstance(CodeNaming, transformation);
                     return Tuple.Create(baseClass, baseClassOffset);
                 }
 
@@ -513,7 +513,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                     if (genericsInstance != null && !genericsInstance.CanInstantiate)
                     {
                         // We cannot instantiate the base class, so we must use UserType as the base class.
-                        baseClass = new VariableTypeInstance(CodeWriter, false);
+                        baseClass = new VariableTypeInstance(CodeNaming, false);
                         return Tuple.Create(baseClass, baseClassOffset);
                     }
 
@@ -526,7 +526,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             }
 
             // Class doesn't inherit any type
-            baseClass = new VariableTypeInstance(CodeWriter, false);
+            baseClass = new VariableTypeInstance(CodeNaming, false);
             return Tuple.Create(baseClass, baseClassOffset);
         }
 
@@ -617,7 +617,7 @@ namespace CsDebugScript.CodeGen.UserTypes
                 yield return new HungarianArrayUserTypeMember()
                 {
                     AccessLevel = AccessLevel.Public,
-                    Name = fixName(CodeWriter.FixUserNaming(pointerField.Name + "Array")),
+                    Name = fixName(CodeNaming.FixUserNaming(pointerField.Name + "Array")),
                     Type = new ArrayTypeInstance(fieldType),
                     UserType = this,
                     PointerFieldName = pointerField.Name,

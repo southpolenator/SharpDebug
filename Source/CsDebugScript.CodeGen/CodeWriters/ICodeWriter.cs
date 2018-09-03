@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace CsDebugScript.CodeGen.CodeWriters
@@ -6,17 +7,10 @@ namespace CsDebugScript.CodeGen.CodeWriters
     using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
 
     /// <summary>
-    /// Declares how code writers should behave. Code writers are used to output code for generated user types.
+    /// Declares how come naming should behave. Code naming interfaces are used to output code namings for generated user types.
     /// </summary>
-    internal interface ICodeWriter
+    internal interface ICodeNaming
     {
-        /// <summary>
-        /// Generates code for user type and writes it to the specified output.
-        /// </summary>
-        /// <param name="userType">User type for which code should be generated.</param>
-        /// <param name="output">Output text writer.</param>
-        void WriteUserType(UserType userType, StringBuilder output);
-
         /// <summary>
         /// Corrects naming inside user type. Replaces unallowed characters and keywords.
         /// </summary>
@@ -30,5 +24,40 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="type">Type to be converted.</param>
         /// <returns>String representation of the type.</returns>
         string ToString(Type type);
+    }
+
+    /// <summary>
+    /// Declares how code writers should behave. Code writers are used to output code for generated user types.
+    /// </summary>
+    internal interface ICodeWriter
+    {
+        /// <summary>
+        /// Gets the code naming interface. <see cref="ICodeNaming"/>
+        /// </summary>
+        ICodeNaming Naming { get; }
+
+        /// <summary>
+        /// Returns <c>true</c> if code writer supports binary writer.
+        /// </summary>
+        bool HasBinaryWriter { get; }
+
+        /// <summary>
+        /// Returns <c>true</c> if code writer supports text writer.
+        /// </summary>
+        bool HasTextWriter { get; }
+
+        /// <summary>
+        /// Generates code for user type and writes it to the specified output. This is used only if <see cref="HasTextWriter"/> is <c>true</c>.
+        /// </summary>
+        /// <param name="userType">User type for which code should be generated.</param>
+        /// <param name="output">Output text writer.</param>
+        void WriteUserType(UserType userType, StringBuilder output);
+
+        /// <summary>
+        /// Generated binary code for user types. This is used only if <see cref="HasBinaryWriter"/> is <c>true</c>.
+        /// </summary>
+        /// <param name="userTypes">User types for which code should be generated.</param>
+        /// <returns>Bytes of the generated assembly.</returns>
+        byte[] GenerateBinary(IEnumerable<UserType> userTypes);
     }
 }
