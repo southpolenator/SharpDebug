@@ -70,6 +70,14 @@ namespace CsDebugScript.CodeGen
         public bool GenerateAssemblyWithRoslyn { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets a value indicating whether generated assembly should be compiled by emitting IL.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if generated assembly should be compiled by emitting IL; otherwise, <c>false</c>.
+        /// </value>
+        public bool GenerateAssemblyWithILWriter { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether generated assembly won't have PDB generated.
         /// </summary>
         /// <value>

@@ -200,191 +200,201 @@ namespace CsDebugScript.CodeGen
             // Generate user types
             GenerateUserTypes();
 
-            // Code generation and saving it to disk
-            logger.Write("Saving code to disk...");
-
-            if (!generationOptions.HasFlag(UserTypeGenerationFlags.SingleFileExport))
+            // Use IL code writer for assembly generation.
+            if (xmlConfig.GenerateAssemblyWithILWriter && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
             {
-                // Generate Code
-                Parallel.ForEach(userTypes,
-                    (symbolEntry) =>
-                    {
-                        Tuple<string, string> result = GenerateCode(codeWriter, symbolEntry, userTypeFactory, outputDirectory, errorLogger, generationOptions, generatedFiles);
-                        string text = result.Item1;
-                        string filename = result.Item2;
-
-                        if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName) && !string.IsNullOrEmpty(text))
-                            lock (syntaxTrees)
-                            {
-                                syntaxTrees.Add(CSharpSyntaxTree.ParseText(text, path: filename, encoding: System.Text.UTF8Encoding.Default));
-                            }
-                    });
+                logger.Write("IL emitting time...");
+                codeWriter.GenerateBinary(userTypes, xmlConfig.GeneratedAssemblyName, !xmlConfig.DisablePdbGeneration);
+                logger.WriteLine(" {0}", stopwatch.Elapsed);
             }
             else
             {
-                string filename = string.Format(@"{0}\everything.exported.cs", outputDirectory);
-                string code = GenerateSingleFile();
+                // Code generation and saving it to disk
+                logger.Write("Saving code to disk...");
 
-                generatedFiles.TryAdd(filename.ToLowerInvariant(), filename);
-                if (!generationOptions.HasFlag(UserTypeGenerationFlags.DontSaveGeneratedCodeFiles))
+                if (!generationOptions.HasFlag(UserTypeGenerationFlags.SingleFileExport))
                 {
-                    File.WriteAllText(filename, code);
+                    // Generate Code
+                    Parallel.ForEach(userTypes,
+                        (symbolEntry) =>
+                        {
+                            Tuple<string, string> result = GenerateCode(codeWriter, symbolEntry, userTypeFactory, outputDirectory, errorLogger, generationOptions, generatedFiles);
+                            string text = result.Item1;
+                            string filename = result.Item2;
+
+                            if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName) && !string.IsNullOrEmpty(text))
+                                lock (syntaxTrees)
+                                {
+                                    syntaxTrees.Add(CSharpSyntaxTree.ParseText(text, path: filename, encoding: System.Text.UTF8Encoding.Default));
+                                }
+                        });
                 }
+                else
+                {
+                    string filename = string.Format(@"{0}\everything.exported.cs", outputDirectory);
+                    string code = GenerateSingleFile();
+
+                    generatedFiles.TryAdd(filename.ToLowerInvariant(), filename);
+                    if (!generationOptions.HasFlag(UserTypeGenerationFlags.DontSaveGeneratedCodeFiles))
+                    {
+                        File.WriteAllText(filename, code);
+                    }
+
+                    if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
+                    {
+                        logger.WriteLine(" {0}", stopwatch.Elapsed);
+                        logger.Write("Parsing generated code with Roslyn...");
+                        syntaxTrees.Add(CSharpSyntaxTree.ParseText(code, path: filename, encoding: UTF8Encoding.Default));
+                    }
+                }
+
+                logger.WriteLine(" {0}", stopwatch.Elapsed);
+
+                // Compiling the code
+                string[] dependentAssemblies = new string[]
+                {
+                    "CsDebugScript.Engine.dll",
+                    "CsDebugScript.CommonUserTypes.dll",
+                };
 
                 if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
                 {
-                    logger.WriteLine(" {0}", stopwatch.Elapsed);
-                    logger.Write("Parsing generated code with Roslyn...");
-                    syntaxTrees.Add(CSharpSyntaxTree.ParseText(code, path: filename, encoding: UTF8Encoding.Default));
-                }
-            }
-
-            logger.WriteLine(" {0}", stopwatch.Elapsed);
-
-            // Compiling the code
-            string[] dependentAssemblies = new string[]
-            {
-                "CsDebugScript.Engine.dll",
-                "CsDebugScript.CommonUserTypes.dll",
-            };
-
-            if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
-            {
-                List<MetadataReference> references = new List<MetadataReference>
-                {
-                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                    MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                };
-
-                foreach (string dependentAssembly in dependentAssemblies)
-                {
-                    if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
+                    List<MetadataReference> references = new List<MetadataReference>
                     {
-                        references.Add(MetadataReference.CreateFromFile(ResolveAssemblyPath(dependentAssembly)));
-                    }
-                }
+                        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                        MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
+                    };
 
-                references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(ResolveAssemblyPath(r.Path))));
-
-                foreach (var includedFile in includedFiles)
-                    syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(includedFile.Path), path: includedFile.Path, encoding: System.Text.UTF8Encoding.Default));
-
-                CSharpCompilation compilation = CSharpCompilation.Create(
-                    Path.GetFileNameWithoutExtension(xmlConfig.GeneratedAssemblyName),
-                    syntaxTrees: syntaxTrees,
-                    references: references,
-                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, platform: Platform.AnyCpu));
-
-                logger.WriteLine("Syntax trees: {0}", syntaxTrees.Count);
-
-                string dllFilename = Path.Combine(outputDirectory, xmlConfig.GeneratedAssemblyName);
-                string pdbFilename = Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(dllFilename) + ".pdb");
-
-                using (var dllStream = new FileStream(dllFilename, FileMode.Create))
-                using (var pdbStream = new FileStream(pdbFilename, FileMode.Create))
-                {
-                    var result = compilation.Emit(dllStream, !xmlConfig.DisablePdbGeneration ? pdbStream : null);
-
-                    if (!result.Success)
+                    foreach (string dependentAssembly in dependentAssemblies)
                     {
-                        IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
-                            diagnostic.IsWarningAsError ||
-                            diagnostic.Severity == DiagnosticSeverity.Error);
+                        if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
+                        {
+                            references.Add(MetadataReference.CreateFromFile(ResolveAssemblyPath(dependentAssembly)));
+                        }
+                    }
 
-                        errorLogger.WriteLine("Compile errors (top 1000):");
-                        foreach (var diagnostic in failures.Take(1000))
-                            errorLogger.WriteLine(diagnostic);
-                    }
-                    else
+                    references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(ResolveAssemblyPath(r.Path))));
+
+                    foreach (var includedFile in includedFiles)
+                        syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(includedFile.Path), path: includedFile.Path, encoding: System.Text.UTF8Encoding.Default));
+
+                    CSharpCompilation compilation = CSharpCompilation.Create(
+                        Path.GetFileNameWithoutExtension(xmlConfig.GeneratedAssemblyName),
+                        syntaxTrees: syntaxTrees,
+                        references: references,
+                        options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, platform: Platform.AnyCpu));
+
+                    logger.WriteLine("Syntax trees: {0}", syntaxTrees.Count);
+
+                    string dllFilename = Path.Combine(outputDirectory, xmlConfig.GeneratedAssemblyName);
+                    string pdbFilename = Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(dllFilename) + ".pdb");
+
+                    using (var dllStream = new FileStream(dllFilename, FileMode.Create))
+                    using (var pdbStream = new FileStream(pdbFilename, FileMode.Create))
                     {
-                        logger.WriteLine("DLL size: {0}", dllStream.Position);
-                        logger.WriteLine("PDB size: {0}", pdbStream.Position);
+                        var result = compilation.Emit(dllStream, !xmlConfig.DisablePdbGeneration ? pdbStream : null);
+
+                        if (!result.Success)
+                        {
+                            IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                                diagnostic.IsWarningAsError ||
+                                diagnostic.Severity == DiagnosticSeverity.Error);
+
+                            errorLogger.WriteLine("Compile errors (top 1000):");
+                            foreach (var diagnostic in failures.Take(1000))
+                                errorLogger.WriteLine(diagnostic);
+                        }
+                        else
+                        {
+                            logger.WriteLine("DLL size: {0}", dllStream.Position);
+                            logger.WriteLine("PDB size: {0}", pdbStream.Position);
+                        }
                     }
+
+                    logger.WriteLine("Compiling: {0}", stopwatch.Elapsed);
                 }
 
-                logger.WriteLine("Compiling: {0}", stopwatch.Elapsed);
-            }
-
-            // Check whether we should generate assembly
-            if (!xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
-            {
+                // Check whether we should generate assembly
+                if (!xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
+                {
 #if NET461
-                var codeProvider = new CSharpCodeProvider();
-                var compilerParameters = new CompilerParameters()
-                {
-                    IncludeDebugInformation = !xmlConfig.DisablePdbGeneration,
-                    OutputAssembly = outputDirectory + xmlConfig.GeneratedAssemblyName,
-                };
-                List<string> assembliesList = new List<string>();
-
-                foreach (var assemblyPath in AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location))
-                {
-                    string assemblyName = Path.GetFileName(assemblyPath);
-
-                    if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(assemblyName)))
+                    var codeProvider = new CSharpCodeProvider();
+                    var compilerParameters = new CompilerParameters()
                     {
-                        assembliesList.Add(assemblyPath);
-                    }
-                }
+                        IncludeDebugInformation = !xmlConfig.DisablePdbGeneration,
+                        OutputAssembly = outputDirectory + xmlConfig.GeneratedAssemblyName,
+                    };
+                    List<string> assembliesList = new List<string>();
 
-                foreach (string dependentAssembly in dependentAssemblies)
-                {
-                    if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
+                    foreach (var assemblyPath in AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location))
                     {
-                        assembliesList.Add(ResolveAssemblyPath(dependentAssembly));
+                        string assemblyName = Path.GetFileName(assemblyPath);
+
+                        if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(assemblyName)))
+                        {
+                            assembliesList.Add(assemblyPath);
+                        }
                     }
-                }
-                assembliesList.AddRange(xmlConfig.ReferencedAssemblies.Select(r => ResolveAssemblyPath(r.Path)).ToArray());
 
-                const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
-
-                if (!assembliesList.Where(a => a.Contains(MicrosoftCSharpDll)).Any())
-                {
-                    assembliesList.Add(MicrosoftCSharpDll);
-                }
-
-                Dictionary<string, string> uniqueAssemblies = new Dictionary<string, string>();
-
-                foreach (string assemblyString in assembliesList)
-                {
-                    string key = Path.GetFileName(assemblyString);
-
-                    if (!uniqueAssemblies.ContainsKey(key))
+                    foreach (string dependentAssembly in dependentAssemblies)
                     {
-                        uniqueAssemblies.Add(key, assemblyString);
+                        if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
+                        {
+                            assembliesList.Add(ResolveAssemblyPath(dependentAssembly));
+                        }
                     }
-                }
+                    assembliesList.AddRange(xmlConfig.ReferencedAssemblies.Select(r => ResolveAssemblyPath(r.Path)).ToArray());
 
-                compilerParameters.ReferencedAssemblies.AddRange(uniqueAssemblies.Values.ToArray());
+                    const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
 
-                var filesToCompile = generatedFiles.Values.Concat(includedFiles.Select(f => f.Path)).ToArray();
-                var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);
+                    if (!assembliesList.Where(a => a.Contains(MicrosoftCSharpDll)).Any())
+                    {
+                        assembliesList.Add(MicrosoftCSharpDll);
+                    }
 
-                if (compileResult.Errors.Count > 0)
-                {
-                    errorLogger.WriteLine("Compile errors (top 1000):");
-                    foreach (CompilerError err in compileResult.Errors.Cast<CompilerError>().Take(1000))
-                        errorLogger.WriteLine(err);
-                }
+                    Dictionary<string, string> uniqueAssemblies = new Dictionary<string, string>();
 
-                logger.WriteLine("Compiling: {0}", stopwatch.Elapsed);
+                    foreach (string assemblyString in assembliesList)
+                    {
+                        string key = Path.GetFileName(assemblyString);
+
+                        if (!uniqueAssemblies.ContainsKey(key))
+                        {
+                            uniqueAssemblies.Add(key, assemblyString);
+                        }
+                    }
+
+                    compilerParameters.ReferencedAssemblies.AddRange(uniqueAssemblies.Values.ToArray());
+
+                    var filesToCompile = generatedFiles.Values.Concat(includedFiles.Select(f => f.Path)).ToArray();
+                    var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);
+
+                    if (compileResult.Errors.Count > 0)
+                    {
+                        errorLogger.WriteLine("Compile errors (top 1000):");
+                        foreach (CompilerError err in compileResult.Errors.Cast<CompilerError>().Take(1000))
+                            errorLogger.WriteLine(err);
+                    }
+
+                    logger.WriteLine("Compiling: {0}", stopwatch.Elapsed);
 #else
-                throw new Exception(".NET standard must use Roslyn to generate assemblies.");
+                    throw new Exception(".NET standard must use Roslyn to generate assemblies.");
 #endif
-            }
+                }
 
-            // Generating props file
-            if (!string.IsNullOrEmpty(xmlConfig.GeneratedPropsFileName))
-            {
-                using (TextWriter output = new StreamWriter(outputDirectory + xmlConfig.GeneratedPropsFileName, false /* append */, System.Text.Encoding.UTF8, 16 * 1024 * 1024))
+                // Generating props file
+                if (!string.IsNullOrEmpty(xmlConfig.GeneratedPropsFileName))
                 {
-                    output.WriteLine(@"<?xml version=""1.0"" encoding=""utf-8""?>");
-                    output.WriteLine(@"<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">");
-                    output.WriteLine(@"  <ItemGroup>");
-                    foreach (var file in generatedFiles.Values)
-                        output.WriteLine(@"    <Compile Include=""{0}"" />", file);
-                    output.WriteLine(@" </ItemGroup>");
-                    output.WriteLine(@"</Project>");
+                    using (TextWriter output = new StreamWriter(outputDirectory + xmlConfig.GeneratedPropsFileName, false /* append */, System.Text.Encoding.UTF8, 16 * 1024 * 1024))
+                    {
+                        output.WriteLine(@"<?xml version=""1.0"" encoding=""utf-8""?>");
+                        output.WriteLine(@"<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">");
+                        output.WriteLine(@"  <ItemGroup>");
+                        foreach (var file in generatedFiles.Values)
+                            output.WriteLine(@"    <Compile Include=""{0}"" />", file);
+                        output.WriteLine(@" </ItemGroup>");
+                        output.WriteLine(@"</Project>");
+                    }
                 }
             }
 
@@ -409,7 +419,13 @@ namespace CsDebugScript.CodeGen
             referencedAssemblies = xmlConfig.ReferencedAssemblies;
             generationOptions = xmlConfig.GetGenerationFlags();
             int nameLimit = xmlConfig.GenerateAssemblyWithRoslyn ? 1000 : 250;
-            codeWriter = new CSharpCodeWriter(generationOptions, nameLimit);
+            if (xmlConfig.GenerateAssemblyWithILWriter && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
+            {
+                nameLimit = 10000;
+                codeWriter = new ManagedILCodeWriter(Path.GetFileNameWithoutExtension(xmlConfig.GeneratedAssemblyName), generationOptions, nameLimit);
+            }
+            else
+                codeWriter = new CSharpCodeWriter(generationOptions, nameLimit);
             userTypeFactory = new UserTypeFactory(xmlConfig.Transformations, codeWriter.Naming);
             userTypes = new List<UserType>();
         }

@@ -38,6 +38,9 @@ namespace CsDebugScript.CodeGen.App
         [Option("generate-physical-mapping-of-user-types", Default = false, HelpText = "Generate physical access to fields in exported user types (instead of symbolic/by name)", Required = false, SetName = "cmdSettings")]
         public bool GeneratePhysicalMappingOfUserTypes { get; set; }
 
+        [Option("generate-assembly-with-il", Default = false, HelpText = "Generate assembly by emitting IL instead of compiling C# code.", Required = false, SetName = "cmdSettings")]
+        public bool GenerateAssemblyWithIL { get; set; }
+
         [Option("generated-assembly-name", Default = "", HelpText = "Name of the assembly that will be generated next to sources in output folder", Required = false, SetName = "cmdSettings")]
         public string GeneratedAssemblyName { get; set; }
 
@@ -86,6 +89,7 @@ namespace CsDebugScript.CodeGen.App
                     CacheUserTypeFields = options.CacheUserTypeFields,
                     LazyCacheUserTypeFields = options.LazyCacheUserTypeFields,
                     GeneratePhysicalMappingOfUserTypes = options.GeneratePhysicalMappingOfUserTypes,
+                    GenerateAssemblyWithILWriter = options.GenerateAssemblyWithIL,
                     Types = new XmlType[options.Types.Count],
                     Modules = new XmlModule[]
                     {

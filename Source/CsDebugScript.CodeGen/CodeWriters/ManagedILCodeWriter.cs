@@ -459,7 +459,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
                     if (startingCount == selectedTypes.Count)
                     {
+#if DEBUG
                         Console.Error.WriteLine("Dead-lock in dependency graph");
+#endif
                         for (int i = 0; i < types.Length; i++)
                             if (!selected[i])
                                 orderedUserTypes.Add(userTypes[i]);
@@ -2247,7 +2249,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <summary>
         /// Helper method that converts from Managed.Reflection.Type into System.Type.
         /// </summary>
-        /// <param name="systemType">Type to be converted.</param>
+        /// <param name="type">Type to be converted.</param>
         /// <returns>Converted type.</returns>
         private static System.Type ConvertType(Type type)
         {
