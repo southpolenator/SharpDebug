@@ -60,7 +60,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 this.value = value;
                 length = UserMember.Create(() => (int)Value.GetField("_Mysize"));
                 reserved = UserMember.Create(() => (int)Value.GetField("_Myres"));
-                text = UserMember.Create(GetText);
+                text = UserMember.Create(() => GetText());
             }
 
             /// <summary>
