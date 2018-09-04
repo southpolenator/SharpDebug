@@ -41,8 +41,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// Generated binary code for user types. This is used only if <see cref="HasBinaryWriter"/> is <c>true</c>.
         /// </summary>
         /// <param name="userTypes">User types for which code should be generated.</param>
-        /// <returns>Bytes of the generated assembly.</returns>
-        public override byte[] GenerateBinary(IEnumerable<UserType> userTypes)
+        /// <param name="dllFileName">Output DLL file path.</param>
+        /// <param name="generatePdb"><c>true</c> if PDB file should be generated.</param>
+        public override void GenerateBinary(IEnumerable<UserType> userTypes, string dllFileName, bool generatePdb)
         {
             // This should never be called.
             throw new NotImplementedException();

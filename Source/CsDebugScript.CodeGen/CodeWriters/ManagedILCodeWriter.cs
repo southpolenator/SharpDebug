@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Text;
 using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.CodeGen.TypeInstances;
@@ -10,29 +9,30 @@ using CsDebugScript.CodeGen.UserTypes;
 using CsDebugScript.CodeGen.UserTypes.Members;
 using CsDebugScript.Engine.Utility;
 using DIA;
+using Managed.Reflection;
+using Managed.Reflection.Emit;
 
 namespace CsDebugScript.CodeGen.CodeWriters
 {
     using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+    using Type = Managed.Reflection.Type;
 
     /// <summary>
     /// Code writer that outputs IL code and compiles it using System.Reflection.Emit.
     /// </summary>
-    internal class ILCodeWriter : DotNetCodeWriter
+    internal class ManagedILCodeWriter : DotNetCodeWriter
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ILCodeWriter"/> class.
+        /// Initializes a new instance of the <see cref="ManagedILCodeWriter"/> class.
         /// </summary>
         /// <param name="assemblyName">The name of the assembly.</param>
         /// <param name="generationFlags">The code generation options</param>
         /// <param name="nameLimit">Maximum number of characters that generated name can have.</param>
-        public ILCodeWriter(string assemblyName, UserTypeGenerationFlags generationFlags, int nameLimit)
+        public ManagedILCodeWriter(string assemblyName, UserTypeGenerationFlags generationFlags, int nameLimit)
             : base(generationFlags, nameLimit)
         {
             AssemblyName = assemblyName;
-#if NET461
             templateConstantInterfacesCache = new DictionaryCache<Type, Type[]>(GetITemplateConstantInterface);
-#endif
         }
 
         /// <summary>
@@ -69,9 +69,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="generatePdb"><c>true</c> if PDB file should be generated.</param>
         public override void GenerateBinary(IEnumerable<UserType> userTypes, string dllFileName, bool generatePdb)
         {
-#if NET461
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName { Name = AssemblyName }, AssemblyBuilderAccess.Save);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(AssemblyName, dllFileName);
+            AssemblyBuilder assemblyBuilder = Defines.Universe.DefineDynamicAssembly(new AssemblyName { Name = AssemblyName }, AssemblyBuilderAccess.Save);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(AssemblyName, dllFileName, generatePdb);
 
             // Select top level types that will be exported
             List<UserType> allUserTypes = new List<UserType>();
@@ -135,12 +134,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
             }
 
             assemblyBuilder.Save(dllFileName);
-#else
-            throw new NotImplementedException();
-#endif
         }
 
-#if NET461
         /// <summary>
         /// Helper class that represents generated type. It caries all info related to generated types,
         /// especially info about types that are still not created.
@@ -256,7 +251,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             /// <param name="constructor">The user type constructor.</param>
             private ConstructorBuilder DefineConstructor(UserTypeConstructor constructor)
             {
-                Type[] parameters = constructor.Arguments.Select(a => a.Item1).ToArray();
+                Type[] parameters = constructor.Arguments.Select(a => ConvertType(a.Item1)).ToArray();
                 ConstructorBuilder constructorBuilder = TypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameters);
 
                 for (int i = 0; i < constructor.Arguments.Length; i++)
@@ -291,7 +286,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             /// </summary>
             /// <param name="codeWriter">The IL code writer.</param>
             /// <param name="moduleBuilder">The module builder.</param>
-            public GeneratedTypes(ILCodeWriter codeWriter, ModuleBuilder moduleBuilder)
+            public GeneratedTypes(ManagedILCodeWriter codeWriter, ModuleBuilder moduleBuilder)
             {
                 CodeWriter = codeWriter;
                 ModuleBuilder = moduleBuilder;
@@ -301,7 +296,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             /// <summary>
             /// Gets the IL code writer.
             /// </summary>
-            public ILCodeWriter CodeWriter { get; private set; }
+            public ManagedILCodeWriter CodeWriter { get; private set; }
 
             /// <summary>
             /// Gets the module builder.
@@ -368,19 +363,19 @@ namespace CsDebugScript.CodeGen.CodeWriters
             /// <param name="typeInstance">The type instance.</param>
             public Type GetType(TypeInstance typeInstance)
             {
-                return typeInstance.GetType(this);
+                return ConvertType(typeInstance.GetType(this));
             }
 
-        #region ITypeConverter
+            #region ITypeConverter
             /// <summary>
             /// Gets type associated with user type.
             /// </summary>
             /// <param name="userType">The user type.</param>
-            public Type GetType(UserType userType)
+            public System.Type GetType(UserType userType)
             {
                 GeneratedType generatedType = GetGeneratedType(userType);
 
-                return generatedType.CreatedType ?? generatedType.Type;
+                return ConvertType(generatedType.CreatedType ?? generatedType.Type);
             }
 
             /// <summary>
@@ -388,13 +383,13 @@ namespace CsDebugScript.CodeGen.CodeWriters
             /// </summary>
             /// <param name="userType">The user type</param>
             /// <param name="parameter">Parameter name</param>
-            public Type GetGenericParameter(UserType userType, string parameter)
+            public System.Type GetGenericParameter(UserType userType, string parameter)
             {
                 GeneratedType generatedType = GetGeneratedType(userType);
 
-                return generatedType.TypeBuilder.GenericTypeParameters.FirstOrDefault(p => p.Name == parameter);
+                return ConvertType(generatedType.TypeBuilder.GenericTypeParameters.FirstOrDefault(p => p.Name == parameter));
             }
-        #endregion
+            #endregion
         }
 
         /// <summary>
@@ -543,26 +538,27 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// </summary>
         /// <param name="type">The enumeration user type.</param>
         /// <param name="moduleBuilder">The module builder</param>
-        private EnumBuilder GenerateType(EnumUserType type, ModuleBuilder moduleBuilder)
+        private TypeBuilder GenerateType(EnumUserType type, ModuleBuilder moduleBuilder)
         {
-            Type basicType = type.BasicType ?? Defines.Int;
-            EnumBuilder enumBuilder = moduleBuilder.DefineEnum(type.FullTypeName, TypeAttributes.Public, basicType);
+            Type basicType = ConvertType(type.BasicType) ?? Defines.Int;
+            TypeBuilder enumerationBuilder = moduleBuilder.DefineType(type.ConstructorName, TypeAttributes.NestedPublic | TypeAttributes.Sealed, Defines.Enum);
 
+            MakeGenericsIfNeeded(enumerationBuilder, type);
             if (type.AreValuesFlags)
-                enumBuilder.SetCustomAttribute(new CustomAttributeBuilder(Defines.FlagsAttribute_Constructor, new object[0]));
+                enumerationBuilder.SetCustomAttribute(new CustomAttributeBuilder(Defines.FlagsAttribute_Constructor, new object[0]));
 
+            enumerationBuilder.DefineField("value__", Defines.Int, FieldAttributes.Private | FieldAttributes.SpecialName);
             foreach (var enumValue in type.Symbol.EnumValues)
             {
                 object value;
 
                 if (enumValue.Item2[0] == '-')
-                    value = Convert.ChangeType(long.Parse(enumValue.Item2), basicType);
+                    value = ConvertConstant(basicType, long.Parse(enumValue.Item2));
                 else
-                    value = Convert.ChangeType(ulong.Parse(enumValue.Item2), basicType);
-                enumBuilder.DefineLiteral(enumValue.Item1, value);
+                    value = ConvertConstant(basicType, ulong.Parse(enumValue.Item2));
+                enumerationBuilder.DefineField(enumValue.Item1, enumerationBuilder, FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal).SetConstant(value);
             }
-
-            return enumBuilder;
+            return enumerationBuilder;
         }
 
         /// <summary>
@@ -572,7 +568,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="typeBuilder">The parent type builder.</param>
         private TypeBuilder GenerateNestedType(EnumUserType type, TypeBuilder typeBuilder)
         {
-            Type basicType = type.BasicType ?? Defines.Int;
+            Type basicType = ConvertType(type.BasicType) ?? Defines.Int;
             TypeBuilder enumerationBuilder = typeBuilder.DefineNestedType(type.ConstructorName, TypeAttributes.NestedPublic | TypeAttributes.Sealed, Defines.Enum);
 
             MakeGenericsIfNeeded(enumerationBuilder, type);
@@ -585,9 +581,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 object value;
 
                 if (enumValue.Item2[0] == '-')
-                    value = Convert.ChangeType(long.Parse(enumValue.Item2), basicType);
+                    value = ConvertConstant(basicType, long.Parse(enumValue.Item2));
                 else
-                    value = Convert.ChangeType(ulong.Parse(enumValue.Item2), basicType);
+                    value = ConvertConstant(basicType, ulong.Parse(enumValue.Item2));
                 enumerationBuilder.DefineField(enumValue.Item1, enumerationBuilder, FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal).SetConstant(value);
             }
             return enumerationBuilder;
@@ -606,9 +602,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="argumentType">The built-in argument type.</param>
         private Type[] GetITemplateConstantInterface(Type argumentType)
         {
-            Type interfaceType = typeof(ITemplateConstant<>);
+            Type interfaceType = Defines.ITemplateConstant_;
 
-            return new[] { interfaceType.MakeGenericType(argumentType), typeof(ITemplateConstant) };
+            return new[] { interfaceType.MakeGenericType(argumentType), Defines.ITemplateConstant };
         }
 
         /// <summary>
@@ -624,10 +620,11 @@ namespace CsDebugScript.CodeGen.CodeWriters
             if (enumConstant != null || integralConstant == null)
                 throw new NotImplementedException();
 
-            Type constantType = integralConstant.Value.GetType();
+            Type constantType = ConvertType(integralConstant.Value.GetType());
             TypeBuilder tb = moduleBuilder.DefineType(type.FullTypeName, TypeAttributes.Public | TypeAttributes.BeforeFieldInit, Defines.Object, templateConstantInterfacesCache[constantType]);
 
-            tb.SetCustomAttribute(new CustomAttributeBuilder(Defines.TemplateConstantAttribute_Constructor, new object[0], Defines.TemplateConstantAttribute_Properties, new[] { integralConstant.Name, integralConstant.Value }));
+            var cab = new CustomAttributeBuilder(Defines.TemplateConstantAttribute_Constructor, new object[0], Defines.TemplateConstantAttribute_Properties, new[] { integralConstant.Name, integralConstant.Value });
+            tb.SetCustomAttribute(cab);
             MethodBuilder metb = tb.DefineMethod("get_Value", MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.NewSlot | MethodAttributes.Virtual, constantType, null);
 
             ILGenerator il = metb.GetILGenerator();
@@ -959,7 +956,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                             fil.Emit(OpCodes.Ldarg_0);
                             fil.Emit(OpCodes.Ldarg_0);
                             fil.Emit(OpCodes.Ldftn, fieldMethod);
-                            fil.Emit(OpCodes.Newobj, Defines.Func_.MakeGenericType(dataFieldType).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) }));
+                            fil.Emit(OpCodes.Newobj, Defines.Func_.MakeGenericType(dataFieldType).GetConstructor(new Type[] { Defines.Object, Defines.IntPtr }));
                             fil.Emit(OpCodes.Call, Defines.UserMember_Create);
                             fil.Emit(OpCodes.Stfld, fieldBuilder);
                         });
@@ -1119,7 +1116,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 }
                 else
                 {
-                    Type[] parameters = constructor.Arguments.Select(a => a.Item1).ToArray();
+                    Type[] parameters = constructor.Arguments.Select(a => ConvertType(a.Item1)).ToArray();
                     ConstructorBuilder constructorBuilder = generatedType.DefinedConstructors[constructor];
                     ILGenerator il = constructorBuilder.GetILGenerator();
                     Func<ConstructorInfo> getBaseClassConstructor = () =>
@@ -1138,7 +1135,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                                     bool same = true;
 
                                     for (int i = 0; same && i < constructor.Arguments.Length; i++)
-                                        same = constructor.Arguments[i].Item1 == cb.GetParameters()[i].ParameterType;
+                                        same = ConvertType(constructor.Arguments[i].Item1) == cb.GetParameters()[i].ParameterType;
                                     if (same)
                                         return cb;
                                 }
@@ -1271,7 +1268,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             // Specialization for basic type
             if (dataField.Type is BasicTypeInstance basicType)
             {
-                if (basicType.BasicType == Defines.String)
+                if (ConvertType(basicType.BasicType) == Defines.String)
                     return true;
 
                 string basicTypeName = ToUserTypeName(basicType.BasicType);
@@ -1457,7 +1454,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         {
                             ParameterInfo parameter = parameters[i];
 
-                            EmitConstant(il, parameter.DefaultValue);
+                            EmitConstant(il, parameter.RawDefaultValue);
                         }
 
                         il.Emit(OpCodes.Call, readFunction);
@@ -1568,13 +1565,14 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     else
                     {
                         // Read function call with default parameter values
+                        readFunction = Defines.UserType_Methods.Where(m => m.Name == readFunctionName && m.GetParameters().Length > 2 && m.GetParameters()[2].HasDefaultValue).Single();
                         ParameterInfo[] parameters = readFunction.GetParameters();
 
                         for (int i = 2; i < parameters.Length; i++)
                         {
                             ParameterInfo parameter = parameters[i];
 
-                            EmitConstant(il, parameter.DefaultValue);
+                            EmitConstant(il, parameter.RawDefaultValue);
                         }
 
                         il.Emit(OpCodes.Call, readFunction);
@@ -1738,11 +1736,11 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 // Do nothing, property code should remain the same
             }
             else if (dataField.Type is EnumTypeInstance enumType)
-                CastVariableToBasicType(il, enumType.EnumUserType.BasicType ?? Defines.Int);
+                CastVariableToBasicType(il, ConvertType(enumType.EnumUserType.BasicType) ?? Defines.Int);
             else if (dataField.Type is TemplateTypeInstance templateType && templateType.UserType is EnumUserType enumType2)
-                CastVariableToBasicType(il, enumType2.BasicType ?? Defines.Int);
+                CastVariableToBasicType(il, ConvertType(enumType2.BasicType) ?? Defines.Int);
             else if (dataField.Type is BasicTypeInstance basicType)
-                CastVariableToBasicType(il, basicType.BasicType);
+                CastVariableToBasicType(il, ConvertType(basicType.BasicType));
             else if ((GenerationFlags.HasFlag(UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting)
                 || dataField.Type is ArrayTypeInstance || dataField.Type is PointerTypeInstance) && !(dataField.Type is TemplateArgumentTypeInstance))
                 il.Emit(OpCodes.Newobj, dataFieldType.GetConstructor(new Type[] { Defines.Variable }));
@@ -1765,33 +1763,33 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="basicType">The built-in basic type.</param>
         private void CastVariableToBasicType(ILGenerator il, Type basicType)
         {
-            if (basicType == typeof(string))
+            if (basicType == Defines.String)
                 il.Emit(OpCodes.Callvirt, Defines.Object_ToString);
             else if (basicType == Defines.NakedPointer)
                 il.Emit(OpCodes.Newobj, Defines.NakedPointer_Constructor_Variable);
-            else if (basicType == typeof(bool))
+            else if (basicType == Defines.Bool)
                 il.Emit(OpCodes.Call, Defines.Variable_Bool_Operator);
-            else if (basicType == typeof(byte))
+            else if (basicType == Defines.Byte)
                 il.Emit(OpCodes.Call, Defines.Variable_Byte_Operator);
-            else if (basicType == typeof(sbyte))
+            else if (basicType == Defines.SByte)
                 il.Emit(OpCodes.Call, Defines.Variable_SByte_Operator);
-            else if (basicType == typeof(char))
+            else if (basicType == Defines.Char)
                 il.Emit(OpCodes.Call, Defines.Variable_Char_Operator);
-            else if (basicType == typeof(short))
+            else if (basicType == Defines.Short)
                 il.Emit(OpCodes.Call, Defines.Variable_Short_Operator);
-            else if (basicType == typeof(ushort))
+            else if (basicType == Defines.UShort)
                 il.Emit(OpCodes.Call, Defines.Variable_UShort_Operator);
-            else if (basicType == typeof(int))
+            else if (basicType == Defines.Int)
                 il.Emit(OpCodes.Call, Defines.Variable_Int_Operator);
-            else if (basicType == typeof(uint))
+            else if (basicType == Defines.UInt)
                 il.Emit(OpCodes.Call, Defines.Variable_UInt_Operator);
-            else if (basicType == typeof(long))
+            else if (basicType == Defines.Long)
                 il.Emit(OpCodes.Call, Defines.Variable_Long_Operator);
-            else if (basicType == typeof(ulong))
+            else if (basicType == Defines.ULong)
                 il.Emit(OpCodes.Call, Defines.Variable_ULong_Operator);
-            else if (basicType == typeof(float))
+            else if (basicType == Defines.Float)
                 il.Emit(OpCodes.Call, Defines.Variable_Float_Operator);
-            else if (basicType == typeof(double))
+            else if (basicType == Defines.Double)
                 il.Emit(OpCodes.Call, Defines.Variable_Double_Operator);
             else
                 throw new NotImplementedException();
@@ -1808,19 +1806,19 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <returns>Constant value or <c>null</c> if action should be used.</returns>
         private object ConstantValue(ConstantUserTypeMember constant, GeneratedTypes generatedTypes, out Action<ILGenerator, FieldBuilder> staticReadOnlyInitialization)
         {
-            Type constantType = (constant.Type as BasicTypeInstance)?.BasicType;
+            Type constantType = ConvertType((constant.Type as BasicTypeInstance)?.BasicType);
 
             if (constantType != null)
                 return ConstantValue(constantType, constant.Value, out staticReadOnlyInitialization);
 
             if (constant.Type is PointerTypeInstance pointerType)
             {
-                ulong cvalue = (ulong)ConvertConstant(typeof(ulong), constant.Value);
+                ulong cvalue = (ulong)ConvertConstant(Defines.ULong, constant.Value);
 
                 staticReadOnlyInitialization = (il, fieldBuilder) =>
                 {
                     EmitConstant(il, cvalue);
-                    il.Emit(OpCodes.Newobj, fieldBuilder.FieldType.GetConstructor(new Type[] { typeof(ulong) }));
+                    il.Emit(OpCodes.Newobj, fieldBuilder.FieldType.GetConstructor(new Type[] { Defines.ULong }));
                     il.Emit(OpCodes.Stsfld, fieldBuilder);
                 };
                 return null;
@@ -1830,9 +1828,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
             if (enumUserType != null)
             {
-                object basicTypeValue = ConstantValue(enumUserType.BasicType ?? Defines.Int, constant.Value, out staticReadOnlyInitialization);
+                object basicTypeValue = ConstantValue(ConvertType(enumUserType.BasicType) ?? Defines.Int, constant.Value, out staticReadOnlyInitialization);
 
-                return Enum.ToObject(generatedTypes.GetType(constant.Type), basicTypeValue);
+                return basicTypeValue;
             }
 
             throw new NotImplementedException();
@@ -1850,12 +1848,12 @@ namespace CsDebugScript.CodeGen.CodeWriters
         private object ConstantValue(Type type, object value, out Action<ILGenerator, FieldBuilder> staticReadOnlyInitialization)
         {
             staticReadOnlyInitialization = null;
-            if (type == value.GetType())
+            if (type == ConvertType(value.GetType()))
                 return value;
 
-            if (type == typeof(NakedPointer))
+            if (type == Defines.NakedPointer)
             {
-                ulong cvalue = (ulong)ConvertConstant(typeof(ulong), value);
+                ulong cvalue = (ulong)ConvertConstant(Defines.ULong, value);
 
                 staticReadOnlyInitialization = (il, fieldBuilder) =>
                 {
@@ -1877,48 +1875,48 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <returns>Converted constant.</returns>
         private static object ConvertConstant(Type type, object value)
         {
-            if (type == value.GetType())
+            if (type == ConvertType(value.GetType()))
                 return value;
 
             string constantValue = value.ToString();
 
             if (constantValue[0] == '-')
             {
-                if (type == typeof(ulong))
+                if (type == Defines.ULong)
                     return (ulong)long.Parse(constantValue);
-                if (type == typeof(uint))
+                if (type == Defines.UInt)
                     return (uint)int.Parse(constantValue);
-                if (type == typeof(ushort))
+                if (type == Defines.UShort)
                     return (ushort)short.Parse(constantValue);
-                if (type == typeof(byte))
+                if (type == Defines.Byte)
                     return (byte)sbyte.Parse(constantValue);
             }
-            if (type == typeof(byte))
+            if (type == Defines.Byte)
                 return byte.Parse(constantValue);
-            if (type == typeof(sbyte))
+            if (type == Defines.SByte)
                 if (sbyte.TryParse(constantValue, out sbyte v))
                     return v;
                 else
                     return (sbyte)(byte)(ulong)value;
-            if (type == typeof(short))
+            if (type == Defines.Short)
                 return short.Parse(constantValue);
-            if (type == typeof(ushort))
+            if (type == Defines.UShort)
                 return ushort.Parse(constantValue);
-            if (type == typeof(int))
+            if (type == Defines.Int)
                 return int.Parse(constantValue);
-            if (type == typeof(uint))
+            if (type == Defines.UInt)
                 return uint.Parse(constantValue);
-            if (type == typeof(long))
+            if (type == Defines.Long)
                 return long.Parse(constantValue);
-            if (type == typeof(ulong))
+            if (type == Defines.ULong)
                 return ulong.Parse(constantValue);
-            if (type == typeof(float))
+            if (type == Defines.Float)
                 return float.Parse(constantValue);
-            if (type == typeof(double))
+            if (type == Defines.Double)
                 return double.Parse(constantValue);
-            if (type == typeof(bool))
+            if (type == Defines.Bool)
                 return (int.Parse(constantValue) != 0);
-            if (type == typeof(char))
+            if (type == Defines.Char)
                 return (char)int.Parse(constantValue);
 
             throw new NotImplementedException();
@@ -1931,17 +1929,17 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="value">The constant value.</param>
         private static void EmitConstant(ILGenerator il, object value)
         {
-            Type type = value.GetType();
+            Type type = ConvertType(value.GetType());
 
-            if (type == typeof(int))
+            if (type == Defines.Int)
                 EmitConstant(il, (int)value);
-            else if (type == typeof(uint))
+            else if (type == Defines.UInt)
                 EmitConstant(il, (uint)value);
-            else if (type == typeof(long))
+            else if (type == Defines.Long)
                 EmitConstant(il, (long)value);
-            else if (type == typeof(ulong))
+            else if (type == Defines.ULong)
                 EmitConstant(il, (ulong)value);
-            else if (type == typeof(string))
+            else if (type == Defines.String)
                 il.Emit(OpCodes.Ldstr, (string)value);
             else
                 throw new NotImplementedException();
@@ -2017,46 +2015,347 @@ namespace CsDebugScript.CodeGen.CodeWriters
         }
 
         /// <summary>
+        /// Helper class that fakes System.Type instead of Manager.Reflection.Type.
+        /// It is exists because rest of the code is using System.Type and this class provides bridge.
+        /// </summary>
+        private class TypeToSystemType : System.Type
+        {
+            public TypeToSystemType(Type originalType)
+            {
+                OriginalType = originalType;
+            }
+
+            public Type OriginalType { get; private set; }
+
+            public override System.Type MakeGenericType(params System.Type[] typeArguments)
+            {
+                Type[] arguments = new Type[typeArguments.Length];
+                for (int i = 0; i < arguments.Length; i++)
+                    arguments[i] = ConvertType(typeArguments[i]);
+                return ConvertType(OriginalType.MakeGenericType(arguments));
+            }
+
+            #region Intentionally not implemented overrides as they are not used
+            public override Guid GUID => throw new NotImplementedException();
+
+            public override System.Reflection.Module Module => throw new NotImplementedException();
+
+            public override System.Reflection.Assembly Assembly => throw new NotImplementedException();
+
+            public override string FullName => throw new NotImplementedException();
+
+            public override string Namespace => throw new NotImplementedException();
+
+            public override string AssemblyQualifiedName => throw new NotImplementedException();
+
+            public override System.Type BaseType => throw new NotImplementedException();
+
+            public override System.Type UnderlyingSystemType => throw new NotImplementedException();
+
+            public override string Name => throw new NotImplementedException();
+
+            public override System.Reflection.ConstructorInfo[] GetConstructors(System.Reflection.BindingFlags bindingAttr)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override object[] GetCustomAttributes(bool inherit)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override object[] GetCustomAttributes(System.Type attributeType, bool inherit)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Type GetElementType()
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Reflection.EventInfo GetEvent(string name, System.Reflection.BindingFlags bindingAttr)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Reflection.EventInfo[] GetEvents(System.Reflection.BindingFlags bindingAttr)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Reflection.FieldInfo GetField(string name, System.Reflection.BindingFlags bindingAttr)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingAttr)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Type GetInterface(string name, bool ignoreCase)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Type[] GetInterfaces()
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Reflection.MemberInfo[] GetMembers(System.Reflection.BindingFlags bindingAttr)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Reflection.MethodInfo[] GetMethods(System.Reflection.BindingFlags bindingAttr)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Type GetNestedType(string name, System.Reflection.BindingFlags bindingAttr)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Type[] GetNestedTypes(System.Reflection.BindingFlags bindingAttr)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override System.Reflection.PropertyInfo[] GetProperties(System.Reflection.BindingFlags bindingAttr)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override object InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, object target, object[] args, System.Reflection.ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool IsDefined(System.Type attributeType, bool inherit)
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override System.Reflection.TypeAttributes GetAttributeFlagsImpl()
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override System.Reflection.ConstructorInfo GetConstructorImpl(System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[] modifiers)
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override System.Reflection.MethodInfo GetMethodImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[] modifiers)
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override System.Reflection.PropertyInfo GetPropertyImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Type returnType, System.Type[] types, System.Reflection.ParameterModifier[] modifiers)
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override bool HasElementTypeImpl()
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override bool IsArrayImpl()
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override bool IsByRefImpl()
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override bool IsCOMObjectImpl()
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override bool IsPointerImpl()
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override bool IsPrimitiveImpl()
+            {
+                throw new NotImplementedException();
+            }
+            #endregion
+        }
+
+        /// <summary>
+        /// Dictionary of converted System.Types into Managed.Reflection.Type.
+        /// </summary>
+        private static Dictionary<System.Type, Type> convertedSystemTypes = new Dictionary<System.Type, Type>();
+
+        /// <summary>
+        /// Dictionary of converted Managed.Reflection.Types into System.Type.
+        /// </summary>
+        private static Dictionary<Type, System.Type> convertedTypes = new Dictionary<Type, System.Type>();
+
+        /// <summary>
+        /// Helper method that converts from System.Type into Managed.Reflection.Type.
+        /// </summary>
+        /// <param name="systemType">Type to be converted.</param>
+        /// <returns>Converted type.</returns>
+        private static Type ConvertType(System.Type systemType)
+        {
+            // Check if it is null
+            if (systemType == null)
+                return null;
+
+            // Check if it is from type convertion
+            if (systemType is TypeToSystemType helperType)
+                return helperType.OriginalType;
+
+            // Try to get already converted type
+            Type type;
+
+            if (convertedSystemTypes.TryGetValue(systemType, out type))
+                return type;
+
+            // Check if type is generics
+            if (systemType.GenericTypeArguments.Length > 0)
+            {
+                Type[] arguments = new Type[systemType.GenericTypeArguments.Length];
+
+                for (int i = 0; i < arguments.Length; i++)
+                    arguments[i] = ConvertType(systemType.GenericTypeArguments[i]);
+                type = ConvertType(systemType.GetGenericTypeDefinition()).MakeGenericType(arguments);
+            }
+            else
+            {
+                // Import system type in the universe
+                type = Defines.Universe.Import(systemType);
+            }
+
+            // Check if conversion was successful
+            if (type == null)
+                throw new NotImplementedException();
+            convertedSystemTypes.Add(systemType, type);
+            return type;
+        }
+
+        /// <summary>
+        /// Helper method that converts from Managed.Reflection.Type into System.Type.
+        /// </summary>
+        /// <param name="systemType">Type to be converted.</param>
+        /// <returns>Converted type.</returns>
+        private static System.Type ConvertType(Type type)
+        {
+            // Check if it is null
+            if (type == null)
+                return null;
+
+            // Try to get already converted type
+            System.Type systemType;
+
+            if (convertedTypes.TryGetValue(type, out systemType))
+                return systemType;
+
+            // Create new convertion class
+            return new TypeToSystemType(type);
+        }
+
+        /// <summary>
         /// Helper class that contains definitions of all used types, methods, constructors and properties for IL generation.
         /// </summary>
         private static class Defines
         {
-        #region int
-            public static readonly Type Int = typeof(int);
-        #endregion
+            public static readonly Universe Universe = new Universe();
 
-        #region object
-            public static readonly Type Object = typeof(object);
+            #region bool
+            public static readonly Type Bool = ConvertType(typeof(bool));
+            #endregion
+
+            #region byte
+            public static readonly Type Byte = ConvertType(typeof(byte));
+            #endregion
+
+            #region sbyte
+            public static readonly Type SByte = ConvertType(typeof(sbyte));
+            #endregion
+
+            #region char
+            public static readonly Type Char = ConvertType(typeof(char));
+            #endregion
+
+            #region short
+            public static readonly Type Short = ConvertType(typeof(short));
+            #endregion
+
+            #region ushort
+            public static readonly Type UShort = ConvertType(typeof(ushort));
+            #endregion
+
+            #region int
+            public static readonly Type Int = ConvertType(typeof(int));
+            #endregion
+
+            #region uint
+            public static readonly Type UInt = ConvertType(typeof(uint));
+            #endregion
+
+            #region long
+            public static readonly Type Long = ConvertType(typeof(long));
+            #endregion
+
+            #region ulong
+            public static readonly Type ULong = ConvertType(typeof(ulong));
+            #endregion
+
+            #region float
+            public static readonly Type Float = ConvertType(typeof(float));
+            #endregion
+
+            #region double
+            public static readonly Type Double = ConvertType(typeof(double));
+            #endregion
+
+            #region IntPtr
+            public static readonly Type IntPtr = ConvertType(typeof(IntPtr));
+            #endregion
+
+            #region object
+            public static readonly Type Object = ConvertType(typeof(object));
             public static readonly MethodInfo Object_ToString = Object.GetMethod("ToString");
-        #endregion
+            #endregion
 
-        #region string
-            public static readonly Type String = typeof(string);
-        #endregion
+            #region string
+            public static readonly Type String = ConvertType(typeof(string));
+            #endregion
 
-        #region Type
-            public static readonly Type Type = typeof(Type);
-            public static readonly Type TypeArray = typeof(Type[]);
+            #region Type
+            public static readonly Type Type = ConvertType(typeof(System.Type));
+            public static readonly Type TypeArray = ConvertType(typeof(System.Type[]));
             public static readonly MethodInfo Type_GetTypeFromHandle = Type.GetMethod("GetTypeFromHandle");
-        #endregion
+            #endregion
 
-        #region Enum
-            public static readonly Type Enum = typeof(Enum);
-        #endregion
+            #region Enum
+            public static readonly Type Enum = ConvertType(typeof(Enum));
+            #endregion
 
-        #region Flags
-            public static readonly Type FlagsAttribute = typeof(System.FlagsAttribute);
+            #region Flags
+            public static readonly Type FlagsAttribute = ConvertType(typeof(System.FlagsAttribute));
             public static readonly ConstructorInfo FlagsAttribute_Constructor = Defines.FlagsAttribute.GetConstructor(new Type[0]);
-        #endregion
+            #endregion
 
-        #region Func<>
-            public static readonly Type Func_ = typeof(Func<>);
-            public static readonly Type Func_Variable = typeof(Func<Variable>);
-            public static readonly ConstructorInfo Func_Variable_Constructor = Func_Variable.GetConstructor(new Type[] { typeof(object), typeof(IntPtr) });
-        #endregion
+            #region Func<>
+            public static readonly Type Func_ = ConvertType(typeof(Func<>));
+            public static readonly Type Func_Variable = ConvertType(typeof(Func<Variable>));
+            public static readonly ConstructorInfo Func_Variable_Constructor = Func_Variable.GetConstructor(new Type[] { Defines.Object, Defines.IntPtr });
+            #endregion
 
-        #region Variable
-            public static readonly Type Variable = typeof(Variable);
+            #region Variable
+            public static readonly Type Variable = ConvertType(typeof(Variable));
             public static readonly MethodInfo[] VariableMethods = Variable.GetMethods();
             public static readonly MethodInfo Variable_GetBaseClass_String = VariableMethods.Where(m => m.Name == "GetBaseClass" && m.ReturnType == Variable && !m.ContainsGenericParameters && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == Defines.String).Single();
             public static readonly MethodInfo Variable_GetBaseClass_Int_This_ = VariableMethods.Where(m => m.Name == "GetBaseClass" && m.ContainsGenericParameters && m.GetGenericArguments().Length == 2 && m.GetParameters().Length == 2 && m.GetParameters()[0].ParameterType == Defines.Int).Single();
@@ -2065,30 +2364,30 @@ namespace CsDebugScript.CodeGen.CodeWriters
             public static readonly MethodInfo Variable_GetField = VariableMethods.Where(m => m.Name == "GetField" && m.ReturnType == Variable && !m.ContainsGenericParameters && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == Defines.String).Single();
             public static readonly MethodInfo Variable_GetCodeType = VariableMethods.Where(m => m.Name == "GetCodeType").Single();
             public static readonly MethodInfo Variable_GetPointerAddress = VariableMethods.Where(m => m.Name == "GetPointerAddress").Single();
-            public static readonly MethodInfo Variable_Bool_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(bool)).Single();
-            public static readonly MethodInfo Variable_Byte_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(byte)).Single();
-            public static readonly MethodInfo Variable_SByte_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(sbyte)).Single();
-            public static readonly MethodInfo Variable_Char_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(char)).Single();
-            public static readonly MethodInfo Variable_Short_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(short)).Single();
-            public static readonly MethodInfo Variable_UShort_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(ushort)).Single();
-            public static readonly MethodInfo Variable_Int_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(int)).Single();
-            public static readonly MethodInfo Variable_UInt_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(uint)).Single();
-            public static readonly MethodInfo Variable_Long_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(long)).Single();
-            public static readonly MethodInfo Variable_ULong_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(ulong)).Single();
-            public static readonly MethodInfo Variable_Float_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(float)).Single();
-            public static readonly MethodInfo Variable_Double_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == typeof(double)).Single();
-        #endregion
+            public static readonly MethodInfo Variable_Bool_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.Bool).Single();
+            public static readonly MethodInfo Variable_Byte_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.Byte).Single();
+            public static readonly MethodInfo Variable_SByte_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.SByte).Single();
+            public static readonly MethodInfo Variable_Char_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.Char).Single();
+            public static readonly MethodInfo Variable_Short_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.Short).Single();
+            public static readonly MethodInfo Variable_UShort_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.UShort).Single();
+            public static readonly MethodInfo Variable_Int_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.Int).Single();
+            public static readonly MethodInfo Variable_UInt_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.UInt).Single();
+            public static readonly MethodInfo Variable_Long_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.Long).Single();
+            public static readonly MethodInfo Variable_ULong_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.ULong).Single();
+            public static readonly MethodInfo Variable_Float_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.Float).Single();
+            public static readonly MethodInfo Variable_Double_Operator = VariableMethods.Where(m => m.Name == "op_Explicit" && m.ReturnType == Defines.Double).Single();
+            #endregion
 
-        #region CodeType
-            public static readonly Type CodeType = typeof(CodeType);
+            #region CodeType
+            public static readonly Type CodeType = ConvertType(typeof(CodeType));
             public static readonly PropertyInfo CodeType_Module = CodeType.GetProperty("Module");
             public static readonly PropertyInfo CodeType_Size = CodeType.GetProperty("Size");
             public static readonly MethodInfo CodeType_GetStaticField = CodeType.GetMethod("GetStaticField");
             public static readonly MethodInfo CodeType_GetClassFieldType = CodeType.GetMethod("GetClassFieldType");
-        #endregion
+            #endregion
 
-        #region UserType
-            public static readonly Type UserType = typeof(CsDebugScript.UserType);
+            #region UserType
+            public static readonly Type UserType = ConvertType(typeof(CsDebugScript.UserType));
             public static readonly MethodInfo[] UserType_Methods = UserType.GetMethods();
             public static readonly MethodInfo UserType_GetBaseClassString = UserType.GetMethod("GetBaseClassString");
             public static readonly MethodInfo UserType_GetClassCodeType = UserType.GetMethod("GetClassCodeType");
@@ -2098,60 +2397,65 @@ namespace CsDebugScript.CodeGen.CodeWriters
             public static readonly FieldInfo UserType_memoryBuffer = UserType.GetField("memoryBuffer", BindingFlags.NonPublic | BindingFlags.Instance);
             public static readonly FieldInfo UserType_memoryBufferAddress = UserType.GetField("memoryBufferAddress", BindingFlags.NonPublic | BindingFlags.Instance);
             public static readonly FieldInfo UserType_memoryBufferOffset = UserType.GetField("memoryBufferOffset", BindingFlags.NonPublic | BindingFlags.Instance);
-        #endregion
+            #endregion
 
-        #region VariableCastExtender
-            public static readonly Type VariableCastExtender = typeof(VariableCastExtender);
+            #region VariableCastExtender
+            public static readonly Type VariableCastExtender = ConvertType(typeof(VariableCastExtender));
             public static readonly MethodInfo VariableCastExtender_DowncastObject_ = VariableCastExtender.GetMethod("DowncastObject");
-        #endregion
+            #endregion
 
-        #region UserMember
-            public static readonly Type UserMember_ = typeof(UserMember<>);
+            #region UserMember
+            public static readonly Type UserMember_ = ConvertType(typeof(UserMember<>));
             public static readonly Type UserMember_Variable = UserMember_.MakeGenericType(Defines.Variable);
             public static readonly PropertyInfo UserMember_Variable_Value = UserMember_Variable.GetProperty("Value");
-            public static readonly Type UserMember = typeof(UserMember);
+            public static readonly Type UserMember = ConvertType(typeof(UserMember));
             public static readonly MethodInfo[] UserMember_Methods = UserMember.GetMethods();
             public static readonly MethodInfo UserMember_Create = UserMember_Methods.Where(m => m.Name == "Create" && !m.ContainsGenericParameters).Single();
-        #endregion
+            #endregion
 
-        #region Process
-            public static readonly Type Process = typeof(Process);
+            #region Process
+            public static readonly Type Process = ConvertType(typeof(Process));
             public static readonly PropertyInfo Process_Current = Process.GetProperty("Current");
             public static readonly MethodInfo Process_GetGlobal = Process.GetMethod("GetGlobal");
-        #endregion
+            #endregion
 
-        #region Module
-            public static readonly Type Module = typeof(Module);
+            #region Module
+            public static readonly Type Module = ConvertType(typeof(Module));
             public static readonly PropertyInfo Module_Process = Module.GetProperty("Process");
-        #endregion
+            #endregion
 
-        #region Debugger
-            public static readonly Type Debugger = typeof(Debugger);
+            #region Debugger
+            public static readonly Type Debugger = ConvertType(typeof(Debugger));
             public static readonly MethodInfo[] Debugger_Methods = Debugger.GetMethods();
-            public static readonly MethodInfo Debugger_ReadMemory = Debugger_Methods.Where(m => m.Name == "ReadMemory" && m.GetParameters().Length == 3 && m.GetParameters()[0].ParameterType == Process && m.GetParameters()[1].ParameterType == typeof(ulong) && m.GetParameters()[2].ParameterType == typeof(uint)).Single();
-        #endregion
+            public static readonly MethodInfo Debugger_ReadMemory = Debugger_Methods.Where(m => m.Name == "ReadMemory" && m.GetParameters().Length == 3 && m.GetParameters()[0].ParameterType == Process && m.GetParameters()[1].ParameterType == Defines.ULong && m.GetParameters()[2].ParameterType == Defines.UInt).Single();
+            #endregion
 
-        #region NakedPointer
-            public static readonly Type NakedPointer = typeof(NakedPointer);
-            public static readonly ConstructorInfo NakedPointer_Constructor_Ulong = NakedPointer.GetConstructor(new Type[] { typeof(ulong) });
+            #region NakedPointer
+            public static readonly Type NakedPointer = ConvertType(typeof(NakedPointer));
+            public static readonly ConstructorInfo NakedPointer_Constructor_Ulong = NakedPointer.GetConstructor(new Type[] { Defines.ULong });
             public static readonly ConstructorInfo NakedPointer_Constructor_Variable = NakedPointer.GetConstructor(new Type[] { Defines.Variable });
-        #endregion
+            #endregion
 
-        #region ICastableObject
-            public static readonly Type ICastableObject = typeof(ICastableObject);
-        #endregion
+            #region ICastableObject
+            public static readonly Type ICastableObject = ConvertType(typeof(ICastableObject));
+            #endregion
 
-        #region TemplateConstantAttribute
-            public static readonly Type TemplateConstantAttribute = typeof(TemplateConstantAttribute);
+            #region TemplateConstantAttribute
+            public static readonly Type TemplateConstantAttribute = ConvertType(typeof(TemplateConstantAttribute));
             public static readonly ConstructorInfo TemplateConstantAttribute_Constructor = TemplateConstantAttribute.GetConstructor(new Type[0]);
             public static readonly PropertyInfo[] TemplateConstantAttribute_Properties = new[]
             {
                 TemplateConstantAttribute.GetProperty("String"), TemplateConstantAttribute.GetProperty("Value")
             };
-        #endregion
+            #endregion
 
-        #region DerivedClassAttribute
-            public static readonly Type DerivedClassAttribute = typeof(DerivedClassAttribute);
+            #region ITemplateConstant
+            public static readonly Type ITemplateConstant_ = ConvertType(typeof(ITemplateConstant<>));
+            public static readonly Type ITemplateConstant = ConvertType(typeof(ITemplateConstant));
+            #endregion
+
+            #region DerivedClassAttribute
+            public static readonly Type DerivedClassAttribute = ConvertType(typeof(DerivedClassAttribute));
             public static readonly ConstructorInfo DerivedClassAttribute_Constructor = DerivedClassAttribute.GetConstructor(new Type[0]);
             public static readonly PropertyInfo[] DerivedClassAttribute_Properties = new[]
             {
@@ -2159,27 +2463,26 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 DerivedClassAttribute.GetProperty("Priority"),
                 DerivedClassAttribute.GetProperty("TypeName"),
             };
-        #endregion
+            #endregion
 
-        #region UserTypeAttribute
-            public static readonly Type UserTypeAttribute = typeof(UserTypeAttribute);
+            #region UserTypeAttribute
+            public static readonly Type UserTypeAttribute = ConvertType(typeof(UserTypeAttribute));
             public static readonly ConstructorInfo UserTypeAttribute_Constructor = UserTypeAttribute.GetConstructor(new Type[0]);
             public static readonly PropertyInfo[] UserTypeAttribute_Properties = new[]
             {
                 UserTypeAttribute.GetProperty("ModuleName"),
                 UserTypeAttribute.GetProperty("TypeName"),
             };
-        #endregion
+            #endregion
 
-        #region BaseClassesArrayAttribute
-            public static readonly Type BaseClassesArrayAttribute = typeof(BaseClassesArrayAttribute);
+            #region BaseClassesArrayAttribute
+            public static readonly Type BaseClassesArrayAttribute = ConvertType(typeof(BaseClassesArrayAttribute));
             public static readonly ConstructorInfo BaseClassesArrayAttribute_Constructor = BaseClassesArrayAttribute.GetConstructor(new Type[0]);
             public static readonly PropertyInfo[] BaseClassesArrayAttribute_Properties = new[]
             {
                 BaseClassesArrayAttribute.GetProperty("FieldName"),
             };
-        #endregion
+            #endregion
         }
-#endif
     }
 }
