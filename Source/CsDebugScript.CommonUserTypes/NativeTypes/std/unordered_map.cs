@@ -11,7 +11,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
-    public class unordered_map<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>
+    public class unordered_map<TKey, TValue> : UserType, IReadOnlyDictionary<TKey, TValue>
     {
         /// <summary>
         /// Common code for Microsoft Visual Studio implementations of std::unordered_map
@@ -423,6 +423,16 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         });
 
         /// <summary>
+        /// Verifies that type user type can work with the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type can work with the specified code type; <c>false</c> otherwise</returns>
+        public static bool VerifyCodeType(CodeType codeType)
+        {
+            return typeSelector.VerifyCodeType(codeType);
+        }
+
+        /// <summary>
         /// The instance used to read variable data
         /// </summary>
         private IReadOnlyDictionary<TKey, TValue> instance;
@@ -432,6 +442,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// </summary>
         /// <param name="variable">The variable.</param>
         public unordered_map(Variable variable)
+            : base(variable)
         {
             instance = typeSelector.SelectType(variable);
             if (instance == null)
@@ -533,11 +544,23 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         {
             return instance.GetEnumerator();
         }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"{{ size={Count} }}";
+        }
     }
 
     /// <summary>
     /// Simplification class for creating <see cref="unordered_map{TKey, TValue}"/> with TKey and TValue being <see cref="Variable"/>.
     /// </summary>
+    [UserType(TypeName = "std::unordered_map<>", CodeTypeVerification = nameof(unordered_map.VerifyCodeType))]
     public class unordered_map : unordered_map<Variable, Variable>
     {
         /// <summary>

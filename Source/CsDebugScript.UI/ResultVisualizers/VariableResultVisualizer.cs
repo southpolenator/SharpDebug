@@ -71,6 +71,8 @@ namespace CsDebugScript.UI.ResultVisualizers
                 }
                 else if (codeType.IsArray)
                 {
+                    if (variable.GetCodeType().IsString)
+                        yield return Create(variable.ToString(), typeof(string), "Text", CompletionDataType.Property, interactiveResultVisualizer);
                     yield return Create(variable.GetArrayLength(), typeof(int), "Length", CompletionDataType.Property, interactiveResultVisualizer);
                     if (variable.GetArrayLength() <= ArrayElementsVisualized)
                     {

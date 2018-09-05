@@ -7,7 +7,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Implementation of std::weak_ptr
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class weak_ptr<T>
+    public class weak_ptr<T> : UserType
     {
         /// <summary>
         /// Interface that describes weak_ptr instance abilities.
@@ -473,6 +473,16 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         });
 
         /// <summary>
+        /// Verifies that type user type can work with the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type can work with the specified code type; <c>false</c> otherwise</returns>
+        public static bool VerifyCodeType(CodeType codeType)
+        {
+            return typeSelector.VerifyCodeType(codeType);
+        }
+
+        /// <summary>
         /// The instance used to read variable data
         /// </summary>
         private Iweak_ptr instance;
@@ -482,6 +492,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// </summary>
         /// <param name="variable">The variable.</param>
         public weak_ptr(Variable variable)
+            : base(variable)
         {
             // Verify code type
             instance = typeSelector.SelectType(variable);
@@ -572,6 +583,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// <summary>
     /// Simplification class for creating <see cref="weak_ptr{T}"/> with T being <see cref="Variable"/>.
     /// </summary>
+    [UserType(TypeName = "std::weak_ptr<>", CodeTypeVerification = nameof(weak_ptr.VerifyCodeType))]
     public class weak_ptr : weak_ptr<Variable>
     {
         /// <summary>

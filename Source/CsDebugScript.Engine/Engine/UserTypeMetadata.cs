@@ -7,16 +7,51 @@ namespace CsDebugScript.Engine
     internal class UserTypeMetadata
     {
         /// <summary>
+        /// Delegate for vefication that the specified code type can be handled by this user type metadata.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type metadata can handle code type.</returns>
+        public delegate bool CodeTypeVerificationDelegate(CodeType codeType);
+
+        /// <summary>
+        /// Delegate for code type verification.
+        /// </summary>
+        private CodeTypeVerificationDelegate verificationDelegate;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="UserTypeMetadata"/> class.
         /// </summary>
         /// <param name="moduleName">Name of the module.</param>
         /// <param name="typeName">Name of the type.</param>
+        /// <param name="codeTypeVerificationFunction">Name of the static function in <paramref name="type"/> that can verify code type.</param>
         /// <param name="type">The type.</param>
-        public UserTypeMetadata(string moduleName, string typeName, Type type)
+        public UserTypeMetadata(string moduleName, string typeName, string codeTypeVerificationFunction, Type type)
         {
             ModuleName = moduleName;
             TypeName = typeName;
             Type = type;
+            try
+            {
+                if (!string.IsNullOrEmpty(codeTypeVerificationFunction))
+                {
+                    // Search for method
+                    Type t = type;
+                    MethodInfo methodInfo = null;
+
+                    while (methodInfo == null && t != null)
+                    {
+                        methodInfo = t.GetMethod(codeTypeVerificationFunction);
+                        t = type.BaseType;
+                    }
+
+                    if (methodInfo != null)
+                        verificationDelegate = (CodeTypeVerificationDelegate)Delegate.CreateDelegate(typeof(CodeTypeVerificationDelegate), methodInfo);
+                }
+            }
+            catch
+            {
+                // Silently fail delegate initialization
+            }
         }
 
         /// <summary>
@@ -56,13 +91,23 @@ namespace CsDebugScript.Engine
                     string moduleName = attribute?.ModuleName;
                     string typeName = attribute?.TypeName ?? defaultTypeName;
 
-                    metadata[i] = new UserTypeMetadata(moduleName, typeName, type);
+                    metadata[i] = new UserTypeMetadata(moduleName, typeName, attribute.CodeTypeVerification, type);
                 }
 
                 return metadata;
             }
 
             return new UserTypeMetadata[0];
+        }
+
+        /// <summary>
+        /// Verifies that type user type from this metadata can work with the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type from this metadata can work with the specified code type; <c>false</c> otherwise</returns>
+        public bool VerifyCodeType(CodeType codeType)
+        {
+            return verificationDelegate == null || verificationDelegate(codeType);
         }
 
         /// <summary>

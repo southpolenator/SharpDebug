@@ -9,7 +9,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Implementation of std::list
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class list<T> : IReadOnlyCollection<T>
+    public class list<T> : UserType, IReadOnlyCollection<T>
     {
         /// <summary>
         /// Common code for Microsoft Visual Studio implementations of std::list
@@ -660,6 +660,16 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         });
 
         /// <summary>
+        /// Verifies that type user type can work with the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type can work with the specified code type; <c>false</c> otherwise</returns>
+        public static bool VerifyCodeType(CodeType codeType)
+        {
+            return typeSelector.VerifyCodeType(codeType);
+        }
+
+        /// <summary>
         /// The instance used to read variable data
         /// </summary>
         private IReadOnlyCollection<T> instance;
@@ -670,6 +680,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <param name="variable">The variable.</param>
         /// <exception cref="WrongCodeTypeException">std::list</exception>
         public list(Variable variable)
+            : base(variable)
         {
             instance = typeSelector.SelectType(variable);
             if (instance == null)
@@ -712,18 +723,21 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
-        /// Verifies if the specified code type is correct for this class.
+        /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
-        /// <param name="codeType">The code type.</param>
-        internal static bool VerifyCodeType(CodeType codeType)
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
         {
-            return typeSelector.VerifyCodeType(codeType);
+            return $"{{ size={Count} }}";
         }
     }
 
     /// <summary>
     /// Simplification class for creating <see cref="list{T}"/> with T being <see cref="Variable"/>.
     /// </summary>
+    [UserType(TypeName = "std::list<>", CodeTypeVerification = nameof(list.VerifyCodeType))]
     public class list : list<Variable>
     {
         /// <summary>

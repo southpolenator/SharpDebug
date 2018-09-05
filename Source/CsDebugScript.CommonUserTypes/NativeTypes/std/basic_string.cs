@@ -6,7 +6,8 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// <summary>
     /// Implementation of std::basic_string
     /// </summary>
-    public class basic_string
+    [UserType(TypeName = "std::basic_string<>", CodeTypeVerification = nameof(basic_string.VerifyCodeType))]
+    public class basic_string : UserType
     {
         private interface IBasicString
         {
@@ -474,6 +475,16 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         });
 
         /// <summary>
+        /// Verifies that type user type can work with the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type can work with the specified code type; <c>false</c> otherwise</returns>
+        public static bool VerifyCodeType(CodeType codeType)
+        {
+            return typeSelector.VerifyCodeType(codeType);
+        }
+
+        /// <summary>
         /// The instance used to read variable data
         /// </summary>
         private IBasicString instance;
@@ -484,6 +495,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <param name="variable">The variable.</param>
         /// <exception cref="WrongCodeTypeException">std::basic_string</exception>
         public basic_string(Variable variable)
+            : base(variable)
         {
             instance = typeSelector.SelectType(variable);
             if (instance == null)

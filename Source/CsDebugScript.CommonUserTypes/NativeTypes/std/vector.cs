@@ -10,7 +10,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Microsoft implementation of std::vector
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class vector<T> : IReadOnlyList<T>
+    public class vector<T> : UserType, IReadOnlyList<T>
     {
         /// <summary>
         /// Interface that describes vector instance abilities.
@@ -74,6 +74,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 get
                 {
+                    if (First == null || Last == null)
+                        return 0;
+
                     ulong firstAddress = First.GetPointerAddress();
                     ulong lastAddress = Last.GetPointerAddress();
 
@@ -97,6 +100,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 get
                 {
+                    if (First == null || End == null)
+                        return 0;
+
                     ulong firstAddress = First.GetPointerAddress();
                     ulong endAddress = End.GetPointerAddress();
 
@@ -584,6 +590,16 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         });
 
         /// <summary>
+        /// Verifies that type user type can work with the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type can work with the specified code type; <c>false</c> otherwise</returns>
+        public static bool VerifyCodeType(CodeType codeType)
+        {
+            return typeSelector.VerifyCodeType(codeType);
+        }
+
+        /// <summary>
         /// The instance used to read variable data
         /// </summary>
         private IVector instance;
@@ -594,6 +610,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <param name="variable">The variable.</param>
         /// <exception cref="WrongCodeTypeException">std::vector</exception>
         public vector(Variable variable)
+            : base(variable)
         {
             instance = typeSelector.SelectType(variable);
             if (instance == null)
@@ -675,11 +692,23 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         {
             return ToCodeArray().ToArray();
         }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"{{ size={Count} }}";
+        }
     }
 
     /// <summary>
     /// Simplification class for creating <see cref="vector{T}"/> with T being <see cref="Variable"/>.
     /// </summary>
+    [UserType(TypeName = "std::vector<>", CodeTypeVerification = nameof(vector.VerifyCodeType))]
     public class vector : vector<Variable>
     {
         /// <summary>

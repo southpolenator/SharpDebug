@@ -37,6 +37,8 @@ namespace CsDebugScript.UI.ResultVisualizers
             get
             {
                 yield return Create(array.Length, null, "Length", CompletionDataType.Property, interactiveResultVisualizer);
+                if (resultType == typeof(char[]))
+                    yield return Create(ToString((char[])array), typeof(string), "Text", CompletionDataType.Property, interactiveResultVisualizer);
                 if (array.Length <= ArrayElementsVisualized)
                 {
                     foreach (IResultVisualizer element in GetElements(0, array.Length))
@@ -94,6 +96,20 @@ namespace CsDebugScript.UI.ResultVisualizers
             {
                 yield return Create(GetValue(() => array.GetValue(i)), resultType.GetElementType(), $"[{i}]", CompletionDataType.Variable, interactiveResultVisualizer);
             }
+        }
+
+        /// <summary>
+        /// Extracts C-style string from char array.
+        /// </summary>
+        /// <param name="array">The array of chars.</param>
+        /// <returns>C-style string</returns>
+        private static string ToString(char[] array)
+        {
+            int length = 0;
+
+            while (length < array.Length && array[length] != 0)
+                length++;
+            return new string(array, 0, length);
         }
     }
 }

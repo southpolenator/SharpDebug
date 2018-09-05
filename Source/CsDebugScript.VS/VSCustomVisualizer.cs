@@ -31,7 +31,7 @@ namespace CsDebugScript.VS
             VSCustomVisualizerEvaluator evaluator = visualizedExpression.GetDataItem<VSCustomVisualizerEvaluator>();
 
             initialChildren = new DkmChildVisualizedExpression[0];
-            enumContext = DkmEvaluationResultEnumContext.Create(evaluator.ResultVisualizer.Children.Count(), visualizedExpression.StackFrame, visualizedExpression.InspectionContext, evaluator);
+            enumContext = DkmEvaluationResultEnumContext.Create(evaluator.ResultVisualizer?.Children.Count() ?? 0, visualizedExpression.StackFrame, visualizedExpression.InspectionContext, evaluator);
         }
 
         /// <summary>

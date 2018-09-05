@@ -840,9 +840,7 @@ namespace CsDebugScript
         {
             // Check if it pointer, but element is not pointer
             if (IsPointer && !ElementType.IsPointer)
-            {
                 return ElementType.UserTypes;
-            }
 
             // Search Context.UserTypeMetadata for this CodeType
             // TODO: Speed this up with search caches
@@ -852,15 +850,15 @@ namespace CsDebugScript
             {
                 // Check module name
                 if (metadata.ModuleName != null && metadata.ModuleName != Module.Name)
-                {
                     continue;
-                }
 
                 // Check type name
                 if (!CodeType.TypeNameMatches(Name, metadata.TypeName))
-                {
                     continue;
-                }
+
+                // Check using verification function
+                if (!metadata.VerifyCodeType(this))
+                    continue;
 
                 // Add type to the list
                 types.Add(metadata.Type);
