@@ -347,9 +347,9 @@ namespace CsDebugScript.Engine
                         gen.Emit(OpCodes.Ldarg_1);
                         gen.Emit(OpCodes.Ldarg_2);
                         gen.Emit(OpCodes.Ldarg_3);
-                        gen.Emit(OpCodes.Ldarg, (short)4);
-                        gen.Emit(OpCodes.Ldarg, (short)5);
-                        gen.Emit(OpCodes.Ldarg, (short)6);
+                        gen.Emit(OpCodes.Ldarg_S, (byte)4);
+                        gen.Emit(OpCodes.Ldarg_S, (byte)5);
+                        gen.Emit(OpCodes.Ldarg_S, (byte)6);
                         gen.Emit(OpCodes.Newobj, constructor);
                         gen.Emit(OpCodes.Ret);
 
@@ -668,8 +668,18 @@ namespace CsDebugScript.Engine
                 // Define constructors
                 foreach (ConstructorInfo baseConstructor in constructors)
                 {
-                    Type[] parameters = baseConstructor.GetParameters().Select(p => p.ParameterType).ToArray();
+                    ParameterInfo[] baseParameters = baseConstructor.GetParameters();
+                    Type[] parameters = baseParameters.Select(p => p.ParameterType).ToArray();
                     ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.RTSpecialName, CallingConventions.Any, parameters);
+
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        ParameterBuilder parameter = constructorBuilder.DefineParameter(i + 1, baseParameters[i].Attributes, baseParameters[i].Name);
+
+                        if (baseParameters[i].HasDefaultValue)
+                            parameter.SetConstant(baseParameters[i].DefaultValue);
+                    }
+
                     ILGenerator ilGenerator = constructorBuilder.GetILGenerator();
 
                     ilGenerator.Emit(OpCodes.Ldarg_0);
@@ -680,34 +690,34 @@ namespace CsDebugScript.Engine
                     if (parameters.Length >= 3)
                         ilGenerator.Emit(OpCodes.Ldarg_3);
                     for (int i = 4; i <= parameters.Length; i++)
-                        ilGenerator.Emit(OpCodes.Ldarg, (short)i);
+                        ilGenerator.Emit(OpCodes.Ldarg_S, (byte)i);
                     ilGenerator.Emit(OpCodes.Call, baseConstructor);
                     ilGenerator.Emit(OpCodes.Ret);
                 }
 
                 // Add field for storing parent
-                string fieldName = "parent";
-                FieldBuilder fieldBuilder = typeBuilder.DefineField(fieldName, parentType, FieldAttributes.Private);
+                string parentFieldName = "parent";
+                FieldBuilder parentField = typeBuilder.DefineField(parentFieldName, parentType, FieldAttributes.Private);
 
                 // Implement property for IMultiClassInheritance
                 Type propertyType = typeof(UserType);
                 string propertyName = nameof(IMultiClassInheritance.DowncastParent);
-                PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.HasDefault, propertyType, null);
-                MethodBuilder getPropertyMethodBuilder = typeBuilder.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual, propertyType, Type.EmptyTypes);
+                PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.None, propertyType, null);
+                MethodBuilder getPropertyMethodBuilder = typeBuilder.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual | MethodAttributes.NewSlot, propertyType, Type.EmptyTypes);
                 ILGenerator il = getPropertyMethodBuilder.GetILGenerator();
 
                 il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldfld, fieldBuilder);
+                il.Emit(OpCodes.Ldfld, parentField);
                 il.Emit(OpCodes.Ret);
                 propertyBuilder.SetGetMethod(getPropertyMethodBuilder);
 
-                MethodBuilder setPropertyMethodBuilder = typeBuilder.DefineMethod("set_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual, null, new Type[] { propertyType });
+                MethodBuilder setPropertyMethodBuilder = typeBuilder.DefineMethod("set_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual | MethodAttributes.NewSlot, null, new Type[] { propertyType });
                 il = setPropertyMethodBuilder.GetILGenerator();
 
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Castclass, parentType);
-                il.Emit(OpCodes.Stfld, fieldBuilder);
+                il.Emit(OpCodes.Stfld, parentField);
                 il.Emit(OpCodes.Ret);
                 propertyBuilder.SetSetMethod(setPropertyMethodBuilder);
 
@@ -723,9 +733,18 @@ namespace CsDebugScript.Engine
                     if (!ContainsMethod(baseVirtualMethods, parentVirtualMethod))
                         methodAttributes |= MethodAttributes.NewSlot;
 
-                    Type[] parameters = parentVirtualMethod.GetParameters().Select(p => p.ParameterType).ToArray();
+                    ParameterInfo[] parentParameters = parentVirtualMethod.GetParameters();
+                    Type[] parameters = parentParameters.Select(p => p.ParameterType).ToArray();
                     MethodBuilder methodBuilder = typeBuilder.DefineMethod(parentVirtualMethod.Name, methodAttributes, parentVirtualMethod.ReturnType, parameters);
                     Type[] parentVirtualMethodGenericArguments = parentVirtualMethod.GetGenericArguments();
+
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        ParameterBuilder parameter = methodBuilder.DefineParameter(i + 1, parentParameters[i].Attributes, parentParameters[i].Name);
+
+                        if (parentParameters[i].HasDefaultValue)
+                            parameter.SetConstant(parentParameters[i].DefaultValue);
+                    }
 
                     if (parentVirtualMethodGenericArguments.Length > 0)
                     {
@@ -740,7 +759,7 @@ namespace CsDebugScript.Engine
                     il = methodBuilder.GetILGenerator();
 
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldfld, fieldBuilder);
+                    il.Emit(OpCodes.Ldfld, parentField);
                     if (parameters.Length >= 1)
                         il.Emit(OpCodes.Ldarg_1);
                     if (parameters.Length >= 2)
@@ -748,7 +767,7 @@ namespace CsDebugScript.Engine
                     if (parameters.Length >= 3)
                         il.Emit(OpCodes.Ldarg_3);
                     for (int i = 4; i <= parameters.Length; i++)
-                        il.Emit(OpCodes.Ldarg, (short)i);
+                        il.Emit(OpCodes.Ldarg_S, (byte)i);
                     il.Emit(OpCodes.Callvirt, parentVirtualMethod);
                     il.Emit(OpCodes.Ret);
                 }

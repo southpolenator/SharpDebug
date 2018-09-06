@@ -1179,7 +1179,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         il.Emit(OpCodes.Ldarg_1);
                         il.Emit(OpCodes.Ldarg_2);
                         il.Emit(OpCodes.Ldarg_3);
-                        il.Emit(OpCodes.Ldarg_S, 4);
+                        il.Emit(OpCodes.Ldarg_S, (byte)4);
                         il.Emit(OpCodes.Call, getBaseClassConstructor());
                         foreach (var initialization in constructorInitializations)
                             initialization(il);
@@ -1192,10 +1192,10 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         il.Emit(OpCodes.Ldarg_1);
                         il.Emit(OpCodes.Ldarg_2);
                         il.Emit(OpCodes.Ldarg_3);
-                        il.Emit(OpCodes.Ldarg_S, 4);
-                        il.Emit(OpCodes.Ldarg_S, 5);
-                        il.Emit(OpCodes.Ldarg_S, 6);
-                        il.Emit(OpCodes.Ldarg_S, 7);
+                        il.Emit(OpCodes.Ldarg_S, (byte)4);
+                        il.Emit(OpCodes.Ldarg_S, (byte)5);
+                        il.Emit(OpCodes.Ldarg_S, (byte)6);
+                        il.Emit(OpCodes.Ldarg_S, (byte)7);
                         il.Emit(OpCodes.Call, getBaseClassConstructor());
                         foreach (var initialization in constructorInitializations)
                             initialization(il);
