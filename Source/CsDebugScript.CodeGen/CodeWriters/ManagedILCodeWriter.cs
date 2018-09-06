@@ -331,7 +331,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     if (type is EnumUserType enumType)
                         generatedType = GeneratedType.Create(CodeWriter.GenerateType(enumType, ModuleBuilder));
                     else if (type is TemplateArgumentConstantUserType constantType)
-                        generatedType = GeneratedType.Create(CodeWriter.GenerateType(constantType, ModuleBuilder));
+                        generatedType = GeneratedType.Create(CodeWriter.GenerateType(constantType, ModuleBuilder, this));
                     else
                         generatedType = GeneratedType.Create(CodeWriter.CreateType(type, ModuleBuilder));
                 }
@@ -460,7 +460,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     if (startingCount == selectedTypes.Count)
                     {
 #if DEBUG
-                        Console.Error.WriteLine("Dead-lock in dependency graph");
+                        Console.WriteLine("Dead-lock in dependency graph");
 #endif
                         for (int i = 0; i < types.Length; i++)
                             if (!selected[i])
@@ -484,6 +484,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     // Add declared in type
                     if (userType.DeclaredInType != null && !(userType.DeclaredInType is NamespaceUserType && userType.DeclaredInType.DeclaredInType == null))
                         generatedType.DependentTypes.Add(GeneratedTypes.GetGeneratedType(userType.DeclaredInType));
+
+                    if (userType is TemplateArgumentConstantUserType && userType.Symbol is EnumConstantSymbol enumConstant)
+                        AddDependentTypes(generatedType, userType.Factory.GetSymbolTypeInstance(userType, enumConstant.EnumSymbol));
 
                     if (!(userType is TemplateArgumentConstantUserType) && !(userType is NamespaceUserType))
                     {
@@ -509,6 +512,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
             /// <param name="typeInstance">The type instance.</param>
             private void AddDependentTypes(GeneratedType generatedType, TypeInstance typeInstance)
             {
+                if (typeInstance is SingleClassInheritanceWithInterfacesTypeInstance singleClassInheritance)
+                    typeInstance = singleClassInheritance.BaseClassUserType;
+
                 if (typeInstance is UserTypeInstance userTypeInstance)
                     generatedType.DependentTypes.Add(GeneratedTypes.GetGeneratedType(userTypeInstance.UserType));
 
@@ -543,13 +549,13 @@ namespace CsDebugScript.CodeGen.CodeWriters
         private TypeBuilder GenerateType(EnumUserType type, ModuleBuilder moduleBuilder)
         {
             Type basicType = ConvertType(type.BasicType) ?? Defines.Int;
-            TypeBuilder enumerationBuilder = moduleBuilder.DefineType(type.ConstructorName, TypeAttributes.NestedPublic | TypeAttributes.Sealed, Defines.Enum);
+            TypeBuilder enumerationBuilder = moduleBuilder.DefineType(type.FullTypeName, TypeAttributes.Public | TypeAttributes.Sealed, Defines.Enum);
 
             MakeGenericsIfNeeded(enumerationBuilder, type);
             if (type.AreValuesFlags)
                 enumerationBuilder.SetCustomAttribute(new CustomAttributeBuilder(Defines.FlagsAttribute_Constructor, new object[0]));
 
-            enumerationBuilder.DefineField("value__", Defines.Int, FieldAttributes.Private | FieldAttributes.SpecialName);
+            enumerationBuilder.DefineField("value__", basicType, FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName);
             foreach (var enumValue in type.Symbol.EnumValues)
             {
                 object value;
@@ -577,7 +583,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             if (type.AreValuesFlags)
                 enumerationBuilder.SetCustomAttribute(new CustomAttributeBuilder(Defines.FlagsAttribute_Constructor, new object[0]));
 
-            enumerationBuilder.DefineField("value__", Defines.Int, FieldAttributes.Private | FieldAttributes.SpecialName);
+            enumerationBuilder.DefineField("value__", basicType, FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName);
             foreach (var enumValue in type.Symbol.EnumValues)
             {
                 object value;
@@ -614,15 +620,20 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// </summary>
         /// <param name="type">The template argument constant.</param>
         /// <param name="moduleBuilder">The module builder</param>
-        private TypeBuilder GenerateType(TemplateArgumentConstantUserType type, ModuleBuilder moduleBuilder)
+        /// <param name="generatedTypes">The generated types list.</param>
+        private TypeBuilder GenerateType(TemplateArgumentConstantUserType type, ModuleBuilder moduleBuilder, GeneratedTypes generatedTypes)
         {
             IntegralConstantSymbol integralConstant = type.Symbol as IntegralConstantSymbol;
             EnumConstantSymbol enumConstant = type.Symbol as EnumConstantSymbol;
 
-            if (enumConstant != null || integralConstant == null)
+            if (integralConstant == null)
                 throw new NotImplementedException();
 
-            Type constantType = ConvertType(integralConstant.Value.GetType());
+            Type constantType;
+            if (enumConstant == null)
+                constantType = ConvertType(integralConstant.Value.GetType());
+            else
+                constantType = ConvertType(type.Factory.GetSymbolTypeInstance(type, enumConstant.EnumSymbol).GetType(generatedTypes));
             TypeBuilder tb = moduleBuilder.DefineType(type.FullTypeName, TypeAttributes.Public | TypeAttributes.BeforeFieldInit, Defines.Object, templateConstantInterfacesCache[constantType]);
 
             var cab = new CustomAttributeBuilder(Defines.TemplateConstantAttribute_Constructor, new object[0], Defines.TemplateConstantAttribute_Properties, new[] { integralConstant.Name, integralConstant.Value });
@@ -633,7 +644,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             EmitConstant(il, integralConstant.Value);
             il.Emit(OpCodes.Ret);
 
-            PropertyBuilder pb = tb.DefineProperty("Value", PropertyAttributes.None, Defines.Int, null);
+            PropertyBuilder pb = tb.DefineProperty("Value", PropertyAttributes.None, constantType, null);
             pb.SetGetMethod(metb);
 
             return tb;
@@ -1000,7 +1011,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     if (type is TemplateUserType)
                     {
                         // ClassCodeType.GetStaticField(dataField.Name);
-                        il.Emit(OpCodes.Ldfld, classCodeTypeField);
+                        il.Emit(OpCodes.Ldsfld, classCodeTypeField);
                         il.Emit(OpCodes.Ldstr, dataField.Name);
                         il.Emit(OpCodes.Callvirt, Defines.CodeType_GetStaticField);
                     }
@@ -1933,7 +1944,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
         {
             Type type = ConvertType(value.GetType());
 
-            if (type == Defines.Int)
+            if (type == Defines.Bool)
+                EmitConstant(il, (bool)value ? 1 : 0);
+            else if (type == Defines.Int)
                 EmitConstant(il, (int)value);
             else if (type == Defines.UInt)
                 EmitConstant(il, (uint)value);
