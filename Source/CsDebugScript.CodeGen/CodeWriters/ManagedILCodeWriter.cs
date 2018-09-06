@@ -67,8 +67,14 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="userTypes">User types for which code should be generated.</param>
         /// <param name="dllFileName">Output DLL file path.</param>
         /// <param name="generatePdb"><c>true</c> if PDB file should be generated.</param>
-        public override void GenerateBinary(IEnumerable<UserType> userTypes, string dllFileName, bool generatePdb)
+        /// <param name="additionalAssemblies">Enumeration of additional assemblies that we should load for type lookup - used with transformations.</param>
+        public override void GenerateBinary(IEnumerable<UserType> userTypes, string dllFileName, bool generatePdb, IEnumerable<string> additionalAssemblies)
         {
+            // Load additional assemblies
+            foreach (string additionalAssembly in additionalAssemblies)
+                Defines.Universe.LoadFile(additionalAssembly);
+
+            // Create new assembly
             AssemblyBuilder assemblyBuilder = Defines.Universe.DefineDynamicAssembly(new AssemblyName { Name = AssemblyName }, AssemblyBuilderAccess.Save);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(AssemblyName, dllFileName, generatePdb);
 
@@ -389,6 +395,96 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
                 return ConvertType(generatedType.TypeBuilder.GenericTypeParameters.FirstOrDefault(p => p.Name == parameter));
             }
+
+            /// <summary>
+            /// Resolves type for the specified type name.
+            /// </summary>
+            /// <param name="typeName">The type name to be resolved.</param>
+            /// <returns>Resolved type.</returns>
+            public System.Type GetTypeByName(string typeName)
+            {
+                typeName = typeName.Replace("@", "");
+                int genericIndex = typeName.IndexOf('<');
+
+                if (genericIndex > 0)
+                {
+                    string baseTypeName = typeName.Substring(0, genericIndex);
+                    List<string> argumentNames = new List<string>();
+                    int offset = genericIndex + 1;
+
+                    while (true)
+                    {
+                        string argument = XmlTypeTransformation.ExtractType(typeName, offset);
+                        argumentNames.Add(argument);
+                        offset += argument.Length + 1;
+                        if (typeName[offset - 1] == '>')
+                            break;
+                    }
+                    string restOfTypeName = offset < typeName.Length ? typeName.Substring(offset) : string.Empty;
+
+                    if (!string.IsNullOrEmpty(restOfTypeName))
+                    {
+                        // Searching for nested types
+                        throw new NotImplementedException();
+                    }
+
+                    baseTypeName += $"`{argumentNames.Count}";
+                    System.Type genericType = FindType(baseTypeName);
+                    System.Type[] arguments = new System.Type[argumentNames.Count];
+                    for (int i = 0; i < arguments.Length; i++)
+                        arguments[i] = GetTypeByName(argumentNames[i]);
+                    return genericType.MakeGenericType(arguments);
+                }
+                else
+                    return FindType(typeName);
+            }
+
+            /// <summary>
+            /// Finds type for the specified type name.
+            /// </summary>
+            /// <param name="typeName">The type name to be found.</param>
+            /// <returns>Found type.</returns>
+            private System.Type FindType(string typeName)
+            {
+                foreach (Assembly assembly in Defines.Universe.GetAssemblies())
+                {
+                    Type type = assembly.GetType(typeName);
+
+                    if (type != null)
+                        return ConvertType(type);
+                }
+
+                switch (typeName)
+                {
+                    case "bool":
+                        return typeof(bool);
+                    case "byte":
+                        return typeof(byte);
+                    case "sbyte":
+                        return typeof(sbyte);
+                    case "char":
+                        return typeof(char);
+                    case "short":
+                        return typeof(short);
+                    case "ushort":
+                        return typeof(ushort);
+                    case "int":
+                        return typeof(int);
+                    case "uint":
+                        return typeof(uint);
+                    case "long":
+                        return typeof(long);
+                    case "ulong":
+                        return typeof(ulong);
+                    case "float":
+                        return typeof(float);
+                    case "double":
+                        return typeof(double);
+                }
+
+                throw new NotImplementedException();
+            }
+
             #endregion
         }
 
@@ -1684,14 +1780,56 @@ namespace CsDebugScript.CodeGen.CodeWriters
             {
                 if (field.Type.Tag != Engine.CodeTypeTag.Pointer)
                 {
-                    // TODO:
-                    //string fieldAddress = $"{MemoryBufferAddressFieldName} + (ulong)({MemoryBufferOffsetFieldName} + {offset})";
-                    //string fieldVariable = $"{ToString(typeof(Variable))}.CreateNoCast({ClassCodeTypeFieldName}.GetClassFieldType(\"{dataField.Name}\"), {fieldAddress}, \"{dataField.Name}\")";
+                    // Variable.CreateNoCast(ClassCodeType.GetClassFieldType(dataField.Name), memoryBufferAddress + (ulong)(memoryBufferOffset + offset), dataField.Name);
 
-                    //if (transformationType.Transformation.Transformation.HasPhysicalConstructor)
-                    //    fieldVariable = $"{fieldVariable}, {MemoryBufferFieldName}, {MemoryBufferOffsetFieldName} + {offset}, {MemoryBufferAddressFieldName}";
-                    //return $"new {dataField.Type.GetTypeString()}({fieldVariable})";
-                    throw new NotImplementedException();
+                    // ClassCodeType.GetClassFieldType(dataField.Name);
+                    il.Emit(OpCodes.Ldsfld, generatedType.DefinedFields[ClassCodeTypeFieldName]);
+                    EmitConstant(il, dataField.Name);
+                    il.Emit(OpCodes.Callvirt, Defines.CodeType_GetClassFieldType);
+
+                    // this.memoryBufferAddress + (ulong)(this.memoryBufferOffset + offset)
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldfld, Defines.UserType_memoryBufferAddress);
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldfld, Defines.UserType_memoryBufferOffset);
+                    EmitConstant(il, offset);
+                    il.Emit(OpCodes.Add);
+                    il.Emit(OpCodes.Conv_I8);
+                    il.Emit(OpCodes.Add);
+
+                    // dataField.Name
+                    EmitConstant(il, dataField.Name);
+
+                    // Variable.UnknownPath
+                    EmitConstant(il, Variable.UnknownPath);
+
+                    // Call Variable.CreateNoCast
+                    il.Emit(OpCodes.Call, Defines.Variable_CreateNoCast);
+
+                    if (transformationType.Transformation.Transformation.HasPhysicalConstructor)
+                    {
+                        // Calling physical constructor of 4 arguments: variable, memoryBuffer, memoryBufferOffset + offset, memoryBufferAddress
+
+                        // this.memoryBuffer
+                        il.Emit(OpCodes.Ldarg_0);
+                        il.Emit(OpCodes.Ldfld, Defines.UserType_memoryBuffer);
+
+                        // this.memoryBufferOffset + offset
+                        il.Emit(OpCodes.Ldarg_0);
+                        il.Emit(OpCodes.Ldfld, Defines.UserType_memoryBufferOffset);
+                        EmitConstant(il, offset);
+                        il.Emit(OpCodes.Add);
+
+                        // this.memoryBufferAddress
+                        il.Emit(OpCodes.Ldarg_0);
+                        il.Emit(OpCodes.Ldfld, Defines.UserType_memoryBufferAddress);
+
+                        // Call constructor
+                        il.Emit(OpCodes.Newobj, dataFieldType.GetConstructor(new[] { Defines.Variable, Defines.MemoryBuffer, Defines.Int, Defines.ULong }));
+                    }
+                    else
+                        il.Emit(OpCodes.Newobj, dataFieldType.GetConstructor(new[] { Defines.Variable }));
+                    return;
                 }
             }
 
@@ -1756,7 +1894,23 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 CastVariableToBasicType(il, ConvertType(basicType.BasicType));
             else if ((GenerationFlags.HasFlag(UserTypeGenerationFlags.ForceUserTypesToNewInsteadOfCasting)
                 || dataField.Type is ArrayTypeInstance || dataField.Type is PointerTypeInstance) && !(dataField.Type is TemplateArgumentTypeInstance))
-                il.Emit(OpCodes.Newobj, dataFieldType.GetConstructor(new Type[] { Defines.Variable }));
+            {
+                // Check if we are still in the process of creating this type
+                UserType type = null;
+
+                if (dataField.Type is UserTypeInstance userTypeInstance)
+                    type = userTypeInstance.UserType;
+
+                if (type != null)
+                {
+                    GeneratedType generatedType = generatedTypes.GetGeneratedType(type);
+                    UserTypeConstructor constructor = type.Constructors.Contains(UserTypeConstructor.Simple) ? UserTypeConstructor.Simple : UserTypeConstructor.SimplePhysical;
+
+                    il.Emit(OpCodes.Newobj, generatedType.DefinedConstructors[constructor]);
+                }
+                else
+                    il.Emit(OpCodes.Newobj, dataFieldType.GetConstructor(new Type[] { Defines.Variable }));
+            }
             else
                 il.Emit(OpCodes.Callvirt, Defines.Variable_CastAs_.MakeGenericMethod(dataFieldType));
 
@@ -2369,11 +2523,16 @@ namespace CsDebugScript.CodeGen.CodeWriters
             public static readonly ConstructorInfo Func_Variable_Constructor = Func_Variable.GetConstructor(new Type[] { Defines.Object, Defines.IntPtr });
             #endregion
 
+            #region MemoryBuffer
+            public static readonly Type MemoryBuffer = ConvertType(typeof(MemoryBuffer));
+            #endregion
+
             #region Variable
             public static readonly Type Variable = ConvertType(typeof(Variable));
             public static readonly MethodInfo[] VariableMethods = Variable.GetMethods();
             public static readonly MethodInfo Variable_GetBaseClass_String = VariableMethods.Where(m => m.Name == "GetBaseClass" && m.ReturnType == Variable && !m.ContainsGenericParameters && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == Defines.String).Single();
             public static readonly MethodInfo Variable_GetBaseClass_Int_This_ = VariableMethods.Where(m => m.Name == "GetBaseClass" && m.ContainsGenericParameters && m.GetGenericArguments().Length == 2 && m.GetParameters().Length == 2 && m.GetParameters()[0].ParameterType == Defines.Int).Single();
+            public static readonly MethodInfo Variable_CreateNoCast = VariableMethods.Where(m => m.Name == "CreateNoCast").Single();
             public static readonly MethodInfo Variable_CastAs_ = VariableMethods.Where(m => m.Name == "CastAs" && m.ContainsGenericParameters && m.GetParameters().Length == 0).Single();
             public static readonly MethodInfo Variable_GetClassField = VariableMethods.Where(m => m.Name == "GetClassField" && m.ReturnType == Variable && !m.ContainsGenericParameters && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == Defines.String).Single();
             public static readonly MethodInfo Variable_GetField = VariableMethods.Where(m => m.Name == "GetField" && m.ReturnType == Variable && !m.ContainsGenericParameters && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == Defines.String).Single();

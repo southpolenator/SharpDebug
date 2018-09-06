@@ -42,8 +42,7 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <param name="typeConverter">The type converter interface.</param>
         public override Type GetType(ITypeConverter typeConverter)
         {
-            // TODO: What should we do here?
-            return typeof(Variable);
+            return typeConverter.GetTypeByName(Transformation.TypeString);
         }
 
         /// <summary>

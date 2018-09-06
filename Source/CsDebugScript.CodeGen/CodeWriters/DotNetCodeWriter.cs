@@ -115,7 +115,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="userTypes">User types for which code should be generated.</param>
         /// <param name="dllFileName">Output DLL file path.</param>
         /// <param name="generatePdb"><c>true</c> if PDB file should be generated.</param>
-        public abstract void GenerateBinary(IEnumerable<UserType> userTypes, string dllFileName, bool generatePdb);
+        /// <param name="additionalAssemblies">Enumeration of additional assemblies that we should load for type lookup - used with transformations.</param>
+        public abstract void GenerateBinary(IEnumerable<UserType> userTypes, string dllFileName, bool generatePdb, IEnumerable<string> additionalAssemblies);
 
         /// <summary>
         /// Converts built-in type to string.

@@ -23,6 +23,7 @@ namespace CsDebugScript.Tests
                 InterpretInteractive($@"
 var options = new ImportUserTypeOptions();
 options.Modules.Add(""{DefaultModuleName}"");
+options.UseILCodeWriter = {DumpInitialization.UseILCodeGen.ToString().ToLower()};
 ImportUserTypes(options, true);
                     ");
                 DumpInitialization.CodeGenExecuted = true;
@@ -753,6 +754,17 @@ void IsTrue(bool value)
     {
         public NativeDumpTest_x64_NoDia(NativeDumpTest_x64_dmp_NoDia_Initialization initialization)
             : base(initialization, executeCodeGen: false)
+        {
+        }
+    }
+
+    [Collection("NativeDumpTest.x64.mdmp ILCodeGen")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class NativeDumpTest_x64_IL : NativeDumpTest
+    {
+        public NativeDumpTest_x64_IL(NativeDumpTest_x64_dmp_IL_Initialization initialization)
+            : base(initialization)
         {
         }
     }

@@ -43,7 +43,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="userTypes">User types for which code should be generated.</param>
         /// <param name="dllFileName">Output DLL file path.</param>
         /// <param name="generatePdb"><c>true</c> if PDB file should be generated.</param>
-        public override void GenerateBinary(IEnumerable<UserType> userTypes, string dllFileName, bool generatePdb)
+        /// <param name="additionalAssemblies">Enumeration of additional assemblies that we should load for type lookup - used with transformations.</param>
+        public override void GenerateBinary(IEnumerable<UserType> userTypes, string dllFileName, bool generatePdb, IEnumerable<string> additionalAssemblies)
         {
             // This should never be called.
             throw new NotImplementedException();

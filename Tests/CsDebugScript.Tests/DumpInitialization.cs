@@ -13,7 +13,7 @@ namespace CsDebugScript.Tests
 
         private static CommonUserTypes.NativeTypes.std.vector vector = InitializeCommonUserTypes();
 
-        public DumpInitialization(string dumpPath, string defaultModuleName, string symbolPath)
+        public DumpInitialization(string dumpPath, string defaultModuleName, string symbolPath, bool useILCodeGen = false)
         {
             if (!Path.IsPathRooted(dumpPath))
             {
@@ -25,6 +25,7 @@ namespace CsDebugScript.Tests
             }
             DefaultModuleName = defaultModuleName;
             SymbolPath = symbolPath;
+            UseILCodeGen = useILCodeGen;
         }
 
         public string DumpPath { get; private set; }
@@ -32,6 +33,8 @@ namespace CsDebugScript.Tests
         public string DefaultModuleName { get; private set; }
 
         public string SymbolPath { get; private set; }
+
+        public bool UseILCodeGen { get; private set; }
 
         public InteractiveExecution InteractiveExecution { get; private set; } = new InteractiveExecution();
 
@@ -63,8 +66,8 @@ namespace CsDebugScript.Tests
 
     public class DbgEngDumpInitialization : DumpInitialization
     {
-        public DbgEngDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = DefaultDumpPath, bool addSymbolServer = true, bool useDia = true, bool useDwarf = false)
-            : base(dumpPath, defaultModuleName, FixSymbolPath(symbolPath, addSymbolServer))
+        public DbgEngDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = DefaultDumpPath, bool addSymbolServer = true, bool useDia = true, bool useDwarf = false, bool useILCodeGen = false)
+            : base(dumpPath, defaultModuleName, FixSymbolPath(symbolPath, addSymbolServer), useILCodeGen)
         {
             IDebugClient client = DebugClient.OpenDumpFile(DumpPath, SymbolPath);
 
@@ -104,6 +107,15 @@ namespace CsDebugScript.Tests
     {
         public NativeDumpTest_x64_dmp_NoDia_Initialization()
             : base("NativeDumpTest.x64.mdmp", "NativeDumpTest_x64", useDia: false)
+        {
+        }
+    }
+
+    [CollectionDefinition("NativeDumpTest.x64.mdmp ILCodeGen")]
+    public class NativeDumpTest_x64_dmp_IL_Initialization : DbgEngDumpInitialization, ICollectionFixture<NativeDumpTest_x64_dmp_IL_Initialization>
+    {
+        public NativeDumpTest_x64_dmp_IL_Initialization()
+            : base("NativeDumpTest.x64.mdmp", "NativeDumpTest_x64", useILCodeGen: true)
         {
         }
     }

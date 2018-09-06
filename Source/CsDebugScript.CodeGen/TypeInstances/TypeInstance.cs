@@ -22,6 +22,13 @@ namespace CsDebugScript.CodeGen.TypeInstances
         /// <param name="userType">The user type</param>
         /// <param name="parameter">Parameter name</param>
         Type GetGenericParameter(UserType userType, string parameter);
+
+        /// <summary>
+        /// Resolves type for the specified type name.
+        /// </summary>
+        /// <param name="typeName">The type name to be resolved.</param>
+        /// <returns>Resolved type.</returns>
+        Type GetTypeByName(string typeName);
     }
 
     /// <summary>
