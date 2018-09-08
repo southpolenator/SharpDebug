@@ -226,6 +226,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// Gets the value stored in this instance. If <see cref="HasValue"/> is <c>false</c> this will be <c>null</c>.
         /// </summary>
+        [ForceDefaultVisualizerAtttribute]
         public Variable Value => instance.Value;
 
         /// <summary>

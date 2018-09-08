@@ -534,6 +534,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// Gets the dereferenced pointer.
         /// </summary>
+        [ForceDefaultVisualizerAtttribute]
         public T Element
         {
             get

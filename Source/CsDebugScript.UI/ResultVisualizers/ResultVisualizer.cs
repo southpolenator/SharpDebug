@@ -126,6 +126,11 @@ namespace CsDebugScript.UI.ResultVisualizers
         public abstract bool IsExpandable { get; }
 
         /// <summary>
+        /// Should we stop using our visualizers and try to force default visualizers? (<see cref="ForceDefaultVisualizerAtttribute"/>)
+        /// </summary>
+        public bool ShouldForceDefaultVisualizer { get; private set; }
+
+        /// <summary>
         /// Gets the string that describes value of the variable / property.
         /// </summary>
         public string ValueString => valueString.Value;
@@ -298,29 +303,27 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// <param name="name">Name of the variable / property.</param>
         /// <param name="dataType">Data type that will be used to generate icon of the variable / property</param>
         /// <param name="interactiveResultVisualizer">Interactive result visualizer that can be used for creating UI elements.</param>
+        /// <param name="shouldForceDefaultVisualizer">Should we stop using our visualizers and try to force default visualizers? (<see cref="ForceDefaultVisualizerAtttribute"/>)</param>
         /// <returns>Instance of <see cref="IResultVisualizer"/> interface that can be used to visualize resulting object.</returns>
-        public static IResultVisualizer Create(object result, Type resultType, string name, CompletionDataType dataType, InteractiveResultVisualizer interactiveResultVisualizer)
+        public static IResultVisualizer Create(object result, Type resultType, string name, CompletionDataType dataType, InteractiveResultVisualizer interactiveResultVisualizer, bool shouldForceDefaultVisualizer = false)
         {
+            ResultVisualizer resultVisualizer = null;
+
             if (result != null)
             {
                 if (result.GetType().IsArray)
-                {
-                    return new ArrayResultVisualizer((Array)result, resultType, name, dataType, interactiveResultVisualizer);
-                }
+                    resultVisualizer = new ArrayResultVisualizer((Array)result, resultType, name, dataType, interactiveResultVisualizer);
                 else if (typeof(IDictionary).IsAssignableFrom(result.GetType()))
-                {
-                    return new DictionaryResultVisualizer((IDictionary)result, resultType, name, dataType, interactiveResultVisualizer);
-                }
+                    resultVisualizer = new DictionaryResultVisualizer((IDictionary)result, resultType, name, dataType, interactiveResultVisualizer);
                 else if (result.GetType() == typeof(Variable))
-                {
-                    return new VariableResultVisualizer(((Variable)result).DowncastInterface(), resultType, name, dataType, interactiveResultVisualizer);
-                }
+                    resultVisualizer = new VariableResultVisualizer(((Variable)result).DowncastInterface(), resultType, name, dataType, interactiveResultVisualizer);
                 else if (result.GetType() == typeof(VariableCollection))
-                {
-                    return new VariableCollectionResultVisualizer((VariableCollection)result, resultType, name, dataType, interactiveResultVisualizer);
-                }
+                    resultVisualizer = new VariableCollectionResultVisualizer((VariableCollection)result, resultType, name, dataType, interactiveResultVisualizer);
             }
-            return new ObjectResultVisualizer(result, resultType, name, dataType, interactiveResultVisualizer);
+            if (resultVisualizer == null)
+                resultVisualizer = new ObjectResultVisualizer(result, resultType, name, dataType, interactiveResultVisualizer);
+            resultVisualizer.ShouldForceDefaultVisualizer = shouldForceDefaultVisualizer;
+            return resultVisualizer;
         }
 
         /// <summary>

@@ -38,6 +38,11 @@ namespace CsDebugScript.UI.ResultVisualizers
         public bool IsExpandable => true;
 
         /// <summary>
+        /// Should we stop using our visualizers and try to force default visualizers? (<see cref="ForceDefaultVisualizerAtttribute"/>)
+        /// </summary>
+        public bool ShouldForceDefaultVisualizer => false;
+
+        /// <summary>
         /// Gets the child elements in groups (Tuple of group name and elements).
         /// </summary>
         public IEnumerable<Tuple<string, IEnumerable<IResultVisualizer>>> ChildrenGroups => throw new NotImplementedException();

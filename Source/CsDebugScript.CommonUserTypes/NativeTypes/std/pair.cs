@@ -41,6 +41,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// Gets the first field.
         /// </summary>
+        [ForceDefaultVisualizerAtttribute]
         public TFirst First
         {
             get
@@ -52,6 +53,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// Gets the second field.
         /// </summary>
+        [ForceDefaultVisualizerAtttribute]
         public TSecond Second
         {
             get
