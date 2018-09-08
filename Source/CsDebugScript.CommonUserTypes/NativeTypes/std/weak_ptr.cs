@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.Exceptions;
 using System;
+using System.Text;
 
 namespace CsDebugScript.CommonUserTypes.NativeTypes.std
 {
@@ -577,6 +578,47 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 return instance.WeakCount;
             }
+        }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            if (IsEmpty)
+                return "empty";
+
+            StringBuilder sb = new StringBuilder();
+
+            if (SharedCount == 0)
+                sb.Append("expired ");
+            else
+            {
+                sb.Append("weak_ptr ");
+                sb.Append(Element?.ToString());
+            }
+            sb.Append(" [");
+            if (SharedCount > 0)
+            {
+                sb.Append(SharedCount);
+                if (SharedCount == 1)
+                    sb.Append(" strong ref, ");
+                else
+                    sb.Append(" strong refs, ");
+            }
+            int weakCount = WeakCount - (SharedCount > 0 ? 1 : 0);
+            sb.Append(weakCount);
+            if (weakCount == 1)
+                sb.Append(" weak ref");
+            else
+                sb.Append(" weak refs");
+            sb.Append("]");
+            if (IsCreatedWithMakeShared)
+                sb.Append(" [make_shared]");
+            return sb.ToString();
         }
     }
 
