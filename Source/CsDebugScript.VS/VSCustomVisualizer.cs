@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.UI.CodeWindow;
+using CsDebugScript.UI.ResultVisualizers;
 using Microsoft.VisualStudio.Debugger;
 using Microsoft.VisualStudio.Debugger.ComponentInterfaces;
 using Microsoft.VisualStudio.Debugger.Evaluation;
@@ -60,10 +61,12 @@ namespace CsDebugScript.VS
 
             // Execute our regular visualizer
             VSCustomVisualizerEvaluator evaluator = visualizedExpression.GetDataItem<VSCustomVisualizerEvaluator>();
-            int i = 0;
+            IResultVisualizer[] itemsAsResults = evaluator.ResultVisualizer.Children.Skip(startIndex).Take(count).ToArray();
 
-            items = evaluator.ResultVisualizer.Children.Skip(startIndex).Take(count).Select(item =>
+            items = new DkmChildVisualizedExpression[itemsAsResults.Length];
+            for (int i = 0; i < items.Length; i++)
             {
+                IResultVisualizer item = itemsAsResults[i];
                 DkmEvaluationResultCategory category;
 
                 switch (item.DataType)
@@ -98,21 +101,27 @@ namespace CsDebugScript.VS
 
                 DkmExpressionValueHome valueHome = visualizedExpression.ValueHome;
                 ulong address = 0;
-                string fullName = null;
+                string fullName = string.Empty;
                 string typeName = null;
 
-                if (item.Value is Variable variable)
+                try
                 {
-                    address = variable.GetPointerAddress();
-                    typeName = variable.GetCodeType().Name;
-                    fullName = $"*(({typeName}*)0x{address:X})";
-                    valueHome = DkmPointerValueHome.Create(address);
+                    if (item.Value is Variable variable)
+                    {
+                        address = variable.GetPointerAddress();
+                        typeName = variable.GetCodeType().Name;
+                        fullName = $"*(({typeName}*)0x{address:X})";
+                        valueHome = DkmPointerValueHome.Create(address);
+                    }
+                }
+                catch
+                {
                 }
 
                 DkmEvaluationResult result;
                 DkmDataItem dataItem = null;
 
-                if (item.ShouldForceDefaultVisualizer && fullName != null)
+                if (item.ShouldForceDefaultVisualizer && !string.IsNullOrEmpty(fullName))
                 {
                     using (DkmLanguageExpression languageExpression = DkmLanguageExpression.Create(visualizedExpression.InspectionContext.Language, DkmEvaluationFlags.TreatAsExpression, fullName, null))
                     {
@@ -163,7 +172,7 @@ namespace CsDebugScript.VS
                         null);
                     dataItem = new VSCustomVisualizerEvaluator(result, item);
                 }
-                return DkmChildVisualizedExpression.Create(
+                items[i] = DkmChildVisualizedExpression.Create(
                     visualizedExpression.InspectionContext,
                     visualizedExpression.VisualizerId,
                     visualizedExpression.SourceId,
@@ -171,9 +180,9 @@ namespace CsDebugScript.VS
                     valueHome,
                     result,
                     visualizedExpression,
-                    (uint)(startIndex + (i++)),
+                    (uint)(startIndex + i),
                     dataItem);
-            }).ToArray();
+            }
         }
 
         public string GetUnderlyingString(DkmVisualizedExpression visualizedExpression)
