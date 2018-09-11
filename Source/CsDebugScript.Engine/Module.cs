@@ -143,10 +143,7 @@ namespace CsDebugScript
                 Variable variable = Process.CastVariableToUserType(GlobalVariables[name]);
 
                 if (UserTypeCastedGlobalVariables.Count == 0)
-                {
-                    GlobalCache.VariablesUserTypeCastedFieldsByName.Add(UserTypeCastedGlobalVariables);
-                }
-
+                    GlobalCache.Caches.Add(UserTypeCastedGlobalVariables);
                 return variable;
             });
         }

@@ -2,6 +2,7 @@
 using CsDebugScript.Drawing.Interfaces;
 using CsDebugScript.Engine.Utility;
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
 
@@ -103,10 +104,10 @@ namespace CsDebugScript.Engine
         {
             CacheInvalidator.InvalidateCaches(ClrProvider);
             GlobalCache.Processes.Clear();
-            GlobalCache.UserTypeCastedVariableCollections.Clear();
-            GlobalCache.UserTypeCastedVariables.Clear();
-            GlobalCache.VariablesUserTypeCastedFields.Clear();
-            GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
+            var caches = GlobalCache.Caches;
+            GlobalCache.Caches = new ConcurrentBag<ICache>();
+            foreach (ICache cache in caches)
+                cache.InvalidateCache();
         }
 
         /// <summary>
