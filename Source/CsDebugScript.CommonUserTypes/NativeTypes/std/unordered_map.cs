@@ -763,6 +763,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Simplification class for creating <see cref="unordered_map{TKey, TValue}"/> with TKey and TValue being <see cref="Variable"/>.
     /// </summary>
     [UserType(TypeName = "std::unordered_map<>", CodeTypeVerification = nameof(unordered_map.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::unordered_map<>", CodeTypeVerification = nameof(unordered_map.VerifyCodeType))]
     public class unordered_map : unordered_map<Variable, Variable>
     {
         /// <summary>

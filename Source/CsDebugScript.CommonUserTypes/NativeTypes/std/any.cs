@@ -8,6 +8,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Implementation of std::any
     /// </summary>
     [UserType(TypeName = "std::any")]
+    [UserType(TypeName = "std::__1::any")]
     public class any : UserType
     {
         private interface IAny

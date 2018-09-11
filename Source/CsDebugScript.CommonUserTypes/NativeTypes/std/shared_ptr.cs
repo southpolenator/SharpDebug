@@ -606,6 +606,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Simplification class for creating <see cref="shared_ptr{T}"/> with T being <see cref="Variable"/>.
     /// </summary>
     [UserType(TypeName = "std::shared_ptr<>", CodeTypeVerification = nameof(shared_ptr.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::shared_ptr<>", CodeTypeVerification = nameof(shared_ptr.VerifyCodeType))]
     public class shared_ptr : shared_ptr<Variable>
     {
         /// <summary>

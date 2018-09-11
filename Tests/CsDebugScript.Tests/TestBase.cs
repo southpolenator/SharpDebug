@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsDebugScript.Engine;
+using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -84,6 +85,28 @@ namespace CsDebugScript.Tests
             get
             {
                 return Module.All.Single(module => module.Name == DefaultModuleName);
+            }
+        }
+
+        protected void Execute_AutoCast(Action action)
+        {
+            var originalUserTypeMetadata = Context.UserTypeMetadata;
+
+            try
+            {
+                Context.ClearCache();
+                Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
+                {
+                    typeof(CsDebugScript.CommonUserTypes.NativeTypes.std.@string).Assembly,
+                    typeof(DumpTestBase).Assembly,
+                });
+
+                action();
+            }
+            finally
+            {
+                Context.UserTypeMetadata = originalUserTypeMetadata;
+                Context.ClearCache();
             }
         }
     }

@@ -1290,6 +1290,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Simplification class for creating <see cref="map{TKey, TValue}"/> with TKey and TValue being <see cref="Variable"/>.
     /// </summary>
     [UserType(TypeName = "std::map<>", CodeTypeVerification = nameof(map.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::map<>", CodeTypeVerification = nameof(map.VerifyCodeType))]
     public class map : map<Variable, Variable>
     {
         /// <summary>

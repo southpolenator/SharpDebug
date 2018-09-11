@@ -938,6 +938,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Simplification class for creating <see cref="vector{T}"/> with T being <see cref="Variable"/>.
     /// </summary>
     [UserType(TypeName = "std::vector<>", CodeTypeVerification = nameof(vector.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::vector<>", CodeTypeVerification = nameof(vector.VerifyCodeType))]
     public class vector : vector<Variable>
     {
         /// <summary>

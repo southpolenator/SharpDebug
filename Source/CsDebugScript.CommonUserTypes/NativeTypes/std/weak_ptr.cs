@@ -627,6 +627,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Simplification class for creating <see cref="weak_ptr{T}"/> with T being <see cref="Variable"/>.
     /// </summary>
     [UserType(TypeName = "std::weak_ptr<>", CodeTypeVerification = nameof(weak_ptr.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::weak_ptr<>", CodeTypeVerification = nameof(weak_ptr.VerifyCodeType))]
     public class weak_ptr : weak_ptr<Variable>
     {
         /// <summary>

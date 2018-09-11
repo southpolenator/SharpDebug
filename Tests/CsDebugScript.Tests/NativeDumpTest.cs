@@ -623,16 +623,8 @@ for (int i = 0; i < intTemplate.values.Length; i++)
         [Fact]
         public void UserTypeAutoCast()
         {
-            var originalUserTypeMetadata = Context.UserTypeMetadata;
-
-            try
+            Execute_AutoCast(() =>
             {
-                Context.ClearCache();
-                Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
-                {
-                    typeof(DoubleTest).Assembly,
-                });
-
                 Variable doubleTestVariable = DefaultModule.GetVariable("doubleTest");
 
                 Assert.IsType<DoubleTest>(doubleTestVariable);
@@ -642,12 +634,7 @@ for (int i = 0; i < intTemplate.values.Length; i++)
                 Assert.Equal(3.5, doubleTest.d);
                 Assert.Equal(2.5, doubleTest.f);
                 Assert.Equal(5, doubleTest.i);
-            }
-            finally
-            {
-                Context.UserTypeMetadata = originalUserTypeMetadata;
-                Context.ClearCache();
-            }
+            });
         }
 
         private void VerifyBuiltinType(NativeCodeType codeType, params BuiltinType[] expected)

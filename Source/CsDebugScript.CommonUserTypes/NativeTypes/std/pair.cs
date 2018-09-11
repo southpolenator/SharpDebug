@@ -96,6 +96,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Simplification class for creating <see cref="pair{TFirst, TSecond}"/> with TFirst and TSecond being <see cref="Variable"/>.
     /// </summary>
     [UserType(TypeName = "std::pair<>", CodeTypeVerification = nameof(pair.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::pair<>", CodeTypeVerification = nameof(pair.VerifyCodeType))]
     public class pair : pair<Variable, Variable>
     {
         /// <summary>

@@ -901,6 +901,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Simplification class for creating <see cref="list{T}"/> with T being <see cref="Variable"/>.
     /// </summary>
     [UserType(TypeName = "std::list<>", CodeTypeVerification = nameof(list.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::list<>", CodeTypeVerification = nameof(list.VerifyCodeType))]
     public class list : list<Variable>
     {
         /// <summary>

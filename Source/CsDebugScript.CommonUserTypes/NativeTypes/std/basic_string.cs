@@ -7,6 +7,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Implementation of std::basic_string
     /// </summary>
     [UserType(TypeName = "std::basic_string<>", CodeTypeVerification = nameof(basic_string.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::basic_string<>", CodeTypeVerification = nameof(basic_string.VerifyCodeType))]
     public class basic_string : UserType
     {
         private interface IBasicString

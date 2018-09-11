@@ -86,6 +86,54 @@ namespace CsDebugScript.Tests
             std.any a_empty = new std.any(locals["a_empty"]);
             Assert.False(a_empty.HasValue);
         }
+
+        [Fact]
+        public void StdAny_AutoCast()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestAny");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+
+                // std::string
+                std.any a_string = new std.any(locals["a_string"]);
+                Assert.True(a_string.HasValue);
+                Assert.IsType<std.basic_string>(a_string.Value);
+
+                // std::vector<int>
+                std.any a_vector = new std.any(locals["a_vector"]);
+                Assert.True(a_vector.HasValue);
+                Assert.IsType<std.vector>(a_vector.Value);
+
+                // std::list<int>
+                std.any a_list = new std.any(locals["a_list"]);
+                Assert.True(a_list.HasValue);
+                Assert.IsType<std.list>(a_list.Value);
+
+                // std::map<int, int>
+                std.any a_map = new std.any(locals["a_map"]);
+                Assert.True(a_map.HasValue);
+                Assert.IsType<std.map>(a_map.Value);
+
+                // std::pair<std::string, double>
+                std.any a_pair = new std.any(locals["a_pair"]);
+                Assert.True(a_pair.HasValue);
+                Assert.IsType<std.pair>(a_pair.Value);
+                std.pair p = (std.pair)a_pair.Value;
+                Assert.IsType<std.basic_string>(p.First);
+
+                // std::shared_ptr<std::any>
+                std.any a_shared = new std.any(locals["a_shared"]);
+                Assert.True(a_shared.HasValue);
+                Assert.IsType<std.shared_ptr>(a_shared.Value);
+                std.shared_ptr sp = (std.shared_ptr)a_shared.Value;
+                Assert.IsType<std.any>(sp.Element);
+                std.any inner = (std.any)sp.Element;
+                Assert.IsType<std.pair>(inner.Value);
+                p = (std.pair)a_pair.Value;
+                Assert.IsType<std.basic_string>(p.First);
+            });
+        }
     }
 
     #region Test configurations
