@@ -65,6 +65,8 @@ namespace CsDebugScript.Tests
 
     public class DumpTestBase : TestBase
     {
+        private static object autoCastLock = new object();
+
         public DumpTestBase(DumpInitialization dumpInitialization)
         {
             DumpInitialization = dumpInitialization;
@@ -90,23 +92,26 @@ namespace CsDebugScript.Tests
 
         protected void Execute_AutoCast(Action action)
         {
-            var originalUserTypeMetadata = Context.UserTypeMetadata;
-
-            try
+            lock (autoCastLock)
             {
-                Context.ClearCache();
-                Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
+                var originalUserTypeMetadata = Context.UserTypeMetadata;
+
+                try
                 {
+                    Context.ClearCache();
+                    Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
+                    {
                     typeof(CsDebugScript.CommonUserTypes.NativeTypes.std.@string).Assembly,
                     typeof(DumpTestBase).Assembly,
                 });
 
-                action();
-            }
-            finally
-            {
-                Context.UserTypeMetadata = originalUserTypeMetadata;
-                Context.ClearCache();
+                    action();
+                }
+                finally
+                {
+                    Context.UserTypeMetadata = originalUserTypeMetadata;
+                    Context.ClearCache();
+                }
             }
         }
     }
