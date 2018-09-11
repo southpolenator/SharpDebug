@@ -1415,6 +1415,8 @@ namespace CsDebugScript.DwarfSymbolProvider
         public object[] GetTemplateArguments(uint typeId)
         {
             DwarfSymbol symbol = GetType(typeId);
+            if (symbol.Tag == DwarfTag.PointerType)
+                symbol = GetType(symbol);
             DwarfSymbol[] parameters = symbol.Children.Where(c => c.Tag == DwarfTag.TemplateTypeParameter || c.Tag == DwarfTag.TemplateValueParameter).ToArray();
             object[] result = new object[parameters.Length];
 
@@ -1444,6 +1446,8 @@ namespace CsDebugScript.DwarfSymbolProvider
                             }
                             switch (type.Tag)
                             {
+                                case DwarfTag.EnumerationType:
+                                    // Since we don't know if there is C# type for enumeration, we want to return integer value for constant...
                                 case DwarfTag.BaseType:
                                     switch (GetTypeBasicType(type))
                                     {
@@ -1479,11 +1483,6 @@ namespace CsDebugScript.DwarfSymbolProvider
                                         default:
                                             result[i] = value;
                                             break;
-                                    }
-                                    break;
-                                case DwarfTag.EnumerationType:
-                                    {
-                                        throw new NotImplementedException();
                                     }
                                     break;
                                 default:
