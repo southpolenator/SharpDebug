@@ -787,6 +787,360 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
+        /// Clang libc++ implementations of std::map
+        /// </summary>
+        /// <seealso cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}" />
+        public class ClangLibCpp : IReadOnlyDictionary<TKey, TValue>
+        {
+            /// <summary>
+            /// std::map item
+            /// </summary>
+            protected class item
+            {
+                /// <summary>
+                /// The left item
+                /// </summary>
+                private UserMember<item> left;
+
+                /// <summary>
+                /// The right item
+                /// </summary>
+                private UserMember<item> right;
+
+                /// <summary>
+                /// The parent item
+                /// </summary>
+                private UserMember<item> parent;
+
+                /// <summary>
+                /// The key/value pair
+                /// </summary>
+                private UserMember<pair<TKey, TValue>> pair;
+
+                /// <summary>
+                /// Initializes a new instance of the <see cref="item" /> class.
+                /// </summary>
+                /// <param name="variable">The variable.</param>
+                /// <param name="treeNodeCodeType">The tree node code type (it includes key value pair field).</param>
+                public item(Variable variable, CodeType treeNodeCodeType)
+                {
+                    left = UserMember.Create(() =>
+                    {
+                        Variable field = variable.GetField("__left_");
+
+                        return field.IsNull() ? null : new item(field, treeNodeCodeType);
+                    });
+                    right = UserMember.Create(() =>
+                    {
+                        Variable field = variable.GetField("__right_");
+
+                        return field.IsNull() ? null : new item(field, treeNodeCodeType);
+                    });
+                    parent = UserMember.Create(() =>
+                    {
+                        Variable parent = variable.GetField("__parent_");
+
+                        if (parent.IsNull())
+                            return null;
+
+                        Variable field = parent.GetField("__left_");
+
+                        return field.IsNull() ? null : new item(field, treeNodeCodeType);
+                    });
+                    pair = UserMember.Create(() =>
+                    {
+                        Variable value = variable.CastAs(treeNodeCodeType).GetField("__value_").GetField("__nc");
+
+                        return new pair<TKey, TValue>(value);
+                    });
+                }
+
+                /// <summary>
+                /// Gets the left child item in the tree.
+                /// </summary>
+                public item Left
+                {
+                    get
+                    {
+                        return left.Value;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the right child item in the tree.
+                /// </summary>
+                public item Right
+                {
+                    get
+                    {
+                        return right.Value;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the parent item in the tree.
+                /// </summary>
+                public item Parent
+                {
+                    get
+                    {
+                        return parent.Value;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the key stored in the item.
+                /// </summary>
+                public TKey Key
+                {
+                    get
+                    {
+                        return pair.Value.First;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the value stored in the item.
+                /// </summary>
+                public TValue Value
+                {
+                    get
+                    {
+                        return pair.Value.Second;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// The internal tree field inside the std::map
+            /// </summary>
+            private UserMember<Variable> tree;
+
+            /// <summary>
+            /// The size of the map
+            /// </summary>
+            private UserMember<int> size;
+
+            /// <summary>
+            /// The root of the tree
+            /// </summary>
+            private UserMember<item> root;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public ClangLibCpp(Variable variable)
+            {
+                tree = UserMember.Create(() => variable.GetField("__tree_"));
+                size = UserMember.Create(() => (int)tree.Value.GetField("__pair3_").GetField("__value_"));
+                root = UserMember.Create(() =>
+                {
+                    Variable root = tree.Value.GetField("__pair1_").GetField("__value_").GetField("__left_");
+                    CodeType valueType = tree.Value.GetCodeType().TemplateArguments[0] as CodeType;
+                    CodeType treeNodeBaseCodeType = root.GetCodeType().ElementType;
+                    const string treeNodeBaseNameStart = "std::__1::__tree_node_base<";
+                    const string treeNodeNameStart = "std::__1::__tree_node<";
+                    string treeNodeName = treeNodeNameStart + valueType.Name + ", " + treeNodeBaseCodeType.Name.Substring(treeNodeBaseNameStart.Length);
+                    CodeType treeNodeCodeType = CodeType.Create(treeNodeName, valueType.Module);
+                    return new item(root, treeNodeCodeType).Parent;
+                });
+            }
+
+            /// <summary>
+            /// Gets the number of elements in the collection.
+            /// </summary>
+            public int Count
+            {
+                get
+                {
+                    return size.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the internal value field inside the std::map
+            /// </summary>
+            private item Root
+            {
+                get
+                {
+                    return root.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the <c>TValue</c> with the specified key.
+            /// </summary>
+            /// <param name="key">The key to locate.</param>
+            /// <returns>The element that has the specified key in the read-only dictionary.</returns>
+            /// <exception cref="System.Collections.Generic.KeyNotFoundException">The property is retrieved and key is not found.</exception>
+            public TValue this[TKey key]
+            {
+                get
+                {
+                    TValue value;
+
+                    if (!TryGetValue(key, out value))
+                    {
+                        throw new KeyNotFoundException();
+                    }
+
+                    return value;
+                }
+            }
+
+            /// <summary>
+            /// Gets an enumerable collection that contains the keys in the read-only dictionary.
+            /// </summary>
+            public IEnumerable<TKey> Keys
+            {
+                get
+                {
+                    return Enumerate().Select(kvp => kvp.Key);
+                }
+            }
+
+            /// <summary>
+            /// Gets an enumerable collection that contains the values in the read-only dictionary.
+            /// </summary>
+            public IEnumerable<TValue> Values
+            {
+                get
+                {
+                    return Enumerate().Select(kvp => kvp.Value);
+                }
+            }
+
+            /// <summary>
+            /// Determines whether the read-only dictionary contains an element that has the specified key.
+            /// </summary>
+            /// <param name="key">The key to locate.</param>
+            /// <returns>
+            /// true if the read-only dictionary contains an element that has the specified key; otherwise, false.
+            /// </returns>
+            public bool ContainsKey(TKey key)
+            {
+                TValue value;
+
+                return TryGetValue(key, out value);
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through the collection.
+            /// </summary>
+            /// <returns>
+            /// A <see cref="T:System.Collections.Generic.IEnumerator`1" /> that can be used to iterate through the collection.
+            /// </returns>
+            public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+            {
+                return Enumerate().GetEnumerator();
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through a collection.
+            /// </summary>
+            /// <returns>
+            /// An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.
+            /// </returns>
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return Enumerate().GetEnumerator();
+            }
+
+            /// <summary>
+            /// Gets the value that is associated with the specified key.
+            /// </summary>
+            /// <param name="key">The key to locate.</param>
+            /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the <paramref name="value" /> parameter. This parameter is passed uninitialized.</param>
+            /// <returns>
+            /// true if the object that implements the <see cref="T:System.Collections.Generic.IReadOnlyDictionary`2" /> interface contains an element that has the specified key; otherwise, false.
+            /// </returns>
+            public bool TryGetValue(TKey key, out TValue value)
+            {
+                // As we don't have comparer (for sorted tree), we will need to scan all items
+                foreach (KeyValuePair<TKey, TValue> kvp in Enumerate())
+                {
+                    if (kvp.Key.Equals(key))
+                    {
+                        value = kvp.Value;
+                        return true;
+                    }
+                }
+
+                value = default(TValue);
+                return false;
+            }
+
+            /// <summary>
+            /// Enumerates this map.
+            /// </summary>
+            private IEnumerable<KeyValuePair<TKey, TValue>> Enumerate()
+            {
+                if (Count > 0 && Root != null)
+                {
+                    Stack<item> items = new Stack<item>();
+
+                    items.Push(Root);
+                    while (items.Count > 0)
+                    {
+                        item item = items.Pop();
+
+                        yield return new KeyValuePair<TKey, TValue>(item.Key, item.Value);
+                        if (item.Right != null)
+                        {
+                            items.Push(item.Right);
+                        }
+                        if (item.Left != null)
+                        {
+                            items.Push(item.Left);
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // __tree_
+                // | __begin_node_
+                //   | __left_
+                //     | __is_black_
+                //     | __left_
+                //     | __parent_
+                //     | __right_
+                // | __pair1_
+                //   | __value_ (same type as __begin_node_)
+                //     | __left_
+                //       | __is_black_
+                //       | __left_
+                //       | __parent_
+                //       | __right_
+                // | __pair3_
+                //   | __value_
+                CodeType __tree_, __begin_node_, __left_, __is_black_, __left_2, __parent_, __right_, __pair1_, __value_, __pair3_, __value_2;
+
+                if (!codeType.GetFieldTypes().TryGetValue("__tree_", out __tree_))
+                    return false;
+                if (!__tree_.GetFieldTypes().TryGetValue("__begin_node_", out __begin_node_) || !__tree_.GetFieldTypes().TryGetValue("__pair1_", out __pair1_) || !__tree_.GetFieldTypes().TryGetValue("__pair3_", out __pair3_))
+                    return false;
+                if (!__begin_node_.GetFieldTypes().TryGetValue("__left_", out __left_))
+                    return false;
+                if (!__left_.GetFieldTypes().TryGetValue("__is_black_", out __is_black_) || !__left_.GetFieldTypes().TryGetValue("__left_", out __left_2) || !__left_.GetFieldTypes().TryGetValue("__parent_", out __parent_) || !__left_.GetFieldTypes().TryGetValue("__right_", out __right_))
+                    return false;
+                if (!__pair1_.GetFieldTypes().TryGetValue("__value_", out __value_) || __value_ != __begin_node_.ElementType)
+                    return false;
+                if (!__pair3_.GetFieldTypes().TryGetValue("__value_", out __value_2))
+                    return false;
+                return true;
+            }
+        }
+
+        /// <summary>
         /// The type selector
         /// </summary>
         private static TypeSelector<IReadOnlyDictionary<TKey, TValue>> typeSelector = new TypeSelector<IReadOnlyDictionary<TKey, TValue>>(new[]
@@ -794,6 +1148,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2013), VisualStudio2013.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2015), VisualStudio2015.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, bool>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
 
         /// <summary>

@@ -24,6 +24,289 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
+        /// libstdc++ 7 implementation of std::any
+        /// </summary>
+        public class LibStdCpp7 : IAny
+        {
+            private const string InternalManagerNameStart = "std::any::_Manager_internal<";
+            private const string InternalManagerNameEnd = ">::_S_manage";
+            private const string ExternalManagerNameStart = "std::any::_Manager_external<";
+            private const string ExternalManagerNameEnd = ">::_S_manage";
+
+            /// <summary>
+            /// Cache of _M_storage field.
+            /// </summary>
+            private UserMember<Variable> storage;
+
+            /// <summary>
+            /// Cache of _M_storage._M_ptr field.
+            /// </summary>
+            private UserMember<Variable> pointer;
+
+            /// <summary>
+            /// Cache of _M_storage._M_buffer field.
+            /// </summary>
+            private UserMember<Variable> buffer;
+
+            /// <summary>
+            /// Cache of _M_manager field.
+            /// </summary>
+            private UserMember<Variable> manager;
+
+            /// <summary>
+            /// Cache of manager function name.
+            /// </summary>
+            private UserMember<string> managerName;
+
+            /// <summary>
+            /// Cache of value code type.
+            /// </summary>
+            private UserMember<CodeType> codeType;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="LibStdCpp7"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public LibStdCpp7(Variable variable)
+            {
+                storage = UserMember.Create(() => variable.GetField("_M_storage"));
+                pointer = UserMember.Create(() => storage.Value.GetField("_M_ptr"));
+                buffer = UserMember.Create(() => storage.Value.GetField("_M_buffer"));
+                manager = UserMember.Create(() => variable.GetField("_M_manager"));
+                managerName = UserMember.Create(() =>
+                {
+                    Tuple<string, ulong> nameAndOffset = Context.SymbolProvider.GetSymbolNameByAddress(storage.Value.GetCodeType().Module.Process, manager.Value.GetPointerAddress());
+
+                    if (nameAndOffset == null)
+                        return null;
+                    return nameAndOffset.Item1;
+                });
+                codeType = UserMember.Create(() =>
+                {
+                    string codeTypeName;
+
+                    if (IsInternal)
+                    {
+                        string moduleName = managerName.Value.Substring(0, managerName.Value.IndexOf('!') + 1);
+
+                        codeTypeName = moduleName + managerName.Value.Substring(moduleName.Length + InternalManagerNameStart.Length, managerName.Value.Length - moduleName.Length - InternalManagerNameStart.Length - InternalManagerNameEnd.Length);
+                    }
+                    else if (IsExternal)
+                    {
+                        string moduleName = managerName.Value.Substring(0, managerName.Value.IndexOf('!') + 1);
+
+                        codeTypeName = moduleName + managerName.Value.Substring(moduleName.Length + ExternalManagerNameStart.Length, managerName.Value.Length - moduleName.Length - ExternalManagerNameStart.Length - ExternalManagerNameEnd.Length);
+                    }
+                    else
+                        throw new NotImplementedException();
+
+                    return CodeType.Create(codeTypeName.Trim());
+                });
+            }
+
+            /// <summary>
+            /// Gets the flag indicating if this instance has value set.
+            /// </summary>
+            public bool HasValue => !manager.Value.IsNull();
+
+            /// <summary>
+            /// Gets the value stored in this instance. If <see cref="HasValue"/> is <c>false</c> this will be <c>null</c>.
+            /// </summary>
+            public Variable Value
+            {
+                get
+                {
+                    if (!HasValue)
+                        return null;
+
+                    if (IsInternal)
+                        return Variable.Create(codeType.Value, buffer.Value.GetPointerAddress());
+                    else if (IsExternal)
+                        return Variable.Create(codeType.Value, pointer.Value.GetPointerAddress());
+                    else
+                        throw new NotImplementedException();
+                }
+            }
+
+            /// <summary>
+            /// Checks if value is stored in internal buffer.
+            /// </summary>
+            internal bool IsInternal => managerName.Value?.Contains(InternalManagerNameStart) ?? false;
+
+            /// <summary>
+            /// Checks if value is stored in external buffer (allocated in pointer field).
+            /// </summary>
+            internal bool IsExternal => managerName.Value?.Contains(ExternalManagerNameStart) ?? false;
+
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // _M_storage
+                // | _M_ptr
+                // | _M_buffer
+                // _M_manager
+                CodeType _M_storage, _M_ptr, _M_buffer, _M_manager;
+
+                if (!codeType.GetFieldTypes().TryGetValue("_M_storage", out _M_storage) || !codeType.GetFieldTypes().TryGetValue("_M_manager", out _M_manager))
+                    return false;
+                if (!_M_storage.GetFieldTypes().TryGetValue("_M_ptr", out _M_ptr))
+                    return false;
+                if (!_M_storage.GetFieldTypes().TryGetValue("_M_buffer", out _M_buffer))
+                    return false;
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Clang libc++ implementation of std::any
+        /// </summary>
+        public class ClangLibCpp : IAny
+        {
+            private const string SmallHandlerNameStart = "std::__1::__any_imp::_SmallHandler<";
+            private const string SmallHandlerNameEnd = ">::__handle";
+            private const string LargeHandlerNameStart = "std::__1::__any_imp::_LargeHandler<";
+            private const string LargeHandlerNameEnd = ">::__handle";
+
+            /// <summary>
+            /// Cache of __s field.
+            /// </summary>
+            private UserMember<Variable> storage;
+
+            /// <summary>
+            /// Cache of __s.__ptr field.
+            /// </summary>
+            private UserMember<Variable> pointer;
+
+            /// <summary>
+            /// Cache of __s.__buf field.
+            /// </summary>
+            private UserMember<Variable> buffer;
+
+            /// <summary>
+            /// Cache of __h field.
+            /// </summary>
+            private UserMember<Variable> manager;
+
+            /// <summary>
+            /// Cache of manager function name.
+            /// </summary>
+            private UserMember<string> managerName;
+
+            /// <summary>
+            /// Cache of value code type.
+            /// </summary>
+            private UserMember<CodeType> codeType;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public ClangLibCpp(Variable variable)
+            {
+                storage = UserMember.Create(() => variable.GetField("__s"));
+                pointer = UserMember.Create(() => storage.Value.GetField("__ptr"));
+                buffer = UserMember.Create(() => storage.Value.GetField("__buf"));
+                manager = UserMember.Create(() => variable.GetField("__h"));
+                managerName = UserMember.Create(() =>
+                {
+                    Tuple<string, ulong> nameAndOffset = Context.SymbolProvider.GetSymbolNameByAddress(storage.Value.GetCodeType().Module.Process, manager.Value.GetPointerAddress());
+
+                    if (nameAndOffset == null)
+                        return null;
+                    return nameAndOffset.Item1;
+                });
+                codeType = UserMember.Create(() =>
+                {
+                    string codeTypeName;
+                    string handlerCodeTypeName;
+
+                    if (IsSmall)
+                    {
+                        string moduleName = managerName.Value.Substring(0, managerName.Value.IndexOf('!') + 1);
+
+                        codeTypeName = moduleName + managerName.Value.Substring(moduleName.Length + SmallHandlerNameStart.Length, managerName.Value.Length - moduleName.Length - SmallHandlerNameStart.Length - SmallHandlerNameEnd.Length);
+                        handlerCodeTypeName = $"{moduleName}std::__1::__any_imp::_SmallHandler<{codeTypeName.Substring(moduleName.Length)}>";
+                    }
+                    else if (IsLarge)
+                    {
+                        string moduleName = managerName.Value.Substring(0, managerName.Value.IndexOf('!') + 1);
+
+                        codeTypeName = moduleName + managerName.Value.Substring(moduleName.Length + LargeHandlerNameStart.Length, managerName.Value.Length - moduleName.Length - LargeHandlerNameStart.Length - LargeHandlerNameEnd.Length);
+                        handlerCodeTypeName = $"{moduleName}std::__1::__any_imp::_LargeHandler<{codeTypeName.Substring(moduleName.Length)}>";
+                    }
+                    else
+                        throw new NotImplementedException();
+
+                    CodeType handlerCodeType = CodeType.Create(handlerCodeTypeName);
+
+                    return handlerCodeType.TemplateArguments[0] as CodeType ?? CodeType.Create(codeTypeName.Trim());
+                });
+            }
+
+            /// <summary>
+            /// Gets the flag indicating if this instance has value set.
+            /// </summary>
+            public bool HasValue => !manager.Value.IsNull();
+
+            /// <summary>
+            /// Gets the value stored in this instance. If <see cref="HasValue"/> is <c>false</c> this will be <c>null</c>.
+            /// </summary>
+            public Variable Value
+            {
+                get
+                {
+                    if (!HasValue)
+                        return null;
+
+                    if (IsSmall)
+                        return Variable.Create(codeType.Value, buffer.Value.GetPointerAddress());
+                    else if (IsLarge)
+                        return Variable.Create(codeType.Value, pointer.Value.GetPointerAddress());
+                    else
+                        throw new NotImplementedException();
+                }
+            }
+
+            /// <summary>
+            /// Checks if value is stored in internal buffer.
+            /// </summary>
+            internal bool IsSmall => managerName.Value?.Contains(SmallHandlerNameStart) ?? false;
+
+            /// <summary>
+            /// Checks if value is stored in external buffer (allocated in pointer field).
+            /// </summary>
+            internal bool IsLarge => managerName.Value?.Contains(LargeHandlerNameStart) ?? false;
+
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // __s
+                // | __ptr
+                // | __buf
+                // __h
+                CodeType __s, __ptr, __buf, __h;
+
+                if (!codeType.GetFieldTypes().TryGetValue("__s", out __s) || !codeType.GetFieldTypes().TryGetValue("__h", out __h))
+                    return false;
+                if (!__s.GetFieldTypes().TryGetValue("__ptr", out __ptr))
+                    return false;
+                if (!__s.GetFieldTypes().TryGetValue("__buf", out __buf))
+                    return false;
+                return true;
+            }
+        }
+
+        /// <summary>
         /// Microsoft Visual Studio implementation of std::any
         /// </summary>
         public class VisualStudio : IAny
@@ -196,6 +479,8 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         private static TypeSelector<IAny> typeSelector = new TypeSelector<IAny>(new[]
         {
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio), VisualStudio.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp7), LibStdCpp7.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, bool>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
 
         /// <summary>
@@ -238,7 +523,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         public override string ToString()
         {
             if (!HasValue)
-                return "{Empty}";
+                return "empty";
             return Value.ToString();
         }
     }

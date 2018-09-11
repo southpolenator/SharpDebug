@@ -503,6 +503,17 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         }
 
         /// <summary>
+        /// Gets the template arguments. This is optional to be implemented in symbol module provider. If it is not implemented, <see cref="NativeCodeType.GetTemplateArguments"/> will do the job.
+        /// <para>For given type: MyType&lt;Arg1, 2, Arg3&lt;5&gt;&gt;</para>
+        /// <para>It will return: <code>new object[] { CodeType.Create("Arg1", Module), 2, CodeType.Create("Arg3&lt;5&gt;", Module) }</code></para>
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public object[] GetTemplateArguments(uint typeId)
+        {
+            return null;
+        }
+
+        /// <summary>
         /// Gets the name of the specified type.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>

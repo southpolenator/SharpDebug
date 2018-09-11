@@ -356,6 +356,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 head = UserMember.Create(() => new item(variable.GetField("_M_impl").GetField("_M_node"), templateCodeType).Next);
             }
 
+            /// <summary>
+            /// Gets the head of the list
+            /// </summary>
             private item Head
             {
                 get
@@ -545,6 +548,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 head = UserMember.Create(() => new item(anchor.Value.GetField("_M_next").CastAs(listNodeCodeType), templateCodeType));
             }
 
+            /// <summary>
+            /// Gets the head of the list
+            /// </summary>
             private item Head
             {
                 get
@@ -649,6 +655,162 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
+        /// Clang libc++ implementations of std::basic_string
+        /// </summary>
+        public class ClangLibCpp : IReadOnlyCollection<T>
+        {
+            /// <summary>
+            /// std::list item
+            /// </summary>
+            private class item
+            {
+                /// <summary>
+                /// The next item
+                /// </summary>
+                private UserMember<item> next;
+
+                /// <summary>
+                /// The previous item
+                /// </summary>
+                private UserMember<item> previous;
+
+                /// <summary>
+                /// The value
+                /// </summary>
+                private UserMember<T> value;
+
+                /// <summary>
+                /// Initializes a new instance of the <see cref="item" /> class.
+                /// </summary>
+                /// <param name="variable">The variable.</param>
+                /// <param name="listNodeCodeType">List node code type.</param>
+                public item(Variable variable, CodeType listNodeCodeType)
+                {
+                    next = UserMember.Create(() => new item(variable.GetField("__next_"), listNodeCodeType));
+                    previous = UserMember.Create(() => new item(variable.GetField("__prev_"), listNodeCodeType));
+                    value = UserMember.Create(() => variable.CastAs(listNodeCodeType).GetField("__value_").CastAs<T>());
+                }
+
+                /// <summary>
+                /// Gets the next item in the list.
+                /// </summary>
+                public item Next => next.Value;
+
+                /// <summary>
+                /// Gets the previous item in the list.
+                /// </summary>
+                public item Previous => previous.Value;
+
+                /// <summary>
+                /// Gets the value stored in the item.
+                /// </summary>
+                public T Value => value.Value;
+            }
+
+            /// <summary>
+            /// The number of elements
+            /// </summary>
+            UserMember<int> count;
+
+            /// <summary>
+            /// The head of the list
+            /// </summary>
+            UserMember<item> head;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public ClangLibCpp(Variable variable)
+            {
+                CodeType codeType = variable.GetCodeType();
+                CodeType listNodeBaseType = codeType.GetFieldType("__end_");
+                const string listNodeBaseNameStart = "std::__1::__list_node_base<";
+                const string listNodeNameStart = "std::__1::__list_node<";
+                CodeType listNodeType = CodeType.Create(listNodeNameStart + listNodeBaseType.Name.Substring(listNodeBaseNameStart.Length), listNodeBaseType.Module);
+
+                count = UserMember.Create(() => (int)variable.GetField("__size_alloc_").GetField("__value_"));
+                head = UserMember.Create(() => new item(variable.GetField("__end_").GetField("__next_"), listNodeType));
+            }
+
+            /// <summary>
+            /// Gets the head of the list
+            /// </summary>
+            private item Head
+            {
+                get
+                {
+                    return head.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the number of elements in the collection.
+            /// </summary>
+            public int Count
+            {
+                get
+                {
+                    return count.Value;
+                }
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through the collection.
+            /// </summary>
+            public IEnumerator<T> GetEnumerator()
+            {
+                return Enumerate().GetEnumerator();
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through a collection.
+            /// </summary>
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return Enumerate().GetEnumerator();
+            }
+
+            /// <summary>
+            /// Enumerates this list.
+            /// </summary>
+            private IEnumerable<T> Enumerate()
+            {
+                item item = Head;
+                for (int i = 0; i < Count; i++)
+                {
+                    yield return item.Value;
+                    item = item.Next;
+                }
+            }
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // __end_
+                // | __next_
+                // | __prev_
+                // __size_alloc_
+                // | __value_
+                CodeType __end_, __next_, __prev_, __size_alloc_, __value_;
+
+                if (!codeType.GetFieldTypes().TryGetValue("__end_", out __end_))
+                    return false;
+                if (!__end_.GetFieldTypes().TryGetValue("__next_", out __next_) || !__end_.GetFieldTypes().TryGetValue("__prev_", out __prev_))
+                    return false;
+                if (!codeType.GetFieldTypes().TryGetValue("__size_alloc_", out __size_alloc_))
+                    return false;
+                if (!__size_alloc_.GetFieldTypes().TryGetValue("__value_", out __value_))
+                    return false;
+                return true;
+            }
+        }
+
+        /// <summary>
         /// The type selector
         /// </summary>
         private static TypeSelector<IReadOnlyCollection<T>> typeSelector = new TypeSelector<IReadOnlyCollection<T>>(new[]
@@ -657,6 +819,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2015), VisualStudio2015.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6_NoAbi), LibStdCpp6_NoAbi.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, bool>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
 
         /// <summary>

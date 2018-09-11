@@ -1041,6 +1041,16 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="address">The address within the module.</param>
         public Tuple<string, ulong> GetSymbolNameByAddress(uint address)
         {
+            // Try to find a function
+            ulong displacement;
+            DwarfSymbol function = FindFunction(address, out displacement);
+
+            if (displacement == 0)
+            {
+                return Tuple.Create(function.FullName, displacement);
+            }
+
+            // TODO:
             throw new NotImplementedException();
         }
 
@@ -1397,6 +1407,97 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Gets the template arguments. This is optional to be implemented in symbol module provider. If it is not implemented, <see cref="NativeCodeType.GetTemplateArguments"/> will do the job.
+        /// <para>For given type: MyType&lt;Arg1, 2, Arg3&lt;5&gt;&gt;</para>
+        /// <para>It will return: <code>new object[] { CodeType.Create("Arg1", Module), 2, CodeType.Create("Arg3&lt;5&gt;", Module) }</code></para>
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public object[] GetTemplateArguments(uint typeId)
+        {
+            DwarfSymbol symbol = GetType(typeId);
+            DwarfSymbol[] parameters = symbol.Children.Where(c => c.Tag == DwarfTag.TemplateTypeParameter || c.Tag == DwarfTag.TemplateValueParameter).ToArray();
+            object[] result = new object[parameters.Length];
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                DwarfSymbol parameter = parameters[i];
+
+                switch (parameter.Tag)
+                {
+                    case DwarfTag.TemplateTypeParameter:
+                        {
+                            DwarfSymbol parameterType = parameter.Attributes[DwarfAttribute.Type].Reference;
+                            uint parameterTypeId = GetTypeId(parameterType);
+                            CodeType codeType = Module.TypesById[parameterTypeId];
+
+                            result[i] = codeType;
+                        }
+                        break;
+                    case DwarfTag.TemplateValueParameter:
+                        {
+                            DwarfSymbol type = parameter.Attributes[DwarfAttribute.Type].Reference;
+                            ulong value = parameter.GetConstantAttribute(DwarfAttribute.ConstValue);
+
+                            if (!parameter.Attributes.ContainsKey(DwarfAttribute.ConstValue))
+                            {
+                                throw new NotImplementedException();
+                            }
+                            switch (type.Tag)
+                            {
+                                case DwarfTag.BaseType:
+                                    switch (GetTypeBasicType(type))
+                                    {
+                                        case BuiltinType.Bool:
+                                            result[i] = value != 0 ? true : false;
+                                            break;
+                                        case BuiltinType.Int8:
+                                            result[i] = (sbyte)value;
+                                            break;
+                                        case BuiltinType.Int16:
+                                            result[i] = (short)value;
+                                            break;
+                                        case BuiltinType.Int32:
+                                            result[i] = (int)value;
+                                            break;
+                                        case BuiltinType.Int64:
+                                        case BuiltinType.Int128:
+                                            result[i] = (long)value;
+                                            break;
+                                        case BuiltinType.UInt8:
+                                            result[i] = (byte)value;
+                                            break;
+                                        case BuiltinType.UInt16:
+                                            result[i] = (ushort)value;
+                                            break;
+                                        case BuiltinType.UInt32:
+                                            result[i] = (uint)value;
+                                            break;
+                                        case BuiltinType.UInt64:
+                                        case BuiltinType.UInt128:
+                                            result[i] = value;
+                                            break;
+                                        default:
+                                            result[i] = value;
+                                            break;
+                                    }
+                                    break;
+                                case DwarfTag.EnumerationType:
+                                    {
+                                        throw new NotImplementedException();
+                                    }
+                                    break;
+                                default:
+                                    throw new NotImplementedException();
+                            }
+                        }
+                        break;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Gets all available types from the module.
         /// </summary>
         /// <returns>Enumeration of type identifiers.</returns>
@@ -1516,8 +1617,11 @@ namespace CsDebugScript.DwarfSymbolProvider
                             {
                                 typeNameToType.TryAdd(typeName, symbol);
                                 typeNameToType.TryAdd(CleanSymbolNameNumbers(typeName), symbol);
-                                typeNameToType.TryAdd(GetTypeNameNicePrint(symbol, true), symbol);
-                                typeNameToType.TryAdd(GetTypeNameNicePrint(symbol, false), symbol);
+                                if (symbol.Tag != DwarfTag.Typedef)
+                                {
+                                    typeNameToType.TryAdd(GetTypeNameNicePrint(symbol, true), symbol);
+                                    typeNameToType.TryAdd(GetTypeNameNicePrint(symbol, false), symbol);
+                                }
                             }
 
                             // If it is pointer type, add it to collection
@@ -1607,6 +1711,10 @@ namespace CsDebugScript.DwarfSymbolProvider
                 if (symbol.Tag == DwarfTag.ReferenceType)
                 {
                     return GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint) + " &";
+                }
+                if (symbol.Tag == DwarfTag.RvalueReferenceType)
+                {
+                    return GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint) + " &&";
                 }
                 if (symbol.Tag == DwarfTag.ArrayType)
                 {
@@ -2675,6 +2783,16 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             displacement = address - functionAddressesCache[index];
+
+            // if there are two symbols for the same address, choose one that has name
+            if (functionsCache[index].Name != null)
+                return functionsCache[index];
+            if (index > 0 && functionAddressesCache[index - 1] == functionAddressesCache[index] && functionsCache[index - 1].Name != null)
+                return functionsCache[index - 1];
+            if (index + 1 < functionsCache.Count && functionAddressesCache[index + 1] == functionAddressesCache[index] && functionsCache[index + 1].Name != null)
+                return functionsCache[index + 1];
+
+            // Fall back to the one we originaly found.
             return functionsCache[index];
         }
 
@@ -2825,6 +2943,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                 case DwarfTag.InterfaceType:
                 case DwarfTag.SubroutineType:
                 case DwarfTag.UnionType:
+                case DwarfTag.Typedef:
                     return type.FullName ?? GetUnnamedType();
                 default:
                     return null;

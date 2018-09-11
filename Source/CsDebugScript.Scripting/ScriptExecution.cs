@@ -69,7 +69,7 @@ namespace CsDebugScript
             },
             new XmlTypeTransformation()
             {
-                OriginalType = "std::map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
+                OriginalType = "std::unordered_map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
                 Constructor = "${new}",
                 HasPhysicalConstructor = false,
@@ -78,6 +78,13 @@ namespace CsDebugScript
             {
                 OriginalType = "std::pair<${TFirst},${TSecond}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::any",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.any",
                 Constructor = "${new}",
                 HasPhysicalConstructor = false,
             },
@@ -127,7 +134,7 @@ namespace CsDebugScript
             },
             new XmlTypeTransformation()
             {
-                OriginalType = "std::__cxx11::map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
+                OriginalType = "std::__cxx11::unordered_map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
                 Constructor = "${new}",
                 HasPhysicalConstructor = false,
@@ -136,6 +143,13 @@ namespace CsDebugScript
             {
                 OriginalType = "std::__cxx11::pair<${TFirst},${TSecond}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__cxx11::any",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.any",
                 Constructor = "${new}",
                 HasPhysicalConstructor = false,
             },
@@ -164,6 +178,27 @@ namespace CsDebugScript
             },
             new XmlTypeTransformation()
             {
+                OriginalType = "std::__1::basic_string<char>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::basic_string<wchar_t>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::basic_string<unsigned short>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
                 OriginalType = "std::__1::vector<${T},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
                 Constructor = "${new}",
@@ -185,7 +220,7 @@ namespace CsDebugScript
             },
             new XmlTypeTransformation()
             {
-                OriginalType = "std::__1::map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
+                OriginalType = "std::__1::unordered_map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
                 Constructor = "${new}",
                 HasPhysicalConstructor = false,
@@ -197,8 +232,14 @@ namespace CsDebugScript
                 Constructor = "${new}",
                 HasPhysicalConstructor = false,
             },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::any",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.any",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
         };
-
 
         /// <summary>
         /// Resolves the path for the specified base file path.

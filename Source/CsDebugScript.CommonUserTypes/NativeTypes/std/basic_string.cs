@@ -464,6 +464,159 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
+        /// Clang libc++ implementations of std::basic_string
+        /// </summary>
+        public class ClangLibCpp : IBasicString
+        {
+            /// <summary>
+            /// Cache of __r_.__value_ field.
+            /// </summary>
+            private UserMember<Variable> value;
+
+            /// <summary>
+            /// Cache of long data field: __r_.__value_.__l.
+            /// </summary>
+            private UserMember<Variable> longData;
+
+            /// <summary>
+            /// Cache of short data field: __r_.__value_.__s.
+            /// </summary>
+            private UserMember<Variable> shortData;
+
+            /// <summary>
+            /// Cache of __data_ field from longData.
+            /// </summary>
+            private UserMember<Variable> longText;
+
+            /// <summary>
+            /// Cache of __data_ field from shortData.
+            /// </summary>
+            private UserMember<Variable> shortText;
+
+            /// <summary>
+            /// Cache of <see cref="Length"/> property.
+            /// </summary>
+            private UserMember<int> length;
+
+            /// <summary>
+            /// Cache of <see cref="capacity"/> property.
+            /// </summary>
+            private UserMember<int> capacity;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public ClangLibCpp(Variable variable)
+            {
+                value = UserMember.Create(() => variable.GetField("__r_").GetField("__value_"));
+                longData = UserMember.Create(() => value.Value.GetField("__l"));
+                shortData = UserMember.Create(() => value.Value.GetField("__s"));
+                longText = UserMember.Create(() => longData.Value.GetField("__data_"));
+                shortText = UserMember.Create(() => shortData.Value.GetField("__data_"));
+                length = UserMember.Create(() =>
+                {
+                    if (IsLocalData)
+                    {
+                        bool bigEndian = true; // TODO:
+                        int size = (int)shortData.Value.GetField("__size_");
+
+                        if (bigEndian)
+                            return size >> 1;
+                        return size;
+                    }
+                    return (int)longData.Value.GetField("__size_");
+                });
+                capacity = UserMember.Create(() =>
+                {
+                    if (IsLocalData)
+                    {
+                        CodeType bufferCodeType = shortText.Value.GetCodeType();
+
+                        return (int)(bufferCodeType.Size / bufferCodeType.ElementType.Size);
+                    }
+                    else
+                        return (int)longData.Value.GetField("__cap_");
+                });
+            }
+
+            /// <summary>
+            /// Gets the string length.
+            /// </summary>
+            public int Length => length.Value;
+
+            /// <summary>
+            /// Gets the reserved space in buffer (number of characters).
+            /// </summary>
+            public int Reserved => capacity.Value;
+
+            /// <summary>
+            /// Gets the string text.
+            /// </summary>
+            public string Text
+            {
+                get
+                {
+                    return IsLocalData ? shortText.Value.ToString() : longText.Value.ToString();
+                }
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether basic_string is using local data.
+            /// </summary>
+            /// <value>
+            /// <c>true</c> if basic_string is using local data; otherwise, <c>false</c>.
+            /// </value>
+            private bool IsLocalData
+            {
+                get
+                {
+                    return longText.Value.IsNull();
+                }
+            }
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // __r_
+                // | __value_
+                //   | __l
+                //     | __cap_
+                //     | __data_
+                //     | __size_
+                //   | __r
+                //     | __words
+                //   | __s
+                //     | __data_
+                //     | __lx
+                //     | __size_
+                CodeType __r_, __value_, __l, __cap_, __data_, __size_, __r, __words, __s, __data_2, __lx, __size_2;
+
+                if (!codeType.GetFieldTypes().TryGetValue("__r_", out __r_))
+                    return false;
+                if (!__r_.GetFieldTypes().TryGetValue("__value_", out __value_))
+                    return false;
+                if (!__value_.GetFieldTypes().TryGetValue("__l", out __l))
+                    return false;
+                if (!__l.GetFieldTypes().TryGetValue("__cap_", out __cap_) || !__l.GetFieldTypes().TryGetValue("__data_", out __data_) || !__l.GetFieldTypes().TryGetValue("__size_", out __size_))
+                    return false;
+                if (!__value_.GetFieldTypes().TryGetValue("__r", out __r))
+                    return false;
+                if (!__r.GetFieldTypes().TryGetValue("__words", out __words))
+                    return false;
+                if (!__value_.GetFieldTypes().TryGetValue("__s", out __s))
+                    return false;
+                if (!__s.GetFieldTypes().TryGetValue("__data_", out __data_2) || !__s.GetFieldTypes().TryGetValue("__lx", out __lx) || !__s.GetFieldTypes().TryGetValue("__size_", out __size_2))
+                    return false;
+                return true;
+            }
+        }
+
+        /// <summary>
         /// The type selector
         /// </summary>
         private static TypeSelector<IBasicString> typeSelector = new TypeSelector<IBasicString>(new[]
@@ -472,6 +625,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2015), VisualStudio2015.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6_NoAbi), LibStdCpp6_NoAbi.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, bool>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
 
         /// <summary>

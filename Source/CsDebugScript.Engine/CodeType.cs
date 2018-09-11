@@ -222,7 +222,7 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the template arguments.
         /// <para>For given type: MyType&lt;Arg1, 2, Arg3&lt;5&gt;&gt;</para>
-        /// <para>It will return: <code>new string[] { CodeType.Create("Arg1", Module), 2, CodeType.Create("Arg3&lt;5&gt;", Module) }</code></para>
+        /// <para>It will return: <code>new object[] { CodeType.Create("Arg1", Module), 2, CodeType.Create("Arg3&lt;5&gt;", Module) }</code></para>
         /// </summary>
         public object[] TemplateArguments
         {
@@ -1233,9 +1233,14 @@ namespace CsDebugScript
         /// </summary>
         protected override object[] GetTemplateArguments()
         {
-            string[] arguments = TemplateArgumentsStrings;
-            object[] result = new object[arguments.Length];
+            object[] result = Context.SymbolProvider.GetTemplateArguments(Module, TypeId);
 
+            if (result != null)
+                return result;
+
+            string[] arguments = TemplateArgumentsStrings;
+
+            result = new object[arguments.Length];
             for (int i = 0; i < result.Length; i++)
             {
                 int intValue;

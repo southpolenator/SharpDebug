@@ -192,7 +192,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
-        /// libstdc++ 6 implementations of std::map
+        /// libstdc++ 6 implementations of std::unordered_map
         /// </summary>
         /// <seealso cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}" />
         public class LibStdCpp6 : IReadOnlyDictionary<TKey, TValue>
@@ -414,12 +414,214 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
+        /// Clang libc++ implementations of std::unordered_map
+        /// </summary>
+        /// <seealso cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}" />
+        public class ClangLibCpp : IReadOnlyDictionary<TKey, TValue>
+        {
+            /// <summary>
+            /// The element count
+            /// </summary>
+            UserMember<int> elementCount;
+
+            UserMember<Variable> firstElement;
+
+            CodeType hashNodeCodeType;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            public ClangLibCpp(Variable variable)
+            {
+                firstElement = UserMember.Create(() =>
+                {
+                    Variable begin = variable.GetField("__table_").GetField("__p1_").GetField("__value_").GetField("__next_");
+
+                    hashNodeCodeType = begin.GetCodeType().ElementType.TemplateArguments[0] as CodeType;
+                    return begin;
+                });
+                elementCount = UserMember.Create(() => (int)variable.GetField("__table_").GetField("__p2_").GetField("__value_"));
+            }
+
+            /// <summary>
+            /// Gets the <c>TValue</c> with the specified key.
+            /// </summary>
+            /// <param name="key">The key to locate.</param>
+            /// <returns>The element that has the specified key in the read-only dictionary.</returns>
+            /// <exception cref="System.Collections.Generic.KeyNotFoundException">The property is retrieved and key is not found.</exception>
+            public TValue this[TKey key]
+            {
+                get
+                {
+                    TValue value;
+
+                    if (!TryGetValue(key, out value))
+                    {
+                        throw new KeyNotFoundException();
+                    }
+
+                    return value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the number of elements in the collection.
+            /// </summary>
+            public int Count
+            {
+                get
+                {
+                    return elementCount.Value;
+                }
+            }
+
+            /// <summary>
+            /// Gets an enumerable collection that contains the keys in the read-only dictionary.
+            /// </summary>
+            public IEnumerable<TKey> Keys
+            {
+                get
+                {
+                    return Enumerate().Select(kvp => kvp.Key);
+                }
+            }
+
+            /// <summary>
+            /// Gets an enumerable collection that contains the values in the read-only dictionary.
+            /// </summary>
+            public IEnumerable<TValue> Values
+            {
+                get
+                {
+                    return Enumerate().Select(kvp => kvp.Value);
+                }
+            }
+
+            /// <summary>
+            /// Determines whether the read-only dictionary contains an element that has the specified key.
+            /// </summary>
+            /// <param name="key">The key to locate.</param>
+            /// <returns>
+            /// true if the read-only dictionary contains an element that has the specified key; otherwise, false.
+            /// </returns>
+            public bool ContainsKey(TKey key)
+            {
+                TValue value;
+
+                return TryGetValue(key, out value);
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through the collection.
+            /// </summary>
+            /// <returns>
+            /// A <see cref="T:System.Collections.Generic.IEnumerator`1" /> that can be used to iterate through the collection.
+            /// </returns>
+            public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+            {
+                return Enumerate().GetEnumerator();
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through a collection.
+            /// </summary>
+            /// <returns>
+            /// An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.
+            /// </returns>
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return Enumerate().GetEnumerator();
+            }
+
+            /// <summary>
+            /// Gets the value that is associated with the specified key.
+            /// </summary>
+            /// <param name="key">The key to locate.</param>
+            /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the <paramref name="value" /> parameter. This parameter is passed uninitialized.</param>
+            /// <returns>
+            /// true if the object that implements the <see cref="T:System.Collections.Generic.IReadOnlyDictionary`2" /> interface contains an element that has the specified key; otherwise, false.
+            /// </returns>
+            public bool TryGetValue(TKey key, out TValue value)
+            {
+                // As we don't have hash function, we will need to scan all items
+                foreach (KeyValuePair<TKey, TValue> kvp in Enumerate())
+                {
+                    if (kvp.Key.Equals(key))
+                    {
+                        value = kvp.Value;
+                        return true;
+                    }
+                }
+
+                value = default(TValue);
+                return false;
+            }
+
+            /// <summary>
+            /// Enumerates this unordered_map.
+            /// </summary>
+            private IEnumerable<KeyValuePair<TKey, TValue>> Enumerate()
+            {
+                Variable element = firstElement.Value;
+
+                while (!element.IsNull())
+                {
+                    element = element.CastAs(hashNodeCodeType);
+
+                    pair<TKey, TValue> item = new pair<TKey, TValue>(element.GetField("__value_").GetField("__nc"));
+
+                    yield return new KeyValuePair<TKey, TValue>(item.First, item.Second);
+
+                    element = element.GetField("__next_");
+                }
+            }
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            internal static bool VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // __table_
+                // | __bucket_list_
+                //   | __ptr_
+                // | __p1_
+                //   | __value_
+                //     | __next_
+                // | __p2_
+                //   | __value_
+                // | __p3_
+                //   | __value_
+                CodeType __table_, __bucket_list_, __ptr_, __p1_, __value_, __next_, __p2_, __value_2, __p3_, __value_3;
+
+                if (!codeType.GetFieldTypes().TryGetValue("__table_", out __table_))
+                    return false;
+                if (!__table_.GetFieldTypes().TryGetValue("__bucket_list_", out __bucket_list_) || !__table_.GetFieldTypes().TryGetValue("__p1_", out __p1_) || !__table_.GetFieldTypes().TryGetValue("__p2_", out __p2_) || !__table_.GetFieldTypes().TryGetValue("__p3_", out __p3_))
+                    return false;
+                if (!__bucket_list_.GetFieldTypes().TryGetValue("__ptr_", out __ptr_))
+                    return false;
+                if (!__p1_.GetFieldTypes().TryGetValue("__value_", out __value_))
+                    return false;
+                if (!__value_.GetFieldTypes().TryGetValue("__next_", out __next_))
+                    return false;
+                if (!__p2_.GetFieldTypes().TryGetValue("__value_", out __value_2))
+                    return false;
+                if (!__p3_.GetFieldTypes().TryGetValue("__value_", out __value_3))
+                    return false;
+                return true;
+            }
+        }
+
+        /// <summary>
         /// The type selector
         /// </summary>
         private static TypeSelector<IReadOnlyDictionary<TKey, TValue>> typeSelector = new TypeSelector<IReadOnlyDictionary<TKey, TValue>>(new[]
         {
             new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio), VisualStudio.VerifyCodeType),
             new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, bool>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
 
         /// <summary>
