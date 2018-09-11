@@ -428,7 +428,16 @@ namespace CsDebugScript.DwarfSymbolProvider
                 publicSymbolIndex--;
             }
 
-            publicSymbol = publicSymbols[publicSymbolIndex];
+            // if there are two symbols for the same address, choose one that has demangled name different from name.
+            if (publicSymbols[publicSymbolIndex].Name != publicSymbols[publicSymbolIndex].DemangledName)
+                publicSymbol = publicSymbols[publicSymbolIndex];
+            else if (publicSymbolIndex > 0 && publicSymbolsAddresses[publicSymbolIndex - 1] == publicSymbolsAddresses[publicSymbolIndex] && publicSymbols[publicSymbolIndex - 1].Name != publicSymbols[publicSymbolIndex - 1].DemangledName)
+                publicSymbol = publicSymbols[publicSymbolIndex - 1];
+            else if (publicSymbolIndex + 1 < publicSymbolsAddresses.Count && publicSymbolsAddresses[publicSymbolIndex + 1] == publicSymbolsAddresses[publicSymbolIndex] && publicSymbols[publicSymbolIndex + 1].Name != publicSymbols[publicSymbolIndex + 1].DemangledName)
+                publicSymbol = publicSymbols[publicSymbolIndex + 1];
+            else
+                publicSymbol = publicSymbols[publicSymbolIndex];
+
             string publicSymbolName = null;
             if (publicSymbol.DemangledName.StartsWith("vtable for "))
             {
