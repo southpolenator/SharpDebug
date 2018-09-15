@@ -16,11 +16,29 @@ namespace CsDebugScript.Engine
     internal delegate object SymbolicConstructorDelegate(Variable variable);
 
     /// <summary>
+    /// The symbolic constructor with data delegate. Creates a new user type by calling constructor with signature of this delegate.
+    /// This constructor is being used with common user types that know how to speed up processing with precalculated data for given code type.
+    /// </summary>
+    /// <param name="variable">The variable.</param>
+    /// <param name="data">The data extracted from the <see cref="CodeType"/> of the specified variable.</param>
+    /// <returns>New instance of user type</returns>
+    internal delegate object SymbolicConstructorWithDataDelegate(Variable variable, object data);
+
+    /// <summary>
     /// The symbolic constructor delegate. Creates a new user type by calling constructor with signature of this delegate.
     /// </summary>
     /// <param name="variable">The variable.</param>
     /// <returns>New instance of user type</returns>
     internal delegate T SymbolicConstructorDelegate<T>(Variable variable);
+
+    /// <summary>
+    /// The symbolic constructor with data delegate. Creates a new user type by calling constructor with signature of this delegate.
+    /// This constructor is being used with common user types that know how to speed up processing with precalculated data for given code type.
+    /// </summary>
+    /// <param name="variable">The variable.</param>
+    /// <param name="data">The data extracted from the <see cref="CodeType"/> of the specified variable.</param>
+    /// <returns>New instance of user type</returns>
+    internal delegate T SymbolicConstructorWithDataDelegate<T>(Variable variable, object data);
 
     /// <summary>
     /// The physical constructor delegate. Creates a new user type by calling constructor with signature of this delegate.
@@ -64,6 +82,11 @@ namespace CsDebugScript.Engine
         /// Gets the symbolic constructor, or null if not available.
         /// </summary>
         SymbolicConstructorDelegate SymbolicConstructor { get; }
+
+        /// <summary>
+        /// Gets the symbolic constructor with data, or null if not available.
+        /// </summary>
+        SymbolicConstructorWithDataDelegate SymbolicConstructorWithData { get; }
 
         /// <summary>
         /// Gets the physical constructor, or null if not available.
@@ -114,6 +137,11 @@ namespace CsDebugScript.Engine
         /// Gets the symbolic constructor, or null if not available.
         /// </summary>
         SymbolicConstructorDelegate<T> SymbolicConstructor { get; }
+
+        /// <summary>
+        /// Gets the symbolic constructor with data, or null if not available.
+        /// </summary>
+        SymbolicConstructorWithDataDelegate<T> SymbolicConstructorWithData { get; }
 
         /// <summary>
         /// Gets the physical constructor, or null if not available.
@@ -249,6 +277,11 @@ namespace CsDebugScript.Engine
         private SimpleCache<Tuple<SymbolicConstructorDelegate, SymbolicConstructorDelegate<T>>> symbolicConstructors;
 
         /// <summary>
+        /// The cache of symbolic constructors with data
+        /// </summary>
+        private SimpleCache<Tuple<SymbolicConstructorWithDataDelegate, SymbolicConstructorWithDataDelegate<T>>> symbolicConstructorsWithData;
+
+        /// <summary>
         /// The cache of downcaster
         /// </summary>
         private SimpleCache<DowncasterDelegate<T>> downcaster;
@@ -299,7 +332,7 @@ namespace CsDebugScript.Engine
 
                     if (parameters[0].ParameterType == typeof(Variable))
                     {
-                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(Variable) });
+                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(Variable) }, UserTypeDelegates.ModuleBuilder);
                         ILGenerator gen = method.GetILGenerator();
 
                         gen.Emit(OpCodes.Ldarg_0);
@@ -310,6 +343,42 @@ namespace CsDebugScript.Engine
                         var symbolicConstructorTyped = (SymbolicConstructorDelegate<T>)method.CreateDelegate(typeof(SymbolicConstructorDelegate<T>));
 
                         return Tuple.Create(symbolicConstructor, symbolicConstructorTyped);
+                    }
+                }
+
+                return null;
+            });
+
+            symbolicConstructorsWithData = SimpleCache.Create(() =>
+            {
+                foreach (ConstructorInfo constructor in constructors)
+                {
+                    if (!constructor.IsPublic)
+                    {
+                        continue;
+                    }
+
+                    var parameters = constructor.GetParameters();
+
+                    if (parameters.Length < 2 || parameters.Count(p => !p.HasDefaultValue) > 2)
+                    {
+                        continue;
+                    }
+
+                    if (parameters[0].ParameterType == typeof(Variable) && parameters[1].ParameterType == typeof(object))
+                    {
+                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(Variable), typeof(object) }, UserTypeDelegates.ModuleBuilder);
+                        ILGenerator gen = method.GetILGenerator();
+
+                        gen.Emit(OpCodes.Ldarg_0);
+                        gen.Emit(OpCodes.Ldarg_1);
+                        gen.Emit(OpCodes.Newobj, constructor);
+                        gen.Emit(OpCodes.Ret);
+
+                        var symbolicConstructorWithData = (SymbolicConstructorWithDataDelegate)method.CreateDelegate(typeof(SymbolicConstructorWithDataDelegate));
+                        var symbolicConstructorWithDataTyped = (SymbolicConstructorWithDataDelegate<T>)method.CreateDelegate(typeof(SymbolicConstructorWithDataDelegate<T>));
+
+                        return Tuple.Create(symbolicConstructorWithData, symbolicConstructorWithDataTyped);
                     }
                 }
 
@@ -340,7 +409,7 @@ namespace CsDebugScript.Engine
                         && parameters[5].ParameterType == typeof(string)
                         && parameters[6].ParameterType == typeof(string))
                     {
-                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(MemoryBuffer), typeof(int), typeof(ulong), typeof(CodeType), typeof(ulong), typeof(string), typeof(string) });
+                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(MemoryBuffer), typeof(int), typeof(ulong), typeof(CodeType), typeof(ulong), typeof(string), typeof(string) }, UserTypeDelegates.ModuleBuilder);
                         ILGenerator gen = method.GetILGenerator();
 
                         gen.Emit(OpCodes.Ldarg_0);
@@ -371,7 +440,7 @@ namespace CsDebugScript.Engine
                     MethodInfo downcastObjectGenericMethod = downcastObjectMethod.MakeGenericMethod(typeof(T));
                     MethodInfo castAsMethod = typeof(Variable).GetMethod(nameof(Variable.CastAs), BindingFlags.Static | BindingFlags.Public);
                     MethodInfo castAsGenericMethod = castAsMethod.MakeGenericMethod(typeof(T));
-                    DynamicMethod method = new DynamicMethod(nameof(VariableCastExtender.DowncastObject), userType, new Type[] { typeof(Variable) });
+                    DynamicMethod method = new DynamicMethod(nameof(VariableCastExtender.DowncastObject), userType, new Type[] { typeof(Variable) }, UserTypeDelegates.ModuleBuilder);
                     ILGenerator gen = method.GetILGenerator();
 
                     gen.Emit(OpCodes.Ldarg_0);
@@ -482,6 +551,28 @@ namespace CsDebugScript.Engine
             get
             {
                 return symbolicConstructors.Value.Item2;
+            }
+        }
+
+        /// <summary>
+        /// Gets the symbolic constructor with data, or null if not available.
+        /// </summary>
+        SymbolicConstructorWithDataDelegate IUserTypeDelegates.SymbolicConstructorWithData
+        {
+            get
+            {
+                return symbolicConstructorsWithData.Value.Item1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the symbolic constructor with data, or null if not available.
+        /// </summary>
+        SymbolicConstructorWithDataDelegate<T> IUserTypeDelegates<T>.SymbolicConstructorWithData
+        {
+            get
+            {
+                return symbolicConstructorsWithData.Value.Item2;
             }
         }
 

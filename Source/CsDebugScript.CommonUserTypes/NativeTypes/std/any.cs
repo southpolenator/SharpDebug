@@ -27,7 +27,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// libstdc++ 7 implementation of std::any
         /// </summary>
-        public class LibStdCpp7 : IAny
+        internal class LibStdCpp7 : IAny
         {
             private const string InternalManagerNameStart = "std::any::_Manager_internal<";
             private const string InternalManagerNameEnd = ">::_S_manage";
@@ -35,80 +35,99 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             private const string ExternalManagerNameEnd = ">::_S_manage";
 
             /// <summary>
-            /// Cache of _M_storage field.
+            /// Code type extracted data
             /// </summary>
-            private UserMember<Variable> storage;
+            private class ExtractedData
+            {
+                /// <summary>
+                /// Offset of manager pointer field.
+                /// </summary>
+                public int ManagerPointerOffset;
+
+                /// <summary>
+                /// Offset of data pointer field.
+                /// </summary>
+                public int DataPointerOffset;
+
+                /// <summary>
+                /// Offset of buffer field.
+                /// </summary>
+                public int BufferOffset;
+
+                /// <summary>
+                /// Code type of std::any.
+                /// </summary>
+                public CodeType CodeType;
+
+                /// <summary>
+                /// Process where code type comes from.
+                /// </summary>
+                public Process Process;
+            }
 
             /// <summary>
-            /// Cache of _M_storage._M_ptr field.
+            /// Code type extracted data.
             /// </summary>
-            private UserMember<Variable> pointer;
+            private ExtractedData data;
 
             /// <summary>
-            /// Cache of _M_storage._M_buffer field.
+            /// Address of variable.
             /// </summary>
-            private UserMember<Variable> buffer;
+            private ulong address;
 
             /// <summary>
-            /// Cache of _M_manager field.
+            /// Name of the manager function.
             /// </summary>
-            private UserMember<Variable> manager;
+            private string managerName;
 
             /// <summary>
-            /// Cache of manager function name.
+            /// Value code type.
             /// </summary>
-            private UserMember<string> managerName;
-
-            /// <summary>
-            /// Cache of value code type.
-            /// </summary>
-            private UserMember<CodeType> codeType;
+            private CodeType valueCodeType;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="LibStdCpp7"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
-            public LibStdCpp7(Variable variable)
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public LibStdCpp7(Variable variable, object savedData)
             {
-                storage = UserMember.Create(() => variable.GetField("_M_storage"));
-                pointer = UserMember.Create(() => storage.Value.GetField("_M_ptr"));
-                buffer = UserMember.Create(() => storage.Value.GetField("_M_buffer"));
-                manager = UserMember.Create(() => variable.GetField("_M_manager"));
-                managerName = UserMember.Create(() =>
+                data = (ExtractedData)savedData;
+                address = variable.GetPointerAddress();
+                ulong managerAddress = data.Process.ReadPointer(address + (uint)data.ManagerPointerOffset);
+                if (managerAddress != 0)
                 {
-                    Tuple<string, ulong> nameAndOffset = Context.SymbolProvider.GetSymbolNameByAddress(storage.Value.GetCodeType().Module.Process, manager.Value.GetPointerAddress());
+                    Tuple<string, ulong> nameAndOffset = Context.SymbolProvider.GetSymbolNameByAddress(data.Process, managerAddress);
 
-                    if (nameAndOffset == null)
-                        return null;
-                    return nameAndOffset.Item1;
-                });
-                codeType = UserMember.Create(() =>
+                    if (nameAndOffset != null)
+                        managerName = nameAndOffset.Item1;
+                }
+                if (HasValue)
                 {
                     string codeTypeName;
 
                     if (IsInternal)
                     {
-                        string moduleName = managerName.Value.Substring(0, managerName.Value.IndexOf('!') + 1);
+                        string moduleName = managerName.Substring(0, managerName.IndexOf('!') + 1);
 
-                        codeTypeName = moduleName + managerName.Value.Substring(moduleName.Length + InternalManagerNameStart.Length, managerName.Value.Length - moduleName.Length - InternalManagerNameStart.Length - InternalManagerNameEnd.Length);
+                        codeTypeName = moduleName + managerName.Substring(moduleName.Length + InternalManagerNameStart.Length, managerName.Length - moduleName.Length - InternalManagerNameStart.Length - InternalManagerNameEnd.Length);
                     }
                     else if (IsExternal)
                     {
-                        string moduleName = managerName.Value.Substring(0, managerName.Value.IndexOf('!') + 1);
+                        string moduleName = managerName.Substring(0, managerName.IndexOf('!') + 1);
 
-                        codeTypeName = moduleName + managerName.Value.Substring(moduleName.Length + ExternalManagerNameStart.Length, managerName.Value.Length - moduleName.Length - ExternalManagerNameStart.Length - ExternalManagerNameEnd.Length);
+                        codeTypeName = moduleName + managerName.Substring(moduleName.Length + ExternalManagerNameStart.Length, managerName.Length - moduleName.Length - ExternalManagerNameStart.Length - ExternalManagerNameEnd.Length);
                     }
                     else
                         throw new NotImplementedException();
-
-                    return CodeType.Create(codeTypeName.Trim());
-                });
+                    valueCodeType = CodeType.Create(codeTypeName.Trim());
+                }
             }
 
             /// <summary>
             /// Gets the flag indicating if this instance has value set.
             /// </summary>
-            public bool HasValue => !manager.Value.IsNull();
+            public bool HasValue => managerName != null;
 
             /// <summary>
             /// Gets the value stored in this instance. If <see cref="HasValue"/> is <c>false</c> this will be <c>null</c>.
@@ -121,9 +140,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                         return null;
 
                     if (IsInternal)
-                        return Variable.Create(codeType.Value, buffer.Value.GetPointerAddress());
+                        return Variable.Create(valueCodeType, address + (uint)data.BufferOffset);
                     else if (IsExternal)
-                        return Variable.Create(codeType.Value, pointer.Value.GetPointerAddress());
+                        return Variable.Create(valueCodeType, data.Process.ReadPointer(address + (uint)data.DataPointerOffset));
                     else
                         throw new NotImplementedException();
                 }
@@ -132,19 +151,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// <summary>
             /// Checks if value is stored in internal buffer.
             /// </summary>
-            internal bool IsInternal => managerName.Value?.Contains(InternalManagerNameStart) ?? false;
+            internal bool IsInternal => managerName?.Contains(InternalManagerNameStart) ?? false;
 
             /// <summary>
             /// Checks if value is stored in external buffer (allocated in pointer field).
             /// </summary>
-            internal bool IsExternal => managerName.Value?.Contains(ExternalManagerNameStart) ?? false;
-
+            internal bool IsExternal => managerName?.Contains(ExternalManagerNameStart) ?? false;
 
             /// <summary>
             /// Verifies if the specified code type is correct for this class.
             /// </summary>
             /// <param name="codeType">The code type.</param>
-            internal static bool VerifyCodeType(CodeType codeType)
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
                 // _M_storage
@@ -154,19 +173,26 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 CodeType _M_storage, _M_ptr, _M_buffer, _M_manager;
 
                 if (!codeType.GetFieldTypes().TryGetValue("_M_storage", out _M_storage) || !codeType.GetFieldTypes().TryGetValue("_M_manager", out _M_manager))
-                    return false;
+                    return null;
                 if (!_M_storage.GetFieldTypes().TryGetValue("_M_ptr", out _M_ptr))
-                    return false;
+                    return null;
                 if (!_M_storage.GetFieldTypes().TryGetValue("_M_buffer", out _M_buffer))
-                    return false;
-                return true;
+                    return null;
+                return new ExtractedData
+                {
+                    ManagerPointerOffset = codeType.GetFieldOffset("_M_manager"),
+                    DataPointerOffset = codeType.GetFieldOffset("_M_storage") + _M_storage.GetFieldOffset("_M_ptr"),
+                    BufferOffset = codeType.GetFieldOffset("_M_storage") + _M_storage.GetFieldOffset("_M_buffer"),
+                    CodeType = codeType,
+                    Process = codeType.Module.Process,
+                };
             }
         }
 
         /// <summary>
         /// Clang libc++ implementation of std::any
         /// </summary>
-        public class ClangLibCpp : IAny
+        internal class ClangLibCpp : IAny
         {
             private const string SmallHandlerNameStart = "std::__1::__any_imp::_SmallHandler<";
             private const string SmallHandlerNameEnd = ">::__handle";
@@ -174,70 +200,90 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             private const string LargeHandlerNameEnd = ">::__handle";
 
             /// <summary>
-            /// Cache of __s field.
+            /// Code type extracted data
             /// </summary>
-            private UserMember<Variable> storage;
+            private class ExtractedData
+            {
+                /// <summary>
+                /// Offset of manager pointer field.
+                /// </summary>
+                public int ManagerPointerOffset;
+
+                /// <summary>
+                /// Offset of data pointer field.
+                /// </summary>
+                public int DataPointerOffset;
+
+                /// <summary>
+                /// Offset of buffer field.
+                /// </summary>
+                public int BufferOffset;
+
+                /// <summary>
+                /// Code type of std::any.
+                /// </summary>
+                public CodeType CodeType;
+
+                /// <summary>
+                /// Process where code type comes from.
+                /// </summary>
+                public Process Process;
+            }
 
             /// <summary>
-            /// Cache of __s.__ptr field.
+            /// Code type extracted data.
             /// </summary>
-            private UserMember<Variable> pointer;
+            private ExtractedData data;
 
             /// <summary>
-            /// Cache of __s.__buf field.
+            /// Address of variable.
             /// </summary>
-            private UserMember<Variable> buffer;
+            private ulong address;
 
             /// <summary>
-            /// Cache of __h field.
+            /// Name of the manager function.
             /// </summary>
-            private UserMember<Variable> manager;
+            private string managerName;
 
             /// <summary>
-            /// Cache of manager function name.
+            /// Value code type.
             /// </summary>
-            private UserMember<string> managerName;
-
-            /// <summary>
-            /// Cache of value code type.
-            /// </summary>
-            private UserMember<CodeType> codeType;
+            private CodeType valueCodeType;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
-            public ClangLibCpp(Variable variable)
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public ClangLibCpp(Variable variable, object savedData)
             {
-                storage = UserMember.Create(() => variable.GetField("__s"));
-                pointer = UserMember.Create(() => storage.Value.GetField("__ptr"));
-                buffer = UserMember.Create(() => storage.Value.GetField("__buf"));
-                manager = UserMember.Create(() => variable.GetField("__h"));
-                managerName = UserMember.Create(() =>
+                data = (ExtractedData)savedData;
+                address = variable.GetPointerAddress();
+                ulong managerAddress = data.Process.ReadPointer(address + (uint)data.ManagerPointerOffset);
+                if (managerAddress != 0)
                 {
-                    Tuple<string, ulong> nameAndOffset = Context.SymbolProvider.GetSymbolNameByAddress(storage.Value.GetCodeType().Module.Process, manager.Value.GetPointerAddress());
+                    Tuple<string, ulong> nameAndOffset = Context.SymbolProvider.GetSymbolNameByAddress(data.Process, managerAddress);
 
-                    if (nameAndOffset == null)
-                        return null;
-                    return nameAndOffset.Item1;
-                });
-                codeType = UserMember.Create(() =>
+                    if (nameAndOffset != null)
+                        managerName = nameAndOffset.Item1;
+                }
+                if (HasValue)
                 {
                     string codeTypeName;
                     string handlerCodeTypeName;
 
                     if (IsSmall)
                     {
-                        string moduleName = managerName.Value.Substring(0, managerName.Value.IndexOf('!') + 1);
+                        string moduleName = managerName.Substring(0, managerName.IndexOf('!') + 1);
 
-                        codeTypeName = moduleName + managerName.Value.Substring(moduleName.Length + SmallHandlerNameStart.Length, managerName.Value.Length - moduleName.Length - SmallHandlerNameStart.Length - SmallHandlerNameEnd.Length);
+                        codeTypeName = moduleName + managerName.Substring(moduleName.Length + SmallHandlerNameStart.Length, managerName.Length - moduleName.Length - SmallHandlerNameStart.Length - SmallHandlerNameEnd.Length);
                         handlerCodeTypeName = $"{moduleName}std::__1::__any_imp::_SmallHandler<{codeTypeName.Substring(moduleName.Length)}>";
                     }
                     else if (IsLarge)
                     {
-                        string moduleName = managerName.Value.Substring(0, managerName.Value.IndexOf('!') + 1);
+                        string moduleName = managerName.Substring(0, managerName.IndexOf('!') + 1);
 
-                        codeTypeName = moduleName + managerName.Value.Substring(moduleName.Length + LargeHandlerNameStart.Length, managerName.Value.Length - moduleName.Length - LargeHandlerNameStart.Length - LargeHandlerNameEnd.Length);
+                        codeTypeName = moduleName + managerName.Substring(moduleName.Length + LargeHandlerNameStart.Length, managerName.Length - moduleName.Length - LargeHandlerNameStart.Length - LargeHandlerNameEnd.Length);
                         handlerCodeTypeName = $"{moduleName}std::__1::__any_imp::_LargeHandler<{codeTypeName.Substring(moduleName.Length)}>";
                     }
                     else
@@ -245,14 +291,14 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
 
                     CodeType handlerCodeType = CodeType.Create(handlerCodeTypeName);
 
-                    return handlerCodeType.TemplateArguments[0] as CodeType ?? CodeType.Create(codeTypeName.Trim());
-                });
+                    valueCodeType = handlerCodeType.TemplateArguments[0] as CodeType ?? CodeType.Create(codeTypeName.Trim());
+                }
             }
 
             /// <summary>
             /// Gets the flag indicating if this instance has value set.
             /// </summary>
-            public bool HasValue => !manager.Value.IsNull();
+            public bool HasValue => managerName != null;
 
             /// <summary>
             /// Gets the value stored in this instance. If <see cref="HasValue"/> is <c>false</c> this will be <c>null</c>.
@@ -265,9 +311,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                         return null;
 
                     if (IsSmall)
-                        return Variable.Create(codeType.Value, buffer.Value.GetPointerAddress());
+                        return Variable.Create(valueCodeType, address + (uint)data.BufferOffset);
                     else if (IsLarge)
-                        return Variable.Create(codeType.Value, pointer.Value.GetPointerAddress());
+                        return Variable.Create(valueCodeType, data.Process.ReadPointer(address + (uint)data.DataPointerOffset));
                     else
                         throw new NotImplementedException();
                 }
@@ -276,19 +322,20 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// <summary>
             /// Checks if value is stored in internal buffer.
             /// </summary>
-            internal bool IsSmall => managerName.Value?.Contains(SmallHandlerNameStart) ?? false;
+            internal bool IsSmall => managerName?.Contains(SmallHandlerNameStart) ?? false;
 
             /// <summary>
             /// Checks if value is stored in external buffer (allocated in pointer field).
             /// </summary>
-            internal bool IsLarge => managerName.Value?.Contains(LargeHandlerNameStart) ?? false;
+            internal bool IsLarge => managerName?.Contains(LargeHandlerNameStart) ?? false;
 
 
             /// <summary>
             /// Verifies if the specified code type is correct for this class.
             /// </summary>
             /// <param name="codeType">The code type.</param>
-            internal static bool VerifyCodeType(CodeType codeType)
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
                 // __s
@@ -298,19 +345,26 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 CodeType __s, __ptr, __buf, __h;
 
                 if (!codeType.GetFieldTypes().TryGetValue("__s", out __s) || !codeType.GetFieldTypes().TryGetValue("__h", out __h))
-                    return false;
+                    return null;
                 if (!__s.GetFieldTypes().TryGetValue("__ptr", out __ptr))
-                    return false;
+                    return null;
                 if (!__s.GetFieldTypes().TryGetValue("__buf", out __buf))
-                    return false;
-                return true;
+                    return null;
+                return new ExtractedData
+                {
+                    ManagerPointerOffset = codeType.GetFieldOffset("__h"),
+                    DataPointerOffset = codeType.GetFieldOffset("__s") + __s.GetFieldOffset("__ptr"),
+                    BufferOffset = codeType.GetFieldOffset("__s") + __s.GetFieldOffset("__buf"),
+                    CodeType = codeType,
+                    Process = codeType.Module.Process,
+                };
             }
         }
 
         /// <summary>
         /// Microsoft Visual Studio implementation of std::any
         /// </summary>
-        public class VisualStudio : IAny
+        internal class VisualStudio : IAny
         {
             /// <summary>
             /// Bit mask used to extract <see cref="Representation"/> from <see cref="typeData"/>.
@@ -343,47 +397,97 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             }
 
             /// <summary>
-            /// Cache of _Storage field.
+            /// Code type extracted data
             /// </summary>
-            private UserMember<Variable> storage;
+            private class ExtractedData
+            {
+                /// <summary>
+                /// Offset of trivial data structure.
+                /// </summary>
+                public int TrivialDataOffset;
+
+                /// <summary>
+                /// Offset of small storage data structure.
+                /// </summary>
+                public int SmallStorageDataOffset;
+
+                /// <summary>
+                /// Offset of big storage pointer data field.
+                /// </summary>
+                public int BigStoragePointerOffset;
+
+                /// <summary>
+                /// Offset of type data field.
+                /// </summary>
+                public int TypeDataOffset;
+
+                /// <summary>
+                /// Representation mask constant.
+                /// </summary>
+                public ulong RepresentationMaskFlipped;
+
+                /// <summary>
+                /// Code type of std::any.
+                /// </summary>
+                public CodeType CodeType;
+
+                /// <summary>
+                /// Process where code type comes from.
+                /// </summary>
+                public Process Process;
+            }
 
             /// <summary>
-            /// Cache of _Storage._TrivialData field.
+            /// Code type extracted data.
             /// </summary>
-            private UserMember<Variable> trivialData;
+            private ExtractedData data;
 
             /// <summary>
-            /// Cache of _Storage._SmallStorage field.
+            /// Address of variable.
             /// </summary>
-            private UserMember<Variable> smallStorage;
+            private ulong address;
 
             /// <summary>
-            /// Cache of _Storage._BigStorage field.
+            /// TypeData field value.
             /// </summary>
-            private UserMember<Variable> bigStorage;
+            private ulong typeData;
 
             /// <summary>
-            /// Cache of _Storage._TypeData field.
+            /// Value code type.
             /// </summary>
-            private UserMember<ulong> typeData;
+            private CodeType valueCodeType;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="VisualStudio"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
-            public VisualStudio(Variable variable)
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public VisualStudio(Variable variable, object savedData)
             {
-                storage = UserMember.Create(() => variable.GetField("_Storage"));
-                trivialData = UserMember.Create(() => storage.Value.GetField("_TrivialData"));
-                smallStorage = UserMember.Create(() => storage.Value.GetField("_SmallStorage"));
-                bigStorage = UserMember.Create(() => storage.Value.GetField("_BigStorage"));
-                typeData = UserMember.Create(() => (ulong)storage.Value.GetField("_TypeData"));
+                data = (ExtractedData)savedData;
+                address = variable.GetPointerAddress();
+                typeData = data.Process.ReadPointer(address + (uint)data.TypeDataOffset);
+                if (HasValue)
+                {
+                    Tuple<string, ulong> nameAndOffset = Context.SymbolProvider.GetSymbolNameByAddress(data.Process, TypeInfoAddress);
+
+                    if (nameAndOffset != null)
+                    {
+                        string name = nameAndOffset.Item1;
+
+                        if (name.EndsWith(rttiSignature))
+                        {
+                            name = name.Substring(0, name.Length - rttiSignature.Length);
+                            valueCodeType = CodeType.Create(name);
+                        }
+                    }
+                }
             }
 
             /// <summary>
             /// Gets the flag indicating if this instance has value set.
             /// </summary>
-            public bool HasValue => typeData.Value != 0;
+            public bool HasValue => typeData != 0;
 
             /// <summary>
             /// Gets the value stored in this instance. If <see cref="HasValue"/> is <c>false</c> this will be <c>null</c>.
@@ -397,11 +501,11 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     switch (StorageType)
                     {
                         case Representation.Trivial:
-                            return Variable.Create(CodeType, trivialData.Value.GetPointerAddress());
+                            return Variable.Create(valueCodeType, address + (uint)data.TrivialDataOffset);
                         case Representation.Small:
-                            return Variable.Create(CodeType, smallStorage.Value.GetField("_Data").GetPointerAddress());
+                            return Variable.Create(valueCodeType, address + (uint)data.SmallStorageDataOffset);
                         case Representation.Big:
-                            return Variable.Create(CodeType, bigStorage.Value.GetField("_Ptr").GetPointerAddress());
+                            return Variable.Create(valueCodeType, data.Process.ReadPointer(address + (uint)data.BigStoragePointerOffset));
                         default:
                             throw new NotImplementedException();
                     }
@@ -411,40 +515,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// <summary>
             /// Gets the address of type_info pointer (it is pointer to RTTI structure).
             /// </summary>
-            private ulong TypeInfoAddress => typeData.Value & (storage.Value.GetCodeType().Module.PointerSize == 4 ? RepresentationMaskFlipped_x86 : RepresentationMaskFlipped_x64);
+            private ulong TypeInfoAddress => typeData & data.RepresentationMaskFlipped;
 
             /// <summary>
             /// Gets the representation type of this instance.
             /// </summary>
-            private Representation StorageType => (Representation)(typeData.Value & RepresentationMask);
-
-            /// <summary>
-            /// Gets the code type of value stored in this instance.
-            /// </summary>
-            private CodeType CodeType
-            {
-                get
-                {
-                    Tuple<string, ulong> nameAndOffset = Context.SymbolProvider.GetSymbolNameByAddress(storage.Value.GetCodeType().Module.Process, TypeInfoAddress);
-
-                    if (nameAndOffset == null)
-                        return null;
-
-                    string name = nameAndOffset.Item1;
-
-                    if (!name.EndsWith(rttiSignature))
-                        return null;
-
-                    name = name.Substring(0, name.Length - rttiSignature.Length);
-                    return CodeType.Create(name);
-                }
-            }
+            private Representation StorageType => (Representation)(typeData & RepresentationMask);
 
             /// <summary>
             /// Verifies if the specified code type is correct for this class.
             /// </summary>
             /// <param name="codeType">The code type.</param>
-            internal static bool VerifyCodeType(CodeType codeType)
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
                 // _Storage
@@ -461,16 +544,25 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 CodeType _Storage, _TrivialData, _SmallStorage, _Data, _RTTI, _BigStorage, _Padding, _Ptr, _RTTI2, _TypeData, _Dummy;
 
                 if (!codeType.GetFieldTypes().TryGetValue("_Storage", out _Storage) || !codeType.GetFieldTypes().TryGetValue("_Dummy", out _Dummy))
-                    return false;
+                    return null;
                 if (!_Storage.GetFieldTypes().TryGetValue("_TrivialData", out _TrivialData))
-                    return false;
+                    return null;
                 if (!_Storage.GetFieldTypes().TryGetValue("_SmallStorage", out _SmallStorage) || !_SmallStorage.GetFieldTypes().TryGetValue("_Data", out _Data) || !_SmallStorage.GetFieldTypes().TryGetValue("_RTTI", out _RTTI))
-                    return false;
+                    return null;
                 if (!_Storage.GetFieldTypes().TryGetValue("_BigStorage", out _BigStorage) || !_BigStorage.GetFieldTypes().TryGetValue("_Padding", out _Padding) || !_BigStorage.GetFieldTypes().TryGetValue("_Ptr", out _Ptr) || !_BigStorage.GetFieldTypes().TryGetValue("_RTTI", out _RTTI2))
-                    return false;
+                    return null;
                 if (!_Storage.GetFieldTypes().TryGetValue("_TypeData", out _TypeData))
-                    return false;
-                return true;
+                    return null;
+                return new ExtractedData()
+                {
+                    BigStoragePointerOffset = codeType.GetFieldOffset("_Storage") + _Storage.GetFieldOffset("_BigStorage") + _BigStorage.GetFieldOffset("_Ptr"),
+                    SmallStorageDataOffset = codeType.GetFieldOffset("_Storage") + _Storage.GetFieldOffset("_SmallStorage") + _SmallStorage.GetFieldOffset("_Data"),
+                    TrivialDataOffset = codeType.GetFieldOffset("_Storage") + _Storage.GetFieldOffset("_TrivialData"),
+                    TypeDataOffset = codeType.GetFieldOffset("_Storage") + _Storage.GetFieldOffset("_TypeData"),
+                    RepresentationMaskFlipped = codeType.Module.PointerSize == 4 ? RepresentationMaskFlipped_x86 : RepresentationMaskFlipped_x64,
+                    CodeType = codeType,
+                    Process = codeType.Module.Process,
+                };
             }
         }
 
@@ -479,9 +571,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// </summary>
         private static TypeSelector<IAny> typeSelector = new TypeSelector<IAny>(new[]
         {
-            new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio), VisualStudio.VerifyCodeType),
-            new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp7), LibStdCpp7.VerifyCodeType),
-            new Tuple<Type, Func<CodeType, bool>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(VisualStudio), VisualStudio.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(LibStdCpp7), LibStdCpp7.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
 
         /// <summary>

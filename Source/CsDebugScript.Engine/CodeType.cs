@@ -276,6 +276,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public abstract BuiltinType BuiltinType { get; }
+
+        /// <summary>
         /// Gets a value indicating whether this type is enum.
         /// </summary>
         /// <value>
@@ -874,6 +879,11 @@ namespace CsDebugScript
     internal class NativeCodeType : CodeType
     {
         /// <summary>
+        /// The build-in type.
+        /// </summary>
+        private BuiltinType builtinType;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CodeType"/> class.
         /// </summary>
         /// <remarks>This should not be used directly, but through Module.TypesById[typeId]</remarks>
@@ -886,7 +896,7 @@ namespace CsDebugScript
         {
             TypeId = typeId;
             Tag = tag;
-            BuiltinType = builtinType;
+            this.builtinType = builtinType;
 
             if (IsPointer && module.IsFakeCodeTypeId(typeId))
             {
@@ -910,7 +920,7 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the built-in type.
         /// </summary>
-        internal BuiltinType BuiltinType { get; private set; }
+        public override BuiltinType BuiltinType => builtinType;
 
         /// <summary>
         /// Gets a value indicating whether this type is enum.
@@ -1576,6 +1586,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.Bool;
+
+        /// <summary>
         /// Gets the name of the type.
         /// </summary>
         protected override string GetTypeName()
@@ -1605,6 +1620,11 @@ namespace CsDebugScript
             : base(module)
         {
         }
+
+        /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.UInt8;
 
         /// <summary>
         /// Gets the name of the type.
@@ -1638,6 +1658,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.Int8;
+
+        /// <summary>
         /// Gets the name of the type.
         /// </summary>
         protected override string GetTypeName()
@@ -1667,6 +1692,11 @@ namespace CsDebugScript
             : base(module)
         {
         }
+
+        /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.Int16;
 
         /// <summary>
         /// Gets the name of the type.
@@ -1700,6 +1730,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.UInt16;
+
+        /// <summary>
         /// Gets the name of the type.
         /// </summary>
         protected override string GetTypeName()
@@ -1729,6 +1764,11 @@ namespace CsDebugScript
             : base(module)
         {
         }
+
+        /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.Int32;
 
         /// <summary>
         /// Gets the name of the type.
@@ -1762,6 +1802,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.UInt32;
+
+        /// <summary>
         /// Gets the name of the type.
         /// </summary>
         protected override string GetTypeName()
@@ -1793,6 +1838,11 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.Int64;
+
+        /// <summary>
         /// Gets the name of the type.
         /// </summary>
         protected override string GetTypeName()
@@ -1822,6 +1872,11 @@ namespace CsDebugScript
             : base(module)
         {
         }
+
+        /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.UInt64;
 
         /// <summary>
         /// Gets the name of the type.
@@ -1860,7 +1915,12 @@ namespace CsDebugScript
         /// <value>
         ///   <c>true</c> if this instance is float; otherwise, <c>false</c>.
         /// </value>
-        public override bool IsFloat { get { return true; } }
+        public override bool IsFloat => true;
+
+        /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.Float32;
 
         /// <summary>
         /// Gets the name of the type.
@@ -1899,7 +1959,12 @@ namespace CsDebugScript
         /// <value>
         ///   <c>true</c> if this instance is double; otherwise, <c>false</c>.
         /// </value>
-        public override bool IsDouble { get { return true; } }
+        public override bool IsDouble => true;
+
+        /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.Float64;
 
         /// <summary>
         /// Gets the name of the type.
@@ -1991,6 +2056,11 @@ namespace CsDebugScript
             : base(module)
         {
         }
+
+        /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType => BuiltinType.NoType;
 
         /// <summary>
         /// Gets a value indicating whether this type is ANSI string.
@@ -2262,6 +2332,49 @@ namespace CsDebugScript
         /// Gets the CLR type.
         /// </summary>
         internal IClrType ClrType { get; private set; }
+
+        /// <summary>
+        /// Gets the built-in type.
+        /// </summary>
+        public override BuiltinType BuiltinType
+        {
+            get
+            {
+                if (ClrType.HasSimpleValue)
+                {
+                    switch (ClrType.ElementType)
+                    {
+                        case ClrElementType.Boolean:
+                            return BuiltinType.Bool;
+                        case ClrElementType.Char:
+                            return BuiltinType.Char16;
+                        case ClrElementType.Float:
+                            return BuiltinType.Float32;
+                        case ClrElementType.Double:
+                            return BuiltinType.Float64;
+                        case ClrElementType.Int8:
+                            return BuiltinType.Int8;
+                        case ClrElementType.UInt8:
+                            return BuiltinType.UInt8;
+                        case ClrElementType.Int16:
+                            return BuiltinType.Int16;
+                        case ClrElementType.UInt16:
+                            return BuiltinType.UInt16;
+                        case ClrElementType.NativeInt:
+                        case ClrElementType.Int32:
+                            return BuiltinType.Int32;
+                        case ClrElementType.NativeUInt:
+                        case ClrElementType.UInt32:
+                            return BuiltinType.UInt32;
+                        case ClrElementType.Int64:
+                            return BuiltinType.Int64;
+                        case ClrElementType.UInt64:
+                            return BuiltinType.UInt64;
+                    }
+                }
+                return BuiltinType.NoType;
+            }
+        }
 
         /// <summary>
         /// Gets a value indicating whether this type is ANSI string.

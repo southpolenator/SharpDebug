@@ -31,22 +31,73 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// Common code for Microsoft Visual Studio implementations of std::basic_string
         /// </summary>
-        public class VisualStudio : IBasicString
+        internal class VisualStudio : IBasicString
         {
             /// <summary>
-            /// The internal value field inside the std::basic_string
+            /// Code type extracted data
             /// </summary>
-            private UserMember<Variable> value;
+            protected class ExtractedData
+            {
+                /// <summary>
+                /// Function that reads size field.
+                /// </summary>
+                public Func<ulong, int> ReadSize;
+
+                /// <summary>
+                /// Function that reads reserved field.
+                /// </summary>
+                public Func<ulong, int> ReadReserved;
+
+                /// <summary>
+                /// Offset of buffer field.
+                /// </summary>
+                public int BufferOffset;
+
+                /// <summary>
+                /// Array length of buffer field.
+                /// </summary>
+                public int BufferLength;
+
+                /// <summary>
+                /// Offset of pointer field.
+                /// </summary>
+                public int PointerOffset;
+
+                /// <summary>
+                /// Number of bytes needed to store a character.
+                /// </summary>
+                public int CharSize;
+
+                /// <summary>
+                /// Code type of std::basic_string.
+                /// </summary>
+                public CodeType CodeType;
+
+                /// <summary>
+                /// Process where code type comes from.
+                /// </summary>
+                public Process Process;
+            }
+
+            /// <summary>
+            /// Code type extracted data.
+            /// </summary>
+            private ExtractedData data;
+
+            /// <summary>
+            /// Address of variable.
+            /// </summary>
+            private ulong address;
 
             /// <summary>
             /// The length of the string
             /// </summary>
-            private UserMember<int> length;
+            private int length;
 
             /// <summary>
             /// The reserved number of characters in the string buffer
             /// </summary>
-            private UserMember<int> reserved;
+            private int reserved;
 
             /// <summary>
             /// The text inside the string buffer
@@ -56,89 +107,59 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// <summary>
             /// Initializes a new instance of the <see cref="VisualStudio"/> class.
             /// </summary>
-            /// <param name="value">The value variable.</param>
-            public VisualStudio(UserMember<Variable> value)
+            /// <param name="variable">The variable.</param>
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public VisualStudio(Variable variable, object savedData)
             {
-                this.value = value;
-                length = UserMember.Create(() => (int)Value.GetField("_Mysize"));
-                reserved = UserMember.Create(() => (int)Value.GetField("_Myres"));
+                data = (ExtractedData)savedData;
+                address = variable.GetPointerAddress();
+                length = data.ReadSize(address);
+                reserved = data.ReadReserved(address);
                 text = UserMember.Create(() => GetText());
             }
 
             /// <summary>
             /// Gets the string length.
             /// </summary>
-            public int Length
-            {
-                get
-                {
-                    return length.Value;
-                }
-            }
+            public int Length => length;
 
             /// <summary>
             /// Gets the reserved space in buffer (number of characters).
             /// </summary>
-            public int Reserved
-            {
-                get
-                {
-                    return reserved.Value;
-                }
-            }
+            public int Reserved => reserved;
 
             /// <summary>
             /// Gets the string text.
             /// </summary>
-            public string Text
-            {
-                get
-                {
-                    return text.Value;
-                }
-            }
-
-            /// <summary>
-            /// Gets the internal value field inside the std::basic_string
-            /// </summary>
-            private Variable Value
-            {
-                get
-                {
-                    return value.Value;
-                }
-            }
+            public string Text => text.Value;
 
             /// <summary>
             /// Gets the string text.
             /// </summary>
             private string GetText()
             {
-                var bx = Value.GetField("_Bx");
-                var buf = bx.GetField("_Buf");
+                ulong stringAddress;
 
-                if (Length >= buf.GetArrayLength())
-                {
-                    return bx.GetField("_Ptr").ToString();
-                }
+                if (length >= data.BufferLength)
+                    stringAddress = data.Process.ReadPointer(address + (uint)data.PointerOffset);
                 else
-                {
-                    return buf.ToString();
-                }
+                    stringAddress = address + (uint)data.BufferOffset;
+                return data.Process.ReadString(stringAddress, data.CharSize, length);
             }
         }
 
         /// <summary>
         /// Microsoft Visual Studio 2013 implementation of std::basic_string
         /// </summary>
-        public class VisualStudio2013 : VisualStudio
+        internal class VisualStudio2013 : VisualStudio
         {
             /// <summary>
             /// Initializes a new instance of the <see cref="VisualStudio2013"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
-            public VisualStudio2013(Variable variable)
-                : base(UserMember.Create(() => variable))
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public VisualStudio2013(Variable variable, object savedData)
+                : base(variable, savedData)
             {
             }
 
@@ -146,7 +167,8 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// Verifies if the specified code type is correct for this class.
             /// </summary>
             /// <param name="codeType">The code type.</param>
-            internal static bool VerifyCodeType(CodeType codeType)
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
                 // _Bx
@@ -158,28 +180,39 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 var fields = codeType.GetFieldTypes();
 
                 if (!fields.TryGetValue("_Bx", out _Bx) || !fields.TryGetValue("_Mysize", out _Mysize) || !fields.TryGetValue("_Myres", out _Myres))
-                    return false;
+                    return null;
 
                 var _BxFields = _Bx.GetFieldTypes();
 
                 if (!_BxFields.TryGetValue("_Buf", out _Buf) || !_BxFields.TryGetValue("_Ptr", out _Ptr))
-                    return false;
+                    return null;
 
-                return true;
+                return new ExtractedData
+                {
+                    ReadSize = codeType.Module.Process.GetReadInt(codeType, "_Mysize"),
+                    ReadReserved = codeType.Module.Process.GetReadInt(codeType, "_Myres"),
+                    CharSize = (int)_Buf.ElementType.Size,
+                    BufferLength = (int)(_Buf.Size / _Buf.ElementType.Size),
+                    BufferOffset = codeType.GetFieldOffset("_Bx") + _Bx.GetFieldOffset("_Buf"),
+                    PointerOffset = codeType.GetFieldOffset("_Bx") + _Bx.GetFieldOffset("_Ptr"),
+                    CodeType = codeType,
+                    Process = codeType.Module.Process,
+                };
             }
         }
 
         /// <summary>
         /// Microsoft Visual Studio 2015 implementation of std::basic_string
         /// </summary>
-        public class VisualStudio2015 : VisualStudio
+        internal class VisualStudio2015 : VisualStudio
         {
             /// <summary>
             /// Initializes a new instance of the <see cref="VisualStudio2015"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
-            public VisualStudio2015(Variable variable)
-                : base(UserMember.Create(() => variable.GetField("_Mypair").GetField("_Myval2")))
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public VisualStudio2015(Variable variable, object savedData)
+                : base(variable, savedData)
             {
             }
 
@@ -187,7 +220,8 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// Verifies if the specified code type is correct for this class.
             /// </summary>
             /// <param name="codeType">The code type.</param>
-            internal static bool VerifyCodeType(CodeType codeType)
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
                 // _Mypair
@@ -200,120 +234,149 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 CodeType _Mypair, _Myval2, _Bx, _Buf, _Ptr, _Mysize, _Myres;
 
                 if (!codeType.GetFieldTypes().TryGetValue("_Mypair", out _Mypair))
-                    return false;
+                    return null;
                 if (!_Mypair.GetFieldTypes().TryGetValue("_Myval2", out _Myval2))
-                    return false;
+                    return null;
 
                 var _Myval2Fields = _Myval2.GetFieldTypes();
 
                 if (!_Myval2Fields.TryGetValue("_Bx", out _Bx) || !_Myval2Fields.TryGetValue("_Mysize", out _Mysize) || !_Myval2Fields.TryGetValue("_Myres", out _Myres))
-                    return false;
+                    return null;
 
                 var _BxFields = _Bx.GetFieldTypes();
 
                 if (!_BxFields.TryGetValue("_Buf", out _Buf) || !_BxFields.TryGetValue("_Ptr", out _Ptr))
-                    return false;
+                    return null;
 
-                return true;
+                int baseOffset = codeType.GetFieldOffset("_Mypair") + _Mypair.GetFieldOffset("_Myval2");
+
+                return new ExtractedData
+                {
+                    ReadSize = codeType.Module.Process.GetReadInt(codeType, "_Mypair._Myval2._Mysize"),
+                    ReadReserved = codeType.Module.Process.GetReadInt(codeType, "_Mypair._Myval2._Myres"),
+                    CharSize = (int)_Buf.ElementType.Size,
+                    BufferLength = (int)(_Buf.Size / _Buf.ElementType.Size),
+                    BufferOffset = baseOffset + _Myval2.GetFieldOffset("_Bx") + _Bx.GetFieldOffset("_Buf"),
+                    PointerOffset = baseOffset + _Myval2.GetFieldOffset("_Bx") + _Bx.GetFieldOffset("_Ptr"),
+                    CodeType = codeType,
+                    Process = codeType.Module.Process,
+                };
             }
         }
 
         /// <summary>
         /// libstdc++ 6 implementations of std::basic_string
         /// </summary>
-        public class LibStdCpp6 : IBasicString
+        internal class LibStdCpp6 : IBasicString
         {
             /// <summary>
-            /// The text inside the string buffer
+            /// Code type extracted data
             /// </summary>
-            private UserMember<Variable> text;
+            private class ExtractedData
+            {
+                /// <summary>
+                /// Function that reads length field.
+                /// </summary>
+                public Func<ulong, int> ReadLength;
+
+                /// <summary>
+                /// Function that reads capacity field.
+                /// </summary>
+                public Func<ulong, int> ReadCapacity;
+
+                /// <summary>
+                /// Offset of buffer field.
+                /// </summary>
+                public int BufferOffset;
+
+                /// <summary>
+                /// Array length of buffer field.
+                /// </summary>
+                public int BufferLength;
+
+                /// <summary>
+                /// Offset of pointer field.
+                /// </summary>
+                public int PointerOffset;
+
+                /// <summary>
+                /// Number of bytes needed to store a character.
+                /// </summary>
+                public int CharSize;
+
+                /// <summary>
+                /// Code type of std::basic_string.
+                /// </summary>
+                public CodeType CodeType;
+
+                /// <summary>
+                /// Process where code type comes from.
+                /// </summary>
+                public Process Process;
+            }
+
+            /// <summary>
+            /// Code type extracted data.
+            /// </summary>
+            private ExtractedData data;
+
+            /// <summary>
+            /// Address of variable.
+            /// </summary>
+            private ulong address;
 
             /// <summary>
             /// The length of the string
             /// </summary>
-            private UserMember<int> length;
+            private int length;
 
             /// <summary>
-            /// The local buffer that can be used for the string
+            /// The reserved number of characters in the string buffer
             /// </summary>
-            private UserMember<Variable> localBuffer;
+            private int reserved;
 
             /// <summary>
-            /// The string buffer capacity
+            /// The text inside the string buffer
             /// </summary>
-            private UserMember<int> capacity;
+            private UserMember<string> text;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="LibStdCpp6"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
-            public LibStdCpp6(Variable variable)
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public LibStdCpp6(Variable variable, object savedData)
             {
-                length = UserMember.Create(() => (int)variable.GetField("_M_string_length"));
-                text = UserMember.Create(() => variable.GetField("_M_dataplus").GetField("_M_p"));
-                localBuffer = UserMember.Create(() => variable.GetField("_M_local_buf"));
-                capacity = UserMember.Create(() => (int)variable.GetField("_M_allocated_capacity"));
+                data = (ExtractedData)savedData;
+                address = variable.GetPointerAddress();
+                length = data.ReadLength(address);
+                ulong stringAddress = data.Process.ReadPointer(address + (uint)data.PointerOffset);
+                bool localData = stringAddress == address + (uint)data.BufferOffset;
+                reserved = localData ? data.BufferLength : data.ReadCapacity(address);
+                text = UserMember.Create(() => data.Process.ReadString(stringAddress, data.CharSize, length));
             }
 
             /// <summary>
             /// Gets the string length.
             /// </summary>
-            public int Length
-            {
-                get
-                {
-                    return length.Value;
-                }
-            }
+            public int Length => length;
 
             /// <summary>
             /// Gets the reserved space in buffer (number of characters).
             /// </summary>
-            public int Reserved
-            {
-                get
-                {
-                    if (IsLocalData)
-                    {
-                        return (int)(15 / text.Value.GetCodeType().ElementType.Size);
-                    }
-                    else
-                    {
-                        return capacity.Value;
-                    }
-                }
-            }
+            public int Reserved => reserved;
 
             /// <summary>
             /// Gets the string text.
             /// </summary>
-            public string Text
-            {
-                get
-                {
-                    return text.Value.ToString();
-                }
-            }
-
-            /// <summary>
-            /// Gets a value indicating whether basic_string is using local data.
-            /// </summary>
-            /// <value>
-            /// <c>true</c> if basic_string is using local data; otherwise, <c>false</c>.
-            /// </value>
-            private bool IsLocalData
-            {
-                get
-                {
-                    return localBuffer.Value.GetPointerAddress() == text.Value.GetPointerAddress();
-                }
-            }
+            public string Text => text.Value;
 
             /// <summary>
             /// Verifies if the specified code type is correct for this class.
             /// </summary>
             /// <param name="codeType">The code type.</param>
-            internal static bool VerifyCodeType(CodeType codeType)
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
                 // _M_dataplus
@@ -325,112 +388,133 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 CodeType _M_dataplus, _M_p, _M_string_length, _M_local_buf, _M_allocated_capacity;
 
                 if (!codeType.GetFieldTypes().TryGetValue("_M_dataplus", out _M_dataplus))
-                    return false;
+                    return null;
                 if (!codeType.GetFieldTypes().TryGetValue("_M_string_length", out _M_string_length))
-                    return false;
+                    return null;
                 if (!_M_dataplus.GetFieldTypes().TryGetValue("_M_p", out _M_p))
-                    return false;
+                    return null;
 
                 // These should be part of unnamed union
                 if (!codeType.GetFieldTypes().TryGetValue("_M_local_buf", out _M_local_buf))
-                    return false;
+                    return null;
                 if (!codeType.GetFieldTypes().TryGetValue("_M_allocated_capacity", out _M_allocated_capacity))
-                    return false;
-                return true;
+                    return null;
+                return new ExtractedData
+                {
+                    ReadLength = codeType.Module.Process.GetReadInt(codeType, "_M_string_length"),
+                    ReadCapacity = codeType.Module.Process.GetReadInt(codeType, "_M_allocated_capacity"),
+                    BufferOffset = codeType.GetFieldOffset("_M_local_buf"),
+                    PointerOffset = codeType.GetFieldOffset("_M_dataplus") + _M_dataplus.GetFieldOffset("_M_p"),
+                    CharSize = (int)_M_local_buf.ElementType.Size,
+                    BufferLength = (int)(15 / _M_local_buf.ElementType.Size),
+                    CodeType = codeType,
+                    Process = codeType.Module.Process,
+                };
             }
         }
 
         /// <summary>
         /// libstdc++ 6 implementations of std::basic_string with _GLIBCXX_USE_CXX11_ABI not defined.
         /// </summary>
-        public class LibStdCpp6_NoAbi : IBasicString
+        internal class LibStdCpp6_NoAbi : IBasicString
         {
             /// <summary>
-            /// The text inside the string buffer
+            /// Code type extracted data
             /// </summary>
-            private UserMember<Variable> text;
+            private class ExtractedData
+            {
+                /// <summary>
+                /// Function that reads length field.
+                /// </summary>
+                public Func<ulong, int> ReadLength;
+
+                /// <summary>
+                /// Function that reads capacity field.
+                /// </summary>
+                public Func<ulong, int> ReadCapacity;
+
+                /// <summary>
+                /// Offset of pointer field.
+                /// </summary>
+                public int PointerOffset;
+
+                /// <summary>
+                /// Number of bytes needed to store a character.
+                /// </summary>
+                public int CharSize;
+
+                /// <summary>
+                /// Code type of std::basic_string.
+                /// </summary>
+                public CodeType CodeType;
+
+                /// <summary>
+                /// Process where code type comes from.
+                /// </summary>
+                public Process Process;
+            }
+
+            /// <summary>
+            /// Code type extracted data.
+            /// </summary>
+            private ExtractedData data;
+
+            /// <summary>
+            /// Address of variable.
+            /// </summary>
+            private ulong address;
 
             /// <summary>
             /// The length of the string
             /// </summary>
-            private UserMember<int> length;
+            private int length;
 
             /// <summary>
-            /// The string buffer capacity
+            /// The reserved number of characters in the string buffer
             /// </summary>
-            private UserMember<int> capacity;
+            private int reserved;
 
             /// <summary>
-            /// Header that holds extra info about string
+            /// The text inside the string buffer
             /// </summary>
-            private UserMember<Variable> header;
+            private UserMember<string> text;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="LibStdCpp6_NoAbi"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
-            public LibStdCpp6_NoAbi(Variable variable)
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public LibStdCpp6_NoAbi(Variable variable, object savedData)
             {
-                CodeType codeType = variable.GetCodeType();
-                CodeType _Rep = CodeType.Create($"{codeType.Name}::_Rep", codeType.Module);
-                header = UserMember.Create(() => text.Value.AdjustPointer(-(int)_Rep.Size).CastAs(_Rep));
-                length = UserMember.Create(() => (int)header.Value.GetField("_M_length"));
-                text = UserMember.Create(() => variable.GetField("_M_dataplus").GetField("_M_p"));
-                capacity = UserMember.Create(() => (int)header.Value.GetField("_M_capacity"));
+                data = (ExtractedData)savedData;
+                address = variable.GetPointerAddress();
+                ulong stringAddress = data.Process.ReadPointer(address + (uint)data.PointerOffset);
+                length = data.ReadLength(stringAddress);
+                reserved = data.ReadCapacity(stringAddress);
+                text = UserMember.Create(() => data.Process.ReadString(stringAddress, data.CharSize, length));
             }
 
             /// <summary>
             /// Gets the string length.
             /// </summary>
-            public int Length
-            {
-                get
-                {
-                    return length.Value;
-                }
-            }
+            public int Length => length;
 
             /// <summary>
             /// Gets the reserved space in buffer (number of characters).
             /// </summary>
-            public int Reserved
-            {
-                get
-                {
-                    return capacity.Value;
-                }
-            }
+            public int Reserved => reserved;
 
             /// <summary>
             /// Gets the string text.
             /// </summary>
-            public string Text
-            {
-                get
-                {
-                    return text.Value.ToString();
-                }
-            }
-
-            /// <summary>
-            /// Gets a value indicating whether basic_string is using local data.
-            /// </summary>
-            /// <value>
-            /// <c>true</c> if basic_string is using local data; otherwise, <c>false</c>.
-            /// </value>
-            private bool IsLocalData
-            {
-                get
-                {
-                    return false;
-                }
-            }
+            public string Text => text.Value;
 
             /// <summary>
             /// Verifies if the specified code type is correct for this class.
             /// </summary>
             /// <param name="codeType">The code type.</param>
-            internal static bool VerifyCodeType(CodeType codeType)
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
                 // _M_dataplus
@@ -447,140 +531,163 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 }
                 catch
                 {
-                    return false;
+                    return null;
                 }
 
                 if (!codeType.GetFieldTypes().TryGetValue("_M_dataplus", out _M_dataplus))
-                    return false;
+                    return null;
                 if (!_M_dataplus.GetFieldTypes().TryGetValue("_M_p", out _M_p))
-                    return false;
+                    return null;
                 if (!_Rep.GetFieldTypes().TryGetValue("_M_length", out _M_length))
-                    return false;
+                    return null;
                 if (!_Rep.GetFieldTypes().TryGetValue("_M_capacity", out _M_capacity))
-                    return false;
+                    return null;
                 if (!_Rep.GetFieldTypes().TryGetValue("_M_refcount", out _M_refcount))
-                    return false;
-                return true;
+                    return null;
+                int repOffset = -(int)_Rep.Size;
+                return new ExtractedData
+                {
+                    ReadLength = codeType.Module.Process.GetReadInt(_Rep, "_M_length", repOffset),
+                    ReadCapacity = codeType.Module.Process.GetReadInt(_Rep, "_M_capacity", repOffset),
+                    CharSize = (int)_M_p.ElementType.Size,
+                    PointerOffset = codeType.GetFieldOffset("_M_dataplus") + _M_dataplus.GetFieldOffset("_M_p"),
+                    CodeType = codeType,
+                    Process = codeType.Module.Process,
+                };
             }
         }
 
         /// <summary>
         /// Clang libc++ implementations of std::basic_string
         /// </summary>
-        public class ClangLibCpp : IBasicString
+        internal class ClangLibCpp : IBasicString
         {
             /// <summary>
-            /// Cache of __r_.__value_ field.
+            /// Code type extracted data
             /// </summary>
-            private UserMember<Variable> value;
+            private class ExtractedData
+            {
+                /// <summary>
+                /// Function that reads short data length field.
+                /// </summary>
+                public Func<ulong, int> ReadShortDataLength;
+
+                /// <summary>
+                /// Function that reads long data length field.
+                /// </summary>
+                public Func<ulong, int> ReadLongDataLength;
+
+                /// <summary>
+                /// Function that reads long data capacity field.
+                /// </summary>
+                public Func<ulong, int> ReadCapacity;
+
+                /// <summary>
+                /// Offset of buffer field.
+                /// </summary>
+                public int BufferOffset;
+
+                /// <summary>
+                /// Array length of buffer field.
+                /// </summary>
+                public int BufferLength;
+
+                /// <summary>
+                /// Offset of pointer field.
+                /// </summary>
+                public int PointerOffset;
+
+                /// <summary>
+                /// Number of bytes needed to store a character.
+                /// </summary>
+                public int CharSize;
+
+                /// <summary>
+                /// Code type of std::basic_string.
+                /// </summary>
+                public CodeType CodeType;
+
+                /// <summary>
+                /// Process where code type comes from.
+                /// </summary>
+                public Process Process;
+            }
 
             /// <summary>
-            /// Cache of long data field: __r_.__value_.__l.
+            /// Code type extracted data.
             /// </summary>
-            private UserMember<Variable> longData;
+            private ExtractedData data;
 
             /// <summary>
-            /// Cache of short data field: __r_.__value_.__s.
+            /// Address of variable.
             /// </summary>
-            private UserMember<Variable> shortData;
+            private ulong address;
 
             /// <summary>
-            /// Cache of __data_ field from longData.
+            /// The length of the string
             /// </summary>
-            private UserMember<Variable> longText;
+            private int length;
 
             /// <summary>
-            /// Cache of __data_ field from shortData.
+            /// The reserved number of characters in the string buffer
             /// </summary>
-            private UserMember<Variable> shortText;
+            private int reserved;
 
             /// <summary>
-            /// Cache of <see cref="Length"/> property.
+            /// The text inside the string buffer
             /// </summary>
-            private UserMember<int> length;
-
-            /// <summary>
-            /// Cache of <see cref="capacity"/> property.
-            /// </summary>
-            private UserMember<int> capacity;
+            private UserMember<string> text;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
-            public ClangLibCpp(Variable variable)
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public ClangLibCpp(Variable variable, object savedData)
             {
-                value = UserMember.Create(() => variable.GetField("__r_").GetField("__value_"));
-                longData = UserMember.Create(() => value.Value.GetField("__l"));
-                shortData = UserMember.Create(() => value.Value.GetField("__s"));
-                longText = UserMember.Create(() => longData.Value.GetField("__data_"));
-                shortText = UserMember.Create(() => shortData.Value.GetField("__data_"));
-                length = UserMember.Create(() =>
+                data = (ExtractedData)savedData;
+                address = variable.GetPointerAddress();
+                ulong stringAddress = data.Process.ReadPointer(address + (uint)data.PointerOffset);
+                bool localData = stringAddress == 0;
+                if (localData)
+                    stringAddress = address + (uint)data.BufferOffset;
+                bool bigEndian = true; // TODO:
+                if (localData)
                 {
-                    if (IsLocalData)
-                    {
-                        bool bigEndian = true; // TODO:
-                        int size = (int)shortData.Value.GetField("__size_");
-
-                        if (bigEndian)
-                            return size >> 1;
-                        return size;
-                    }
-                    return (int)longData.Value.GetField("__size_");
-                });
-                capacity = UserMember.Create(() =>
-                {
-                    if (IsLocalData)
-                    {
-                        CodeType bufferCodeType = shortText.Value.GetCodeType();
-
-                        return (int)(bufferCodeType.Size / bufferCodeType.ElementType.Size);
-                    }
-                    else
-                        return (int)longData.Value.GetField("__cap_");
-                });
+                    length = data.ReadShortDataLength(address);
+                    if (bigEndian)
+                        length = length >> 1;
+                }
+                else
+                    length = data.ReadLongDataLength(address);
+                if (localData)
+                    reserved = data.BufferLength;
+                else
+                    reserved = data.ReadCapacity(address);
+                text = UserMember.Create(() => data.Process.ReadString(stringAddress, data.CharSize, length));
             }
 
             /// <summary>
             /// Gets the string length.
             /// </summary>
-            public int Length => length.Value;
+            public int Length => length;
 
             /// <summary>
             /// Gets the reserved space in buffer (number of characters).
             /// </summary>
-            public int Reserved => capacity.Value;
+            public int Reserved => reserved;
 
             /// <summary>
             /// Gets the string text.
             /// </summary>
-            public string Text
-            {
-                get
-                {
-                    return IsLocalData ? shortText.Value.ToString() : longText.Value.ToString();
-                }
-            }
-
-            /// <summary>
-            /// Gets a value indicating whether basic_string is using local data.
-            /// </summary>
-            /// <value>
-            /// <c>true</c> if basic_string is using local data; otherwise, <c>false</c>.
-            /// </value>
-            private bool IsLocalData
-            {
-                get
-                {
-                    return longText.Value.IsNull();
-                }
-            }
+            public string Text => text.Value;
 
             /// <summary>
             /// Verifies if the specified code type is correct for this class.
             /// </summary>
             /// <param name="codeType">The code type.</param>
-            internal static bool VerifyCodeType(CodeType codeType)
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
                 // __r_
@@ -598,22 +705,33 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 CodeType __r_, __value_, __l, __cap_, __data_, __size_, __r, __words, __s, __data_2, __lx, __size_2;
 
                 if (!codeType.GetFieldTypes().TryGetValue("__r_", out __r_))
-                    return false;
+                    return null;
                 if (!__r_.GetFieldTypes().TryGetValue("__value_", out __value_))
-                    return false;
+                    return null;
                 if (!__value_.GetFieldTypes().TryGetValue("__l", out __l))
-                    return false;
+                    return null;
                 if (!__l.GetFieldTypes().TryGetValue("__cap_", out __cap_) || !__l.GetFieldTypes().TryGetValue("__data_", out __data_) || !__l.GetFieldTypes().TryGetValue("__size_", out __size_))
-                    return false;
+                    return null;
                 if (!__value_.GetFieldTypes().TryGetValue("__r", out __r))
-                    return false;
+                    return null;
                 if (!__r.GetFieldTypes().TryGetValue("__words", out __words))
-                    return false;
+                    return null;
                 if (!__value_.GetFieldTypes().TryGetValue("__s", out __s))
-                    return false;
+                    return null;
                 if (!__s.GetFieldTypes().TryGetValue("__data_", out __data_2) || !__s.GetFieldTypes().TryGetValue("__lx", out __lx) || !__s.GetFieldTypes().TryGetValue("__size_", out __size_2))
-                    return false;
-                return true;
+                    return null;
+                return new ExtractedData
+                {
+                    BufferLength = (int)(__data_2.Size / __data_2.ElementType.Size),
+                    BufferOffset = codeType.GetFieldOffset("__r_") + __r_.GetFieldOffset("__value_") + __value_.GetFieldOffset("__s") + __s.GetFieldOffset("__data_"),
+                    CharSize = (int)__data_2.ElementType.Size,
+                    PointerOffset = codeType.GetFieldOffset("__r_") + __r_.GetFieldOffset("__value_") + __value_.GetFieldOffset("__l") + __l.GetFieldOffset("__data_"),
+                    ReadCapacity = codeType.Module.Process.GetReadInt(codeType, "__r_.__value_.__l.__cap_"),
+                    ReadLongDataLength = codeType.Module.Process.GetReadInt(codeType, "__r_.__value_.__l.__size_"),
+                    ReadShortDataLength = codeType.Module.Process.GetReadInt(codeType, "__r_.__value_.__s.__size_"),
+                    CodeType = codeType,
+                    Process = codeType.Module.Process,
+                };
             }
         }
 
@@ -622,11 +740,11 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// </summary>
         private static TypeSelector<IBasicString> typeSelector = new TypeSelector<IBasicString>(new[]
         {
-            new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2013), VisualStudio2013.VerifyCodeType),
-            new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio2015), VisualStudio2015.VerifyCodeType),
-            new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
-            new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6_NoAbi), LibStdCpp6_NoAbi.VerifyCodeType),
-            new Tuple<Type, Func<CodeType, bool>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(VisualStudio2013), VisualStudio2013.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(VisualStudio2015), VisualStudio2015.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(LibStdCpp6_NoAbi), LibStdCpp6_NoAbi.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
 
         /// <summary>

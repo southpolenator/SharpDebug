@@ -599,6 +599,213 @@ namespace CsDebugScript
             }
         }
 
+        #region Read functions
+        /// <summary>
+        /// Reads pointer from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <returns>Pointer read from the specified address.</returns>
+        public ulong ReadPointer(ulong address)
+        {
+            uint pointerSize = GetPointerSize();
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, pointerSize);
+
+            return UserType.ReadPointer(buffer, 0, (int)pointerSize);
+        }
+
+        /// <summary>
+        /// Reads byte from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="bits">The number of bits to interpret.</param>
+        /// <param name="bitsOffset">The offset in bits.</param>
+        /// <returns>Byte read from the specified address.</returns>
+        public byte ReadByte(ulong address, int bits = 8, int bitsOffset = 0)
+        {
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, 1);
+
+            return UserType.ReadByte(buffer, 0, bits, bitsOffset);
+        }
+
+        /// <summary>
+        /// Reads signed byte from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <returns>Signed byte read from the specified address.</returns>
+        public sbyte ReadSbyte(ulong address)
+        {
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, 1);
+
+            return UserType.ReadSbyte(buffer, 0);
+        }
+
+        /// <summary>
+        /// Reads short from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="bits">The number of bits to interpret.</param>
+        /// <param name="bitsOffset">The offset in bits.</param>
+        /// <returns>Short read from the specified address.</returns>
+        public short ReadShort(ulong address, int bits = 16, int bitsOffset = 0)
+        {
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, 2);
+
+            return UserType.ReadShort(buffer, 0, bits, bitsOffset);
+        }
+
+        /// <summary>
+        /// Read unsigned short from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="bits">The number of bits to interpret.</param>
+        /// <param name="bitsOffset">The offset in bits.</param>
+        /// <returns>Unsigned short read from the specified address.</returns>
+        public ushort ReadUshort(ulong address, int bits = 16, int bitsOffset = 0)
+        {
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, 2);
+
+            return UserType.ReadUshort(buffer, 0, bits, bitsOffset);
+        }
+
+        /// <summary>
+        /// Read integer from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="bits">The number of bits to interpret.</param>
+        /// <param name="bitsOffset">The offset in bits.</param>
+        /// <returns>Integer read from the specified address.</returns>
+        public int ReadInt(ulong address, int bits = 32, int bitsOffset = 0)
+        {
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, 4);
+
+            return UserType.ReadInt(buffer, 0, bits, bitsOffset);
+        }
+
+        /// <summary>
+        /// Read unsigned integer from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="bits">The number of bits to interpret.</param>
+        /// <param name="bitsOffset">The offset in bits.</param>
+        /// <returns>Unsigned integer read from the specified address.</returns>
+        public uint ReadUint(ulong address, int bits = 32, int bitsOffset = 0)
+        {
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, 4);
+
+            return UserType.ReadUint(buffer, 0, bits, bitsOffset);
+        }
+
+        /// <summary>
+        /// Read long integer from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="bits">The number of bits to interpret.</param>
+        /// <param name="bitsOffset">The offset in bits.</param>
+        /// <returns>Long integer read from the specified address.</returns>
+        public long ReadLong(ulong address, int bits = 64, int bitsOffset = 0)
+        {
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, 8);
+
+            return UserType.ReadLong(buffer, 0, bits, bitsOffset);
+        }
+
+        /// <summary>
+        /// Read unsigned long integer from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <param name="bits">The number of bits to interpret.</param>
+        /// <param name="bitsOffset">The offset in bits.</param>
+        /// <returns>Unsigned long integer read from the specified address.</returns>
+        public ulong ReadUlong(ulong address, int bits = 64, int bitsOffset = 0)
+        {
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, 8);
+
+            return UserType.ReadUlong(buffer, 0, bits, bitsOffset);
+        }
+
+        /// <summary>
+        /// Read float from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <returns>Float from the specified address.</returns>
+        public float ReadFloat(ulong address)
+        {
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, 4);
+
+            return UserType.ReadFloat(buffer, 0);
+        }
+
+        /// <summary>
+        /// Read double from the specified address.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <returns>Double read from the specified address.</returns>
+        public double ReadDouble(ulong address)
+        {
+            MemoryBuffer buffer = Debugger.ReadMemory(this, address, 8);
+
+            return UserType.ReadDouble(buffer, 0);
+        }
+
+        /// <summary>
+        /// Gets function that can be used to read integer from the specified address of the structure containing the specified field by dot path.
+        /// This function handles all built-in types and converts result to integer for the user.
+        /// </summary>
+        /// <param name="codeType">The code type containing field that should be read.</param>
+        /// <param name="fieldPath">Field dot path. Example: MyType.MyInnerType.MyField</param>
+        /// <param name="baseOffset">Base offset that will be applied to the specified address. This offset will be added with field offset.</param>
+        /// <param name="readingCodeType">Code type of the field to be read. If not specified, field code type will be used.</param>
+        /// <returns>Function that reads integer for the speicifed address.</returns>
+        public Func<ulong, int> GetReadInt(CodeType codeType, string fieldPath = null, int baseOffset = 0, CodeType readingCodeType = null)
+        {
+            CodeType fieldCodeType = codeType;
+            int offset = baseOffset;
+
+            if (!string.IsNullOrEmpty(fieldPath))
+            {
+                string[] fields = fieldPath.Split(".".ToCharArray());
+
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    offset += fieldCodeType.GetFieldOffset(fields[i]);
+                    fieldCodeType = fieldCodeType.GetFieldType(fields[i]);
+                }
+            }
+
+            if (readingCodeType == null)
+                readingCodeType = fieldCodeType;
+            switch (readingCodeType.BuiltinType)
+            {
+                case BuiltinType.Bool:
+                    return (address) => ReadByte(address + (ulong)offset) != 0 ? 1 : 0;
+                case BuiltinType.Char8:
+                case BuiltinType.Int8:
+                    return (address) => ReadSbyte(address + (ulong)offset);
+                case BuiltinType.Char16:
+                case BuiltinType.UInt16:
+                    return (address) => ReadUshort(address + (ulong)offset);
+                case BuiltinType.Char32:
+                case BuiltinType.UInt32:
+                    return (address) => (int)ReadUint(address + (ulong)offset);
+                case BuiltinType.Float32:
+                    return (address) => (int)ReadFloat(address + (ulong)offset);
+                case BuiltinType.Float64:
+                    return (address) => (int)ReadDouble(address + (ulong)offset);
+                case BuiltinType.Int16:
+                    return (address) => ReadShort(address + (ulong)offset);
+                case BuiltinType.Int32:
+                    return (address) => ReadInt(address + (ulong)offset);
+                case BuiltinType.Int64:
+                    return (address) => (int)ReadLong(address + (ulong)offset);
+                case BuiltinType.UInt8:
+                    return (address) => ReadByte(address + (ulong)offset);
+                case BuiltinType.UInt64:
+                    return (address) => (int)ReadUlong(address + (ulong)offset);
+            }
+
+            throw new NotImplementedException($"Unexpected build-in type: {readingCodeType.BuiltinType}");
+        }
+
         /// <summary>
         /// Reads the string and caches it inside this object.
         /// </summary>
@@ -707,5 +914,6 @@ namespace CsDebugScript
                 return Context.Debugger.ReadWideUnicodeString(this, address, length);
             }
         }
+        #endregion
     }
 }
