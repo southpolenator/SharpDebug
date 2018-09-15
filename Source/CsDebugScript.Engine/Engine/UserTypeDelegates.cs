@@ -333,11 +333,11 @@ namespace CsDebugScript.Engine
                     if (parameters[0].ParameterType == typeof(Variable))
                     {
                         DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(Variable) }, UserTypeDelegates.ModuleBuilder);
-                        ILGenerator gen = method.GetILGenerator();
+                        ILGenerator il = method.GetILGenerator();
 
-                        gen.Emit(OpCodes.Ldarg_0);
-                        gen.Emit(OpCodes.Newobj, constructor);
-                        gen.Emit(OpCodes.Ret);
+                        il.PrepareMethodCall(1, parameters);
+                        il.Emit(OpCodes.Newobj, constructor);
+                        il.Emit(OpCodes.Ret);
 
                         var symbolicConstructor = (SymbolicConstructorDelegate)method.CreateDelegate(typeof(SymbolicConstructorDelegate));
                         var symbolicConstructorTyped = (SymbolicConstructorDelegate<T>)method.CreateDelegate(typeof(SymbolicConstructorDelegate<T>));
@@ -368,12 +368,11 @@ namespace CsDebugScript.Engine
                     if (parameters[0].ParameterType == typeof(Variable) && parameters[1].ParameterType == typeof(object))
                     {
                         DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(Variable), typeof(object) }, UserTypeDelegates.ModuleBuilder);
-                        ILGenerator gen = method.GetILGenerator();
+                        ILGenerator il = method.GetILGenerator();
 
-                        gen.Emit(OpCodes.Ldarg_0);
-                        gen.Emit(OpCodes.Ldarg_1);
-                        gen.Emit(OpCodes.Newobj, constructor);
-                        gen.Emit(OpCodes.Ret);
+                        il.PrepareMethodCall(2, parameters);
+                        il.Emit(OpCodes.Newobj, constructor);
+                        il.Emit(OpCodes.Ret);
 
                         var symbolicConstructorWithData = (SymbolicConstructorWithDataDelegate)method.CreateDelegate(typeof(SymbolicConstructorWithDataDelegate));
                         var symbolicConstructorWithDataTyped = (SymbolicConstructorWithDataDelegate<T>)method.CreateDelegate(typeof(SymbolicConstructorWithDataDelegate<T>));
@@ -410,17 +409,11 @@ namespace CsDebugScript.Engine
                         && parameters[6].ParameterType == typeof(string))
                     {
                         DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(MemoryBuffer), typeof(int), typeof(ulong), typeof(CodeType), typeof(ulong), typeof(string), typeof(string) }, UserTypeDelegates.ModuleBuilder);
-                        ILGenerator gen = method.GetILGenerator();
+                        ILGenerator il = method.GetILGenerator();
 
-                        gen.Emit(OpCodes.Ldarg_0);
-                        gen.Emit(OpCodes.Ldarg_1);
-                        gen.Emit(OpCodes.Ldarg_2);
-                        gen.Emit(OpCodes.Ldarg_3);
-                        gen.Emit(OpCodes.Ldarg_S, (byte)4);
-                        gen.Emit(OpCodes.Ldarg_S, (byte)5);
-                        gen.Emit(OpCodes.Ldarg_S, (byte)6);
-                        gen.Emit(OpCodes.Newobj, constructor);
-                        gen.Emit(OpCodes.Ret);
+                        il.PrepareMethodCall(7, parameters);
+                        il.Emit(OpCodes.Newobj, constructor);
+                        il.Emit(OpCodes.Ret);
 
                         var physicalConstructor = (PhysicalConstructorDelegate)method.CreateDelegate(typeof(PhysicalConstructorDelegate));
                         var physicalConstructorTyped = (PhysicalConstructorDelegate<T>)method.CreateDelegate(typeof(PhysicalConstructorDelegate<T>));
@@ -441,12 +434,12 @@ namespace CsDebugScript.Engine
                     MethodInfo castAsMethod = typeof(Variable).GetMethod(nameof(Variable.CastAs), BindingFlags.Static | BindingFlags.Public);
                     MethodInfo castAsGenericMethod = castAsMethod.MakeGenericMethod(typeof(T));
                     DynamicMethod method = new DynamicMethod(nameof(VariableCastExtender.DowncastObject), userType, new Type[] { typeof(Variable) }, UserTypeDelegates.ModuleBuilder);
-                    ILGenerator gen = method.GetILGenerator();
+                    ILGenerator il = method.GetILGenerator();
 
-                    gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Call, castAsGenericMethod);
-                    gen.Emit(OpCodes.Call, downcastObjectGenericMethod);
-                    gen.Emit(OpCodes.Ret);
+                    il.ForwardArguments(1);
+                    il.Emit(OpCodes.Call, castAsGenericMethod);
+                    il.Emit(OpCodes.Call, downcastObjectGenericMethod);
+                    il.Emit(OpCodes.Ret);
 
                     return (DowncasterDelegate<T>)method.CreateDelegate(typeof(DowncasterDelegate<T>));
                 }
@@ -773,15 +766,7 @@ namespace CsDebugScript.Engine
 
                     ILGenerator ilGenerator = constructorBuilder.GetILGenerator();
 
-                    ilGenerator.Emit(OpCodes.Ldarg_0);
-                    if (parameters.Length >= 1)
-                        ilGenerator.Emit(OpCodes.Ldarg_1);
-                    if (parameters.Length >= 2)
-                        ilGenerator.Emit(OpCodes.Ldarg_2);
-                    if (parameters.Length >= 3)
-                        ilGenerator.Emit(OpCodes.Ldarg_3);
-                    for (int i = 4; i <= parameters.Length; i++)
-                        ilGenerator.Emit(OpCodes.Ldarg_S, (byte)i);
+                    ilGenerator.ForwardArguments(parameters.Length + 1);
                     ilGenerator.Emit(OpCodes.Call, baseConstructor);
                     ilGenerator.Emit(OpCodes.Ret);
                 }
@@ -797,7 +782,7 @@ namespace CsDebugScript.Engine
                 MethodBuilder getPropertyMethodBuilder = typeBuilder.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual | MethodAttributes.NewSlot, propertyType, Type.EmptyTypes);
                 ILGenerator il = getPropertyMethodBuilder.GetILGenerator();
 
-                il.Emit(OpCodes.Ldarg_0);
+                il.ForwardArguments(1);
                 il.Emit(OpCodes.Ldfld, parentField);
                 il.Emit(OpCodes.Ret);
                 propertyBuilder.SetGetMethod(getPropertyMethodBuilder);
@@ -805,8 +790,7 @@ namespace CsDebugScript.Engine
                 MethodBuilder setPropertyMethodBuilder = typeBuilder.DefineMethod("set_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual | MethodAttributes.NewSlot, null, new Type[] { propertyType });
                 il = setPropertyMethodBuilder.GetILGenerator();
 
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldarg_1);
+                il.ForwardArguments(2);
                 il.Emit(OpCodes.Castclass, parentType);
                 il.Emit(OpCodes.Stfld, parentField);
                 il.Emit(OpCodes.Ret);
@@ -848,17 +832,9 @@ namespace CsDebugScript.Engine
                     }
 
                     il = methodBuilder.GetILGenerator();
-
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldfld, parentField);
-                    if (parameters.Length >= 1)
-                        il.Emit(OpCodes.Ldarg_1);
-                    if (parameters.Length >= 2)
-                        il.Emit(OpCodes.Ldarg_2);
-                    if (parameters.Length >= 3)
-                        il.Emit(OpCodes.Ldarg_3);
-                    for (int i = 4; i <= parameters.Length; i++)
-                        il.Emit(OpCodes.Ldarg_S, (byte)i);
+                    il.ForwardArguments(parameters.Length + 1, 1);
                     il.Emit(OpCodes.Callvirt, parentVirtualMethod);
                     il.Emit(OpCodes.Ret);
                 }
