@@ -48,7 +48,7 @@ after_build:
   - ps: msbuild WinDbgCs.sln /t:Source\CsDebugScript_VS /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
   - ps: pushd $env:PROJECT_ROOT\bin\$env:CONFIGURATION\$env:DEAFULT_TARGET_FRAMEWORK\
   - ps: 7z a CsDebugScript.WinDbgCs-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@("CsDebugScript.CommonUserTypes.dll", "CsDebugScript.DwarfSymbolProvider.dll", "CsDebugScript.WinDbg.x64.dll", "CsDebugScript.WinDbg.x86.dll")))
-  - ps: if ($env:CONFIGURATION -eq "Release") { Vsix-PushArtifacts | Vsix-PublishToGallery }
+  - ps: if (($env:CONFIGURATION -eq "Release") -and (($env:APPVEYOR_REPO_BRANCH -eq "master") -or ($env:APPVEYOR_REPO_BRANCH -eq "next"))) { Vsix-PushArtifacts | Vsix-PublishToGallery }
   - ps: popd
   - ps: |-
         if ($env:CONFIGURATION -eq "Release") {
