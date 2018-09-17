@@ -69,7 +69,7 @@ namespace CsDebugScript
             },
             new XmlTypeTransformation()
             {
-                OriginalType = "std::map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
+                OriginalType = "std::unordered_map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
                 Constructor = "${new}",
                 HasPhysicalConstructor = false,
@@ -81,8 +81,165 @@ namespace CsDebugScript
                 Constructor = "${new}",
                 HasPhysicalConstructor = false,
             },
-        };
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::any",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.any",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
 
+            // Adding GCC namespace duplicates
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__cxx11::basic_string<char,${char_traits},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__cxx11::basic_string<wchar_t,${char_traits},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__cxx11::basic_string<unsigned short,${char_traits},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__cxx11::vector<${T},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__cxx11::list<${T},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.list<${T}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__cxx11::map<${TKey},${TValue},${comparator},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.map<${TKey},${TValue}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__cxx11::unordered_map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__cxx11::pair<${TFirst},${TSecond}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__cxx11::any",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.any",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+
+            // Adding CLANG namespace duplicates
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::basic_string<char,${char_traits},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::basic_string<wchar_t,${char_traits},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::basic_string<unsigned short,${char_traits},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::basic_string<char>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::basic_string<wchar_t>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::basic_string<unsigned short>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::vector<${T},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::list<${T},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.list<${T}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::map<${TKey},${TValue},${comparator},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.map<${TKey},${TValue}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::unordered_map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::pair<${TFirst},${TSecond}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::__1::any",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.any",
+                Constructor = "${new}",
+                HasPhysicalConstructor = false,
+            },
+        };
 
         /// <summary>
         /// Resolves the path for the specified base file path.
@@ -206,6 +363,7 @@ namespace CsDebugScript
                 GeneratePhysicalMappingOfUserTypes = useDirectClassAccess,
                 MultiFileExport = false,
                 Transformations = DefaultTransformations,
+                GenerateAssemblyWithILWriter = options.UseILCodeWriter,
             };
         }
 
@@ -373,15 +531,15 @@ namespace CsDebugScript
                 string assemblyPath = Path.Combine(Path.GetTempPath(), "CsDebugScript.CodeGen.Assemblies", Guid.NewGuid().ToString() + ".dll");
                 XmlConfig codeGenConfig = ConvertOptionsToCodeGenConfig(options);
 
+                Directory.CreateDirectory(Path.GetDirectoryName(assemblyPath));
                 codeGenConfig.GeneratedAssemblyName = assemblyPath;
 
                 // Execute code generation
                 IModuleProvider moduleProvider = new EngineSymbolProviderModuleProvider(Process.Current);
                 Generator generator = new Generator(moduleProvider);
-                byte[] assemblyBytes = generator.GenerateAssembly(codeGenConfig);
+                generator.GenerateAssembly(codeGenConfig, assemblyPath);
 
-                Directory.CreateDirectory(Path.GetDirectoryName(assemblyPath));
-                File.WriteAllBytes(assemblyPath, assemblyBytes);
+                byte[] assemblyBytes = File.ReadAllBytes(assemblyPath);
 
                 // Add generated file to be loaded after execution
                 return new ImportUserTypeAssembly()
@@ -644,6 +802,11 @@ namespace CsDebugScript
         public bool ImportDependentTypes { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets a value indicating wheter assembly should be generated by emitting IL.
+        /// </summary>
+        public bool UseILCodeWriter { get; set; } = false;
+
+        /// <summary>
         /// Determines whether the specified <see cref="System.Object" />, is equal to this instance.
         /// </summary>
         /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
@@ -666,7 +829,8 @@ namespace CsDebugScript
         {
             return UserTypes.SequenceEqual(other.UserTypes)
                 && Modules.SequenceEqual(other.Modules)
-                && ImportDependentTypes == other.ImportDependentTypes;
+                && ImportDependentTypes == other.ImportDependentTypes
+                && UseILCodeWriter == other.UseILCodeWriter;
         }
 
         /// <summary>

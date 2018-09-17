@@ -1,58 +1,115 @@
 ﻿using CsDebugScript.CodeGen;
 using CsDebugScript.DwarfSymbolProvider;
+using CsDebugScript.PdbSymbolProvider;
 using System;
 using System.IO;
 using Xunit;
 
 namespace CsDebugScript.Tests
 {
+    public enum CodeGenSymbolProvider
+    {
+        DIA,
+        Dwarf,
+        PdbReader,
+    }
+
+    public enum CodeGenCodeOutput
+    {
+        CSharp_SingleFile_Roslyn,
+        CSharp_SingleFile,
+        CSharp_MultipleFiles_Roslyn,
+        CSharp_MultipleFiles,
+        ILWriter,
+    }
+
     [Trait("x64", "true")]
     public class CodeGenTests : TestBase
     {
         [Theory]
-        [InlineData("NativeDumpTest.x64.pdb", true, true, true, false)]
-        [InlineData("NativeDumpTest.x64.pdb", false, true, true, false)]
-        [InlineData("NativeDumpTest.x64.pdb", true, false, true, false)]
-        [InlineData("NativeDumpTest.x64.pdb", true, true, false, false)]
-        [InlineData("NativeDumpTest.x64.Release.pdb", true, true, true, false)]
-        [InlineData("NativeDumpTest.x64.Release.pdb", false, true, true, false)]
-        [InlineData("NativeDumpTest.x64.Release.pdb", true, false, true, false)]
-        [InlineData("NativeDumpTest.x64.Release.pdb", true, true, false, false)]
-        [InlineData("NativeDumpTest.x86.pdb", true, true, true, false)]
-        [InlineData("NativeDumpTest.x86.pdb", false, true, true, false)]
-        [InlineData("NativeDumpTest.x86.pdb", true, false, true, false)]
-        [InlineData("NativeDumpTest.x86.pdb", true, true, false, false)]
-        [InlineData("NativeDumpTest.x86.Release.pdb", true, true, true, false)]
-        [InlineData("NativeDumpTest.x86.Release.pdb", false, true, true, false)]
-        [InlineData("NativeDumpTest.x86.Release.pdb", true, false, true, false)]
-        [InlineData("NativeDumpTest.x86.Release.pdb", true, true, false, false)]
-        [InlineData("NativeDumpTest.x64.VS2013.pdb", true, true, true, false)]
-        [InlineData("NativeDumpTest.x64.VS2013.pdb", false, true, true, false)]
-        [InlineData("NativeDumpTest.x64.VS2013.pdb", true, false, true, false)]
-        [InlineData("NativeDumpTest.x64.VS2013.pdb", true, true, false, false)]
-        [InlineData("NativeDumpTest.x64.VS2015.pdb", true, true, true, false)]
-        [InlineData("NativeDumpTest.x64.VS2015.pdb", false, true, true, false)]
-        [InlineData("NativeDumpTest.x64.VS2015.pdb", true, false, true, false)]
-        [InlineData("NativeDumpTest.x64.VS2015.pdb", true, true, false, false)]
-        [InlineData("NativeDumpTest.gcc.exe", true, true, true, true)]
-        [InlineData("NativeDumpTest.gcc.exe", false, true, true, true)]
-        [InlineData("NativeDumpTest.gcc.exe", true, false, true, true)]
-        [InlineData("NativeDumpTest.gcc.exe", true, true, false, true)]
-        [InlineData("NativeDumpTest.x64.gcc.exe", true, true, true, true)]
-        [InlineData("NativeDumpTest.x64.gcc.exe", false, true, true, true)]
-        [InlineData("NativeDumpTest.x64.gcc.exe", true, false, true, true)]
-        [InlineData("NativeDumpTest.x64.gcc.exe", true, true, false, true)]
-        [InlineData("NativeDumpTest.linux.x64.gcc", true, true, true, true)]
-        [InlineData("NativeDumpTest.linux.x64.gcc", false, true, true, true)]
-        //[InlineData("NativeDumpTest.linux.x64.gcc", true, false, true, true)] // TODO: Once ModuleGlobals are implemented for DwarfSymbolProvider, enable this test case...
-        [InlineData("NativeDumpTest.linux.x64.gcc", true, true, false, true)]
-        public void Generation(string pdbFile, bool singleFileExport, bool compileWithRoslyn, bool transformations, bool useDwarf)
+        [InlineData("NativeDumpTest.x64.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.Release.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.Release.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.Release.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.Release.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x86.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x86.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x86.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x86.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x86.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x86.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x86.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x86.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x86.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x86.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x86.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x86.Release.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x86.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x86.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x86.Release.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x86.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x86.Release.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x86.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x86.Release.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x86.Release.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.VS2013.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.DIA)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.x64.VS2015.pdb", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.PdbReader)]
+        [InlineData("NativeDumpTest.gcc.exe", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.gcc.exe", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.gcc.exe", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.gcc.exe", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.gcc.exe", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.x64.gcc.exe", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.x64.gcc.exe", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.x64.gcc.exe", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.x64.gcc.exe", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.x64.gcc.exe", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.linux.x64.gcc", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, true, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.linux.x64.gcc", CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn, true, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.linux.x64.gcc", CodeGenCodeOutput.CSharp_SingleFile, true, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.linux.x64.gcc", CodeGenCodeOutput.CSharp_SingleFile_Roslyn, false, CodeGenSymbolProvider.Dwarf)]
+        [InlineData("NativeDumpTest.linux.x64.gcc", CodeGenCodeOutput.ILWriter, false, CodeGenSymbolProvider.Dwarf)]
+        public void Generation(string pdbFile, CodeGenCodeOutput codeOutput, bool transformations, CodeGenSymbolProvider symbolProvider)
         {
             // Generate CodeGen configuration
             XmlConfig xmlConfig = GetXmlConfig(Path.Combine(DumpInitialization.DefaultDumpPath, pdbFile));
 
-            xmlConfig.MultiFileExport = !singleFileExport;
-            xmlConfig.GenerateAssemblyWithRoslyn = compileWithRoslyn;
+            xmlConfig.MultiFileExport = codeOutput == CodeGenCodeOutput.CSharp_MultipleFiles || codeOutput == CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn;
+            xmlConfig.GenerateAssemblyWithRoslyn = codeOutput == CodeGenCodeOutput.CSharp_MultipleFiles_Roslyn || codeOutput == CodeGenCodeOutput.CSharp_SingleFile_Roslyn;
+            xmlConfig.GenerateAssemblyWithILWriter = codeOutput == CodeGenCodeOutput.ILWriter;
             xmlConfig.DontSaveGeneratedCodeFiles = true;
             if (!transformations)
             {
@@ -68,13 +125,19 @@ namespace CsDebugScript.Tests
                 {
                     Generator generator;
 
-                    if (!useDwarf)
+                    switch (symbolProvider)
                     {
-                        generator = new Generator();
-                    }
-                    else
-                    {
-                        generator = new Generator(new DwarfCodeGenModuleProvider());
+                        case CodeGenSymbolProvider.DIA:
+                            generator = new Generator();
+                            break;
+                        case CodeGenSymbolProvider.Dwarf:
+                            generator = new Generator(new DwarfCodeGenModuleProvider());
+                            break;
+                        case CodeGenSymbolProvider.PdbReader:
+                            generator = new Generator(new PdbModuleProvider());
+                            break;
+                        default:
+                            throw new NotImplementedException();
                     }
 
                     Console.SetError(writer);

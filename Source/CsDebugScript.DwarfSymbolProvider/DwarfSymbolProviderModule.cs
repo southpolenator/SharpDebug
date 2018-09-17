@@ -120,6 +120,24 @@ namespace CsDebugScript.DwarfSymbolProvider
         private List<ulong> publicSymbolsAddresses;
 
         /// <summary>
+        /// Fake DWARF symbol used for generating ModuleGlobals.
+        /// </summary>
+        class GlobalScopeDwarfSymbol : DwarfSymbol
+        {
+            public GlobalScopeDwarfSymbol()
+            {
+                Tag = DwarfTag.Module;
+                Offset = int.MinValue;
+                Attributes = new Dictionary<DwarfAttribute, DwarfAttributeValue>();
+            }
+        }
+
+        /// <summary>
+        /// Global scope symbol used for generating ModuleGlobals with CodeGen.
+        /// </summary>
+        private GlobalScopeDwarfSymbol globalScope;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DwarfSymbolProviderModule" /> class.
         /// </summary>
         /// <param name="module">The module.</param>
@@ -410,7 +428,16 @@ namespace CsDebugScript.DwarfSymbolProvider
                 publicSymbolIndex--;
             }
 
-            publicSymbol = publicSymbols[publicSymbolIndex];
+            // if there are two symbols for the same address, choose one that has demangled name different from name.
+            if (publicSymbols[publicSymbolIndex].Name != publicSymbols[publicSymbolIndex].DemangledName)
+                publicSymbol = publicSymbols[publicSymbolIndex];
+            else if (publicSymbolIndex > 0 && publicSymbolsAddresses[publicSymbolIndex - 1] == publicSymbolsAddresses[publicSymbolIndex] && publicSymbols[publicSymbolIndex - 1].Name != publicSymbols[publicSymbolIndex - 1].DemangledName)
+                publicSymbol = publicSymbols[publicSymbolIndex - 1];
+            else if (publicSymbolIndex + 1 < publicSymbolsAddresses.Count && publicSymbolsAddresses[publicSymbolIndex + 1] == publicSymbolsAddresses[publicSymbolIndex] && publicSymbols[publicSymbolIndex + 1].Name != publicSymbols[publicSymbolIndex + 1].DemangledName)
+                publicSymbol = publicSymbols[publicSymbolIndex + 1];
+            else
+                publicSymbol = publicSymbols[publicSymbolIndex];
+
             string publicSymbolName = null;
             if (publicSymbol.DemangledName.StartsWith("vtable for "))
             {
@@ -987,6 +1014,8 @@ namespace CsDebugScript.DwarfSymbolProvider
                     return CodeTypeTag.Enum;
                 case DwarfTag.ArrayType:
                     return CodeTypeTag.Array;
+                case DwarfTag.Module:
+                    return CodeTypeTag.ModuleGlobals;
                 default:
                     return CodeTypeTag.Unsupported;
             }
@@ -1021,6 +1050,16 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="address">The address within the module.</param>
         public Tuple<string, ulong> GetSymbolNameByAddress(uint address)
         {
+            // Try to find a function
+            ulong displacement;
+            DwarfSymbol function = FindFunction(address, out displacement);
+
+            if (displacement == 0)
+            {
+                return Tuple.Create(function.FullName, displacement);
+            }
+
+            // TODO:
             throw new NotImplementedException();
         }
 
@@ -1201,6 +1240,132 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Gets the names of static fields of the specified type.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public string[] GetTypeStaticFieldNames(uint typeId)
+        {
+            DwarfSymbol type = GetType(typeId);
+
+            if (type.Tag == DwarfTag.PointerType)
+            {
+                type = GetType(type);
+            }
+
+            if (type == globalScope)
+            {
+                return globalVariables.Keys.ToArray();
+            }
+
+            List<string> names = new List<string>();
+            Queue<DwarfSymbol> baseClasses = new Queue<DwarfSymbol>();
+
+            baseClasses.Enqueue(type);
+            while (baseClasses.Count > 0)
+            {
+                type = baseClasses.Dequeue();
+                if (type.Children != null)
+                {
+                    foreach (DwarfSymbol child in type.Children)
+                    {
+                        if (child.Tag == DwarfTag.Member && !string.IsNullOrEmpty(child.Name))
+                        {
+                            if (!child.Attributes.ContainsKey(DwarfAttribute.Artifical) && child.Attributes.ContainsKey(DwarfAttribute.External) && child.Attributes[DwarfAttribute.External].Flag)
+                            {
+                                names.Add(child.Name);
+                            }
+                        }
+                        else if (child.Tag == DwarfTag.Member && string.IsNullOrEmpty(child.Name))
+                        {
+                            // We want to add unnamed unions
+                            DwarfSymbol unionType = GetType(child);
+
+                            if (unionType.Tag == DwarfTag.UnionType)
+                            {
+                                baseClasses.Enqueue(unionType);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return names.ToArray();
+        }
+
+        /// <summary>
+        /// Gets the static field type id and address of the specified type.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        public Tuple<uint, ulong> GetTypeStaticFieldTypeAndAddress(uint typeId, string fieldName)
+        {
+            DwarfSymbol type = GetType(typeId);
+
+            if (type.Tag == DwarfTag.PointerType)
+            {
+                type = GetType(type);
+            }
+
+            if (type == globalScope)
+            {
+                DwarfSymbol globalVariable;
+
+                if (globalVariables.TryGetValue(fieldName, out globalVariable))
+                {
+                    if (globalVariable.Attributes.ContainsKey(DwarfAttribute.Location))
+                    {
+                        Location location = DecodeLocation(globalVariable.Attributes[DwarfAttribute.Location]);
+
+                        return Tuple.Create(GetTypeId(GetType(globalVariable)), location.Address + Module.Address);
+                    }
+                    return Tuple.Create(GetTypeId(GetType(globalVariable)), 0UL);
+                }
+            }
+
+            Queue<Tuple<DwarfSymbol, int>> baseClasses = new Queue<Tuple<DwarfSymbol, int>>();
+
+            baseClasses.Enqueue(Tuple.Create(type, 0));
+            while (baseClasses.Count > 0)
+            {
+                Tuple<DwarfSymbol, int> typeAndOffset = baseClasses.Dequeue();
+                int typeOffset = typeAndOffset.Item2;
+
+                type = typeAndOffset.Item1;
+                if (type.Children != null)
+                {
+                    foreach (DwarfSymbol child in type.Children)
+                    {
+                        if (child.Tag == DwarfTag.Member && child.Name == fieldName)
+                        {
+                            uint fieldTypeId = GetTypeId(GetType(child));
+                            if (child.Attributes.ContainsKey(DwarfAttribute.Location))
+                            {
+                                Location location = DecodeLocation(child.Attributes[DwarfAttribute.Location]);
+
+                                return Tuple.Create(fieldTypeId, location.Address + Module.Address);
+                            }
+                            return Tuple.Create(fieldTypeId, 0UL);
+                        }
+                        else if (child.Tag == DwarfTag.Member && string.IsNullOrEmpty(child.Name))
+                        {
+                            // We want to add unnamed unions
+                            DwarfSymbol unionType = GetType(child);
+
+                            if (unionType.Tag == DwarfTag.UnionType)
+                            {
+                                int offset = DecodeDataMemberLocation(child);
+
+                                baseClasses.Enqueue(Tuple.Create(unionType, typeOffset + offset));
+                            }
+                        }
+                    }
+                }
+            }
+
+            throw new Exception("Field name not found");
+        }
+
+        /// <summary>
         /// Gets the type element type identifier.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
@@ -1248,6 +1413,96 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             throw new Exception("Type name not found");
+        }
+
+        /// <summary>
+        /// Gets the template arguments. This is optional to be implemented in symbol module provider. If it is not implemented, <see cref="NativeCodeType.GetTemplateArguments"/> will do the job.
+        /// <para>For given type: MyType&lt;Arg1, 2, Arg3&lt;5&gt;&gt;</para>
+        /// <para>It will return: <code>new object[] { CodeType.Create("Arg1", Module), 2, CodeType.Create("Arg3&lt;5&gt;", Module) }</code></para>
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public object[] GetTemplateArguments(uint typeId)
+        {
+            DwarfSymbol symbol = GetType(typeId);
+            if (symbol.Tag == DwarfTag.PointerType)
+                symbol = GetType(symbol);
+            DwarfSymbol[] parameters = symbol.Children.Where(c => c.Tag == DwarfTag.TemplateTypeParameter || c.Tag == DwarfTag.TemplateValueParameter).ToArray();
+            object[] result = new object[parameters.Length];
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                DwarfSymbol parameter = parameters[i];
+
+                switch (parameter.Tag)
+                {
+                    case DwarfTag.TemplateTypeParameter:
+                        {
+                            DwarfSymbol parameterType = parameter.Attributes[DwarfAttribute.Type].Reference;
+                            uint parameterTypeId = GetTypeId(parameterType);
+                            CodeType codeType = Module.TypesById[parameterTypeId];
+
+                            result[i] = codeType;
+                        }
+                        break;
+                    case DwarfTag.TemplateValueParameter:
+                        {
+                            DwarfSymbol type = parameter.Attributes[DwarfAttribute.Type].Reference;
+                            ulong value = parameter.GetConstantAttribute(DwarfAttribute.ConstValue);
+
+                            if (!parameter.Attributes.ContainsKey(DwarfAttribute.ConstValue))
+                            {
+                                throw new NotImplementedException();
+                            }
+                            switch (type.Tag)
+                            {
+                                case DwarfTag.EnumerationType:
+                                    // Since we don't know if there is C# type for enumeration, we want to return integer value for constant...
+                                case DwarfTag.BaseType:
+                                    switch (GetTypeBasicType(type))
+                                    {
+                                        case BuiltinType.Bool:
+                                            result[i] = value != 0 ? true : false;
+                                            break;
+                                        case BuiltinType.Int8:
+                                            result[i] = (sbyte)value;
+                                            break;
+                                        case BuiltinType.Int16:
+                                            result[i] = (short)value;
+                                            break;
+                                        case BuiltinType.Int32:
+                                            result[i] = (int)value;
+                                            break;
+                                        case BuiltinType.Int64:
+                                        case BuiltinType.Int128:
+                                            result[i] = (long)value;
+                                            break;
+                                        case BuiltinType.UInt8:
+                                            result[i] = (byte)value;
+                                            break;
+                                        case BuiltinType.UInt16:
+                                            result[i] = (ushort)value;
+                                            break;
+                                        case BuiltinType.UInt32:
+                                            result[i] = (uint)value;
+                                            break;
+                                        case BuiltinType.UInt64:
+                                        case BuiltinType.UInt128:
+                                            result[i] = value;
+                                            break;
+                                        default:
+                                            result[i] = value;
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    throw new NotImplementedException();
+                            }
+                        }
+                        break;
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -1329,9 +1584,21 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// </summary>
         public uint GetGlobalScope()
         {
-            // Symbol that has all info about globals (global variables)
-            // TODO: throw new NotImplementedException();
-            return 0;
+            if (globalScope == null)
+                lock (this)
+                {
+                    if (globalScope == null)
+                    {
+                        globalScope = new GlobalScopeDwarfSymbol();
+                    }
+                }
+
+            if (!allSymbolsEnumerated)
+            {
+                ContinueSymbolSearch(s => false);
+            }
+
+            return GetTypeId(globalScope);
         }
 
         /// <summary>
@@ -1358,8 +1625,11 @@ namespace CsDebugScript.DwarfSymbolProvider
                             {
                                 typeNameToType.TryAdd(typeName, symbol);
                                 typeNameToType.TryAdd(CleanSymbolNameNumbers(typeName), symbol);
-                                typeNameToType.TryAdd(GetTypeNameNicePrint(symbol, true), symbol);
-                                typeNameToType.TryAdd(GetTypeNameNicePrint(symbol, false), symbol);
+                                if (symbol.Tag != DwarfTag.Typedef)
+                                {
+                                    typeNameToType.TryAdd(GetTypeNameNicePrint(symbol, true), symbol);
+                                    typeNameToType.TryAdd(GetTypeNameNicePrint(symbol, false), symbol);
+                                }
                             }
 
                             // If it is pointer type, add it to collection
@@ -1449,6 +1719,10 @@ namespace CsDebugScript.DwarfSymbolProvider
                 if (symbol.Tag == DwarfTag.ReferenceType)
                 {
                     return GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint) + " &";
+                }
+                if (symbol.Tag == DwarfTag.RvalueReferenceType)
+                {
+                    return GetTypeNameNicePrint(symbol.Attributes[DwarfAttribute.Type].Reference, gccPrint) + " &&";
                 }
                 if (symbol.Tag == DwarfTag.ArrayType)
                 {
@@ -2517,6 +2791,16 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
 
             displacement = address - functionAddressesCache[index];
+
+            // if there are two symbols for the same address, choose one that has name
+            if (functionsCache[index].Name != null)
+                return functionsCache[index];
+            if (index > 0 && functionAddressesCache[index - 1] == functionAddressesCache[index] && functionsCache[index - 1].Name != null)
+                return functionsCache[index - 1];
+            if (index + 1 < functionsCache.Count && functionAddressesCache[index + 1] == functionAddressesCache[index] && functionsCache[index + 1].Name != null)
+                return functionsCache[index + 1];
+
+            // Fall back to the one we originaly found.
             return functionsCache[index];
         }
 
@@ -2667,6 +2951,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                 case DwarfTag.InterfaceType:
                 case DwarfTag.SubroutineType:
                 case DwarfTag.UnionType:
+                case DwarfTag.Typedef:
                     return type.FullName ?? GetUnnamedType();
                 default:
                     return null;

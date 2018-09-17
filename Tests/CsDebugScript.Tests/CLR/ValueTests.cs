@@ -30,7 +30,7 @@ namespace CsDebugScript.Tests.CLR
             Variable fooObject = frame.Locals["containsnullref"];
 
             Assert.Equal(42, (int)fooObject.GetField("SetValue").GetField("i"));
-            Assert.True(fooObject.GetField("NullValue").IsNullPointer());
+            Assert.True(fooObject.GetField("NullValue").IsNull());
             Assert.Contains(fooObject, clrThread.EnumerateStackObjects());
         }
 
@@ -100,7 +100,7 @@ namespace CsDebugScript.Tests.CLR
             Variable foo = frame.Locals["foo"];
 
             Assert.NotNull(foo);
-            Assert.False(foo.IsNullPointer());
+            Assert.False(foo.IsNull());
             Assert.Equal("Foo", foo.GetCodeType().Name);
         }
 

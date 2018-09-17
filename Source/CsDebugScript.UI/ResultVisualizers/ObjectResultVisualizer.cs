@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
@@ -28,10 +29,10 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// <param name="result">Resulting object that should be visualized.</param>
         /// <param name="resultType">Type of the resulting object that should be visualized.</param>
         /// <param name="name">Name of the variable / property.</param>
-        /// <param name="image">Image that represents icon of the variable / property</param>
+        /// <param name="dataType">Data type that will be used to generate icon of the variable / property</param>
         /// <param name="interactiveResultVisualizer">Interactive result visualizer that can be used for creating UI elements.</param>
-        public ObjectResultVisualizer(object result, Type resultType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
-            : base(result, resultType, name, image, interactiveResultVisualizer)
+        public ObjectResultVisualizer(object result, Type resultType, string name, CompletionDataType dataType, InteractiveResultVisualizer interactiveResultVisualizer)
+            : base(result, resultType, name, dataType, interactiveResultVisualizer)
         {
         }
 
@@ -74,7 +75,9 @@ namespace CsDebugScript.UI.ResultVisualizers
                         {
                             if (property.CanRead && property.GetIndexParameters().Length == 0)
                             {
-                                yield return Create(GetValue(() => property.GetValue(result)), property.PropertyType, property.Name, CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                                bool shouldForceDefaultVisualizer = property.GetCustomAttributes(false).OfType<ForceDefaultVisualizerAtttribute>().Any();
+
+                                yield return Create(GetValue(() => property.GetValue(result)), property.PropertyType, property.Name, CompletionDataType.Property, interactiveResultVisualizer, shouldForceDefaultVisualizer);
                             }
                         }
 
@@ -85,7 +88,9 @@ namespace CsDebugScript.UI.ResultVisualizers
                         {
                             if (!field.IsStatic && !field.Name.EndsWith(">k__BackingField"))
                             {
-                                yield return Create(GetValue(() => field.GetValue(result)), field.FieldType, field.Name, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                                bool shouldForceDefaultVisualizer = field.GetCustomAttributes(false).OfType<ForceDefaultVisualizerAtttribute>().Any();
+
+                                yield return Create(GetValue(() => field.GetValue(result)), field.FieldType, field.Name, CompletionDataType.Variable, interactiveResultVisualizer, shouldForceDefaultVisualizer);
                             }
                         }
                     }
@@ -114,7 +119,9 @@ namespace CsDebugScript.UI.ResultVisualizers
                         {
                             if (property.CanRead && property.GetIndexParameters().Length == 0)
                             {
-                                yield return Create(GetValue(() => property.GetValue(result)), property.PropertyType, property.Name, CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                                bool shouldForceDefaultVisualizer = property.GetCustomAttributes(false).OfType<ForceDefaultVisualizerAtttribute>().Any();
+
+                                yield return Create(GetValue(() => property.GetValue(result)), property.PropertyType, property.Name, CompletionDataType.Property, interactiveResultVisualizer, shouldForceDefaultVisualizer);
                             }
                         }
 
@@ -125,7 +132,9 @@ namespace CsDebugScript.UI.ResultVisualizers
                         {
                             if (!field.IsStatic && !field.Name.EndsWith(">k__BackingField"))
                             {
-                                yield return Create(GetValue(() => field.GetValue(result)), field.FieldType, field.Name, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                                bool shouldForceDefaultVisualizer = field.GetCustomAttributes(false).OfType<ForceDefaultVisualizerAtttribute>().Any();
+
+                                yield return Create(GetValue(() => field.GetValue(result)), field.FieldType, field.Name, CompletionDataType.Variable, interactiveResultVisualizer, shouldForceDefaultVisualizer);
                             }
                         }
                     }
@@ -154,7 +163,9 @@ namespace CsDebugScript.UI.ResultVisualizers
                         {
                             if (property.CanRead && property.GetIndexParameters().Length == 0)
                             {
-                                yield return Create(GetValue(() => property.GetValue(result)), property.PropertyType, property.Name, CompletionData.GetImage(CompletionDataType.StaticProperty), interactiveResultVisualizer);
+                                bool shouldForceDefaultVisualizer = property.GetCustomAttributes(false).OfType<ForceDefaultVisualizerAtttribute>().Any();
+
+                                yield return Create(GetValue(() => property.GetValue(result)), property.PropertyType, property.Name, CompletionDataType.StaticProperty, interactiveResultVisualizer, shouldForceDefaultVisualizer);
                             }
                         }
 
@@ -165,7 +176,9 @@ namespace CsDebugScript.UI.ResultVisualizers
                         {
                             if (field.IsStatic && !field.Name.EndsWith(">k__BackingField"))
                             {
-                                yield return Create(GetValue(() => field.GetValue(result)), field.FieldType, field.Name, CompletionData.GetImage(CompletionDataType.StaticVariable), interactiveResultVisualizer);
+                                bool shouldForceDefaultVisualizer = field.GetCustomAttributes(false).OfType<ForceDefaultVisualizerAtttribute>().Any();
+
+                                yield return Create(GetValue(() => field.GetValue(result)), field.FieldType, field.Name, CompletionDataType.StaticVariable, interactiveResultVisualizer, shouldForceDefaultVisualizer);
                             }
                         }
                     }
@@ -189,7 +202,7 @@ namespace CsDebugScript.UI.ResultVisualizers
 
                         foreach (string memberName in dynamicObject.GetDynamicMemberNames())
                         {
-                            yield return Create(GetValue(() => Dynamic.InvokeGet(dynamicObject, memberName)), typeof(DynamicObject), memberName, CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                            yield return Create(GetValue(() => Dynamic.InvokeGet(dynamicObject, memberName)), typeof(DynamicObject), memberName, CompletionDataType.Variable, interactiveResultVisualizer);
                         }
                     }
                 }
@@ -213,7 +226,7 @@ namespace CsDebugScript.UI.ResultVisualizers
 
                         foreach (object value in enumeration)
                         {
-                            yield return Create(value, value?.GetType(), $"[{index++}]", CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                            yield return Create(value, value?.GetType(), $"[{index++}]", CompletionDataType.Variable, interactiveResultVisualizer);
                         }
                     }
                 }

@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Drawing.Interfaces\CsDebugScript.Drawing.Interfaces.csproj" />
   </ItemGroup>
 
 </Project>

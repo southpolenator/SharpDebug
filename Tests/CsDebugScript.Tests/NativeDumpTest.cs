@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using CsDebugScript.Engine;
 using CsDebugScript.Tests.Utils;
 using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
+using CsDebugScript.CommonUserTypes;
 
 namespace CsDebugScript.Tests
 {
@@ -22,6 +23,7 @@ namespace CsDebugScript.Tests
                 InterpretInteractive($@"
 var options = new ImportUserTypeOptions();
 options.Modules.Add(""{DefaultModuleName}"");
+options.UseILCodeWriter = {DumpInitialization.UseILCodeGen.ToString().ToLower()};
 ImportUserTypes(options, true);
                     ");
                 DumpInitialization.CodeGenExecuted = true;
@@ -121,7 +123,7 @@ ImportUserTypes(options, true);
             Variable codeFunctionVariable = DefaultModule.GetVariable($"{DefaultModuleName}!defaultTestCaseAddress");
 
             Assert.True(codeFunctionVariable.GetCodeType().IsPointer);
-            Assert.True(!codeFunctionVariable.IsNullPointer());
+            Assert.True(!codeFunctionVariable.IsNull());
 
             CodeFunction codeFunction = new CodePointer<CodeFunction>(new NakedPointer(codeFunctionVariable)).Element;
 
@@ -174,7 +176,7 @@ ImportUserTypes(options, true);
             {
                 Variable argument = arguments[i];
 
-                Assert.False(argument.IsNullPointer());
+                Assert.False(argument.IsNull());
             }
 
             string command = arguments["argv"].GetArrayElement(0).ToString();
@@ -229,6 +231,23 @@ ImportUserTypes(options, true);
             Assert.Equal(2, (int)pEnumeration);
             Assert.Equal("simple4", pInnerEnumeration.ToString());
             Assert.Equal(4, (int)pInnerEnumeration);
+
+            if (ExecuteCodeGen)
+            {
+                InterpretInteractive($@"
+MyTestClass global = ModuleGlobals.globalVariable;
+AreEqual(1212121212, MyTestClass.staticVariable);
+AreEqual(""qwerty"", global.string1.Text);
+AreEqual(2, global.strings.Count);
+AreEqual(""Foo"", global.strings.ElementAt(0).Text);
+AreEqual(""Bar"", global.strings.ElementAt(1).Text);
+AreEqual(2, global.ansiStrings.Count);
+AreEqual(""AnsiFoo"", global.ansiStrings[0].Text);
+AreEqual(""AnsiBar"", global.ansiStrings[1].Text);
+AreEqual(MyEnum.enumEntry2, global.enumeration);
+AreEqual(MyTestClass.MyEnumInner.simple4, global.innerEnumeration);
+                    ");
+            }
         }
 
         [Fact]
@@ -554,6 +573,70 @@ for (int i = 0; i < intTemplate.values.Length; i++)
             VerifyBuiltinType(nativeCodeType, expected);
         }
 
+        [Fact]
+        public void TestReadingBuiltinTypes()
+        {
+            Variable var = DefaultModule.GetVariable("builtinTypesTest");
+            TestReading<bool>(var.GetField("b"), false);
+            TestReading<sbyte>(var.GetField("i8"), 42);
+            TestReading<short>(var.GetField("i16"), 42);
+            TestReading<int>(var.GetField("i32"), 42);
+            TestReading<long>(var.GetField("i64"), 42);
+            TestReading<byte>(var.GetField("u8"), 42);
+            TestReading<ushort>(var.GetField("u16"), 42);
+            TestReading<uint>(var.GetField("u32"), 42);
+            TestReading<ulong>(var.GetField("u64"), 42);
+            TestReading<float>(var.GetField("f32"), 42);
+            TestReading<double>(var.GetField("f64"), 42);
+        }
+
+        private static void TestReading<T>(Variable var, T expectedValue)
+        {
+            Assert.Equal(expectedValue, var.CastAs<T>());
+            Assert.Equal(expectedValue, (T)Convert.ChangeType(var, typeof(T)));
+            NakedPointer pointer = new NakedPointer(var.GetPointerAddress());
+            CodePointer<T> codePointer = new CodePointer<T>(pointer);
+            Assert.Equal(expectedValue, codePointer.Element);
+            codePointer = new CodePointer<T>(pointer.GetPointerAddress());
+            Assert.Equal(expectedValue, codePointer.Element);
+            codePointer = new CodePointer<T>(var.GetPointer());
+            Assert.Equal(expectedValue, codePointer.Element);
+            CodeArray<T> codeArray = new CodeArray<T>(pointer, 1);
+            Assert.Equal(expectedValue, codeArray[0]);
+        }
+
+        [UserType(TypeName = "DoubleTest")]
+        public class DoubleTest : DynamicSelfUserType
+        {
+            public DoubleTest(Variable variable)
+                : base(variable)
+            {
+            }
+
+            public double d => (double)self.d;
+
+            public float f => (float)self.f;
+
+            public int i => (int)self.i;
+        }
+
+        [Fact]
+        public void UserTypeAutoCast()
+        {
+            Execute_AutoCast(() =>
+            {
+                Variable doubleTestVariable = DefaultModule.GetVariable("doubleTest");
+
+                Assert.IsType<DoubleTest>(doubleTestVariable);
+
+                DoubleTest doubleTest = (DoubleTest)doubleTestVariable;
+
+                Assert.Equal(3.5, doubleTest.d);
+                Assert.Equal(2.5, doubleTest.f);
+                Assert.Equal(5, doubleTest.i);
+            });
+        }
+
         private void VerifyBuiltinType(NativeCodeType codeType, params BuiltinType[] expected)
         {
             BuiltinType actual = codeType.BuiltinType;
@@ -621,9 +704,8 @@ StackFrame GetFrame(string functionName)
 }
 
 void AreEqual<T>(T value1, T value2)
-    where T : IEquatable<T>
 {
-    if (!value1.Equals(value2))
+    if (!System.Collections.Generic.EqualityComparer<T>.Default.Equals(value1, value2))
     {
         throw new Exception($""Not equal. value1 = {value1}, value2 = {value2}"");
     }
@@ -659,6 +741,17 @@ void IsTrue(bool value)
     {
         public NativeDumpTest_x64_NoDia(NativeDumpTest_x64_dmp_NoDia_Initialization initialization)
             : base(initialization, executeCodeGen: false)
+        {
+        }
+    }
+
+    [Collection("NativeDumpTest.x64.mdmp ILCodeGen")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class NativeDumpTest_x64_IL : NativeDumpTest
+    {
+        public NativeDumpTest_x64_IL(NativeDumpTest_x64_dmp_IL_Initialization initialization)
+            : base(initialization)
         {
         }
     }

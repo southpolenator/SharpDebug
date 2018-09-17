@@ -267,6 +267,7 @@ namespace CsDebugScript
         /// <param name="length">The array length.</param>
         private void Initialize(Variable variable, int length)
         {
+            variable = CodePointer<T>.CastIfNecessary(variable);
             this.variable = variable;
             Length = length;
             preCalculatedArray = ReadArray();
@@ -288,20 +289,13 @@ namespace CsDebugScript
             var elementType = variable.GetCodeType().ElementType;
             var type = typeof(T);
 
-            if (!elementType.IsPointer)
+            if (!elementType.IsPointer) // TODO: Will this work for single pointers?
             {
                 if (type.GetTypeInfo().IsSubclassOf(typeof(UserType)))
                 {
-                    var process = variable.GetCodeType().Module.Process;
-
-                    // Verify that CodeType for this user type is exactly elementType
-                    var descriptions = process.TypeToUserTypeDescription[type];
-
-                    foreach (var description in descriptions)
+                    foreach (Type ut in elementType.UserTypes)
                     {
-                        CodeType newType = description.UserType;
-
-                        if (newType == elementType)
+                        if (ut == type)
                         {
                             return UserTypeDelegates<T>.Instance;
                         }
@@ -315,8 +309,9 @@ namespace CsDebugScript
         /// <summary>
         /// Reads the precalculated array.
         /// </summary>
-        private IReadOnlyList<T> ReadArray()
+        private unsafe IReadOnlyList<T> ReadArray()
         {
+            // Check if we have phisical constructor in delegates
             var delegates = GetDelegates();
 
             if (delegates != null && delegates.PhysicalConstructor != null)
@@ -334,7 +329,82 @@ namespace CsDebugScript
                 return new ElementCreatorReadOnlyList(delegates, elementType, address);
             }
 
+            // Check if type is basic type and we can read it directly with marshaler.
+            Type type = typeof(T);
+
+            if (type.IsPrimitive)
+            {
+                // Try to use binary conversion of memory blocks
+                try
+                {
+                    CodeType builtinCodeType = BuiltinCodeTypes.GetCodeType<T>(variable.GetCodeType().Module);
+                    CodeType elementType = variable.GetCodeType().ElementType;
+
+                    if ((builtinCodeType == elementType)
+                       || (builtinCodeType.Size == elementType.Size && elementType.IsSimple && builtinCodeType.IsDouble == elementType.IsDouble && builtinCodeType.IsFloat == elementType.IsFloat))
+                    {
+                        var address = variable.GetPointerAddress();
+                        uint bytesCount = (uint)(Length * elementType.Size);
+                        var buffer = Debugger.ReadMemory(elementType.Module.Process, address, bytesCount);
+
+                        if (elementType.Module.Process.DumpFileMemoryReader == null)
+                        {
+                            if (type != typeof(byte))
+                            {
+                                T[] result = new T[Length];
+
+                                Buffer.BlockCopy(buffer.Bytes, 0, result, 0, buffer.Bytes.Length);
+                                return result;
+                            }
+
+                            return (T[])(object)buffer.Bytes;
+                        }
+                        else
+                        {
+                            T[] result = new T[Length];
+
+                            var handle = System.Runtime.InteropServices.GCHandle.Alloc(result, System.Runtime.InteropServices.GCHandleType.Pinned);
+                            try
+                            {
+                                void* pointer = handle.AddrOfPinnedObject().ToPointer();
+
+                                MemoryBuffer.MemCpy(pointer, buffer.BytePointer, bytesCount);
+                            }
+                            finally
+                            {
+                                handle.Free();
+                            }
+                            return result;
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
             return null;
+        }
+
+        /// <summary>
+        /// Reads all data to managed array.
+        /// </summary>
+        /// <returns>Managed array.</returns>
+        public T[] ToArray()
+        {
+            if (preCalculatedArray != null && preCalculatedArray is T[])
+            {
+                return (T[])preCalculatedArray;
+            }
+
+            T[] result = new T[Length];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = this[i];
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -499,6 +569,70 @@ namespace CsDebugScript
                 throw new NotImplementedException();
             }
             #endregion
+        }
+    }
+
+    /// <summary>
+    /// Simple wrapper class for handling unknown element type of array as <see cref="CodeArray{Variable}"/>.
+    /// </summary>
+    public class CodeArray : CodeArray<Variable>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public CodeArray(Variable variable)
+            : base(variable)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="preCalculatedArray">The pre-calculated array.</param>
+        public CodeArray(Variable[] preCalculatedArray)
+            : base(preCalculatedArray)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, int length)
+            : base(variable, length)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, uint length)
+            : base(variable, length)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, ulong length)
+            : base(variable, length)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeArray"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="length">The array length.</param>
+        public CodeArray(Variable variable, long length)
+            : base(variable, length)
+        {
         }
     }
 }

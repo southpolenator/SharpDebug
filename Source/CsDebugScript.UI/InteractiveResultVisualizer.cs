@@ -1,4 +1,6 @@
-﻿using CsDebugScript.UI.CodeWindow;
+﻿using CsDebugScript.Drawing.Interfaces;
+using CsDebugScript.UI.CodeWindow;
+using CsDebugScript.UI.Drawing;
 using CsDebugScript.UI.ResultVisualizers;
 using System;
 using System.Collections.Generic;
@@ -47,10 +49,12 @@ namespace CsDebugScript.UI
         internal const string ExpandingItemText = "Loading...";
 
         private InteractiveWindowContent interactiveWindowContent;
+        System.Windows.Threading.Dispatcher dispatcher;
 
         public InteractiveResultVisualizer(InteractiveWindowContent interactiveWindowContent)
         {
             this.interactiveWindowContent = interactiveWindowContent;
+            dispatcher = interactiveWindowContent?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
         }
 
 
@@ -74,14 +78,44 @@ namespace CsDebugScript.UI
                 return obj;
             }
 
+            // Drawing objects should be resurfaced back.
+            if (obj is IDrawing)
+            {
+                return ((IDrawing)obj).UIObject;
+            }
+
             // All other should be visualized in a table
-            IResultVisualizer resultTreeItem = ResultVisualizer.Create(obj, obj.GetType(), "result", null, this);
+            IResultVisualizer resultTreeItem = ResultVisualizer.Create(obj, obj.GetType(), "result", CompletionDataType.Unknown, this);
 
             resultTreeItem.Initialize();
+
+            // Check if we can also represent resulting object as a drawing
+            IDrawingVisualizerObject drawingVisualizerObject = obj as IDrawingVisualizerObject;
+            UIElement drawing = null;
+
+            if (drawingVisualizerObject != null && drawingVisualizerObject.CanVisualize())
+            {
+                Graphics graphics = new Graphics(dispatcher);
+
+                drawing = drawingVisualizerObject.CreateDrawing(graphics).UIObject as UIElement;
+            }
+
+            if (drawing != null)
+            {
+                // Create panel that will hold both elements.
+                return new LazyUIResult(() =>
+                {
+                    StackPanel panel = new StackPanel();
+
+                    panel.Orientation = Orientation.Vertical;
+                    panel.Children.Add(Visualize(resultTreeItem));
+                    panel.Children.Add(drawing);
+                    return panel;
+                });
+            }
+
             return new LazyUIResult(() => Visualize(resultTreeItem));
         }
-
-        System.Windows.Threading.Dispatcher dispatcher;
 
         private static FrameworkElementFactory CreateStackPanelFactory(string name)
         {
@@ -179,7 +213,6 @@ namespace CsDebugScript.UI
                     }
                 }
             };
-            dispatcher = tree.Dispatcher;
             return tree;
         }
 
@@ -318,6 +351,7 @@ namespace CsDebugScript.UI
         private TreeViewItem CreateTreeItem(TreeListView tree, string name, ImageSource imageSource, int level, UIElement value = null, string typeString = null, bool nameItalic = false)
         {
             TreeViewItem item = new TreeViewItem();
+            bool alreadyLoaded = false;
             GridViewRowPresenter rowPresenter = new GridViewRowPresenter()
             {
                 Columns = tree.Columns,
@@ -326,6 +360,12 @@ namespace CsDebugScript.UI
             item.Header = rowPresenter;
             item.Loaded += (sender, e) =>
             {
+                if (alreadyLoaded)
+                {
+                    return;
+                }
+                alreadyLoaded = true;
+
                 FrameworkElement expander = item.Template.FindName("Expander", item) as FrameworkElement;
                 StackPanel nameStackPanel = FindVisualChild<StackPanel>(rowPresenter, "Name");
                 StackPanel valueStackPanel = FindVisualChild<StackPanel>(rowPresenter, "Value");
@@ -424,11 +464,11 @@ namespace CsDebugScript.UI
                             {
                                 List<Tuple<string, IEnumerable<IResultVisualizer>>> customChildren = new List<Tuple<string, IEnumerable<IResultVisualizer>>>();
 
-                                foreach (Tuple<string, IEnumerable<IResultVisualizer>> customChild in resultTreeItem.Children)
+                                foreach (Tuple<string, IEnumerable<IResultVisualizer>> customChild in resultTreeItem.ChildrenGroups)
                                 {
                                     if (customChild.Item2.Any())
                                     {
-                                        if (customChild.Item1 == "[Expanded]")
+                                        if (customChild.Item1 == ResultVisualizer.ExpandedGroupName)
                                         {
                                             List<IResultVisualizer> cachedItems = customChild.Item2.ToList();
 
@@ -454,7 +494,7 @@ namespace CsDebugScript.UI
                                         item.Items.Clear();
                                         foreach (Tuple<string, IEnumerable<IResultVisualizer>> customChild in customChildren)
                                         {
-                                            if (customChild.Item1 == "[Expanded]")
+                                            if (customChild.Item1 == ResultVisualizer.ExpandedGroupName)
                                             {
                                                 foreach (IResultVisualizer child in customChild.Item2)
                                                 {

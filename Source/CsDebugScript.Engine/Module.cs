@@ -112,6 +112,7 @@ namespace CsDebugScript
         {
             Address = address;
             Process = process;
+            Id = uint.MaxValue;
             name = SimpleCache.Create(() =>
             {
                 string name = Context.Debugger.GetModuleName(this);
@@ -142,10 +143,7 @@ namespace CsDebugScript
                 Variable variable = Process.CastVariableToUserType(GlobalVariables[name]);
 
                 if (UserTypeCastedGlobalVariables.Count == 0)
-                {
-                    GlobalCache.VariablesUserTypeCastedFieldsByName.Add(UserTypeCastedGlobalVariables);
-                }
-
+                    GlobalCache.Caches.Add(UserTypeCastedGlobalVariables);
                 return variable;
             });
         }
@@ -492,6 +490,10 @@ namespace CsDebugScript
             if (name == CodeType.NakedPointerCodeTypeName)
             {
                 return new NakedPointerCodeType(this);
+            }
+            else if (name.StartsWith(BuiltinCodeTypes.FakeNameStart))
+            {
+                return BuiltinCodeTypes.CreateCodeType(this, name.Substring(BuiltinCodeTypes.FakeNameStart.Length));
             }
 
             CodeType codeType = null;

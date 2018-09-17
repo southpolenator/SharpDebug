@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
+using CsDebugScript.Engine.Utility;
 using System;
 
 namespace CsDebugScript.CodeGen.UserTypes
@@ -24,6 +25,11 @@ namespace CsDebugScript.CodeGen.UserTypes
         private Symbol type;
 
         /// <summary>
+        /// Lazy cache for the <see cref="TypeString"/> property.
+        /// </summary>
+        private SimpleCacheStruct<string> typeStringCache;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="UserTypeTransformation"/> class.
         /// </summary>
         /// <param name="transformation">The XML transformation definition.</param>
@@ -36,6 +42,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             this.typeConverter = typeConverter;
             this.ownerUserType = ownerUserType;
             this.type = type;
+            typeStringCache = SimpleCache.CreateStruct(() => Transformation.TransformType(type.Name, typeConverter));
         }
 
         /// <summary>
@@ -44,15 +51,9 @@ namespace CsDebugScript.CodeGen.UserTypes
         public XmlTypeTransformation Transformation { get; private set; }
 
         /// <summary>
-        /// Transforms the symbol type to user type.
+        /// Gets the type string of this transformation.
         /// </summary>
-        /// <returns>Transformed type</returns>
-        internal string TransformType()
-        {
-            string originalFieldTypeString = type.Name;
-
-            return Transformation.TransformType(originalFieldTypeString, ownerUserType.ClassName, typeConverter);
-        }
+        public string TypeString => typeStringCache.Value;
 
         /// <summary>
         /// Transforms the constructor based on field variable and field offset.
@@ -63,7 +64,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             string originalFieldTypeString = type.Name;
 
-            return Transformation.TransformConstructor(originalFieldTypeString, simpleFieldValue, fieldOffset, ownerUserType.ClassName, typeConverter);
+            return Transformation.TransformConstructor(originalFieldTypeString, simpleFieldValue, fieldOffset, typeConverter);
         }
     }
 }

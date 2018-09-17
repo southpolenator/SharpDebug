@@ -14,7 +14,7 @@
         /// <returns>The value of basic type pointer from the variable</returns>
         public static T? GetValue(Variable variable)
         {
-            if (variable.IsNullPointer())
+            if (variable.IsNull())
             {
                 return null;
             }

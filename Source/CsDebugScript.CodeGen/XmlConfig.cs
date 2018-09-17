@@ -70,6 +70,14 @@ namespace CsDebugScript.CodeGen
         public bool GenerateAssemblyWithRoslyn { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets a value indicating whether generated assembly should be compiled by emitting IL.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if generated assembly should be compiled by emitting IL; otherwise, <c>false</c>.
+        /// </value>
+        public bool GenerateAssemblyWithILWriter { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether generated assembly won't have PDB generated.
         /// </summary>
         /// <value>
@@ -164,6 +172,11 @@ namespace CsDebugScript.CodeGen
         /// <c>true</c> if generator should try to match use of Hungarian notation; otherwise, <c>false</c>.
         /// </value>
         public bool UseHungarianNotation { get; set; }
+
+        /// <summary>
+        /// Should we initialize symbol caches during enumeration of symbols?
+        /// </summary>
+        public bool InitializeSymbolCaches { get; set; }
 
         /// <summary>
         /// Gets or sets the list of modules for which user types should be exported.
@@ -303,6 +316,10 @@ namespace CsDebugScript.CodeGen
             if (DontSaveGeneratedCodeFiles && GenerateAssemblyWithRoslyn)
             {
                 generationFlags |= UserTypeGenerationFlags.DontSaveGeneratedCodeFiles;
+            }
+            if (InitializeSymbolCaches)
+            {
+                generationFlags |= UserTypeGenerationFlags.InitializeSymbolCaches;
             }
             return generationFlags;
         }
@@ -444,7 +461,6 @@ namespace CsDebugScript.CodeGen
         internal const string FieldRegexGroup = "${field}";
         internal const string FieldOffsetRegexGroup = "${fieldOffset}";
         internal const string NewTypeRegexGroup = "${newType}";
-        internal const string ClassNameRegexGroup = "${className}";
         internal static readonly Dictionary<string, string> CastRegexGroups = new Dictionary<string, string>()
         {
             { "${new}", "new ${newType}(${field})" },
@@ -492,15 +508,13 @@ namespace CsDebugScript.CodeGen
         /// Transforms the specified input type based on the class name and type converter.
         /// </summary>
         /// <param name="inputType">Type of the input.</param>
-        /// <param name="className">Name of the class.</param>
         /// <param name="typeConverter">The type converter.</param>
         /// <returns>Transformed type</returns>
-        internal string TransformType(string inputType, string className, Func<string, string> typeConverter)
+        internal string TransformType(string inputType, Func<string, string> typeConverter)
         {
             Dictionary<string, string> groups = new Dictionary<string, string>(CastRegexGroups);
 
             ParseType(OriginalType, inputType, groups, typeConverter);
-            groups.Add(ClassNameRegexGroup, className);
             return Transform(NewType, groups);
         }
 
@@ -510,17 +524,15 @@ namespace CsDebugScript.CodeGen
         /// <param name="inputType">Type of the input.</param>
         /// <param name="field">The field.</param>
         /// <param name="fieldOffset">The field offset.</param>
-        /// <param name="className">Name of the class.</param>
         /// <param name="typeConverter">The type converter.</param>
-        internal string TransformConstructor(string inputType, string field, string fieldOffset, string className, Func<string, string> typeConverter)
+        internal string TransformConstructor(string inputType, string field, string fieldOffset, Func<string, string> typeConverter)
         {
             Dictionary<string, string> groups = new Dictionary<string, string>(CastRegexGroups);
 
             ParseType(OriginalType, inputType, groups, typeConverter);
             groups.Add(FieldRegexGroup, field);
             groups.Add(FieldOffsetRegexGroup, fieldOffset);
-            groups.Add(ClassNameRegexGroup, className);
-            groups.Add(NewTypeRegexGroup, TransformType(inputType, className, typeConverter));
+            groups.Add(NewTypeRegexGroup, TransformType(inputType, typeConverter));
             return Transform(Constructor, groups);
         }
 

@@ -33,7 +33,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             if (symTag != SymTagEnum.Exe)
             {
                 Name = TypeToString.GetTypeString(symbol);
-                Name = Name.Replace("<enum ", "<").Replace(",enum ", ",");
             }
             else
             {
@@ -75,14 +74,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
                     yield return Tuple.Create(enumValue.name, enumValue.value.ToString());
                 }
             }
-        }
-
-        /// <summary>
-        /// Casts as symbol field.
-        /// </summary>
-        public override SymbolField CastAsSymbolField()
-        {
-            return new DiaSymbolField(this, symbol);
         }
 
         /// <summary>
@@ -160,10 +151,16 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override Symbol GetPointerType()
         {
-            Symbol result = DiaModule.GetSymbol(symbol.objectPointerType);
+            IDiaSymbol pointerType = symbol.objectPointerType;
 
-            result.ElementType = this;
-            return result;
+            if (pointerType != null)
+            {
+                Symbol result = DiaModule.GetSymbol(pointerType);
+
+                result.ElementType = this;
+                return result;
+            }
+            return base.GetPointerType();
         }
 
         /// <summary>

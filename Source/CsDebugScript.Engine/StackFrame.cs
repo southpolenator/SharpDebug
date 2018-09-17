@@ -68,14 +68,14 @@ namespace CsDebugScript
             {
                 VariableCollection collection = Variable.CastVariableCollectionToUserType(locals.Value);
 
-                GlobalCache.UserTypeCastedVariableCollections.Add(userTypeConvertedLocals);
+                GlobalCache.Caches.Add(userTypeConvertedLocals);
                 return collection;
             });
             userTypeConvertedArguments = SimpleCache.Create(() =>
             {
                 VariableCollection collection = Variable.CastVariableCollectionToUserType(arguments.Value);
 
-                GlobalCache.UserTypeCastedVariableCollections.Add(userTypeConvertedArguments);
+                GlobalCache.Caches.Add(userTypeConvertedArguments);
                 return collection;
             });
             module = SimpleCache.Create(() =>

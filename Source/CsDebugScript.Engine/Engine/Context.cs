@@ -1,6 +1,8 @@
 ﻿using CsDebugScript.CLR;
+using CsDebugScript.Drawing.Interfaces;
 using CsDebugScript.Engine.Utility;
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
 
@@ -56,6 +58,11 @@ namespace CsDebugScript.Engine
         public static bool EnableVariablePathTracking { get; set; } = true;
 
         /// <summary>
+        /// Gets graphics object used for creating drawing objects.
+        /// </summary>
+        public static IGraphics Graphics { get; internal set; }
+
+        /// <summary>
         /// Gets a value indicating whether debugger is currently in live debugging.
         /// </summary>
         /// <value>
@@ -97,48 +104,10 @@ namespace CsDebugScript.Engine
         {
             CacheInvalidator.InvalidateCaches(ClrProvider);
             GlobalCache.Processes.Clear();
-            GlobalCache.UserTypeCastedVariableCollections.Clear();
-            GlobalCache.UserTypeCastedVariables.Clear();
-            GlobalCache.VariablesUserTypeCastedFields.Clear();
-            GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
-        }
-
-        /// <summary>
-        /// Clears the metadata cache.
-        /// </summary>
-        internal static void ClearMetadataCache()
-        {
-            // Clear metadata from processes
-            foreach (var process in GlobalCache.Processes.Values)
-            {
-                process.ClearMetadataCache();
-            }
-
-            // Clear user types metadata
-            UserTypeMetadata = new UserTypeMetadata[0];
-            foreach (var cacheEntry in GlobalCache.VariablesUserTypeCastedFields)
-            {
-                cacheEntry.Cached = false;
-            }
-
-            foreach (var cacheEntry in GlobalCache.VariablesUserTypeCastedFieldsByName)
-            {
-                cacheEntry.Clear();
-            }
-
-            foreach (var cacheEntry in GlobalCache.UserTypeCastedVariableCollections)
-            {
-                cacheEntry.Cached = false;
-            }
-
-            foreach (var cacheEntry in GlobalCache.UserTypeCastedVariables)
-            {
-                cacheEntry.Clear();
-            }
-
-            GlobalCache.VariablesUserTypeCastedFields.Clear();
-            GlobalCache.VariablesUserTypeCastedFieldsByName.Clear();
-            GlobalCache.UserTypeCastedVariableCollections.Clear();
+            var caches = GlobalCache.Caches;
+            GlobalCache.Caches = new ConcurrentBag<ICache>();
+            foreach (ICache cache in caches)
+                cache.InvalidateCache();
         }
 
         /// <summary>

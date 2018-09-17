@@ -7,7 +7,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// </summary>
     /// <typeparam name="TFirst">The type of the first field.</typeparam>
     /// <typeparam name="TSecond">The type of the second field.</typeparam>
-    public class pair<TFirst, TSecond>
+    public class pair<TFirst, TSecond> : UserType
     {
         /// <summary>
         /// The first field
@@ -25,6 +25,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <param name="variable">The variable.</param>
         /// <exception cref="WrongCodeTypeException">std::pair</exception>
         public pair(Variable variable)
+            : base(variable)
         {
             // Verify code type
             if (!VerifyCodeType(variable.GetCodeType()))
@@ -40,6 +41,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// Gets the first field.
         /// </summary>
+        [ForceDefaultVisualizerAtttribute]
         public TFirst First
         {
             get
@@ -51,6 +53,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// Gets the second field.
         /// </summary>
+        [ForceDefaultVisualizerAtttribute]
         public TSecond Second
         {
             get
@@ -63,7 +66,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// Verifies if the specified code type is correct for this class.
         /// </summary>
         /// <param name="codeType">The code type.</param>
-        internal static bool VerifyCodeType(CodeType codeType)
+        public static bool VerifyCodeType(CodeType codeType)
         {
             // We want to have this kind of hierarchy
             // first
@@ -76,11 +79,24 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 return false;
             return true;
         }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"({First}, {Second})";
+        }
     }
 
     /// <summary>
     /// Simplification class for creating <see cref="pair{TFirst, TSecond}"/> with TFirst and TSecond being <see cref="Variable"/>.
     /// </summary>
+    [UserType(TypeName = "std::pair<>", CodeTypeVerification = nameof(pair.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::pair<>", CodeTypeVerification = nameof(pair.VerifyCodeType))]
     public class pair : pair<Variable, Variable>
     {
         /// <summary>

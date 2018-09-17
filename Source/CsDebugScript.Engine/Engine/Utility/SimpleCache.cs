@@ -171,8 +171,14 @@ namespace CsDebugScript.Engine.Utility
             {
                 if (!Cached)
                 {
-                    value = populateAction();
-                    Cached = true;
+                    lock (populateAction)
+                    {
+                        if (!Cached)
+                        {
+                            value = populateAction();
+                            Cached = true;
+                        }
+                    }
                 }
 
                 return value;

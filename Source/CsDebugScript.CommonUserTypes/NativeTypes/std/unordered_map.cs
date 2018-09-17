@@ -11,14 +11,35 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
-    public class unordered_map<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>
+    public class unordered_map<TKey, TValue> : UserType, IReadOnlyDictionary<TKey, TValue>
     {
         /// <summary>
-        /// Common code for Microsoft Visual Studio implementations of std::unordered_map
+        /// Microsoft Visual Studio implementation of std::unordered_map
         /// </summary>
         /// <seealso cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}" />
-        public class VisualStudio : IReadOnlyDictionary<TKey, TValue>
+        internal class VisualStudio : IReadOnlyDictionary<TKey, TValue>
         {
+            /// <summary>
+            /// Code type extracted data
+            /// </summary>
+            protected class ExtractedData
+            {
+                /// <summary>
+                /// Offset of list field.
+                /// </summary>
+                public int ListOffset;
+
+                /// <summary>
+                /// Code type of list field.
+                /// </summary>
+                public CodeType ListCodeType;
+
+                /// <summary>
+                /// Code type of std::unordered_map.
+                /// </summary>
+                public CodeType CodeType;
+            }
+
             /// <summary>
             /// The list
             /// </summary>
@@ -28,9 +49,13 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// Initializes a new instance of the <see cref="VisualStudio"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
-            public VisualStudio(Variable variable)
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public VisualStudio(Variable variable, object savedData)
             {
-                list = UserMember.Create(() => new list<pair<TKey, TValue>>(variable.GetField("_List")));
+                ExtractedData data = (ExtractedData)savedData;
+                ulong address = variable.GetPointerAddress();
+
+                list = UserMember.Create(() => new list<pair<TKey, TValue>>(Variable.Create(data.ListCodeType, address + (uint)data.ListOffset)));
             }
 
             /// <summary>
@@ -46,10 +71,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     TValue value;
 
                     if (!TryGetValue(key, out value))
-                    {
                         throw new KeyNotFoundException();
-                    }
-
                     return value;
                 }
             }
@@ -57,13 +79,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// <summary>
             /// Gets the number of elements in the collection.
             /// </summary>
-            public int Count
-            {
-                get
-                {
-                    return List.Count;
-                }
-            }
+            public int Count => List.Count;
 
             /// <summary>
             /// Gets an enumerable collection that contains the keys in the read-only dictionary.
@@ -90,13 +106,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// <summary>
             /// Gets the list.
             /// </summary>
-            private list<pair<TKey, TValue>> List
-            {
-                get
-                {
-                    return list.Value;
-                }
-            }
+            private list<pair<TKey, TValue>> List => list.Value;
 
             /// <summary>
             /// Determines whether the read-only dictionary contains an element that has the specified key.
@@ -146,13 +156,11 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 // As we don't have comparer (for sorted tree), we will need to scan all items
                 foreach (KeyValuePair<TKey, TValue> kvp in Enumerate())
-                {
                     if (kvp.Key.Equals(key))
                     {
                         value = kvp.Value;
                         return true;
                     }
-                }
 
                 value = default(TValue);
                 return false;
@@ -164,76 +172,104 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             private IEnumerable<KeyValuePair<TKey, TValue>> Enumerate()
             {
                 foreach (pair<TKey, TValue> item in List)
-                {
                     yield return new KeyValuePair<TKey, TValue>(item.First, item.Second);
-                }
             }
 
             /// <summary>
             /// Verifies if the specified code type is correct for this class.
             /// </summary>
             /// <param name="codeType">The code type.</param>
-            internal static bool VerifyCodeType(CodeType codeType)
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
                 // _List
                 CodeType _List;
 
                 if (!codeType.GetFieldTypes().TryGetValue("_List", out _List))
-                    return false;
-
+                    return null;
                 if (!list<pair<TKey, TValue>>.VerifyCodeType(_List))
-                    return false;
-
-                // TODO: We should also verify list item type
-
-                return true;
+                    return null;
+                return new ExtractedData
+                {
+                    ListOffset = codeType.GetFieldOffset("_List"),
+                    ListCodeType = _List,
+                    CodeType = codeType,
+                };
             }
         }
 
         /// <summary>
-        /// libstdc++ 6 implementations of std::map
+        /// Common code for all implementations of std::unordered_map
         /// </summary>
-        /// <seealso cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}" />
-        public class LibStdCpp6 : IReadOnlyDictionary<TKey, TValue>
+        internal class UnorderedMapBase : IReadOnlyDictionary<TKey, TValue>
         {
             /// <summary>
-            /// The hashtable buckets
+            /// Code type extracted data
             /// </summary>
-            UserMember<CodeArray<Variable>> buckets;
+            protected class ExtractedData
+            {
+                /// <summary>
+                /// Function that reads element count field.
+                /// </summary>
+                public Func<ulong, int> ReadElementCount;
 
-            UserMember<Variable> beforeBegin;
+                /// <summary>
+                /// Offset of before first element field.
+                /// </summary>
+                public int BeforeFirstElementOffset;
+
+                /// <summary>
+                /// Offset of item's next field.
+                /// </summary>
+                public int ItemNextOffset;
+
+                /// <summary>
+                /// Offset of item's value field.
+                /// </summary>
+                public int ItemValueOffset;
+
+                /// <summary>
+                /// Code type of item's value field.
+                /// </summary>
+                public CodeType ItemValueCodeType;
+
+                /// <summary>
+                /// Code type of std::unordered_map.
+                /// </summary>
+                public CodeType CodeType;
+
+                /// <summary>
+                /// Process where code type comes from.
+                /// </summary>
+                public Process Process;
+            }
 
             /// <summary>
-            /// The element count
+            /// Code type extracted data.
             /// </summary>
-            UserMember<int> elementCount;
-
-            CodeType elementCodeType;
+            private ExtractedData data;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="LibStdCpp6"/> class.
+            /// Address of variable.
+            /// </summary>
+            private ulong address;
+
+            /// <summary>
+            /// The number of elements in the map.
+            /// </summary>
+            private int elementCount;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="UnorderedMapBase"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
-            public LibStdCpp6(Variable variable)
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public UnorderedMapBase(Variable variable, object savedData)
             {
-                buckets = UserMember.Create(() =>
-                {
-                    Variable h = variable.GetField("_M_h");
-                    Variable b = h.GetField("_M_buckets");
-                    int count = (int)h.GetField("_M_bucket_count");
-
-                    elementCodeType = (CodeType)h.GetCodeType().TemplateArguments[1];
-                    return new CodeArray<Variable>(b, count);
-                });
-                beforeBegin = UserMember.Create(() =>
-                {
-                    Variable h = variable.GetField("_M_h");
-
-                    elementCodeType = (CodeType)h.GetCodeType().TemplateArguments[1];
-                    return h.GetField("_M_before_begin");
-                });
-                elementCount = UserMember.Create(() => (int)variable.GetField("_M_h").GetField("_M_element_count"));
+                data = (ExtractedData)savedData;
+                address = variable.GetPointerAddress();
+                elementCount = data.ReadElementCount(address);
             }
 
             /// <summary>
@@ -249,10 +285,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     TValue value;
 
                     if (!TryGetValue(key, out value))
-                    {
                         throw new KeyNotFoundException();
-                    }
-
                     return value;
                 }
             }
@@ -260,13 +293,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// <summary>
             /// Gets the number of elements in the collection.
             /// </summary>
-            public int Count
-            {
-                get
-                {
-                    return elementCount.Value;
-                }
-            }
+            public int Count => elementCount;
 
             /// <summary>
             /// Gets an enumerable collection that contains the keys in the read-only dictionary.
@@ -338,13 +365,11 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             {
                 // As we don't have hash function, we will need to scan all items
                 foreach (KeyValuePair<TKey, TValue> kvp in Enumerate())
-                {
                     if (kvp.Key.Equals(key))
                     {
                         value = kvp.Value;
                         return true;
                     }
-                }
 
                 value = default(TValue);
                 return false;
@@ -355,30 +380,42 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// </summary>
             private IEnumerable<KeyValuePair<TKey, TValue>> Enumerate()
             {
-                //foreach (Variable bucket in buckets.Value)
-                Variable bucket = beforeBegin.Value;
+                ulong beforeFirstElementAddress = address + (uint)data.BeforeFirstElementOffset;
+                ulong elementAddress = data.Process.ReadPointer(beforeFirstElementAddress + (uint)data.ItemNextOffset);
+
+                while (elementAddress != 0)
                 {
-                    Variable element = bucket;
+                    ulong valueAddress = elementAddress + (uint)data.ItemValueOffset;
+                    pair<TKey, TValue> value = new pair<TKey, TValue>(Variable.Create(data.ItemValueCodeType, valueAddress));
 
-                    while (element != null && !element.IsNullPointer())
-                    {
-                        if (element.GetPointerAddress() != beforeBegin.Value.GetPointerAddress())
-                        {
-                            ulong itemAddress = element.GetPointerAddress() + element.GetCodeType().ElementType.Size;
-                            pair<TKey, TValue> item = new pair<TKey, TValue>(Variable.Create(elementCodeType, itemAddress));
-
-                            yield return new KeyValuePair<TKey, TValue>(item.First, item.Second);
-                        }
-                        element = element.GetField("_M_nxt");
-                    }
+                    yield return new KeyValuePair<TKey, TValue>(value.First, value.Second);
+                    elementAddress = data.Process.ReadPointer(elementAddress + (uint)data.ItemNextOffset);
                 }
+            }
+        }
+
+        /// <summary>
+        /// libstdc++ 6 implementations of std::unordered_map
+        /// </summary>
+        /// <seealso cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}" />
+        internal class LibStdCpp6 : UnorderedMapBase
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="LibStdCpp6"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public LibStdCpp6(Variable variable, object savedData)
+                : base(variable, savedData)
+            {
             }
 
             /// <summary>
             /// Verifies if the specified code type is correct for this class.
             /// </summary>
             /// <param name="codeType">The code type.</param>
-            internal static bool VerifyCodeType(CodeType codeType)
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
                 // _M_h
@@ -394,22 +431,121 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 CodeType _M_h, _M_before_begin, _M_nxt, _M_bucket_count, _M_buckets, _M_element_count, _M_rehash_policy, _M_max_load_factor, _M_next_resize, _M_single_bucket;
 
                 if (!codeType.GetFieldTypes().TryGetValue("_M_h", out _M_h))
-                    return false;
+                    return null;
 
                 var _M_hFields = _M_h.GetFieldTypes();
 
                 if (!_M_hFields.TryGetValue("_M_before_begin", out _M_before_begin) || !_M_hFields.TryGetValue("_M_bucket_count", out _M_bucket_count) || !_M_hFields.TryGetValue("_M_buckets", out _M_buckets) || !_M_hFields.TryGetValue("_M_element_count", out _M_element_count) || !_M_hFields.TryGetValue("_M_rehash_policy", out _M_rehash_policy) || !_M_hFields.TryGetValue("_M_single_bucket", out _M_single_bucket))
-                    return false;
-
+                    return null;
                 if (!_M_before_begin.GetFieldTypes().TryGetValue("_M_nxt", out _M_nxt))
-                    return false;
+                    return null;
 
                 var _M_rehash_policyFields = _M_rehash_policy.GetFieldTypes();
 
                 if (!_M_rehash_policyFields.TryGetValue("_M_max_load_factor", out _M_max_load_factor) || !_M_rehash_policyFields.TryGetValue("_M_next_resize", out _M_next_resize))
-                    return false;
+                    return null;
 
-                return true;
+                CodeType valueCodeType;
+
+                try
+                {
+                    valueCodeType = (CodeType)_M_h.TemplateArguments[1];
+                }
+                catch
+                {
+                    return null;
+                }
+                if (!pair<TKey, TValue>.VerifyCodeType(valueCodeType))
+                    return null;
+
+                return new ExtractedData
+                {
+                    ReadElementCount = codeType.Module.Process.GetReadInt(codeType, "_M_h._M_element_count"),
+                    BeforeFirstElementOffset = codeType.GetFieldOffset("_M_h") + _M_h.GetFieldOffset("_M_before_begin"),
+                    ItemNextOffset = _M_nxt.ElementType.GetFieldOffset("_M_nxt"),
+                    ItemValueOffset = (int)_M_nxt.ElementType.Size,
+                    ItemValueCodeType = valueCodeType,
+                    CodeType = codeType,
+                    Process = codeType.Module.Process,
+                };
+            }
+        }
+
+        /// <summary>
+        /// Clang libc++ implementations of std::unordered_map
+        /// </summary>
+        /// <seealso cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}" />
+        internal class ClangLibCpp : UnorderedMapBase
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
+            /// </summary>
+            /// <param name="variable">The variable.</param>
+            /// <param name="savedData">Data returned from VerifyCodeType function.</param>
+            public ClangLibCpp(Variable variable, object savedData)
+                : base(variable, savedData)
+            {
+            }
+
+            /// <summary>
+            /// Verifies if the specified code type is correct for this class.
+            /// </summary>
+            /// <param name="codeType">The code type.</param>
+            /// <returns>Extracted data object or <c>null</c> if fails.</returns>
+            internal static object VerifyCodeType(CodeType codeType)
+            {
+                // We want to have this kind of hierarchy
+                // __table_
+                // | __bucket_list_
+                //   | __ptr_
+                // | __p1_
+                //   | __value_
+                //     | __next_
+                // | __p2_
+                //   | __value_
+                // | __p3_
+                //   | __value_
+                CodeType __table_, __bucket_list_, __ptr_, __p1_, __value_, __next_, __p2_, __value_2, __p3_, __value_3;
+
+                if (!codeType.GetFieldTypes().TryGetValue("__table_", out __table_))
+                    return null;
+                if (!__table_.GetFieldTypes().TryGetValue("__bucket_list_", out __bucket_list_) || !__table_.GetFieldTypes().TryGetValue("__p1_", out __p1_) || !__table_.GetFieldTypes().TryGetValue("__p2_", out __p2_) || !__table_.GetFieldTypes().TryGetValue("__p3_", out __p3_))
+                    return null;
+                if (!__bucket_list_.GetFieldTypes().TryGetValue("__ptr_", out __ptr_))
+                    return null;
+                if (!__p1_.GetFieldTypes().TryGetValue("__value_", out __value_))
+                    return null;
+                if (!__value_.GetFieldTypes().TryGetValue("__next_", out __next_))
+                    return null;
+                if (!__p2_.GetFieldTypes().TryGetValue("__value_", out __value_2))
+                    return null;
+                if (!__p3_.GetFieldTypes().TryGetValue("__value_", out __value_3))
+                    return null;
+
+                CodeType hashNodeCodeType, valueCodeType;
+
+                try
+                {
+                    hashNodeCodeType = __next_.ElementType.TemplateArguments[0] as CodeType;
+                    valueCodeType = hashNodeCodeType.GetFieldType("__value_").GetFieldType("__nc");
+                }
+                catch
+                {
+                    return null;
+                }
+                if (!pair<TKey, TValue>.VerifyCodeType(valueCodeType))
+                    return null;
+
+                return new ExtractedData
+                {
+                    ReadElementCount = codeType.Module.Process.GetReadInt(codeType, "__table_.__p2_.__value_"),
+                    BeforeFirstElementOffset = codeType.GetFieldOffset("__table_") + __table_.GetFieldOffset("__p1_") + __p1_.GetFieldOffset("__value_"),
+                    ItemNextOffset = hashNodeCodeType.GetFieldOffset("__next_"),
+                    ItemValueCodeType = valueCodeType,
+                    ItemValueOffset = hashNodeCodeType.GetFieldOffset("__value_") + hashNodeCodeType.GetFieldType("__value_").GetFieldOffset("__nc"),
+                    CodeType = codeType,
+                    Process = codeType.Module.Process,
+                };
             }
         }
 
@@ -418,9 +554,20 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// </summary>
         private static TypeSelector<IReadOnlyDictionary<TKey, TValue>> typeSelector = new TypeSelector<IReadOnlyDictionary<TKey, TValue>>(new[]
         {
-            new Tuple<Type, Func<CodeType, bool>>(typeof(VisualStudio), VisualStudio.VerifyCodeType),
-            new Tuple<Type, Func<CodeType, bool>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(VisualStudio), VisualStudio.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
+
+        /// <summary>
+        /// Verifies that type user type can work with the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type can work with the specified code type; <c>false</c> otherwise</returns>
+        public static bool VerifyCodeType(CodeType codeType)
+        {
+            return typeSelector.VerifyCodeType(codeType);
+        }
 
         /// <summary>
         /// The instance used to read variable data
@@ -432,12 +579,15 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// </summary>
         /// <param name="variable">The variable.</param>
         public unordered_map(Variable variable)
+            : base(variable)
         {
             instance = typeSelector.SelectType(variable);
             if (instance == null)
             {
                 throw new WrongCodeTypeException(variable, nameof(variable), "std::unordered_map");
             }
+
+            var a = System.Linq.Enumerable.ToArray(this);
         }
 
         /// <summary>
@@ -533,11 +683,24 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         {
             return instance.GetEnumerator();
         }
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"{{ size={Count} }}";
+        }
     }
 
     /// <summary>
     /// Simplification class for creating <see cref="unordered_map{TKey, TValue}"/> with TKey and TValue being <see cref="Variable"/>.
     /// </summary>
+    [UserType(TypeName = "std::unordered_map<>", CodeTypeVerification = nameof(unordered_map.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::unordered_map<>", CodeTypeVerification = nameof(unordered_map.VerifyCodeType))]
     public class unordered_map : unordered_map<Variable, Variable>
     {
         /// <summary>

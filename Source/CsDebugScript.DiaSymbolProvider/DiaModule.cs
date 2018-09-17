@@ -33,9 +33,14 @@ namespace CsDebugScript.Engine.SymbolProviders
         private DictionaryCache<uint, List<Tuple<string, uint, int>>> typeAllFields;
 
         /// <summary>
-        /// The cache of type all fields
+        /// The cache of type fields
         /// </summary>
         private DictionaryCache<uint, List<Tuple<string, uint, int>>> typeFields;
+
+        /// <summary>
+        /// The cache of type static fields
+        /// </summary>
+        private DictionaryCache<uint, List<Tuple<string, uint, ulong>>> typeStaticFields;
 
         /// <summary>
         /// The basic types
@@ -89,6 +94,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             globalScope = session.globalScope;
             typeAllFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeAllFields);
             typeFields = new DictionaryCache<uint, List<Tuple<string, uint, int>>>(GetTypeFields);
+            typeStaticFields = new DictionaryCache<uint, List<Tuple<string, uint, ulong>>>(GetTypeStaticFields);
             basicTypes = SimpleCache.Create(() =>
             {
                 var types = new Dictionary<string, IDiaSymbol>();
@@ -215,6 +221,29 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
+        /// Gets the type static fields.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        private List<Tuple<string, uint, ulong>> GetTypeStaticFields(uint typeId)
+        {
+            var type = GetTypeFromId(typeId);
+            List<Tuple<string, uint, ulong>> typeFields = new List<Tuple<string, uint, ulong>>();
+            var fields = type.GetChildren(SymTagEnum.Data);
+
+            foreach (var field in fields)
+            {
+                if (field.dataKind != DataKind.StaticMember && field.dataKind != DataKind.Constant)
+                {
+                    continue;
+                }
+
+                typeFields.Add(Tuple.Create(field.name, field.typeId, field.relativeVirtualAddress + Module.Offset));
+            }
+
+            return typeFields;
+        }
+
+        /// <summary>
         /// Gets the type symbol from type identifier.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
@@ -289,6 +318,17 @@ namespace CsDebugScript.Engine.SymbolProviders
             }
 
             return GetTypeId(type);
+        }
+
+        /// <summary>
+        /// Gets the template arguments. This is optional to be implemented in symbol module provider. If it is not implemented, <see cref="NativeCodeType.GetTemplateArguments"/> will do the job.
+        /// <para>For given type: MyType&lt;Arg1, 2, Arg3&lt;5&gt;&gt;</para>
+        /// <para>It will return: <code>new object[] { CodeType.Create("Arg1", Module), 2, CodeType.Create("Arg3&lt;5&gt;", Module) }</code></para>
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public object[] GetTemplateArguments(uint typeId)
+        {
+            return null;
         }
 
         /// <summary>
@@ -537,6 +577,10 @@ namespace CsDebugScript.Engine.SymbolProviders
                 symbols = block.GetChildren(SymTagEnum.Data);
             }
 
+            string previousName = null;
+            uint previousCountLiveRanges = 0;
+            uint previousOffsetInUdt = 0;
+
             foreach (var symbol in symbols)
             {
                 SymTagEnum tag = symbol.symTag;
@@ -555,11 +599,41 @@ namespace CsDebugScript.Engine.SymbolProviders
                     continue;
                 }
 
-                CodeType codeType = module.TypesById[symbol.typeId];
-                ulong address = ResolveAddress(module.Process, symbol, frame.FrameContext);
-                var variableName = symbol.name;
+                try
+                {
+                    CodeType codeType = module.TypesById[symbol.typeId];
+                    string variableName = symbol.name;
+                    uint countLiveRanges = symbol.countLiveRanges;
+                    uint offsetInUdt = symbol.offsetInUdt;
+                    ulong address = ResolveAddress(module.Process, symbol, frame.FrameContext);
+                    Variable variable;
+                    bool hasData = symbol.locationType == LocationType.Enregistered;
 
-                variables.Add(Variable.CreateNoCast(codeType, address, variableName, variableName));
+                    if (codeType.IsPointer && hasData)
+                    {
+                        variable = Variable.CreatePointerNoCast(codeType, address, variableName, variableName);
+                    }
+                    else
+                    {
+                        variable = Variable.CreateNoCast(codeType, address, variableName, variableName);
+                    }
+                    if (!codeType.IsPointer && hasData)
+                    {
+                        variable.Data = address;
+                    }
+
+                    if (previousName != variableName || previousOffsetInUdt != offsetInUdt || previousCountLiveRanges != countLiveRanges)
+                    {
+                        variables.Add(variable);
+                    }
+                    previousName = variableName;
+                    previousCountLiveRanges = countLiveRanges;
+                    previousOffsetInUdt = offsetInUdt;
+                }
+                catch
+                {
+                    // TODO: Surface error to the user ...somehow...
+                }
             }
         }
 
@@ -576,6 +650,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             switch (symbol.locationType)
             {
                 case LocationType.RegRel:
+                case LocationType.Enregistered:
                     switch (symbol.registerId)
                     {
                         case CV_HREG_e.CV_AMD64_ESP:
@@ -600,10 +675,22 @@ namespace CsDebugScript.Engine.SymbolProviders
                             }
                             break;
                         default:
-                            throw new Exception("Unknown register id" + symbol.registerId);
+                            {
+                                IRegistersAccess registersAccess = frameContext.Registers as IRegistersAccess;
+
+                                if (registersAccess == null)
+                                {
+                                    throw new Exception("Unknown register id" + symbol.registerId);
+                                }
+                                address = registersAccess.GetRegisterValue(symbol.registerId);
+                            }
+                            break;
                     }
 
-                    address += (ulong)symbol.offset;
+                    if (symbol.locationType == LocationType.RegRel)
+                    {
+                        address += (ulong)symbol.offset;
+                    }
                     return address;
 
                 case LocationType.Static:
@@ -710,6 +797,53 @@ namespace CsDebugScript.Engine.SymbolProviders
             }
 
             var fields = typeFields[type.symIndexId];
+
+            foreach (var field in fields)
+            {
+                if (field.Item1 != fieldName)
+                {
+                    continue;
+                }
+
+                return Tuple.Create(field.Item2, field.Item3);
+            }
+
+            throw new Exception("Field not found");
+        }
+
+        /// <summary>
+        /// Gets the names of static fields of the specified type.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        public string[] GetTypeStaticFieldNames(uint typeId)
+        {
+            var type = GetTypeFromId(typeId);
+
+            if (type.symTag == SymTagEnum.PointerType)
+            {
+                type = type.type;
+            }
+
+            var fields = typeStaticFields[type.symIndexId];
+
+            return fields.Select(t => t.Item1).ToArray();
+        }
+
+        /// <summary>
+        /// Gets the static field type id and address of the specified type.
+        /// </summary>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        public Tuple<uint, ulong> GetTypeStaticFieldTypeAndAddress(uint typeId, string fieldName)
+        {
+            var type = GetTypeFromId(typeId);
+
+            if (type.symTag == SymTagEnum.PointerType)
+            {
+                type = type.type;
+            }
+
+            var fields = typeStaticFields[type.symIndexId];
 
             foreach (var field in fields)
             {

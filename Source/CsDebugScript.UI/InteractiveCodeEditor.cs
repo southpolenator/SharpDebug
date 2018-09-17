@@ -13,6 +13,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using CsDebugScript.Engine.Debuggers;
+using CsDebugScript.Engine;
+using CsDebugScript.UI.Drawing;
 
 namespace CsDebugScript.UI
 {
@@ -41,7 +43,6 @@ namespace CsDebugScript.UI
 
         private delegate void BackgroundExecuteDelegate(string documentText, out string textOutput, out string errorOutput, out IEnumerable<object> result);
 
-        private InteractiveExecution interactiveExecution;
         private Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
         private List<object> results = new List<object>();
         private System.Threading.ManualResetEvent initializedEvent = new System.Threading.ManualResetEvent(false);
@@ -62,16 +63,16 @@ namespace CsDebugScript.UI
         public InteractiveCodeEditor(InteractiveResultVisualizer objectWriter, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
             : base(fontFamily, fontSize, indentationSize, highlightingColors)
         {
-            interactiveExecution = new InteractiveExecution();
-            interactiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
+            InteractiveExecution = new InteractiveExecution();
+            InteractiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
             {
                 InteractiveCodeEditor = this,
             };
-            interactiveExecution.scriptBase.ObjectWriter = objectWriter;
+            InteractiveExecution.scriptBase.ObjectWriter = objectWriter;
 
-            // Run initialization of the window in background task
+            // Run initialization of the window in background STA thread
             IsEnabled = false;
-            Task.Run(() =>
+            System.Threading.Thread thread = new System.Threading.Thread(() =>
             {
                 try
                 {
@@ -98,6 +99,8 @@ namespace CsDebugScript.UI
                     MessageBox.Show(ex.ToString());
                 }
             });
+            thread.SetApartmentState(System.Threading.ApartmentState.STA);
+            thread.Start();
         }
 
         public event CommandExecutedHandler CommandExecuted;
@@ -110,11 +113,13 @@ namespace CsDebugScript.UI
 
         public event Action CloseRequested;
 
+        internal InteractiveExecution InteractiveExecution { get; private set; }
+
         protected new void Initialize()
         {
             UpdateScriptCode();
             base.Initialize();
-            interactiveExecution.UnsafeInterpret("null");
+            InteractiveExecution.UnsafeInterpret("null");
             initializedEvent.Set();
         }
 
@@ -131,9 +136,11 @@ namespace CsDebugScript.UI
                     // Execution code
                     var oldOut = Console.Out;
                     var oldError = Console.Error;
+                    var oldGraphics = Context.Graphics;
 
                     try
                     {
+                        Context.Graphics = new Graphics(Dispatcher);
                         using (StringWriter writer = new StringWriter())
                         {
                             Console.SetOut(writer);
@@ -144,10 +151,10 @@ namespace CsDebugScript.UI
                                 | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
                             var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
 
-                            interactiveExecution.scriptBase._UiActionExecutor_ = (action) => Dispatcher.Invoke(action);
+                            InteractiveExecution.scriptBase._UiActionExecutor_ = (action) => Dispatcher.Invoke(action);
                             using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
                             {
-                                interactiveExecution.UnsafeInterpret(documentText);
+                                InteractiveExecution.UnsafeInterpret(documentText);
                                 writer.Flush();
                                 textOutput = writer.GetStringBuilder().ToString();
                             }
@@ -195,14 +202,15 @@ namespace CsDebugScript.UI
                     {
                         Console.SetError(oldError);
                         Console.SetOut(oldOut);
+                        Context.Graphics = oldGraphics;
                         result = results;
                         results = new List<object>();
-                        interactiveExecution.scriptBase._UiActionExecutor_ = null;
+                        InteractiveExecution.scriptBase._UiActionExecutor_ = null;
                     }
                 };
 
                 // Check if we should execute script code in STA thread
-                if (interactiveExecution.scriptBase.ForceStaExecution)
+                if (InteractiveExecution.scriptBase.ForceStaExecution)
                 {
                     string tempTextOutput = null;
                     string tempErrorOutput = null;
@@ -309,7 +317,7 @@ namespace CsDebugScript.UI
         private void UpdateScriptCode()
         {
             string scriptStart, scriptEnd;
-            string[] loadedReferences = interactiveExecution.GetScriptHelperCode(out scriptStart, out scriptEnd).ToArray();
+            string[] loadedReferences = InteractiveExecution.GetScriptHelperCode(out scriptStart, out scriptEnd).ToArray();
 
             if (loadedReferences.Length != loadedAssemblies.Count)
             {

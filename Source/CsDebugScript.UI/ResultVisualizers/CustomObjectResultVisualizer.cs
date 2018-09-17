@@ -1,6 +1,7 @@
-﻿using System;
+﻿using CsDebugScript.UI.CodeWindow;
+using System;
 using System.Collections.Generic;
-using System.Windows.Media;
+using System.Linq;
 
 namespace CsDebugScript.UI.ResultVisualizers
 {
@@ -18,10 +19,10 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// <param name="result">Resulting object that should be visualized.</param>
         /// <param name="resultType">Type of the resulting object that should be visualized.</param>
         /// <param name="name">Name of the variable / property.</param>
-        /// <param name="image">Image that represents icon of the variable / property</param>
+        /// <param name="dataType">Data type that will be used to generate icon of the variable / property</param>
         /// <param name="interactiveResultVisualizer">Interactive result visualizer that can be used for creating UI elements.</param>
-        public CustomObjectResultVisualizer(object result, Type resultType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
-            : base(result, resultType, name, image, interactiveResultVisualizer)
+        public CustomObjectResultVisualizer(object result, Type resultType, string name, CompletionDataType dataType, InteractiveResultVisualizer interactiveResultVisualizer)
+            : base(result, resultType, name, dataType, interactiveResultVisualizer)
         {
         }
 
@@ -40,19 +41,22 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// Gets the child elements in groups.
         /// Since inherited classes would override ExpandedChildren, we need to return them into [Public] group.
         /// </summary>
-        public override IEnumerable<Tuple<string, IEnumerable<IResultVisualizer>>> Children
+        public override IEnumerable<Tuple<string, IEnumerable<IResultVisualizer>>> ChildrenGroups
         {
             get
             {
                 bool publicsReturned = false;
 
-                foreach (Tuple<string, IEnumerable<IResultVisualizer>> children in base.Children)
+                foreach (Tuple<string, IEnumerable<IResultVisualizer>> children in base.ChildrenGroups)
                 {
                     yield return children;
-                    if (!publicsReturned && children.Item1 == "[Expanded]")
+                    if (!publicsReturned && children.Item1 == ExpandedGroupName)
                     {
                         publicsReturned = true;
-                        yield return Tuple.Create("[Public]", base.ExpandedChildren);
+                        if (base.ExpandedChildren.Any())
+                        {
+                            yield return Tuple.Create("[Public]", base.ExpandedChildren);
+                        }
                     }
                 }
             }

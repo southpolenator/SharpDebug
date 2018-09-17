@@ -73,6 +73,13 @@ namespace CsDebugScript.VS
         }
 
         /// <summary>
+        /// Initializes context if it is not already initialized.
+        /// </summary>
+        internal static void InitializeIfNeeded()
+        {
+        }
+
+        /// <summary>
         /// Initializes the DTE.
         /// </summary>
         private static void InitializeDTE()
