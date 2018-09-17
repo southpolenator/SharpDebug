@@ -605,7 +605,7 @@ namespace CsDebugScript.VS
                 trimNullTermination = true;
             }
 
-            byte[] bytes = process.ReadMemoryString(address, DkmReadMemoryFlags.None, charSize, length);
+            byte[] bytes = process.ReadMemoryString(address, DkmReadMemoryFlags.AllowPartialRead, charSize, length);
 
             if (trimNullTermination && bytes[bytes.Length - 1] == 0)
             {
