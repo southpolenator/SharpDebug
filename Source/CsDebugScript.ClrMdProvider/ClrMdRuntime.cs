@@ -110,11 +110,11 @@ namespace CsDebugScript.ClrMdProvider
             get
             {
                 foreach (ClrMdAppDomain appDomain in AppDomains)
-                {
                     yield return appDomain;
-                }
-                yield return SharedDomain;
-                yield return SystemDomain;
+                if (SharedDomain != null)
+                    yield return SharedDomain;
+                if (SystemDomain != null)
+                    yield return SystemDomain;
             }
         }
 
