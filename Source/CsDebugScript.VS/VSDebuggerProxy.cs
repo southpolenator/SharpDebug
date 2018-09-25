@@ -68,9 +68,6 @@ namespace CsDebugScript.VS
                 }
                 return false;
             });
-            System.Threading.Thread thread = new System.Threading.Thread(() => StaThreadLoop() );
-            thread.SetApartmentState(System.Threading.ApartmentState.STA);
-            thread.Start();
         }
 
         /// <summary>
@@ -79,10 +76,6 @@ namespace CsDebugScript.VS
         public VSDebuggerProxy()
         {
             processes = new List<DkmProcess>();
-            Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
-            {
-                typeof(CsDebugScript.CommonUserTypes.NativeTypes.cv.Mat).Assembly, // CsDebugScript.CommonUserTypes.dll
-            });
         }
 
         /// <summary>
@@ -137,7 +130,7 @@ namespace CsDebugScript.VS
 
                 return DkmStackFrame.ExtractFromDTEObject(stackFrame);
             });
-            DkmStackWalkFrame[] frames = threads[threadId].Frames.Value;
+            DkmStackWalkFrame[] frames = GetThreadFrames((uint)threadId);
 
             for (int i = 0; i < frames.Length; i++)
                 if (frames[i].FrameBase == frame.FrameBase)
@@ -406,7 +399,7 @@ namespace CsDebugScript.VS
         {
             return ExecuteOnDkmInitializedThread(() =>
             {
-                DkmFrameRegisters frameRegisters = threads[(int)threadId].Frames.Value[frameId].Registers;
+                DkmFrameRegisters frameRegisters = GetThreadFrames(threadId)[frameId].Registers;
                 CV_HREG_e register = (CV_HREG_e)registerId;
                 byte[] data = new byte[129];
                 int result = frameRegisters.GetRegisterValue(registerId, data);
@@ -520,7 +513,10 @@ namespace CsDebugScript.VS
                     }
                 }
 
-                threads[(int)threadId].Frames.Value = frames.ToArray();
+                lock (threads)
+                {
+                    threads[(int)threadId].Frames.Value = frames.ToArray();
+                }
 
                 Tuple<ulong, ulong, ulong>[] result = new Tuple<ulong, ulong, ulong>[frames.Count];
 
@@ -605,7 +601,7 @@ namespace CsDebugScript.VS
                 trimNullTermination = true;
             }
 
-            byte[] bytes = process.ReadMemoryString(address, DkmReadMemoryFlags.None, charSize, length);
+            byte[] bytes = process.ReadMemoryString(address, DkmReadMemoryFlags.AllowPartialRead, charSize, length);
 
             if (trimNullTermination && bytes[bytes.Length - 1] == 0)
             {
@@ -726,6 +722,15 @@ namespace CsDebugScript.VS
             }
         }
 
+        private DkmStackWalkFrame[] GetThreadFrames(uint threadId)
+        {
+            lock (threads)
+            {
+                return threads[(int)threadId].Frames.Value;
+            }
+        }
+
+
         private DkmModuleInstance GetModule(uint id)
         {
             lock (modules)
@@ -736,93 +741,148 @@ namespace CsDebugScript.VS
 
         #region Executing evaluators on correct thread
         /// <summary>
-        /// Signal event when there is something new in STA thread queue.
+        /// Helper class that enables background execution on specially initialized thread.
         /// </summary>
-        private static System.Threading.AutoResetEvent staThreadActionAvailable = new System.Threading.AutoResetEvent(false);
-
-        /// <summary>
-        /// Signal event when STA thread should stop.
-        /// </summary>
-        private static System.Threading.AutoResetEvent staThreadShouldStop = new System.Threading.AutoResetEvent(false);
-
-        /// <summary>
-        /// Queue of STA thread actions.
-        /// </summary>
-        private static Queue<Action> staThreadActions = new Queue<Action>();
-
-        /// <summary>
-        /// Local thread storage for signal event when STA thread process' action.
-        /// </summary>
-        private static System.Threading.ThreadLocal<System.Threading.AutoResetEvent> threadSyncEvent = new System.Threading.ThreadLocal<System.Threading.AutoResetEvent>(() => new System.Threading.AutoResetEvent(false));
-
-        /// <summary>
-        /// STA thread loop function.
-        /// </summary>
-        private static void StaThreadLoop()
+        private class ThreadActionPool : IDisposable
         {
-            System.Threading.WaitHandle[] handles = new System.Threading.WaitHandle[] { staThreadShouldStop, staThreadActionAvailable };
-            Queue<Action> nextActions = new Queue<Action>();
-            bool initializeDkm = initializationForThread.Value;
+            /// <summary>
+            /// Signal event when there is something new in thread queue.
+            /// </summary>
+            private System.Threading.AutoResetEvent actionAvailable = new System.Threading.AutoResetEvent(false);
 
-            while (true)
+            /// <summary>
+            /// Signal event when thread should stop.
+            /// </summary>
+            private System.Threading.AutoResetEvent shouldStop = new System.Threading.AutoResetEvent(false);
+
+            /// <summary>
+            /// Queue of thread actions.
+            /// </summary>
+            private Queue<Action> actions = new Queue<Action>();
+
+            /// <summary>
+            /// Local thread storage for signal event when thread process' action.
+            /// </summary>
+            private System.Threading.ThreadLocal<System.Threading.AutoResetEvent> threadSyncEvent = new System.Threading.ThreadLocal<System.Threading.AutoResetEvent>(() => new System.Threading.AutoResetEvent(false));
+
+            /// <summary>
+            /// Thread that will be executing action pool
+            /// </summary>
+            private volatile System.Threading.Thread thread;
+
+            /// <summary>
+            /// Background thread apartment state that will be applied when first action is created.
+            /// </summary>
+            private readonly System.Threading.ApartmentState threadApartmentState;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ThreadActionPool"/> class.
+            /// </summary>
+            /// <param name="apartmentState">Background thread apartment state.</param>
+            public ThreadActionPool(System.Threading.ApartmentState apartmentState)
             {
-                // Wait for next operation
-                int id = System.Threading.WaitHandle.WaitAny(handles);
+                threadApartmentState = apartmentState;
+            }
 
-                if (handles[id] == staThreadShouldStop)
-                    break;
-
-                // Swap actions queue
-                lock (staThreadActions)
+            /// <summary>
+            /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+            /// </summary>
+            public void Dispose()
+            {
+                if (thread != null)
                 {
-                    var actions = staThreadActions;
-                    staThreadActions = nextActions;
-                    nextActions = actions;
-                }
-
-                // Execute all actions
-                bool initialized = initializationForThread.Value;
-
-                while (nextActions.Count > 0)
-                {
-                    Action action = nextActions.Dequeue();
-
-                    action();
+                    shouldStop.Set();
+                    thread.Join();
+                    thread = null;
                 }
             }
-        }
 
-        /// <summary>
-        /// Executes the specified action on STA thread.
-        /// </summary>
-        /// <param name="action"></param>
-        private static void ExecuteOnStaThread(Action action)
-        {
-            System.Threading.AutoResetEvent syncEvent = threadSyncEvent.Value;
-            Exception exception = null;
-
-            lock (staThreadActions)
+            /// <summary>
+            /// Executes the specified action on the thread.
+            /// </summary>
+            /// <param name="action">Action to be executed.</param>
+            public void Execute(Action action)
             {
-                staThreadActions.Enqueue(() =>
-                {
-                    try
+                // Check if we should create and start background processing thread.
+                if (thread == null)
+                    lock (this)
                     {
+                        if (thread == null)
+                        {
+                            thread = new System.Threading.Thread(() => ThreadLoop());
+                            thread.SetApartmentState(threadApartmentState);
+                            thread.Start();
+                        }
+                    }
+
+                System.Threading.AutoResetEvent syncEvent = threadSyncEvent.Value;
+                Exception exception = null;
+
+                lock (actions)
+                {
+                    actions.Enqueue(() =>
+                    {
+                        try
+                        {
+                            action();
+                        }
+                        catch (Exception ex)
+                        {
+                            exception = ex;
+                        }
+                        syncEvent.Set();
+                    });
+                }
+                actionAvailable.Set();
+                syncEvent.WaitOne();
+                if (exception != null)
+                {
+                    throw new AggregateException(exception);
+                }
+            }
+
+            /// <summary>
+            /// STA thread loop function.
+            /// </summary>
+            private void ThreadLoop()
+            {
+                System.Threading.WaitHandle[] handles = new System.Threading.WaitHandle[] { shouldStop, actionAvailable };
+                Queue<Action> nextActions = new Queue<Action>();
+                bool initializeDkm = initializationForThread.Value;
+
+                while (true)
+                {
+                    // Wait for next operation
+                    int id = System.Threading.WaitHandle.WaitAny(handles);
+
+                    if (handles[id] == shouldStop)
+                        break;
+
+                    // Swap actions queue
+                    lock (actions)
+                    {
+                        var actions = this.actions;
+                        this.actions = nextActions;
+                        nextActions = actions;
+                    }
+
+                    // Execute all actions
+                    bool initialized = initializationForThread.Value;
+
+                    while (nextActions.Count > 0)
+                    {
+                        Action action = nextActions.Dequeue();
+
                         action();
                     }
-                    catch (Exception ex)
-                    {
-                        exception = ex;
-                    }
-                    syncEvent.Set();
-                });
-            }
-            staThreadActionAvailable.Set();
-            syncEvent.WaitOne();
-            if (exception != null)
-            {
-                throw new AggregateException(exception);
+                }
             }
         }
+
+        /// <summary>
+        /// Action pool for executing actions on STA thread.
+        /// </summary>
+        private static ThreadActionPool staActionPool = new ThreadActionPool(System.Threading.ApartmentState.STA);
 
         /// <summary>
         /// Executes the specified evaluator on STA thread.
@@ -833,7 +893,7 @@ namespace CsDebugScript.VS
         {
             T result = default(T);
 
-            ExecuteOnStaThread(() =>
+            staActionPool.Execute(() =>
             {
                 result = evaluator();
             });
@@ -853,7 +913,7 @@ namespace CsDebugScript.VS
             }
             else
             {
-                ExecuteOnStaThread(evaluator);
+                staActionPool.Execute(evaluator);
             }
         }
 

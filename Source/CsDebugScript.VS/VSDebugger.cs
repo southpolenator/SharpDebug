@@ -9,7 +9,7 @@ using CsDebugScript.Engine;
 
 namespace CsDebugScript.VS
 {
-    internal class VSDebugger : Engine.IDebuggerEngine, IDiaSessionProvider
+    internal class VSDebugger : IDebuggerEngine, IDiaSessionProvider
     {
         /// <summary>
         /// The Visual Studio debugger proxy running in Default AppDomain.
@@ -23,6 +23,10 @@ namespace CsDebugScript.VS
         public VSDebugger(VSDebuggerProxy proxy)
         {
             this.proxy = proxy;
+            Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
+            {
+                typeof(CsDebugScript.CommonUserTypes.NativeTypes.cv.Mat).Assembly, // CsDebugScript.CommonUserTypes.dll
+            });
         }
 
         /// <summary>
