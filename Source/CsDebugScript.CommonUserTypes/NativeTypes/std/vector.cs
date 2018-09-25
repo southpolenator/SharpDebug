@@ -203,7 +203,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             /// <returns>An <see cref="CodeArray{T}"/> instance.</returns>
             public CodeArray<T> ToCodeArray()
             {
-                Variable first = Variable.Create(data.ElementCodeType, firstAddress);
+                Variable first = Variable.CreatePointer(data.ElementCodeType.PointerToType, firstAddress);
 
                 return new CodeArray<T>(first, Count);
             }

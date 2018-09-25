@@ -847,6 +847,10 @@ namespace CsDebugScript
             if (IsPointer && !ElementType.IsPointer)
                 return ElementType.UserTypes;
 
+            // If we didn't set user type metadata, then we don't know about any user type, so return empty array.
+            if (Context.UserTypeMetadata == null)
+                return Array.Empty<Type>();
+
             // Search Context.UserTypeMetadata for this CodeType
             // TODO: Speed this up with search caches
             List<Type> types = new List<Type>();
