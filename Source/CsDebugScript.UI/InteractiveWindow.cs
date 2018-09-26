@@ -1,16 +1,23 @@
-﻿using System;
-using System.Windows;
-using System.Windows.Controls;
+﻿using Avalonia;
+using Avalonia.Controls;
+using System;
 
 namespace CsDebugScript.UI
 {
     /// <summary>
     /// C# REPL interactive window
     /// </summary>
-    /// <seealso cref="System.Windows.Window" />
+    /// <seealso cref="Window" />
     public class InteractiveWindow : Window
     {
         internal const string WindowTitle = "C# Interactive Window";
+
+        static InteractiveWindow()
+        {
+            // Initialize application and all platform specifics
+            if (Application.Current == null)
+                AppBuilder.Configure<Application>().UsePlatformDetect().SetupWithoutStarting();
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindow"/> class.
@@ -24,9 +31,9 @@ namespace CsDebugScript.UI
             // Add content
             Grid grid = new Grid();
             Content = grid;
-            ContentControl = new InteractiveWindowContent();
-            ContentControl.TextEditor.CloseRequested += TextEditor_CloseRequested;
-            grid.Children.Add(ContentControl);
+            //ContentControl = new InteractiveWindowContent();
+            //ContentControl.TextEditor.CloseRequested += TextEditor_CloseRequested;
+            //grid.Children.Add(ContentControl);
         }
 
         internal InteractiveWindowContent ContentControl { get; private set; }
@@ -42,24 +49,18 @@ namespace CsDebugScript.UI
         /// <param name="initializer">Action that will initialize <see cref="InteractiveWindow"/> before showing it.</param>
         public static void ShowModalWindow(Action<InteractiveWindow> initializer = null)
         {
-            ExecuteInSTA(() =>
+            try
             {
-                InteractiveWindow window = null;
+                InteractiveWindow window = new InteractiveWindow();
 
-                try
-                {
-                    window = new InteractiveWindow();
-                    initializer?.Invoke(window);
-                    window.ShowDialog();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.ToString());
-                }
-
-                window.Close();
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
-            });
+                initializer?.Invoke(window);
+                window.Show();
+                Application.Current.Run(window);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.ToString());
+            }
         }
 
         /// <summary>
@@ -87,7 +88,7 @@ namespace CsDebugScript.UI
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.ToString());
+                    System.Windows.MessageBox.Show(ex.ToString());
                 }
                 finally
                 {
