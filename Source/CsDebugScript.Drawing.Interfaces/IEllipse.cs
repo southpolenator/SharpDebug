@@ -1,7 +1,7 @@
 ﻿namespace CsDebugScript.Drawing.Interfaces
 {
     /// <summary>
-    /// Interface that reprensents ellipse as drawing object.
+    /// Interface that represents ellipse as drawing object.
     /// </summary>
     public interface IEllipse : IDrawing
     {
@@ -34,5 +34,10 @@
         /// Gets the ellipse rectangle height.
         /// </summary>
         double Height { get; }
+
+        /// <summary>
+        /// Gets the ellipse clockwise rotation in radians.
+        /// </summary>
+        double Rotation { get; }
     }
 }
