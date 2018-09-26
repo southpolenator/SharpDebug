@@ -60,6 +60,7 @@ namespace CsDebugScript
 
             assemblyReferences.Add(typeof(System.Object).Assembly.Location);
             assemblyReferences.Add(typeof(System.Linq.Enumerable).Assembly.Location);
+            assemblyReferences.Add(typeof(CsDebugScript.Drawing.Interfaces.IGraphics).Assembly.Location);
             assemblyReferences.Add(typeof(CsDebugScript.Variable).Assembly.Location);
             assemblyReferences.Add(typeof(CsDebugScript.InteractiveScriptBase).Assembly.Location);
 
