@@ -8,6 +8,31 @@ namespace CsDebugScript.UI.Drawing
     internal class Line : Drawing, ILine
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="Line" /> class.
+        /// </summary>
+        /// <param name="pen">Pen that should be used to draw the line.</param>
+        /// <param name="x1">First point X coordinate.</param>
+        /// <param name="y1">First point Y coordinate.</param>
+        /// <param name="x2">Second point X coordinate.</param>
+        /// <param name="y2">Second point Y coordinate.</param>
+        public Line(IPen pen, double x1, double y1, double x2, double y2)
+        {
+            Pen = pen;
+            X1 = x1;
+            Y1 = y1;
+            X2 = x2;
+            Y2 = y2;
+            UILine = new System.Windows.Shapes.Line()
+            {
+                X1 = x1,
+                Y1 = y1,
+                X2 = x2,
+                Y2 = y2,
+            };
+            UILine.SetPen(pen);
+        }
+
+        /// <summary>
         /// Gets the pen used to draw the line.
         /// </summary>
         public IPen Pen { get; private set; }
@@ -41,30 +66,5 @@ namespace CsDebugScript.UI.Drawing
         /// UI object that should be added to visualization window.
         /// </summary>
         public override object UIObject => UILine;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Line" /> class.
-        /// </summary>
-        /// <param name="pen">Pen that should be used to draw the line.</param>
-        /// <param name="x1">First point X coordinate.</param>
-        /// <param name="y1">First point Y coordinate.</param>
-        /// <param name="x2">Second point X coordinate.</param>
-        /// <param name="y2">Second point Y coordinate.</param>
-        public Line(IPen pen, double x1, double y1, double x2, double y2)
-        {
-            Pen = pen;
-            X1 = x1;
-            Y1 = y1;
-            X2 = x2;
-            Y2 = y2;
-            UILine = new System.Windows.Shapes.Line()
-            {
-                X1 = x1,
-                Y1 = y1,
-                X2 = x2,
-                Y2 = y2,
-            };
-            UILine.SetPen(pen);
-        }
     }
 }

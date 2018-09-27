@@ -70,6 +70,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             dia.loadDataFromPdb(pdbPath);
             dia.openSession(out diaSession);
             Initialize(diaSession, module);
+            PdbPath = pdbPath;
         }
 
         /// <summary>
@@ -80,6 +81,7 @@ namespace CsDebugScript.Engine.SymbolProviders
         public DiaModule(IDiaSession diaSession, Module module)
         {
             Initialize(diaSession, module);
+            PdbPath = module.SymbolFileName;
         }
 
         /// <summary>
@@ -134,6 +136,11 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
+        /// Gets path to the symbols file.
+        /// </summary>
+        public string PdbPath { get; private set; }
+
+        /// <summary>
         /// Gets the module.
         /// </summary>
         internal Module Module { get; private set; }
@@ -147,6 +154,14 @@ namespace CsDebugScript.Engine.SymbolProviders
             {
                 return basicTypes.Value;
             }
+        }
+
+        /// <summary>
+        /// Gets path to the symbols file or <c>null</c> if we don't have symbols.
+        /// </summary>
+        public string GetSymbolsPath()
+        {
+            return PdbPath;
         }
 
         /// <summary>

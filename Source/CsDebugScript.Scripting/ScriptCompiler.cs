@@ -43,7 +43,7 @@ namespace CsDebugScript
         /// <summary>
         /// The default list of using commands used by the compiler.
         /// </summary>
-        internal static readonly string[] DefaultUsings = new string[] { "System", "System.Linq", "CsDebugScript" };
+        internal static readonly string[] DefaultUsings = new string[] { "System", "System.Linq", "System.Collections.Generic", "CsDebugScript", "CsDebugScript.Drawing.Interfaces" };
 
         /// <summary>
         /// The default list of using alias commands used by the compiler.
@@ -60,6 +60,7 @@ namespace CsDebugScript
 
             assemblyReferences.Add(typeof(System.Object).Assembly.Location);
             assemblyReferences.Add(typeof(System.Linq.Enumerable).Assembly.Location);
+            assemblyReferences.Add(typeof(CsDebugScript.Drawing.Interfaces.IGraphics).Assembly.Location);
             assemblyReferences.Add(typeof(CsDebugScript.Variable).Assembly.Location);
             assemblyReferences.Add(typeof(CsDebugScript.InteractiveScriptBase).Assembly.Location);
 

@@ -8,11 +8,6 @@ namespace CsDebugScript.UI.Drawing
     internal class SolidColorBrush : Brush, ISolidColorBrush
     {
         /// <summary>
-        /// Gets the brush solid color.
-        /// </summary>
-        public Color Color { get; private set; }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="SolidColorBrush" /> class.
         /// </summary>
         /// <param name="color">Brush solid color.</param>
@@ -22,5 +17,10 @@ namespace CsDebugScript.UI.Drawing
         {
             Color = color;
         }
+
+        /// <summary>
+        /// Gets the brush solid color.
+        /// </summary>
+        public Color Color { get; private set; }
     }
 }

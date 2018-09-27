@@ -41,6 +41,14 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         }
 
         /// <summary>
+        /// Gets path to the symbols file or <c>null</c> if we don't have symbols.
+        /// </summary>
+        public string GetSymbolsPath()
+        {
+            return Module.SymbolFileName;
+        }
+
+        /// <summary>
         /// Gets the name of the enumeration value.
         /// </summary>
         /// <param name="enumTypeId">The enumeration type identifier.</param>
