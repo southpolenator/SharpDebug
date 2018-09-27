@@ -218,5 +218,53 @@ namespace CsDebugScript.Drawing.Interfaces
 
             return graphics.CreateCircle(pen, centerX, centerY, radius, brush);
         }
+
+        /// <summary>
+        /// Creates text as drawing object.
+        /// </summary>
+        /// <param name="graphics"><see cref="IGraphics"/> object.</param>
+        /// <param name="text">Text that will be drawn.</param>
+        /// <param name="font">Font that will be used to draw the text.</param>
+        /// <param name="foregroundColor">Color of the brush that will be used to paint the text.</param>
+        /// <param name="left">Left position of the text.</param>
+        /// <param name="top">Top position of the text.</param>
+        /// <param name="width">Virtual text box width. If value is less than 0, it will be automatically computed.</param>
+        /// <param name="height">Virtual text box height. If value is less than 0, it will be automatically computed.</param>
+        /// <param name="horizontalAlignment">Text horizontal alignment.</param>
+        /// <param name="verticalAlignment">Text vertical alignment.</param>
+        /// <param name="wrapping">Text wrapping.</param>
+        /// <param name="rotation">Text clockwise rotation in radians.</param>
+        /// <returns>Text as drawing object.</returns>
+        public static IText CreateText(this IGraphics graphics, string text, IFont font, Color foregroundColor, double left = 0, double top = 0, double width = -1, double height = -1, TextHorizontalAlignment horizontalAlignment = TextHorizontalAlignment.Left, TextVerticalAlignment verticalAlignment = TextVerticalAlignment.Top, TextWrapping wrapping = TextWrapping.Wrap, double rotation = 0)
+        {
+            IBrush foreground = graphics.CreateSolidColorBrush(foregroundColor);
+
+            return graphics.CreateText(text, font, foreground, left, top, width, height, horizontalAlignment, verticalAlignment, wrapping, rotation);
+        }
+
+        /// <summary>
+        /// Creates text as drawing object.
+        /// </summary>
+        /// <param name="graphics"><see cref="IGraphics"/> object.</param>
+        /// <param name="text">Text that will be drawn.</param>
+        /// <param name="font">Font that will be used to draw the text.</param>
+        /// <param name="foregroundColor">Color of the brush that will be used to paint the text.</param>
+        /// <param name="backgroundColor">Color of the brush that will be used to paint the text's background.</param>
+        /// <param name="left">Left position of the text.</param>
+        /// <param name="top">Top position of the text.</param>
+        /// <param name="width">Virtual text box width. If value is less than 0, it will be automatically computed.</param>
+        /// <param name="height">Virtual text box height. If value is less than 0, it will be automatically computed.</param>
+        /// <param name="horizontalAlignment">Text horizontal alignment.</param>
+        /// <param name="verticalAlignment">Text vertical alignment.</param>
+        /// <param name="wrapping">Text wrapping.</param>
+        /// <param name="rotation">Text clockwise rotation in radians.</param>
+        /// <returns>Text as drawing object.</returns>
+        public static IText CreateText(this IGraphics graphics, string text, IFont font, Color foregroundColor, Color backgroundColor, double left = 0, double top = 0, double width = -1, double height = -1, TextHorizontalAlignment horizontalAlignment = TextHorizontalAlignment.Left, TextVerticalAlignment verticalAlignment = TextVerticalAlignment.Top, TextWrapping wrapping = TextWrapping.Wrap, double rotation = 0)
+        {
+            IBrush foreground = graphics.CreateSolidColorBrush(foregroundColor);
+            IBrush background = graphics.CreateSolidColorBrush(backgroundColor);
+
+            return graphics.CreateText(text, font, foreground, background, left, top, width, height, horizontalAlignment, verticalAlignment, wrapping, rotation);
+        }
     }
 }
