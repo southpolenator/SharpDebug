@@ -29,7 +29,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="generationFlags">The code generation options</param>
         /// <param name="nameLimit">Maximum number of characters that generated name can have.</param>
         public ManagedILCodeWriter(string assemblyName, UserTypeGenerationFlags generationFlags, int nameLimit)
-            : base(generationFlags, nameLimit)
+            : base(generationFlags, nameLimit, fixKeywordsInUserNaming: false)
         {
             AssemblyName = assemblyName;
             templateConstantInterfacesCache = new DictionaryCache<Type, Type[]>(GetITemplateConstantInterface);
@@ -149,12 +149,21 @@ namespace CsDebugScript.CodeGen.CodeWriters
         private class GeneratedType
         {
             /// <summary>
+            /// Cache of generic arguments by name.
+            /// </summary>
+            private SimpleCache<Dictionary<string, Type>> genericArgumentsCache;
+
+            /// <summary>
             /// Initializes a new instance of the <see cref="GeneratedType"/> class.
             /// </summary>
             public GeneratedType()
             {
                 DefinedFields = new DictionaryCache<string, FieldBuilder>(DefineField);
                 DefinedConstructors = new DictionaryCache<UserTypeConstructor, ConstructorBuilder>(DefineConstructor);
+                genericArgumentsCache = new SimpleCache<Dictionary<string, Type>>(() =>
+                {
+                    return TypeBuilder.GenericTypeParameters.ToDictionary((gt) => gt.Name);
+                });
             }
 
             /// <summary>
@@ -193,6 +202,11 @@ namespace CsDebugScript.CodeGen.CodeWriters
             public Type CreatedType { get; private set; }
 
             /// <summary>
+            /// Gets the dictionary of generic arguments by name.
+            /// </summary>
+            public Dictionary<string, Type> GenericArguments => genericArgumentsCache.Value;
+
+            /// <summary>
             /// Returns <c>true</c> if type has been created. <see cref="Create()"/>
             /// </summary>
             public bool Created => CreatedType != null;
@@ -201,6 +215,44 @@ namespace CsDebugScript.CodeGen.CodeWriters
             /// Gets the associated type (either from <see cref="TypeBuilder"/> or <see cref="EnumBuilder"/>).
             /// </summary>
             public Type Type => TypeBuilder?.AsType() ?? EnumBuilder?.AsType();
+
+            /// <summary>
+            /// Gets the type name associated with this generated type.
+            /// </summary>
+            public string TypeName
+            {
+                get
+                {
+                    if (TypeBuilder.IsNested)
+                    {
+                        Stack<Type> declaringTypes = new Stack<Type>();
+                        Type declaringType = TypeBuilder.DeclaringType;
+
+                        while (declaringType != null)
+                        {
+                            declaringTypes.Push(declaringType);
+                            declaringType = declaringType.DeclaringType;
+                        }
+                        StringBuilder sb = new StringBuilder();
+
+                        while (declaringTypes.Count > 0)
+                        {
+                            declaringType = declaringTypes.Pop();
+                            if (sb.Length == 0)
+                                sb.Append(declaringType.FullName);
+                            else
+                            {
+                                sb.Append('.');
+                                sb.Append(declaringType.Name);
+                            }
+                        }
+                        sb.Append('.');
+                        sb.Append(TypeBuilder.Name);
+                        return sb.ToString();
+                    }
+                    return TypeBuilder.FullName;
+                }
+            }
 
             /// <summary>
             /// Creates generated type from the specified enumeration builder.
@@ -285,7 +337,12 @@ namespace CsDebugScript.CodeGen.CodeWriters
             /// <summary>
             /// Dictionary of associated generated types for the specified user type.
             /// </summary>
-            private Dictionary<UserType, GeneratedType> types;
+            private Dictionary<UserType, GeneratedType> types = new Dictionary<UserType, GeneratedType>();
+
+            /// <summary>
+            /// Dictionary of generated types indexed by type name.
+            /// </summary>
+            private Dictionary<string, GeneratedType> typesByName = new Dictionary<string, GeneratedType>();
 
             /// <summary>
             /// Initializes a new instance of the <see cref="GeneratedTypes"/> class.
@@ -296,7 +353,6 @@ namespace CsDebugScript.CodeGen.CodeWriters
             {
                 CodeWriter = codeWriter;
                 ModuleBuilder = moduleBuilder;
-                types = new Dictionary<UserType, GeneratedType>();
             }
 
             /// <summary>
@@ -360,16 +416,36 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 }
 
                 types.Add(type, generatedType);
+                typesByName.Add(generatedType.TypeName, generatedType);
                 return generatedType;
             }
+
+            /// <summary>
+            /// If we are processing getting type of type instance, this is owning type that we will use to resolve generic arguments.
+            /// </summary>
+            private GeneratedType currentOwningType;
 
             /// <summary>
             /// Gets the type for the specified type instance.
             /// </summary>
             /// <param name="typeInstance">The type instance.</param>
-            public Type GetType(TypeInstance typeInstance)
+            /// <param name="owningType">Type that owns this type instance. It is used for extracting template arguments.</param>
+            public Type GetType(TypeInstance typeInstance, GeneratedType owningType)
             {
-                return ConvertType(typeInstance.GetType(this));
+                // Since we know that this is not executing in multi-threaded,
+                // we can safely store owning type information as no one can call functions that use them except us.
+                // We will restore value once we finish processing.
+                GeneratedType lastOwningType = currentOwningType;
+
+                try
+                {
+                    currentOwningType = owningType;
+                    return ConvertType(typeInstance.GetType(this));
+                }
+                finally
+                {
+                    currentOwningType = lastOwningType;
+                }
             }
 
             #region ITypeConverter
@@ -403,7 +479,6 @@ namespace CsDebugScript.CodeGen.CodeWriters
             /// <returns>Resolved type.</returns>
             public System.Type GetTypeByName(string typeName)
             {
-                typeName = typeName.Replace("@", "");
                 int genericIndex = typeName.IndexOf('<');
 
                 if (genericIndex > 0)
@@ -420,16 +495,69 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         if (typeName[offset - 1] == '>')
                             break;
                     }
-                    string restOfTypeName = offset < typeName.Length ? typeName.Substring(offset) : string.Empty;
-
-                    if (!string.IsNullOrEmpty(restOfTypeName))
-                    {
-                        // Searching for nested types
-                        throw new NotImplementedException();
-                    }
 
                     baseTypeName += $"`{argumentNames.Count}";
                     System.Type genericType = FindType(baseTypeName);
+                    bool isTypeBuilder = ConvertType(genericType) is TypeBuilder;
+
+                    string restOfTypeName = offset < typeName.Length ? typeName.Substring(offset) : string.Empty;
+                    string searchTypeName = baseTypeName;
+
+                    while (!string.IsNullOrEmpty(restOfTypeName))
+                    {
+                        // Check that nested type needs to have point for access.
+                        if (restOfTypeName[0] != '.')
+                            throw new NotImplementedException();
+
+                        // Searching for nested types
+                        int previousArgumentsCount = argumentNames.Count;
+                        genericIndex = restOfTypeName.IndexOf('<');
+
+                        if (genericIndex > 0)
+                        {
+                            baseTypeName = restOfTypeName.Substring(1, genericIndex - 1);
+                            while (true)
+                            {
+                                string argument = XmlTypeTransformation.ExtractType(restOfTypeName, offset);
+                                argumentNames.Add(argument);
+                                offset += argument.Length + 1;
+                                if (typeName[offset - 1] == '>')
+                                    break;
+                            }
+                            restOfTypeName = offset < restOfTypeName.Length ? restOfTypeName.Substring(offset) : string.Empty;
+
+                            if (isTypeBuilder)
+                            {
+                                searchTypeName += $".{baseTypeName}`{argumentNames.Count - previousArgumentsCount}";
+                                genericType = FindType(searchTypeName);
+                            }
+                            else
+                            {
+                                string[] types = baseTypeName.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+
+                                types[types.Length - 1] += $"`{argumentNames.Count - previousArgumentsCount}";
+                                for (int i = 0; i < types.Length; i++)
+                                    genericType = genericType.GetNestedType(types[i]);
+                            }
+                        }
+                        else
+                        {
+                            if (isTypeBuilder)
+                            {
+                                searchTypeName += restOfTypeName;
+                                genericType = FindType(searchTypeName);
+                            }
+                            else
+                            {
+                                string[] types = restOfTypeName.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+
+                                for (int i = 0; i < types.Length; i++)
+                                    genericType = genericType.GetNestedType(types[i]);
+                            }
+                            restOfTypeName = string.Empty;
+                        }
+                    }
+
                     System.Type[] arguments = new System.Type[argumentNames.Count];
                     for (int i = 0; i < arguments.Length; i++)
                         arguments[i] = GetTypeByName(argumentNames[i]);
@@ -446,14 +574,17 @@ namespace CsDebugScript.CodeGen.CodeWriters
             /// <returns>Found type.</returns>
             private System.Type FindType(string typeName)
             {
+                string cleanedTypeName = typeName.Replace("@", "");
+
                 foreach (Assembly assembly in Defines.Universe.GetAssemblies())
                 {
-                    Type type = assembly.GetType(typeName);
+                    Type type = assembly.GetType(cleanedTypeName);
 
                     if (type != null)
                         return ConvertType(type);
                 }
 
+                // Try to see if it is built-in type.
                 switch (typeName)
                 {
                     case "bool":
@@ -481,6 +612,18 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     case "double":
                         return typeof(double);
                 }
+
+                // Check if it is generic type parameter.
+                Type genericTypeParameter;
+
+                if (currentOwningType.GenericArguments.TryGetValue(typeName, out genericTypeParameter))
+                    return ConvertType(genericTypeParameter);
+
+                // Check if it is type that we are defining.
+                GeneratedType generatedType;
+
+                if (typesByName.TryGetValue(typeName, out generatedType))
+                    return ConvertType(generatedType.TypeBuilder);
 
                 throw new NotImplementedException();
             }
@@ -865,7 +1008,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     {
                         // Since user type can be specialized template type (or one of its nested types), we need to create type instance.
                         TypeInstance derivedClassTypeInstance = UserTypeInstance.Create(derivedClass, type.Factory);
-                        Type derivedClassType = generatedTypes.GetType(derivedClassTypeInstance);
+                        Type derivedClassType = generatedTypes.GetType(derivedClassTypeInstance, generatedType);
                         object[] propertyValues = new object[]
                         {
                             derivedClassType,
@@ -918,7 +1061,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 }
 
                 // Update parent type
-                baseClassType = generatedTypes.GetType(type.BaseClass);
+                baseClassType = generatedTypes.GetType(type.BaseClass, generatedType);
                 typeBuilder.SetParent(baseClassType);
                 if (type.Symbol.HasVTable())
                     typeBuilder.AddInterfaceImplementation(Defines.ICastableObject);
@@ -945,7 +1088,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 {
                     Action<ILGenerator, FieldBuilder> staticReadOnlyInitialization;
                     object value = ConstantValue(member, generatedTypes, out staticReadOnlyInitialization);
-                    FieldBuilder fieldBuilder = typeBuilder.DefineField(member.Name, generatedTypes.GetType(member.Type), FieldAttributes.Public | FieldAttributes.Static | (staticReadOnlyInitialization == null ? FieldAttributes.Literal : FieldAttributes.HasDefault));
+                    FieldBuilder fieldBuilder = typeBuilder.DefineField(member.Name, generatedTypes.GetType(member.Type, generatedType), FieldAttributes.Public | FieldAttributes.Static | (staticReadOnlyInitialization == null ? FieldAttributes.Literal : FieldAttributes.HasDefault));
 
                     generatedType.DefinedFields[fieldBuilder.Name] = fieldBuilder;
                     if (staticReadOnlyInitialization == null)
@@ -1020,7 +1163,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                 // Fix array field type if needed, before we create this field
                 IsPhysicalDataFieldProperty(type, dataField);
 
-                Type dataFieldType = generatedTypes.GetType(dataField.Type);
+                Type dataFieldType = generatedTypes.GetType(dataField.Type, generatedType);
 
                 if (!dataField.IsStatic)
                 {
@@ -1138,7 +1281,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             // Write properties for Hungarian notation generated properties
             foreach (var dataField in type.Members.OfType<HungarianArrayUserTypeMember>())
             {
-                Type dataFieldType = generatedTypes.GetType(dataField.Type);
+                Type dataFieldType = generatedTypes.GetType(dataField.Type, generatedType);
                 MethodBuilder propertyMethod = typeBuilder.DefineMethod($"get_{dataField.Name}", MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName, dataFieldType, null);
                 ILGenerator il = propertyMethod.GetILGenerator();
 
@@ -1161,7 +1304,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
                 foreach (BaseClassPropertyUserTypeMember baseClassProperty in baseClassProperties)
                 {
-                    Type propertyType = generatedTypes.GetType(baseClassProperty.Type);
+                    Type propertyType = generatedTypes.GetType(baseClassProperty.Type, generatedType);
                     MethodBuilder propertyGetMethod = typeBuilder.DefineMethod($"get_{baseClassProperty.Name}", MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName, propertyType, null);
                     ILGenerator il = propertyGetMethod.GetILGenerator();
 
@@ -1202,7 +1345,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     il.Emit(OpCodes.Newarr, Defines.Type);
                     for (int i = 0; i < baseClassProperties.Length; i++)
                     {
-                        Type propertyType = generatedTypes.GetType(baseClassProperties[i].Type);
+                        Type propertyType = generatedTypes.GetType(baseClassProperties[i].Type, generatedType);
                         il.Emit(OpCodes.Dup);
                         EmitConstant(il, i);
                         il.Emit(OpCodes.Ldtoken, propertyType);
@@ -1465,7 +1608,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             SymbolField field = dataField.Symbol;
             int offset = field.Offset - physicalType.MemoryBufferOffset;
             GeneratedType generatedType = generatedTypes.GetGeneratedType(type);
-            Type dataFieldType = generatedTypes.GetType(dataField.Type);
+            Type dataFieldType = generatedTypes.GetType(dataField.Type, generatedType);
 
             // Specialization for basic type
             if (dataField.Type is BasicTypeInstance basicType)
@@ -1880,7 +2023,8 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="generatedTypes">The generated types collection.</param>
         private void CastVariableToDataFieldType(ILGenerator il, DataFieldUserTypeMember dataField, GeneratedTypes generatedTypes)
         {
-            Type dataFieldType = generatedTypes.GetType(dataField.Type);
+            GeneratedType owningType = generatedTypes.GetGeneratedType(dataField.UserType);
+            Type dataFieldType = generatedTypes.GetType(dataField.Type, owningType);
 
             if (dataField.Type is VariableTypeInstance)
             {
@@ -2285,7 +2429,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
             public override System.Type GetNestedType(string name, System.Reflection.BindingFlags bindingAttr)
             {
-                throw new NotImplementedException();
+                return ConvertType(OriginalType.GetNestedType(name, (BindingFlags)bindingAttr));
             }
 
             public override System.Type[] GetNestedTypes(System.Reflection.BindingFlags bindingAttr)

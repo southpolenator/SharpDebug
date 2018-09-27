@@ -71,10 +71,12 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// </summary>
         /// <param name="generationFlags">The code generation options</param>
         /// <param name="nameLimit">Maximum number of characters that generated name can have.</param>
-        public DotNetCodeWriter(UserTypeGenerationFlags generationFlags, int nameLimit)
+        /// <param name="fixKeywordsInUserNaming">Should we fix keywords by adding @ when fixing user naming?</param>
+        public DotNetCodeWriter(UserTypeGenerationFlags generationFlags, int nameLimit, bool fixKeywordsInUserNaming)
         {
             GenerationFlags = generationFlags;
             NameLimit = nameLimit;
+            FixKeywordsInUserNaming = fixKeywordsInUserNaming;
         }
 
         /// <summary>
@@ -86,6 +88,11 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// Maximum number of characters that generated name can have.
         /// </summary>
         public int NameLimit { get; private set; }
+
+        /// <summary>
+        /// Should we fix keywords by adding @ when fixing user naming?
+        /// </summary>
+        public bool FixKeywordsInUserNaming { get; private set; }
 
         /// <summary>
         /// Gets the code naming interface. <see cref="ICodeNaming"/>
@@ -223,7 +230,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             }
 
             // Keywords should be prefixed with @...
-            if (name.Length <= LongestKeyword && Keywords.Contains(name))
+            if (name.Length <= LongestKeyword && FixKeywordsInUserNaming && Keywords.Contains(name))
                 return $"@{name}";
             return name;
         }
