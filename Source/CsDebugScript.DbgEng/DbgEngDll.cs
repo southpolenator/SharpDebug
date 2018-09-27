@@ -456,13 +456,20 @@ namespace CsDebugScript.Engine.Debuggers
 
                     foreach (string folder in folders)
                     {
-                        string path = Path.Combine(folder, module.LoadedImageName);
-
-                        if (File.Exists(path))
+                        try
                         {
-                            return path;
+                            string path = Path.Combine(folder, module.LoadedImageName);
+
+                            if (File.Exists(path))
+                            {
+                                return path;
+                            }
+                        }
+                        catch
+                        {
                         }
                     }
+                    return null;
                 }
                 return sb.ToString();
             }
