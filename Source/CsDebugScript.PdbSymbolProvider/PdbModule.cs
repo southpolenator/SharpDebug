@@ -3,6 +3,7 @@ using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.PdbSymbolProvider.SymbolRecords;
 using CsDebugScript.PdbSymbolProvider.TypeRecords;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace CsDebugScript.PdbSymbolProvider
     /// <summary>
     /// Class represents CodeGen module for PDB reader.
     /// </summary>
-    public class PdbModule : Module
+    public class PdbModule : Module, IDisposable
     {
         /// <summary>
         /// Cache of the global scope symbol.
@@ -245,6 +246,14 @@ namespace CsDebugScript.PdbSymbolProvider
         public PdbSymbol GetSymbol(TypeRecord typeRecord)
         {
             return new PdbSymbol(this, uint.MaxValue, typeRecord);
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            PdbFile.Dispose();
         }
 
         /// <summary>

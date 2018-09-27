@@ -342,10 +342,14 @@ namespace CsDebugScript
 
             foreach (string moduleName in options.Modules)
             {
+                string pdbPath = Module.All.First(m => m.Name == moduleName).SymbolFileName;
+
+                if (!File.Exists(pdbPath))
+                    continue;
                 modules.Add(new XmlModule()
                 {
                     Name = moduleName,
-                    PdbPath = Module.All.First(m => m.Name == moduleName).SymbolFileName,
+                    PdbPath = pdbPath,
                 });
             }
 
@@ -535,19 +539,82 @@ namespace CsDebugScript
                 codeGenConfig.GeneratedAssemblyName = assemblyPath;
 
                 // Execute code generation
-                IModuleProvider moduleProvider = new EngineSymbolProviderModuleProvider(Process.Current);
-                Generator generator = new Generator(moduleProvider);
-                generator.GenerateAssembly(codeGenConfig, assemblyPath);
-
-                byte[] assemblyBytes = File.ReadAllBytes(assemblyPath);
-
-                // Add generated file to be loaded after execution
-                return new ImportUserTypeAssembly()
+                using (var engineModuleProvider = new EngineSymbolProviderModuleProviderWithPdbReader(Process.Current, options.UsePdbReaderWhenPossible))
                 {
-                    AssemblyBytes = assemblyBytes,
-                    AssemblyPath = assemblyPath,
-                    Options = options,
-                };
+                    Generator generator = new Generator(engineModuleProvider);
+                    generator.GenerateAssembly(codeGenConfig, assemblyPath);
+
+                    byte[] assemblyBytes = File.ReadAllBytes(assemblyPath);
+
+                    // Add generated file to be loaded after execution
+                    return new ImportUserTypeAssembly()
+                    {
+                        AssemblyBytes = assemblyBytes,
+                        AssemblyPath = assemblyPath,
+                        Options = options,
+                    };
+                }
+            }
+        }
+
+        /// <summary>
+        /// Helper class that provides ability to return PDB reader when possible or just falls back to engine module provider otherwise.
+        /// </summary>
+        private class EngineSymbolProviderModuleProviderWithPdbReader : EngineSymbolProviderModuleProvider, IDisposable
+        {
+            /// <summary>
+            /// List of PDB module that we need to dispose when needed.
+            /// </summary>
+            private List<PdbSymbolProvider.PdbModule> pdbModules = new List<PdbSymbolProvider.PdbModule>();
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="EngineSymbolProviderModuleProviderWithPdbReader"/> class.
+            /// </summary>
+            /// <param name="process"></param>
+            /// <param name="usePdbReaderWhenPossible"></param>
+            public EngineSymbolProviderModuleProviderWithPdbReader(Process process, bool usePdbReaderWhenPossible)
+                : base(process)
+            {
+                UsePdbReaderWhenPossible = usePdbReaderWhenPossible;
+            }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether PDB reader should be used when possible.
+            /// </summary>
+            public bool UsePdbReaderWhenPossible { get; private set; }
+
+            /// <summary>
+            /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+            /// </summary>
+            public void Dispose()
+            {
+                foreach (PdbSymbolProvider.PdbModule pdbModule in pdbModules)
+                    pdbModule.Dispose();
+            }
+
+            /// <summary>
+            /// Opens the module for the specified XML module description.
+            /// </summary>
+            /// <param name="xmlModule">The XML module description.</param>
+            public override CodeGen.SymbolProviders.Module Open(XmlModule xmlModule)
+            {
+                try
+                {
+                    if (UsePdbReaderWhenPossible && xmlModule?.PdbPath != null && Path.GetExtension(xmlModule.PdbPath).ToLower() == ".pdb")
+                    {
+                        PdbSymbolProvider.PdbModule pdbModule = new PdbSymbolProvider.PdbModule(xmlModule);
+
+                        lock (pdbModules)
+                        {
+                            pdbModules.Add(pdbModule);
+                        }
+                        return pdbModule;
+                    }
+                }
+                catch
+                {
+                }
+                return base.Open(xmlModule);
             }
         }
 
@@ -802,9 +869,25 @@ namespace CsDebugScript
         public bool ImportDependentTypes { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating wheter assembly should be generated by emitting IL.
+        /// Gets or sets a value indicating whether assembly should be generated by emitting IL.
         /// </summary>
         public bool UseILCodeWriter { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether PDB reader (<see cref="PdbSymbolProvider.PdbModuleProvider"/>) should be used when possible.
+        /// </summary>
+        public bool UsePdbReaderWhenPossible { get; set; } = false;
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
+        /// </returns>
+        public override int GetHashCode()
+        {
+            return (UserTypes?.GetHashCode() ?? 0) ^ (Modules?.GetHashCode() ?? 0) ^ (ImportDependentTypes ? 13 : 0) ^ (UseILCodeWriter ? 121 : 0) ^ (UsePdbReaderWhenPossible ? 1453 : 0);
+        }
 
         /// <summary>
         /// Determines whether the specified <see cref="System.Object" />, is equal to this instance.
@@ -840,6 +923,16 @@ namespace CsDebugScript
         /// <returns>Importing options if string was parsed; <c>null</c> otherwise</returns>
         internal static ImportUserTypeOptions ParseString(string jsonInput)
         {
+            if (jsonInput?.ToLower() == "[AutoUserTypes]".ToLower())
+                return new ImportUserTypeOptions()
+                {
+                    ImportDependentTypes = false,
+                    UseILCodeWriter = true,
+                    UsePdbReaderWhenPossible = true,
+                    UserTypes = new List<string>(),
+                    Modules = Process.Current.Modules.Select(m => m.Name).ToList(),
+                };
+
             try
             {
                 JavaScriptSerializer jsonSerializer = new JavaScriptSerializer();
