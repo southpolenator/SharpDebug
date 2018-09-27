@@ -574,6 +574,20 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
+        /// Gets path to the symbols file or <c>null</c> if we don't have symbols.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <returns>Paths to the symbols file.</returns>
+        public string GetModuleSymbolsPath(Module module)
+        {
+            ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
+
+            if (symbolProviderModule == null)
+                return FallbackSymbolProvider.GetModuleSymbolsPath(module);
+            return symbolProviderModule.GetSymbolsPath();
+        }
+
+        /// <summary>
         /// Gets the runtime code type and offset to original code type.
         /// </summary>
         /// <param name="tuple">The tuple containing process and vtable address.</param>

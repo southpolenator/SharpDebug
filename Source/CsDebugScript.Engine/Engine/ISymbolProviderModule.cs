@@ -216,6 +216,11 @@ namespace CsDebugScript.Engine
         /// Gets the global scope type id.
         /// </summary>
         uint GetGlobalScope();
+
+        /// <summary>
+        /// Gets path to the symbols file or <c>null</c> if we don't have symbols.
+        /// </summary>
+        string GetSymbolsPath();
         #endregion
     }
 }

@@ -342,14 +342,15 @@ namespace CsDebugScript
 
             foreach (string moduleName in options.Modules)
             {
-                string pdbPath = Module.All.First(m => m.Name == moduleName).SymbolFileName;
+                Module module = Module.All.First(m => m.Name == moduleName);
+                string symbolsPath = Context.SymbolProvider.GetModuleSymbolsPath(module);
 
-                if (!File.Exists(pdbPath))
+                if (!File.Exists(symbolsPath))
                     continue;
                 modules.Add(new XmlModule()
                 {
                     Name = moduleName,
-                    PdbPath = pdbPath,
+                    SymbolsPath = symbolsPath,
                 });
             }
 
@@ -600,7 +601,7 @@ namespace CsDebugScript
             {
                 try
                 {
-                    if (UsePdbReaderWhenPossible && xmlModule?.PdbPath != null && Path.GetExtension(xmlModule.PdbPath).ToLower() == ".pdb")
+                    if (UsePdbReaderWhenPossible && xmlModule?.SymbolsPath != null && Path.GetExtension(xmlModule.SymbolsPath).ToLower() == ".pdb")
                     {
                         PdbSymbolProvider.PdbModule pdbModule = new PdbSymbolProvider.PdbModule(xmlModule);
 

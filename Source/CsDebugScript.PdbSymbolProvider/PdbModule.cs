@@ -58,7 +58,7 @@ namespace CsDebugScript.PdbSymbolProvider
         /// </summary>
         /// <param name="module">The XML module description.</param>
         public PdbModule(XmlModule module)
-            : this(module, new PdbFile(module.PdbPath))
+            : this(module, new PdbFile(module.SymbolsPath))
         {
         }
 
@@ -70,7 +70,7 @@ namespace CsDebugScript.PdbSymbolProvider
         public PdbModule(XmlModule module, PdbFile pdbFile)
         {
             PdbFile = pdbFile;
-            Name = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.PdbPath).ToLower();
+            Name = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.SymbolsPath).ToLower();
             Namespace = module.Namespace;
             globalScopeCache = SimpleCache.CreateStruct(() => new PdbGlobalScope(this));
             builtinSymbolsCache = new DictionaryCache<TypeIndex, PdbSymbol>(CreateBuiltinSymbol);

@@ -140,6 +140,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Initializes a new instance of the <see cref="DwarfSymbolProviderModule" /> class.
         /// </summary>
+        /// <param name="symbolsPath">Path to the symbols file.</param>
         /// <param name="module">The module.</param>
         /// <param name="compilationUnits">The compilation units.</param>
         /// <param name="programs">The line number programs.</param>
@@ -147,8 +148,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="publicSymbols">The public symbols.</param>
         /// <param name="codeSegmentOffset">The code segment offset.</param>
         /// <param name="is64bit">if set to <c>true</c> image is 64 bit.</param>
-        public DwarfSymbolProviderModule(Module module, DwarfCompilationUnit[] compilationUnits, DwarfLineNumberProgram[] programs, DwarfCommonInformationEntry[] commonInformationEntries, IReadOnlyList<PublicSymbol> publicSymbols, ulong codeSegmentOffset, bool is64bit)
+        public DwarfSymbolProviderModule(string symbolsPath, Module module, DwarfCompilationUnit[] compilationUnits, DwarfLineNumberProgram[] programs, DwarfCommonInformationEntry[] commonInformationEntries, IReadOnlyList<PublicSymbol> publicSymbols, ulong codeSegmentOffset, bool is64bit)
         {
+            SymbolsPath = symbolsPath;
             Module = module;
             Is64bit = is64bit;
             symbolEnumerator = compilationUnits.SelectMany(cu => cu.Symbols).GetEnumerator();
@@ -189,6 +191,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Gets path to the symbols file.
+        /// </summary>
+        public string SymbolsPath { get; private set; }
+
+        /// <summary>
         /// Gets the module.
         /// </summary>
         public Module Module { get; private set; }
@@ -197,6 +204,14 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Flag indicating if image is 64 bit.
         /// </summary>
         internal bool Is64bit { get; private set; }
+
+        /// <summary>
+        /// Gets path to the symbols file.
+        /// </summary>
+        public string GetSymbolsPath()
+        {
+            return SymbolsPath;
+        }
 
         /// <summary>
         /// Gets the name of the enumeration value.

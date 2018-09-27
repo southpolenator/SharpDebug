@@ -29,13 +29,8 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         public virtual Module Open(XmlModule xmlModule)
         {
             foreach (var module in Process.Modules)
-            {
-                if (module.SymbolFileName == xmlModule.PdbPath || module.MappedImageName == xmlModule.PdbPath)
-                {
+                if (module.SymbolFileName == xmlModule.SymbolsPath || module.MappedImageName == xmlModule.SymbolsPath)
                     return new EngineSymbolProviderModule(module, xmlModule);
-                }
-            }
-
             throw new ArgumentException("Couldn't find XML module in current process modules list.", nameof(xmlModule));
         }
     }

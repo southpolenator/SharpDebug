@@ -345,10 +345,10 @@ namespace CsDebugScript.CodeGen
         public string Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the path to PDB file.
+        /// Gets or sets the path to symbols file.
         /// </summary>
         [XmlAttribute]
-        public string PdbPath { get; set; }
+        public string SymbolsPath { get; set; }
 
         /// <summary>
         /// Gets or sets the namespace where all exported user types should be placed.

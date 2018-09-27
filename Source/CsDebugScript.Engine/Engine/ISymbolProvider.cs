@@ -221,5 +221,12 @@ namespace CsDebugScript.Engine
         /// <param name="virtualCodeType">Virtual class code type.</param>
         /// <returns>Address of the object which code type is virtual class.</returns>
         ulong GetVirtualClassBaseAddress(CodeType originalCodeType, ulong objectAddress, CodeType virtualCodeType);
+
+        /// <summary>
+        /// Gets path to the symbols file or <c>null</c> if we don't have symbols.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <returns>Paths to the symbols file.</returns>
+        string GetModuleSymbolsPath(Module module);
     }
 }
