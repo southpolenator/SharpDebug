@@ -178,7 +178,7 @@ namespace CsDebugScript.Tests
                     {
                         Name = "NativeDumpTest",
                         Namespace = "NativeDumpTest",
-                        PdbPath = pdbFile,
+                        SymbolsPath = pdbFile,
                     }
                 },
                 ReferencedAssemblies = new[]
