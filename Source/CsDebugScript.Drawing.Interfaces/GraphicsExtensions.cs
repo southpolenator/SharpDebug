@@ -32,6 +32,17 @@ namespace CsDebugScript.Drawing.Interfaces
         }
 
         /// <summary>
+        /// Adds drawing objects to the list of drawing objects.
+        /// </summary>
+        /// <param name="canvas"><see cref="ICanvas"/> object.</param>
+        /// <param name="drawings">Drawing objects.</param>
+        public static void Add(this ICanvas canvas, params IDrawing[] drawings)
+        {
+            foreach (IDrawing drawing in drawings)
+                canvas.AddDrawing(drawing);
+        }
+
+        /// <summary>
         /// Combines two drawing objects into single canvas object.
         /// If both drawing objects are canvas, first canvas will get all second canvas drawing objects and second canvas will be cleared.
         /// If only one of the objects is canvas, second object will be added to the canvas.
