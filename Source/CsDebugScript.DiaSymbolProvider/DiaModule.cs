@@ -288,51 +288,58 @@ namespace CsDebugScript.Engine.SymbolProviders
         }
 
         /// <summary>
-        /// Gets the type identifier.
+        /// Tries to get the type identifier.
         /// </summary>
         /// <param name="typeName">Name of the type.</param>
-        public uint GetTypeId(string typeName)
+        /// <param name="typeId">The type identifier.</param>
+        public bool TryGetTypeId(string typeName, out uint typeId)
         {
             IDiaSymbol type;
 
             if (typeName == "unsigned __int64")
-            {
                 typeName = "unsigned long long";
-            }
             else if (typeName == "__int64")
-            {
                 typeName = "long long";
-            }
             else if (typeName == "long")
-            {
                 typeName = "int";
-            }
             else if (typeName == "unsigned long")
-            {
                 typeName = "unsigned int";
-            }
             else if (typeName == "signed char")
-            {
                 typeName = "char";
-            }
 
             if (basicTypes.Cached)
             {
                 if (!BasicTypes.TryGetValue(typeName, out type))
-                {
                     type = GetTypeFromGlobalSpace(typeName);
-                }
             }
             else
             {
                 type = GetTypeFromGlobalSpace(typeName);
                 if (type == null)
-                {
                     type = BasicTypes[typeName];
-                }
             }
 
-            return GetTypeId(type);
+            if (type != null)
+            {
+                typeId = GetTypeId(type);
+                return true;
+            }
+
+            typeId = 0;
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        public uint GetTypeId(string typeName)
+        {
+            uint typeId;
+
+            if (!TryGetTypeId(typeName, out typeId))
+                throw new Exception($"Type name not found: {typeName}");
+            return typeId;
         }
 
         /// <summary>
@@ -398,17 +405,17 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// Gets the type pointer to type of the specified type.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
+        /// <returns>Type id to pointer type, or <c>int.MaxValue</c> if it doesn't exist and fake should be used.</returns>
         public uint GetTypePointerToTypeId(uint typeId)
         {
             var symbol = GetTypeFromId(typeId);
             var pointer = symbol.objectPointerType;
 
             if (pointer != null)
-            {
                 return pointer.symIndexId;
-            }
-
-            return GetTypeId(symbol.name + "*");
+            if (TryGetTypeId(symbol.name + "*", out typeId))
+                return typeId;
+            return int.MaxValue;
         }
 
         /// <summary>

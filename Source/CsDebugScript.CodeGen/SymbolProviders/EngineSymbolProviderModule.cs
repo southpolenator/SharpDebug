@@ -158,20 +158,23 @@ namespace CsDebugScript.CodeGen.SymbolProviders
 
                 FixSymbolSearchName(ref name);
 
-                symbol = GetSymbol(EngineModuleProvider.GetTypeId(name));
-                for (int i = 0; i < pointer; i++)
+                uint typeId;
+
+                if (EngineModuleProvider.TryGetTypeId(name, out typeId))
                 {
-                    symbol = symbol.PointerType;
+                    symbol = GetSymbol(typeId);
+                    for (int i = 0; i < pointer; i++)
+                        symbol = symbol.PointerType;
+                    return symbol;
                 }
-                return symbol;
             }
             catch
             {
-#if DEBUG
-                Console.WriteLine("   '{0}' not found", originalName);
-#endif
-                return null;
             }
+#if DEBUG
+            Console.WriteLine("   '{0}' not found", originalName);
+#endif
+            return null;
         }
 
         /// <summary>

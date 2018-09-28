@@ -9,6 +9,7 @@ using System.Linq;
 using DIA;
 using System.Runtime.InteropServices;
 using CsDebugScript.Engine;
+using System.IO;
 
 namespace CsDebugScript.VS
 {
@@ -180,7 +181,13 @@ namespace CsDebugScript.VS
                 {
                     DkmPdbFileId pdbFileId = (DkmPdbFileId)symbolFileId;
 
-                    return pdbFileId.PdbName;
+                    if (File.Exists(pdbFileId.PdbName))
+                        return pdbFileId.PdbName;
+
+                    string symbolFilePath = module.Module?.GetSymbolFilePath();
+
+                    if (File.Exists(symbolFilePath))
+                        return symbolFilePath;
                 }
 
                 return module.FullName;
@@ -195,7 +202,7 @@ namespace CsDebugScript.VS
                 {
                     DkmModuleInstance module = GetModule(moduleId);
 
-                    return module.Module.GetSymbolInterface(Marshal.GenerateGuidForType(typeof(IDiaSession)));
+                    return module.Module?.GetSymbolInterface(Marshal.GenerateGuidForType(typeof(IDiaSession)));
                 }
                 catch
                 {

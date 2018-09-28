@@ -940,27 +940,18 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Gets the type pointer to type identifier.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
+        /// <returns>Type id to pointer type, or <c>int.MaxValue</c> if it doesn't exist and fake should be used.</returns>
         public uint GetTypePointerToTypeId(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
             DwarfSymbol pointerType;
 
             if (typeOffsetToPointerType.TryGetValue(type.Offset, out pointerType))
-            {
                 return GetTypeId(pointerType);
-            }
-
-            pointerType = ContinueSymbolSearch((symbol) =>
-            {
-                return symbol.Tag == DwarfTag.PointerType && GetType(symbol) == type;
-            });
-
+            pointerType = ContinueSymbolSearch((symbol) => symbol.Tag == DwarfTag.PointerType && GetType(symbol) == type);
             if (pointerType != null)
-            {
                 return GetTypeId(pointerType);
-            }
-
-            throw new Exception("There is no pointer type to the specified type ID");
+            return int.MaxValue;
         }
 
         /// <summary>
@@ -1392,42 +1383,43 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Tries to get the type identifier.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public bool TryGetTypeId(string typeName, out uint typeId)
+        {
+            if (typeName.StartsWith("const "))
+                typeName = typeName.Substring(6);
+            if (typeName.EndsWith(" const*"))
+                typeName = typeName.Substring(0, typeName.Length - 7) + "*";
+            if (typeName == "unsigned long" && Is64bit)
+                typeName = "long long unsigned int";
+
+            DwarfSymbol type;
+
+            if (!typeNameToType.TryGetValue(typeName, out type))
+                type = ContinueSymbolSearch((symbol) => GetTypeName(symbol) == typeName);
+            if (type != null)
+            {
+                typeId = GetTypeId(type);
+                return true;
+            }
+            typeId = 0;
+            return false;
+        }
+
+        /// <summary>
         /// Gets the type identifier.
         /// </summary>
         /// <param name="typeName">Name of the type.</param>
         public uint GetTypeId(string typeName)
         {
-            if (typeName.StartsWith("const "))
-            {
-                typeName = typeName.Substring(6);
-            }
-            if (typeName.EndsWith(" const*"))
-            {
-                typeName = typeName.Substring(0, typeName.Length - 7) + "*";
-            }
-            if (typeName == "unsigned long" && Is64bit)
-            {
-                typeName = "long long unsigned int";
-            }
+            uint typeId;
 
-            DwarfSymbol type;
-
-            if (typeNameToType.TryGetValue(typeName, out type))
-            {
-                return GetTypeId(type);
-            }
-
-            type = ContinueSymbolSearch((symbol) =>
-                {
-                    return GetTypeName(symbol) == typeName;
-                });
-
-            if (type != null)
-            {
-                return GetTypeId(type);
-            }
-
-            throw new Exception("Type name not found");
+            if (!TryGetTypeId(typeName, out typeId))
+                throw new Exception($"Type name not found: {typeName}");
+            return typeId;
         }
 
         /// <summary>

@@ -100,6 +100,7 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
+        /// <returns>Type id to pointer type, or <c>int.MaxValue</c> if it doesn't exist and fake should be used.</returns>
         uint GetTypePointerToTypeId(Module module, uint typeId);
 
         /// <summary>

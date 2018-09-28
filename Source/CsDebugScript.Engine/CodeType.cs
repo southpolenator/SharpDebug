@@ -1132,8 +1132,10 @@ namespace CsDebugScript
             {
                 try
                 {
-                    uint elementTypeId = Context.SymbolProvider.GetTypePointerToTypeId(Module, TypeId);
-                    return Module.TypesById[elementTypeId];
+                    uint pointerTypeId = Context.SymbolProvider.GetTypePointerToTypeId(Module, TypeId);
+
+                    if (pointerTypeId != int.MaxValue)
+                        return Module.TypesById[pointerTypeId];
                 }
                 catch
                 {
