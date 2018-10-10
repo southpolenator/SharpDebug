@@ -10,10 +10,20 @@ namespace DbgEng
 #pragma warning disable CS0108 // XXX hides inherited member. This is COM default.
 
         #region IDebugAdvanced
+        /// <summary>
+        /// The <see cref="GetThreadContext"/> method returns the current thread context.
+        /// </summary>
+        /// <param name="Context">Receives the current thread context. The type of the thread context is the CONTEXT structure for the target's effective processor. The buffer Context must be large enough to hold this structure.</param>
+        /// <param name="ContextSize">Specifies the size of the buffer <paramref name="Context"/>.</param>
         void GetThreadContext(
             [Out] IntPtr Context,
             [In] uint ContextSize);
 
+        /// <summary>
+        /// The <see cref="SetThreadContext"/> method sets the current thread context.
+        /// </summary>
+        /// <param name="Context">Specifies the thread context. The type of the thread context is the CONTEXT structure for the target's effective processor. The buffer Context must be large enough to hold this structure.</param>
+        /// <param name="ContextSize">Specifies the size of the buffer <paramref name="Context"/>.</param>
         void SetThreadContext(
             [In] IntPtr Context,
             [In] uint ContextSize);

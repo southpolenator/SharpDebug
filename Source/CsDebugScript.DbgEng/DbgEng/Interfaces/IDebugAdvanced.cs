@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace DbgEng.NoExceptions
+namespace DbgEng
 {
     /// <summary>
     /// The <see cref="IDebugAdvanced"/> interface has these methods.
@@ -14,8 +14,7 @@ namespace DbgEng.NoExceptions
         /// </summary>
         /// <param name="Context">Receives the current thread context. The type of the thread context is the CONTEXT structure for the target's effective processor. The buffer Context must be large enough to hold this structure.</param>
         /// <param name="ContextSize">Specifies the size of the buffer <paramref name="Context"/>.</param>
-        [PreserveSig]
-        int GetThreadContext(
+        void GetThreadContext(
             [Out] IntPtr Context,
             [In] uint ContextSize);
 
@@ -24,8 +23,7 @@ namespace DbgEng.NoExceptions
         /// </summary>
         /// <param name="Context">Specifies the thread context. The type of the thread context is the CONTEXT structure for the target's effective processor. The buffer Context must be large enough to hold this structure.</param>
         /// <param name="ContextSize">Specifies the size of the buffer <paramref name="Context"/>.</param>
-        [PreserveSig]
-        int SetThreadContext(
+        void SetThreadContext(
             [In] IntPtr Context,
             [In] uint ContextSize);
     }
