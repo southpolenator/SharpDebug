@@ -1,13 +1,13 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace CsDebugScript.Engine.Native
+namespace DbgEng
 {
     /// <summary>
     /// The EXT_TYPED_DATA structure is passed to and returned from the DEBUG_REQUEST_EXT_TYPED_DATA_ANSI
     /// Request operation. It contains the input and output parameters for the operation as well as specifying
     /// which particular suboperation to perform.
     /// </summary>
-    internal struct EXT_TYPED_DATA
+    public struct EXT_TYPED_DATA
     {
         /// <summary>
         /// Specifies which suboperation the DEBUG_REQUEST_EXT_TYPED_DATA_ANSI Request operation should perform.
@@ -17,13 +17,9 @@ namespace CsDebugScript.Engine.Native
 
         /// <summary>
         /// Specifies the bit flags describing the target's memory in which the data resides. If no flags are present, the data is
-        /// considered to be in virtual memory. One of the following flags may be present:
-        /// <para>EXT_TDF_PHYSICAL_DEFAULT          The typed data is in physical memory, and this physical memory uses the default memory caching.</para>
-        /// <para>EXT_TDF_PHYSICAL_CACHED           The typed data is in physical memory, and this physical memory is cached.</para>
-        /// <para>EXT_TDF_PHYSICAL_UNCACHED         The typed data is in physical memory, and this physical memory is uncached.</para>
-        /// <para>EXT_TDF_PHYSICAL_WRITE_COMBINED   The typed data is in physical memory, and this physical memory is write-combined.</para>
+        /// considered to be in virtual memory.
         /// </summary>
-        public uint Flags;
+        public ExtTdf Flags;
 
         /// <summary>
         /// Specifies typed data to be used as input to the operation.For details about this structure, see DEBUG_TYPED_DATA.

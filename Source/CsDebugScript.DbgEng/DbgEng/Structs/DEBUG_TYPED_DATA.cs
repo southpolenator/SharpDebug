@@ -1,12 +1,12 @@
 ﻿using DIA;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.Engine.Native
+namespace DbgEng
 {
     /// <summary>
     /// The DEBUG_TYPED_DATA structure describes typed data in the memory of the target.
     /// </summary>
-    internal struct DEBUG_TYPED_DATA
+    public struct DEBUG_TYPED_DATA
     {
         /// <summary>
         /// The base address of the module, in the target's virtual address space, that contains the typed data.
@@ -36,14 +36,9 @@ namespace CsDebugScript.Engine.Native
         public uint Size;
 
         /// <summary>
-        /// The flags describing the target's memory in which the data resides. The following bit flags can be set. Flag Description:
-        /// <para>DEBUG_TYPED_DATA_IS_IN_MEMORY              The data is in the target's memory and is available.</para>
-        /// <para>DEBUG_TYPED_DATA_PHYSICAL_DEFAULT          Offset is a physical memory address, and the physical memory at Offset uses the default memory caching.</para>
-        /// <para>DEBUG_TYPED_DATA_PHYSICAL_CACHED           Offset is a physical memory address, and the physical memory at Offset is cached.</para>
-        /// <para>DEBUG_TYPED_DATA_PHYSICAL_UNCACHED         Offset is a physical memory address, and the physical memory at Offset is uncached.</para>
-        /// <para>DEBUG_TYPED_DATA_PHYSICAL_WRITE_COMBINED   Offset is a physical memory address, and the physical memory at Offset is write-combined.</para>
+        /// The flags describing the target's memory in which the data resides.
         /// </summary>
-        public uint Flags;
+        public DebugTypedDataFlags Flags;
 
         /// <summary>
         /// The type ID for the data's type.

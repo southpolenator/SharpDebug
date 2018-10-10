@@ -1,10 +1,10 @@
-﻿namespace CsDebugScript.Engine.Native
+﻿namespace DbgEng
 {
     /// <summary>
-    /// The EXT_TDOP enumeration is used in the Operation member of the EXT_TYPED_DATA structure to
-    /// specify which suboperation the DEBUG_REQUEST_EXT_TYPED_DATA_ANSI Request operation will perform.
+    /// The EXT_TDOP enumeration is used in the Operation member of the <see cref="EXT_TYPED_DATA"/> structure to
+    /// specify which suboperation the <see cref="DebugRequest.ExtTypedDataAnsi"/> Request operation will perform.
     /// </summary>
-    internal enum ExtTdop : uint
+    public enum ExtTdop : uint
     {
         /// <summary>
         /// Makes a copy of a typed data description.
@@ -102,7 +102,7 @@
         SetPtrFromTypeIdAndU64,
 
         /// <summary>
-        /// Does not specify an operation. Instead, it represents the number of suboperations defined in the EXT_TDOP enumeration. 
+        /// Does not specify an operation. Instead, it represents the number of suboperations defined in the EXT_TDOP enumeration.
         /// </summary>
         Count,
     }
