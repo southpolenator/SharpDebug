@@ -6,7 +6,7 @@ namespace DbgEng
     /// The flags describing the target's memory in which the data resides.
     /// </summary>
     [Flags]
-    public enum DebugTypedDataFlags
+    public enum DebugTypedDataFlags : uint
     {
         /// <summary>
         /// The data is in the target's memory and is available.
