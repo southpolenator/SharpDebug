@@ -426,23 +426,20 @@ namespace CsDebugScript
         {
             int variableNameIndex = name.LastIndexOf('.');
             string typeName = name.Substring(0, variableNameIndex);
-            var clrType = ClrModule.GetTypeByName(typeName);
+            IClrType clrType = ClrModule.GetTypeByName(typeName);
 
             if (clrType == null)
-            {
                 throw new Exception($"CLR type not found {typeName}");
-            }
 
             string variableName = name.Substring(variableNameIndex + 1);
-            var staticField = clrType.GetStaticFieldByName(variableName);
+            IClrStaticField staticField = clrType.GetStaticFieldByName(variableName);
 
             if (staticField == null)
-            {
                 throw new Exception($"Field {staticField} wasn't found in CLR type {typeName}");
-            }
 
-            var address = staticField.GetAddress(appDomain);
-            Variable field = Variable.CreateNoCast(FromClrType(clrType), address, variableName);
+            ulong address = staticField.GetAddress(appDomain);
+            IClrType fieldType = staticField.Type;
+            Variable field = Variable.CreateNoCast(FromClrType(fieldType), address, variableName);
 
             return Variable.UpcastClrVariable(field);
         }

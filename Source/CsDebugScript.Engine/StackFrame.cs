@@ -328,26 +328,16 @@ namespace CsDebugScript
         private Tuple<string, uint, ulong> ReadSourceFileNameAndLine()
         {
             if (clrStackFrame.Cached && clrStackFrame.Value != null)
-            {
-                return ClrStackFrame.ReadSourceFileNameAndLine(Module, InstructionOffset);
-            }
-
+                return ClrStackFrame.ReadSourceFileNameAndLine();
             try
             {
-                string sourceFileName;
-                uint sourceFileLine;
-                ulong displacement;
-
-                Context.SymbolProvider.GetStackFrameSourceFileNameAndLine(this, out sourceFileName, out sourceFileLine, out displacement);
+                Context.SymbolProvider.GetStackFrameSourceFileNameAndLine(this, out string sourceFileName, out uint sourceFileLine, out ulong displacement);
                 return Tuple.Create(sourceFileName, sourceFileLine, displacement);
             }
             catch (Exception ex)
             {
                 if (ClrStackFrame != null)
-                {
-                    return ClrStackFrame.ReadSourceFileNameAndLine(Module, InstructionOffset);
-                }
-
+                    return ClrStackFrame.ReadSourceFileNameAndLine();
                 throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
             }
         }
@@ -359,25 +349,16 @@ namespace CsDebugScript
         private Tuple<string, ulong> ReadFunctionNameAndDisplacement()
         {
             if (clrStackFrame.Cached && ClrStackFrame != null)
-            {
-                return ClrStackFrame.ReadFunctionNameAndDisplacement(Module, InstructionOffset);
-            }
-
+                return ClrStackFrame.ReadFunctionNameAndDisplacement();
             try
             {
-                ulong displacement;
-                string functionName;
-
-                Context.SymbolProvider.GetStackFrameFunctionName(this, out functionName, out displacement);
+                Context.SymbolProvider.GetStackFrameFunctionName(this, out string functionName, out ulong displacement);
                 return Tuple.Create(functionName, displacement);
             }
             catch (Exception ex)
             {
                 if (ClrStackFrame != null)
-                {
-                    return ClrStackFrame.ReadFunctionNameAndDisplacement(Module, InstructionOffset);
-                }
-
+                    return ClrStackFrame.ReadFunctionNameAndDisplacement();
                 throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
             }
         }
