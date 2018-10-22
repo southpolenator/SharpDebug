@@ -103,6 +103,7 @@ namespace CsDebugScript.VS
                 debuggerProxy = (VSDebuggerProxy)AppDomain.CurrentDomain.GetData(VSDebuggerProxy.AppDomainDataName) ?? new VSDebuggerProxy();
                 VSDebugger = new VSDebugger(debuggerProxy);
                 Engine.Context.InitializeDebugger(VSDebugger, new DiaSymbolProvider());
+                Engine.Context.ClrProvider = VSDebugger;
             }
             else
             {
@@ -146,6 +147,7 @@ namespace CsDebugScript.VS
         private static void DebuggerEvents_OnEnterDesignMode(dbgEventReason reason)
         {
             DebuggerEnteredDesignMode?.Invoke();
+            VSDebugger?.UpdateCache();
         }
 
         /// <summary>

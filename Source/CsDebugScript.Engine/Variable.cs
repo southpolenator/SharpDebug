@@ -1382,6 +1382,23 @@ namespace CsDebugScript
         /// </summary>
         private ulong ReadData()
         {
+            if (codeType is ClrCodeType)
+            {
+                uint size = codeType.Size;
+
+                switch (size)
+                {
+                    case 1:
+                        return codeType.Module.Process.ReadByte(Address);
+                    case 2:
+                        return codeType.Module.Process.ReadUshort(Address);
+                    case 4:
+                        return codeType.Module.Process.ReadUint(Address);
+                    case 8:
+                        return codeType.Module.Process.ReadUlong(Address);
+                }
+            }
+
             return Context.SymbolProvider.ReadSimpleData(codeType, Address);
         }
 

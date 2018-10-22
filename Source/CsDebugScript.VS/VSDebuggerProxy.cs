@@ -1,14 +1,17 @@
-﻿using CsDebugScript.Engine.Utility;
+﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Utility;
+using CsDebugScript.VS.DPE;
+using DIA;
 using Microsoft.VisualStudio.Debugger;
 using Microsoft.VisualStudio.Debugger.CallStack;
+using Microsoft.VisualStudio.Debugger.Clr;
 using Microsoft.VisualStudio.Debugger.Evaluation;
 using Microsoft.VisualStudio.Debugger.Symbols;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using DIA;
 using System.Runtime.InteropServices;
-using CsDebugScript.Engine;
 
 namespace CsDebugScript.VS
 {
@@ -19,6 +22,7 @@ namespace CsDebugScript.VS
     internal class VSDebuggerProxy : MarshalByRefObject
     {
         public const string AppDomainDataName = "VSDebuggerProxy.Value";
+        private static readonly Guid VS_SourceId = new Guid("CF7BFB1A-F3DD-4A81-A3E9-D1A3CAEED7E9");
 
         private struct ThreadStruct
         {
@@ -310,7 +314,6 @@ namespace CsDebugScript.VS
                         this.modules.Add(module);
                     }
                 }
-
                 return result.ToArray();
             });
         }
@@ -627,7 +630,7 @@ namespace CsDebugScript.VS
             {
                 DkmProcess process = GetProcess(processId);
 
-                return ReadMemoryString(process, address, length, 2, System.Text.UnicodeEncoding.Default);
+                return ReadMemoryString(process, address, length, 2, System.Text.UnicodeEncoding.Unicode);
             });
         }
 
@@ -691,9 +694,433 @@ namespace CsDebugScript.VS
 
         public void ClearCache()
         {
+            ExecuteOnDkmInitializedThread(() =>
+            {
+                lock (processes)
+                    foreach (DkmProcess process in processes)
+                        try
+                        {
+                            QueryDPE<bool>(process, MessageCodes.ClearCache, true);
+                        }
+                        catch
+                        {
+                        }
+            });
             processes.Clear();
             threads.Clear();
             modules.Clear();
+        }
+        #endregion
+
+        #region IClrRuntime
+        public Tuple<int, int, int, int, int>[] GetClrRuntimes(uint processId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                if (!process.GetRuntimeInstances().OfType<DkmClrRuntimeInstance>().Any())
+                    return null;
+
+                return QueryDPE<Tuple<int, int, int, int, int>[]>(process, MessageCodes.GetClrRuntimes, processId);
+            });
+        }
+
+        public Tuple<bool, uint, bool, ulong>[] GetClrRuntimeThreads(uint processId, int runtimeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple< bool, uint, bool, ulong>[]>(process, MessageCodes.ClrRuntime_GetThreads, runtimeId);
+            });
+        }
+
+        public ulong[] GetClrRuntimeModules(uint processId, int runtimeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<ulong[]>(process, MessageCodes.ClrRuntime_GetModules, runtimeId);
+            });
+        }
+
+        public Tuple<int, string, ulong, string, string>[] GetClrRuntimeAppDomains(uint processId, int runtimeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<int, string, ulong, string, string>[]>(process, MessageCodes.ClrRuntime_GetAppDomains, runtimeId);
+            });
+        }
+
+        public Tuple<int, string, ulong, string, string> GetClrRuntimeSharedAppDomain(uint processId, int runtimeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<int, string, ulong, string, string>>(process, MessageCodes.ClrRuntime_GetSharedAppDomain, runtimeId);
+            });
+        }
+
+        public Tuple<int, string, ulong, string, string> GetClrRuntimeSystemAppDomain(uint processId, int runtimeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<int, string, ulong, string, string>>(process, MessageCodes.ClrRuntime_GetSystemAppDomain, runtimeId);
+            });
+        }
+
+        public int GetClrRuntimeHeapCount(uint processId, int runtimeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<int>(process, MessageCodes.ClrRuntime_GetHeapCount, runtimeId);
+            });
+        }
+
+        public bool GetClrRuntimeServerGC(uint processId, int runtimeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<bool>(process, MessageCodes.ClrRuntime_GetServerGC, runtimeId);
+            });
+        }
+
+        public Tuple<string, ulong> ReadClrRuntimeFunctionNameAndDisplacement(uint processId, int runtimeId, ulong address)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<string, ulong>>(process, MessageCodes.ClrRuntime_ReadFunctionNameAndDisplacement, Tuple.Create(runtimeId, address));
+            });
+        }
+
+        public Tuple<string, uint, ulong> ReadClrRuntimeSourceFileNameAndLine(uint processId, int runtimeId, ulong address)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+                Tuple<ulong, uint, uint> tuple = QueryDPE<Tuple<ulong, uint, uint>>(process, MessageCodes.ClrRuntime_GetInstructionPointerInfo, Tuple.Create(runtimeId, address));
+                DkmModuleInstance moduleInstance = process.GetRuntimeInstances().SelectMany(ri => ri.GetModuleInstances()).FirstOrDefault(m => m.BaseAddress == tuple.Item1);
+                string pdbPath = moduleInstance?.Module?.GetSymbolFilePath();
+
+                if (File.Exists(pdbPath))
+                {
+                    // TODO: This needs to be cached
+                    using (var pdbReader = new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath))
+                    {
+                        var function = pdbReader.GetFunctionFromToken(tuple.Item2);
+                        uint ilOffset = tuple.Item3;
+
+                        ulong distance = ulong.MaxValue;
+                        string sourceFileName = "";
+                        uint sourceFileLine = uint.MaxValue;
+
+                        foreach (Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSequencePointCollection sequenceCollection in function.SequencePoints)
+                            foreach (Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSequencePoint point in sequenceCollection.Lines)
+                                if (point.Offset <= ilOffset)
+                                {
+                                    ulong dist = ilOffset - point.Offset;
+
+                                    if (dist < distance)
+                                    {
+                                        sourceFileName = sequenceCollection.File.Name;
+                                        sourceFileLine = point.LineBegin;
+                                        distance = dist;
+                                    }
+                                }
+                        return Tuple.Create(sourceFileName, sourceFileLine, distance);
+                    }
+                }
+
+                throw new NotImplementedException();
+            });
+        }
+        #endregion
+
+        #region IClrAppDomain
+        public ulong[] GetClrAppDomainModules(uint processId, int runtimeId, int appDomainId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<ulong[]>(process, MessageCodes.ClrAppDomain_GetModules, Tuple.Create(runtimeId, appDomainId));
+            });
+        }
+        #endregion
+
+        #region IClrHeap
+        public bool GetClrHeapCanWalkHeap(uint processId, int runtimeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<bool>(process, MessageCodes.ClrHeap_GetCanWalkHeap, runtimeId);
+            });
+        }
+
+        public ulong GetClrHeapTotalHeapSize(uint processId, int runtimeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<ulong>(process, MessageCodes.ClrHeap_GetTotalHeapSize, runtimeId);
+            });
+        }
+
+        public int GetClrHeapObjectType(uint processId, int runtimeId, ulong objectAddress)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<int>(process, MessageCodes.ClrHeap_GetObjectType, Tuple.Create(runtimeId, objectAddress));
+            });
+        }
+
+        public Tuple<int, Tuple<ulong, int>[]> EnumerateClrHeapObjects(uint processId, int runtimeId, int batchCount)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<int, Tuple<ulong, int>[]>>(process, MessageCodes.ClrHeap_EnumerateObjects, Tuple.Create(runtimeId, batchCount));
+            });
+        }
+
+        public Tuple<ulong, int>[] GetVariableEnumeratorNextBatch(uint processId, int runtimeId, int batchCount)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<ulong, int>[]>(process, MessageCodes.VariableEnumerator_GetNextBatch, Tuple.Create(runtimeId, batchCount));
+            });
+        }
+
+        public bool DisposeVariableEnumerator(uint processId, int runtimeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<bool>(process, MessageCodes.VariableEnumerator_Dispose, runtimeId);
+            });
+        }
+
+        public ulong GetClrHeapSizeByGeneration(uint processId, int runtimeId, int generation)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<ulong>(process, MessageCodes.ClrHeap_GetSizeByGeneration, Tuple.Create(runtimeId, generation));
+            });
+        }
+        #endregion
+
+        #region IClrThread
+        public Tuple<int, ulong, ulong, ulong>[] GetClrThreadFrames(uint processId, int runtimeId, uint threadSystemId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<int, ulong, ulong, ulong>[]>(process, MessageCodes.ClrThread_GetFrames, Tuple.Create(runtimeId, threadSystemId));
+            });
+        }
+
+        public Tuple<ulong, int> GetClrThreadLastException(uint processId, int runtimeId, uint threadSystemId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<ulong, int>>(process, MessageCodes.ClrThread_GetLastException, Tuple.Create(runtimeId, threadSystemId));
+            });
+        }
+
+        public Tuple<int, Tuple<ulong, int>[]> EnumerateClrThreadStackObjects(uint processId, int runtimeId, uint threadSystemId, int batchCount)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<int, Tuple<ulong, int>[]>>(process, MessageCodes.ClrThread_EnumerateStackObjects, Tuple.Create(runtimeId, threadSystemId, batchCount));
+            });
+        }
+        #endregion
+
+        #region ClrStackFrame
+        public Tuple<ulong, int, string>[] GetClrStackFrameArguments(uint processId, int runtimeId, uint threadSystemId, int stackFrameId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<ulong, int, string>[]>(process, MessageCodes.ClrStackFrame_GetArguments, Tuple.Create(runtimeId, threadSystemId, stackFrameId));
+            });
+        }
+
+        public Tuple<ulong, int, string>[] GetClrStackFrameLocals(uint processId, int runtimeId, uint threadSystemId, int stackFrameId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+                var variables = QueryDPE<Tuple<ulong, int, ulong, uint, uint>[]>(process, MessageCodes.ClrStackFrame_GetLocals, Tuple.Create(runtimeId, threadSystemId, stackFrameId));
+                string[] names = null;
+                int length = variables.Length;
+
+                if (length > 0)
+                {
+                    DkmModuleInstance moduleInstance = process.GetRuntimeInstances().SelectMany(ri => ri.GetModuleInstances()).FirstOrDefault(m => m.BaseAddress == variables[0].Item3);
+                    string pdbPath = moduleInstance?.Module?.GetSymbolFilePath();
+
+                    if (File.Exists(pdbPath))
+                    {
+                        // TODO: This needs to be cached
+                        using (var pdbReader = new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath))
+                        {
+                            var function = pdbReader.GetFunctionFromToken(variables[0].Item4);
+                            var scope = function.FindScopeByILOffset(variables[0].Item5);
+
+                            names = GetRecursiveSlots(scope).Select(s => s.Name).ToArray();
+                        }
+                    }
+
+                    if (names == null)
+                        names = Enumerable.Range(0, variables.Length).Select(id => string.Format("local_{0}", id)).ToArray();
+                    if (names.Length < length)
+                        length = names.Length;
+                }
+
+                Tuple<ulong, int, string>[] result = new Tuple<ulong, int, string>[length];
+
+                for (int i = 0; i < length; i++)
+                    result[i] = Tuple.Create(variables[i].Item1, variables[i].Item2, names[i]);
+                return result;
+            });
+        }
+
+        /// <summary>
+        /// Gets the recursive slots.
+        /// </summary>
+        /// <param name="scope">The scope.</param>
+        /// <param name="results">The results.</param>
+        private static IEnumerable<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> GetRecursiveSlots(Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbScope scope, List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> results = null)
+        {
+            if (results == null)
+                results = new List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot>();
+            foreach (var slot in scope.Slots)
+            {
+                while (results.Count <= slot.Slot)
+                    results.Add(null);
+                results[(int)slot.Slot] = slot;
+            }
+
+            foreach (var innerScope in scope.Scopes)
+                GetRecursiveSlots(innerScope, results);
+            return results;
+        }
+        #endregion
+
+        #region IClrModule
+        public int GetClrModuleTypeByName(uint processId, int runtimeId, ulong imageBase, string typeName)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<int>(process, MessageCodes.ClrModule_GetTypeByName, Tuple.Create(runtimeId, imageBase, typeName));
+            });
+        }
+        #endregion
+
+        #region IClrType
+        public ulong GetClrTypeModule(uint processId, int clrTypeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<ulong>(process, MessageCodes.ClrType_GetModule, clrTypeId);
+            });
+        }
+
+        public Tuple<int, int, int, int, int, int, string> GetClrTypeSimpleData(uint processId, int clrTypeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<int, int, int, int, int, int, string>>(process, MessageCodes.ClrType_GetSimpleData, clrTypeId);
+            });
+        }
+
+        public Tuple<string, int, int, int>[] GetClrTypeFields(uint processId, int clrTypeId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<Tuple<string, int, int, int>[]>(process, MessageCodes.ClrType_GetFields, clrTypeId);
+            });
+        }
+
+        public ulong GetClrTypeArrayElementAddress(uint processId, int clrTypeId, ulong address, int index)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<ulong>(process, MessageCodes.ClrType_GetArrayElementAddress, Tuple.Create(clrTypeId, address, index));
+            });
+        }
+
+        public int GetClrTypeArrayLength(uint processId, int clrTypeId, ulong address)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<int>(process, MessageCodes.ClrType_GetArrayLength, Tuple.Create(clrTypeId, address));
+            });
+        }
+
+        public int GetClrTypeStaticField(uint processId, int clrTypeId, string name)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<int>(process, MessageCodes.ClrType_GetArrayLength, Tuple.Create(clrTypeId, name));
+            });
+        }
+        #endregion
+
+        #region IClrStaticField
+        public ulong GetClrStaticFieldAddress(uint processId, int clrTypeId, string name, int appDomainId)
+        {
+            return ExecuteOnDkmInitializedThread(() =>
+            {
+                DkmProcess process = GetProcess(processId);
+
+                return QueryDPE<ulong>(process, MessageCodes.ClrStaticField_GetAddress, Tuple.Create(clrTypeId, name));
+            });
         }
         #endregion
 
@@ -933,6 +1360,32 @@ namespace CsDebugScript.VS
             {
                 return ExecuteOnStaThread(evaluator);
             }
+        }
+        #endregion
+
+        #region Messaging with Concord debugging process component (DPE)
+        private static TOutput QueryDPE<TOutput>(DkmProcess process, MessageCodes messageCode, object parameter)
+        {
+            byte[] bytes = MessageSerializer.Serialize(parameter);
+            DkmCustomMessage message = DkmCustomMessage.Create(process.Connection, process, VS_SourceId, (int)messageCode, bytes, null);
+            DkmCustomMessage response = message.SendLower();
+            MessageCodes responseCode = (MessageCodes)response.MessageCode;
+            bytes = (byte[])response.Parameter1;
+
+            // Check if we encountered exception during processing
+            if (responseCode == MessageCodes.Exception)
+            {
+                string exceptionText = MessageSerializer.Deserialize<string>(bytes);
+
+                throw new Exception(exceptionText);
+            }
+
+            // Check if we got the same message response
+            if (responseCode != messageCode)
+                throw new Exception($"Unexpected message code: {responseCode}");
+
+            // All good, deserialize response
+            return MessageSerializer.Deserialize<TOutput>(bytes);
         }
         #endregion
     }

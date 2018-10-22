@@ -68,6 +68,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Drawing.Inter
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.PdbSymbolProvider", "Source\CsDebugScript.PdbSymbolProvider\CsDebugScript.PdbSymbolProvider.csproj", "{C2CB7599-B319-45BE-9F37-320E7865DE2D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.VS.DPE", "Source\CsDebugScript.VS.DPE\CsDebugScript.VS.DPE.csproj", "{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -372,6 +374,18 @@ Global
 		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|x64.Build.0 = Release|Any CPU
 		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|x86.ActiveCfg = Release|Any CPU
 		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|x86.Build.0 = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|x64.Build.0 = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|x86.Build.0 = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|x64.ActiveCfg = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|x64.Build.0 = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|x86.ActiveCfg = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -402,6 +416,7 @@ Global
 		{7DFFED6E-52CE-4C6D-91EF-568AA5DFC567} = {EF2FD4E0-777D-4E92-A036-4604D0D14868}
 		{9CE6DC17-D6A1-4DBF-B83A-B66645711A18} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 		{C2CB7599-B319-45BE-9F37-320E7865DE2D} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9EE35CEC-B6D7-4442-BD27-F74972D115AE}
