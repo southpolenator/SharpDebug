@@ -561,6 +561,18 @@ namespace CsDebugScript.VS
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Adds new breakpoint to the given process.
+        /// </summary>
+        /// <param name="process">Process.</param>
+        /// <param name="breakpointSpec">Description of this breakpoint.</param>
+        /// <returns>New breakpoint.</returns>
+        public IBreakpoint AddBreakpoint(Process process, BreakpointSpec breakpointSpec)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region IClrProvider

@@ -6,7 +6,7 @@ using DbgEng;
 namespace CsDebugScript
 {
     /// <summary>
-    /// Class for simplified debugger initializion.
+    /// Class for simplified debugger initialization.
     /// </summary>
     public static class DebuggerInitialization
     {

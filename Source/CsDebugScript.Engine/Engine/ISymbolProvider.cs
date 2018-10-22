@@ -100,6 +100,7 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
+        /// <returns>Type id to pointer type, or <c>int.MaxValue</c> if it doesn't exist and fake should be used.</returns>
         uint GetTypePointerToTypeId(Module module, uint typeId);
 
         /// <summary>
@@ -221,5 +222,12 @@ namespace CsDebugScript.Engine
         /// <param name="virtualCodeType">Virtual class code type.</param>
         /// <returns>Address of the object which code type is virtual class.</returns>
         ulong GetVirtualClassBaseAddress(CodeType originalCodeType, ulong objectAddress, CodeType virtualCodeType);
+
+        /// <summary>
+        /// Gets path to the symbols file or <c>null</c> if we don't have symbols.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <returns>Paths to the symbols file.</returns>
+        string GetModuleSymbolsPath(Module module);
     }
 }

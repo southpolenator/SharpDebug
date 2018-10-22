@@ -140,6 +140,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Initializes a new instance of the <see cref="DwarfSymbolProviderModule" /> class.
         /// </summary>
+        /// <param name="symbolsPath">Path to the symbols file.</param>
         /// <param name="module">The module.</param>
         /// <param name="compilationUnits">The compilation units.</param>
         /// <param name="programs">The line number programs.</param>
@@ -147,8 +148,9 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <param name="publicSymbols">The public symbols.</param>
         /// <param name="codeSegmentOffset">The code segment offset.</param>
         /// <param name="is64bit">if set to <c>true</c> image is 64 bit.</param>
-        public DwarfSymbolProviderModule(Module module, DwarfCompilationUnit[] compilationUnits, DwarfLineNumberProgram[] programs, DwarfCommonInformationEntry[] commonInformationEntries, IReadOnlyList<PublicSymbol> publicSymbols, ulong codeSegmentOffset, bool is64bit)
+        public DwarfSymbolProviderModule(string symbolsPath, Module module, DwarfCompilationUnit[] compilationUnits, DwarfLineNumberProgram[] programs, DwarfCommonInformationEntry[] commonInformationEntries, IReadOnlyList<PublicSymbol> publicSymbols, ulong codeSegmentOffset, bool is64bit)
         {
+            SymbolsPath = symbolsPath;
             Module = module;
             Is64bit = is64bit;
             symbolEnumerator = compilationUnits.SelectMany(cu => cu.Symbols).GetEnumerator();
@@ -189,6 +191,11 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Gets path to the symbols file.
+        /// </summary>
+        public string SymbolsPath { get; private set; }
+
+        /// <summary>
         /// Gets the module.
         /// </summary>
         public Module Module { get; private set; }
@@ -197,6 +204,14 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Flag indicating if image is 64 bit.
         /// </summary>
         internal bool Is64bit { get; private set; }
+
+        /// <summary>
+        /// Gets path to the symbols file.
+        /// </summary>
+        public string GetSymbolsPath()
+        {
+            return SymbolsPath;
+        }
 
         /// <summary>
         /// Gets the name of the enumeration value.
@@ -925,27 +940,18 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Gets the type pointer to type identifier.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
+        /// <returns>Type id to pointer type, or <c>int.MaxValue</c> if it doesn't exist and fake should be used.</returns>
         public uint GetTypePointerToTypeId(uint typeId)
         {
             DwarfSymbol type = GetType(typeId);
             DwarfSymbol pointerType;
 
             if (typeOffsetToPointerType.TryGetValue(type.Offset, out pointerType))
-            {
                 return GetTypeId(pointerType);
-            }
-
-            pointerType = ContinueSymbolSearch((symbol) =>
-            {
-                return symbol.Tag == DwarfTag.PointerType && GetType(symbol) == type;
-            });
-
+            pointerType = ContinueSymbolSearch((symbol) => symbol.Tag == DwarfTag.PointerType && GetType(symbol) == type);
             if (pointerType != null)
-            {
                 return GetTypeId(pointerType);
-            }
-
-            throw new Exception("There is no pointer type to the specified type ID");
+            return int.MaxValue;
         }
 
         /// <summary>
@@ -1377,42 +1383,43 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Tries to get the type identifier.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public bool TryGetTypeId(string typeName, out uint typeId)
+        {
+            if (typeName.StartsWith("const "))
+                typeName = typeName.Substring(6);
+            if (typeName.EndsWith(" const*"))
+                typeName = typeName.Substring(0, typeName.Length - 7) + "*";
+            if (typeName == "unsigned long" && Is64bit)
+                typeName = "long long unsigned int";
+
+            DwarfSymbol type;
+
+            if (!typeNameToType.TryGetValue(typeName, out type))
+                type = ContinueSymbolSearch((symbol) => GetTypeName(symbol) == typeName);
+            if (type != null)
+            {
+                typeId = GetTypeId(type);
+                return true;
+            }
+            typeId = 0;
+            return false;
+        }
+
+        /// <summary>
         /// Gets the type identifier.
         /// </summary>
         /// <param name="typeName">Name of the type.</param>
         public uint GetTypeId(string typeName)
         {
-            if (typeName.StartsWith("const "))
-            {
-                typeName = typeName.Substring(6);
-            }
-            if (typeName.EndsWith(" const*"))
-            {
-                typeName = typeName.Substring(0, typeName.Length - 7) + "*";
-            }
-            if (typeName == "unsigned long" && Is64bit)
-            {
-                typeName = "long long unsigned int";
-            }
+            uint typeId;
 
-            DwarfSymbol type;
-
-            if (typeNameToType.TryGetValue(typeName, out type))
-            {
-                return GetTypeId(type);
-            }
-
-            type = ContinueSymbolSearch((symbol) =>
-                {
-                    return GetTypeName(symbol) == typeName;
-                });
-
-            if (type != null)
-            {
-                return GetTypeId(type);
-            }
-
-            throw new Exception("Type name not found");
+            if (!TryGetTypeId(typeName, out typeId))
+                throw new Exception($"Type name not found: {typeName}");
+            return typeId;
         }
 
         /// <summary>

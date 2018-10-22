@@ -48,6 +48,8 @@ namespace DbgEng
             control.SetEngineOptions(debugEngineOptions);
             client.CreateProcessAndAttach(0, processCommandLine, DebugCreateProcess.DebugOnlyThisProcess, 0, 0);
             control.WaitForEvent(0, uint.MaxValue);
+            symbols.SetSymbolPathWide(symbolPath);
+            control.Execute(0, ".reload -f", 0);
             return client;
         }
 

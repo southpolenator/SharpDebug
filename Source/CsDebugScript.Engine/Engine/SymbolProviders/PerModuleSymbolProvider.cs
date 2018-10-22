@@ -53,20 +53,11 @@ namespace CsDebugScript.Engine.SymbolProviders
         public ISymbolProviderModule GetSymbolProviderModule(Module module)
         {
             if (module == null)
-            {
                 return null;
-            }
-
             if (module.SymbolProvider == null)
-            {
                 module.SymbolProvider = modules[module];
-            }
-
-            if (module.SymbolProvider == null && FallbackSymbolProvider != null)
-            {
-                module.SymbolProvider = FallbackSymbolProvider.GetSymbolProviderModule(module);
-            }
-
+            if (module.SymbolProvider == null)
+                module.SymbolProvider = FallbackSymbolProvider?.GetSymbolProviderModule(module);
             return module.SymbolProvider;
         }
 
@@ -80,10 +71,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.GetGlobalVariableAddress(module, globalVariableName);
-            }
-
             return symbolProviderModule.GetGlobalVariableAddress(globalVariableName);
         }
 
@@ -97,10 +85,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.GetGlobalVariableTypeId(module, globalVariableName);
-            }
-
             return symbolProviderModule.GetGlobalVariableTypeId(globalVariableName);
         }
 
@@ -114,10 +99,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.GetTypeElementTypeId(module, typeId);
-            }
-
             return symbolProviderModule.GetTypeElementTypeId(typeId);
         }
 
@@ -126,15 +108,13 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
+        /// <returns>Type id to pointer type, or <c>int.MaxValue</c> if it doesn't exist and fake should be used.</returns>
         public uint GetTypePointerToTypeId(Module module, uint typeId)
         {
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.GetTypePointerToTypeId(module, typeId);
-            }
-
             return symbolProviderModule.GetTypePointerToTypeId(typeId);
         }
 
@@ -148,10 +128,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetTypeAllFieldNames(module, typeId);
-            }
-
+                return FallbackSymbolProvider?.GetTypeAllFieldNames(module, typeId);
             return symbolProviderModule.GetTypeAllFieldNames(typeId);
         }
 
@@ -166,10 +143,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetTypeAllFieldTypeAndOffset(module, typeId, fieldName);
-            }
-
+                return FallbackSymbolProvider?.GetTypeAllFieldTypeAndOffset(module, typeId, fieldName);
             return symbolProviderModule.GetTypeAllFieldTypeAndOffset(typeId, fieldName);
         }
 
@@ -183,10 +157,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetTypeName(module, typeId);
-            }
-
+                return FallbackSymbolProvider?.GetTypeName(module, typeId);
             return symbolProviderModule.GetTypeName(typeId);
         }
 
@@ -200,10 +171,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.GetTypeSize(module, typeId);
-            }
-
             return symbolProviderModule.GetTypeSize(typeId);
         }
 
@@ -217,10 +185,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.GetTypeTag(module, typeId);
-            }
-
             return symbolProviderModule.GetTypeTag(typeId);
         }
 
@@ -234,10 +199,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.GetTypeId(module, typeName);
-            }
-
             return symbolProviderModule.GetTypeId(typeName);
         }
 
@@ -253,10 +215,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetTemplateArguments(module, typeId);
-            }
-
+                return FallbackSymbolProvider?.GetTemplateArguments(module, typeId);
             return symbolProviderModule.GetTemplateArguments(typeId);
         }
 
@@ -274,12 +233,9 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
 
             if (symbolProviderModule == null)
-            {
                 FallbackSymbolProvider.GetStackFrameSourceFileNameAndLine(stackFrame, out sourceFileName, out sourceFileLine, out displacement);
-                return;
-            }
-
-            symbolProviderModule.GetSourceFileNameAndLine((uint)distance, out sourceFileName, out sourceFileLine, out displacement);
+            else
+                symbolProviderModule.GetSourceFileNameAndLine((uint)distance, out sourceFileName, out sourceFileLine, out displacement);
         }
 
         /// <summary>
@@ -302,13 +258,9 @@ namespace CsDebugScript.Engine.SymbolProviders
 
             symbolProviderModule.GetFunctionNameAndDisplacement((uint)distance, out functionName, out displacement);
             if (string.IsNullOrEmpty(functionName))
-            {
-                functionName = $"{module.Name}!???";
-            }
+                functionName = module.Name + "!???";
             else if (!functionName.Contains("!"))
-            {
                 functionName = module.Name + "!" + functionName;
-            }
         }
 
         /// <summary>
@@ -326,12 +278,9 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(process, address, out distance, out module);
 
             if (symbolProviderModule == null)
-            {
                 FallbackSymbolProvider.GetProcessAddressSourceFileNameAndLine(process, address, out sourceFileName, out sourceFileLine, out displacement);
-                return;
-            }
-
-            symbolProviderModule.GetSourceFileNameAndLine((uint)distance, out sourceFileName, out sourceFileLine, out displacement);
+            else
+                symbolProviderModule.GetSourceFileNameAndLine((uint)distance, out sourceFileName, out sourceFileLine, out displacement);
         }
 
         /// <summary>
@@ -355,9 +304,7 @@ namespace CsDebugScript.Engine.SymbolProviders
 
             symbolProviderModule.GetFunctionNameAndDisplacement((uint)distance, out functionName, out displacement);
             if (!functionName.StartsWith(module.Name + "!"))
-            {
                 functionName = module.Name + "!" + functionName;
-            }
         }
 
         /// <summary>
@@ -375,10 +322,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(process, address, out distance, out module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.IsFunctionAddressPublicSymbol(process, address);
-            }
-
             return symbolProviderModule.IsFunctionAddressPublicSymbol((uint)distance);
         }
 
@@ -394,10 +338,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(stackFrame.Process, stackFrame.InstructionOffset, out distance, out module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetFrameLocals(stackFrame, arguments);
-            }
-
+                return FallbackSymbolProvider?.GetFrameLocals(stackFrame, arguments);
             return symbolProviderModule.GetFrameLocals(stackFrame, (uint)distance, arguments);
         }
 
@@ -411,10 +352,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(codeType.Module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.ReadSimpleData(codeType, address);
-            }
-
             return symbolProviderModule.ReadSimpleData(codeType, address);
         }
 
@@ -428,10 +366,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetTypeFieldNames(module, typeId);
-            }
-
+                return FallbackSymbolProvider?.GetTypeFieldNames(module, typeId);
             return symbolProviderModule.GetTypeFieldNames(typeId);
         }
 
@@ -446,10 +381,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetTypeFieldTypeAndOffset(module, typeId, fieldName);
-            }
-
+                return FallbackSymbolProvider?.GetTypeFieldTypeAndOffset(module, typeId, fieldName);
             return symbolProviderModule.GetTypeFieldTypeAndOffset(typeId, fieldName);
         }
 
@@ -464,10 +396,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetTypeBaseClass(module, typeId, className);
-            }
-
+                return FallbackSymbolProvider?.GetTypeBaseClass(module, typeId, className);
             return symbolProviderModule.GetTypeBaseClass(typeId, className);
         }
 
@@ -482,10 +411,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetEnumName(module, enumTypeId, enumValue);
-            }
-
+                return FallbackSymbolProvider?.GetEnumName(module, enumTypeId, enumValue);
             return symbolProviderModule.GetEnumName(enumTypeId, enumValue);
         }
 
@@ -499,10 +425,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.GetTypeBuiltinType(module, typeId);
-            }
-
             return symbolProviderModule.GetTypeBuiltinType(typeId);
         }
 
@@ -516,10 +439,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetTypeDirectBaseClasses(module, typeId);
-            }
-
+                return FallbackSymbolProvider?.GetTypeDirectBaseClasses(module, typeId);
             return symbolProviderModule.GetTypeDirectBaseClasses(typeId);
         }
 
@@ -535,9 +455,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(process, address, out distance, out module);
 
             if (symbolProviderModule == null)
-            {
-                return FallbackSymbolProvider.GetSymbolNameByAddress(process, address);
-            }
+                return FallbackSymbolProvider?.GetSymbolNameByAddress(process, address);
 
             var result = symbolProviderModule.GetSymbolNameByAddress((uint)distance);
 
@@ -566,11 +484,22 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(originalCodeType.Module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider.GetVirtualClassBaseAddress(originalCodeType, objectAddress, virtualCodeType);
-            }
-
             return symbolProviderModule.GetVirtualClassBaseAddress(((NativeCodeType)originalCodeType).TypeId, objectAddress, ((NativeCodeType)virtualCodeType).TypeId);
+        }
+
+        /// <summary>
+        /// Gets path to the symbols file or <c>null</c> if we don't have symbols.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <returns>Paths to the symbols file.</returns>
+        public string GetModuleSymbolsPath(Module module)
+        {
+            ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(module);
+
+            if (symbolProviderModule == null)
+                return FallbackSymbolProvider?.GetModuleSymbolsPath(module);
+            return symbolProviderModule.GetSymbolsPath();
         }
 
         /// <summary>
@@ -586,10 +515,7 @@ namespace CsDebugScript.Engine.SymbolProviders
             ISymbolProviderModule symbolProviderModule = GetSymbolProviderModule(process, vtableAddress, out distance, out module);
 
             if (symbolProviderModule == null)
-            {
                 return FallbackSymbolProvider?.GetRuntimeCodeTypeAndOffset(tuple.Item1, tuple.Item2);
-            }
-
             return symbolProviderModule?.GetRuntimeCodeTypeAndOffset((uint)distance);
         }
 

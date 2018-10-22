@@ -1,5 +1,7 @@
 ﻿using DbgEng;
 using System;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
 {
@@ -13,28 +15,66 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <summary>
         /// IDebugClient.
         /// </summary>
-        private IDebugClient client;
+        private readonly IDebugControl7 control;
+
+        /// <summary>
+        /// Dictionaryy containing all breakpoints.
+        /// </summary>
+        /// <remarks>Is this class even aware of process concept?</remarks>
+        private Dictionary<uint, DbgEngBreakpoint> breakpoints = new Dictionary<uint, DbgEngBreakpoint>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DebugCallbacks"/> class.
         /// </summary>
-        /// <param name="client">IDebugClient interface.</param>
+        /// <param name="control">IDebugControl7 interface.</param>
         /// <param name="debugStatusGoEvent">Event used to signal when debuggee switches to release state.</param>
-        public DebugCallbacks(IDebugClient client, System.Threading.AutoResetEvent debugStatusGoEvent)
+        public DebugCallbacks(IDebugControl7 control, AutoResetEvent debugStatusGoEvent)
         {
-            this.client = client;
+            // TODO: But the loop should always be running? Why this mess with events?
+            //
+            this.control = control;
             this.debugStatusGoEvent = debugStatusGoEvent;
-            this.client.SetEventCallbacks(this);
         }
 
         /// <summary>
         /// Event used to signal go state. Used to unblock DebugFlow loop.
         /// </summary>
-        private System.Threading.AutoResetEvent debugStatusGoEvent;
+        private AutoResetEvent debugStatusGoEvent;
 
-        public void Breakpoint(IDebugBreakpoint Bp)
+        /// <summary>
+        /// I don't like this here.
+        /// </summary>
+        /// <param name="breakpoint"></param>
+        public void AddBreakpoint(DbgEngBreakpoint breakpoint)
         {
-            throw new NotImplementedException();
+            breakpoints.Add(breakpoint.GetId(), breakpoint);
+        }
+
+        public void RemoveBreakpoint(DbgEngBreakpoint breakpoint)
+        {
+            breakpoints.Remove(breakpoint.GetId());
+        }
+
+        /// <summary>
+        /// Callback executed when breakpoint gets hit.
+        /// </summary>
+        /// <param name="Bp">Breakpoint that was hit.</param>
+        /// <returns></returns>
+        public int Breakpoint(IDebugBreakpoint Bp)
+        {
+            uint bpId = Bp.GetId();
+            BreakpointHitResult actionStatus = breakpoints[bpId].ExecuteAction();
+
+            if (actionStatus == BreakpointHitResult.Continue)
+            {
+                debugStatusGoEvent.Set();
+                return (int)Defines.DebugStatusGo;
+            }
+            else
+            {
+                return (int)Defines.DebugStatusBreak;
+            }
+
         }
 
         /// <summary>
@@ -45,12 +85,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <returns></returns>
         public void ChangeDebuggeeState(uint Flags, ulong Argument)
         {
-            uint executionStatus = ((IDebugControl7)client).GetExecutionStatus();
-
-            if (executionStatus == (uint)Defines.DebugStatusGo)
-            {
-                debugStatusGoEvent.Set();
-            }
+            return;
         }
 
         public void ChangeEngineState(uint Flags, ulong Argument)
@@ -115,7 +150,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// <returns></returns>
         public uint GetInterestMask()
         {
-            return (uint)DebugEvent.ChangeDebuggeeState;
+            return (uint)DebugEvent.ChangeDebuggeeState | (uint)DebugEvent.Breakpoint;
         }
     }
 }

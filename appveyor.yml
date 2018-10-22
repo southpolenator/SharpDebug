@@ -19,8 +19,11 @@ environment:
     secure: 2KQWKwkpAyvIjNLzJS6g4SY9URejpaumcJuJLTqvppYB4+aINA3ElJC7n8UoD0zd
   GITHUB_PAGES_URL: https://$(GITHUB_PASSWORD)@github.com/$(GITHUB_USERNAME)/$(GITHUB_USERNAME).github.io.git
 init:
- - git config --global user.email "auto_publish@appveyor.com"
- - git config --global user.name %GITHUB_PASSWORD%
+- ps: |-
+         if(-not $env:APPVEYOR_PULL_REQUEST_NUMBER){
+             git config --global user.email "auto_publish@appveyor.com"
+             git config --global user.name %GITHUB_PASSWORD%
+         }
 install:
   - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
   - ps: (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/WinDbgCs/master/GetShipFiles.ps1") | iex
@@ -53,21 +56,23 @@ after_build:
   - ps: |-
         if ($env:CONFIGURATION -eq "Release") {
             if ($env:APPVEYOR_REPO_BRANCH -eq "master") {
-                msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
-                git clone $env:GITHUB_PAGES_URL $env:GITHUB_PAGES
-                git config --global core.autocrlf false
-                pushd $env:GITHUB_PAGES
-                Remove-Item -Recurse -Force $env:GITHUB_PAGES_REFERENCES
-                mkdir $env:GITHUB_PAGES_REFERENCES | Out-Null
-                $files = "index.html", "SearchHelp.aspx", "SearchHelp.inc.php", "SearchHelp.php", "Web.Config", "WebKI.xml", "WebTOC.xml", "fti", "html", "icons", "scripts", "styles", "toc"
-                foreach ($file in $files) {
-                    Copy-Item $env:HELP_OUTPUT_PATH\$file -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES\$file -Recurse
-                }
-                git add .
-                git commit -m "Automatic update of code reference with build {version}"
-                git push
-                popd
-            }
+               if(-not $env:APPVEYOR_PULL_REQUEST_NUMBER) {
+                   msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
+                   git clone $env:GITHUB_PAGES_URL $env:GITHUB_PAGES
+                   git config --global core.autocrlf false
+                   pushd $env:GITHUB_PAGES
+                   Remove-Item -Recurse -Force $env:GITHUB_PAGES_REFERENCES
+                   mkdir $env:GITHUB_PAGES_REFERENCES | Out-Null
+                   $files = "index.html", "SearchHelp.aspx", "SearchHelp.inc.php", "SearchHelp.php", "Web.Config", "WebKI.xml", "WebTOC.xml", "fti", "html", "icons", "scripts", "styles", "toc"
+                   foreach ($file in $files) {
+                       Copy-Item $env:HELP_OUTPUT_PATH\$file -Destination $env:GITHUB_PAGES\$env:GITHUB_PAGES_REFERENCES\$file -Recurse
+                   }
+                   git add .
+                   git commit -m "Automatic update of code reference with build {version}"
+                   git push
+                   popd
+               }
+           }
         }
 test_script:
   - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%UITESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.UI.xml -targetdir:%TARGET_DIR%'
