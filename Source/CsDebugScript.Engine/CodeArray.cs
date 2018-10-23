@@ -200,7 +200,12 @@ namespace CsDebugScript
 
                 if (addressesArray != null)
                 {
-                    item = addressesArray[index] == 0 ? null : Variable.CreatePointerNoCast(variable.GetCodeType().ElementType, addressesArray[index]);
+                    if (addressesArray[index] == 0)
+                        item = null;
+                    else if (typeof(T) == typeof(Variable))
+                        item = Variable.CreatePointer(variable.GetCodeType().ElementType, addressesArray[index]);
+                    else
+                        item = Variable.CreatePointerNoCast(variable.GetCodeType().ElementType, addressesArray[index]);
                 }
                 else
                 {
