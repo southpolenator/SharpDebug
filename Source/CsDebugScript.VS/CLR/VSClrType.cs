@@ -285,7 +285,14 @@ namespace CsDebugScript.VS.CLR
         /// <param name="address">The address.</param>
         public int GetArrayLength(ulong address)
         {
-            return Proxy.GetClrTypeArrayLength(Runtime.Process.Id, Id, address);
+            try
+            {
+                return Runtime.Process.ReadInt(address + Runtime.Process.GetPointerSize());
+            }
+            catch
+            {
+                return Proxy.GetClrTypeArrayLength(Runtime.Process.Id, Id, address);
+            }
         }
 
         /// <summary>

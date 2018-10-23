@@ -1113,7 +1113,7 @@ namespace CsDebugScript.VS
             {
                 DkmProcess process = GetProcess(processId);
 
-                return QueryDPE<int>(process, MessageCodes.ClrType_GetArrayLength, Tuple.Create(clrTypeId, name));
+                return QueryDPE<int>(process, MessageCodes.ClrType_GetStaticField, Tuple.Create(clrTypeId, name));
             });
         }
         #endregion

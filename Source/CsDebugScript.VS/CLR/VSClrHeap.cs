@@ -21,6 +21,11 @@ namespace CsDebugScript.VS.CLR
         private SimpleCache<ulong> totalHeapSizeCache;
 
         /// <summary>
+        /// Cache of types by virtual table address.
+        /// </summary>
+        private DictionaryCache<ulong, VSClrType> typesByAddressCache;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ClrMdHeap"/> class.
         /// </summary>
         /// <param name="runtime">The runtime.</param>
@@ -29,6 +34,7 @@ namespace CsDebugScript.VS.CLR
             VSRuntime = runtime;
             canWalkHeapCache = SimpleCache.Create(() => Proxy.GetClrHeapCanWalkHeap(VSRuntime.Process.Id, VSRuntime.Id));
             totalHeapSizeCache = SimpleCache.Create(() => Proxy.GetClrHeapTotalHeapSize(VSRuntime.Process.Id, VSRuntime.Id));
+            typesByAddressCache = new DictionaryCache<ulong, VSClrType>((a) => default(VSClrType));
         }
 
         /// <summary>
@@ -134,7 +140,24 @@ namespace CsDebugScript.VS.CLR
         /// <param name="objectAddress">The object address.</param>
         public IClrType GetObjectType(ulong objectAddress)
         {
-            return VSRuntime.GetClrType(Proxy.GetClrHeapObjectType(VSRuntime.Process.Id, VSRuntime.Id, objectAddress));
+            try
+            {
+                ulong vtablePointer = VSRuntime.Process.ReadPointer(objectAddress);
+                VSClrType type;
+
+                if (!typesByAddressCache.TryGetExistingValue(vtablePointer, out type))
+                    lock (typesByAddressCache)
+                        if (!typesByAddressCache.TryGetExistingValue(vtablePointer, out type))
+                        {
+                            type = VSRuntime.GetClrType(Proxy.GetClrHeapObjectType(VSRuntime.Process.Id, VSRuntime.Id, objectAddress));
+                            typesByAddressCache[vtablePointer] = type;
+                        }
+                return type;
+            }
+            catch
+            {
+                return VSRuntime.GetClrType(Proxy.GetClrHeapObjectType(VSRuntime.Process.Id, VSRuntime.Id, objectAddress));
+            }
         }
 
         /// <summary>

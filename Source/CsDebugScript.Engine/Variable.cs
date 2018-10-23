@@ -1052,6 +1052,12 @@ namespace CsDebugScript
 
             if (clrCodeType != null)
             {
+                // Check if CLR code type can be upcasted.
+                if (clrCodeType.BuiltinType != BuiltinType.NoType)
+                    return variable;
+                if (!clrCodeType.IsPointer)
+                    return variable;
+
                 // Get runtime type
                 IClrType newClrType = clrCodeType.ClrType.Heap.GetObjectType(variable.GetPointerAddress());
                 ClrCodeType clrCodeTypeSpecialization = clrCodeType.GetSpecializedCodeType(variable.GetPointerAddress());
