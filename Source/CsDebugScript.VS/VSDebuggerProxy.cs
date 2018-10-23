@@ -30,6 +30,14 @@ namespace CsDebugScript.VS
             public SimpleCache<DkmStackFrame[]> Frames;
         }
 
+        private enum ProcessReadMechanism
+        {
+            VSDebugger,
+            ReadProcessMemoryX86,
+            ReadProcessMemoryWow64,
+            ReadProcessMemoryX64,
+        }
+
         /// <summary>
         /// The cached DKM processes
         /// </summary>
@@ -44,6 +52,11 @@ namespace CsDebugScript.VS
         /// The cached DKM modules
         /// </summary>
         private List<DkmModuleInstance> modules = new List<DkmModuleInstance>();
+
+        /// <summary>
+        /// The cache of process reading mechanism.
+        /// </summary>
+        private DictionaryCache<uint, Tuple<ProcessReadMechanism, IntPtr>> processReadMechanismCache;
 
         /// <summary>
         /// The DKM component manager initialization for the thread
@@ -80,6 +93,7 @@ namespace CsDebugScript.VS
         public VSDebuggerProxy()
         {
             processes = new List<DkmProcess>();
+            processReadMechanismCache = new DictionaryCache<uint, Tuple<ProcessReadMechanism, IntPtr>>(FindProcessReadMechanism);
         }
 
         /// <summary>
@@ -588,16 +602,144 @@ namespace CsDebugScript.VS
             });
         }
 
-        public byte[] ReadMemory(uint processId, ulong address, uint size)
+        #region WinAPI
+        [Flags]
+        public enum ProcessAccessFlags : uint
+        {
+            All = 0x001F0FFF,
+            Terminate = 0x00000001,
+            CreateThread = 0x00000002,
+            VirtualMemoryOperation = 0x00000008,
+            VirtualMemoryRead = 0x00000010,
+            VirtualMemoryWrite = 0x00000020,
+            DuplicateHandle = 0x00000040,
+            CreateProcess = 0x000000080,
+            SetQuota = 0x00000100,
+            SetInformation = 0x00000200,
+            QueryInformation = 0x00000400,
+            QueryLimitedInformation = 0x00001000,
+            Synchronize = 0x00100000
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr OpenProcess(ProcessAccessFlags processAccess, bool inheritHandle, int processId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool ReadProcessMemory(
+            IntPtr processHandle,
+            IntPtr baseAddress,
+            [Out] byte[] buffer,
+            uint size,
+            out IntPtr numberOfBytesRead);
+
+        [DllImport("ntdll.dll", SetLastError = true)]
+        static extern bool NtWow64ReadVirtualMemory64(
+            IntPtr processHandle,
+            ulong baseAddress,
+            [Out] byte[] buffer,
+            ulong size,
+            out ulong numberOfBytesRead);
+        #endregion
+
+        private byte[] ReadProcessMemoryX64(IntPtr processHandle, ulong address, uint size)
+        {
+            byte[] memory = new byte[size];
+            IntPtr baseAddress = new IntPtr((long)address);
+            IntPtr read;
+
+            if (ReadProcessMemory(processHandle, baseAddress, memory, size, out read))
+                return memory;
+            return null;
+        }
+
+        private byte[] ReadProcessMemoryWow64(IntPtr processHandle, ulong address, uint size)
+        {
+            byte[] memory = new byte[size];
+            ulong read;
+
+            if (!NtWow64ReadVirtualMemory64(processHandle, address, memory, size, out read))
+                return memory;
+            return null;
+        }
+
+        private byte[] ReadProcessMemoryX86(IntPtr processHandle, ulong address, uint size)
+        {
+            byte[] memory = new byte[size];
+            IntPtr baseAddress = new IntPtr((long)address);
+            IntPtr read;
+
+            if (ReadProcessMemory(processHandle, baseAddress, memory, size, out read))
+                return memory;
+            return null;
+        }
+
+        private Tuple<ProcessReadMechanism, IntPtr> FindProcessReadMechanism(uint processId)
         {
             return ExecuteOnDkmInitializedThread(() =>
             {
-                DkmProcess process = GetProcess(processId);
-                byte[] bytes = new byte[size];
+                try
+                {
+                    if (IsProcessLiveDebugging(processId)) // TODO: Check if we are debugging local process
+                    {
+                        DkmProcess process = GetProcess(processId);
+                        IntPtr processHandle = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, process.LivePart.Id);
 
-                process.ReadMemory(address, DkmReadMemoryFlags.None, bytes);
-                return bytes;
+                        if (processHandle != IntPtr.Zero)
+                        {
+                            ArchitectureType architectureType = GetProcessArchitectureType(processId);
+                            ProcessReadMechanism readMechanism = ProcessReadMechanism.VSDebugger;
+                            ulong testAddress = process.GetRuntimeInstances().SelectMany(ri => ri.GetModuleInstances()).First(m => m.BaseAddress != 0).BaseAddress;
+
+                            if (IntPtr.Size == 8)
+                            {
+                                byte[] memory = ReadProcessMemoryX64(processHandle, testAddress, 4);
+                                readMechanism = ProcessReadMechanism.ReadProcessMemoryX64;
+                            }
+                            else if (architectureType == ArchitectureType.Amd64)
+                            {
+                                byte[] memory = ReadProcessMemoryWow64(processHandle, testAddress, 4);
+                                readMechanism = ProcessReadMechanism.ReadProcessMemoryWow64;
+                            }
+                            else
+                            {
+                                byte[] memory = ReadProcessMemoryX86(processHandle, testAddress, 4);
+                                readMechanism = ProcessReadMechanism.ReadProcessMemoryX86;
+                            }
+
+                            return Tuple.Create(readMechanism, processHandle);
+                        }
+                    }
+                }
+                catch
+                {
+                }
+                return Tuple.Create(ProcessReadMechanism.VSDebugger, IntPtr.Zero);
             });
+        }
+
+        public byte[] ReadMemory(uint processId, ulong address, uint size)
+        {
+            Tuple<ProcessReadMechanism, IntPtr> readMechanism = processReadMechanismCache[processId];
+
+            switch (readMechanism.Item1)
+            {
+                case ProcessReadMechanism.ReadProcessMemoryX64:
+                    return ReadProcessMemoryX64(readMechanism.Item2, address, size);
+                case ProcessReadMechanism.ReadProcessMemoryX86:
+                    return ReadProcessMemoryX86(readMechanism.Item2, address, size);
+                case ProcessReadMechanism.ReadProcessMemoryWow64:
+                    return ReadProcessMemoryWow64(readMechanism.Item2, address, size);
+                default:
+                case ProcessReadMechanism.VSDebugger:
+                    return ExecuteOnDkmInitializedThread(() =>
+                    {
+                        DkmProcess process = GetProcess(processId);
+                        byte[] bytes = new byte[size];
+
+                        process.ReadMemory(address, DkmReadMemoryFlags.None, bytes);
+                        return bytes;
+                    });
+            }
         }
 
         private static string ReadMemoryString(DkmProcess process, ulong address, int length, ushort charSize, System.Text.Encoding encoding)
@@ -620,34 +762,64 @@ namespace CsDebugScript.VS
             return encoding.GetString(bytes);
         }
 
+        private string ReadMemoryString(uint processId, ulong address, int length, ushort charSize, System.Text.Encoding encoding)
+        {
+            bool trimNullTermination = false;
+
+            if (length < 0)
+            {
+                length = ushort.MaxValue;
+                trimNullTermination = true;
+                throw new NotImplementedException();
+            }
+
+            byte[] bytes = ReadMemory(processId, address, charSize * (uint)length);
+
+            if (trimNullTermination && bytes[bytes.Length - 1] == 0)
+                return encoding.GetString(bytes, 0, bytes.Length - 1);
+            return encoding.GetString(bytes);
+        }
+
         public string ReadAnsiString(uint processId, ulong address, int length)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess process = GetProcess(processId);
+            Tuple<ProcessReadMechanism, IntPtr> readMechanism = processReadMechanismCache[processId];
 
-                return ReadMemoryString(process, address, length, 1, System.Text.ASCIIEncoding.Default);
-            });
+            if (readMechanism.Item1 == ProcessReadMechanism.VSDebugger || length < 0)
+                return ExecuteOnDkmInitializedThread(() =>
+                {
+                    DkmProcess process = GetProcess(processId);
+
+                    return ReadMemoryString(process, address, length, 1, System.Text.ASCIIEncoding.Default);
+                });
+            return ReadMemoryString(processId, address, length, 1, System.Text.ASCIIEncoding.Default);
         }
 
         public string ReadUnicodeString(uint processId, ulong address, int length)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess process = GetProcess(processId);
+            Tuple<ProcessReadMechanism, IntPtr> readMechanism = processReadMechanismCache[processId];
 
-                return ReadMemoryString(process, address, length, 2, System.Text.UnicodeEncoding.Unicode);
-            });
+            if (readMechanism.Item1 == ProcessReadMechanism.VSDebugger || length < 0)
+                return ExecuteOnDkmInitializedThread(() =>
+                {
+                    DkmProcess process = GetProcess(processId);
+
+                    return ReadMemoryString(process, address, length, 2, System.Text.UnicodeEncoding.Unicode);
+                });
+            return ReadMemoryString(processId, address, length, 2, System.Text.UnicodeEncoding.Unicode);
         }
 
         public string ReadWideUnicodeString(uint processId, ulong address, int length)
         {
-            return ExecuteOnDkmInitializedThread(() =>
-            {
-                DkmProcess process = GetProcess(processId);
+            Tuple<ProcessReadMechanism, IntPtr> readMechanism = processReadMechanismCache[processId];
 
-                return ReadMemoryString(process, address, length, 4, System.Text.Encoding.UTF32);
-            });
+            if (readMechanism.Item1 == ProcessReadMechanism.VSDebugger || length < 0)
+                return ExecuteOnDkmInitializedThread(() =>
+                {
+                    DkmProcess process = GetProcess(processId);
+
+                    return ReadMemoryString(process, address, length, 4, System.Text.Encoding.UTF32);
+                });
+            return ReadMemoryString(processId, address, length, 4, System.Text.Encoding.UTF32);
         }
 
         public void SetCurrentProcess(uint processId)
@@ -715,6 +887,7 @@ namespace CsDebugScript.VS
             processes.Clear();
             threads.Clear();
             modules.Clear();
+            processReadMechanismCache.Clear();
         }
         #endregion
 
