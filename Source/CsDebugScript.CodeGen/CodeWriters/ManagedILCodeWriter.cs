@@ -383,7 +383,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                     return generatedType;
 
                 // Check if it is template user type
-                if (type is SpecializedTemplateUserType templateType && templateType.NumberOfTemplateArguments > 0)
+                if (type is SpecializedTemplateUserType templateType)
                     return GetGeneratedType(templateType.TemplateType);
 
                 // Check if it is nested user type
@@ -1458,11 +1458,12 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         il.Emit(OpCodes.Callvirt, Defines.Variable_GetBaseClass_String);
                         il.Emit(OpCodes.Callvirt, Defines.Variable_GetPointerAddress);
 
-                        // variable.GetBaseClass(baseClassString).GetCodeType().Size
+                        // variable.GetBaseClass(baseClassString).GetCodeType().RemovePointer().Size
                         il.Emit(OpCodes.Ldarg_1);
                         il.Emit(OpCodes.Ldsfld, baseClassStringField);
                         il.Emit(OpCodes.Callvirt, Defines.Variable_GetBaseClass_String);
                         il.Emit(OpCodes.Callvirt, Defines.Variable_GetCodeType);
+                        il.Emit(OpCodes.Callvirt, Defines.CodeType_RemovePointer);
                         il.Emit(OpCodes.Callvirt, Defines.CodeType_Size.GetMethod);
 
                         // Debugger.ReadMemory(process, address, size)
@@ -2342,6 +2343,9 @@ namespace CsDebugScript.CodeGen.CodeWriters
 
             public override System.Type MakeGenericType(params System.Type[] typeArguments)
             {
+                if (typeArguments.Length == 0)
+                    return this;
+
                 Type[] arguments = new Type[typeArguments.Length];
                 for (int i = 0; i < arguments.Length; i++)
                     arguments[i] = ConvertType(typeArguments[i]);
@@ -2700,6 +2704,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             public static readonly Type CodeType = ConvertType(typeof(CodeType));
             public static readonly PropertyInfo CodeType_Module = CodeType.GetProperty("Module");
             public static readonly PropertyInfo CodeType_Size = CodeType.GetProperty("Size");
+            public static readonly MethodInfo CodeType_RemovePointer = CodeType.GetMethod("RemovePointer");
             public static readonly MethodInfo CodeType_GetStaticField = CodeType.GetMethod("GetStaticField");
             public static readonly MethodInfo CodeType_GetClassFieldType = CodeType.GetMethod("GetClassFieldType");
             #endregion

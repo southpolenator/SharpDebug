@@ -402,6 +402,15 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Removes pointer from the code type.
+        /// </summary>
+        /// <returns>Element type of if this code type is a pointer or self if it isn't a pointer.</returns>
+        public virtual CodeType RemovePointer()
+        {
+            return IsPointer ? ElementType : this;
+        }
+
+        /// <summary>
         /// Gets the type of the class field.
         /// </summary>
         /// <param name="classFieldName">Name of the class field.</param>

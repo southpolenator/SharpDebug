@@ -704,7 +704,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         output.Write(BaseClassStringFieldName);
                         output.Write(").GetPointerAddress(), variable.GetBaseClass(");
                         output.Write(BaseClassStringFieldName);
-                        output.Write(").GetCodeType().Size), 0, variable.GetBaseClass(");
+                        output.Write(").GetCodeType().RemovePointer().Size), 0, variable.GetBaseClass(");
                         output.Write(BaseClassStringFieldName);
                         output.EndLine(").GetPointerAddress())");
                     }
