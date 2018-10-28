@@ -1258,6 +1258,9 @@ namespace CsDebugScript
         /// </summary>
         protected override object[] GetTemplateArguments()
         {
+            if (IsPointer)
+                return ElementType.TemplateArguments;
+
             object[] result = Context.SymbolProvider.GetTemplateArguments(Module, TypeId);
 
             if (result != null)
@@ -1294,6 +1297,8 @@ namespace CsDebugScript
         /// </summary>
         protected override string[] GetTemplateArgumentsStrings()
         {
+            if (IsPointer)
+                return ElementType.TemplateArgumentsStrings;
             return GetTemplateArgumentsStrings(Name);
         }
 
