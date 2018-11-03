@@ -63,19 +63,19 @@ namespace CsDebugScript.UI
         public InteractiveCodeEditor(InteractiveResultVisualizer objectWriter, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
             : base(fontFamily, fontSize, indentationSize, highlightingColors)
         {
-            InteractiveExecution = new InteractiveExecution();
-            InteractiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
-            {
-                InteractiveCodeEditor = this,
-            };
-            InteractiveExecution.scriptBase.ObjectWriter = objectWriter;
-
             // Run initialization of the window in background STA thread
             IsEnabled = false;
             System.Threading.Thread thread = new System.Threading.Thread(() =>
             {
                 try
                 {
+                    InteractiveExecution = new InteractiveExecution();
+                    InteractiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
+                    {
+                        InteractiveCodeEditor = this,
+                    };
+                    InteractiveExecution.scriptBase.ObjectWriter = objectWriter;
+
                     Dispatcher.InvokeAsync(() =>
                     {
                         IsEnabled = true;
