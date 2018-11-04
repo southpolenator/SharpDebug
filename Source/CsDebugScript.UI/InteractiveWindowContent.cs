@@ -10,7 +10,6 @@ namespace CsDebugScript.UI
 {
     internal class InteractiveWindowContent : UserControl
     {
-        private const string ExecutingPrompt = "...> ";
         private StackPanel resultsPanel;
         private TextBlock promptBlock;
         private ScrollViewer scrollViewer;
@@ -20,24 +19,27 @@ namespace CsDebugScript.UI
         private int indentationSize;
         private List<string> previousCommands = new List<string>();
         private int previousCommandsIndex = -1;
+        private bool clearAfterExecution = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindowContent" /> class.
         /// </summary>
+        /// <param name="interactiveExecutionBehavior">Customization of interactive execution.</param>
         /// <param name="highlightingColors">The highlighting colors.</param>
-        public InteractiveWindowContent(params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
-            : this("Consolas", 14, 4, highlightingColors)
+        public InteractiveWindowContent(InteractiveExecutionBehavior interactiveExecutionBehavior, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+            : this(interactiveExecutionBehavior, "Consolas", 14, 4, highlightingColors)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindowContent"/> class.
         /// </summary>
+        /// <param name="interactiveExecutionBehavior">Customization of interactive execution.</param>
         /// <param name="fontFamily">The font family.</param>
         /// <param name="fontSize">Size of the font.</param>
         /// <param name="indentationSize">Size of the indentation.</param>
         /// <param name="highlightingColors">The highlighting colors.</param>
-        public InteractiveWindowContent(string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+        public InteractiveWindowContent(InteractiveExecutionBehavior interactiveExecutionBehavior, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
         {
             this.fontFamily = fontFamily;
             this.fontSize = fontSize;
@@ -55,6 +57,7 @@ namespace CsDebugScript.UI
             resultsPanel.CanVerticallyScroll = true;
             resultsPanel.CanHorizontallyScroll = true;
             scrollViewer.Content = resultsPanel;
+            interactiveExecutionBehavior.ClearDone += () => clearAfterExecution = true;
 
             // Add prompt for text editor
             var panel = new Grid();
@@ -65,12 +68,12 @@ namespace CsDebugScript.UI
             promptBlock.VerticalAlignment = VerticalAlignment.Top;
             promptBlock.FontFamily = new FontFamily(fontFamily);
             promptBlock.FontSize = fontSize;
-            promptBlock.Text = ExecutingPrompt;
+            promptBlock.Text = interactiveExecutionBehavior.GetReplExecutingPrompt();
             promptBlock.SizeChanged += PromptBlock_SizeChanged;
             panel.Children.Add(promptBlock);
 
             // Add text editor
-            TextEditor = new InteractiveCodeEditor(new InteractiveResultVisualizer(this), fontFamily, fontSize, indentationSize, highlightingColors);
+            TextEditor = new InteractiveCodeEditor(new InteractiveResultVisualizer(this), interactiveExecutionBehavior, fontFamily, fontSize, indentationSize, highlightingColors);
             TextEditor.HorizontalAlignment = HorizontalAlignment.Stretch;
             TextEditor.Background = Brushes.Transparent;
             TextEditor.CommandExecuted += TextEditor_CommandExecuted;
@@ -307,7 +310,7 @@ namespace CsDebugScript.UI
             var textBlock = new TextBlock();
             textBlock.FontFamily = new FontFamily(fontFamily);
             textBlock.FontSize = fontSize;
-            textBlock.Text = InteractiveExecution.DefaultPrompt;
+            textBlock.Text = TextEditor.InteractiveExecution.Behavior.GetReplPrompt();
             panel.Children.Add(textBlock);
 
             var codeControl = new CsTextEditor(fontFamily, fontSize, indentationSize, highlightingColors);
@@ -358,37 +361,45 @@ namespace CsDebugScript.UI
 
         private void TextEditor_CommandExecuted(bool csharpCode, string textOutput, IEnumerable<object> objectsOutput)
         {
-            int initialLength = resultsPanel.Children.Count;
-            int textEditorIndex = initialLength - 1;
-
-            foreach (var objectOutput in objectsOutput.Reverse())
+            if (clearAfterExecution)
             {
-                if (objectOutput != null)
-                {
-                    LazyUIResult lazyUI = objectOutput as LazyUIResult;
-                    UIElement elementOutput = objectOutput as UIElement ?? lazyUI?.UIElement;
+                resultsPanel.Children.RemoveRange(0, resultsPanel.Children.Count - 1);
+                clearAfterExecution = false;
+            }
+            else
+            {
+                int initialLength = resultsPanel.Children.Count;
+                int textEditorIndex = initialLength - 1;
 
-                    if (elementOutput != null)
+                foreach (var objectOutput in objectsOutput.Reverse())
+                {
+                    if (objectOutput != null)
                     {
-                        resultsPanel.Children.Insert(textEditorIndex, elementOutput);
-                    }
-                    else
-                    {
-                        resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(objectOutput.ToString()));
+                        LazyUIResult lazyUI = objectOutput as LazyUIResult;
+                        UIElement elementOutput = objectOutput as UIElement ?? lazyUI?.UIElement;
+
+                        if (elementOutput != null)
+                        {
+                            resultsPanel.Children.Insert(textEditorIndex, elementOutput);
+                        }
+                        else
+                        {
+                            resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(objectOutput.ToString()));
+                        }
                     }
                 }
-            }
 
-            if (!string.IsNullOrEmpty(textOutput))
-            {
-                resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
-            }
+                if (!string.IsNullOrEmpty(textOutput))
+                {
+                    resultsPanel.Children.Insert(textEditorIndex, CreateTextOutput(textOutput));
+                }
 
-            resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(TextEditor.Text) : CreateDbgCode(TextEditor.Text));
-            AddSpacing(resultsPanel.Children[textEditorIndex]);
-            if (resultsPanel.Children.Count - initialLength > 1)
-            {
-                AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
+                resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(TextEditor.Text) : CreateDbgCode(TextEditor.Text));
+                AddSpacing(resultsPanel.Children[textEditorIndex]);
+                if (resultsPanel.Children.Count - initialLength > 1)
+                {
+                    AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
+                }
             }
         }
 
@@ -413,11 +424,11 @@ namespace CsDebugScript.UI
             if (!started)
             {
                 TextEditor.TextArea.Focus();
-                promptBlock.Text = InteractiveExecution.DefaultPrompt;
+                promptBlock.Text = TextEditor.InteractiveExecution.Behavior.GetReplPrompt();
             }
             else
             {
-                promptBlock.Text = ExecutingPrompt;
+                promptBlock.Text = TextEditor.InteractiveExecution.Behavior.GetReplExecutingPrompt();
             }
         }
     }

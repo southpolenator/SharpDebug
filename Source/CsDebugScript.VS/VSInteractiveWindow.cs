@@ -2,7 +2,9 @@
 using System;
 using System.AddIn.Contract;
 using System.AddIn.Pipeline;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -14,9 +16,9 @@ namespace CsDebugScript.VS
     {
         private VSInteractiveWindowControl control;
 
-        public INativeHandleContract CreateControl()
+        public INativeHandleContract CreateControl(InteractiveExecutionBehavior interactiveExecutionBehavior)
         {
-            control = new VSInteractiveWindowControl();
+            control = new VSInteractiveWindowControl(interactiveExecutionBehavior);
             return FrameworkElementAdapters.ViewToContractAdapter(control);
         }
 
@@ -24,6 +26,50 @@ namespace CsDebugScript.VS
         {
             control.Dispatcher.InvokeShutdown();
             GC.Collect();
+        }
+    }
+
+    class VSInteractiveExecutionBehavior : InteractiveExecutionBehavior
+    {
+        public const string InitializationScriptRelativePath = "CsDebugScript/init.csx";
+
+        public override string GetResetScriptPath()
+        {
+            string initializationScriptRelativePath = InitializationScriptRelativePath.Replace('/', Path.DirectorySeparatorChar);
+            string initializationScript;
+
+            // Check folder with startup project path
+            EnvDTE.SolutionBuild solutionBuild = VSContext.DTE.Solution.SolutionBuild;
+
+            if (solutionBuild != null && solutionBuild.StartupProjects != null)
+                foreach (string item in (Array)solutionBuild.StartupProjects)
+                {
+                    EnvDTE.Project project = VSContext.DTE.Solution.Projects.Item(item);
+                    string projectPath = project.FullName;
+                    string projectDirectory = projectPath;
+
+                    if (!Directory.Exists(projectPath))
+                        projectDirectory = Path.GetDirectoryName(projectPath);
+                    initializationScript = Path.Combine(projectDirectory, initializationScriptRelativePath);
+                    if (File.Exists(initializationScript))
+                        return initializationScript;
+                }
+
+            // Check folder with solution path
+            string solutionPath = VSContext.DTE.Solution.FullName;
+            string solutionDirectory = !Directory.Exists(solutionPath) ? Path.GetDirectoryName(solutionPath) : solutionPath;
+
+            initializationScript = Path.Combine(solutionDirectory, initializationScriptRelativePath);
+            if (File.Exists(initializationScript))
+                return initializationScript;
+
+            // Check current working directory
+            initializationScript = Path.Combine(Directory.GetCurrentDirectory(), initializationScriptRelativePath);
+            if (File.Exists(initializationScript))
+                return initializationScript;
+
+            // Base class anwser
+            return base.GetResetScriptPath();
         }
     }
 
@@ -125,6 +171,8 @@ namespace CsDebugScript.VS
             {
                 try
                 {
+                    InteractiveExecutionBehavior interactiveExecutionBehavior = new VSInteractiveExecutionBehavior();
+
                     AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
                     AppDomainSetup setup = new AppDomainSetup()
                     {
@@ -135,9 +183,9 @@ namespace CsDebugScript.VS
                     VSContext.InitializeAppDomain(scriptDomain);
 #if USE_APP_DOMAIN
                     proxy = (VSInteractiveWindowProxy)scriptDomain.CreateInstanceAndUnwrap(typeof(VSInteractiveWindowProxy).Assembly.FullName, typeof(VSInteractiveWindowProxy).FullName);
-                    var interactiveControl = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl());
+                    var interactiveControl = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl(interactiveExecutionBehavior));
 #else
-                    interactiveControl = new VSInteractiveWindowControl();
+                    interactiveControl = new VSInteractiveWindowControl(interactiveExecutionBehavior);
 #endif
 
                     grid.Children.Clear();
