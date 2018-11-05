@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using CsDebugScript.Engine;
 using Microsoft.CodeAnalysis.Scripting;
 
 namespace CsDebugScript
@@ -122,6 +123,11 @@ namespace CsDebugScript
         /// The assembly resolver used for generating assemblies with CodeGen.
         /// </summary>
         internal ScriptExecution.MetadataResolver _AssemblyResolver_;
+
+        /// <summary>
+        /// Extracted user type metadata from the running assembly. This is used during '#reset' command.
+        /// </summary>
+        internal List<UserTypeMetadata> _ExtractedUserTypeMetadata_ = new List<UserTypeMetadata>();
 
         /// <summary>
         /// Outputs the specified object using ObjectWriter.
@@ -343,6 +349,15 @@ namespace CsDebugScript
 
                 _CodeGenCode_.Add(code);
             }
+        }
+
+        /// <summary>
+        /// Imports user types to be available for automatic user type casting.
+        /// </summary>
+        /// <param name="assembly">The assembly containing user types.</param>
+        public void __ImportUserTypes__(System.Reflection.Assembly assembly)
+        {
+            _ExtractedUserTypeMetadata_.AddRange(ScriptCompiler.ExtractMetadata(assembly));
         }
     }
 }

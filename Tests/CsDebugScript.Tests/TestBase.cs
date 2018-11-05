@@ -99,17 +99,17 @@ namespace CsDebugScript.Tests
                 try
                 {
                     Context.ClearCache();
-                    Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
-                    {
-                    typeof(CsDebugScript.CommonUserTypes.NativeTypes.std.@string).Assembly,
-                    typeof(DumpTestBase).Assembly,
-                });
+                    Context.SetUserTypeMetadata(ScriptCompiler.ExtractMetadata(new[]
+                        {
+                            typeof(CsDebugScript.CommonUserTypes.NativeTypes.std.@string).Assembly,
+                            typeof(DumpTestBase).Assembly,
+                        }));
 
                     action();
                 }
                 finally
                 {
-                    Context.UserTypeMetadata = originalUserTypeMetadata;
+                    Context.SetUserTypeMetadata(originalUserTypeMetadata);
                     Context.ClearCache();
                 }
             }

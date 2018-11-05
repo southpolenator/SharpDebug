@@ -666,11 +666,11 @@ namespace CsDebugScript
         /// <param name="type">Type that has <see cref="UserTypeAttribute"/> with info about <see cref="CodeType"/>.</param>
         private static UserTypeMetadata GetTypeMetadataInstance(Type type)
         {
-            UserTypeMetadata[] allMetadata = UserTypeMetadata.ReadFromType(type);
+            IEnumerable<UserTypeMetadata> allMetadata = UserTypeMetadata.ReadFromType(type);
 
             if (!type.IsGenericType)
             {
-                UserTypeMetadata metadata = allMetadata[0];
+                UserTypeMetadata metadata = allMetadata.First();
 
                 return metadata;
             }
@@ -751,8 +751,8 @@ namespace CsDebugScript
                 return metadata.TypeName;
 
             // Fallback to old code path: MyType<>
-            UserTypeMetadata[] allMetadata = UserTypeMetadata.ReadFromType(baseClassType);
-            string typeName = allMetadata[0].TypeName;
+            IEnumerable<UserTypeMetadata> allMetadata = UserTypeMetadata.ReadFromType(baseClassType);
+            string typeName = allMetadata.First().TypeName;
 
             return typeName.Substring(0, typeName.IndexOf('<')) + "<>";
         }

@@ -20,10 +20,10 @@ namespace CsDebugScript.VS
         public VSDebugger(VSDebuggerProxy proxy)
         {
             Proxy = proxy;
-            Context.UserTypeMetadata = ScriptCompiler.ExtractMetadata(new[]
-            {
-                typeof(CsDebugScript.CommonUserTypes.NativeTypes.cv.Mat).Assembly, // CsDebugScript.CommonUserTypes.dll
-            });
+            Context.SetUserTypeMetadata(ScriptCompiler.ExtractMetadata(new[]
+                {
+                    typeof(CsDebugScript.CommonUserTypes.NativeTypes.cv.Mat).Assembly, // CsDebugScript.CommonUserTypes.dll
+                }));
         }
 
         /// <summary>

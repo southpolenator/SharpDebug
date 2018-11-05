@@ -29,11 +29,6 @@ namespace CsDebugScript.Engine
         public static IClrProvider ClrProvider;
 
         /// <summary>
-        /// The user type metadata (used for casting to user types)
-        /// </summary>
-        internal static UserTypeMetadata[] UserTypeMetadata;
-
-        /// <summary>
         /// Gets or sets a value indicating whether variable caching is enabled.
         /// </summary>
         /// <value>
@@ -68,13 +63,17 @@ namespace CsDebugScript.Engine
         /// <value>
         /// <c>true</c> if debugger is currently in live debugging; otherwise, <c>false</c>.
         /// </value>
-        public static bool IsLiveDebugging
-        {
-            get
-            {
-                return Debugger.IsLiveDebugging;
-            }
-        }
+        public static bool IsLiveDebugging => Debugger.IsLiveDebugging;
+
+        /// <summary>
+        /// The user type metadata (used for casting to user types)
+        /// </summary>
+        internal static UserTypeMetadata[] UserTypeMetadata { get; private set; }
+
+        /// <summary>
+        /// The user type metadata caches (references of caches that can be cleared when <see cref="UserTypeMetadata"/> can be changed).
+        /// </summary>
+        internal static ConcurrentBag<ICache> UserTypeMetadataCaches { get; private set; } = new ConcurrentBag<ICache>();
 
         /// <summary>
         /// Initializes the Context with the specified debugger engine interface.
@@ -108,6 +107,18 @@ namespace CsDebugScript.Engine
             GlobalCache.Caches = new ConcurrentBag<ICache>();
             foreach (ICache cache in caches)
                 cache.InvalidateCache();
+        }
+
+        /// <summary>
+        /// Updates <see cref="UserTypeMetadata"/> with the new user type metadata collection.
+        /// </summary>
+        /// <param name="userTypeMetadata">New user type metadata collection.</param>
+        internal static void SetUserTypeMetadata(UserTypeMetadata[] userTypeMetadata)
+        {
+            foreach (ICache cache in UserTypeMetadataCaches)
+                cache.InvalidateCache();
+            UserTypeMetadataCaches = new ConcurrentBag<ICache>();
+            UserTypeMetadata = userTypeMetadata;
         }
 
         /// <summary>

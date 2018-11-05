@@ -26,6 +26,19 @@ namespace CsDebugScript
     public class InteractiveExecutionBehavior
     {
         /// <summary>
+        /// Cache of <see cref="Context.UserTypeMetadata"/> in constructor that will be used as starting point after '#reset'.
+        /// </summary>
+        private UserTypeMetadata[] userTypeMetadata;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InteractiveExecutionBehavior"/> class.
+        /// </summary>
+        public InteractiveExecutionBehavior()
+        {
+            userTypeMetadata = Context.UserTypeMetadata;
+        }
+
+        /// <summary>
         /// Action to be called when user executes '#clear' or '#cls' command.
         /// </summary>
         public event Action ClearDone;
@@ -66,6 +79,14 @@ namespace CsDebugScript
         public virtual string GetResetScriptPath()
         {
             return string.Empty;
+        }
+
+        /// <summary>
+        /// Gets collection of user types that will be set to <see cref="Context.UserTypeMetadata"/> after '#reset' command.
+        /// </summary>
+        internal virtual UserTypeMetadata[] GetResetUserTypeMetadata()
+        {
+            return userTypeMetadata;
         }
 
         /// <summary>
@@ -168,6 +189,8 @@ namespace CsDebugScript
             scriptState = CSharpScript.RunAsync(string.Join("\n", ScriptCompiler.DefaultAliases.Select(s => $"using {s};")), scriptOptions, scriptBase).Result;
             scriptBase.ObjectWriter = new DefaultObjectWriter();
             scriptBase._InternalObjectWriter_ = new ConsoleObjectWriter();
+
+            Context.SetUserTypeMetadata(Behavior.GetResetUserTypeMetadata());
         }
 
         /// <summary>
@@ -222,7 +245,7 @@ namespace CsDebugScript
                 sb.AppendLine($"#load \"{initializationScriptPath}\"");
             if (sb.Length != 0)
             {
-                // TODO: Add code to extract user types
+                sb.AppendLine($"{nameof(InteractiveScriptBase.__ImportUserTypes__)}(System.Reflection.Assembly.GetExecutingAssembly());");
                 UnsafeInterpret(sb.ToString());
             }
             Behavior.OnResetExecuted();
@@ -277,7 +300,7 @@ namespace CsDebugScript
             }
             else if (code == "#clear" || code == "#cls")
             {
-                Behavior.OnClearExecuted(); // TODO: It is better for this to be event field
+                Behavior.OnClearExecuted();
             }
             else
             {
@@ -357,6 +380,12 @@ namespace CsDebugScript
 
                     // TODO: Changing globals, but we need to store previous variables
                     scriptState = CSharpScript.RunAsync(string.Join("\n", ScriptCompiler.DefaultAliases.Select(s => $"using {s};")), scriptState.Script.Options, scriptBase).Result;
+                }
+
+                if (scriptBase._ExtractedUserTypeMetadata_.Count > 0)
+                {
+                    Context.SetUserTypeMetadata(scriptBase._ExtractedUserTypeMetadata_.Concat(Context.UserTypeMetadata).ToArray());
+                    scriptBase._ExtractedUserTypeMetadata_.Clear();
                 }
 
                 if (scriptBase._CodeGenCode_.Count > 0)

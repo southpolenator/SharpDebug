@@ -640,20 +640,12 @@ namespace CsDebugScript
             {
                 // Check types associated with this code type and all of its inherited code types.
                 if (InheritsPrivate(type))
-                {
                     return true;
-                }
 
                 // Check metadata that wasn't extracted from the debugger context.
-                UserTypeMetadata[] metadatas = UserTypeMetadata.ReadFromType(type);
-
-                foreach (var metadata in metadatas)
-                {
+                foreach (var metadata in UserTypeMetadata.ReadFromType(type))
                     if (Inherits(metadata.TypeName))
-                    {
                         return true;
-                    }
-                }
             }
 
             return false;
@@ -697,16 +689,9 @@ namespace CsDebugScript
             if (type.IsSubclassOf(typeof(Variable)))
             {
                 foreach (Type ut in UserTypes)
-                {
                     if (ut == type)
-                    {
                         return true;
-                    }
-                }
-
-                UserTypeMetadata[] metadatas = UserTypeMetadata.ReadFromType(type);
-
-                foreach (var metadata in metadatas)
+                foreach (var metadata in UserTypeMetadata.ReadFromType(type))
                     if (TypeNameMatches(Name, metadata.TypeName))
                         return true;
             }
@@ -852,6 +837,9 @@ namespace CsDebugScript
         /// </summary>
         private Type[] GetUserTypes()
         {
+            // Add cache of this function to global collection of caches from where it can be cleared once we load more user types...
+            Context.UserTypeMetadataCaches.Add(userTypes);
+
             // Check if it pointer, but element is not pointer
             if (IsPointer && !ElementType.IsPointer)
                 return ElementType.UserTypes;

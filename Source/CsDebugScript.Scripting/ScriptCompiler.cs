@@ -144,25 +144,30 @@ namespace CsDebugScript
             List<UserTypeMetadata> metadata = new List<UserTypeMetadata>();
 
             foreach (var assembly in assemblies)
+                metadata.AddRange(ExtractMetadata(assembly));
+            return metadata.ToArray();
+        }
+
+        /// <summary>
+        /// Extracts the metadata from user assembly.
+        /// </summary>
+        /// <param name="assembly">The assembly containing user types.</param>
+        internal static IEnumerable<UserTypeMetadata> ExtractMetadata(Assembly assembly)
+        {
+            List<Type> nextTypes = assembly.ExportedTypes.ToList();
+
+            while (nextTypes.Count > 0)
             {
-                List<Type> nextTypes = assembly.ExportedTypes.ToList();
+                List<Type> types = nextTypes;
 
-                while (nextTypes.Count > 0)
+                nextTypes = new List<Type>();
+                foreach (var type in types)
                 {
-                    List<Type> types = nextTypes;
-
-                    nextTypes = new List<Type>();
-                    foreach (var type in types)
-                    {
-                        UserTypeMetadata[] userTypes = UserTypeMetadata.ReadFromType(type);
-
-                        metadata.AddRange(userTypes);
-                        nextTypes.AddRange(type.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public));
-                    }
+                    foreach (UserTypeMetadata metadata in UserTypeMetadata.ReadFromType(type))
+                        yield return metadata;
+                    nextTypes.AddRange(type.GetNestedTypes(BindingFlags.NonPublic));
                 }
             }
-
-            return metadata.ToArray();
         }
     }
 }
