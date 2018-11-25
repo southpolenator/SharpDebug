@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Debuggers;
+using CsDebugScript.Engine.Utility;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
@@ -31,11 +32,24 @@ namespace CsDebugScript
         private UserTypeMetadata[] userTypeMetadata;
 
         /// <summary>
+        /// Cache of <see cref="InteractiveScriptBase"/> that this behavior returns.
+        /// </summary>
+        private SimpleCacheStruct<InteractiveScriptBase> interactiveScriptBase;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveExecutionBehavior"/> class.
         /// </summary>
         public InteractiveExecutionBehavior()
         {
             userTypeMetadata = Context.UserTypeMetadata;
+            interactiveScriptBase = SimpleCache.CreateStruct(() =>
+            {
+                return new InteractiveScriptBase
+                {
+                    ObjectWriter = new DefaultObjectWriter(),
+                    _InternalObjectWriter_ = new ConsoleObjectWriter(),
+                };
+            });
         }
 
         /// <summary>
@@ -53,7 +67,7 @@ namespace CsDebugScript
         /// </summary>
         public virtual InteractiveScriptBase GetInteractiveScriptBase()
         {
-            return new InteractiveScriptBase();
+            return interactiveScriptBase.Value;
         }
 
         /// <summary>
@@ -187,8 +201,6 @@ namespace CsDebugScript
             importedCode = string.Empty;
             scriptBase = Behavior.GetInteractiveScriptBase();
             scriptState = CSharpScript.RunAsync(string.Join("\n", ScriptCompiler.DefaultAliases.Select(s => $"using {s};")), scriptOptions, scriptBase).Result;
-            scriptBase.ObjectWriter = new DefaultObjectWriter();
-            scriptBase._InternalObjectWriter_ = new ConsoleObjectWriter();
 
             Context.SetUserTypeMetadata(Behavior.GetResetUserTypeMetadata());
         }
