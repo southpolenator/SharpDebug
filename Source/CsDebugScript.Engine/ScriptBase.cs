@@ -152,18 +152,19 @@ namespace CsDebugScript
         /// <summary>
         /// Gets the variable collection of arguemnts from current stack frame.
         /// </summary>
-        public static VariableCollection Arguments => StackFrame.Current.Arguments;
+        public static VariableCollection Arguments => StackFrame.Current.Arguments; // TODO: Make this dynamic collection too
 
         /// <summary>
         /// Gets the variable collection of local variables from current stack frame.
         /// </summary>
-        public static VariableCollection Locals => StackFrame.Current.Locals;
+        public static VariableCollection Locals => StackFrame.Current.Locals; // TODO: Make this dynamic collection too
 
         /// <summary>
         /// Gets graphics object used for creating drawing objects.
         /// </summary>
         public static IGraphics Graphics => Context.Graphics;
 
+        #region Console helpers
         /// <summary>
         /// Helper function for writing onto console (shorter version for scripts).
         /// </summary>
@@ -295,5 +296,139 @@ namespace CsDebugScript
         {
             Console.WriteLine();
         }
+        #endregion
+
+        #region Graphics helpers
+        /// <summary>
+        /// Creates <see cref="IBitmap"/> with pixel type read from data element type.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="data"/> is <see cref="Variable"/> of <see cref="CodeType"/> <code>unsigned char*</code>,
+        /// then pixel type is read as <code>byte</code>.
+        /// </remarks>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="channels">Description of the image channels.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        /// <returns>Instance of the <see cref="IBitmap"/> object.</returns>
+        public IBitmap CreateImage(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null)
+        {
+            int imageWidth = Convert.ToInt32(width);
+            int imageHeight = Convert.ToInt32(width);
+            int dataStride = stride == null ? -1 : Convert.ToInt32(stride);
+            Variable dataVariable = data as Variable;
+            BuiltinType dataType;
+            NakedPointer dataPointer;
+
+            if (dataVariable != null)
+            {
+                dataPointer = new NakedPointer(dataVariable.GetCodeType().Module.Process, dataVariable.GetPointerAddress());
+                try
+                {
+                    dataType = dataVariable.GetCodeType().ElementType.BuiltinType;
+                }
+                catch
+                {
+                    dataType = dataVariable.GetCodeType().BuiltinType;
+                }
+            }
+            else
+            {
+                // Consider data as memory pointer and data type as byte
+                dataPointer = new NakedPointer(Convert.ToUInt64(data));
+                dataType = BuiltinType.UInt8;
+            }
+
+            switch (dataType)
+            {
+                case BuiltinType.Float32:
+                    return Graphics.CreateBitmap(imageWidth, imageHeight, channels, ReadPixels<float>(imageWidth, imageHeight, dataPointer, dataStride, channels.Length));
+                case BuiltinType.Float64:
+                    return Graphics.CreateBitmap(imageWidth, imageHeight, channels, ReadPixels<double>(imageWidth, imageHeight, dataPointer, dataStride, channels.Length));
+                case BuiltinType.Int8:
+                    return Graphics.CreateBitmap(imageWidth, imageHeight, channels, ReadPixels<sbyte>(imageWidth, imageHeight, dataPointer, dataStride, channels.Length));
+                case BuiltinType.Int16:
+                    return Graphics.CreateBitmap(imageWidth, imageHeight, channels, ReadPixels<short>(imageWidth, imageHeight, dataPointer, dataStride, channels.Length));
+                case BuiltinType.Int32:
+                    return Graphics.CreateBitmap(imageWidth, imageHeight, channels, ReadPixels<int>(imageWidth, imageHeight, dataPointer, dataStride, channels.Length));
+                case BuiltinType.NoType:
+                case BuiltinType.Char8:
+                case BuiltinType.Void:
+                case BuiltinType.UInt8:
+                    return Graphics.CreateBitmap(imageWidth, imageHeight, channels, ReadPixels<byte>(imageWidth, imageHeight, dataPointer, dataStride, channels.Length));
+                case BuiltinType.UInt16:
+                    return Graphics.CreateBitmap(imageWidth, imageHeight, channels, ReadPixels<ushort>(imageWidth, imageHeight, dataPointer, dataStride, channels.Length));
+                default:
+                    throw new NotImplementedException($"Unknown image data type: {dataType}");
+            }
+        }
+
+        /// <summary>
+        /// Creates <see cref="IBitmap"/> with the specified pixel type.
+        /// </summary>
+        /// <typeparam name="PixelType">Type of the pixel.</typeparam>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="channels">Description of the image channels.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        /// <returns>Instance of the <see cref="IBitmap"/> object.</returns>
+        public IBitmap CreateImage<PixelType>(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null)
+        {
+            int imageWidth = Convert.ToInt32(width);
+            int imageHeight = Convert.ToInt32(width);
+            int dataStride = stride == null ? -1 : Convert.ToInt32(stride);
+            Variable dataVariable = data as Variable;
+            NakedPointer dataPointer;
+
+            if (dataVariable != null)
+                dataPointer = new NakedPointer(dataVariable.GetCodeType().Module.Process, dataVariable.GetPointerAddress());
+            else
+                dataPointer = new NakedPointer(Convert.ToUInt64(data));
+
+            // pixels will be PixelType[], but if we use dynamic, compiler will do the magic to call the right function.
+            dynamic pixels = ReadPixels<PixelType>(imageWidth, imageHeight, dataPointer, dataStride, channels.Length);
+
+            return Graphics.CreateBitmap(imageWidth, imageHeight, channels, pixels);
+        }
+
+        /// <summary>
+        /// Reads pixels data into single array of pixels with new stride equal to <paramref name="width"/>.
+        /// </summary>
+        /// <typeparam name="T">Type of the pixel.</typeparam>
+        /// <param name="width">Bitmap width.</param>
+        /// <param name="height">Bitmap height.</param>
+        /// <param name="data">Pointer to start of bitmap data.</param>
+        /// <param name="stride">Row stride in bytes.</param>
+        /// <param name="channels">Number of channels in the image.</param>
+        /// <returns>Array of image pixels.</returns>
+        private static T[] ReadPixels<T>(int width, int height, NakedPointer data, int stride, int channels)
+        {
+            int pixelByteSize = System.Runtime.InteropServices.Marshal.SizeOf<T>();
+
+            if (stride <= 0 || stride == pixelByteSize * channels * width)
+            {
+                return new CodeArray<T>(data, width * height * channels).ToArray();
+            }
+            else
+            {
+                T[] result = new T[width * height * channels];
+                int rowElements = width * channels;
+
+                for (int y = 0, j = 0; y < height; y++)
+                {
+                    CodeArray<T> array = new CodeArray<T>(data.AdjustPointer(stride * y), rowElements);
+
+                    for (int x = 0; x < rowElements; x++, j++)
+                    {
+                        result[j] = array[x];
+                    }
+                }
+
+                return result;
+            }
+        }
+        #endregion
     }
 }
