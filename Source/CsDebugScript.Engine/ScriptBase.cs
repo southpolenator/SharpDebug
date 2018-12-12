@@ -125,6 +125,112 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Helper class for making <see cref="VariableCollection"/> be dynamic object inside the scripts.
+        /// </summary>
+        private abstract class VariableCollectionDynamicObject : DynamicObject
+        {
+            /// <summary>
+            /// Gets the <see cref="VariableCollection"/> object to be represented as dynamic.
+            /// </summary>
+            protected abstract VariableCollection GetVariableCollection();
+
+            /// <summary>
+            /// Provides the implementation for operations that get member values. Classes derived
+            /// from the System.Dynamic.DynamicObject class can override this method to specify
+            /// dynamic behavior for operations such as getting a value for a property.
+            /// </summary>
+            /// <param name="binder">Provides information about the object that called the dynamic operation. The
+            /// <code>binder.Name</code> property provides the name of the member on which the dynamic operation
+            /// is performed. For example, for the <code>Console.WriteLine(sampleObject.SampleProperty)</code>
+            /// statement, where sampleObject is an instance of the class derived from the <see cref="System.Dynamic.DynamicObject"/>
+            /// class, <code>binder.Name</code> returns "SampleProperty". The <code>binder.IgnoreCase</code> property specifies
+            /// whether the member name is case-sensitive.</param>
+            /// <param name="result">The result of the get operation. For example, if the method is called for a property,
+            /// you can assign the property value to result.</param>
+            /// <returns>
+            /// <c>true</c> if the operation is successful; otherwise, <c>false</c>. If this method returns
+            /// <c>false</c>, the run-time binder of the language determines the behavior. (In most
+            /// cases, a run-time exception is thrown.)
+            /// </returns>
+            public override bool TryGetMember(GetMemberBinder binder, out object result)
+            {
+                VariableCollection variableCollection = GetVariableCollection();
+
+                if (variableCollection.ContainsName(binder.Name))
+                {
+                    result = variableCollection[binder.Name];
+                    return true;
+                }
+
+                result = null;
+                return false;
+            }
+
+            /// <summary>
+            /// Provides the implementation for operations that get a value by index. Classes
+            /// derived from the System.Dynamic.DynamicObject class can override this method
+            /// to specify dynamic behavior for indexing operations.
+            /// </summary>
+            /// <param name="binder">Provides information about the operation.</param>
+            /// <param name="indexes">The indexes that are used in the operation. For example, for the sampleObject[3]
+            /// operation in C# (sampleObject(3) in Visual Basic), where sampleObject is derived
+            /// from the DynamicObject class, indexes[0] is equal to 3.</param>
+            /// <param name="result">The result of the index operation.</param>
+            /// <returns>
+            /// <c>true</c> if the operation is successful; otherwise, <c>false</c>. If this method returns
+            /// <c>false</c>, the run-time binder of the language determines the behavior. (In most
+            /// cases, a run-time exception is thrown.)
+            /// </returns>
+            public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object result)
+            {
+                if (indexes.Length == 1 && indexes[0] is string)
+                {
+                    result = GetVariableCollection()[indexes[0].ToString()];
+                    return true;
+                }
+
+                return base.TryGetIndex(binder, indexes, out result);
+            }
+
+            /// <summary>
+            /// Returns the enumeration of all dynamic member names.
+            /// </summary>
+            /// <returns>A sequence that contains dynamic member names.</returns>
+            public override IEnumerable<string> GetDynamicMemberNames()
+            {
+                return GetVariableCollection().Names;
+            }
+        }
+
+        /// <summary>
+        /// Helper class for making <see cref="Arguments"/> be dynamic object inside the scripts.
+        /// </summary>
+        private class ArgumentsDynamicObject : VariableCollectionDynamicObject
+        {
+            /// <summary>
+            /// Gets the <see cref="VariableCollection"/> object to be represented as dynamic.
+            /// </summary>
+            protected override VariableCollection GetVariableCollection()
+            {
+                return StackFrame.Current.Arguments;
+            }
+        }
+
+        /// <summary>
+        /// Helper class for making <see cref="Locals"/> be dynamic object inside the scripts.
+        /// </summary>
+        private class LocalsDynamicObject : VariableCollectionDynamicObject
+        {
+            /// <summary>
+            /// Gets the <see cref="VariableCollection"/> object to be represented as dynamic.
+            /// </summary>
+            protected override VariableCollection GetVariableCollection()
+            {
+                return StackFrame.Current.Locals;
+            }
+        }
+
+        /// <summary>
         /// The Modules dynamic object. You can use this dynamic variable to easily access Modules and afterwards global variables.
         /// </summary>
         public dynamic Modules = new ModulesDynamicObject();
@@ -150,14 +256,14 @@ namespace CsDebugScript
         public static StackFrame[] Frames => StackTrace.Current.Frames;
 
         /// <summary>
-        /// Gets the variable collection of arguemnts from current stack frame.
+        /// Gets the variable collection of arguments from current stack frame.
         /// </summary>
-        public static VariableCollection Arguments => StackFrame.Current.Arguments; // TODO: Make this dynamic collection too
+        public static dynamic Arguments { get; private set; } = new ArgumentsDynamicObject();
 
         /// <summary>
         /// Gets the variable collection of local variables from current stack frame.
         /// </summary>
-        public static VariableCollection Locals => StackFrame.Current.Locals; // TODO: Make this dynamic collection too
+        public static dynamic Locals { get; private set; } = new LocalsDynamicObject();
 
         /// <summary>
         /// Gets graphics object used for creating drawing objects.
