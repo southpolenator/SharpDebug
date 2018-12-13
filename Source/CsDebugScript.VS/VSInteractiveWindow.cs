@@ -167,7 +167,7 @@ namespace CsDebugScript.VS
 
         private void LoadDomain()
         {
-            if (scriptDomain == null)
+            if (scriptDomain == null && VSContext.CurrentDebugMode == EnvDTE.dbgDebugMode.dbgBreakMode)
             {
                 try
                 {
