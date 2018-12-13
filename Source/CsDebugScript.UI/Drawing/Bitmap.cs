@@ -137,7 +137,7 @@ namespace CsDebugScript.UI.Drawing
         /// <param name="dpiX">The horizontal dots per inch (dpi) of the bitmap.</param>
         /// <param name="dpiY">The vertical dots per inch (dpi) of the bitmap.</param>
         public Bitmap(int width, int height, ChannelType[] channels, int[] pixels, double dpiX = 96, double dpiY = 96)
-            : this(width, height, channels, ConvertToUshort(pixels), dpiX, dpiY)
+            : this(width, height, channels, ConvertToUshort(pixels), dpiX, dpiY, pixels)
         {
         }
 
