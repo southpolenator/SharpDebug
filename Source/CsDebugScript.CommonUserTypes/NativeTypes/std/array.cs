@@ -9,12 +9,12 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// Implementation of std::array
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class array<T> : UserType, IReadOnlyCollection<T>
+    public class array<T> : UserType, IReadOnlyList<T>
     {
         /// <summary>
         /// Common code for all implementations of std::array
         /// </summary>
-        internal class ArrayBase : IReadOnlyCollection<T>
+        internal class ArrayBase : IReadOnlyList<T>
         {
             /// <summary>
             /// Code type extracted data
@@ -75,6 +75,23 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             public int Count => data.Length;
 
             /// <summary>
+            /// Gets the &lt;T&gt; at the specified index.
+            /// </summary>
+            /// <param name="index">The index.</param>
+            public T this[int index]
+            {
+                get
+                {
+                    if (index < 0 || index >= data.Length)
+                        throw new ArgumentOutOfRangeException("index", index, "Querying index outside of the array buffer");
+
+                    ulong address = firstElementAddress + data.ElementCodeType.Size * (uint)index;
+
+                    return Variable.Create(data.ElementCodeType, address).CastAs<T>();
+                }
+            }
+
+            /// <summary>
             /// Returns an enumerator that iterates through the collection.
             /// </summary>
             public IEnumerator<T> GetEnumerator()
@@ -100,6 +117,17 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
 
                 for (int i = 0, n = Count; i < n; i++, address += elementSize)
                     yield return Variable.Create(data.ElementCodeType, address).CastAs<T>();
+            }
+
+            /// <summary>
+            /// Creates <see cref="CodeArray{T}"/> for better performance access to buffer data (for example byte arrays when reading images).
+            /// </summary>
+            /// <returns>An <see cref="CodeArray{T}"/> instance.</returns>
+            public CodeArray<T> ToCodeArray()
+            {
+                Variable first = Variable.CreatePointer(data.ElementCodeType.PointerToType, firstElementAddress);
+
+                return new CodeArray<T>(first, Count);
             }
         }
 
@@ -226,7 +254,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// The type selector
         /// </summary>
-        private static TypeSelector<IReadOnlyCollection<T>> typeSelector = new TypeSelector<IReadOnlyCollection<T>>(new[]
+        private static TypeSelector<ArrayBase> typeSelector = new TypeSelector<ArrayBase>(new[]
         {
             new Tuple<Type, Func<CodeType, object>>(typeof(VisualStudio), VisualStudio.VerifyCodeType),
             new Tuple<Type, Func<CodeType, object>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
@@ -246,7 +274,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// The instance used to read variable data
         /// </summary>
-        private IReadOnlyCollection<T> instance;
+        private ArrayBase instance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="array{T}"/> class.
@@ -265,6 +293,12 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// Gets the number of elements in the collection.
         /// </summary>
         public int Count => instance.Count;
+
+        /// <summary>
+        /// Gets the &lt;T&gt; at the specified index.
+        /// </summary>
+        /// <param name="index">The index.</param>
+        public T this[int index] => instance[index];
 
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
@@ -286,6 +320,24 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         IEnumerator IEnumerable.GetEnumerator()
         {
             return instance.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Creates <see cref="CodeArray{T}"/> for better performance access to buffer data (for example byte arrays when reading images).
+        /// </summary>
+        /// <returns>An <see cref="CodeArray{T}"/> instance.</returns>
+        public CodeArray<T> ToCodeArray()
+        {
+            return instance.ToCodeArray();
+        }
+
+        /// <summary>
+        /// Reads all data to managed array.
+        /// </summary>
+        /// <returns>Managed array.</returns>
+        public T[] ToArray()
+        {
+            return ToCodeArray().ToArray();
         }
 
         /// <summary>

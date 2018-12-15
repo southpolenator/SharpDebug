@@ -305,18 +305,21 @@ AreEqual(MyTestClass.MyEnumInner.simple4, global.innerEnumeration);
 
             Assert.Equal(10000, testArray.Length);
             foreach (int value in testArray)
-            {
                 Assert.Equal(0x12121212, value);
-            }
 
             Variable testStdArrayVariable = locals["testStdArray"];
             std.array<int> testStdArray = new std.array<int>(testStdArrayVariable);
 
             Assert.Equal(10000, testStdArray.Count);
             foreach (int value in testStdArray)
-            {
                 Assert.Equal(0x12121212, value);
-            }
+            Assert.Equal(0x12121212, testStdArray[testStdArray.Count - 1]);
+
+            int[] a = testStdArray.ToArray();
+
+            Assert.Equal(10000, a.Length);
+            foreach (int value in a)
+                Assert.Equal(0x12121212, value);
         }
 
         [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]
