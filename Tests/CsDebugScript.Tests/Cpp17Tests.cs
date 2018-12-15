@@ -226,6 +226,73 @@ namespace CsDebugScript.Tests
                 Assert.False(bEmpty.HasValue);
             });
         }
+
+        [Fact]
+        public void StdFilesystemPath()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestPath");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
+
+            char pathSeparator = (char)locals["pathSeparator"];
+            std.filesystem.path root = new std.filesystem.path(locals["root"]);
+            Assert.Equal("/my/test", root.Path);
+            std.filesystem.path child = new std.filesystem.path(locals["child"]);
+            Assert.Equal($"/my/test{pathSeparator}child", child.Path);
+            std.filesystem.path wroot = new std.filesystem.path(locals["wroot"]);
+            Assert.Equal("/my/test", wroot.Path);
+            std.filesystem.path wchild = new std.filesystem.path(locals["wchild"]);
+            Assert.Equal($"/my/test{pathSeparator}child", wchild.Path);
+        }
+
+        [Fact]
+        public void StdFilesystemPath_AutoCast()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestPath");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+                char pathSeparator = (char)locals["pathSeparator"];
+
+                Assert.IsType<std.filesystem.path>(locals["root"]);
+                std.filesystem.path root = (std.filesystem.path)locals["root"];
+                Assert.Equal("/my/test", root.Path);
+
+                Assert.IsType<std.filesystem.path>(locals["child"]);
+                std.filesystem.path child = (std.filesystem.path)locals["child"];
+                Assert.Equal($"/my/test{pathSeparator}child", child.Path);
+
+                Assert.IsType<std.filesystem.path>(locals["wroot"]);
+                std.filesystem.path wroot = (std.filesystem.path)locals["wroot"];
+                Assert.Equal("/my/test", wroot.Path);
+
+                Assert.IsType<std.filesystem.path>(locals["wchild"]);
+                std.filesystem.path wchild = (std.filesystem.path)locals["wchild"];
+                Assert.Equal($"/my/test{pathSeparator}child", wchild.Path);
+            });
+        }
+
+        [Fact]
+        public void StdFilesystemPath_Dynamic()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestPath");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+                char pathSeparator = (char)locals["pathSeparator"];
+
+                dynamic root = locals["root"];
+                Assert.Equal("/my/test", root.Path);
+
+                dynamic child = locals["child"];
+                Assert.Equal($"/my/test{pathSeparator}child", child.Path);
+
+                dynamic wroot = locals["wroot"];
+                Assert.Equal("/my/test", wroot.Path);
+
+                dynamic wchild = locals["wchild"];
+                Assert.Equal($"/my/test{pathSeparator}child", wchild.Path);
+            });
+        }
     }
 
     #region Test configurations

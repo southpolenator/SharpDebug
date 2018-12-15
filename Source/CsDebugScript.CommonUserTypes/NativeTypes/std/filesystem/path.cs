@@ -1,19 +1,19 @@
-﻿using CsDebugScript.Engine.Utility;
-using CsDebugScript.Exceptions;
+﻿using CsDebugScript.Exceptions;
 using System;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.std
+namespace CsDebugScript.CommonUserTypes.NativeTypes.std.filesystem
 {
     /// <summary>
-    /// Implementation of std::optional
+    /// Implementation of std::filesystem::path
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class optional<T> : UserType
+    [UserType(TypeName = "std::filesystem::path", CodeTypeVerification = nameof(any.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::filesystem::path", CodeTypeVerification = nameof(any.VerifyCodeType))]
+    public class path : UserType
     {
         /// <summary>
-        /// Common code for all implementations of std::optional
+        /// Common code for all implementations of std::filesystem::path
         /// </summary>
-        internal class OptionalBase
+        internal class PathBase
         {
             /// <summary>
             /// Code type extracted data
@@ -21,22 +21,12 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             protected class ExtractedData
             {
                 /// <summary>
-                /// Offset of has value field.
+                /// Function that reads path.
                 /// </summary>
-                public int HasValueOffset;
+                public Func<ulong, string> ReadPath;
 
                 /// <summary>
-                /// Offset of value field.
-                /// </summary>
-                public int ValueOffset;
-
-                /// <summary>
-                /// Code type of value.
-                /// </summary>
-                public CodeType ValueCodeType;
-
-                /// <summary>
-                /// Code type of std::optional.
+                /// Code type of std::filesystem::path.
                 /// </summary>
                 public CodeType CodeType;
 
@@ -52,39 +42,31 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             private ExtractedData data;
 
             /// <summary>
-            /// The value address.
+            /// The address of this instance.
             /// </summary>
-            private ulong valueAddress;
+            private ulong address;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="OptionalBase"/> class.
+            /// Initializes a new instance of the <see cref="PathBase"/> class.
             /// </summary>
             /// <param name="variable">The value.</param>
             /// <param name="savedData">Data returned from VerifyCodeType function.</param>
-            public OptionalBase(Variable variable, object savedData)
+            public PathBase(Variable variable, object savedData)
             {
                 data = (ExtractedData)savedData;
-                ulong address = variable.GetPointerAddress();
-                valueAddress = address + (uint)data.ValueOffset;
-                MemoryBuffer hasValueBuffer = Debugger.ReadMemory(data.Process, address + (uint)data.HasValueOffset, 1);
-                HasValue = UserType.ReadBool(hasValueBuffer, 0);
+                address = variable.GetPointerAddress();
             }
 
             /// <summary>
-            /// Gets the value.
+            /// Gets the path as string.
             /// </summary>
-            public T Value => Variable.Create(data.ValueCodeType, valueAddress).CastAs<T>();
-
-            /// <summary>
-            /// Gets the flag representing if this instance contains a value.
-            /// </summary>
-            public bool HasValue { get; private set; }
+            public string Path => data.ReadPath(address);
         }
 
         /// <summary>
-        /// Microsoft Visual Studio implementations of std::optional
+        /// Microsoft Visual Studio implementations of std::filesystem::path
         /// </summary>
-        internal class VisualStudio : OptionalBase
+        internal class VisualStudio : PathBase
         {
             /// <summary>
             /// Initializes a new instance of the <see cref="VisualStudio"/> class.
@@ -104,18 +86,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
-                // _Has_value
-                // _Value
-                CodeType _Has_value, _Value;
+                // _Text
+                CodeType _Text;
 
-                if (!codeType.GetFieldTypes().TryGetValue("_Has_value", out _Has_value) || !codeType.GetFieldTypes().TryGetValue("_Value", out _Value))
+                if (!codeType.GetFieldTypes().TryGetValue("_Text", out _Text))
                     return null;
+                if (!basic_string.VerifyCodeType(_Text))
+                    return null;
+
+                int offset = codeType.GetFieldOffset("_Text");
 
                 return new ExtractedData
                 {
-                    HasValueOffset = codeType.GetFieldOffset("_Has_value"),
-                    ValueCodeType = (CodeType)codeType.TemplateArguments[0],
-                    ValueOffset = codeType.GetFieldOffset("_Value"),
+                    ReadPath = (address) => new basic_string(Variable.Create(_Text, address + (uint)offset)).Text,
                     CodeType = codeType,
                     Process = codeType.Module.Process,
                 };
@@ -123,16 +106,16 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
-        /// libstdc++ 6 implementations of std::optional
+        /// libstdc++ 8 implementations of std::filesystem::path
         /// </summary>
-        internal class LibStdCpp6 : OptionalBase
+        internal class LibStdCpp8 : PathBase
         {
             /// <summary>
-            /// Initializes a new instance of the <see cref="LibStdCpp6"/> class.
+            /// Initializes a new instance of the <see cref="LibStdCpp8"/> class.
             /// </summary>
             /// <param name="variable">The variable.</param>
             /// <param name="savedData">Data returned from VerifyCodeType function.</param>
-            public LibStdCpp6(Variable variable, object savedData)
+            public LibStdCpp8(Variable variable, object savedData)
                 : base(variable, savedData)
             {
             }
@@ -145,21 +128,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
-                // _M_payload
-                // | _M_engaged
-                // | _M_payload
-                CodeType _M_payload, _M_engaged, _M_payload2;
+                // _M_pathname
+                CodeType _M_pathname;
 
-                if (!codeType.GetFieldTypes().TryGetValue("_M_payload", out _M_payload)
-                    || !_M_payload.GetFieldTypes().TryGetValue("_M_engaged", out _M_engaged)
-                    || !_M_payload.GetFieldTypes().TryGetValue("_M_payload", out _M_payload2))
+                if (!codeType.GetFieldTypes().TryGetValue("_M_pathname", out _M_pathname))
                     return null;
+                if (!basic_string.VerifyCodeType(_M_pathname))
+                    return null;
+
+                int offset = codeType.GetFieldOffset("_M_pathname");
 
                 return new ExtractedData
                 {
-                    HasValueOffset = codeType.GetFieldOffset("_M_payload") + _M_payload.GetFieldOffset("_M_engaged"),
-                    ValueCodeType = (CodeType)codeType.TemplateArguments[0],
-                    ValueOffset = codeType.GetFieldOffset("_M_payload") + _M_payload.GetFieldOffset("_M_payload"),
+                    ReadPath = (address) => new basic_string(Variable.Create(_M_pathname, address + (uint)offset)).Text,
                     CodeType = codeType,
                     Process = codeType.Module.Process,
                 };
@@ -167,9 +148,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         }
 
         /// <summary>
-        /// Clang libc++ implementations of std::optional
+        /// Clang libc++ implementations of std::filesystem::path
         /// </summary>
-        internal class ClangLibCpp : OptionalBase
+        internal class ClangLibCpp : PathBase
         {
             /// <summary>
             /// Initializes a new instance of the <see cref="ClangLibCpp"/> class.
@@ -189,18 +170,19 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             internal static object VerifyCodeType(CodeType codeType)
             {
                 // We want to have this kind of hierarchy
-                // __engaged_
-                // __val_
-                CodeType __engaged_, __val_;
+                // __pn_
+                CodeType __pn_;
 
-                if (!codeType.GetFieldTypes().TryGetValue("__engaged_", out __engaged_) || !codeType.GetFieldTypes().TryGetValue("__val_", out __val_))
+                if (!codeType.GetFieldTypes().TryGetValue("__pn_", out __pn_))
                     return null;
+                if (!basic_string.VerifyCodeType(__pn_))
+                    return null;
+
+                int offset = codeType.GetFieldOffset("__pn_");
 
                 return new ExtractedData
                 {
-                    HasValueOffset = codeType.GetFieldOffset("__engaged_"),
-                    ValueCodeType = (CodeType)codeType.TemplateArguments[0],
-                    ValueOffset = codeType.GetFieldOffset("__val_"),
+                    ReadPath = (address) => new basic_string(Variable.Create(__pn_, address + (uint)offset)).Text,
                     CodeType = codeType,
                     Process = codeType.Module.Process,
                 };
@@ -210,10 +192,10 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// The type selector
         /// </summary>
-        private static TypeSelector<OptionalBase> typeSelector = new TypeSelector<OptionalBase>(new[]
+        private static TypeSelector<PathBase> typeSelector = new TypeSelector<PathBase>(new[]
         {
             new Tuple<Type, Func<CodeType, object>>(typeof(VisualStudio), VisualStudio.VerifyCodeType),
-            new Tuple<Type, Func<CodeType, object>>(typeof(LibStdCpp6), LibStdCpp6.VerifyCodeType),
+            new Tuple<Type, Func<CodeType, object>>(typeof(LibStdCpp8), LibStdCpp8.VerifyCodeType),
             new Tuple<Type, Func<CodeType, object>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
 
@@ -230,31 +212,25 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// <summary>
         /// The instance used to read variable data
         /// </summary>
-        private OptionalBase instance;
+        private PathBase instance;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="optional{T}"/> class.
+        /// Initializes a new instance of the <see cref="path"/> class.
         /// </summary>
         /// <param name="variable">The variable.</param>
-        /// <exception cref="WrongCodeTypeException">std::optional</exception>
-        public optional(Variable variable)
+        /// <exception cref="WrongCodeTypeException">std::path</exception>
+        public path(Variable variable)
             : base(variable)
         {
             instance = typeSelector.SelectType(variable);
             if (instance == null)
-                throw new WrongCodeTypeException(variable, nameof(variable), "std::optional");
+                throw new WrongCodeTypeException(variable, nameof(variable), "std::filesystem::path");
         }
 
         /// <summary>
-        /// Gets the value stored in this instance.
+        /// Gets the path as string.
         /// </summary>
-        [ForceDefaultVisualizerAtttribute]
-        public T Value => instance.Value;
-
-        /// <summary>
-        /// Gets the flag indicating if this instance has value set.
-        /// </summary>
-        public bool HasValue => instance.HasValue;
+        public string Path => instance.Path;
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
@@ -264,26 +240,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// </returns>
         public override string ToString()
         {
-            if (!HasValue)
-                return "nullopt";
-            return Value.ToString();
-        }
-    }
-
-    /// <summary>
-    /// Simplification class for creating <see cref="optional{T}"/> with T being <see cref="Variable"/>.
-    /// </summary>
-    [UserType(TypeName = "std::optional<>", CodeTypeVerification = nameof(optional.VerifyCodeType))]
-    [UserType(TypeName = "std::__1::optional<>", CodeTypeVerification = nameof(optional.VerifyCodeType))]
-    public class optional : optional<Variable>
-    {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="optional"/> class.
-        /// </summary>
-        /// <param name="variable">The variable.</param>
-        public optional(Variable variable)
-            : base(variable)
-        {
+            return Path;
         }
     }
 }
