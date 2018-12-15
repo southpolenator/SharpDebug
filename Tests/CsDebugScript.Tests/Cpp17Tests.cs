@@ -173,6 +173,7 @@ namespace CsDebugScript.Tests
                 Assert.True(i.HasValue);
                 Assert.Equal("int", i.Value.GetCodeType().Name);
                 Assert.Equal(5, (int)i.Value);
+
                 Assert.IsType<std.optional>(locals["emptyInt"]);
                 std.optional emptyInt = (std.optional)locals["emptyInt"];
                 Assert.False(emptyInt.HasValue);
@@ -192,6 +193,36 @@ namespace CsDebugScript.Tests
 
                 Assert.IsType<std.optional>(locals["bEmpty"]);
                 std.optional bEmpty = (std.optional)locals["bEmpty"];
+                Assert.False(bEmpty.HasValue);
+            });
+        }
+
+        [Fact]
+        public void StdOptional_Dynamic()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestOptional");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+
+                // int
+                dynamic i = locals["i"];
+                Assert.True(i.HasValue);
+                Assert.Equal(5, (int)i.Value);
+
+                dynamic emptyInt = locals["emptyInt"];
+                Assert.False(emptyInt.HasValue);
+
+                // bool
+                dynamic bFalse = locals["bFalse"];
+                Assert.True(bFalse.HasValue);
+                Assert.False((bool)bFalse.Value);
+
+                dynamic bTrue = locals["bTrue"];
+                Assert.True(bTrue.HasValue);
+                Assert.True((bool)bTrue.Value);
+
+                dynamic bEmpty = locals["bEmpty"];
                 Assert.False(bEmpty.HasValue);
             });
         }

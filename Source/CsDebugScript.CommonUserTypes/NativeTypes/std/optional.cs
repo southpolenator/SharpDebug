@@ -268,8 +268,9 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// </returns>
         public override string ToString()
         {
-            // TODO:
-            return $"{{  }}";
+            if (!HasValue)
+                return "nullopt";
+            return Value.ToString();
         }
     }
 
