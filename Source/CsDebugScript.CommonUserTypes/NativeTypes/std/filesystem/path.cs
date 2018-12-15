@@ -7,7 +7,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std.filesystem
     /// Implementation of std::filesystem::path
     /// </summary>
     [UserType(TypeName = "std::filesystem::path", CodeTypeVerification = nameof(any.VerifyCodeType))]
-    [UserType(TypeName = "std::__1::filesystem::path", CodeTypeVerification = nameof(any.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::__fs::filesystem::path", CodeTypeVerification = nameof(any.VerifyCodeType))]
     public class path : UserType
     {
         /// <summary>
