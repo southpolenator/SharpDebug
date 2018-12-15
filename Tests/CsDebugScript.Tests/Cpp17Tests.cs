@@ -134,6 +134,67 @@ namespace CsDebugScript.Tests
                 Assert.IsType<std.basic_string>(p.First);
             });
         }
+
+        [Fact]
+        public void StdOptional()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestOptional");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
+
+            // int
+            std.optional<int> i = new std.optional<int>(locals["i"]);
+            Assert.True(i.HasValue);
+            Assert.Equal(5, i.Value);
+            std.optional<int> emptyInt = new std.optional<int>(locals["emptyInt"]);
+            Assert.False(emptyInt.HasValue);
+
+            // bool
+            std.optional<bool> bFalse = new std.optional<bool>(locals["bFalse"]);
+            Assert.True(bFalse.HasValue);
+            Assert.False(bFalse.Value);
+            std.optional<bool> bTrue = new std.optional<bool>(locals["bTrue"]);
+            Assert.True(bTrue.HasValue);
+            Assert.True(bTrue.Value);
+            std.optional<bool> bEmpty = new std.optional<bool>(locals["bEmpty"]);
+            Assert.False(bEmpty.HasValue);
+        }
+
+        [Fact]
+        public void StdOptional_AutoCast()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestOptional");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+
+                // int
+                Assert.IsType<std.optional>(locals["i"]);
+                std.optional i = (std.optional)locals["i"];
+                Assert.True(i.HasValue);
+                Assert.Equal("int", i.Value.GetCodeType().Name);
+                Assert.Equal(5, (int)i.Value);
+                Assert.IsType<std.optional>(locals["emptyInt"]);
+                std.optional emptyInt = (std.optional)locals["emptyInt"];
+                Assert.False(emptyInt.HasValue);
+
+                // bool
+                Assert.IsType<std.optional>(locals["bFalse"]);
+                std.optional bFalse = (std.optional)locals["bFalse"];
+                Assert.True(bFalse.HasValue);
+                Assert.Equal("bool", bFalse.Value.GetCodeType().Name);
+                Assert.False((bool)bFalse.Value);
+
+                Assert.IsType<std.optional>(locals["bTrue"]);
+                std.optional bTrue = (std.optional)locals["bTrue"];
+                Assert.True(bTrue.HasValue);
+                Assert.Equal("bool", bTrue.Value.GetCodeType().Name);
+                Assert.True((bool)bTrue.Value);
+
+                Assert.IsType<std.optional>(locals["bEmpty"]);
+                std.optional bEmpty = (std.optional)locals["bEmpty"];
+                Assert.False(bEmpty.HasValue);
+            });
+        }
     }
 
     #region Test configurations

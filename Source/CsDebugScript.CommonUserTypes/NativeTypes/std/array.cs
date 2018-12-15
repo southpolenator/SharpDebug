@@ -353,7 +353,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     }
 
     /// <summary>
-    /// Simplification class for creating <see cref="list{T}"/> with T being <see cref="Variable"/>.
+    /// Simplification class for creating <see cref="array{T}"/> with T being <see cref="Variable"/>.
     /// </summary>
     [UserType(TypeName = "std::array<>", CodeTypeVerification = nameof(array.VerifyCodeType))]
     [UserType(TypeName = "std::__1::array<>", CodeTypeVerification = nameof(array.VerifyCodeType))]
