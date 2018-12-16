@@ -293,6 +293,31 @@ namespace CsDebugScript.Tests
                 Assert.Equal($"/my/test{pathSeparator}child", wchild.Path);
             });
         }
+
+        [Fact]
+        public void BoolContainers()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestBoolContainers");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
+            bool[] expectedArray = new bool[100];
+            for (int i = 0, j = 1; i < expectedArray.Length; i += j, j++)
+                for (int k = 0; k < j && i < expectedArray.Length; k++, i++)
+                    expectedArray[i] = true;
+
+            // C style array
+            CodeArray<bool> carray = new CodeArray<bool>(locals["carray"]);
+            Assert.Equal(expectedArray, carray);
+
+            // std::array
+            std.array<bool> array = new std.array<bool>(locals["array"]);
+            Assert.Equal(expectedArray, array);
+
+            // std::vector
+            std.vector<bool> vector = new std.vector<bool>(locals["vector"]);
+            Assert.True(expectedArray.Length < vector.Reserved);
+            Assert.Equal(expectedArray, vector);
+            Assert.Equal(expectedArray, vector.ToArray());
+        }
     }
 
     #region Test configurations

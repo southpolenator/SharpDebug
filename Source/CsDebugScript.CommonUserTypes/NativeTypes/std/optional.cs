@@ -66,8 +66,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                 data = (ExtractedData)savedData;
                 ulong address = variable.GetPointerAddress();
                 valueAddress = address + (uint)data.ValueOffset;
-                MemoryBuffer hasValueBuffer = Debugger.ReadMemory(data.Process, address + (uint)data.HasValueOffset, 1);
-                HasValue = UserType.ReadBool(hasValueBuffer, 0);
+                HasValue = data.Process.ReadByte(address + (uint)data.HasValueOffset) != 0;
             }
 
             /// <summary>
