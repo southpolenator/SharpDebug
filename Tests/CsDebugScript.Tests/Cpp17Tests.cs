@@ -1,5 +1,6 @@
-﻿using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
+﻿using System.Linq;
 using Xunit;
+using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
 
 namespace CsDebugScript.Tests
 {
@@ -317,6 +318,30 @@ namespace CsDebugScript.Tests
             Assert.True(expectedArray.Length < vector.Reserved);
             Assert.Equal(expectedArray, vector);
             Assert.Equal(expectedArray, vector.ToArray());
+        }
+
+        [Fact]
+        public void BoolContainers_AutoCast()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestBoolContainers");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+                bool[] expectedArray = new bool[100];
+                for (int i = 0, j = 1; i < expectedArray.Length; i += j, j++)
+                    for (int k = 0; k < j && i < expectedArray.Length; k++, i++)
+                        expectedArray[i] = true;
+
+                // std::array
+                std.array array = (std.array)locals["array"];
+                Assert.Equal(expectedArray, array.Select(v => (bool)v));
+
+                // std::vector
+                std.vector vector = (std.vector)locals["vector"];
+                Assert.True(expectedArray.Length < vector.Reserved);
+                Assert.Equal(expectedArray, vector.Select(v => (bool)v));
+                Assert.Equal(expectedArray, vector.ToArray().Select(v => (bool)v).ToArray());
+            });
         }
     }
 
