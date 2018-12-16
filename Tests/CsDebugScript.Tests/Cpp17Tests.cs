@@ -343,6 +343,75 @@ namespace CsDebugScript.Tests
                 Assert.Equal(expectedArray, vector.ToArray().Select(v => (bool)v).ToArray());
             });
         }
+
+        [Fact]
+        public void StdVariant()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestVariant");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
+
+            // int, float
+            std.variant<int, float> if1 = new std.variant<int, float>(locals["if1"]);
+            Assert.IsType<int>(if1.Value);
+            Assert.Equal(42, if1.Get<int>());
+            std.variant<int, float> if2 = new std.variant<int, float>(locals["if2"]);
+            Assert.IsType<float>(if2.Value);
+            Assert.Equal(42.0f, if2.Get<float>());
+
+            // std::string, std::wstring
+            std.variant<std.@string, std.wstring> s1 = new std.variant<std.@string, std.wstring>(locals["s1"]);
+            Assert.IsType<std.@string>(s1.Value);
+            Assert.Equal("ansiFoo", s1.Get<std.@string>().Text);
+            std.variant<std.@string, std.wstring> s2 = new std.variant<std.@string, std.wstring>(locals["s2"]);
+            Assert.IsType<std.wstring>(s2.Value);
+            Assert.Equal("Foo", s2.Get<std.wstring>().Text);
+        }
+
+        [Fact]
+        public void StdVariant_AutoCast()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestVariant");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+
+                // int, float
+                std.variant if1 = (std.variant)locals["if1"];
+                Assert.Equal("int", if1.Value.GetCodeType().Name);
+                Assert.Equal(42, (int)if1.Value);
+                std.variant if2 = (std.variant)locals["if2"];
+                Assert.Equal("float", if2.Value.GetCodeType().Name);
+                Assert.Equal(42.0f, (float)if2.Value);
+
+                // std::string, std::wstring
+                std.variant s1 = (std.variant)locals["s1"];
+                Assert.Equal("ansiFoo", ((std.basic_string)s1.Value).Text);
+                std.variant s2 = (std.variant)locals["s2"];
+                Assert.Equal("Foo", ((std.basic_string)s2.Value).Text);
+            });
+        }
+
+        [Fact]
+        public void StdVariant_Dynamic()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestVariant");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+
+                // int, float
+                dynamic if1 = locals["if1"];
+                Assert.Equal(42, (int)if1.Value);
+                dynamic if2 = locals["if2"];
+                Assert.Equal(42.0f, (float)if2.Value);
+
+                // std::string, std::wstring
+                dynamic s1 = locals["s1"];
+                Assert.Equal("ansiFoo", s1.Value.Text);
+                dynamic s2 = locals["s2"];
+                Assert.Equal("Foo", s2.Value.Text);
+            });
+        }
     }
 
     #region Test configurations
