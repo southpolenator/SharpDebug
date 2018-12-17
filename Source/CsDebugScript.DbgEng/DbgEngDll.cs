@@ -213,6 +213,15 @@ namespace CsDebugScript.Engine.Debuggers
             }
         }
 
+        /// <summary>
+        /// Ends current debugging session and disposes used memory.
+        /// This method is being called when new debugger engine is loaded with <see cref="Context.InitializeDebugger(IDebuggerEngine, ISymbolProvider)"/>.
+        /// </summary>
+        public void EndSession()
+        {
+            Client?.EndSession(DebugEnd.ActiveTerminate);
+        }
+
         #region Executing native commands
         /// <summary>
         /// Executes the specified command and captures its output.

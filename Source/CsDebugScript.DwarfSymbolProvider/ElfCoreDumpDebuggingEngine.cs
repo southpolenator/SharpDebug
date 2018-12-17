@@ -76,6 +76,22 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Ends current debugging session and disposes used memory.
+        /// This method is being called when new debugger engine is loaded with <see cref="Context.InitializeDebugger(IDebuggerEngine, ISymbolProvider)"/>.
+        /// </summary>
+        public void EndSession()
+        {
+            lock (openedDumps)
+            {
+                foreach (var kvp in openedDumps)
+                {
+                    kvp.Value.Dispose();
+                }
+                openedDumps.Clear();
+            }
+        }
+
+        /// <summary>
         /// Gets the ELF core dump associated with the specified process.
         /// </summary>
         /// <param name="process">The process.</param>

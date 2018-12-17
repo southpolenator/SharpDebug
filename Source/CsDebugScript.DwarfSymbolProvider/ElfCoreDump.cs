@@ -14,7 +14,7 @@ namespace CsDebugScript.DwarfSymbolProvider
     /// <summary>
     /// Simple ELF core dump reader.
     /// </summary>
-    public class ElfCoreDump
+    public class ElfCoreDump : IDisposable
     {
         /// <summary>
         /// The elf reader.
@@ -324,6 +324,15 @@ namespace CsDebugScript.DwarfSymbolProvider
                     return bytes;
                 }
             }
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            elf.Dispose();
+            DumpFileMemoryReader.Dispose();
         }
 
         /// <summary>

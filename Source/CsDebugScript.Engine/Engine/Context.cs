@@ -77,11 +77,13 @@ namespace CsDebugScript.Engine
 
         /// <summary>
         /// Initializes the Context with the specified debugger engine interface.
+        /// It will also <see cref="IDebuggerEngine.EndSession"/> for previous debugger engine.
         /// </summary>
         /// <param name="debuggerEngine">The debugger engine interface.</param>
         /// <param name="symbolProvider">The symbol provider interface.</param>
         public static void InitializeDebugger(IDebuggerEngine debuggerEngine, ISymbolProvider symbolProvider)
         {
+            Debugger?.EndSession();
             ClearCache();
             Debugger = debuggerEngine;
             SymbolProvider = symbolProvider;
