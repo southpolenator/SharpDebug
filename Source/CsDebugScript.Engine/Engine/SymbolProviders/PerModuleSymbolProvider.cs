@@ -30,8 +30,8 @@ namespace CsDebugScript.Engine.SymbolProviders
             {
                 FallbackSymbolProvider = Context.Debugger?.GetDefaultSymbolProvider();
             }
-            modules = new DictionaryCache<Module, ISymbolProviderModule>(LoadModule);
-            runtimeCodeTypeAndOffsetCache = new DictionaryCache<Tuple<Process, ulong>, Tuple<CodeType, int>>(GetRuntimeCodeTypeAndOffset);
+            modules = GlobalCache.CreateDictionaryCache<Module, ISymbolProviderModule>(LoadModule);
+            runtimeCodeTypeAndOffsetCache = GlobalCache.CreateDictionaryCache<Tuple<Process, ulong>, Tuple<CodeType, int>>(GetRuntimeCodeTypeAndOffset);
         }
 
         /// <summary>

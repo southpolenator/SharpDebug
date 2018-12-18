@@ -83,7 +83,8 @@ namespace CsDebugScript.Engine
         /// <param name="symbolProvider">The symbol provider interface.</param>
         public static void InitializeDebugger(IDebuggerEngine debuggerEngine, ISymbolProvider symbolProvider)
         {
-            Debugger?.EndSession();
+            if (Debugger != debuggerEngine)
+                Debugger?.EndSession();
             ClearCache();
             Debugger = debuggerEngine;
             SymbolProvider = symbolProvider;

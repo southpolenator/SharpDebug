@@ -219,7 +219,7 @@ namespace CsDebugScript.Engine.Debuggers
         /// </summary>
         public void EndSession()
         {
-            Client?.EndSession(DebugEnd.ActiveTerminate);
+            // Do nothing. Ending DbgEng.dll session closes all processes being debugger, even new one that is not being set.
         }
 
         #region Executing native commands
