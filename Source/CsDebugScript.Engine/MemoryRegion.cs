@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CsDebugScript
 {
@@ -161,25 +162,35 @@ namespace CsDebugScript
             {
                 if (regions.Count > 1)
                 {
-                    var division = new List<Tuple<int, MemoryRegion>>[1 << BucketSizeBits];
-
-                    foreach (var region in regions)
+                    bool same = true;
+                    for (int i = 1; i < regions.Count && same; i++)
+                        same = regions[0].Item2.BaseAddress == regions[i].Item2.BaseAddress;
+                    if (same)
                     {
-                        ulong bucketStart = (Math.Max(minValue, region.Item2.MemoryStart) & triesStartMask) >> triesStartBits;
-                        ulong bucketEnd = (Math.Min(maxValue, region.Item2.MemoryEnd - 1) & triesStartMask) >> triesStartBits;
-
-                        for (ulong j = bucketStart; j <= bucketEnd; j++)
-                        {
-                            if (division[j] == null)
-                                division[j] = new List<Tuple<int, MemoryRegion>>();
-                            division[j].Add(region);
-                        }
+                        location = regions.OrderByDescending(r => r.Item2.MemoryEnd).First().Item1;
                     }
+                    else
+                    {
+                        var division = new List<Tuple<int, MemoryRegion>>[1 << BucketSizeBits];
 
-                    buckets = new TriesElement[1 << BucketSizeBits];
-                    for (int i = 0; i < 1 << BucketSizeBits; i++)
-                        if (division[i] != null)
-                            buckets[i] = new TriesElement(division[i], triesStartMask >> BucketSizeBits, triesStartBits - BucketSizeBits, minValue | ((ulong)i << triesStartBits), minValue | (((ulong)i + 1) << triesStartBits) - 1);
+                        foreach (var region in regions)
+                        {
+                            ulong bucketStart = (Math.Max(minValue, region.Item2.MemoryStart) & triesStartMask) >> triesStartBits;
+                            ulong bucketEnd = (Math.Min(maxValue, region.Item2.MemoryEnd - 1) & triesStartMask) >> triesStartBits;
+
+                            for (ulong j = bucketStart; j <= bucketEnd; j++)
+                            {
+                                if (division[j] == null)
+                                    division[j] = new List<Tuple<int, MemoryRegion>>();
+                                division[j].Add(region);
+                            }
+                        }
+
+                        buckets = new TriesElement[1 << BucketSizeBits];
+                        for (int i = 0; i < 1 << BucketSizeBits; i++)
+                            if (division[i] != null)
+                                buckets[i] = new TriesElement(division[i], triesStartMask >> BucketSizeBits, triesStartBits - BucketSizeBits, minValue | ((ulong)i << triesStartBits), minValue | (((ulong)i + 1) << triesStartBits) - 1);
+                    }
                 }
                 else
                 {
