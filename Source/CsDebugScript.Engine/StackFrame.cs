@@ -64,16 +64,8 @@ namespace CsDebugScript
             locals = SimpleCache.Create(GetLocals);
             arguments = SimpleCache.Create(GetArguments);
             clrStackFrame = SimpleCache.Create(() => Thread.ClrThread?.GetClrStackFrame(InstructionOffset));
-            userTypeConvertedLocals = GlobalCache.CreateSimpleCache(() =>
-            {
-                Context.UserTypeMetadataCaches.Add(userTypeConvertedLocals);
-                return Variable.CastVariableCollectionToUserType(locals.Value);
-            });
-            userTypeConvertedArguments = GlobalCache.CreateSimpleCache(() =>
-            {
-                Context.UserTypeMetadataCaches.Add(userTypeConvertedArguments);
-                return Variable.CastVariableCollectionToUserType(arguments.Value);
-            });
+            userTypeConvertedLocals = Context.UserTypeMetadataCaches.CreateSimpleCache(() => Variable.CastVariableCollectionToUserType(locals.Value));
+            userTypeConvertedArguments = Context.UserTypeMetadataCaches.CreateSimpleCache(() => Variable.CastVariableCollectionToUserType(arguments.Value));
             module = SimpleCache.Create(() =>
             {
                 var m = Process.GetModuleByInnerAddress(InstructionOffset);
@@ -364,8 +356,6 @@ namespace CsDebugScript
         /// </summary>
         private VariableCollection GetArguments()
         {
-            Context.UserTypeMetadataCaches.Add(this.arguments);
-
             if (clrStackFrame.Cached && ClrStackFrame != null)
             {
                 return ClrStackFrame.Arguments;
@@ -394,8 +384,6 @@ namespace CsDebugScript
         /// </summary>
         private VariableCollection GetLocals()
         {
-            Context.UserTypeMetadataCaches.Add(this.locals);
-
             if (clrStackFrame.Cached && ClrStackFrame != null)
             {
                 return ClrStackFrame.Locals;

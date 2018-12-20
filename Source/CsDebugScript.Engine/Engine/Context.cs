@@ -1,10 +1,6 @@
 ﻿using CsDebugScript.CLR;
 using CsDebugScript.Drawing.Interfaces;
 using CsDebugScript.Engine.Utility;
-using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Reflection;
 
 namespace CsDebugScript.Engine
 {
@@ -73,7 +69,7 @@ namespace CsDebugScript.Engine
         /// <summary>
         /// The user type metadata caches (references of caches that can be cleared when <see cref="UserTypeMetadata"/> can be changed).
         /// </summary>
-        internal static ConcurrentBag<ICache> UserTypeMetadataCaches { get; private set; } = new ConcurrentBag<ICache>();
+        internal static CacheInvalidator UserTypeMetadataCaches { get; private set; } = new CacheInvalidator();
 
         /// <summary>
         /// Initializes the Context with the specified debugger engine interface.
@@ -105,11 +101,9 @@ namespace CsDebugScript.Engine
         public static void ClearCache()
         {
             CacheInvalidator.InvalidateCaches(ClrProvider);
+            UserTypeMetadataCaches.InvalidateCache();
             GlobalCache.Processes.Clear();
-            var caches = GlobalCache.Caches;
-            GlobalCache.Caches = new ConcurrentBag<ICache>();
-            foreach (ICache cache in caches)
-                cache.InvalidateCache();
+            GlobalCache.Caches.InvalidateCache();
         }
 
         /// <summary>
@@ -118,28 +112,8 @@ namespace CsDebugScript.Engine
         /// <param name="userTypeMetadata">New user type metadata collection.</param>
         internal static void SetUserTypeMetadata(UserTypeMetadata[] userTypeMetadata)
         {
-            foreach (ICache cache in UserTypeMetadataCaches)
-                cache.InvalidateCache();
-            UserTypeMetadataCaches = new ConcurrentBag<ICache>();
+            UserTypeMetadataCaches.InvalidateCache();
             UserTypeMetadata = userTypeMetadata;
-        }
-
-        /// <summary>
-        /// Gets the assembly directory.
-        /// </summary>
-        internal static string GetAssemblyDirectory()
-        {
-            string codeBase = Assembly.GetExecutingAssembly().CodeBase;
-            UriBuilder uri = new UriBuilder(codeBase);
-            string path = Uri.UnescapeDataString(uri.Path);
-
-            path = Path.GetDirectoryName(path);
-            if (!path.EndsWith("\\"))
-            {
-                path += "\\";
-            }
-
-            return path;
         }
     }
 }

@@ -126,7 +126,7 @@ namespace CsDebugScript
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
             ModulesById = new DictionaryCache<ulong, Module>(GetModuleByAddress);
             Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
-            UserTypeCastedVariables = GlobalCache.CreateDictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
+            UserTypeCastedVariables = Context.UserTypeMetadataCaches.CreateDictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
             ClrModuleCache = new DictionaryCache<IClrModule, Module>((clrModule) =>
             {
                 // TODO: This needs to change when ClrModule starts to be child of Module
