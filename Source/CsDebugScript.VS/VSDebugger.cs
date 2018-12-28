@@ -39,6 +39,15 @@ namespace CsDebugScript.VS
         /// </value>
         public bool IsLiveDebugging => Proxy.IsProcessLiveDebugging(Process.Current.Id);
 
+        /// <summary>
+        /// Ends current debugging session and disposes used memory.
+        /// This method is being called when new debugger engine is loaded with <see cref="Context.InitializeDebugger(IDebuggerEngine, ISymbolProvider)"/>.
+        /// </summary>
+        public void EndSession()
+        {
+            // Do nothing
+        }
+
         public Engine.ISymbolProvider GetDefaultSymbolProvider()
         {
             throw new NotImplementedException();

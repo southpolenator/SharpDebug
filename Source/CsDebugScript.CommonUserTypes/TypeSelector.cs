@@ -28,8 +28,7 @@ namespace CsDebugScript.CommonUserTypes
         public TypeSelector(params Tuple<Type, Func<CodeType, object>>[] types)
         {
             this.types = types;
-            verifiedTypes = new DictionaryCache<CodeType, Tuple<IUserTypeDelegates, object>>(GetVerifiedTypeData);
-            GlobalCache.Caches.Add(verifiedTypes);
+            verifiedTypes = GlobalCache.Caches.CreateDictionaryCache<CodeType, Tuple<IUserTypeDelegates, object>>(GetVerifiedTypeData);
         }
 
         /// <summary>

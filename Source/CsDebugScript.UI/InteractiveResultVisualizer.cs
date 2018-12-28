@@ -506,6 +506,10 @@ namespace CsDebugScript.UI
                                                 customItem.Items.Add(ExpandingItemText);
                                                 customItem.Expanded += TreeViewItem_Expanded;
                                                 item.Items.Add(customItem);
+
+                                                // If we have only one child and if it is [Dynamic] group, let's expand it...
+                                                if (customChildren.Count == 1 && customChild.Item1 == ResultVisualizer.DynamicGroupName)
+                                                    customItem.IsExpanded = true;
                                             }
                                         }
                                     }

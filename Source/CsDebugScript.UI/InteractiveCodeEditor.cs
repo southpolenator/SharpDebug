@@ -125,6 +125,11 @@ namespace CsDebugScript.UI
             initializedEvent.Set();
         }
 
+        public void ExecuteCSharpScript()
+        {
+            OnExecuteCSharpScript();
+        }
+
         protected override void OnExecuteCSharpScript()
         {
             BackgroundExecute((string _documentText, out string _textOutput, out string _errorOutput, out IEnumerable<object> _result) =>

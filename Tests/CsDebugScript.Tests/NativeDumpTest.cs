@@ -153,6 +153,22 @@ ImportUserTypes(options, true);
             Assert.Equal(doubleTest.GetCodeType(), doubleTest2.GetCodeType());
         }
 
+        [Fact]
+        public void VariableConstants()
+        {
+            Assert.True((bool)Variable.CreateConstant(true));
+            Assert.Equal((byte)42, (byte)Variable.CreateConstant((byte)42));
+            Assert.Equal((sbyte)-42, (sbyte)Variable.CreateConstant((sbyte)-42));
+            Assert.Equal((short)-42, (short)Variable.CreateConstant((short)-42));
+            Assert.Equal((ushort)42, (ushort)Variable.CreateConstant((ushort)42));
+            Assert.Equal((int)-42, (int)Variable.CreateConstant((int)-42));
+            Assert.Equal((uint)42, (uint)Variable.CreateConstant((uint)42));
+            Assert.Equal((long)-42, (long)Variable.CreateConstant((long)-42));
+            Assert.Equal((ulong)42, (ulong)Variable.CreateConstant((ulong)42));
+            Assert.Equal((float)0.42, (float)Variable.CreateConstant((float)0.42));
+            Assert.Equal((double)-0.42, (double)Variable.CreateConstant((double)-0.42));
+        }
+
         [SkippableFact(SkipOnFailurePropertyName = nameof(ReleaseDump))]
         public void GettingClassStaticMember()
         {
@@ -305,9 +321,21 @@ AreEqual(MyTestClass.MyEnumInner.simple4, global.innerEnumeration);
 
             Assert.Equal(10000, testArray.Length);
             foreach (int value in testArray)
-            {
                 Assert.Equal(0x12121212, value);
-            }
+
+            Variable testStdArrayVariable = locals["testStdArray"];
+            std.array<int> testStdArray = new std.array<int>(testStdArrayVariable);
+
+            Assert.Equal(10000, testStdArray.Count);
+            foreach (int value in testStdArray)
+                Assert.Equal(0x12121212, value);
+            Assert.Equal(0x12121212, testStdArray[testStdArray.Count - 1]);
+
+            int[] a = testStdArray.ToArray();
+
+            Assert.Equal(10000, a.Length);
+            foreach (int value in a)
+                Assert.Equal(0x12121212, value);
         }
 
         [SkippableFact(SkipOnFailurePropertyName = nameof(UsingDbgEngSymbolProvider))]

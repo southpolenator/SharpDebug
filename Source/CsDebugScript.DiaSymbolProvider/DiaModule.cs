@@ -913,10 +913,8 @@ namespace CsDebugScript.Engine.SymbolProviders
                 if (b.virtualBaseClass)
                 {
                     ulong vttAddress = objectAddress + (ulong)b.virtualBasePointerOffset;
-                    MemoryBuffer memoryBuffer = Debugger.ReadMemory(Module.Process, vttAddress, Module.PointerSize);
-                    ulong vbAddress = UserType.ReadPointer(memoryBuffer, 0, (int)Module.Process.GetPointerSize());
-                    MemoryBuffer buffer = Debugger.ReadMemory(Module.Process, vbAddress + b.virtualBaseDispIndex * 4, 4);
-                    offset = UserType.ReadInt(buffer, 0);
+                    ulong vbAddress = Module.Process.ReadPointer(vttAddress);
+                    offset = Module.Process.ReadInt(vbAddress + b.virtualBaseDispIndex * 4);
                 }
                 else
                 {

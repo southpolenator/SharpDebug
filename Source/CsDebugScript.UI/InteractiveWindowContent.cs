@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.UI.CodeWindow;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -86,6 +87,11 @@ namespace CsDebugScript.UI
             panel.Children.Add(TextEditor);
 
             Content = scrollViewer;
+
+            // Enable drag and drop
+            AllowDrop = true;
+            DragEnter += (s, e) => e.Effects = GetFilename(e) != null ? DragDropEffects.Link : DragDropEffects.None;
+            Drop += (s, e) => FileDropped(GetFilename(e));
         }
 
         internal InteractiveCodeEditor TextEditor { get; private set; }
@@ -167,6 +173,29 @@ namespace CsDebugScript.UI
                 focus.Focus();
             }
             TraverseDirection = null;
+        }
+
+        private bool executingDroppedFile = false;
+        private string savedTextBeforeExecutingDroppedFile;
+
+        private void FileDropped(string filename)
+        {
+            savedTextBeforeExecutingDroppedFile = TextEditor.Text;
+            executingDroppedFile = true;
+            TextEditor.Text = $"#load \"{filename}\"";
+            TextEditor.ExecuteCSharpScript();
+        }
+
+        private static string GetFilename(DragEventArgs args)
+        {
+            if (args.Data.GetDataPresent(DataFormats.FileDrop, true))
+            {
+                string[] files = args.Data.GetData(DataFormats.FileDrop, true) as string[];
+
+                if (files != null && files.Length == 1 && File.Exists(files[0]))
+                    return files[0];
+            }
+            return null;
         }
 
         private void PromptBlock_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -401,6 +430,17 @@ namespace CsDebugScript.UI
                     AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
                 }
             }
+
+            if (executingDroppedFile)
+            {
+                executingDroppedFile = false;
+                Dispatcher.InvokeAsync(() =>
+                {
+                    TextEditor.Text = savedTextBeforeExecutingDroppedFile;
+                    TextEditor.SelectionStart = savedTextBeforeExecutingDroppedFile.Length;
+                    TextEditor.SelectionLength = 0;
+                });
+            }
         }
 
         private void TextEditor_CommandFailed(bool csharpCode, string textOutput, string errorOutput)
@@ -417,6 +457,12 @@ namespace CsDebugScript.UI
             resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(TextEditor.Text) : CreateDbgCode(TextEditor.Text));
             AddSpacing(resultsPanel.Children[textEditorIndex]);
             AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
+
+            if (executingDroppedFile)
+            {
+                executingDroppedFile = false;
+                TextEditor.Text = savedTextBeforeExecutingDroppedFile;
+            }
         }
 
         private void TextEditor_Executing(bool started)

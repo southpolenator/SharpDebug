@@ -98,7 +98,6 @@ namespace CsDebugScript.Tests
 
                 try
                 {
-                    Context.ClearCache();
                     Context.SetUserTypeMetadata(ScriptCompiler.ExtractMetadata(new[]
                         {
                             typeof(CsDebugScript.CommonUserTypes.NativeTypes.std.@string).Assembly,
@@ -110,7 +109,6 @@ namespace CsDebugScript.Tests
                 finally
                 {
                     Context.SetUserTypeMetadata(originalUserTypeMetadata);
-                    Context.ClearCache();
                 }
             }
         }

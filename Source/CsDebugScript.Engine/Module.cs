@@ -138,14 +138,7 @@ namespace CsDebugScript
             TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
             ClrTypes = new DictionaryCache<IClrType, CodeType>(GetClrCodeType);
             GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
-            UserTypeCastedGlobalVariables = new DictionaryCache<string, Variable>((name) =>
-            {
-                Variable variable = Process.CastVariableToUserType(GlobalVariables[name]);
-
-                if (UserTypeCastedGlobalVariables.Count == 0)
-                    GlobalCache.Caches.Add(UserTypeCastedGlobalVariables);
-                return variable;
-            });
+            UserTypeCastedGlobalVariables = Context.UserTypeMetadataCaches.CreateDictionaryCache<string, Variable>((name) => Process.CastVariableToUserType(GlobalVariables[name]));
         }
 
         /// <summary>

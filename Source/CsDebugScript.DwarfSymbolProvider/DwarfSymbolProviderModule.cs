@@ -352,8 +352,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             try
             {
                 // Try to find what is the first function at virtual table address
-                MemoryBuffer memoryBuffer = Debugger.ReadMemory(Module.Process, vtableAddress + Module.Address, Module.PointerSize);
-                ulong firstFunctionAddress = UserType.ReadPointer(memoryBuffer, 0, (int)Module.Process.GetPointerSize());
+                ulong firstFunctionAddress = Module.Process.ReadPointer(vtableAddress + Module.Address);
                 ulong displacement;
                 DwarfSymbol firstFunction = FindFunction(firstFunctionAddress - Module.Address, out displacement);
 
@@ -2349,9 +2348,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                                 }
 
                                 ulong address = ResolveLocation(location, frameContext);
-                                MemoryBuffer buffer = Debugger.ReadMemory(Module.Process, address, Module.PointerSize);
-
-                                address = UserType.ReadPointer(buffer, 0, (int)Module.PointerSize);
+                                address = Module.Process.ReadPointer(address);
                                 stack.Push(Location.Absolute(address));
                             }
                             break;
