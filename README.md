@@ -31,6 +31,8 @@ foreach (Module module in Process.Current.Modules)
     Console.WriteLine(module.Name);
 ```
 
+Take a look at [Tutorials](Documentation/Tutorials.md). It will come in handy :)
+
 # Building the project
 Prerequisites:
 1. [.NET core 2.0](https://www.microsoft.com/net/download/core)
