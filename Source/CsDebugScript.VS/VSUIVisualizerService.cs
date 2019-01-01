@@ -122,7 +122,7 @@ namespace CsDebugScript.VS
 
             StringBuilder sb = new StringBuilder();
 
-            sb.Append("var ");
+            sb.Append("dynamic ");
             sb.Append(name);
             sb.Append(" = ");
             sb.Append(pointer > 0 ? "Variable.CreatePointer(" : "Variable.Create(");

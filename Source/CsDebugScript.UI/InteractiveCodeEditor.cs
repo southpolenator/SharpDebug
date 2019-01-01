@@ -56,27 +56,26 @@ namespace CsDebugScript.UI
         /// Initializes a new instance of the <see cref="InteractiveCodeEditor" /> class.
         /// </summary>
         /// <param name="objectWriter">Interactive result visualizer object writer.</param>
-        /// <param name="interactiveExecutionBehavior">Customization of interactive execution.</param>
+        /// <param name="interactiveExecution">Interactive execution with delayed evaluation.</param>
         /// <param name="fontFamily">The font family.</param>
         /// <param name="fontSize">Size of the font.</param>
         /// <param name="indentationSize">Size of the indentation.</param>
         /// <param name="highlightingColors">The highlighting colors.</param>
-        public InteractiveCodeEditor(InteractiveResultVisualizer objectWriter, InteractiveExecutionBehavior interactiveExecutionBehavior, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+        public InteractiveCodeEditor(InteractiveResultVisualizer objectWriter, SimpleCache<InteractiveExecution> interactiveExecution, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
             : base(fontFamily, fontSize, indentationSize, highlightingColors)
         {
             // Run initialization of the window in background STA thread
             IsEnabled = false;
+            InteractiveExecutionCache = interactiveExecution;
             System.Threading.Thread thread = new System.Threading.Thread(() =>
             {
                 try
                 {
-                    InteractiveExecution = new InteractiveExecution(interactiveExecutionBehavior);
                     InteractiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
                     {
                         InteractiveCodeEditor = this,
                     };
                     InteractiveExecution.scriptBase.ObjectWriter = objectWriter;
-                    InteractiveExecution.Reset();
 
                     Dispatcher.InvokeAsync(() =>
                     {
@@ -115,7 +114,9 @@ namespace CsDebugScript.UI
 
         public event Action CloseRequested;
 
-        internal InteractiveExecution InteractiveExecution { get; private set; }
+        internal SimpleCache<InteractiveExecution> InteractiveExecutionCache { get; private set; }
+
+        internal InteractiveExecution InteractiveExecution => InteractiveExecutionCache.Value;
 
         protected new void Initialize()
         {
