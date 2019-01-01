@@ -10,9 +10,8 @@ Debugging both native and managed code is supported (currently, managed code is 
 [![Nuget version](https://img.shields.io/nuget/v/csdebugscript.engine.svg?style=flat)](https://www.nuget.org/packages/csdebugscript.engine/)
 [![GitHub release](https://img.shields.io/github/release/southpolenator/windbgcs.svg?style=flat)](https://github.com/southpolenator/WinDbgCs/releases/latest)
 
-If you want newer build than what is available in Releases page or as nuget package, you can click on [Latest build](https://ci.appveyor.com/project/southpolenator/windbgcs/branch/master), select Configuration and click on Artifacts. You can also use private nuget feed [https://ci.appveyor.com/nuget/windbgcs-raewbx34ffcq](https://ci.appveyor.com/nuget/windbgcs-raewbx34ffcq).
-
-You can also install latest version of the Visual Studio extension from [Open VSIX Gallery](http://vsixgallery.com/).
+Latest version of Visual Studio extension is uploaded to [Open VSIX Gallery](http://vsixgallery.com/).
+If you want newer build than what is available in Releases page or as nuget package, you can click on [Latest build](https://ci.appveyor.com/project/southpolenator/windbgcs/branch/master), select Configuration and click on Artifacts. You can also use private nuget feed from [AppVeyor CI builds](https://ci.appveyor.com/nuget/windbgcs-raewbx34ffcq).
 
 # Debugger extensions:
 * [Visual Studio Extension](Documentation/VisualStudioExtension.md)
