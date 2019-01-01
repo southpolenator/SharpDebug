@@ -2,9 +2,7 @@
 using System;
 using System.AddIn.Contract;
 using System.AddIn.Pipeline;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,9 +14,9 @@ namespace CsDebugScript.VS
     {
         private VSInteractiveWindowControl control;
 
-        public INativeHandleContract CreateControl(InteractiveExecutionBehavior interactiveExecutionBehavior)
+        public INativeHandleContract CreateControl(InteractiveExecutionInitialization interactiveExecutionInitialization)
         {
-            control = new VSInteractiveWindowControl(interactiveExecutionBehavior);
+            control = new VSInteractiveWindowControl(interactiveExecutionInitialization);
             return FrameworkElementAdapters.ViewToContractAdapter(control);
         }
 
@@ -26,6 +24,21 @@ namespace CsDebugScript.VS
         {
             control.Dispatcher.InvokeShutdown();
             GC.Collect();
+        }
+
+        public void DebuggerEnteredDesignMode()
+        {
+            control.DebuggerEnteredDesignMode();
+        }
+
+        public void DebuggerEnteredRunMode()
+        {
+            control.DebuggerEnteredRunMode();
+        }
+
+        public void DebuggerEnteredBreakMode()
+        {
+            control.DebuggerEnteredBreakMode();
         }
     }
 
@@ -114,9 +127,33 @@ namespace CsDebugScript.VS
             unloadedDomainControl.Text = "This window is only active while debugging";
             grid.Children.Add(unloadedDomainControl);
 
-            VSContext.DebuggerEnteredDesignMode += () => UnloadDomain();
-            VSContext.DebuggerEnteredRunMode += () => LoadDomain();
-            VSContext.DebuggerEnteredBreakMode += () => LoadDomain();
+            VSContext.DebuggerEnteredDesignMode += () =>
+            {
+#if USE_APP_DOMAIN
+                proxy?.DebuggerEnteredDesignMode();
+#else
+                interactiveControl?.DebuggerEnteredDesignMode();
+#endif
+                UnloadDomain();
+            };
+            VSContext.DebuggerEnteredRunMode += () =>
+            {
+                LoadDomain();
+#if USE_APP_DOMAIN
+                proxy?.DebuggerEnteredRunMode();
+#else
+                interactiveControl?.DebuggerEnteredRunMode();
+#endif
+            };
+            VSContext.DebuggerEnteredBreakMode += () =>
+            {
+                LoadDomain();
+#if USE_APP_DOMAIN
+                proxy?.DebuggerEnteredBreakMode();
+#else
+                interactiveControl?.DebuggerEnteredBreakMode();
+#endif
+            };
             if (VSContext.CurrentDebugMode == EnvDTE.dbgDebugMode.dbgBreakMode || VSContext.CurrentDebugMode == EnvDTE.dbgDebugMode.dbgRunMode)
             {
                 LoadDomain();
@@ -171,8 +208,6 @@ namespace CsDebugScript.VS
             {
                 try
                 {
-                    InteractiveExecutionBehavior interactiveExecutionBehavior = new VSInteractiveExecutionBehavior();
-
                     AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
                     AppDomainSetup setup = new AppDomainSetup()
                     {
@@ -183,9 +218,9 @@ namespace CsDebugScript.VS
                     VSContext.InitializeAppDomain(scriptDomain);
 #if USE_APP_DOMAIN
                     proxy = (VSInteractiveWindowProxy)scriptDomain.CreateInstanceAndUnwrap(typeof(VSInteractiveWindowProxy).Assembly.FullName, typeof(VSInteractiveWindowProxy).FullName);
-                    var interactiveControl = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl(interactiveExecutionBehavior));
+                    var interactiveControl = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl(VSContext.InteractiveExecutionInitialization));
 #else
-                    interactiveControl = new VSInteractiveWindowControl(interactiveExecutionBehavior);
+                    interactiveControl = new VSInteractiveWindowControl(VSContext.InteractiveExecutionInitialization);
 #endif
 
                     grid.Children.Clear();

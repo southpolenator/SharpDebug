@@ -25,22 +25,22 @@ namespace CsDebugScript.UI
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindowContent" /> class.
         /// </summary>
-        /// <param name="interactiveExecutionBehavior">Customization of interactive execution.</param>
+        /// <param name="interactiveExecutionInitialization">Interactive execution initialization.</param>
         /// <param name="highlightingColors">The highlighting colors.</param>
-        public InteractiveWindowContent(InteractiveExecutionBehavior interactiveExecutionBehavior, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
-            : this(interactiveExecutionBehavior, "Consolas", 14, 4, highlightingColors)
+        public InteractiveWindowContent(InteractiveExecutionInitialization interactiveExecutionInitialization, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+            : this(interactiveExecutionInitialization, "Consolas", 14, 4, highlightingColors)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindowContent"/> class.
         /// </summary>
-        /// <param name="interactiveExecutionBehavior">Customization of interactive execution.</param>
+        /// <param name="interactiveExecutionInitialization">Interactive execution initialization.</param>
         /// <param name="fontFamily">The font family.</param>
         /// <param name="fontSize">Size of the font.</param>
         /// <param name="indentationSize">Size of the indentation.</param>
         /// <param name="highlightingColors">The highlighting colors.</param>
-        public InteractiveWindowContent(InteractiveExecutionBehavior interactiveExecutionBehavior, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+        public InteractiveWindowContent(InteractiveExecutionInitialization interactiveExecutionInitialization, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
         {
             this.fontFamily = fontFamily;
             this.fontSize = fontSize;
@@ -58,7 +58,7 @@ namespace CsDebugScript.UI
             resultsPanel.CanVerticallyScroll = true;
             resultsPanel.CanHorizontallyScroll = true;
             scrollViewer.Content = resultsPanel;
-            interactiveExecutionBehavior.ClearDone += () => clearAfterExecution = true;
+            interactiveExecutionInitialization.InteractiveExecutionBehavior.ClearDone += () => clearAfterExecution = true;
 
             // Add prompt for text editor
             var panel = new Grid();
@@ -69,12 +69,12 @@ namespace CsDebugScript.UI
             promptBlock.VerticalAlignment = VerticalAlignment.Top;
             promptBlock.FontFamily = new FontFamily(fontFamily);
             promptBlock.FontSize = fontSize;
-            promptBlock.Text = interactiveExecutionBehavior.GetReplExecutingPrompt();
+            promptBlock.Text = interactiveExecutionInitialization.InteractiveExecutionBehavior.GetReplExecutingPrompt();
             promptBlock.SizeChanged += PromptBlock_SizeChanged;
             panel.Children.Add(promptBlock);
 
             // Add text editor
-            TextEditor = new InteractiveCodeEditor(new InteractiveResultVisualizer(this), interactiveExecutionBehavior, fontFamily, fontSize, indentationSize, highlightingColors);
+            TextEditor = new InteractiveCodeEditor(new InteractiveResultVisualizer(this), interactiveExecutionInitialization.InteractiveExecutionCache, fontFamily, fontSize, indentationSize, highlightingColors);
             TextEditor.HorizontalAlignment = HorizontalAlignment.Stretch;
             TextEditor.Background = Brushes.Transparent;
             TextEditor.CommandExecuted += TextEditor_CommandExecuted;
