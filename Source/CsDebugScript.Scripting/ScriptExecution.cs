@@ -42,6 +42,21 @@ namespace CsDebugScript
             },
             new XmlTypeTransformation()
             {
+                OriginalType = "std::basic_string<char>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::basic_string<wchar_t>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::basic_string<unsigned short>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+            },
+            new XmlTypeTransformation()
+            {
                 OriginalType = "std::vector<${T},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
             },
