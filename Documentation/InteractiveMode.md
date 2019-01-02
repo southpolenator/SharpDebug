@@ -33,7 +33,7 @@ Where `width`, `height` and `stride` can be any kind of number that can be caste
 `channels` can be any value from `CsDebugScript.Drawing.Channels` predefined static fields or you can create a new one.
 `data` can be ulong value of the pointer, pointer to a simple type, or pointer to void. If pixel channel type cannot be deduced, you can use generics function:
 ```cs
-void DrawImage<PixelType>(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null);
+void DrawImage<T>(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null);
 ```
 There are also predefined functions for well known channels:
 ```cs
