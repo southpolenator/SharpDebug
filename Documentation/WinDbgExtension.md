@@ -19,6 +19,7 @@ In case you have one more extension that exports !execute command, you must spec
 ```
 !CsDebugScript.execute c:\Scripts\myscript.csx
 ```
+Learn more about writting scripts in [Tutorials](Tutorials.md).
 
 ## Entering interactive mode
 Use `!interactive` command exported from CsDebugScript extension:
