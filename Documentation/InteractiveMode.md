@@ -26,7 +26,25 @@ writeln() => Console.WriteLine()
 ```
 
 #### Drawing functions
-// TODO: Continue
+```cs
+void DrawImage(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null);
+```
+Where `width`, `height` and `stride` can be any kind of number that can be casted to int. It can also be Variable that holds number type.
+`channels` can be any value from `CsDebugScript.Drawing.Channels` predefined static fields or you can create a new one.
+`data` can be ulong value of the pointer, pointer to a simple type, or pointer to void. If pixel channel type cannot be deduced, you can use generics function:
+```cs
+void DrawImage<PixelType>(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null);
+```
+There are also predefined functions for well known channels:
+```cs
+void DrawRgbImage(dynamic width, dynamic height, dynamic data, dynamic stride = null);
+void DrawRgbaImage(dynamic width, dynamic height, dynamic data, dynamic stride = null);
+void DrawBgrImage(dynamic width, dynamic height, dynamic data, dynamic stride = null);
+void DrawBgraImage(dynamic width, dynamic height, dynamic data, dynamic stride = null);
+void DrawCmykImage(dynamic width, dynamic height, dynamic data, dynamic stride = null);
+void DrawGrayscaleImage(dynamic width, dynamic height, dynamic data, dynamic stride = null);
+```
+Similarly, they all have their generics versions.
 
 ### Helper global objects
 While in interactive mode, you will have access to these global objects:
