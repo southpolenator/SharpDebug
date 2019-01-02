@@ -3,27 +3,27 @@
 ### Enumerating processes being debugged
 ```cs
 foreach (Process process in Process.All)
-    writeln("{0}:{1} {2}", process.Id, process.SystemId, process.ExecutableName);
-Console.WriteLine("Current process: {0}", Process.Current.SystemId);
+    Console.WriteLine($"{process.Id}:{process.SystemId} {process.ExecutableName}");
+Console.WriteLine($"Current process: {Process.Current.SystemId}");
 ```
 
 ### Enumeratung all threads in current process being debugged
 ```cs
 foreach (Thread thread in Thread.All)
-    writeln("{0}:{1}", thread.Id, thread.SystemId);
-writeln("Current thread: {0}:{1}", Thread.Current.Id, Thread.Current.SystemId);
+    Console.WriteLine($"{thread.Id}:{thread.SystemId}");
+Console.WriteLine($"Current thread: {Thread.Current.Id}:{Thread.Current.SystemId}");
 ```
 
 ### Enumerating all modules in current process being debugged
 ```cs
 foreach (Module module in Module.All)
-    writeln("0x{0:X} {1}", module.Offset, module.Name);
+    Console.WriteLine($"0x{module.Offset:X} {module.Name}");
 ```
 
 ### List all functions on a call stack of the current thread
 ```cs
 foreach (StackFrame frame in Thread.Current.StackTrace.Frames)
-    writeln(frame.FunctionName);
+    Console.WriteLine(frame.FunctionName);
 ```
 
 ### Mappings of current process/thread shortcuts
@@ -39,7 +39,47 @@ StackFrame.Current => StackTrace.Current.CurrentFrame;
 ```cs
 VariableCollection locals = StackTrace.Current.Frames[0].Locals;
 foreach (Variable l in locals)
-    writeln(l.GetName());
+    Console.WriteLine(l.GetName());
 dynamic myVar = locals["myVar"];
-writeln(myVar);
+Console.WriteLine(myVar);
+```
+
+### Accessing global variables
+```cs
+Variable globalVariable = Process.Current.GetGlobal("mymodule!globalVariable");
+Variable staticClassVariable = Process.Current.GetGlobal("mymodule!Class::staticVariable");
+```
+You can also access through Modules in [interactive mode](InteractiveMode.md):
+```cs
+dynamic globalVariable = Modules.mymodule.globalVariable;
+dynamic staticClassVariable = Modules.mymodule.GetVariable("Class::staticVariable");
+```
+
+### Accessing variable fields
+```cs
+Variable variable = Process.Current.GetGlobal("mymodule!globalVariable");
+Variable field = variable.GetField("field");
+```
+Or if you use dynamic:
+```cs
+dynamic variable = Process.Current.GetGlobal("mymodule!globalVariable");
+dynamic field = variable.field;
+```
+
+### Getting variable type
+```cs
+CodeType type = myVariable.GetCodeType();
+```
+
+### Casting variable to built-in type
+```cs
+Variable variable = Process.Current.GetGlobal("mymodule!globalVariable");
+int intValue = (int)variable;
+ulong ulongValue = (ulong)variable;
+```
+
+### Casting variable to user type
+```cs
+Variable variable = Process.Current.GetGlobal("mymodule!globalVariable");
+std.wstring s = variable.CastAs<std.wstring>();
 ```
