@@ -26,6 +26,9 @@ writeln() => Console.WriteLine()
 ```
 
 #### Drawing functions
+See more about [drawing objects](Drawings.md).
+
+Here are helper functions with dynamic arguments that can be used for easier visualization of images:
 ```cs
 void DrawImage(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null);
 ```
@@ -69,7 +72,7 @@ writeln(Locals.someArray.Length);
 #### Dump()
 Extension method that allows you to visualize different types on output.
 If variable that needs to be visualized is simple type, it will be just printed to the console using `Console.WriteLine`.
-Drawing objects will be visualized using drawing visualizer. See more about [drawings](Drawings.md).
+[Drawing objects](Drawings.md) will be visualized using drawing visualizer.
 If variable implements IConsoleVisualizer, it will be outputted to console using its method.
 For everything else, variable is considered as of complex type and it will be visualized using result visualizer (table tree).
 ```cs
