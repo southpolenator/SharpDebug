@@ -31,7 +31,7 @@ foreach (Module module in Process.Current.Modules)
     Console.WriteLine(module.Name);
 ```
 
-Take a look at [Tutorials](Documentation/Tutorials.md). It will come in handy :)
+Take a look at [Tutorials](Documentation/Tutorials.md) and [Automate dump processing](Documentation/DumpProcessing.md). It will come in handy :)
 
 # Building the project
 Prerequisites:
