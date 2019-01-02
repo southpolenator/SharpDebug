@@ -32,7 +32,7 @@ var a = Threads[0];
 #dbg kn
 writeln("{0}:{1}", a.Id, a.SystemId);
 ```
-See more about benefits of [interactive mode](InteractiveMode.md).
+Learn more about easier scripting in [interactive mode](InteractiveMode.md).
 
 ### Screenshots
 ![Interactive mode](../samples/interactive.png)
@@ -43,6 +43,8 @@ Use `!openui` command exported from CsDebugScript extension:
 !CsDebugScript.openui
 ```
 UI interactive mode is more powerful than regular interactive mode as it provides C# editor, completion window, XML documentation, etc.
+
+Learn more about easier scripting in [interactive mode](InteractiveMode.md).
 
 ### Screenshots
 ![UI interactive mode 1](../samples/ui1.png)
