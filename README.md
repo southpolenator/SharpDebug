@@ -39,3 +39,6 @@ Prerequisites:
 2. [Visual Studio Community 2017](https://www.visualstudio.com/downloads/) (only for building WinDbg extension, VisualStudio extension)
 
 Take a look at [instructions](Documentation/Build.md).
+
+# Supporting the project
+If you like the project, use it, "star" it, share ideas on how else it can be used, file issues, etc...
