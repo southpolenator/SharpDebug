@@ -32,6 +32,7 @@ var a = Threads[0];
 #dbg kn
 writeln("{0}:{1}", a.Id, a.SystemId);
 ```
+See more about benefits of [interactive mode](InteractiveMode.md).
 
 ### Screenshots
 ![Interactive mode](../samples/interactive.png)
