@@ -77,5 +77,16 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
         /// Type of the single value.
         /// </summary>
         public Type Type;
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return $"{Channels} ({Type.Name})";
+        }
     }
 }

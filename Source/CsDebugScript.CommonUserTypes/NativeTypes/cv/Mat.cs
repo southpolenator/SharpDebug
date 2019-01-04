@@ -131,6 +131,21 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            if (!IsCorrect)
+                return "[not initialized]";
+            if (!CanVisualize())
+                return "[not an image]";
+            return $"{Sizes[1]} x {Sizes[0]} x {Type}";
+        }
+
+        /// <summary>
         /// Creates drawing that should be visualized based on cv::Mat data.
         /// </summary>
         /// <param name="graphics">Graphics object used to create drawings.</param>
