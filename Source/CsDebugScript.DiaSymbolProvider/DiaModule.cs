@@ -273,9 +273,12 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public CodeTypeTag GetTypeTag(uint typeId)
         {
-            SymTagEnum symTag = GetTypeFromId(typeId).symTag;
+            return FixStaFailure(() =>
+            {
+                SymTagEnum symTag = GetTypeFromId(typeId).symTag;
 
-            return symTag.ToCodeTypeTag();
+                return symTag.ToCodeTypeTag();
+            });
         }
 
         /// <summary>
@@ -284,7 +287,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypeSize(uint typeId)
         {
-            return (uint)GetTypeFromId(typeId).length;
+            return FixStaFailure(() =>
+            {
+                return (uint)GetTypeFromId(typeId).length;
+            });
         }
 
         /// <summary>
@@ -294,39 +300,47 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public bool TryGetTypeId(string typeName, out uint typeId)
         {
-            IDiaSymbol type;
+            uint tid = 0;
 
-            if (typeName == "unsigned __int64")
-                typeName = "unsigned long long";
-            else if (typeName == "__int64")
-                typeName = "long long";
-            else if (typeName == "long")
-                typeName = "int";
-            else if (typeName == "unsigned long")
-                typeName = "unsigned int";
-            else if (typeName == "signed char")
-                typeName = "char";
-
-            if (basicTypes.Cached)
+            bool result = FixStaFailure(() =>
             {
-                if (!BasicTypes.TryGetValue(typeName, out type))
+                IDiaSymbol type;
+
+                if (typeName == "unsigned __int64")
+                    typeName = "unsigned long long";
+                else if (typeName == "__int64")
+                    typeName = "long long";
+                else if (typeName == "long")
+                    typeName = "int";
+                else if (typeName == "unsigned long")
+                    typeName = "unsigned int";
+                else if (typeName == "signed char")
+                    typeName = "char";
+
+                if (basicTypes.Cached)
+                {
+                    if (!BasicTypes.TryGetValue(typeName, out type))
+                        type = GetTypeFromGlobalSpace(typeName);
+                }
+                else
+                {
                     type = GetTypeFromGlobalSpace(typeName);
-            }
-            else
-            {
-                type = GetTypeFromGlobalSpace(typeName);
-                if (type == null)
-                    type = BasicTypes[typeName];
-            }
+                    if (type == null)
+                        type = BasicTypes[typeName];
+                }
 
-            if (type != null)
-            {
-                typeId = GetTypeId(type);
-                return true;
-            }
+                if (type != null)
+                {
+                    tid = GetTypeId(type);
+                    return true;
+                }
 
-            typeId = 0;
-            return false;
+                tid = 0;
+                return false;
+            });
+
+            typeId = tid;
+            return result;
         }
 
         /// <summary>
@@ -389,7 +403,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string GetTypeName(uint typeId)
         {
-            return TypeToString.GetTypeString(GetTypeFromId(typeId));
+            return FixStaFailure(() =>
+            {
+                return TypeToString.GetTypeString(GetTypeFromId(typeId));
+            });
         }
 
         /// <summary>
@@ -398,7 +415,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public uint GetTypeElementTypeId(uint typeId)
         {
-            return GetTypeFromId(typeId).typeId;
+            return FixStaFailure(() =>
+            {
+                return GetTypeFromId(typeId).typeId;
+            });
         }
 
         /// <summary>
@@ -408,14 +428,17 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <returns>Type id to pointer type, or <c>int.MaxValue</c> if it doesn't exist and fake should be used.</returns>
         public uint GetTypePointerToTypeId(uint typeId)
         {
-            var symbol = GetTypeFromId(typeId);
-            var pointer = symbol.objectPointerType;
+            return FixStaFailure(() =>
+            {
+                var symbol = GetTypeFromId(typeId);
+                var pointer = symbol.objectPointerType;
 
-            if (pointer != null)
-                return pointer.symIndexId;
-            if (TryGetTypeId(symbol.name + "*", out typeId))
-                return typeId;
-            return int.MaxValue;
+                if (pointer != null)
+                    return pointer.symIndexId;
+                if (TryGetTypeId(symbol.name + "*", out typeId))
+                    return typeId;
+                return (uint)int.MaxValue;
+            });
         }
 
         /// <summary>
@@ -424,7 +447,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string[] GetTypeAllFieldNames(uint typeId)
         {
-            return GetTypeAllFieldNames(GetTypeFromId(typeId));
+            return FixStaFailure(() =>
+            {
+                return GetTypeAllFieldNames(GetTypeFromId(typeId));
+            });
         }
 
         /// <summary>
@@ -450,7 +476,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="fieldName">Name of the field.</param>
         public Tuple<uint, int> GetTypeAllFieldTypeAndOffset(uint typeId, string fieldName)
         {
-            return GetTypeFieldTypeAndOffset(GetTypeFromId(typeId), fieldName);
+            return FixStaFailure(() =>
+            {
+                return GetTypeFieldTypeAndOffset(GetTypeFromId(typeId), fieldName);
+            });
         }
 
         /// <summary>
@@ -491,21 +520,31 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <exception cref="Exception">Address not found</exception>
         public void GetSourceFileNameAndLine(uint address, out string sourceFileName, out uint sourceFileLine, out ulong displacement)
         {
-            IDiaSymbol function = session.findSymbolByRVA(address, SymTagEnum.Function);
-            IDiaEnumLineNumbers lineNumbers = session.findLinesByRVA(address, (uint)function.length);
+            string fileName = null;
+            uint fileLine = 0;
+            ulong disp = 0;
 
-            foreach (IDiaLineNumber lineNumber in lineNumbers.Enum())
+            FixStaFailure(() =>
             {
-                if (address >= lineNumber.relativeVirtualAddress)
-                {
-                    sourceFileName = lineNumber.sourceFile.fileName;
-                    sourceFileLine = lineNumber.lineNumber;
-                    displacement = address - lineNumber.relativeVirtualAddress;
-                    return;
-                }
-            }
+                IDiaSymbol function = session.findSymbolByRVA(address, SymTagEnum.Function);
+                IDiaEnumLineNumbers lineNumbers = session.findLinesByRVA(address, (uint)function.length);
 
-            throw new Exception("Address not found");
+                foreach (IDiaLineNumber lineNumber in lineNumbers.Enum())
+                {
+                    if (address >= lineNumber.relativeVirtualAddress)
+                    {
+                        fileName = lineNumber.sourceFile.fileName;
+                        fileLine = lineNumber.lineNumber;
+                        disp = address - lineNumber.relativeVirtualAddress;
+                        return;
+                    }
+                }
+
+                throw new Exception("Address not found");
+            });
+            sourceFileName = fileName;
+            sourceFileLine = fileLine;
+            displacement = disp;
         }
 
         /// <summary>
@@ -548,31 +587,34 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="arguments">if set to <c>true</c> only arguments will be returned.</param>
         public VariableCollection GetFrameLocals(StackFrame frame, uint relativeAddress, bool arguments)
         {
-            IDiaSymbol function;
-            int displacement;
-            List<Variable> variables = new List<Variable>();
-
-            session.findSymbolByRVAEx(relativeAddress, SymTagEnum.Function, out function, out displacement);
-            GetFrameLocals(function, relativeAddress, variables, frame, Module, arguments);
-            if (!arguments)
+            return FixStaFailure(() =>
             {
-                IDiaSymbol block;
+                IDiaSymbol function;
+                int displacement;
+                List<Variable> variables = new List<Variable>();
 
-                // Locate locals using block.
-                session.findSymbolByRVAEx(relativeAddress, SymTagEnum.Block, out block, out displacement);
-
-                if (block != null)
+                session.findSymbolByRVAEx(relativeAddress, SymTagEnum.Function, out function, out displacement);
+                GetFrameLocals(function, relativeAddress, variables, frame, Module, arguments);
+                if (!arguments)
                 {
-                    // Traverse blocks till we reach function.
-                    while (block.symTag != SymTagEnum.Function)
+                    IDiaSymbol block;
+
+                    // Locate locals using block.
+                    session.findSymbolByRVAEx(relativeAddress, SymTagEnum.Block, out block, out displacement);
+
+                    if (block != null)
                     {
-                        GetFrameLocals(block, uint.MaxValue, variables, frame, Module, arguments);
-                        block = block.lexicalParent;
+                        // Traverse blocks till we reach function.
+                        while (block.symTag != SymTagEnum.Function)
+                        {
+                            GetFrameLocals(block, uint.MaxValue, variables, frame, Module, arguments);
+                            block = block.lexicalParent;
+                        }
                     }
                 }
-            }
 
-            return new VariableCollection(variables.ToArray());
+                return new VariableCollection(variables.ToArray());
+            });
         }
 
         /// <summary>
@@ -739,9 +781,12 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="globalVariableName">Name of the global variable.</param>
         public ulong GetGlobalVariableAddress(string globalVariableName)
         {
-            var globalVariable = GetGlobalVariable(globalVariableName);
+            return FixStaFailure(() =>
+            {
+                var globalVariable = GetGlobalVariable(globalVariableName);
 
-            return globalVariable.relativeVirtualAddress + Module.Offset;
+                return globalVariable.relativeVirtualAddress + Module.Offset;
+            });
         }
 
         /// <summary>
@@ -750,9 +795,12 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="globalVariableName">Name of the global variable.</param>
         public uint GetGlobalVariableTypeId(string globalVariableName)
         {
-            var globalVariable = GetGlobalVariable(globalVariableName);
+            return FixStaFailure(() =>
+            {
+                var globalVariable = GetGlobalVariable(globalVariableName);
 
-            return GetTypeId(globalVariable.type);
+                return GetTypeId(globalVariable.type);
+            });
         }
 
         /// <summary>
@@ -792,16 +840,19 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string[] GetTypeFieldNames(uint typeId)
         {
-            var type = GetTypeFromId(typeId);
-
-            if (type.symTag == SymTagEnum.PointerType)
+            return FixStaFailure(() =>
             {
-                type = type.type;
-            }
+                var type = GetTypeFromId(typeId);
 
-            var fields = typeFields[type.symIndexId];
+                if (type.symTag == SymTagEnum.PointerType)
+                {
+                    type = type.type;
+                }
 
-            return fields.Select(t => t.Item1).ToArray();
+                var fields = typeFields[type.symIndexId];
+
+                return fields.Select(t => t.Item1).ToArray();
+            });
         }
 
         /// <summary>
@@ -811,26 +862,29 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="fieldName">Name of the field.</param>
         public Tuple<uint, int> GetTypeFieldTypeAndOffset(uint typeId, string fieldName)
         {
-            var type = GetTypeFromId(typeId);
-
-            if (type.symTag == SymTagEnum.PointerType)
+            return FixStaFailure(() =>
             {
-                type = type.type;
-            }
+                var type = GetTypeFromId(typeId);
 
-            var fields = typeFields[type.symIndexId];
-
-            foreach (var field in fields)
-            {
-                if (field.Item1 != fieldName)
+                if (type.symTag == SymTagEnum.PointerType)
                 {
-                    continue;
+                    type = type.type;
                 }
 
-                return Tuple.Create(field.Item2, field.Item3);
-            }
+                var fields = typeFields[type.symIndexId];
 
-            throw new Exception("Field not found");
+                foreach (var field in fields)
+                {
+                    if (field.Item1 != fieldName)
+                    {
+                        continue;
+                    }
+
+                    return Tuple.Create(field.Item2, field.Item3);
+                }
+
+                throw new Exception("Field not found");
+            });
         }
 
         /// <summary>
@@ -839,16 +893,19 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public string[] GetTypeStaticFieldNames(uint typeId)
         {
-            var type = GetTypeFromId(typeId);
-
-            if (type.symTag == SymTagEnum.PointerType)
+            return FixStaFailure(() =>
             {
-                type = type.type;
-            }
+                var type = GetTypeFromId(typeId);
 
-            var fields = typeStaticFields[type.symIndexId];
+                if (type.symTag == SymTagEnum.PointerType)
+                {
+                    type = type.type;
+                }
 
-            return fields.Select(t => t.Item1).ToArray();
+                var fields = typeStaticFields[type.symIndexId];
+
+                return fields.Select(t => t.Item1).ToArray();
+            });
         }
 
         /// <summary>
@@ -858,26 +915,29 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="fieldName">Name of the field.</param>
         public Tuple<uint, ulong> GetTypeStaticFieldTypeAndAddress(uint typeId, string fieldName)
         {
-            var type = GetTypeFromId(typeId);
-
-            if (type.symTag == SymTagEnum.PointerType)
+            return FixStaFailure(() =>
             {
-                type = type.type;
-            }
+                var type = GetTypeFromId(typeId);
 
-            var fields = typeStaticFields[type.symIndexId];
-
-            foreach (var field in fields)
-            {
-                if (field.Item1 != fieldName)
+                if (type.symTag == SymTagEnum.PointerType)
                 {
-                    continue;
+                    type = type.type;
                 }
 
-                return Tuple.Create(field.Item2, field.Item3);
-            }
+                var fields = typeStaticFields[type.symIndexId];
 
-            throw new Exception("Field not found");
+                foreach (var field in fields)
+                {
+                    if (field.Item1 != fieldName)
+                    {
+                        continue;
+                    }
+
+                    return Tuple.Create(field.Item2, field.Item3);
+                }
+
+                throw new Exception("Field not found");
+            });
         }
 
         /// <summary>
@@ -889,10 +949,13 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <returns>Address of the object which code type is virtual class.</returns>
         public ulong GetVirtualClassBaseAddress(uint objectTypeId, ulong objectAddress, uint virtualTypeId)
         {
-            IDiaSymbol objectType = GetTypeFromId(objectTypeId);
-            IDiaSymbol virtualType = GetTypeFromId(virtualTypeId);
+            return FixStaFailure(() =>
+            {
+                IDiaSymbol objectType = GetTypeFromId(objectTypeId);
+                IDiaSymbol virtualType = GetTypeFromId(virtualTypeId);
 
-            return GetVirtualClassBaseAddress(objectType, objectAddress, virtualType.name);
+                return GetVirtualClassBaseAddress(objectType, objectAddress, virtualType.name);
+            });
         }
 
         /// <summary>
@@ -945,46 +1008,49 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="className">Name of the class.</param>
         public Tuple<uint, int> GetTypeBaseClass(uint typeId, string className)
         {
-            var type = GetTypeFromId(typeId);
-
-            if (type.symTag == SymTagEnum.PointerType)
+            return FixStaFailure(() =>
             {
-                type = type.type;
-            }
+                var type = GetTypeFromId(typeId);
 
-            if (CodeType.TypeNameMatches(type.name, className))
-            {
-                return Tuple.Create(type.symIndexId, 0);
-            }
-
-            Stack<Tuple<IDiaSymbol, int>> classes = new Stack<Tuple<IDiaSymbol, int>>();
-
-            classes.Push(Tuple.Create(type, 0));
-
-            while (classes.Count > 0)
-            {
-                var tuple = classes.Pop();
-                var bases = tuple.Item1.GetBaseClasses();
-
-                foreach (var b in bases.Reverse())
+                if (type.symTag == SymTagEnum.PointerType)
                 {
-                    int offset = tuple.Item2 + b.offset;
-
-                    if (b.virtualBaseClass || tuple.Item2 == int.MinValue)
-                    {
-                        offset = int.MinValue;
-                    }
-
-                    if (CodeType.TypeNameMatches(b.name, className))
-                    {
-                        return Tuple.Create(GetTypeId(b.name), offset);
-                    }
-
-                    classes.Push(Tuple.Create(b, offset));
+                    type = type.type;
                 }
-            }
 
-            throw new Exception("Base class not found");
+                if (CodeType.TypeNameMatches(type.name, className))
+                {
+                    return Tuple.Create(type.symIndexId, 0);
+                }
+
+                Stack<Tuple<IDiaSymbol, int>> classes = new Stack<Tuple<IDiaSymbol, int>>();
+
+                classes.Push(Tuple.Create(type, 0));
+
+                while (classes.Count > 0)
+                {
+                    var tuple = classes.Pop();
+                    var bases = tuple.Item1.GetBaseClasses();
+
+                    foreach (var b in bases.Reverse())
+                    {
+                        int offset = tuple.Item2 + b.offset;
+
+                        if (b.virtualBaseClass || tuple.Item2 == int.MinValue)
+                        {
+                            offset = int.MinValue;
+                        }
+
+                        if (CodeType.TypeNameMatches(b.name, className))
+                        {
+                            return Tuple.Create(GetTypeId(b.name), offset);
+                        }
+
+                        classes.Push(Tuple.Create(b, offset));
+                    }
+                }
+
+                throw new Exception("Base class not found");
+            });
         }
 
         /// <summary>
@@ -994,7 +1060,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="enumValue">The enumeration value.</param>
         public string GetEnumName(uint enumTypeId, ulong enumValue)
         {
-            return enumTypeNames[enumTypeId][enumValue];
+            return FixStaFailure(() =>
+            {
+                return enumTypeNames[enumTypeId][enumValue];
+            });
         }
 
         /// <summary>
@@ -1032,76 +1101,79 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public BuiltinType GetTypeBuiltinType(uint typeId)
         {
-            BasicType basicType = GetTypeFromId(typeId).baseType;
-            uint size = GetTypeSize(typeId);
-
-            switch (basicType)
+            return FixStaFailure(() =>
             {
-                case BasicType.Bool:
-                    return BuiltinType.Bool;
-                case BasicType.Char16:
-                case BasicType.Char32:
-                case BasicType.WChar:
-                case BasicType.Char:
-                    switch (size)
-                    {
-                        default:
-                        case 1:
-                            return BuiltinType.Char8;
-                        case 2:
-                            return BuiltinType.Char16;
-                        case 4:
-                            return BuiltinType.Char32;
-                    }
-                case BasicType.Int:
-                case BasicType.Long:
-                    switch (size)
-                    {
-                        case 1:
-                            return BuiltinType.Int8;
-                        case 2:
-                            return BuiltinType.Int16;
-                        default:
-                        case 4:
-                            return BuiltinType.Int32;
-                        case 8:
-                            return BuiltinType.Int64;
-                        case 16:
-                            return BuiltinType.Int128;
-                    }
-                case BasicType.UInt:
-                case BasicType.ULong:
-                case BasicType.Hresult:
-                    switch (size)
-                    {
-                        case 1:
-                            return BuiltinType.UInt8;
-                        case 2:
-                            return BuiltinType.UInt16;
-                        default:
-                        case 4:
-                            return BuiltinType.UInt32;
-                        case 8:
-                            return BuiltinType.UInt64;
-                        case 16:
-                            return BuiltinType.UInt128;
-                    }
-                case BasicType.Float:
-                    switch (size)
-                    {
-                        default:
-                        case 4:
-                            return BuiltinType.Float32;
-                        case 8:
-                            return BuiltinType.Float64;
-                        case 10:
-                            return BuiltinType.Float80;
-                    }
-                case BasicType.Void:
-                    return BuiltinType.Void;
-                default:
-                    return BuiltinType.NoType;
-            }
+                BasicType basicType = GetTypeFromId(typeId).baseType;
+                uint size = GetTypeSize(typeId);
+
+                switch (basicType)
+                {
+                    case BasicType.Bool:
+                        return BuiltinType.Bool;
+                    case BasicType.Char16:
+                    case BasicType.Char32:
+                    case BasicType.WChar:
+                    case BasicType.Char:
+                        switch (size)
+                        {
+                            default:
+                            case 1:
+                                return BuiltinType.Char8;
+                            case 2:
+                                return BuiltinType.Char16;
+                            case 4:
+                                return BuiltinType.Char32;
+                        }
+                    case BasicType.Int:
+                    case BasicType.Long:
+                        switch (size)
+                        {
+                            case 1:
+                                return BuiltinType.Int8;
+                            case 2:
+                                return BuiltinType.Int16;
+                            default:
+                            case 4:
+                                return BuiltinType.Int32;
+                            case 8:
+                                return BuiltinType.Int64;
+                            case 16:
+                                return BuiltinType.Int128;
+                        }
+                    case BasicType.UInt:
+                    case BasicType.ULong:
+                    case BasicType.Hresult:
+                        switch (size)
+                        {
+                            case 1:
+                                return BuiltinType.UInt8;
+                            case 2:
+                                return BuiltinType.UInt16;
+                            default:
+                            case 4:
+                                return BuiltinType.UInt32;
+                            case 8:
+                                return BuiltinType.UInt64;
+                            case 16:
+                                return BuiltinType.UInt128;
+                        }
+                    case BasicType.Float:
+                        switch (size)
+                        {
+                            default:
+                            case 4:
+                                return BuiltinType.Float32;
+                            case 8:
+                                return BuiltinType.Float64;
+                            case 10:
+                                return BuiltinType.Float80;
+                        }
+                    case BasicType.Void:
+                        return BuiltinType.Void;
+                    default:
+                        return BuiltinType.NoType;
+                }
+            });
         }
 
         /// <summary>
@@ -1110,24 +1182,27 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public Dictionary<string, Tuple<uint, int>> GetTypeDirectBaseClasses(uint typeId)
         {
-            var type = GetTypeFromId(typeId);
-
-            if (type.symTag == SymTagEnum.PointerType)
+            return FixStaFailure(() =>
             {
-                type = type.type;
-            }
+                var type = GetTypeFromId(typeId);
 
-            var bases = type.GetBaseClasses();
-            var result = new Dictionary<string, Tuple<uint, int>>();
+                if (type.symTag == SymTagEnum.PointerType)
+                {
+                    type = type.type;
+                }
 
-            foreach (var b in bases.Reverse())
-            {
-                int offset = b.virtualBaseClass ? int.MinValue : b.offset;
+                var bases = type.GetBaseClasses();
+                var result = new Dictionary<string, Tuple<uint, int>>();
 
-                result.Add(b.name, Tuple.Create(GetTypeId(b.name), offset));
-            }
+                foreach (var b in bases.Reverse())
+                {
+                    int offset = b.virtualBaseClass ? int.MinValue : b.offset;
 
-            return result;
+                    result.Add(b.name, Tuple.Create(GetTypeId(b.name), offset));
+                }
+
+                return result;
+            });
         }
 
         /// <summary>
@@ -1136,7 +1211,10 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="address">The address within the module.</param>
         public Tuple<string, ulong> GetSymbolNameByAddress(uint address)
         {
-            return symbolNamesByAddress[address];
+            return FixStaFailure(() =>
+            {
+                return symbolNamesByAddress[address];
+            });
         }
 
         /// <summary>
@@ -1145,46 +1223,49 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="vtableAddress">The vtable address within the module.</param>
         public Tuple<CodeType, int> GetRuntimeCodeTypeAndOffset(uint vtableAddress)
         {
-            IDiaSymbol symbol;
-            int displacement;
-            string fullyUndecoratedName, partiallyUndecoratedName;
-
-            session.findSymbolByRVAEx(vtableAddress, SymTagEnum.PublicSymbol, out symbol, out displacement);
-            fullyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu) ?? symbol.name;
-            partiallyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NoEscu) ?? symbol.name;
-
-            // Fully undecorated name should be in form: "DerivedClass::`vftable'" or  "DerivedClass::`vbtable'"
-            const string vftableString = "::`vftable'";
-            const string vbtableString = "::`vbtable'";
-            string vtableString = vftableString;
-
-            if (string.IsNullOrEmpty(fullyUndecoratedName) || !fullyUndecoratedName.EndsWith(vftableString))
+            return FixStaFailure(() =>
             {
-                vtableString = vbtableString;
-                if (string.IsNullOrEmpty(fullyUndecoratedName) || !fullyUndecoratedName.EndsWith(vbtableString))
+                IDiaSymbol symbol;
+                int displacement;
+                string fullyUndecoratedName, partiallyUndecoratedName;
+
+                session.findSymbolByRVAEx(vtableAddress, SymTagEnum.PublicSymbol, out symbol, out displacement);
+                fullyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NameOnly | UndecoratedNameOptions.NoEscu) ?? symbol.name;
+                partiallyUndecoratedName = symbol.get_undecoratedNameEx(UndecoratedNameOptions.NoEscu) ?? symbol.name;
+
+                // Fully undecorated name should be in form: "DerivedClass::`vftable'" or  "DerivedClass::`vbtable'"
+                const string vftableString = "::`vftable'";
+                const string vbtableString = "::`vbtable'";
+                string vtableString = vftableString;
+
+                if (string.IsNullOrEmpty(fullyUndecoratedName) || !fullyUndecoratedName.EndsWith(vftableString))
                 {
-                    // Pointer is not vtable.
-                    return null;
+                    vtableString = vbtableString;
+                    if (string.IsNullOrEmpty(fullyUndecoratedName) || !fullyUndecoratedName.EndsWith(vbtableString))
+                    {
+                        // Pointer is not vtable.
+                        return null;
+                    }
                 }
-            }
 
-            string codeTypeName = fullyUndecoratedName.Substring(0, fullyUndecoratedName.Length - vtableString.Length);
-            CodeType codeType = CodeType.Create(codeTypeName, Module);
+                string codeTypeName = fullyUndecoratedName.Substring(0, fullyUndecoratedName.Length - vtableString.Length);
+                CodeType codeType = CodeType.Create(codeTypeName, Module);
 
-            // Partially undecorated name should be in form: "const DerivedClass::`vftable'{for `BaseClass'}"
-            string partiallyUndecoratedNameStart = string.Format("const {0}{1}{{for `", codeTypeName, vtableString);
+                // Partially undecorated name should be in form: "const DerivedClass::`vftable'{for `BaseClass'}"
+                string partiallyUndecoratedNameStart = string.Format("const {0}{1}{{for `", codeTypeName, vtableString);
 
-            if (!partiallyUndecoratedName.StartsWith(partiallyUndecoratedNameStart))
-            {
-                // Single Inheritace
-                return Tuple.Create(codeType, 0);
-            }
+                if (!partiallyUndecoratedName.StartsWith(partiallyUndecoratedNameStart))
+                {
+                    // Single Inheritace
+                    return Tuple.Create(codeType, 0);
+                }
 
-            string innerCodeTypeName = partiallyUndecoratedName.Substring(partiallyUndecoratedNameStart.Length, partiallyUndecoratedName.Length - 2 - partiallyUndecoratedNameStart.Length);
+                string innerCodeTypeName = partiallyUndecoratedName.Substring(partiallyUndecoratedNameStart.Length, partiallyUndecoratedName.Length - 2 - partiallyUndecoratedNameStart.Length);
 
-            var baseClassWithVTable = codeType.BaseClasses[innerCodeTypeName];
+                var baseClassWithVTable = codeType.BaseClasses[innerCodeTypeName];
 
-            return Tuple.Create(codeType, baseClassWithVTable.Item2);
+                return Tuple.Create(codeType, baseClassWithVTable.Item2);
+            });
         }
 
         /// <summary>
@@ -1260,22 +1341,25 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// <param name="typeId">The type identifier.</param>
         public bool HasTypeVTable(uint typeId)
         {
-            var type = GetTypeFromId(typeId);
-
-            if (type.GetChildren(SymTagEnum.VTable).Any())
+            return FixStaFailure(() =>
             {
-                return true;
-            }
-            var bases = type.GetBaseClasses();
+                var type = GetTypeFromId(typeId);
 
-            foreach (var baseClass in bases)
-            {
-                if (baseClass.offset == 0 && HasTypeVTable(GetTypeId(baseClass)))
+                if (type.GetChildren(SymTagEnum.VTable).Any())
                 {
                     return true;
                 }
-            }
-            return false;
+                var bases = type.GetBaseClasses();
+
+                foreach (var baseClass in bases)
+                {
+                    if (baseClass.offset == 0 && HasTypeVTable(GetTypeId(baseClass)))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            });
         }
 
         /// <summary>
@@ -1283,7 +1367,63 @@ namespace CsDebugScript.Engine.SymbolProviders
         /// </summary>
         public uint GetGlobalScope()
         {
-            return GetTypeId(session.globalScope);
+            return FixStaFailure(() =>
+            {
+                return GetTypeId(session.globalScope);
+            });
+        }
+
+        /// <summary>
+        /// Helper function that tries to fix problems with executing COM functions in STA thread.
+        /// </summary>
+        /// <typeparam name="T">Return type.</typeparam>
+        /// <param name="action">Action that should be evaluated.</param>
+        private static T FixStaFailure<T>(Func<T> action)
+        {
+            try
+            {
+                return action();
+            }
+            catch (InvalidCastException ex)
+            {
+                if (!ex.Message.Contains("COM"))
+                    throw;
+
+                try
+                {
+                    return System.Threading.Tasks.Task.Run(action).Result;
+                }
+                catch
+                {
+                    throw new AggregateException(ex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Helper function that tries to fix problems with executing COM functions in STA thread.
+        /// </summary>
+        /// <param name="action">Action that should be evaluated.</param>
+        private static void FixStaFailure(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (InvalidCastException ex)
+            {
+                if (!ex.Message.Contains("COM"))
+                    throw;
+
+                try
+                {
+                    System.Threading.Tasks.Task.Run(action).Wait();
+                }
+                catch
+                {
+                    throw new AggregateException(ex);
+                }
+            }
         }
     }
 }

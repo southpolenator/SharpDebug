@@ -1847,5 +1847,31 @@ namespace CsDebugScript
 
             return base.Equals(obj);
         }
+
+        /// <summary>
+        /// Determines whether the specified objects are equal.
+        /// </summary>
+        /// <param name="first">First object.</param>
+        /// <param name="second">Second object.</param>
+        /// <returns><c>true</c> if objects are equal.</returns>
+        public static bool operator ==(Variable first, Variable second)
+        {
+            if (ReferenceEquals(first, second))
+                return true;
+            if (ReferenceEquals(first, null) || ReferenceEquals(second, null))
+                return false;
+            return first != null && first.Equals(second);
+        }
+
+        /// <summary>
+        /// Determines whether the specified objects are not equal.
+        /// </summary>
+        /// <param name="first">First object.</param>
+        /// <param name="second">Second object.</param>
+        /// <returns><c>true</c> if objects are not equal.</returns>
+        public static bool operator !=(Variable first, Variable second)
+        {
+            return !(first == second);
+        }
     }
 }

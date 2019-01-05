@@ -128,6 +128,21 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            if (!IsCorrect)
+                return "[not initialized]";
+            if (!CanVisualize())
+                return "[empty]";
+            return $"{Rows} x {Columns} x {Type}";
+        }
+
+        /// <summary>
         /// Verifies if the specified code type is correct for this class.
         /// </summary>
         /// <param name="codeType">The code type.</param>

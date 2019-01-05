@@ -96,6 +96,8 @@ namespace CsDebugScript.UI
                     sb.AppendLine();
                     for (int i = 0; i < bitmap.Channels.Length; i++)
                     {
+                        if (i > 0)
+                            sb.AppendLine();
                         sb.Append(bitmap.Channels[i]);
                         sb.Append(": ");
                         sb.Append(bitmap.OriginalPixels.GetValue(index + i));
