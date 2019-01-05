@@ -131,6 +131,21 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
         }
 
         /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            if (!IsCorrect)
+                return "[not initialized]";
+            if (!CanVisualize())
+                return "[not an image]";
+            return $"{Sizes[1]} x {Sizes[0]} x {Type}";
+        }
+
+        /// <summary>
         /// Creates drawing that should be visualized based on cv::Mat data.
         /// </summary>
         /// <param name="graphics">Graphics object used to create drawings.</param>
@@ -157,71 +172,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
                 throw new NotImplementedException();
             }
 
-            if (type.Type == typeof(byte))
-            {
-                return graphics.CreateBitmap(width, height, channels, ReadPixels<byte>(width, height, data, stride, type));
-            }
-            else if (type.Type == typeof(sbyte))
-            {
-                return graphics.CreateBitmap(width, height, channels, ReadPixels<sbyte>(width, height, data, stride, type));
-            }
-            else if (type.Type == typeof(ushort))
-            {
-                return graphics.CreateBitmap(width, height, channels, ReadPixels<ushort>(width, height, data, stride, type));
-            }
-            else if (type.Type == typeof(short))
-            {
-                return graphics.CreateBitmap(width, height, channels, ReadPixels<short>(width, height, data, stride, type));
-            }
-            else if (type.Type == typeof(int))
-            {
-                return graphics.CreateBitmap(width, height, channels, ReadPixels<int>(width, height, data, stride, type));
-            }
-            else if (type.Type == typeof(float))
-            {
-                return graphics.CreateBitmap(width, height, channels, ReadPixels<float>(width, height, data, stride, type));
-            }
-            else if (type.Type == typeof(double))
-            {
-                return graphics.CreateBitmap(width, height, channels, ReadPixels<double>(width, height, data, stride, type));
-            }
-
-            throw new System.NotImplementedException();
-        }
-
-        /// <summary>
-        /// Reads pixels data into single array of pixels.
-        /// </summary>
-        /// <typeparam name="T">Type of the pixel element.</typeparam>
-        /// <param name="width">Bitmap width.</param>
-        /// <param name="height">Bitmap height.</param>
-        /// <param name="data">Pointer to where start of the data is.</param>
-        /// <param name="stride">Row stride in bytes.</param>
-        /// <param name="type">Matrix element type.</param>
-        /// <returns>Array of pixels.</returns>
-        internal static T[] ReadPixels<T>(int width, int height, NakedPointer data, int stride, MatType type)
-        {
-            if (stride == type.Bits * type.Channels * width / 8)
-            {
-                return new CodeArray<T>(data, width * height * type.Channels).ToArray();
-            }
-            else
-            {
-                T[] result = new T[width * height * type.Channels];
-                int rowElements = width * type.Channels;
-
-                for (int y = 0, j = 0; y < height; y++)
-                {
-                    CodeArray<T> array = new CodeArray<T>(data.AdjustPointer(stride * y), rowElements);
-
-                    for (int x = 0; x < rowElements; x++, j++)
-                    {
-                        result[j] = array[x];
-                    }
-                }
-
-                return result;
-            }
+            return BitmapUserType.CreateDrawing(graphics, width, height, data, channels, type.BuiltinType, stride);
         }
 
         /// <summary>

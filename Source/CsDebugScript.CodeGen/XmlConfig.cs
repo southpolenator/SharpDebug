@@ -478,7 +478,7 @@ namespace CsDebugScript.CodeGen
         /// Gets or sets the transformation for generating constructor.
         /// </summary>
         [XmlAttribute]
-        public string Constructor { get; set; }
+        public string Constructor { get; set; } = "${new}";
 
         /// <summary>
         /// Gets or sets the transformation for matching original type.
@@ -493,7 +493,7 @@ namespace CsDebugScript.CodeGen
         /// <c>true</c> if transformed type has physical constructor; otherwise, <c>false</c>.
         /// </value>
         [XmlAttribute]
-        public bool HasPhysicalConstructor { get; set; }
+        public bool HasPhysicalConstructor { get; set; } = false;
 
         /// <summary>
         /// Checks whether this transformation matches the specified input type.

@@ -14,7 +14,7 @@ namespace CsDebugScript.DwarfSymbolProvider
     /// <summary>
     /// Simple ELF core dump reader.
     /// </summary>
-    public class ElfCoreDump
+    public class ElfCoreDump : IDisposable
     {
         /// <summary>
         /// The elf reader.
@@ -94,57 +94,62 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 if (segment.Type == SegmentType.Note)
                 {
-                    DwarfMemoryReader reader = new DwarfMemoryReader(ReadSegment(segment));
-                    int noteStructSize = Marshal.SizeOf<elf_32note>();
-
-                    while (reader.Position + noteStructSize < reader.Data.Length)
+                    using (DwarfMemoryReader reader = new DwarfMemoryReader(ReadSegment(segment)))
                     {
-                        // Read note
-                        elf_32note note = reader.ReadStructure<elf_32note>();
-                        int nameEnd = reader.Position + (int)note.NameSize;
+                        int noteStructSize = Marshal.SizeOf<elf_32note>();
 
-                        // Check if note is available to be read
-                        if (nameEnd + note.n_descsz > reader.Data.Length)
+                        while (reader.Position + noteStructSize < reader.Data.Length)
                         {
-                            break;
-                        }
+                            // Read note
+                            elf_32note note = reader.ReadStructure<elf_32note>();
+                            int nameEnd = reader.Position + (int)note.NameSize;
 
-                        // Read name and content
-                        string name = reader.ReadString();
-                        reader.Position = nameEnd;
-                        byte[] content = reader.ReadBlock(note.n_descsz);
-
-                        instance.ProcessNote(name, content, note.n_type);
-                        if (note.n_type == elf_note_type.File)
-                        {
-                            DwarfMemoryReader data = new DwarfMemoryReader(content);
-
-                            files = elf_note_file.Parse(data, Is64bit);
-                        }
-                        else if (note.n_type == elf_note_type.Auxv)
-                        {
-                            DwarfMemoryReader data = new DwarfMemoryReader(content);
-                            uint addressSize = elf.Class == Class.Bit32 ? 4U : 8U;
-
-                            while (!data.IsEnd)
+                            // Check if note is available to be read
+                            if (nameEnd + note.n_descsz > reader.Data.Length)
                             {
-                                AuxvEntry entry = new AuxvEntry
-                                {
-                                    Type = (AuxvEntryType)data.ReadUlong(addressSize),
-                                    Value = data.ReadUlong(addressSize)
-                                };
+                                break;
+                            }
 
-                                if (entry.Type == AuxvEntryType.Null)
+                            // Read name and content
+                            string name = reader.ReadString();
+                            reader.Position = nameEnd;
+                            byte[] content = reader.ReadBlock(note.n_descsz);
+
+                            instance.ProcessNote(name, content, note.n_type);
+                            if (note.n_type == elf_note_type.File)
+                            {
+                                using (DwarfMemoryReader data = new DwarfMemoryReader(content))
                                 {
-                                    break;
+                                    files = elf_note_file.Parse(data, Is64bit);
                                 }
-
-                                if (entry.Type == AuxvEntryType.Ignore)
+                            }
+                            else if (note.n_type == elf_note_type.Auxv)
+                            {
+                                using (DwarfMemoryReader data = new DwarfMemoryReader(content))
                                 {
-                                    continue;
-                                }
+                                    uint addressSize = elf.Class == Class.Bit32 ? 4U : 8U;
 
-                                auxVector.Add(entry);
+                                    while (!data.IsEnd)
+                                    {
+                                        AuxvEntry entry = new AuxvEntry
+                                        {
+                                            Type = (AuxvEntryType)data.ReadUlong(addressSize),
+                                            Value = data.ReadUlong(addressSize)
+                                        };
+
+                                        if (entry.Type == AuxvEntryType.Null)
+                                        {
+                                            break;
+                                        }
+
+                                        if (entry.Type == AuxvEntryType.Ignore)
+                                        {
+                                            continue;
+                                        }
+
+                                        auxVector.Add(entry);
+                                    }
+                                }
                             }
                         }
                     }
@@ -327,6 +332,15 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            elf.Dispose();
+            DumpFileMemoryReader.Dispose();
+        }
+
+        /// <summary>
         /// Interface that explains what different platforms will provide
         /// </summary>
         private interface IInstance
@@ -411,18 +425,22 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 if (type == elf_note_type.Prstatus)
                 {
-                    DwarfMemoryReader data = new DwarfMemoryReader(content);
-                    elf_prstatus prstatus = data.ReadStructure<elf_prstatus>();
+                    using (DwarfMemoryReader data = new DwarfMemoryReader(content))
+                    {
+                        elf_prstatus prstatus = data.ReadStructure<elf_prstatus>();
 
-                    threads.Add(prstatus);
+                        threads.Add(prstatus);
+                    }
                 }
                 else if (type == elf_note_type.Prpsinfo)
                 {
                     // TODO: Use when needed
-                    //DwarfMemoryReader data = new DwarfMemoryReader(content);
-                    //elf_prpsinfo prpsinfo = data.ReadStructure<elf_prpsinfo>();
-                    //Console.WriteLine($"  Filename: {prpsinfo.Filename}");
-                    //Console.WriteLine($"  ArgList: {prpsinfo.ArgList}");
+                    //using (DwarfMemoryReader data = new DwarfMemoryReader(content))
+                    //{
+                    //    elf_prpsinfo prpsinfo = data.ReadStructure<elf_prpsinfo>();
+                    //    Console.WriteLine($"  Filename: {prpsinfo.Filename}");
+                    //    Console.WriteLine($"  ArgList: {prpsinfo.ArgList}");
+                    //}
                 }
             }
 
@@ -729,18 +747,22 @@ namespace CsDebugScript.DwarfSymbolProvider
             {
                 if (type == elf_note_type.Prstatus)
                 {
-                    DwarfMemoryReader data = new DwarfMemoryReader(content);
-                    elf_prstatus prstatus = data.ReadStructure<elf_prstatus>();
+                    using (DwarfMemoryReader data = new DwarfMemoryReader(content))
+                    {
+                        elf_prstatus prstatus = data.ReadStructure<elf_prstatus>();
 
-                    threads.Add(prstatus);
+                        threads.Add(prstatus);
+                    }
                 }
                 else if (type == elf_note_type.Prpsinfo)
                 {
                     // TODO: Use when needed
-                    //DwarfMemoryReader data = new DwarfMemoryReader(content);
-                    //elf_prpsinfo prpsinfo = data.ReadStructure<elf_prpsinfo>();
-                    //Console.WriteLine($"  Filename: {prpsinfo.Filename}");
-                    //Console.WriteLine($"  ArgList: {prpsinfo.ArgList}");
+                    //using (DwarfMemoryReader data = new DwarfMemoryReader(content))
+                    //{
+                    //    elf_prpsinfo prpsinfo = data.ReadStructure<elf_prpsinfo>();
+                    //    Console.WriteLine($"  Filename: {prpsinfo.Filename}");
+                    //    Console.WriteLine($"  ArgList: {prpsinfo.ArgList}");
+                    //}
                 }
             }
 

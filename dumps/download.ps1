@@ -1,4 +1,4 @@
-$dumps_version = "dumps_1";
+$dumps_version = "dumps_2";
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $webClient = New-Object System.Net.WebClient
 $webClient.Credentials = new-object System.Net.NetworkCredential("cidownload", "AP6JaG9ToerxBc7gWP5LcU1CNpb");

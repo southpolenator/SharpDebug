@@ -523,11 +523,13 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     return null;
 
                 CodeType hashNodeCodeType, valueCodeType;
+                string pairValueName;
 
                 try
                 {
                     hashNodeCodeType = __next_.ElementType.TemplateArguments[0] as CodeType;
-                    valueCodeType = hashNodeCodeType.GetFieldType("__value_").GetFieldType("__nc");
+                    pairValueName = hashNodeCodeType.GetFieldType("__value_").GetFieldTypes().ContainsKey("__nc") ? "__nc" : "__cc";
+                    valueCodeType = hashNodeCodeType.GetFieldType("__value_").GetFieldType(pairValueName);
                 }
                 catch
                 {
@@ -542,7 +544,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     BeforeFirstElementOffset = codeType.GetFieldOffset("__table_") + __table_.GetFieldOffset("__p1_") + __p1_.GetFieldOffset("__value_"),
                     ItemNextOffset = hashNodeCodeType.GetFieldOffset("__next_"),
                     ItemValueCodeType = valueCodeType,
-                    ItemValueOffset = hashNodeCodeType.GetFieldOffset("__value_") + hashNodeCodeType.GetFieldType("__value_").GetFieldOffset("__nc"),
+                    ItemValueOffset = hashNodeCodeType.GetFieldOffset("__value_") + hashNodeCodeType.GetFieldType("__value_").GetFieldOffset(pairValueName),
                     CodeType = codeType,
                     Process = codeType.Module.Process,
                 };

@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.UI.CodeWindow;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,22 +25,22 @@ namespace CsDebugScript.UI
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindowContent" /> class.
         /// </summary>
-        /// <param name="interactiveExecutionBehavior">Customization of interactive execution.</param>
+        /// <param name="interactiveExecutionInitialization">Interactive execution initialization.</param>
         /// <param name="highlightingColors">The highlighting colors.</param>
-        public InteractiveWindowContent(InteractiveExecutionBehavior interactiveExecutionBehavior, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
-            : this(interactiveExecutionBehavior, "Consolas", 14, 4, highlightingColors)
+        public InteractiveWindowContent(InteractiveExecutionInitialization interactiveExecutionInitialization, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+            : this(interactiveExecutionInitialization, "Consolas", 14, 4, highlightingColors)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InteractiveWindowContent"/> class.
         /// </summary>
-        /// <param name="interactiveExecutionBehavior">Customization of interactive execution.</param>
+        /// <param name="interactiveExecutionInitialization">Interactive execution initialization.</param>
         /// <param name="fontFamily">The font family.</param>
         /// <param name="fontSize">Size of the font.</param>
         /// <param name="indentationSize">Size of the indentation.</param>
         /// <param name="highlightingColors">The highlighting colors.</param>
-        public InteractiveWindowContent(InteractiveExecutionBehavior interactiveExecutionBehavior, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+        public InteractiveWindowContent(InteractiveExecutionInitialization interactiveExecutionInitialization, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
         {
             this.fontFamily = fontFamily;
             this.fontSize = fontSize;
@@ -57,7 +58,7 @@ namespace CsDebugScript.UI
             resultsPanel.CanVerticallyScroll = true;
             resultsPanel.CanHorizontallyScroll = true;
             scrollViewer.Content = resultsPanel;
-            interactiveExecutionBehavior.ClearDone += () => clearAfterExecution = true;
+            interactiveExecutionInitialization.InteractiveExecutionBehavior.ClearDone += () => clearAfterExecution = true;
 
             // Add prompt for text editor
             var panel = new Grid();
@@ -68,12 +69,12 @@ namespace CsDebugScript.UI
             promptBlock.VerticalAlignment = VerticalAlignment.Top;
             promptBlock.FontFamily = new FontFamily(fontFamily);
             promptBlock.FontSize = fontSize;
-            promptBlock.Text = interactiveExecutionBehavior.GetReplExecutingPrompt();
+            promptBlock.Text = interactiveExecutionInitialization.InteractiveExecutionBehavior.GetReplExecutingPrompt();
             promptBlock.SizeChanged += PromptBlock_SizeChanged;
             panel.Children.Add(promptBlock);
 
             // Add text editor
-            TextEditor = new InteractiveCodeEditor(new InteractiveResultVisualizer(this), interactiveExecutionBehavior, fontFamily, fontSize, indentationSize, highlightingColors);
+            TextEditor = new InteractiveCodeEditor(new InteractiveResultVisualizer(this), interactiveExecutionInitialization.InteractiveExecutionCache, fontFamily, fontSize, indentationSize, highlightingColors);
             TextEditor.HorizontalAlignment = HorizontalAlignment.Stretch;
             TextEditor.Background = Brushes.Transparent;
             TextEditor.CommandExecuted += TextEditor_CommandExecuted;
@@ -86,6 +87,11 @@ namespace CsDebugScript.UI
             panel.Children.Add(TextEditor);
 
             Content = scrollViewer;
+
+            // Enable drag and drop
+            AllowDrop = true;
+            DragEnter += (s, e) => e.Effects = GetFilename(e) != null ? DragDropEffects.Link : DragDropEffects.None;
+            Drop += (s, e) => FileDropped(GetFilename(e));
         }
 
         internal InteractiveCodeEditor TextEditor { get; private set; }
@@ -167,6 +173,29 @@ namespace CsDebugScript.UI
                 focus.Focus();
             }
             TraverseDirection = null;
+        }
+
+        private bool executingDroppedFile = false;
+        private string savedTextBeforeExecutingDroppedFile;
+
+        private void FileDropped(string filename)
+        {
+            savedTextBeforeExecutingDroppedFile = TextEditor.Text;
+            executingDroppedFile = true;
+            TextEditor.Text = $"#load \"{filename}\"";
+            TextEditor.ExecuteCSharpScript();
+        }
+
+        private static string GetFilename(DragEventArgs args)
+        {
+            if (args.Data.GetDataPresent(DataFormats.FileDrop, true))
+            {
+                string[] files = args.Data.GetData(DataFormats.FileDrop, true) as string[];
+
+                if (files != null && files.Length == 1 && File.Exists(files[0]))
+                    return files[0];
+            }
+            return null;
         }
 
         private void PromptBlock_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -401,6 +430,17 @@ namespace CsDebugScript.UI
                     AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
                 }
             }
+
+            if (executingDroppedFile)
+            {
+                executingDroppedFile = false;
+                Dispatcher.InvokeAsync(() =>
+                {
+                    TextEditor.Text = savedTextBeforeExecutingDroppedFile;
+                    TextEditor.SelectionStart = savedTextBeforeExecutingDroppedFile.Length;
+                    TextEditor.SelectionLength = 0;
+                });
+            }
         }
 
         private void TextEditor_CommandFailed(bool csharpCode, string textOutput, string errorOutput)
@@ -417,6 +457,12 @@ namespace CsDebugScript.UI
             resultsPanel.Children.Insert(textEditorIndex, csharpCode ? CreateCSharpCode(TextEditor.Text) : CreateDbgCode(TextEditor.Text));
             AddSpacing(resultsPanel.Children[textEditorIndex]);
             AddSpacing(resultsPanel.Children[textEditorIndex + resultsPanel.Children.Count - initialLength - 1]);
+
+            if (executingDroppedFile)
+            {
+                executingDroppedFile = false;
+                TextEditor.Text = savedTextBeforeExecutingDroppedFile;
+            }
         }
 
         private void TextEditor_Executing(bool started)

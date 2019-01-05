@@ -1,5 +1,6 @@
-﻿using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
+﻿using System.Linq;
 using Xunit;
+using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
 
 namespace CsDebugScript.Tests
 {
@@ -132,6 +133,283 @@ namespace CsDebugScript.Tests
                 Assert.IsType<std.pair>(inner.Value);
                 p = (std.pair)a_pair.Value;
                 Assert.IsType<std.basic_string>(p.First);
+            });
+        }
+
+        [Fact]
+        public void StdOptional()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestOptional");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
+
+            // int
+            std.optional<int> i = new std.optional<int>(locals["i"]);
+            Assert.True(i.HasValue);
+            Assert.Equal(5, i.Value);
+            std.optional<int> emptyInt = new std.optional<int>(locals["emptyInt"]);
+            Assert.False(emptyInt.HasValue);
+
+            // bool
+            std.optional<bool> bFalse = new std.optional<bool>(locals["bFalse"]);
+            Assert.True(bFalse.HasValue);
+            Assert.False(bFalse.Value);
+            std.optional<bool> bTrue = new std.optional<bool>(locals["bTrue"]);
+            Assert.True(bTrue.HasValue);
+            Assert.True(bTrue.Value);
+            std.optional<bool> bEmpty = new std.optional<bool>(locals["bEmpty"]);
+            Assert.False(bEmpty.HasValue);
+        }
+
+        [Fact]
+        public void StdOptional_AutoCast()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestOptional");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+
+                // int
+                Assert.IsType<std.optional>(locals["i"]);
+                std.optional i = (std.optional)locals["i"];
+                Assert.True(i.HasValue);
+                Assert.Equal("int", i.Value.GetCodeType().Name);
+                Assert.Equal(5, (int)i.Value);
+
+                Assert.IsType<std.optional>(locals["emptyInt"]);
+                std.optional emptyInt = (std.optional)locals["emptyInt"];
+                Assert.False(emptyInt.HasValue);
+
+                // bool
+                Assert.IsType<std.optional>(locals["bFalse"]);
+                std.optional bFalse = (std.optional)locals["bFalse"];
+                Assert.True(bFalse.HasValue);
+                Assert.Equal("bool", bFalse.Value.GetCodeType().Name);
+                Assert.False((bool)bFalse.Value);
+
+                Assert.IsType<std.optional>(locals["bTrue"]);
+                std.optional bTrue = (std.optional)locals["bTrue"];
+                Assert.True(bTrue.HasValue);
+                Assert.Equal("bool", bTrue.Value.GetCodeType().Name);
+                Assert.True((bool)bTrue.Value);
+
+                Assert.IsType<std.optional>(locals["bEmpty"]);
+                std.optional bEmpty = (std.optional)locals["bEmpty"];
+                Assert.False(bEmpty.HasValue);
+            });
+        }
+
+        [Fact]
+        public void StdOptional_Dynamic()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestOptional");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+
+                // int
+                dynamic i = locals["i"];
+                Assert.True(i.HasValue);
+                Assert.Equal(5, (int)i.Value);
+
+                dynamic emptyInt = locals["emptyInt"];
+                Assert.False(emptyInt.HasValue);
+
+                // bool
+                dynamic bFalse = locals["bFalse"];
+                Assert.True(bFalse.HasValue);
+                Assert.False((bool)bFalse.Value);
+
+                dynamic bTrue = locals["bTrue"];
+                Assert.True(bTrue.HasValue);
+                Assert.True((bool)bTrue.Value);
+
+                dynamic bEmpty = locals["bEmpty"];
+                Assert.False(bEmpty.HasValue);
+            });
+        }
+
+        [Fact]
+        public void StdFilesystemPath()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestPath");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
+
+            char pathSeparator = (char)locals["pathSeparator"];
+            std.filesystem.path root = new std.filesystem.path(locals["root"]);
+            Assert.Equal("/my/test", root.Path);
+            std.filesystem.path child = new std.filesystem.path(locals["child"]);
+            Assert.Equal($"/my/test{pathSeparator}child", child.Path);
+            std.filesystem.path wroot = new std.filesystem.path(locals["wroot"]);
+            Assert.Equal("/my/test", wroot.Path);
+            std.filesystem.path wchild = new std.filesystem.path(locals["wchild"]);
+            Assert.Equal($"/my/test{pathSeparator}child", wchild.Path);
+        }
+
+        [Fact]
+        public void StdFilesystemPath_AutoCast()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestPath");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+                char pathSeparator = (char)locals["pathSeparator"];
+
+                Assert.IsType<std.filesystem.path>(locals["root"]);
+                std.filesystem.path root = (std.filesystem.path)locals["root"];
+                Assert.Equal("/my/test", root.Path);
+
+                Assert.IsType<std.filesystem.path>(locals["child"]);
+                std.filesystem.path child = (std.filesystem.path)locals["child"];
+                Assert.Equal($"/my/test{pathSeparator}child", child.Path);
+
+                Assert.IsType<std.filesystem.path>(locals["wroot"]);
+                std.filesystem.path wroot = (std.filesystem.path)locals["wroot"];
+                Assert.Equal("/my/test", wroot.Path);
+
+                Assert.IsType<std.filesystem.path>(locals["wchild"]);
+                std.filesystem.path wchild = (std.filesystem.path)locals["wchild"];
+                Assert.Equal($"/my/test{pathSeparator}child", wchild.Path);
+            });
+        }
+
+        [Fact]
+        public void StdFilesystemPath_Dynamic()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestPath");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+                char pathSeparator = (char)locals["pathSeparator"];
+
+                dynamic root = locals["root"];
+                Assert.Equal("/my/test", root.Path);
+
+                dynamic child = locals["child"];
+                Assert.Equal($"/my/test{pathSeparator}child", child.Path);
+
+                dynamic wroot = locals["wroot"];
+                Assert.Equal("/my/test", wroot.Path);
+
+                dynamic wchild = locals["wchild"];
+                Assert.Equal($"/my/test{pathSeparator}child", wchild.Path);
+            });
+        }
+
+        [Fact]
+        public void BoolContainers()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestBoolContainers");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
+            bool[] expectedArray = new bool[100];
+            for (int i = 0, j = 1; i < expectedArray.Length; i += j, j++)
+                for (int k = 0; k < j && i < expectedArray.Length; k++, i++)
+                    expectedArray[i] = true;
+
+            // C style array
+            CodeArray<bool> carray = new CodeArray<bool>(locals["carray"]);
+            Assert.Equal(expectedArray, carray);
+
+            // std::array
+            std.array<bool> array = new std.array<bool>(locals["array"]);
+            Assert.Equal(expectedArray, array);
+
+            // std::vector
+            std.vector<bool> vector = new std.vector<bool>(locals["vector"]);
+            Assert.True(expectedArray.Length < vector.Reserved);
+            Assert.Equal(expectedArray, vector);
+            Assert.Equal(expectedArray, vector.ToArray());
+        }
+
+        [Fact]
+        public void BoolContainers_AutoCast()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestBoolContainers");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+                bool[] expectedArray = new bool[100];
+                for (int i = 0, j = 1; i < expectedArray.Length; i += j, j++)
+                    for (int k = 0; k < j && i < expectedArray.Length; k++, i++)
+                        expectedArray[i] = true;
+
+                // std::array
+                std.array array = (std.array)locals["array"];
+                Assert.Equal(expectedArray, array.Select(v => (bool)v));
+
+                // std::vector
+                std.vector vector = (std.vector)locals["vector"];
+                Assert.True(expectedArray.Length < vector.Reserved);
+                Assert.Equal(expectedArray, vector.Select(v => (bool)v));
+                Assert.Equal(expectedArray, vector.ToArray().Select(v => (bool)v).ToArray());
+            });
+        }
+
+        [Fact]
+        public void StdVariant()
+        {
+            StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestVariant");
+            VariableCollection locals = defaultTestCaseFrame.Locals;
+
+            // int, float
+            std.variant<int, float> if1 = new std.variant<int, float>(locals["if1"]);
+            Assert.IsType<int>(if1.Value);
+            Assert.Equal(42, if1.Get<int>());
+            std.variant<int, float> if2 = new std.variant<int, float>(locals["if2"]);
+            Assert.IsType<float>(if2.Value);
+            Assert.Equal(42.0f, if2.Get<float>());
+
+            // std::string, std::wstring
+            std.variant<std.@string, std.wstring> s1 = new std.variant<std.@string, std.wstring>(locals["s1"]);
+            Assert.IsType<std.@string>(s1.Value);
+            Assert.Equal("ansiFoo", s1.Get<std.@string>().Text);
+            std.variant<std.@string, std.wstring> s2 = new std.variant<std.@string, std.wstring>(locals["s2"]);
+            Assert.IsType<std.wstring>(s2.Value);
+            Assert.Equal("Foo", s2.Get<std.wstring>().Text);
+        }
+
+        [Fact]
+        public void StdVariant_AutoCast()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestVariant");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+
+                // int, float
+                std.variant if1 = (std.variant)locals["if1"];
+                Assert.Equal("int", if1.Value.GetCodeType().Name);
+                Assert.Equal(42, (int)if1.Value);
+                std.variant if2 = (std.variant)locals["if2"];
+                Assert.Equal("float", if2.Value.GetCodeType().Name);
+                Assert.Equal(42.0f, (float)if2.Value);
+
+                // std::string, std::wstring
+                std.variant s1 = (std.variant)locals["s1"];
+                Assert.Equal("ansiFoo", ((std.basic_string)s1.Value).Text);
+                std.variant s2 = (std.variant)locals["s2"];
+                Assert.Equal("Foo", ((std.basic_string)s2.Value).Text);
+            });
+        }
+
+        [Fact]
+        public void StdVariant_Dynamic()
+        {
+            Execute_AutoCast(() =>
+            {
+                StackFrame defaultTestCaseFrame = GetFrame($"{DefaultModuleName}!TestVariant");
+                VariableCollection locals = defaultTestCaseFrame.Locals;
+
+                // int, float
+                dynamic if1 = locals["if1"];
+                Assert.Equal(42, (int)if1.Value);
+                dynamic if2 = locals["if2"];
+                Assert.Equal(42.0f, (float)if2.Value);
+
+                // std::string, std::wstring
+                dynamic s1 = locals["s1"];
+                Assert.Equal("ansiFoo", s1.Value.Text);
+                dynamic s2 = locals["s2"];
+                Assert.Equal("Foo", s2.Value.Text);
             });
         }
     }

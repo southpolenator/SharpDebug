@@ -73,6 +73,7 @@ namespace CsDebugScript.VS
                 string moduleName = evaluationResult.ExternalModules?.FirstOrDefault()?.Module?.Name ?? evaluationResult.StackFrame?.ModuleInstance?.Module?.Name;
                 string typeString = evaluationResult.Type;
                 ulong? address = evaluationResult.Address?.Value;
+                string fullName = evaluationResult.FullName;
 
                 if (!string.IsNullOrEmpty(typeString) && !string.IsNullOrEmpty(moduleName) && address.HasValue)
                 {
@@ -80,7 +81,7 @@ namespace CsDebugScript.VS
                     Process process = Process.All.First(p => p.SystemId == processId);
                     Module module = process.ModulesByName[System.IO.Path.GetFileNameWithoutExtension(moduleName)];
                     CodeType codeType = VSCustomVisualizerEvaluator.ResolveCodeType(process, module, typeString);
-                    Variable variable = codeType.IsPointer ? Variable.CreatePointer(codeType, address.Value) : Variable.Create(codeType, address.Value);
+                    Variable variable = codeType.IsPointer ? Variable.CreatePointer(codeType, address.Value, fullName) : Variable.Create(codeType, address.Value, fullName);
 
                     // Open visualizer window
                     switch (visualizerType)
@@ -110,44 +111,56 @@ namespace CsDebugScript.VS
 
         private static void AddVariable(string name, Variable variable, InteractiveWindowContent contentControl)
         {
-            CodeType codeType = variable.GetCodeType();
-            CodeType baseCodeType = codeType;
-            int pointer = 0;
+            StackFrame currentFrame = variable.GetCodeType().Module.Process.CurrentThread.StackTrace.CurrentFrame;
+            Variable local, argument;
+            string scriptText;
 
-            while (baseCodeType.IsPointer)
+            if (currentFrame.Locals.TryGetValue(variable.GetName(), out local) && local == variable)
+                scriptText = "Locals." + variable.GetName();
+            else if (currentFrame.Arguments.TryGetValue(variable.GetName(), out argument) && argument == variable)
+                scriptText = "Arguments." + variable.GetName();
+            else
             {
-                baseCodeType = baseCodeType.ElementType;
-                pointer++;
+                CodeType codeType = variable.GetCodeType();
+                CodeType baseCodeType = codeType;
+                int pointer = 0;
+
+                while (baseCodeType.IsPointer)
+                {
+                    baseCodeType = baseCodeType.ElementType;
+                    pointer++;
+                }
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append("dynamic ");
+                sb.Append(name);
+                sb.Append(" = ");
+                sb.Append(pointer > 0 ? "Variable.CreatePointer(" : "Variable.Create(");
+                sb.Append("CodeType.Create(");
+                if (baseCodeType.Module.Process != Process.Current)
+                {
+                    sb.Append($"Process.All.First(p => p.SystemId == {baseCodeType.Module.Process.SystemId}), ");
+                }
+                sb.Append('"');
+                sb.Append(baseCodeType.Module.Name);
+                sb.Append("!");
+                sb.Append(baseCodeType.Name);
+                sb.Append('"');
+                sb.Append(")");
+                for (int i = 0; i < pointer; i++)
+                {
+                    sb.Append(".PointerToType");
+                }
+                sb.Append(", ");
+                sb.Append(variable.GetPointerAddress());
+                sb.Append(");");
+                sb.AppendLine();
+                sb.Append(name);
+                scriptText = sb.ToString();
             }
 
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append("var ");
-            sb.Append(name);
-            sb.Append(" = ");
-            sb.Append(pointer > 0 ? "Variable.CreatePointer(" : "Variable.Create(");
-            sb.Append("CodeType.Create(");
-            if (baseCodeType.Module.Process != Process.Current)
-            {
-                sb.Append($"Process.All.First(p => p.SystemId == {baseCodeType.Module.Process.SystemId}), ");
-            }
-            sb.Append('"');
-            sb.Append(baseCodeType.Module.Name);
-            sb.Append("!");
-            sb.Append(baseCodeType.Name);
-            sb.Append('"');
-            sb.Append(")");
-            for (int i = 0; i < pointer; i++)
-            {
-                sb.Append(".PointerToType");
-            }
-            sb.Append(", ");
-            sb.Append(variable.GetPointerAddress());
-            sb.Append(");");
-            sb.AppendLine();
-            sb.Append(name);
-
-            contentControl.TextEditor.Text = sb.ToString();
+            contentControl.TextEditor.Text = scriptText;
             contentControl.TextEditor.TextArea_ExecuteCSharpScript(null, null);
         }
 

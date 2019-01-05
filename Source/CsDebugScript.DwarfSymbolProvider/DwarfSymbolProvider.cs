@@ -38,13 +38,15 @@ namespace CsDebugScript.DwarfSymbolProvider
             if (File.Exists(location))
                 try
                 {
-                    IDwarfImage image = LoadImage(location, module.LoadOffset);
-                    var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, image.DebugDataStrings, image.NormalizeAddress);
-                    var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.NormalizeAddress);
-                    var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.EhFrame, new DwarfExceptionHandlingFrameParsingInput(image));
+                    using (IDwarfImage image = LoadImage(location, module.LoadOffset))
+                    {
+                        var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, image.DebugDataStrings, image.NormalizeAddress);
+                        var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.NormalizeAddress);
+                        var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.EhFrame, new DwarfExceptionHandlingFrameParsingInput(image));
 
-                    if (compilationUnits.Length != 0 || lineNumberPrograms.Length != 0 || commonInformationEntries.Length != 0)
-                        return new DwarfSymbolProviderModule(location, module, compilationUnits, lineNumberPrograms, commonInformationEntries, image.PublicSymbols, image.CodeSegmentOffset, image.Is64bit);
+                        if (compilationUnits.Length != 0 || lineNumberPrograms.Length != 0 || commonInformationEntries.Length != 0)
+                            return new DwarfSymbolProviderModule(location, module, compilationUnits, lineNumberPrograms, commonInformationEntries, image.PublicSymbols, image.CodeSegmentOffset, image.Is64bit);
+                    }
                 }
                 catch
                 {

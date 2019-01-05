@@ -69,6 +69,9 @@ namespace CsDebugScript.Tests
         public DbgEngDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = DefaultDumpPath, bool addSymbolServer = true, bool useDia = true, bool useDwarf = false, bool useILCodeGen = false)
             : base(dumpPath, defaultModuleName, FixSymbolPath(symbolPath, addSymbolServer), useILCodeGen)
         {
+            // Clear all processes being debugged with DbgEng.dll...
+            (Context.Debugger as DbgEngDll)?.Client?.EndSession(DebugEnd.ActiveTerminate);
+
             IDebugClient client = DebugClient.OpenDumpFile(DumpPath, SymbolPath);
 
             DbgEngDll.InitializeContext(client);

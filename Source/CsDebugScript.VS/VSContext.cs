@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.Engine.SymbolProviders;
+using CsDebugScript.Engine.Utility;
 using EnvDTE;
 using Microsoft.VisualStudio.OLE.Interop;
 using System;
@@ -65,11 +66,32 @@ namespace CsDebugScript.VS
         internal static VSDebugger VSDebugger { get; private set; }
 
         /// <summary>
+        /// Interactive execution delayed initialization.
+        /// </summary>
+        internal static InteractiveExecutionInitialization InteractiveExecutionInitialization { get; private set; }
+
+        /// <summary>
+        /// Cache invalidator when debugger enters design mode.
+        /// </summary>
+        internal static CacheInvalidator DesignModeCacheInvalidator { get; private set; }
+
+        /// <summary>
         /// Initializes the <see cref="VSContext"/> class.
         /// </summary>
         static VSContext()
         {
             InitializeDTE();
+            DesignModeCacheInvalidator = new CacheInvalidator();
+            InteractiveExecutionInitialization = new InteractiveExecutionInitialization(new VSInteractiveExecutionBehavior(), DesignModeCacheInvalidator);
+            DebuggerEnteredDesignMode += () => DesignModeCacheInvalidator.InvalidateCache();
+        }
+
+        /// <summary>
+        /// Forces initialization of interactive execution (if it is not already initialized).
+        /// </summary>
+        internal static void InitializeInteractiveExecution()
+        {
+            var unused = InteractiveExecutionInitialization.InteractiveExecution;
         }
 
         /// <summary>

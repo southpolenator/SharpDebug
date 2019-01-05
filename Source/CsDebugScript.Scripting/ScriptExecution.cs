@@ -23,223 +23,171 @@ namespace CsDebugScript
         /// <summary>
         /// Deafult transformations that are being applied when using CodeGen.
         /// </summary>
-        public static readonly XmlTypeTransformation[] DefaultTransformations = new[]
+        public static readonly XmlTypeTransformation[] DefaultTransformations = FixTransformations(new[]
         {
             new XmlTypeTransformation()
             {
                 OriginalType = "std::basic_string<char,${char_traits},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::basic_string<wchar_t,${char_traits},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::basic_string<unsigned short,${char_traits},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::basic_string<char>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::basic_string<wchar_t>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::basic_string<unsigned short>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::vector<${T},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::list<${T},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.list<${T}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::map<${TKey},${TValue},${comparator},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.map<${TKey},${TValue}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::unordered_map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::pair<${TFirst},${TSecond}>",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::any",
                 NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.any",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
             },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::array<${T},${Length}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.array<${T}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::optional<${T}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.optional<${T}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::shared_ptr<${T}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.shared_ptr<${T}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::weak_ptr<${T}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.weak_ptr<${T}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::variant<${T1}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::variant<${T1},${T2}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::variant<${T1},${T2},${T3}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::variant<${T1},${T2},${T3},${T4}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::variant<${T1},${T2},${T3},${T4},${T5}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::variant<${T1},${T2},${T3},${T4},${T5},${T6}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5},${T6}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::variant<${T1},${T2},${T3},${T4},${T5},${T6},${T7}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5},${T6},${T7}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::variant<${T1},${T2},${T3},${T4},${T5},${T6},${T7},${T8}>",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5},${T6},${T7},${T8}>",
+            },
+            new XmlTypeTransformation()
+            {
+                OriginalType = "std::filesystem::path",
+                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.filesystem.path",
+            },
+        });
 
-            // Adding GCC namespace duplicates
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__cxx11::basic_string<char,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__cxx11::basic_string<wchar_t,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__cxx11::basic_string<unsigned short,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__cxx11::vector<${T},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__cxx11::list<${T},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.list<${T}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__cxx11::map<${TKey},${TValue},${comparator},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.map<${TKey},${TValue}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__cxx11::unordered_map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__cxx11::pair<${TFirst},${TSecond}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__cxx11::any",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.any",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
+        private static XmlTypeTransformation[] FixTransformations(XmlTypeTransformation[] originalTransformations)
+        {
+            List<XmlTypeTransformation> transformations = new List<XmlTypeTransformation>();
 
-            // Adding CLANG namespace duplicates
-            new XmlTypeTransformation()
+            foreach (XmlTypeTransformation transformation in originalTransformations)
             {
-                OriginalType = "std::__1::basic_string<char,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::basic_string<wchar_t,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::basic_string<unsigned short,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::basic_string<char>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::basic_string<wchar_t>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::basic_string<unsigned short>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::vector<${T},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::list<${T},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.list<${T}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::map<${TKey},${TValue},${comparator},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.map<${TKey},${TValue}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::unordered_map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::pair<${TFirst},${TSecond}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-            new XmlTypeTransformation()
-            {
-                OriginalType = "std::__1::any",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.any",
-                Constructor = "${new}",
-                HasPhysicalConstructor = false,
-            },
-        };
+                transformations.Add(transformation);
+                if (transformation.OriginalType.StartsWith("std::filesystem::"))
+                {
+                    // Adding CLANG namespace duplicates
+                    transformations.Add(new XmlTypeTransformation()
+                    {
+                        OriginalType = "std::__1::__fs::filesystem::" + transformation.OriginalType.Substring(17),
+                        NewType = transformation.NewType,
+                    });
+                }
+                else if (transformation.OriginalType.StartsWith("std::"))
+                {
+                    // Adding GCC namespace duplicate
+                    transformations.Add(new XmlTypeTransformation()
+                    {
+                        OriginalType = "std::__cxx11::" + transformation.OriginalType.Substring(5),
+                        NewType = transformation.NewType,
+                    });
+
+                    // Adding CLANG namespace duplicates
+                    transformations.Add(new XmlTypeTransformation()
+                    {
+                        OriginalType = "std::__1::" + transformation.OriginalType.Substring(5),
+                        NewType = transformation.NewType,
+                    });
+                }
+            }
+
+            return transformations.ToArray();
+        }
 
         /// <summary>
         /// Resolves the path for the specified base file path.

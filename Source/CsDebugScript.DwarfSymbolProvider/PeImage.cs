@@ -252,6 +252,14 @@ namespace CsDebugScript.DwarfSymbolProvider
             }
         }
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do nothing as we don't have any resources.
+        }
+
         #region File Header Structures
         public const ushort IMAGE_DOS_SIGNATURE = 0x5A4D;
         public const uint IMAGE_NT_SIGNATURE = 0x00004550;

@@ -109,7 +109,7 @@ namespace CsDebugScript
             baseClassesAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>(GetBaseClassAndOffset);
             templateArgumentsStrings = SimpleCache.Create(GetTemplateArgumentsStrings);
             templateArguments = SimpleCache.Create(GetTemplateArguments);
-            userTypes = SimpleCache.Create(GetUserTypes);
+            userTypes = Context.UserTypeMetadataCaches.CreateSimpleCache(GetUserTypes);
         }
 
         /// <summary>
@@ -837,9 +837,6 @@ namespace CsDebugScript
         /// </summary>
         private Type[] GetUserTypes()
         {
-            // Add cache of this function to global collection of caches from where it can be cleared once we load more user types...
-            Context.UserTypeMetadataCaches.Add(userTypes);
-
             // Check if it pointer, but element is not pointer
             if (IsPointer && !ElementType.IsPointer)
                 return ElementType.UserTypes;

@@ -10,6 +10,20 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
+namespace CsDebugScript
+{
+    /// <summary>
+    /// Interface that annotates that <see cref="UserType"/> can nicely print itself to the console.
+    /// </summary>
+    public interface IConsoleVisualizer
+    {
+        /// <summary>
+        /// Nicely print itself on the console.
+        /// </summary>
+        void PrintOnConsole();
+    }
+}
+
 namespace CsDebugScript.UI
 {
     /// <summary>
@@ -105,6 +119,13 @@ namespace CsDebugScript.UI
                     panel.Children.Add(new DrawingViewer(drawing));
                     return panel;
                 });
+            }
+
+            // Check if it is console printer
+            if (obj is IConsoleVisualizer consoleVisualizer)
+            {
+                consoleVisualizer.PrintOnConsole();
+                return null;
             }
 
             return new LazyUIResult(() => Visualize(resultTreeItem));
@@ -506,6 +527,10 @@ namespace CsDebugScript.UI
                                                 customItem.Items.Add(ExpandingItemText);
                                                 customItem.Expanded += TreeViewItem_Expanded;
                                                 item.Items.Add(customItem);
+
+                                                // If we have only one child and if it is [Dynamic] group, let's expand it...
+                                                if (customChildren.Count == 1 && customChild.Item1 == ResultVisualizer.DynamicGroupName)
+                                                    customItem.IsExpanded = true;
                                             }
                                         }
                                     }

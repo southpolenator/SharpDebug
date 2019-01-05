@@ -24,7 +24,7 @@ namespace CsDebugScript.UI
             // Add content
             Grid grid = new Grid();
             Content = grid;
-            ContentControl = new InteractiveWindowContent(new InteractiveExecutionBehavior());
+            ContentControl = new InteractiveWindowContent(new InteractiveExecutionInitialization());
             ContentControl.TextEditor.CloseRequested += TextEditor_CloseRequested;
             grid.Children.Add(ContentControl);
         }
