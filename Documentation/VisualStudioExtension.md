@@ -1,5 +1,8 @@
 ## Installing Visual Studio extension
 
+### Visual Studio marketplace
+Open __Extensions and Updates__ and in _Online_ gallery search for CsDebugScript.VS extension.
+
 ### Open [VSIX Gallery](http://vsixgallery.com)
 VSIX gallery will provide access to newest versions of extensions.
 
