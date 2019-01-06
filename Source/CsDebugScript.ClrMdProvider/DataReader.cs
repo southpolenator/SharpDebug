@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Architecture = Microsoft.Diagnostics.Runtime.Architecture;
 
 namespace CsDebugScript.ClrMdProvider
 {
