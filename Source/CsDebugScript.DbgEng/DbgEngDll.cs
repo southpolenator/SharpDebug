@@ -5,6 +5,7 @@ using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
 using DbgEng;
+using DIA;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -47,6 +48,11 @@ namespace CsDebugScript.Engine.Debuggers
         private DebuggeeFlowController debuggeeFlowController;
 
         /// <summary>
+        /// Mapping from DIA register index into DbgEng.dll register index.
+        /// </summary>
+        private DictionaryCache<CV_HREG_e, uint> registerIndexes;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DbgEngDll"/> class.
         /// </summary>
         /// <param name="debugClient">The debugger client interface.</param>
@@ -55,6 +61,7 @@ namespace CsDebugScript.Engine.Debuggers
             originalClient = debugClient;
             dbgEngSymbolProvider = SimpleCache.Create(() => new DbgEngSymbolProvider(this));
             stateCache = new System.Threading.ThreadLocal<StateCache>(() => new StateCache(this));
+            registerIndexes = new DictionaryCache<CV_HREG_e, uint>(GetRegisterIndex);
 
             if (IsLiveDebugging)
             {
@@ -204,6 +211,15 @@ namespace CsDebugScript.Engine.Debuggers
             {
                 Context.InitializeDebugger(null, null);
             }
+        }
+
+        /// <summary>
+        /// Ends current debugging session and disposes used memory.
+        /// This method is being called when new debugger engine is loaded with <see cref="Context.InitializeDebugger(IDebuggerEngine, ISymbolProvider)"/>.
+        /// </summary>
+        public void EndSession()
+        {
+            // Do nothing. Ending DbgEng.dll session closes all processes being debugger, even new one that is not being set.
         }
 
         #region Executing native commands
@@ -447,13 +463,20 @@ namespace CsDebugScript.Engine.Debuggers
 
                     foreach (string folder in folders)
                     {
-                        string path = Path.Combine(folder, module.LoadedImageName);
-
-                        if (File.Exists(path))
+                        try
                         {
-                            return path;
+                            string path = Path.Combine(folder, module.LoadedImageName);
+
+                            if (File.Exists(path))
+                            {
+                                return path;
+                            }
+                        }
+                        catch
+                        {
                         }
                     }
+                    return null;
                 }
                 return sb.ToString();
             }
@@ -745,6 +768,7 @@ namespace CsDebugScript.Engine.Debuggers
                         ReturnOffset = frames[i].ReturnOffset,
                         StackOffset = frames[i].StackOffset,
                     };
+                    frameContexts[i].Registers = new RegisterAccess(stackTrace.Frames[i], this);
                 }
                 return stackTrace;
             }
@@ -1372,6 +1396,101 @@ namespace CsDebugScript.Engine.Debuggers
 
             debuggeeFlowController.WaitForDebuggerLoopToExit();
             debuggeeFlowController = null;
+        }
+
+        /// <summary>
+        /// Converts from DIA register index into DbgEng.dll register index.
+        /// </summary>
+        /// <param name="registerId">DIA register index.</param>
+        /// <returns>DbgEng.dll register index.</returns>
+        private uint GetRegisterIndex(CV_HREG_e registerId)
+        {
+            string nameStart;
+
+            switch (Process.Current.ArchitectureType)
+            {
+                case ArchitectureType.Amd64:
+                    nameStart = "CV_AMD64_";
+                    break;
+                case ArchitectureType.X86:
+                case ArchitectureType.X86OverAmd64:
+                    nameStart = "CV_REG_";
+                    break;
+                default:
+                case ArchitectureType.Arm:
+                    throw new NotImplementedException();
+            }
+
+            string[] names = Enum.GetNames(typeof(CV_HREG_e));
+
+            foreach (var name in names)
+            {
+                if (name.StartsWith(nameStart) && (CV_HREG_e)Enum.Parse(typeof(CV_HREG_e), name) == registerId)
+                {
+                    string s = name.Substring(nameStart.Length).ToLowerInvariant();
+
+                    return Registers.GetIndexByNameWide(s);
+                }
+            }
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Helper class for accessing register values
+        /// </summary>
+        private class RegisterAccess : IRegistersAccess
+        {
+            /// <summary>
+            /// Stack frame.
+            /// </summary>
+            private StackFrame stackFrame;
+
+            /// <summary>
+            /// DbgEng.dll interface.
+            /// </summary>
+            private DbgEngDll dbgEng;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="RegisterAccess"/> class.
+            /// </summary>
+            /// <param name="stackFrame">Stack frame.</param>
+            /// <param name="dbgEng">DbgEng.dll interface.</param>
+            public RegisterAccess(StackFrame stackFrame, DbgEngDll dbgEng)
+            {
+                this.stackFrame = stackFrame;
+                this.dbgEng = dbgEng;
+            }
+
+            /// <summary>
+            /// Gets register value.
+            /// </summary>
+            /// <param name="registerId">Register index.</param>
+            /// <returns>Register value.</returns>
+            public ulong GetRegisterValue(CV_HREG_e registerId)
+            {
+                using (StackFrameSwitcher switcher = new StackFrameSwitcher(dbgEng.StateCache, stackFrame))
+                {
+                    uint regIndex = dbgEng.registerIndexes[registerId];
+                    _DEBUG_VALUE value = dbgEng.Registers.GetValue(regIndex);
+
+                    switch ((Defines)value.Type)
+                    {
+                        case Defines.DebugValueInt8:
+                            return value.__MIDL____MIDL_itf_output_0001_00830001.I8;
+                        case Defines.DebugValueInt16:
+                            return value.__MIDL____MIDL_itf_output_0001_00830001.I16;
+                        case Defines.DebugValueInt32:
+                        case Defines.DebugValueFloat32:
+                            return value.__MIDL____MIDL_itf_output_0001_00830001.I32;
+                        case Defines.DebugValueInt64:
+                        case Defines.DebugValueFloat64:
+                            return value.__MIDL____MIDL_itf_output_0001_00830001.__MIDL____MIDL_itf_output_0001_00830000.I64;
+                        default:
+                            throw new NotImplementedException();
+                    }
+                }
+            }
         }
 
         #region Native methods

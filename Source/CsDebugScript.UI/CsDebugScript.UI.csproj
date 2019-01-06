@@ -22,6 +22,7 @@
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
 
@@ -30,6 +31,7 @@
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Scripting\CsDebugScript.Scripting.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Drawing.Interfaces\CsDebugScript.Drawing.Interfaces.csproj" />
   </ItemGroup>
 
 </Project>

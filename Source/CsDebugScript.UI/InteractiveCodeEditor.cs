@@ -13,6 +13,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using CsDebugScript.Engine.Debuggers;
+using CsDebugScript.Engine;
+using CsDebugScript.UI.Drawing;
 
 namespace CsDebugScript.UI
 {
@@ -41,8 +43,7 @@ namespace CsDebugScript.UI
 
         private delegate void BackgroundExecuteDelegate(string documentText, out string textOutput, out string errorOutput, out IEnumerable<object> result);
 
-        private InteractiveExecution interactiveExecution;
-        private Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
+        private Dictionary<string, IUnresolvedAssembly> loadedAssemblies = new Dictionary<string, IUnresolvedAssembly>();
         private List<object> results = new List<object>();
         private System.Threading.ManualResetEvent initializedEvent = new System.Threading.ManualResetEvent(false);
 
@@ -55,26 +56,27 @@ namespace CsDebugScript.UI
         /// Initializes a new instance of the <see cref="InteractiveCodeEditor" /> class.
         /// </summary>
         /// <param name="objectWriter">Interactive result visualizer object writer.</param>
+        /// <param name="interactiveExecution">Interactive execution with delayed evaluation.</param>
         /// <param name="fontFamily">The font family.</param>
         /// <param name="fontSize">Size of the font.</param>
         /// <param name="indentationSize">Size of the indentation.</param>
         /// <param name="highlightingColors">The highlighting colors.</param>
-        public InteractiveCodeEditor(InteractiveResultVisualizer objectWriter, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+        public InteractiveCodeEditor(InteractiveResultVisualizer objectWriter, SimpleCache<InteractiveExecution> interactiveExecution, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
             : base(fontFamily, fontSize, indentationSize, highlightingColors)
         {
-            interactiveExecution = new InteractiveExecution();
-            interactiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
-            {
-                InteractiveCodeEditor = this,
-            };
-            interactiveExecution.scriptBase.ObjectWriter = objectWriter;
-
-            // Run initialization of the window in background task
+            // Run initialization of the window in background STA thread
             IsEnabled = false;
-            Task.Run(() =>
+            InteractiveExecutionCache = interactiveExecution;
+            System.Threading.Thread thread = new System.Threading.Thread(() =>
             {
                 try
                 {
+                    InteractiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
+                    {
+                        InteractiveCodeEditor = this,
+                    };
+                    InteractiveExecution.scriptBase.ObjectWriter = objectWriter;
+
                     Dispatcher.InvokeAsync(() =>
                     {
                         IsEnabled = true;
@@ -98,6 +100,8 @@ namespace CsDebugScript.UI
                     MessageBox.Show(ex.ToString());
                 }
             });
+            thread.SetApartmentState(System.Threading.ApartmentState.STA);
+            thread.Start();
         }
 
         public event CommandExecutedHandler CommandExecuted;
@@ -110,12 +114,21 @@ namespace CsDebugScript.UI
 
         public event Action CloseRequested;
 
+        internal SimpleCache<InteractiveExecution> InteractiveExecutionCache { get; private set; }
+
+        internal InteractiveExecution InteractiveExecution => InteractiveExecutionCache.Value;
+
         protected new void Initialize()
         {
             UpdateScriptCode();
             base.Initialize();
-            interactiveExecution.UnsafeInterpret("null");
+            InteractiveExecution.UnsafeInterpret("null");
             initializedEvent.Set();
+        }
+
+        public void ExecuteCSharpScript()
+        {
+            OnExecuteCSharpScript();
         }
 
         protected override void OnExecuteCSharpScript()
@@ -131,9 +144,11 @@ namespace CsDebugScript.UI
                     // Execution code
                     var oldOut = Console.Out;
                     var oldError = Console.Error;
+                    var oldGraphics = Context.Graphics;
 
                     try
                     {
+                        Context.Graphics = new Graphics(Dispatcher);
                         using (StringWriter writer = new StringWriter())
                         {
                             Console.SetOut(writer);
@@ -144,10 +159,10 @@ namespace CsDebugScript.UI
                                 | DebugOutput.DebuggeePrompt | DebugOutput.Symbols | DebugOutput.Status;
                             var callbacks = DebuggerOutputToTextWriter.Create(Console.Out, captureFlags);
 
-                            interactiveExecution.scriptBase._UiActionExecutor_ = (action) => Dispatcher.Invoke(action);
+                            InteractiveExecution.scriptBase._UiActionExecutor_ = (action) => Dispatcher.Invoke(action);
                             using (OutputCallbacksSwitcher switcher = OutputCallbacksSwitcher.Create(callbacks))
                             {
-                                interactiveExecution.UnsafeInterpret(documentText);
+                                InteractiveExecution.UnsafeInterpret(documentText);
                                 writer.Flush();
                                 textOutput = writer.GetStringBuilder().ToString();
                             }
@@ -195,14 +210,15 @@ namespace CsDebugScript.UI
                     {
                         Console.SetError(oldError);
                         Console.SetOut(oldOut);
+                        Context.Graphics = oldGraphics;
                         result = results;
                         results = new List<object>();
-                        interactiveExecution.scriptBase._UiActionExecutor_ = null;
+                        InteractiveExecution.scriptBase._UiActionExecutor_ = null;
                     }
                 };
 
                 // Check if we should execute script code in STA thread
-                if (interactiveExecution.scriptBase.ForceStaExecution)
+                if (InteractiveExecution.scriptBase.ForceStaExecution)
                 {
                     string tempTextOutput = null;
                     string tempErrorOutput = null;
@@ -309,29 +325,29 @@ namespace CsDebugScript.UI
         private void UpdateScriptCode()
         {
             string scriptStart, scriptEnd;
-            string[] loadedReferences = interactiveExecution.GetScriptHelperCode(out scriptStart, out scriptEnd).ToArray();
+            string[] loadedReferences = InteractiveExecution.GetScriptHelperCode(out scriptStart, out scriptEnd).ToArray();
 
             if (loadedReferences.Length != loadedAssemblies.Count)
             {
-                var newAssemblies = new List<IUnresolvedAssembly>();
+                var newAssemblies = new Dictionary<string, IUnresolvedAssembly>();
 
                 foreach (var assemblyPath in loadedReferences)
                     if (!loadedAssemblies.ContainsKey(assemblyPath))
-                    {
                         try
                         {
                             var loader = new CecilLoader();
                             loader.DocumentationProvider = GetXmlDocumentation(assemblyPath);
-                            newAssemblies.Add(loader.LoadAssemblyFile(assemblyPath));
+                            newAssemblies.Add(assemblyPath, loader.LoadAssemblyFile(assemblyPath));
                         }
                         catch (Exception)
                         {
+                            newAssemblies.Add(assemblyPath, null);
                         }
-                    }
-
                 if (newAssemblies.Count > 0)
                 {
-                    projectContent = projectContent.AddAssemblyReferences(newAssemblies);
+                    projectContent = projectContent.AddAssemblyReferences(newAssemblies.Values.Where(a => a != null));
+                    foreach (var kvp in newAssemblies)
+                        loadedAssemblies.Add(kvp.Key, kvp.Value);
                 }
             }
 
@@ -359,6 +375,8 @@ namespace CsDebugScript.UI
                     };
                 string[] versions = new string[]
                     {
+                        @"v4.7.2",
+                        @"v4.7.1",
                         @"v4.7",
                         @"v4.6.2",
                         @"v4.6.1",

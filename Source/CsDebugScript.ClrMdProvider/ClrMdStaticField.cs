@@ -10,11 +10,23 @@ namespace CsDebugScript.ClrMdProvider
         /// <summary>
         /// Initializes a new instance of the <see cref="ClrMdStaticField"/> class.
         /// </summary>
+        /// <param name="provider">The CLR provider.</param>
         /// <param name="clrStaticField">The CLR static field.</param>
-        public ClrMdStaticField(Microsoft.Diagnostics.Runtime.ClrStaticField clrStaticField)
+        public ClrMdStaticField(CLR.ClrMdProvider provider, Microsoft.Diagnostics.Runtime.ClrStaticField clrStaticField)
         {
+            Provider = provider;
             ClrStaticField = clrStaticField;
         }
+
+        /// <summary>
+        /// Gets the field type.
+        /// </summary>
+        public IClrType Type => Provider.FromClrType(ClrStaticField.Type);
+
+        /// <summary>
+        /// Gets the CLR provider.
+        /// </summary>
+        internal CLR.ClrMdProvider Provider { get; private set; }
 
         /// <summary>
         /// Gets the CLR static field.

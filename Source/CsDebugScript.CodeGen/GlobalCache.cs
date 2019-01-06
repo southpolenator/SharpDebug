@@ -81,27 +81,26 @@ namespace CsDebugScript.CodeGen
             }
         }
 
-        internal static IEnumerable<Symbol> GetSymbolStaticFieldsSymbols(Symbol symbol)
+        internal static List<Symbol> GetSymbolStaticFieldsSymbols(Symbol symbol)
         {
             Symbol[] symbols;
 
             if (!deduplicatedSymbols.TryGetValue(symbol.Name, out symbols))
-            {
-                yield return symbol;
-            }
+                return null;
             else
             {
+                List<Symbol> result = null;
+
                 foreach (var s in symbols)
-                {
                     foreach (var field in s.Fields)
-                    {
                         if (field.DataKind == DataKind.StaticMember && field.IsValidStatic)
                         {
-                            yield return s;
+                            if (result == null)
+                                result = new List<Symbol>();
+                            result.Add(s);
                             break;
                         }
-                    }
-                }
+                return result;
             }
         }
 

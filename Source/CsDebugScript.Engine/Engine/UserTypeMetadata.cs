@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -7,16 +8,51 @@ namespace CsDebugScript.Engine
     internal class UserTypeMetadata
     {
         /// <summary>
+        /// Delegate for vefication that the specified code type can be handled by this user type metadata.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type metadata can handle code type.</returns>
+        public delegate bool CodeTypeVerificationDelegate(CodeType codeType);
+
+        /// <summary>
+        /// Delegate for code type verification.
+        /// </summary>
+        private CodeTypeVerificationDelegate verificationDelegate;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="UserTypeMetadata"/> class.
         /// </summary>
         /// <param name="moduleName">Name of the module.</param>
         /// <param name="typeName">Name of the type.</param>
+        /// <param name="codeTypeVerificationFunction">Name of the static function in <paramref name="type"/> that can verify code type.</param>
         /// <param name="type">The type.</param>
-        public UserTypeMetadata(string moduleName, string typeName, Type type)
+        public UserTypeMetadata(string moduleName, string typeName, string codeTypeVerificationFunction, Type type)
         {
             ModuleName = moduleName;
             TypeName = typeName;
             Type = type;
+            try
+            {
+                if (!string.IsNullOrEmpty(codeTypeVerificationFunction))
+                {
+                    // Search for method
+                    Type t = type;
+                    MethodInfo methodInfo = null;
+
+                    while (methodInfo == null && t != null)
+                    {
+                        methodInfo = t.GetMethod(codeTypeVerificationFunction);
+                        t = type.BaseType;
+                    }
+
+                    if (methodInfo != null)
+                        verificationDelegate = (CodeTypeVerificationDelegate)Delegate.CreateDelegate(typeof(CodeTypeVerificationDelegate), methodInfo);
+                }
+            }
+            catch
+            {
+                // Silently fail delegate initialization
+            }
         }
 
         /// <summary>
@@ -38,67 +74,35 @@ namespace CsDebugScript.Engine
         /// Reads metadata from the type.
         /// </summary>
         /// <param name="type">The type.</param>
-        public static UserTypeMetadata[] ReadFromType(Type type)
+        public static IEnumerable<UserTypeMetadata> ReadFromType(Type type)
         {
             UserTypeAttribute[] attributes = type.GetCustomAttributes<UserTypeAttribute>(false).ToArray();
             bool derivedFromUserType = IsDerivedFrom(type, typeof(UserType));
 
-            /* #fixme temp workaround for genertic types
-            if (type.IsGenericType)
-            {
-                foreach(Type genericArgument in type.GetGenericArguments())
-                {
-                    UserTypeAttribute genericAttribute = genericArgument.GetCustomAttribute<UserTypeAttribute>();
-                    if (genericAttribute != null)
-                    {
-                        string moduleName = genericAttribute.ModuleName;
-                        // #fixme temp workaround
-                        string typeName = type.Name + "<>";
-
-                        return new UserTypeMetadata(moduleName, typeName, type);
-                    }
-                }
-            }
-            */
-
             if (attributes.Length > 0 && !derivedFromUserType)
-            {
-                throw new Exception(string.Format("Type {0} has defined UserTypeAttribute, but it does not inherit UserType", type.FullName));
-            }
+                throw new Exception($"Type {type.FullName} has defined UserTypeAttribute, but it does not inherit UserType");
             else if (derivedFromUserType)
             {
-                UserTypeMetadata[] metadata = new UserTypeMetadata[attributes.Length];
+                string defaultTypeName = type.Name; // TODO: Form better name for generics type
 
-                for (int i = 0; i < metadata.Length; i++)
+                foreach (UserTypeAttribute attribute in attributes)
                 {
-                    UserTypeAttribute attribute = attributes[i];
-                    string moduleName = attribute != null ? attribute.ModuleName : null;
-                    string typeName = attribute != null ? attribute.TypeName : !type.IsGenericType ? type.Name : type.Name.Substring(0, type.Name.IndexOf('`')) + "<>"; // TODO: Form better name for generics type
+                    string moduleName = attribute?.ModuleName;
+                    string typeName = attribute?.TypeName ?? defaultTypeName;
 
-                    metadata[i] = new UserTypeMetadata(moduleName, typeName, type);
+                    yield return new UserTypeMetadata(moduleName, typeName, attribute.CodeTypeVerification, type);
                 }
-
-                return metadata;
             }
-
-            return new UserTypeMetadata[0];
         }
 
         /// <summary>
-        /// Converts metadata to description using the current process.
+        /// Verifies that type user type from this metadata can work with the specified code type.
         /// </summary>
-        public UserTypeDescription ConvertToDescription()
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type from this metadata can work with the specified code type; <c>false</c> otherwise</returns>
+        public bool VerifyCodeType(CodeType codeType)
         {
-            return new UserTypeDescription(ModuleName, TypeName, Type);
-        }
-
-        /// <summary>
-        /// Converts metadata to description.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        public UserTypeDescription ConvertToDescription(Process process)
-        {
-            return new UserTypeDescription(process, ModuleName, TypeName, Type);
+            return verificationDelegate == null || verificationDelegate(codeType);
         }
 
         /// <summary>

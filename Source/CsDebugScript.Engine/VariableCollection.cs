@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -25,7 +26,7 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="variables">The variables.</param>
         public VariableCollection(Variable[] variables)
-            : this(variables, variables.Where(v => !string.IsNullOrEmpty(v.GetName())).ToDictionary(v => v.GetName()))
+            : this(variables, variables.Select(v => v.GetName()).ToArray())
         {
         }
 
@@ -33,11 +34,23 @@ namespace CsDebugScript
         /// Initializes a new instance of the <see cref="VariableCollection"/> class.
         /// </summary>
         /// <param name="variables">The variables.</param>
+        /// <param name="names">The array of variable names. When user type casting happens, some variables might become <c>null</c>.</param>
+        public VariableCollection(Variable[] variables, string[] names)
+            : this(variables, names, CreateDictionary(variables, names))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="VariableCollection"/> class.
+        /// </summary>
+        /// <param name="variables">The variables.</param>
+        /// <param name="names">The array of variable names. When user type casting happens, some variables might become <c>null</c>.</param>
         /// <param name="variablesByName">The variables indexed by name.</param>
-        public VariableCollection(Variable[] variables, Dictionary<string, Variable> variablesByName)
+        public VariableCollection(Variable[] variables, string[] names, Dictionary<string, Variable> variablesByName)
         {
             this.variables = variables;
             this.variablesByName = variablesByName;
+            Names = names;
         }
 
         /// <summary>
@@ -78,13 +91,7 @@ namespace CsDebugScript
         /// <summary>
         /// Gets an enumerable collection that contains the variables names.
         /// </summary>
-        public IEnumerable<string> Names
-        {
-            get
-            {
-                return variablesByName.Keys;
-            }
-        }
+        public string[] Names { get; private set; }
 
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
@@ -119,6 +126,25 @@ namespace CsDebugScript
         public bool TryGetValue(string name, out Variable value)
         {
             return variablesByName.TryGetValue(name, out value);
+        }
+
+        /// <summary>
+        /// Creates dictionary of variable names.
+        /// </summary>
+        /// <param name="variables">Array of variables</param>
+        /// <param name="names">The array of variable names. When user type casting happens, some variables might become <c>null</c>.</param>
+        private static Dictionary<string, Variable> CreateDictionary(Variable[] variables, string[] names)
+        {
+            Dictionary<string, Variable> result = new Dictionary<string, Variable>(variables.Length);
+
+            for (int i = variables.Length - 1; i >= 0; i--)
+            {
+                if (!string.IsNullOrEmpty(names[i]) && !result.ContainsKey(names[i]))
+                {
+                    result.Add(names[i], variables[i]);
+                }
+            }
+            return result;
         }
     }
 }

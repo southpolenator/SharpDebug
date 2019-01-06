@@ -1,6 +1,6 @@
 ﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Utility;
 using System;
-using System.Collections.Concurrent;
 
 namespace CsDebugScript.CommonUserTypes
 {
@@ -14,20 +14,21 @@ namespace CsDebugScript.CommonUserTypes
         /// <summary>
         /// The verified types
         /// </summary>
-        private ConcurrentDictionary<CodeType, IUserTypeDelegates> verifiedTypes = new ConcurrentDictionary<CodeType, IUserTypeDelegates>();
+        private DictionaryCache<CodeType, Tuple<IUserTypeDelegates, object>> verifiedTypes;
 
         /// <summary>
         /// The user defined types with selector function
         /// </summary>
-        private Tuple<Type, Func<CodeType, bool>>[] types;
+        private Tuple<Type, Func<CodeType, object>>[] types;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TypeSelector{T}"/> class.
         /// </summary>
         /// <param name="types">The user defined types with selector function.</param>
-        public TypeSelector(params Tuple<Type, Func<CodeType, bool>>[] types)
+        public TypeSelector(params Tuple<Type, Func<CodeType, object>>[] types)
         {
             this.types = types;
+            verifiedTypes = GlobalCache.Caches.CreateDictionaryCache<CodeType, Tuple<IUserTypeDelegates, object>>(GetVerifiedTypeData);
         }
 
         /// <summary>
@@ -38,9 +39,9 @@ namespace CsDebugScript.CommonUserTypes
         public T SelectType(Variable variable)
         {
             CodeType codeType = variable.GetCodeType();
-            IUserTypeDelegates delegates = GetUserTypeDelegates(codeType);
+            Tuple<IUserTypeDelegates, object> data = verifiedTypes[codeType];
 
-            return (T)delegates?.SymbolicConstructor(variable);
+            return (T)data?.Item1.SymbolicConstructorWithData(variable, data.Item2);
         }
 
         /// <summary>
@@ -50,33 +51,23 @@ namespace CsDebugScript.CommonUserTypes
         /// <returns><c>true</c> if type selector can work with the specified code type; <c>false</c> otherwise</returns>
         public bool VerifyCodeType(CodeType codeType)
         {
-            return GetUserTypeDelegates(codeType) != null;
+            return verifiedTypes[codeType] != null;
         }
 
         /// <summary>
-        /// Gets the user type delegates for the specified code type.
+        /// Finds verified type data for the specified code type.
         /// </summary>
-        /// <param name="codeType">The code type.</param>
-        /// <returns>User type delegates</returns>
-        private IUserTypeDelegates GetUserTypeDelegates(CodeType codeType)
+        /// <param name="codeType">The code type to be verified.</param>
+        private Tuple<IUserTypeDelegates, object> GetVerifiedTypeData(CodeType codeType)
         {
-            IUserTypeDelegates delegates;
-
-            if (!verifiedTypes.TryGetValue(codeType, out delegates))
+            foreach (var t in types)
             {
-                foreach (var t in types)
-                {
-                    if (t.Item2(codeType))
-                    {
-                        delegates = UserTypeDelegates.Delegates[t.Item1];
-                        break;
-                    }
-                }
+                object data = t.Item2(codeType);
 
-                verifiedTypes.TryAdd(codeType, delegates);
+                if (data != null)
+                    return Tuple.Create(UserTypeDelegates.Delegates[t.Item1], data);
             }
-
-            return delegates;
+            return null;
         }
     }
 }

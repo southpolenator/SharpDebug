@@ -112,6 +112,7 @@ namespace CsDebugScript
         {
             Address = address;
             Process = process;
+            Id = uint.MaxValue;
             name = SimpleCache.Create(() =>
             {
                 string name = Context.Debugger.GetModuleName(this);
@@ -137,17 +138,7 @@ namespace CsDebugScript
             TypesById = new DictionaryCache<uint, CodeType>(GetTypeById);
             ClrTypes = new DictionaryCache<IClrType, CodeType>(GetClrCodeType);
             GlobalVariables = new DictionaryCache<string, Variable>(GetGlobalVariable);
-            UserTypeCastedGlobalVariables = new DictionaryCache<string, Variable>((name) =>
-            {
-                Variable variable = Process.CastVariableToUserType(GlobalVariables[name]);
-
-                if (UserTypeCastedGlobalVariables.Count == 0)
-                {
-                    GlobalCache.VariablesUserTypeCastedFieldsByName.Add(UserTypeCastedGlobalVariables);
-                }
-
-                return variable;
-            });
+            UserTypeCastedGlobalVariables = Context.UserTypeMetadataCaches.CreateDictionaryCache<string, Variable>((name) => Process.CastVariableToUserType(GlobalVariables[name]));
         }
 
         /// <summary>
@@ -428,23 +419,20 @@ namespace CsDebugScript
         {
             int variableNameIndex = name.LastIndexOf('.');
             string typeName = name.Substring(0, variableNameIndex);
-            var clrType = ClrModule.GetTypeByName(typeName);
+            IClrType clrType = ClrModule.GetTypeByName(typeName);
 
             if (clrType == null)
-            {
                 throw new Exception($"CLR type not found {typeName}");
-            }
 
             string variableName = name.Substring(variableNameIndex + 1);
-            var staticField = clrType.GetStaticFieldByName(variableName);
+            IClrStaticField staticField = clrType.GetStaticFieldByName(variableName);
 
             if (staticField == null)
-            {
                 throw new Exception($"Field {staticField} wasn't found in CLR type {typeName}");
-            }
 
-            var address = staticField.GetAddress(appDomain);
-            Variable field = Variable.CreateNoCast(FromClrType(clrType), address, variableName);
+            ulong address = staticField.GetAddress(appDomain);
+            IClrType fieldType = staticField.Type;
+            Variable field = Variable.CreateNoCast(FromClrType(fieldType), address, variableName);
 
             return Variable.UpcastClrVariable(field);
         }
@@ -492,6 +480,10 @@ namespace CsDebugScript
             if (name == CodeType.NakedPointerCodeTypeName)
             {
                 return new NakedPointerCodeType(this);
+            }
+            else if (name.StartsWith(BuiltinCodeTypes.FakeNameStart))
+            {
+                return BuiltinCodeTypes.CreateCodeType(this, name.Substring(BuiltinCodeTypes.FakeNameStart.Length));
             }
 
             CodeType codeType = null;

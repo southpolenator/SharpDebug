@@ -1,5 +1,6 @@
 ﻿using CommandLine;
 using CsDebugScript.DwarfSymbolProvider;
+using CsDebugScript.PdbSymbolProvider;
 using System.Collections.Generic;
 using System.IO;
 
@@ -7,8 +8,8 @@ namespace CsDebugScript.CodeGen.App
 {
     class Options
     {
-        [Option('p', "pdb", Required = false, HelpText = "Path to PDB which will be used to generate the code", SetName = "cmdSettings")]
-        public string PdbPath { get; set; }
+        [Option('s', "symbols", Required = false, HelpText = "Path to symbols file which will be used to generate the code", SetName = "cmdSettings")]
+        public string SymbolsPath { get; set; }
 
         [Option('t', "types", Separator = ',', Required = false, HelpText = "List of types to be exported", SetName = "cmdSettings")]
         public IList<string> Types { get; set; }
@@ -37,6 +38,9 @@ namespace CsDebugScript.CodeGen.App
         [Option("generate-physical-mapping-of-user-types", Default = false, HelpText = "Generate physical access to fields in exported user types (instead of symbolic/by name)", Required = false, SetName = "cmdSettings")]
         public bool GeneratePhysicalMappingOfUserTypes { get; set; }
 
+        [Option("generate-assembly-with-il", Default = false, HelpText = "Generate assembly by emitting IL instead of compiling C# code.", Required = false, SetName = "cmdSettings")]
+        public bool GenerateAssemblyWithIL { get; set; }
+
         [Option("generated-assembly-name", Default = "", HelpText = "Name of the assembly that will be generated next to sources in output folder", Required = false, SetName = "cmdSettings")]
         public string GeneratedAssemblyName { get; set; }
 
@@ -48,6 +52,9 @@ namespace CsDebugScript.CodeGen.App
 
         [Option("use-dwarf", Default = false, HelpText = "Use DWARF symbol provider")]
         public bool UseDwarfSymbolProvider { get; set; }
+
+        [Option("use-pdb-reader", Default = false, HelpText = "Use PDB reader symbol provider")]
+        public bool UsePDBReaderSymbolProvider { get; set; }
     }
 
     class Program
@@ -82,14 +89,15 @@ namespace CsDebugScript.CodeGen.App
                     CacheUserTypeFields = options.CacheUserTypeFields,
                     LazyCacheUserTypeFields = options.LazyCacheUserTypeFields,
                     GeneratePhysicalMappingOfUserTypes = options.GeneratePhysicalMappingOfUserTypes,
+                    GenerateAssemblyWithILWriter = options.GenerateAssemblyWithIL,
                     Types = new XmlType[options.Types.Count],
                     Modules = new XmlModule[]
                     {
                         new XmlModule
                         {
-                            PdbPath = options.PdbPath,
-                            Name = Path.GetFileNameWithoutExtension(options.PdbPath),
-                            Namespace = Path.GetFileNameWithoutExtension(options.PdbPath),
+                            SymbolsPath = options.SymbolsPath,
+                            Name = Path.GetFileNameWithoutExtension(options.SymbolsPath),
+                            Namespace = Path.GetFileNameWithoutExtension(options.SymbolsPath),
                         }
                     },
                 };
@@ -105,7 +113,10 @@ namespace CsDebugScript.CodeGen.App
 
             if (!options.UseDwarfSymbolProvider)
             {
-                generator = new Generator();
+                if (!options.UsePDBReaderSymbolProvider)
+                    generator = new Generator();
+                else
+                    generator = new Generator(new PdbModuleProvider());
             }
             else
             {

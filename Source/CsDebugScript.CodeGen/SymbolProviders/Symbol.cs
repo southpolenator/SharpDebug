@@ -17,37 +17,42 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <summary>
         /// The cache of fields
         /// </summary>
-        private SimpleCache<SymbolField[]> fields;
+        private SimpleCacheStruct<SymbolField[]> fields;
 
         /// <summary>
         /// The cache of base classes
         /// </summary>
-        private SimpleCache<Symbol[]> baseClasses;
+        private SimpleCacheStruct<Symbol[]> baseClasses;
 
         /// <summary>
         /// The cache of element type
         /// </summary>
-        private SimpleCache<Symbol> elementType;
+        private SimpleCacheStruct<Symbol> elementType;
 
         /// <summary>
         /// The cache of pointer type
         /// </summary>
-        private SimpleCache<Symbol> pointerType;
+        private SimpleCacheStruct<Symbol> pointerType;
 
         /// <summary>
         /// The cache of enumeration values
         /// </summary>
-        private SimpleCache<Tuple<string, string>[]> enumValues;
+        private SimpleCacheStruct<Tuple<string, string>[]> enumValues;
+
+        /// <summary>
+        /// The cache of enumeration entries by value (first value is taken if there are multiple entries with the same value).
+        /// </summary>
+        private SimpleCacheStruct<Dictionary<string, string>> enumValuesByValue;
 
         /// <summary>
         /// The cache of namespaces
         /// </summary>
-        private SimpleCache<List<string>> namespaces;
+        private SimpleCacheStruct<List<string>> namespaces;
 
         /// <summary>
         /// The user type
         /// </summary>
-        private SimpleCache<UserType> userType;
+        private SimpleCacheStruct<UserType> userType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Symbol"/> class.
@@ -56,13 +61,22 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         public Symbol(Module module)
         {
             Module = module;
-            fields = SimpleCache.Create(() => GetFields().ToArray());
-            baseClasses = SimpleCache.Create(() => GetBaseClasses().ToArray());
-            elementType = SimpleCache.Create(() => GetElementType());
-            pointerType = SimpleCache.Create(() => GetPointerType());
-            enumValues = SimpleCache.Create(() => GetEnumValues().ToArray());
-            namespaces = SimpleCache.Create(() => SymbolNameHelper.GetSymbolNamespaces(Name));
-            userType = SimpleCache.Create(() => (UserType)null);
+            fields = SimpleCache.CreateStruct(() => GetFields().ToArray());
+            baseClasses = SimpleCache.CreateStruct(() => GetBaseClasses().ToArray());
+            elementType = SimpleCache.CreateStruct(() => GetElementType());
+            pointerType = SimpleCache.CreateStruct(() => GetPointerType());
+            enumValues = SimpleCache.CreateStruct(() => GetEnumValues().ToArray());
+            enumValuesByValue = SimpleCache.CreateStruct(() =>
+            {
+                Dictionary<string, string> values = new Dictionary<string, string>();
+
+                foreach (var kvp in EnumValues)
+                    if (!values.ContainsKey(kvp.Item2))
+                        values.Add(kvp.Item2, kvp.Item1);
+                return values;
+            });
+            namespaces = SimpleCache.CreateStruct(() => SymbolNameHelper.GetSymbolNamespaces(Name));
+            userType = SimpleCache.CreateStruct(() => (UserType)null);
         }
 
         /// <summary>
@@ -160,6 +174,17 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             get
             {
                 return enumValues.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the enumeration values indexed by value (first entry is taken if multiple entries have the same value).
+        /// </summary>
+        public Dictionary<string, string> EnumValuesByValue
+        {
+            get
+            {
+                return enumValuesByValue.Value;
             }
         }
 
@@ -282,7 +307,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </returns>
         public override int GetHashCode()
         {
-            return Id.GetHashCode();
+            return Id.GetHashCode() ^ Module.GetHashCode();
         }
 
         /// <summary>
@@ -300,13 +325,9 @@ namespace CsDebugScript.CodeGen.SymbolProviders
             {
                 return false;
             }
-            return Id == other.Id;
-        }
 
-        /// <summary>
-        /// Casts as symbol field.
-        /// </summary>
-        public abstract SymbolField CastAsSymbolField();
+            return Id == other.Id && Module == other.Module;
+        }
 
         /// <summary>
         /// Initializes the cache.
@@ -341,7 +362,10 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <summary>
         /// Gets the pointer type to this symbol.
         /// </summary>
-        protected abstract Symbol GetPointerType();
+        protected virtual Symbol GetPointerType()
+        {
+            return new FakePointerSymbol(this);
+        }
 
         /// <summary>
         /// Links the symbols.

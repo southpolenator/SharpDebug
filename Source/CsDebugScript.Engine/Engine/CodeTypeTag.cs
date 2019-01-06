@@ -59,5 +59,10 @@
         /// Type representing module global variables. Is is used only in CodeGen.
         /// </summary>
         ModuleGlobals,
+
+        /// <summary>
+        /// Type representing constant used as template type argument. It is used only in CodeGen.
+        /// </summary>
+        TemplateArgumentConstant,
     }
 }

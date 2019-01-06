@@ -19,5 +19,11 @@ namespace CsDebugScript
         /// Note: it can be null, then class name where this attribute was set would be used.
         /// </summary>
         public string TypeName { get; set; }
+
+        /// <summary>
+        /// Gets or sets name of the function that will be used for code type verification.
+        /// If <see cref="TypeName"/> is not unique (for example template that ends with &lt;&gt;) this function will be used to verify that code type is correct for user type.
+        /// </summary>
+        public string CodeTypeVerification { get; set; }
     }
 }

@@ -31,9 +31,9 @@ namespace CsDebugScript.DwarfSymbolProvider
             Module module = new Module(default(Process), 0)
             {
                 Name = xmlModule.Name,
-                SymbolFileName = xmlModule.PdbPath,
-                MappedImageName = xmlModule.PdbPath,
-                ImageName = xmlModule.PdbPath,
+                SymbolFileName = xmlModule.SymbolsPath,
+                MappedImageName = xmlModule.SymbolsPath,
+                ImageName = xmlModule.SymbolsPath,
             };
             var result = new EngineSymbolProviderModule(module, xmlModule, symbolProvider);
             DwarfSymbolProviderModule provider = (DwarfSymbolProviderModule)result.EngineModuleProvider;

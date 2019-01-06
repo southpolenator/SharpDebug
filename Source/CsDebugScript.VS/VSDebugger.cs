@@ -1,29 +1,35 @@
-﻿using CsDebugScript.Engine.Marshaling;
-using CsDebugScript.Engine.Utility;
-using System;
-using System.Linq;
-using DIA;
-using CsDebugScript.Engine.SymbolProviders;
-using System.IO;
+﻿using CsDebugScript.CLR;
 using CsDebugScript.Engine;
+using CsDebugScript.Engine.Marshaling;
+using CsDebugScript.Engine.SymbolProviders;
+using CsDebugScript.Engine.Utility;
+using CsDebugScript.VS.CLR;
+using DIA;
+using System;
+using System.IO;
+using System.Linq;
 
 namespace CsDebugScript.VS
 {
-    internal class VSDebugger : Engine.IDebuggerEngine, IDiaSessionProvider
+    internal class VSDebugger : IDebuggerEngine, IDiaSessionProvider, IClrProvider
     {
-        /// <summary>
-        /// The Visual Studio debugger proxy running in Default AppDomain.
-        /// </summary>
-        private VSDebuggerProxy proxy;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="VSDebugger"/> class.
         /// </summary>
         /// <param name="proxy">The Visual Studio debugger proxy running in Default AppDomain.</param>
         public VSDebugger(VSDebuggerProxy proxy)
         {
-            this.proxy = proxy;
+            Proxy = proxy;
+            Context.SetUserTypeMetadata(ScriptCompiler.ExtractMetadata(new[]
+                {
+                    typeof(CsDebugScript.CommonUserTypes.NativeTypes.cv.Mat).Assembly, // CsDebugScript.CommonUserTypes.dll
+                }));
         }
+
+        /// <summary>
+        /// The Visual Studio debugger proxy running in Default AppDomain.
+        /// </summary>
+        internal VSDebuggerProxy Proxy { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether debugger is currently in live debugging.
@@ -31,12 +37,15 @@ namespace CsDebugScript.VS
         /// <value>
         /// <c>true</c> if debugger is currently in live debugging; otherwise, <c>false</c>.
         /// </value>
-        public bool IsLiveDebugging
+        public bool IsLiveDebugging => Proxy.IsProcessLiveDebugging(Process.Current.Id);
+
+        /// <summary>
+        /// Ends current debugging session and disposes used memory.
+        /// This method is being called when new debugger engine is loaded with <see cref="Context.InitializeDebugger(IDebuggerEngine, ISymbolProvider)"/>.
+        /// </summary>
+        public void EndSession()
         {
-            get
-            {
-                return proxy.IsProcessLiveDebugging(Process.Current.Id);
-            }
+            // Do nothing
         }
 
         public Engine.ISymbolProvider GetDefaultSymbolProvider()
@@ -58,10 +67,7 @@ namespace CsDebugScript.VS
             string dumpFilename = process.DumpFileName;
 
             if (File.Exists(dumpFilename))
-            {
                 return new WindowsDumpFileMemoryReader(dumpFilename);
-            }
-
             return null;
         }
 
@@ -70,7 +76,7 @@ namespace CsDebugScript.VS
         /// </summary>
         public Process[] GetAllProcesses()
         {
-            int[] processSystemIds = proxy.GetAllProcesses();
+            int[] processSystemIds = Proxy.GetAllProcesses();
             Process[] processes = new Process[processSystemIds.Length];
 
             for (int i = 0; i < processes.Length; i++)
@@ -87,7 +93,7 @@ namespace CsDebugScript.VS
         /// </summary>
         public Process GetCurrentProcess()
         {
-            int currentProcessSystemId = proxy.GetCurrentProcessSystemId();
+            int currentProcessSystemId = Proxy.GetCurrentProcessSystemId();
 
             return Process.All.Where(p => p.SystemId == currentProcessSystemId).Single();
         }
@@ -100,7 +106,7 @@ namespace CsDebugScript.VS
         {
             if (GetCurrentProcess() == process)
             {
-                int currentThreadSystemId = proxy.GetCurrentThreadSystemId();
+                int currentThreadSystemId = Proxy.GetCurrentThreadSystemId();
 
                 return process.Threads.Where(t => t.SystemId == currentThreadSystemId).Single();
             }
@@ -119,7 +125,7 @@ namespace CsDebugScript.VS
             if (GetProcessCurrentThread(thread.Process) == thread)
             {
                 StackTrace stackTrace = thread.StackTrace;
-                int currentStackFrameNumber = proxy.GetCurrentStackFrameNumber((int)thread.Id);
+                int currentStackFrameNumber = Proxy.GetCurrentStackFrameNumber((int)thread.Id);
 
                 return thread.StackTrace.Frames[currentStackFrameNumber];
             }
@@ -136,7 +142,7 @@ namespace CsDebugScript.VS
         /// <param name="moduleName">Name of the module.</param>
         public ulong GetModuleAddress(Process process, string moduleName)
         {
-            return proxy.GetModuleAddress(process.Id, moduleName);
+            return Proxy.GetModuleAddress(process.Id, moduleName);
         }
 
         /// <summary>
@@ -146,7 +152,8 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public string GetModuleImageName(Module module)
         {
-            return proxy.GetModuleImageName(module.Id);
+            InitializeModuleId(module);
+            return Proxy.GetModuleImageName(module.Id);
         }
 
         /// <summary>
@@ -175,7 +182,8 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public string GetModuleName(Module module)
         {
-            return proxy.GetModuleName(module.Id);
+            InitializeModuleId(module);
+            return Proxy.GetModuleName(module.Id);
         }
 
         /// <summary>
@@ -185,7 +193,8 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public string GetModuleSymbolFile(Module module)
         {
-            return proxy.GetModuleSymbolName(module.Id);
+            InitializeModuleId(module);
+            return Proxy.GetModuleSymbolName(module.Id);
         }
 
         /// <summary>
@@ -197,7 +206,8 @@ namespace CsDebugScript.VS
         /// </returns>
         public IDiaSession GetModuleDiaSession(Module module)
         {
-            return proxy.GetModuleDiaSession(module.Id) as IDiaSession;
+            InitializeModuleId(module);
+            return Proxy.GetModuleDiaSession(module.Id) as IDiaSession;
         }
 
         /// <summary>
@@ -206,7 +216,8 @@ namespace CsDebugScript.VS
         /// <param name="module">The module.</param>
         public Tuple<DateTime, ulong> GetModuleTimestampAndSize(Module module)
         {
-            return proxy.GetModuleTimestampAndSize(module.Id);
+            InitializeModuleId(module);
+            return Proxy.GetModuleTimestampAndSize(module.Id);
         }
 
         /// <summary>
@@ -219,7 +230,8 @@ namespace CsDebugScript.VS
         /// <param name="patch">The version patch number.</param>
         public void GetModuleVersion(Module module, out int major, out int minor, out int revision, out int patch)
         {
-            proxy.GetModuleVersion(module.Id, out major, out minor, out revision, out patch);
+            InitializeModuleId(module);
+            Proxy.GetModuleVersion(module.Id, out major, out minor, out revision, out patch);
         }
 
         /// <summary>
@@ -228,7 +240,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public ArchitectureType GetProcessArchitectureType(Process process)
         {
-            return proxy.GetProcessArchitectureType(process.Id);
+            return Proxy.GetProcessArchitectureType(process.Id);
         }
 
         /// <summary>
@@ -237,7 +249,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public string GetProcessDumpFileName(Process process)
         {
-            return proxy.GetProcessDumpFileName(process.Id);
+            return Proxy.GetProcessDumpFileName(process.Id);
         }
 
         public ulong GetProcessEnvironmentBlockAddress(Process process)
@@ -251,7 +263,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public string GetProcessExecutableName(Process process)
         {
-            return proxy.GetProcessExecutableName(process.Id);
+            return Proxy.GetProcessExecutableName(process.Id);
         }
 
         /// <summary>
@@ -260,7 +272,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public Module[] GetProcessModules(Process process)
         {
-            Tuple<uint, ulong>[] moduleIdsAndBaseAddresses = proxy.GetProcessModules(process.Id);
+            Tuple<uint, ulong>[] moduleIdsAndBaseAddresses = Proxy.GetProcessModules(process.Id);
             Module[] modules = new Module[moduleIdsAndBaseAddresses.Length];
 
             for (int i = 0; i < modules.Length; i++)
@@ -278,7 +290,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public uint GetProcessSystemId(Process process)
         {
-            return proxy.GetProcessSystemId(process.Id);
+            return Proxy.GetProcessSystemId(process.Id);
         }
 
         /// <summary>
@@ -287,7 +299,7 @@ namespace CsDebugScript.VS
         /// <param name="process">The process.</param>
         public Thread[] GetProcessThreads(Process process)
         {
-            Tuple<uint, uint>[] threadIdsAndSystemIds = proxy.GetProcessThreads(process.Id);
+            Tuple<uint, uint>[] threadIdsAndSystemIds = Proxy.GetProcessThreads(process.Id);
             Thread[] threads = new Thread[threadIdsAndSystemIds.Length];
 
             for (int i = 0; i < threads.Length; i++)
@@ -316,7 +328,7 @@ namespace CsDebugScript.VS
         {
             using (MarshalArrayReader<ThreadContext> threadContextBuffer = WindowsThreadContext.CreateArrayMarshaler(thread.Process, 1))
             {
-                proxy.GetThreadContext(thread.Id, threadContextBuffer.Pointer, threadContextBuffer.Count * threadContextBuffer.Size);
+                Proxy.GetThreadContext(thread.Id, threadContextBuffer.Pointer, threadContextBuffer.Count * threadContextBuffer.Size);
 
                 return threadContextBuffer.Elements.FirstOrDefault();
             }
@@ -328,7 +340,7 @@ namespace CsDebugScript.VS
         /// <param name="thread">The thread.</param>
         public ulong GetThreadEnvironmentBlockAddress(Thread thread)
         {
-            return proxy.GetThreadEnvironmentBlockAddress(thread.Id);
+            return Proxy.GetThreadEnvironmentBlockAddress(thread.Id);
         }
 
         /// <summary>
@@ -337,7 +349,7 @@ namespace CsDebugScript.VS
         /// <param name="thread">The thread.</param>
         public StackTrace GetThreadStackTrace(Thread thread)
         {
-            Tuple<ulong, ulong, ulong>[] framesData = proxy.GetThreadStackTrace(thread.Id, thread.ThreadContext.Bytes);
+            Tuple<ulong, ulong, ulong>[] framesData = Proxy.GetThreadStackTrace(thread.Id, thread.ThreadContext.Bytes);
             StackTrace stackTrace = new StackTrace(thread);
             StackFrame[] frames = new StackFrame[framesData.Length];
 
@@ -356,6 +368,7 @@ namespace CsDebugScript.VS
                     ReturnOffset = 0, // Populated in the loop after this one
                     Virtual = false, // TODO:
                 };
+                threadContext.Registers = new RegistersAccess(thread.Id, frames[i].FrameNumber, Proxy);
             }
 
             for (int i = frames.Length - 2; i >= 0; i--)
@@ -364,6 +377,50 @@ namespace CsDebugScript.VS
             }
 
             return stackTrace;
+        }
+
+        /// <summary>
+        /// Helper class for accessing register values
+        /// </summary>
+        private class RegistersAccess : IRegistersAccess
+        {
+            /// <summary>
+            /// Thread identifier.
+            /// </summary>
+            private uint threadId;
+
+            /// <summary>
+            /// Stack frame identifier.
+            /// </summary>
+            private uint frameId;
+
+            /// <summary>
+            /// VS debugger proxy.
+            /// </summary>
+            private VSDebuggerProxy proxy;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="RegisterAccess"/> class.
+            /// </summary>
+            /// <param name="threadId">Thread identifier.</param>
+            /// <param name="frameId">Stack frame identifier.</param>
+            /// <param name="proxy">VS debugger proxy.</param>
+            public RegistersAccess(uint threadId, uint frameId, VSDebuggerProxy proxy)
+            {
+                this.threadId = threadId;
+                this.frameId = frameId;
+                this.proxy = proxy;
+            }
+
+            /// <summary>
+            /// Gets register value.
+            /// </summary>
+            /// <param name="registerId">Register index.</param>
+            /// <returns>Register value.</returns>
+            public ulong GetRegisterValue(CV_HREG_e registerId)
+            {
+                return proxy.GetRegisterValue(threadId, frameId, (uint)registerId);
+            }
         }
 
         public bool IsMinidump(Process process)
@@ -390,7 +447,7 @@ namespace CsDebugScript.VS
         /// <returns>Buffer containing read memory</returns>
         public MemoryBuffer ReadMemory(Process process, ulong address, uint size)
         {
-            byte[] bytes = proxy.ReadMemory(process.Id, address, size);
+            byte[] bytes = Proxy.ReadMemory(process.Id, address, size);
 
             return new MemoryBuffer(bytes);
         }
@@ -403,7 +460,7 @@ namespace CsDebugScript.VS
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public string ReadAnsiString(Process process, ulong address, int length = -1)
         {
-            return proxy.ReadAnsiString(process.Id, address, length);
+            return Proxy.ReadAnsiString(process.Id, address, length);
         }
 
         /// <summary>
@@ -414,7 +471,7 @@ namespace CsDebugScript.VS
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public string ReadUnicodeString(Process process, ulong address, int length = -1)
         {
-            return proxy.ReadUnicodeString(process.Id, address, length);
+            return Proxy.ReadUnicodeString(process.Id, address, length);
         }
 
         /// <summary>
@@ -425,7 +482,7 @@ namespace CsDebugScript.VS
         /// <param name="length">The length. If length is -1, string is null terminated</param>
         public string ReadWideUnicodeString(Process process, ulong address, int length = -1)
         {
-            return proxy.ReadWideUnicodeString(process.Id, address, length);
+            return Proxy.ReadWideUnicodeString(process.Id, address, length);
         }
 
         /// <summary>
@@ -435,7 +492,7 @@ namespace CsDebugScript.VS
         /// <exception cref="System.ArgumentException">Process wasn't found</exception>
         public void SetCurrentProcess(Process process)
         {
-            proxy.SetCurrentProcess(process.Id);
+            Proxy.SetCurrentProcess(process.Id);
         }
 
         /// <summary>
@@ -446,7 +503,7 @@ namespace CsDebugScript.VS
         public void SetCurrentThread(Thread thread)
         {
             SetCurrentProcess(thread.Process);
-            proxy.SetCurrentThread(thread.Id);
+            Proxy.SetCurrentThread(thread.Id);
         }
 
         public void SetCurrentStackFrame(StackFrame stackFrame)
@@ -463,8 +520,22 @@ namespace CsDebugScript.VS
         internal void UpdateCache()
         {
             // This should update cache with new values. For now, just clear everything
-            proxy.ClearCache();
+            Proxy.ClearCache();
             Engine.Context.ClearCache();
+        }
+
+        /// <summary>
+        /// Initializes module id if it wasn't already.
+        /// </summary>
+        /// <param name="module">Module to be initialized.</param>
+        private void InitializeModuleId(Module module)
+        {
+            if (module == null || module.Id != uint.MaxValue)
+            {
+                return;
+            }
+
+            module.Id = Proxy.GetModuleId(module.Process.Id, module.Address);
         }
 
         #region Unsupported functionality
@@ -511,6 +582,32 @@ namespace CsDebugScript.VS
             throw new NotImplementedException();
         }
 
+        #endregion
+
+        #region IClrProvider
+        /// <summary>
+        /// Gets the CLR runtimes running in the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        public IClrRuntime[] GetClrRuntimes(Process process)
+        {
+            Tuple<int, int, int, int, int>[] runtimeTuples = Proxy.GetClrRuntimes(process.Id);
+
+            if (runtimeTuples == null)
+                return new IClrRuntime[0];
+
+            IClrRuntime[] runtimes = new IClrRuntime[runtimeTuples.Length];
+
+            for (int i = 0; i < runtimeTuples.Length; i++)
+                runtimes[i] = new VSClrRuntime(this, process, runtimeTuples[i].Item1, new ModuleVersion
+                {
+                    Major = runtimeTuples[i].Item2,
+                    Minor = runtimeTuples[i].Item3,
+                    Revision = runtimeTuples[i].Item4,
+                    Patch = runtimeTuples[i].Item5,
+                });
+            return runtimes;
+        }
         #endregion
     }
 }

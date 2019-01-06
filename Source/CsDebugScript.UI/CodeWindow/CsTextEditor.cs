@@ -232,7 +232,7 @@ namespace CsDebugScript.UI.CodeWindow
             CommandBindings.Add(new CommandBinding(routedCommand, handler));
         }
 
-        private void TextArea_ExecuteCSharpScript(object sender, ExecutedRoutedEventArgs e)
+        internal void TextArea_ExecuteCSharpScript(object sender, ExecutedRoutedEventArgs e)
         {
             if (InteractiveExecution.IsCompleteSubmission(Document.Text))
             {

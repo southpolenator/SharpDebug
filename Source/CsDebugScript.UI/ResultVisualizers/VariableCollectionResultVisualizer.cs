@@ -1,7 +1,6 @@
 ﻿using CsDebugScript.UI.CodeWindow;
 using System;
 using System.Collections.Generic;
-using System.Windows.Media;
 
 namespace CsDebugScript.UI.ResultVisualizers
 {
@@ -21,10 +20,10 @@ namespace CsDebugScript.UI.ResultVisualizers
         /// <param name="variableCollection">Variable collection to be visualized.</param>
         /// <param name="variableCollectionType">Type of the resulting object that should be visualized.</param>
         /// <param name="name">Name of the variable / property.</param>
-        /// <param name="image">Image that represents icon of the variable / property</param>
+        /// <param name="dataType">Data type that will be used to generate icon of the variable / property</param>
         /// <param name="interactiveResultVisualizer">Interactive result visualizer that can be used for creating UI elements.</param>
-        public VariableCollectionResultVisualizer(VariableCollection variableCollection, Type variableCollectionType, string name, ImageSource image, InteractiveResultVisualizer interactiveResultVisualizer)
-            : base(variableCollection, variableCollectionType, name, image, interactiveResultVisualizer)
+        public VariableCollectionResultVisualizer(VariableCollection variableCollection, Type variableCollectionType, string name, CompletionDataType dataType, InteractiveResultVisualizer interactiveResultVisualizer)
+            : base(variableCollection, variableCollectionType, name, dataType, interactiveResultVisualizer)
         {
             this.variableCollection = variableCollection;
         }
@@ -37,10 +36,10 @@ namespace CsDebugScript.UI.ResultVisualizers
         {
             get
             {
-                yield return Create(variableCollection.Count, null, "Count", CompletionData.GetImage(CompletionDataType.Property), interactiveResultVisualizer);
+                yield return Create(variableCollection.Count, null, "Count", CompletionDataType.Property, interactiveResultVisualizer);
                 for (int i = 0; i < variableCollection.Count; i++)
                 {
-                    yield return Create(GetValue(() => variableCollection[i]), typeof(Variable), variableCollection[i].GetName(), CompletionData.GetImage(CompletionDataType.Variable), interactiveResultVisualizer);
+                    yield return Create(GetValue(() => variableCollection[i]), typeof(Variable), variableCollection.Names[i], CompletionDataType.Variable, interactiveResultVisualizer);
                 }
             }
         }

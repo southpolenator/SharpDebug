@@ -30,13 +30,9 @@ namespace CsDebugScript.ClrMdProvider
             get
             {
                 if (ClrStackFrame.Arguments.Count > 0)
-                {
                     return ConvertClrToVariableCollection(ClrStackFrame.Arguments, GetClrArgumentsNames());
-                }
                 else
-                {
                     return new VariableCollection(new Variable[0]);
-                }
             }
         }
 
@@ -48,26 +44,16 @@ namespace CsDebugScript.ClrMdProvider
             get
             {
                 if (ClrStackFrame.Locals.Count > 0)
-                {
                     return ConvertClrToVariableCollection(ClrStackFrame.Locals, GetClrLocalsNames());
-                }
                 else
-                {
                     return new VariableCollection(new Variable[0]);
-                }
             }
         }
 
         /// <summary>
         /// Gets the module this frame is associated with.
         /// </summary>
-        public IClrModule Module
-        {
-            get
-            {
-                return Provider.FromClrModule(ClrStackFrame.Module);
-            }
-        }
+        public IClrModule Module => Provider.FromClrModule(ClrStackFrame.Module);
 
         /// <summary>
         /// Gets the CLR provider.
@@ -82,11 +68,9 @@ namespace CsDebugScript.ClrMdProvider
         /// <summary>
         /// Reads the function name and displacement.
         /// </summary>
-        /// <param name="module">The module.</param>
-        /// <param name="address">The address.</param>
-        public Tuple<string, ulong> ReadFunctionNameAndDisplacement(Module module, ulong address)
+        public Tuple<string, ulong> ReadFunctionNameAndDisplacement()
         {
-            return ReadFunctionNameAndDisplacement(module, ClrStackFrame.Method, address);
+            return ReadFunctionNameAndDisplacement(Module.Module, ClrStackFrame.Method, ClrStackFrame.InstructionPointer);
         }
 
         /// <summary>
@@ -107,11 +91,9 @@ namespace CsDebugScript.ClrMdProvider
         /// <summary>
         /// Reads the name of the source file, line and displacement.
         /// </summary>
-        /// <param name="module">The module.</param>
-        /// <param name="address">The address.</param>
-        public Tuple<string, uint, ulong> ReadSourceFileNameAndLine(Module module, ulong address)
+        public Tuple<string, uint, ulong> ReadSourceFileNameAndLine()
         {
-            return ReadSourceFileNameAndLine((ClrMdModule)Module, ClrStackFrame.Method, address);
+            return ReadSourceFileNameAndLine((ClrMdModule)Module, ClrStackFrame.Method, ClrStackFrame.InstructionPointer);
         }
 
         /// <summary>
@@ -131,9 +113,7 @@ namespace CsDebugScript.ClrMdProvider
             uint sourceFileLine = uint.MaxValue;
 
             foreach (Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSequencePointCollection sequenceCollection in function.SequencePoints)
-            {
                 foreach (Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSequencePoint point in sequenceCollection.Lines)
-                {
                     if (point.Offset <= ilOffset)
                     {
                         ulong dist = ilOffset - point.Offset;
@@ -145,9 +125,6 @@ namespace CsDebugScript.ClrMdProvider
                             distance = dist;
                         }
                     }
-                }
-            }
-
             return Tuple.Create(sourceFileName, sourceFileLine, distance);
         }
 
@@ -180,10 +157,7 @@ namespace CsDebugScript.ClrMdProvider
 
             imd.CloseEnum(paramEnum);
             if (arguments.Count == frame.Arguments.Count - 1)
-            {
                 arguments.Insert(0, "this");
-            }
-
             return arguments.ToArray();
         }
 
@@ -201,9 +175,7 @@ namespace CsDebugScript.ClrMdProvider
                     string pdbPath = ClrStackFrame.Runtime.DataTarget.SymbolLocator.FindPdb(ClrStackFrame.Module.Pdb);
 
                     if (!string.IsNullOrEmpty(pdbPath))
-                    {
                         pdb = new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath);
-                    }
                 }
                 catch
                 {
@@ -211,9 +183,7 @@ namespace CsDebugScript.ClrMdProvider
             }
 
             if (pdb == null)
-            {
                 return Enumerable.Range(0, ClrStackFrame.Locals.Count).Select(id => string.Format("local_{0}", id)).ToArray();
-            }
             else
             {
                 var function = pdb.GetFunctionFromToken(ClrStackFrame.Method.MetadataToken);
@@ -232,9 +202,7 @@ namespace CsDebugScript.ClrMdProvider
         private VariableCollection ConvertClrToVariableCollection(IList<Microsoft.Diagnostics.Runtime.ClrValue> values, string[] names)
         {
             if (values.Count != names.Length)
-            {
                 throw new ArgumentOutOfRangeException(nameof(names));
-            }
 
             List<Variable> variables = new List<Variable>(values.Count);
             Module module = Module.Module;
@@ -251,16 +219,12 @@ namespace CsDebugScript.ClrMdProvider
                         Variable variable;
 
                         if (codeType.IsPointer)
-                        {
                             variable = Variable.CreatePointerNoCast(codeType, address, names[i]);
-                        }
                         else
                         {
                             // TODO: This address unboxing should be part of ClrMD.
                             if (value.ElementType == Microsoft.Diagnostics.Runtime.ClrElementType.Class)
-                            {
                                 address += module.Process.GetPointerSize();
-                            }
                             variable = Variable.CreateNoCast(codeType, address, names[i]);
                         }
 

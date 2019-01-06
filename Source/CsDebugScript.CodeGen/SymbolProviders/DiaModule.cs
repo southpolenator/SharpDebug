@@ -56,10 +56,10 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         {
             IDiaDataSource dia = DiaLoader.CreateDiaSource();
             IDiaSession session;
-            string moduleName = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.PdbPath).ToLower();
+            string moduleName = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.SymbolsPath).ToLower();
 
             module.Name = moduleName;
-            dia.loadDataFromPdb(module.PdbPath);
+            dia.loadDataFromPdb(module.SymbolsPath);
             dia.openSession(out session);
             return new DiaModule(module.Name, module.Namespace, dia, session);
         }

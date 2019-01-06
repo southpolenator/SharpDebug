@@ -2,6 +2,8 @@
 using ELFSharp.ELF.Sections;
 using System.Linq;
 using System.Collections.Generic;
+using CsDebugScript.Engine.Utility;
+using System;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
@@ -15,6 +17,16 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// The ELF interface
         /// </summary>
         private ELF<ulong> elf;
+
+        /// <summary>
+        /// Cache of ordered sections.
+        /// </summary>
+        private SimpleCache<Section<ulong>[]> sectionRegions;
+
+        /// <summary>
+        /// Cache of sections finder.
+        /// </summary>
+        private SimpleCache<MemoryRegionFinder> sectionRegionFinder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ElfImage"/> class.
@@ -50,6 +62,8 @@ namespace CsDebugScript.DwarfSymbolProvider
                 }
             }
             PublicSymbols = publicSymbols;
+            sectionRegions = SimpleCache.Create(() => elf.Sections.Where(s => s.LoadAddress > 0).OrderBy(s => s.LoadAddress).ToArray());
+            sectionRegionFinder = SimpleCache.Create(() => new MemoryRegionFinder(sectionRegions.Value.Select(s => new MemoryRegion { BaseAddress = s.LoadAddress, RegionSize = s.Size }).ToArray()));
         }
 
         /// <summary>
@@ -181,18 +195,31 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            elf.Dispose();
+        }
+
+        /// <summary>
         /// Gets address offset within module when it is loaded.
         /// </summary>
         /// <param name="address">Virtual address that points where something should be loaded.</param>
         public ulong NormalizeAddress(ulong address)
         {
-            var section = elf.Sections.FirstOrDefault(s => s.LoadAddress <= address && s.LoadAddress + s.Size > address);
+            Section<ulong> section;
 
-            if (section != null && section.Flags.HasFlag(SectionFlags.Allocatable))
+            if (address < sectionRegions.Value[0].LoadAddress)
+                section = elf.Sections.FirstOrDefault(s => s.LoadAddress <= address && s.LoadAddress + s.Size > address);
+            else
             {
-                return address - CodeSegmentOffset + LoadOffset;
+                int sectionIndex = sectionRegionFinder.Value.Find(address);
+                section = sectionIndex >= 0 ? sectionRegions.Value[sectionIndex] : null;
             }
 
+            if (section != null && section.Flags.HasFlag(SectionFlags.Allocatable))
+                return address - CodeSegmentOffset + LoadOffset;
             return address - CodeSegmentOffset;
         }
 

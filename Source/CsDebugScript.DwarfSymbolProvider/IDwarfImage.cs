@@ -1,6 +1,7 @@
 ﻿using CsDebugScript.Engine.Utility;
-using static CxxDemangler.CxxDemangler;
+using System;
 using System.Collections.Generic;
+using static CxxDemangler.CxxDemangler;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
@@ -51,7 +52,7 @@ namespace CsDebugScript.DwarfSymbolProvider
     /// <summary>
     /// Interface that defines image format that contains DWARF data.
     /// </summary>
-    internal interface IDwarfImage
+    internal interface IDwarfImage : IDisposable
     {
         /// <summary>
         /// Gets the debug data.

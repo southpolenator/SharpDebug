@@ -151,14 +151,32 @@ namespace CsDebugScript
         /// </summary>
         /// <param name="variable">The variable.</param>
         public CodePointer(Variable variable)
-            : base(variable)
+            : base(CastIfNecessary(variable))
         {
             if (!GetCodeType().IsPointer)
             {
                 throw new WrongCodeTypeException(variable, nameof(variable), "pointer");
             }
 
-            element = UserMember.Create(() => variable.DereferencePointer().CastAs<T>());
+            element = UserMember.Create(() => DereferencePointer().CastAs<T>());
+        }
+
+        /// <summary>
+        /// Casts the specified variable to type that is usable by this class if it was naked pointer.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        internal static Variable CastIfNecessary(Variable variable)
+        {
+            if (variable.GetCodeType() is NakedPointerCodeType && !variable.IsNull())
+            {
+                // TODO: CodeType newCodeType = CodeType.Create<T>();
+                CodeType newCodeType = BuiltinCodeTypes.GetCodeType<T>(variable.GetCodeType().Module);
+
+                newCodeType = newCodeType.PointerToType;
+                return variable.CastAs(newCodeType);
+            }
+
+            return variable;
         }
 
         /// <summary>
@@ -445,6 +463,50 @@ namespace CsDebugScript
             }
 
             return ReadUnicodeStringByteLength((int)length);
+        }
+    }
+
+    /// <summary>
+    /// Simple wrapper class for handling unknown element type of pointer as <see cref="CodeArray{Variable}"/>.
+    /// </summary>
+    public class CodePointer : CodePointer<Variable>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodePointer"/> class.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        public CodePointer(Variable variable)
+            : base(variable)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodePointer"/> class.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        public CodePointer(ulong address)
+            : base(address)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodePointer"/> class.
+        /// </summary>
+        /// <param name="pointerType">Type of the pointer.</param>
+        /// <param name="address">The address.</param>
+        public CodePointer(CodeType pointerType, ulong address)
+            : base(pointerType, address)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodePointer"/> class.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="address">The address.</param>
+        public CodePointer(Process process, ulong address)
+            : base(process, address)
+        {
         }
     }
 }

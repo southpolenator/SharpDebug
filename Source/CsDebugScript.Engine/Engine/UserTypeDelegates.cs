@@ -16,11 +16,29 @@ namespace CsDebugScript.Engine
     internal delegate object SymbolicConstructorDelegate(Variable variable);
 
     /// <summary>
+    /// The symbolic constructor with data delegate. Creates a new user type by calling constructor with signature of this delegate.
+    /// This constructor is being used with common user types that know how to speed up processing with precalculated data for given code type.
+    /// </summary>
+    /// <param name="variable">The variable.</param>
+    /// <param name="data">The data extracted from the <see cref="CodeType"/> of the specified variable.</param>
+    /// <returns>New instance of user type</returns>
+    internal delegate object SymbolicConstructorWithDataDelegate(Variable variable, object data);
+
+    /// <summary>
     /// The symbolic constructor delegate. Creates a new user type by calling constructor with signature of this delegate.
     /// </summary>
     /// <param name="variable">The variable.</param>
     /// <returns>New instance of user type</returns>
     internal delegate T SymbolicConstructorDelegate<T>(Variable variable);
+
+    /// <summary>
+    /// The symbolic constructor with data delegate. Creates a new user type by calling constructor with signature of this delegate.
+    /// This constructor is being used with common user types that know how to speed up processing with precalculated data for given code type.
+    /// </summary>
+    /// <param name="variable">The variable.</param>
+    /// <param name="data">The data extracted from the <see cref="CodeType"/> of the specified variable.</param>
+    /// <returns>New instance of user type</returns>
+    internal delegate T SymbolicConstructorWithDataDelegate<T>(Variable variable, object data);
 
     /// <summary>
     /// The physical constructor delegate. Creates a new user type by calling constructor with signature of this delegate.
@@ -64,6 +82,11 @@ namespace CsDebugScript.Engine
         /// Gets the symbolic constructor, or null if not available.
         /// </summary>
         SymbolicConstructorDelegate SymbolicConstructor { get; }
+
+        /// <summary>
+        /// Gets the symbolic constructor with data, or null if not available.
+        /// </summary>
+        SymbolicConstructorWithDataDelegate SymbolicConstructorWithData { get; }
 
         /// <summary>
         /// Gets the physical constructor, or null if not available.
@@ -114,6 +137,11 @@ namespace CsDebugScript.Engine
         /// Gets the symbolic constructor, or null if not available.
         /// </summary>
         SymbolicConstructorDelegate<T> SymbolicConstructor { get; }
+
+        /// <summary>
+        /// Gets the symbolic constructor with data, or null if not available.
+        /// </summary>
+        SymbolicConstructorWithDataDelegate<T> SymbolicConstructorWithData { get; }
 
         /// <summary>
         /// Gets the physical constructor, or null if not available.
@@ -220,6 +248,14 @@ namespace CsDebugScript.Engine
         /// <param name="userType">The user type.</param>
         private static IUserTypeDelegates Get(Type userType)
         {
+            if (userType.ContainsGenericParameters)
+            {
+                Type[] variableTypes = new Type[userType.GetGenericArguments().Length];
+                for (int i = 0; i < variableTypes.Length; i++)
+                    variableTypes[i] = typeof(Variable);
+                userType = userType.MakeGenericType(variableTypes);
+            }
+
             Type userTypeDelegatesType = typeof(UserTypeDelegates<>);
             userTypeDelegatesType = userTypeDelegatesType.MakeGenericType(new Type[] { userType });
             FieldInfo singletonField = userTypeDelegatesType.GetField(nameof(UserTypeDelegates<Variable>.Instance));
@@ -247,6 +283,11 @@ namespace CsDebugScript.Engine
         /// The cache of symbolic constructors
         /// </summary>
         private SimpleCache<Tuple<SymbolicConstructorDelegate, SymbolicConstructorDelegate<T>>> symbolicConstructors;
+
+        /// <summary>
+        /// The cache of symbolic constructors with data
+        /// </summary>
+        private SimpleCache<Tuple<SymbolicConstructorWithDataDelegate, SymbolicConstructorWithDataDelegate<T>>> symbolicConstructorsWithData;
 
         /// <summary>
         /// The cache of downcaster
@@ -299,17 +340,52 @@ namespace CsDebugScript.Engine
 
                     if (parameters[0].ParameterType == typeof(Variable))
                     {
-                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(Variable) });
-                        ILGenerator gen = method.GetILGenerator();
+                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(Variable) }, UserTypeDelegates.ModuleBuilder);
+                        ILGenerator il = method.GetILGenerator();
 
-                        gen.Emit(OpCodes.Ldarg_0);
-                        gen.Emit(OpCodes.Newobj, constructor);
-                        gen.Emit(OpCodes.Ret);
+                        il.PrepareMethodCall(1, parameters);
+                        il.Emit(OpCodes.Newobj, constructor);
+                        il.Emit(OpCodes.Ret);
 
                         var symbolicConstructor = (SymbolicConstructorDelegate)method.CreateDelegate(typeof(SymbolicConstructorDelegate));
                         var symbolicConstructorTyped = (SymbolicConstructorDelegate<T>)method.CreateDelegate(typeof(SymbolicConstructorDelegate<T>));
 
                         return Tuple.Create(symbolicConstructor, symbolicConstructorTyped);
+                    }
+                }
+
+                return null;
+            });
+
+            symbolicConstructorsWithData = SimpleCache.Create(() =>
+            {
+                foreach (ConstructorInfo constructor in constructors)
+                {
+                    if (!constructor.IsPublic)
+                    {
+                        continue;
+                    }
+
+                    var parameters = constructor.GetParameters();
+
+                    if (parameters.Length < 2 || parameters.Count(p => !p.HasDefaultValue) > 2)
+                    {
+                        continue;
+                    }
+
+                    if (parameters[0].ParameterType == typeof(Variable) && parameters[1].ParameterType == typeof(object))
+                    {
+                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(Variable), typeof(object) }, UserTypeDelegates.ModuleBuilder);
+                        ILGenerator il = method.GetILGenerator();
+
+                        il.PrepareMethodCall(2, parameters);
+                        il.Emit(OpCodes.Newobj, constructor);
+                        il.Emit(OpCodes.Ret);
+
+                        var symbolicConstructorWithData = (SymbolicConstructorWithDataDelegate)method.CreateDelegate(typeof(SymbolicConstructorWithDataDelegate));
+                        var symbolicConstructorWithDataTyped = (SymbolicConstructorWithDataDelegate<T>)method.CreateDelegate(typeof(SymbolicConstructorWithDataDelegate<T>));
+
+                        return Tuple.Create(symbolicConstructorWithData, symbolicConstructorWithDataTyped);
                     }
                 }
 
@@ -340,18 +416,12 @@ namespace CsDebugScript.Engine
                         && parameters[5].ParameterType == typeof(string)
                         && parameters[6].ParameterType == typeof(string))
                     {
-                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(MemoryBuffer), typeof(int), typeof(ulong), typeof(CodeType), typeof(ulong), typeof(string), typeof(string) });
-                        ILGenerator gen = method.GetILGenerator();
+                        DynamicMethod method = new DynamicMethod("CreateIntance", userType, new Type[] { typeof(MemoryBuffer), typeof(int), typeof(ulong), typeof(CodeType), typeof(ulong), typeof(string), typeof(string) }, UserTypeDelegates.ModuleBuilder);
+                        ILGenerator il = method.GetILGenerator();
 
-                        gen.Emit(OpCodes.Ldarg_0);
-                        gen.Emit(OpCodes.Ldarg_1);
-                        gen.Emit(OpCodes.Ldarg_2);
-                        gen.Emit(OpCodes.Ldarg_3);
-                        gen.Emit(OpCodes.Ldarg, (short)4);
-                        gen.Emit(OpCodes.Ldarg, (short)5);
-                        gen.Emit(OpCodes.Ldarg, (short)6);
-                        gen.Emit(OpCodes.Newobj, constructor);
-                        gen.Emit(OpCodes.Ret);
+                        il.PrepareMethodCall(7, parameters);
+                        il.Emit(OpCodes.Newobj, constructor);
+                        il.Emit(OpCodes.Ret);
 
                         var physicalConstructor = (PhysicalConstructorDelegate)method.CreateDelegate(typeof(PhysicalConstructorDelegate));
                         var physicalConstructorTyped = (PhysicalConstructorDelegate<T>)method.CreateDelegate(typeof(PhysicalConstructorDelegate<T>));
@@ -371,13 +441,13 @@ namespace CsDebugScript.Engine
                     MethodInfo downcastObjectGenericMethod = downcastObjectMethod.MakeGenericMethod(typeof(T));
                     MethodInfo castAsMethod = typeof(Variable).GetMethod(nameof(Variable.CastAs), BindingFlags.Static | BindingFlags.Public);
                     MethodInfo castAsGenericMethod = castAsMethod.MakeGenericMethod(typeof(T));
-                    DynamicMethod method = new DynamicMethod(nameof(VariableCastExtender.DowncastObject), userType, new Type[] { typeof(Variable) });
-                    ILGenerator gen = method.GetILGenerator();
+                    DynamicMethod method = new DynamicMethod(nameof(VariableCastExtender.DowncastObject), userType, new Type[] { typeof(Variable) }, UserTypeDelegates.ModuleBuilder);
+                    ILGenerator il = method.GetILGenerator();
 
-                    gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Call, castAsGenericMethod);
-                    gen.Emit(OpCodes.Call, downcastObjectGenericMethod);
-                    gen.Emit(OpCodes.Ret);
+                    il.ForwardArguments(1);
+                    il.Emit(OpCodes.Call, castAsGenericMethod);
+                    il.Emit(OpCodes.Call, downcastObjectGenericMethod);
+                    il.Emit(OpCodes.Ret);
 
                     return (DowncasterDelegate<T>)method.CreateDelegate(typeof(DowncasterDelegate<T>));
                 }
@@ -482,6 +552,28 @@ namespace CsDebugScript.Engine
             get
             {
                 return symbolicConstructors.Value.Item2;
+            }
+        }
+
+        /// <summary>
+        /// Gets the symbolic constructor with data, or null if not available.
+        /// </summary>
+        SymbolicConstructorWithDataDelegate IUserTypeDelegates.SymbolicConstructorWithData
+        {
+            get
+            {
+                return symbolicConstructorsWithData.Value.Item1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the symbolic constructor with data, or null if not available.
+        /// </summary>
+        SymbolicConstructorWithDataDelegate<T> IUserTypeDelegates<T>.SymbolicConstructorWithData
+        {
+            get
+            {
+                return symbolicConstructorsWithData.Value.Item2;
             }
         }
 
@@ -668,46 +760,47 @@ namespace CsDebugScript.Engine
                 // Define constructors
                 foreach (ConstructorInfo baseConstructor in constructors)
                 {
-                    Type[] parameters = baseConstructor.GetParameters().Select(p => p.ParameterType).ToArray();
+                    ParameterInfo[] baseParameters = baseConstructor.GetParameters();
+                    Type[] parameters = baseParameters.Select(p => p.ParameterType).ToArray();
                     ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.RTSpecialName, CallingConventions.Any, parameters);
+
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        ParameterBuilder parameter = constructorBuilder.DefineParameter(i + 1, baseParameters[i].Attributes, baseParameters[i].Name);
+
+                        if (baseParameters[i].HasDefaultValue)
+                            parameter.SetConstant(baseParameters[i].DefaultValue);
+                    }
+
                     ILGenerator ilGenerator = constructorBuilder.GetILGenerator();
 
-                    ilGenerator.Emit(OpCodes.Ldarg_0);
-                    if (parameters.Length >= 1)
-                        ilGenerator.Emit(OpCodes.Ldarg_1);
-                    if (parameters.Length >= 2)
-                        ilGenerator.Emit(OpCodes.Ldarg_2);
-                    if (parameters.Length >= 3)
-                        ilGenerator.Emit(OpCodes.Ldarg_3);
-                    for (int i = 4; i <= parameters.Length; i++)
-                        ilGenerator.Emit(OpCodes.Ldarg, (short)i);
+                    ilGenerator.ForwardArguments(parameters.Length + 1);
                     ilGenerator.Emit(OpCodes.Call, baseConstructor);
                     ilGenerator.Emit(OpCodes.Ret);
                 }
 
                 // Add field for storing parent
-                string fieldName = "parent";
-                FieldBuilder fieldBuilder = typeBuilder.DefineField(fieldName, parentType, FieldAttributes.Private);
+                string parentFieldName = "parent";
+                FieldBuilder parentField = typeBuilder.DefineField(parentFieldName, parentType, FieldAttributes.Private);
 
                 // Implement property for IMultiClassInheritance
                 Type propertyType = typeof(UserType);
                 string propertyName = nameof(IMultiClassInheritance.DowncastParent);
-                PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.HasDefault, propertyType, null);
-                MethodBuilder getPropertyMethodBuilder = typeBuilder.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual, propertyType, Type.EmptyTypes);
+                PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.None, propertyType, null);
+                MethodBuilder getPropertyMethodBuilder = typeBuilder.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual | MethodAttributes.NewSlot, propertyType, Type.EmptyTypes);
                 ILGenerator il = getPropertyMethodBuilder.GetILGenerator();
 
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldfld, fieldBuilder);
+                il.ForwardArguments(1);
+                il.Emit(OpCodes.Ldfld, parentField);
                 il.Emit(OpCodes.Ret);
                 propertyBuilder.SetGetMethod(getPropertyMethodBuilder);
 
-                MethodBuilder setPropertyMethodBuilder = typeBuilder.DefineMethod("set_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual, null, new Type[] { propertyType });
+                MethodBuilder setPropertyMethodBuilder = typeBuilder.DefineMethod("set_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual | MethodAttributes.NewSlot, null, new Type[] { propertyType });
                 il = setPropertyMethodBuilder.GetILGenerator();
 
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldarg_1);
+                il.ForwardArguments(2);
                 il.Emit(OpCodes.Castclass, parentType);
-                il.Emit(OpCodes.Stfld, fieldBuilder);
+                il.Emit(OpCodes.Stfld, parentField);
                 il.Emit(OpCodes.Ret);
                 propertyBuilder.SetSetMethod(setPropertyMethodBuilder);
 
@@ -723,9 +816,18 @@ namespace CsDebugScript.Engine
                     if (!ContainsMethod(baseVirtualMethods, parentVirtualMethod))
                         methodAttributes |= MethodAttributes.NewSlot;
 
-                    Type[] parameters = parentVirtualMethod.GetParameters().Select(p => p.ParameterType).ToArray();
+                    ParameterInfo[] parentParameters = parentVirtualMethod.GetParameters();
+                    Type[] parameters = parentParameters.Select(p => p.ParameterType).ToArray();
                     MethodBuilder methodBuilder = typeBuilder.DefineMethod(parentVirtualMethod.Name, methodAttributes, parentVirtualMethod.ReturnType, parameters);
                     Type[] parentVirtualMethodGenericArguments = parentVirtualMethod.GetGenericArguments();
+
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        ParameterBuilder parameter = methodBuilder.DefineParameter(i + 1, parentParameters[i].Attributes, parentParameters[i].Name);
+
+                        if (parentParameters[i].HasDefaultValue)
+                            parameter.SetConstant(parentParameters[i].DefaultValue);
+                    }
 
                     if (parentVirtualMethodGenericArguments.Length > 0)
                     {
@@ -738,17 +840,9 @@ namespace CsDebugScript.Engine
                     }
 
                     il = methodBuilder.GetILGenerator();
-
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldfld, fieldBuilder);
-                    if (parameters.Length >= 1)
-                        il.Emit(OpCodes.Ldarg_1);
-                    if (parameters.Length >= 2)
-                        il.Emit(OpCodes.Ldarg_2);
-                    if (parameters.Length >= 3)
-                        il.Emit(OpCodes.Ldarg_3);
-                    for (int i = 4; i <= parameters.Length; i++)
-                        il.Emit(OpCodes.Ldarg, (short)i);
+                    il.Emit(OpCodes.Ldfld, parentField);
+                    il.ForwardArguments(parameters.Length + 1, 1);
                     il.Emit(OpCodes.Callvirt, parentVirtualMethod);
                     il.Emit(OpCodes.Ret);
                 }

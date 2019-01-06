@@ -91,7 +91,6 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         public override void InitializeCache()
         {
-            // TODO: Do nothing?
         }
 
         /// <summary>
@@ -126,7 +125,9 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         {
             uint pointerTypeId = EngineModuleProvider.GetTypePointerToTypeId(Id);
 
-            return Module.GetSymbol(pointerTypeId);
+            if (pointerTypeId != int.MaxValue)
+                return Module.GetSymbol(pointerTypeId);
+            return base.GetPointerType();
         }
 
         /// <summary>
@@ -134,7 +135,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         protected override IEnumerable<SymbolField> GetFields()
         {
-            // TODO: Static fields are missing
+            // Non-static fields
             foreach (string fieldName in EngineModuleProvider.GetTypeFieldNames(Id))
             {
                 Tuple<uint, int> fieldTypeAndOffset = EngineModuleProvider.GetTypeFieldTypeAndOffset(Id, fieldName);
@@ -142,14 +143,15 @@ namespace CsDebugScript.CodeGen.SymbolProviders
 
                 yield return new EngineSymbolProviderSymbolField(this, fieldName, fieldType, fieldTypeAndOffset.Item2);
             }
-        }
 
-        /// <summary>
-        /// Casts as symbol field.
-        /// </summary>
-        public override SymbolField CastAsSymbolField()
-        {
-            return new EngineSymbolProviderSymbolField(this, Name, this, Offset);
+            // Static fields
+            foreach (string fieldName in EngineModuleProvider.GetTypeStaticFieldNames(Id))
+            {
+                Tuple<uint, ulong> fieldTypeAndAddress = EngineModuleProvider.GetTypeStaticFieldTypeAndAddress(Id, fieldName);
+                Symbol fieldType = Module.GetSymbol(fieldTypeAndAddress.Item1);
+
+                yield return new EngineSymbolProviderSymbolField(this, fieldName, fieldType, int.MinValue);
+            }
         }
 
         /// <summary>

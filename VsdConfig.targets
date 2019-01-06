@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="GenerateVsdconfig"
+          AfterTargets="CoreCompile"
+          BeforeTargets="AfterCompile"
+          Inputs="@(VsdConfigXml);$(IntermediateOutputPath)\$(AssemblyName).dll;@(VsdConfigXmlAdditionalAssemblies)"
+          Outputs="$(OutDir)\$(AssemblyName).vsdconfig"
+          Condition="'$(BuildingProject)' == 'true' AND '@(VsdConfigXml)' != ''">
+    <PropertyGroup>
+      <_VsdConfigTool>%VsSDKToolsPath%\vsdconfigtool.exe</_VsdConfigTool>
+    </PropertyGroup>
+
+    <Exec Command="&quot;$(_VsdConfigTool)&quot; @(VsdConfigXml -> '&quot;%(RelativeDir)%(FileName)%(Extension)&quot;', ' ') &quot;$(IntermediateOutputPath)\$(AssemblyName).dll&quot; @(VsdConfigXmlAdditionalAssemblies -> '&quot;%(RelativeDir)%(FileName)%(Extension)&quot;', ' ') &quot;$(OutDir)\$(AssemblyName).vsdconfig&quot;" />
+  </Target>
+
+  <Target Name="VsdConfigOutputGroup" Outputs="@(VsdConfigOutputGroupOutput)">
+    <ItemGroup>
+      <VsdConfigOutputGroupOutput Include="$(OutDir)\$(AssemblyName).vsdconfig" />
+    </ItemGroup>
+  </Target>
+</Project>

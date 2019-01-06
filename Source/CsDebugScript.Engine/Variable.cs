@@ -165,6 +165,187 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <param name="value">Constant stored as ulong.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        public static Variable CreateConstant(CodeType codeType, ulong value, string name = ComputedName, string path = UnknownPath)
+        {
+            Variable variable = CreateNoCast(codeType, 0, name, path);
+
+            variable.Data = value;
+            return variable;
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static Variable CreateConstant(bool value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<bool>(module), value ? 1U : 0U, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static Variable CreateConstant(byte value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<byte>(module), value, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static Variable CreateConstant(sbyte value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<sbyte>(module), (ulong)value, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static Variable CreateConstant(short value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<short>(module), (ulong)value, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static Variable CreateConstant(ushort value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<ushort>(module), value, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static Variable CreateConstant(int value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<int>(module), (ulong)value, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static Variable CreateConstant(uint value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<uint>(module), value, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static Variable CreateConstant(long value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<long>(module), (ulong)value, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static Variable CreateConstant(ulong value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<ulong>(module), value, name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static unsafe Variable CreateConstant(float value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<float>(module), *((uint*)&value), name, path);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Variable" /> class as constant and doesn't cast it to user code type.
+        /// Variable will have address set to 0, so it probably won't be usable in all scenarios...
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="path">The path.</param>
+        /// <param name="module">The module where type should be created.</param>
+        public static unsafe Variable CreateConstant(double value, string name = ComputedName, string path = UnknownPath, Module module = null)
+        {
+            if (module == null)
+                module = Process.Current.Modules[0];
+            return CreateConstant(BuiltinCodeTypes.GetCodeType<double>(module), *((ulong*)&value), name, path);
+        }
+
+        /// <summary>
         /// The address where this variable value is stored
         /// </summary>
         internal ulong Address { get; private set; }
@@ -177,6 +358,11 @@ namespace CsDebugScript
             get
             {
                 return data.Value;
+            }
+
+            set
+            {
+                data.Value = value;
             }
         }
 
@@ -775,35 +961,6 @@ namespace CsDebugScript
                 return null;
             }
 
-            Variable activatorParameter = this;
-
-            // Check if we should do CastAs
-            if (conversionType.GetTypeInfo().IsSubclassOf(typeof(Variable)))
-            {
-                var description = codeType.Module.Process.TypeToUserTypeDescription[conversionType].FromModuleOrFirst(codeType.Module);
-                if (description != null)
-                {
-                    CodeType newType = description.UserType;
-
-                    // Check if it was non-unique generics type
-                    if (newType != null)
-                    {
-                        // If type is already in the metadata cache, use it
-                        if (newType.Module.Process.UserTypes.Contains(description))
-                        {
-                            return CastAs(newType);
-                        }
-
-                        if (codeType.IsPointer && !newType.IsPointer)
-                        {
-                            newType = newType.PointerToType;
-                        }
-
-                        activatorParameter = CastAs(newType);
-                    }
-                }
-            }
-
             // Check if type has constructor with one argument and that argument is inherited from Variable
             IUserTypeDelegates delegates = UserTypeDelegates.Delegates[conversionType];
 
@@ -812,7 +969,7 @@ namespace CsDebugScript
                 throw new InvalidCastException("Cannot cast Variable to " + conversionType);
             }
 
-            return delegates.SymbolicConstructor(activatorParameter);
+            return delegates.SymbolicConstructor(this);
         }
 
         /// <summary>
@@ -1076,6 +1233,12 @@ namespace CsDebugScript
 
             if (clrCodeType != null)
             {
+                // Check if CLR code type can be upcasted.
+                if (clrCodeType.BuiltinType != BuiltinType.NoType)
+                    return variable;
+                if (!clrCodeType.IsPointer)
+                    return variable;
+
                 // Get runtime type
                 IClrType newClrType = clrCodeType.ClrType.Heap.GetObjectType(variable.GetPointerAddress());
                 ClrCodeType clrCodeTypeSpecialization = clrCodeType.GetSpecializedCodeType(variable.GetPointerAddress());
@@ -1140,23 +1303,17 @@ namespace CsDebugScript
                 return originalVariable;
             }
 
-            // Get user type descriptions to be used by this process
-            var userTypes = originalVariable.codeType.Module.Process.UserTypes;
+            CodeType codeType = originalVariable.GetCodeType();
 
-            // Look at the type and see if it should be converted to user type
-            var typesBasedOnModule = userTypes.Where(t => t.Module == originalVariable.codeType.Module);
-            var typesBasedOnName = typesBasedOnModule.Where(t => t.UserType == (originalVariable.codeType.IsPointer ? originalVariable.codeType.ElementType : originalVariable.codeType));
-
-            var types = typesBasedOnName.ToArray();
-
-            if (types.Length > 1)
+            foreach (Type type in codeType.UserTypes)
             {
-                throw new Exception(string.Format("Multiple types ({0}) are targeting same type {1}", string.Join(", ", types.Select(t => t.Type.FullName)), originalVariable.codeType.Name));
-            }
+                // Create new instance of user defined type
+                IUserTypeDelegates delegates = UserTypeDelegates.Delegates[type];
 
-            if (types.Length == 0)
-            {
-                return originalVariable;
+                if (delegates.SymbolicConstructor != null)
+                {
+                    return (Variable)delegates.SymbolicConstructor(originalVariable);
+                }
             }
 
             // Check if it is null
@@ -1165,16 +1322,7 @@ namespace CsDebugScript
                 return null;
             }
 
-            // Create new instance of user defined type
-            var conversionType = types[0].Type;
-            IUserTypeDelegates delegates = UserTypeDelegates.Delegates[conversionType];
-
-            if (delegates.SymbolicConstructor == null)
-            {
-                throw new InvalidCastException("Cannot cast Variable to " + conversionType);
-            }
-
-            return (Variable)delegates.SymbolicConstructor(originalVariable);
+            return originalVariable;
         }
 
         /// <summary>
@@ -1184,18 +1332,14 @@ namespace CsDebugScript
         internal static VariableCollection CastVariableCollectionToUserType(VariableCollection originalCollection)
         {
             Variable[] variables = new Variable[originalCollection?.Count ?? 0];
-            Dictionary<string, Variable> variablesByName = new Dictionary<string, Variable>();
+            string[] names = originalCollection?.Names ?? new string[0];
 
-            for (int i = 0; i < variables.Length; i++)
+            for (int i = variables.Length - 1; i >= 0; i--)
             {
                 variables[i] = originalCollection[i].codeType.Module.Process.CastVariableToUserType(originalCollection[i]);
-                if (!string.IsNullOrEmpty(originalCollection[i].name))
-                {
-                    variablesByName.Add(originalCollection[i].name, variables[i]);
-                }
             }
 
-            return new VariableCollection(variables, variablesByName);
+            return new VariableCollection(variables, names);
         }
 
         /// <summary>
@@ -1425,6 +1569,23 @@ namespace CsDebugScript
         /// </summary>
         private ulong ReadData()
         {
+            if (codeType is ClrCodeType)
+            {
+                uint size = codeType.Size;
+
+                switch (size)
+                {
+                    case 1:
+                        return codeType.Module.Process.ReadByte(Address);
+                    case 2:
+                        return codeType.Module.Process.ReadUshort(Address);
+                    case 4:
+                        return codeType.Module.Process.ReadUint(Address);
+                    case 8:
+                        return codeType.Module.Process.ReadUlong(Address);
+                }
+            }
+
             return Context.SymbolProvider.ReadSimpleData(codeType, Address);
         }
 
@@ -1685,6 +1846,32 @@ namespace CsDebugScript
             }
 
             return base.Equals(obj);
+        }
+
+        /// <summary>
+        /// Determines whether the specified objects are equal.
+        /// </summary>
+        /// <param name="first">First object.</param>
+        /// <param name="second">Second object.</param>
+        /// <returns><c>true</c> if objects are equal.</returns>
+        public static bool operator ==(Variable first, Variable second)
+        {
+            if (ReferenceEquals(first, second))
+                return true;
+            if (ReferenceEquals(first, null) || ReferenceEquals(second, null))
+                return false;
+            return first != null && first.Equals(second);
+        }
+
+        /// <summary>
+        /// Determines whether the specified objects are not equal.
+        /// </summary>
+        /// <param name="first">First object.</param>
+        /// <param name="second">Second object.</param>
+        /// <returns><c>true</c> if objects are not equal.</returns>
+        public static bool operator !=(Variable first, Variable second)
+        {
+            return !(first == second);
         }
     }
 }

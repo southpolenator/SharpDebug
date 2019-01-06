@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using CsDebugScript.CodeGen.SymbolProviders;
+using CsDebugScript.CodeGen.TypeInstances;
 
 namespace CsDebugScript.CodeGen.UserTypes
 {
@@ -13,137 +15,26 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// The list of namespaces represented by this instance
         /// </summary>
-        private string[] namespaces;
+        private List<string> namespaces;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NamespaceUserType"/> class.
         /// </summary>
-        /// <param name="namespaces">The namespaces.</param>
-        /// <param name="nameSpace">The namespace.</param>
-        internal NamespaceUserType(IEnumerable<string> namespaces, string nameSpace)
-            : base(symbol: null, xmlType: null, nameSpace: null)
+        /// <param name="innerNamespaces">The list of inner namespaces (e.g. chrono in std::chrono).</param>
+        /// <param name="topLevelNamespace">The top level namespace (e.g. module name).</param>
+        /// <param name="factory">User type factory that contains this element.</param>
+        internal NamespaceUserType(IEnumerable<string> innerNamespaces, string topLevelNamespace, UserTypeFactory factory)
+            : base(symbol: null, xmlType: null, nameSpace: null, factory: factory)
         {
-            this.namespaces = namespaces.Select(s => NormalizeSymbolNamespace(s)).ToArray();
-            NamespaceSymbol = string.Join(".", this.namespaces);
-            if (!string.IsNullOrEmpty(nameSpace))
-            {
-                NamespaceSymbol = nameSpace + "." + NamespaceSymbol;
-            }
+            namespaces = innerNamespaces.Select(s => CodeNaming.FixUserNaming(s)).ToList();
+            if (topLevelNamespace != null)
+                namespaces.Insert(0, topLevelNamespace);
         }
 
         /// <summary>
-        /// Writes the code for this user type to the specified output.
+        /// Gets the list of namespaces this class represents.
         /// </summary>
-        /// <param name="output">The output.</param>
-        /// <param name="error">The error text writer.</param>
-        /// <param name="factory">The user type factory.</param>
-        /// <param name="generationFlags">The user type generation flags.</param>
-        /// <param name="indentation">The current indentation.</param>
-        public override void WriteCode(IndentedWriter output, TextWriter error, UserTypeFactory factory, UserTypeGenerationFlags generationFlags, int indentation = 0)
-        {
-            string[] namespaces = this.namespaces;
-
-            if (generationFlags.HasFlag(UserTypeGenerationFlags.GenerateNamespaceAsStaticClass))
-            {
-                namespaces = NamespaceSymbol.Split(".".ToCharArray());
-            }
-
-            // Declared In Type with namespace
-            if (DeclaredInType != null || generationFlags.HasFlag(UserTypeGenerationFlags.GenerateNamespaceAsStaticClass))
-            {
-                foreach (string innerClass in namespaces)
-                {
-                    output.WriteLine(indentation, "public static partial class {0}", innerClass);
-                    output.WriteLine(indentation++, @"{{");
-                }
-            }
-            else
-            {
-                output.WriteLine(indentation, "namespace {0}", Namespace);
-                output.WriteLine(indentation++, @"{{");
-            }
-
-            // Inner types
-            foreach (var innerType in InnerTypes)
-            {
-                output.WriteLine();
-                innerType.WriteCode(output, error, factory, generationFlags, indentation);
-            }
-
-            // Declared In Type with namespace
-            if (DeclaredInType != null || generationFlags.HasFlag(UserTypeGenerationFlags.GenerateNamespaceAsStaticClass))
-            {
-                foreach (string innerClass in namespaces)
-                {
-                    output.WriteLine(--indentation, "}}");
-                }
-            }
-            else
-            {
-                output.WriteLine(--indentation, "}}");
-            }
-        }
-
-        /// <summary>
-        /// Gets the class name for this user type. Class name doesn't contain namespace.
-        /// </summary>
-        public override string OriginalClassName
-        {
-            get
-            {
-                return Namespace;
-            }
-        }
-
-        /// <summary>
-        /// Gets the full name of the class, including namespace and "parent" type it is declared into.
-        /// </summary>
-        public override string FullClassName
-        {
-            get
-            {
-                if (DeclaredInType != null)
-                {
-                    return string.Format("{0}.{1}", DeclaredInType.FullClassName, Namespace);
-                }
-
-                return string.Format("{0}", Namespace);
-            }
-        }
-
-        /// <summary>
-        /// Gets the full name of the class (specialized version), including namespace and "parent" type it is declared into.
-        /// This specialized version of FullClassName returns it with original specialization.
-        /// </summary>
-        internal override string SpecializedFullClassName
-        {
-            get
-            {
-                if (DeclaredInType != null)
-                {
-                    return string.Format("{0}.{1}", DeclaredInType.SpecializedFullClassName, Namespace);
-                }
-
-                return string.Format("{0}", Namespace);
-            }
-        }
-
-        /// <summary>
-        /// Gets the full name of the class (non-specialized version), including namespace and "parent" type it is declared into.
-        /// This non-specialized version of FullClassName returns it with template being trimmed to just &lt;&gt;.
-        /// </summary>
-        internal override string NonSpecializedFullClassName
-        {
-            get
-            {
-                if (DeclaredInType != null)
-                {
-                    return string.Format("{0}.{1}", DeclaredInType.NonSpecializedFullClassName, Namespace);
-                }
-
-                return string.Format("{0}", Namespace);
-            }
-        }
+        public IReadOnlyList<string> Namespaces => namespaces;
 
         /// <summary>
         /// Merges namespace with "parent" ones if possible (only if all are namespaces).
@@ -152,17 +43,55 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             bool canBeMerged = true;
 
-            for (UserType parentNameSpace = DeclaredInType; parentNameSpace != null && canBeMerged; parentNameSpace = parentNameSpace.DeclaredInType)
-            {
-                canBeMerged = parentNameSpace is NamespaceUserType;
-            }
+            for (UserType parentNamespace = DeclaredInType; parentNamespace != null && canBeMerged; parentNamespace = parentNamespace.DeclaredInType)
+                canBeMerged = parentNamespace is NamespaceUserType;
 
             if (canBeMerged && DeclaredInType != null)
             {
-                NamespaceSymbol = FullClassName;
-                DeclaredInType.InnerTypes.Remove(this);
-                DeclaredInType = null;
+                for (UserType parentNamespace = DeclaredInType; parentNamespace != null; parentNamespace = parentNamespace.DeclaredInType)
+                    namespaces.Insert(0, parentNamespace.Namespace);
+                UpdateConstructorNameSuffix(ConstructorNameSuffix); // Invalidate cache of name properties
+                UpdateDeclaredInType(null);
             }
+        }
+
+        /// <summary>
+        /// Function that should evaluate <see cref="UserType.TypeName"/> property.
+        /// </summary>
+        /// <returns>User type name.</returns>
+        protected override string GetTypeName()
+        {
+            if (!string.IsNullOrEmpty(ConstructorNameSuffix))
+                return namespaces.Last() + ConstructorNameSuffix;
+            return namespaces.Last();
+        }
+
+        /// <summary>
+        /// Function that should evaluate <see cref="UserType.FullTypeName"/> property.
+        /// </summary>
+        /// <returns>User type full name.</returns>
+        protected override string GetFullTypeName()
+        {
+            if (DeclaredInType != null)
+                return $"{DeclaredInType.FullTypeName}.{Namespace}";
+            return Namespace;
+        }
+
+        /// <summary>
+        /// Function that should evaluate <see cref="UserType.Namespace"/> property.
+        /// </summary>
+        /// <param name="constructorNamespace">Namespace parameter of the constructor of this class.</param>
+        protected override string GetNamespace(string constructorNamespace)
+        {
+            return string.Join(".", namespaces);
+        }
+
+        /// <summary>
+        /// Function that should evaluate <see cref="UserType.BaseClass"/> and <see cref="UserType.BaseClassOffset"/> properties.
+        /// </summary>
+        protected override Tuple<TypeInstance, int> GetBaseClass(Symbol symbol)
+        {
+            return Tuple.Create<TypeInstance, int>(new StaticClassTypeInstance(CodeNaming), 0);
         }
     }
 }

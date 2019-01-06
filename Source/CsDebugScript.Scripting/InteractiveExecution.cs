@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Debuggers;
+using CsDebugScript.Engine.Utility;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
@@ -21,15 +22,109 @@ namespace CsDebugScript
     }
 
     /// <summary>
+    /// Provides ability to customize behavior of the <see cref="InteractiveExecution"/>.
+    /// </summary>
+    public class InteractiveExecutionBehavior
+    {
+        /// <summary>
+        /// Cache of <see cref="Context.UserTypeMetadata"/> in constructor that will be used as starting point after '#reset'.
+        /// </summary>
+        private UserTypeMetadata[] userTypeMetadata;
+
+        /// <summary>
+        /// Cache of <see cref="InteractiveScriptBase"/> that this behavior returns.
+        /// </summary>
+        private SimpleCacheStruct<InteractiveScriptBase> interactiveScriptBase;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InteractiveExecutionBehavior"/> class.
+        /// </summary>
+        public InteractiveExecutionBehavior()
+        {
+            userTypeMetadata = Context.UserTypeMetadata;
+            interactiveScriptBase = SimpleCache.CreateStruct(() =>
+            {
+                return new InteractiveScriptBase
+                {
+                    ObjectWriter = new DefaultObjectWriter(),
+                    _InternalObjectWriter_ = new ConsoleObjectWriter(),
+                };
+            });
+        }
+
+        /// <summary>
+        /// Action to be called when user executes '#clear' or '#cls' command.
+        /// </summary>
+        public event Action ClearDone;
+
+        /// <summary>
+        /// Action to be called when user executes '#reset' command.
+        /// </summary>
+        public event Action ResetDone;
+
+        /// <summary>
+        /// Gets the initial <see cref="InteractiveScriptBase"/> object.
+        /// </summary>
+        public virtual InteractiveScriptBase GetInteractiveScriptBase()
+        {
+            return interactiveScriptBase.Value;
+        }
+
+        /// <summary>
+        /// Gets prompt string during REPL execution. Default value is 'C#> '.
+        /// </summary>
+        public virtual string GetReplPrompt()
+        {
+            return "C#> ";
+        }
+
+        /// <summary>
+        /// Gets prompt string during command execution. Default value is '...> '.
+        /// </summary>
+        public virtual string GetReplExecutingPrompt()
+        {
+            return "...> ";
+        }
+
+        /// <summary>
+        /// Gets initialization script path to be executed when user runs empty '#reset' command.
+        /// Default is empty string path which results in not executing any script.
+        /// </summary>
+        public virtual string GetResetScriptPath()
+        {
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Gets collection of user types that will be set to <see cref="Context.UserTypeMetadata"/> after '#reset' command.
+        /// </summary>
+        internal virtual UserTypeMetadata[] GetResetUserTypeMetadata()
+        {
+            return userTypeMetadata;
+        }
+
+        /// <summary>
+        /// Called when '#clear' or '#cls' command has been executed.
+        /// </summary>
+        internal void OnClearExecuted()
+        {
+            ClearDone?.Invoke();
+        }
+
+        /// <summary>
+        /// Called when '#reset' command has been executed.
+        /// </summary>
+        internal void OnResetExecuted()
+        {
+            ResetDone?.Invoke();
+        }
+    }
+
+    /// <summary>
     /// Provides interactive mode (C# REPL) with debugging scripts.
     /// </summary>
     public class InteractiveExecution
     {
-        /// <summary>
-        /// The default prompt
-        /// </summary>
-        internal const string DefaultPrompt = "C#> ";
-
         /// <summary>
         /// Roslyn script state
         /// </summary>
@@ -38,7 +133,7 @@ namespace CsDebugScript
         /// <summary>
         /// Interactive script base - Roslyn globals object
         /// </summary>
-        internal InteractiveScriptBase scriptBase = new InteractiveScriptBase();
+        internal InteractiveScriptBase scriptBase;
 
         /// <summary>
         /// The imported code (functions and classes defined in the scripts)
@@ -69,6 +164,29 @@ namespace CsDebugScript
         /// Initializes a new instance of the <see cref="InteractiveExecution"/> class.
         /// </summary>
         public InteractiveExecution()
+            : this(new InteractiveExecutionBehavior())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InteractiveExecution"/> class.
+        /// </summary>
+        /// <param name="behavior">Customization of interactive execution.</param>
+        public InteractiveExecution(InteractiveExecutionBehavior behavior)
+        {
+            Behavior = behavior;
+            Initialize();
+        }
+
+        /// <summary>
+        /// Gets the customization of interactive execution.
+        /// </summary>
+        public InteractiveExecutionBehavior Behavior { get; private set; }
+
+        /// <summary>
+        /// Initializes or resets scripting to default.
+        /// </summary>
+        private void Initialize()
         {
             var scriptOptions = ScriptOptions.Default.WithImports(ScriptCompiler.DefaultUsings).AddReferences(ScriptCompiler.DefaultAssemblyReferences);
 
@@ -80,9 +198,11 @@ namespace CsDebugScript
             scriptOptions = scriptOptions.WithMetadataResolver(metadataResolver);
             scriptOptions = scriptOptions.WithSourceResolver(sourceResolver);
 
+            importedCode = string.Empty;
+            scriptBase = Behavior.GetInteractiveScriptBase();
             scriptState = CSharpScript.RunAsync(string.Join("\n", ScriptCompiler.DefaultAliases.Select(s => $"using {s};")), scriptOptions, scriptBase).Result;
-            scriptBase.ObjectWriter = new DefaultObjectWriter();
-            scriptBase._InternalObjectWriter_ = new ConsoleObjectWriter();
+
+            Context.SetUserTypeMetadata(Behavior.GetResetUserTypeMetadata());
         }
 
         /// <summary>
@@ -90,7 +210,7 @@ namespace CsDebugScript
         /// </summary>
         public void Run()
         {
-            string prompt = DefaultPrompt;
+            string prompt = Behavior.GetReplPrompt();
 
             while (true)
             {
@@ -117,6 +237,30 @@ namespace CsDebugScript
                     Console.Error.WriteLine(ex);
                 }
             }
+        }
+
+        /// <summary>
+        /// Resets interactive execution to default and executes initialization script.
+        /// </summary>
+        /// <param name="initializationScriptPath">Initialization script to be executed or empty to execute default script.</param>
+        public void Reset(string initializationScriptPath = null)
+        {
+            // Reset scripting to default
+            Initialize();
+
+            // Execute initialization
+            StringBuilder sb = new StringBuilder();
+
+            if (string.IsNullOrEmpty(initializationScriptPath))
+                initializationScriptPath = Behavior.GetResetScriptPath();
+            if (!string.IsNullOrEmpty(initializationScriptPath))
+                sb.AppendLine($"#load \"{initializationScriptPath}\"");
+            if (sb.Length != 0)
+            {
+                sb.AppendLine($"{nameof(InteractiveScriptBase.__ImportUserTypes__)}(System.Reflection.Assembly.GetExecutingAssembly());");
+                UnsafeInterpret(sb.ToString());
+            }
+            Behavior.OnResetExecuted();
         }
 
         /// <summary>
@@ -154,13 +298,25 @@ namespace CsDebugScript
         /// <param name="code">The C# code.</param>
         internal void UnsafeInterpret(string code)
         {
-            if (!code.StartsWith("#dbg "))
+            // TODO: This parsing should be done differently
+            code = code.Trim();
+            if (code.StartsWith("#dbg "))
             {
-                Execute(code);
+                ((DbgEngDll)Context.Debugger).ExecuteCommand(code.Substring(5));
+            }
+            else if (code.StartsWith("#reset"))
+            {
+                string initializationScript = code.Substring("#reset".Length);
+
+                Reset(initializationScript);
+            }
+            else if (code == "#clear" || code == "#cls")
+            {
+                Behavior.OnClearExecuted();
             }
             else
             {
-                ((DbgEngDll)Context.Debugger).ExecuteCommand(code.Substring(5));
+                Execute(code);
             }
         }
 
@@ -236,6 +392,12 @@ namespace CsDebugScript
 
                     // TODO: Changing globals, but we need to store previous variables
                     scriptState = CSharpScript.RunAsync(string.Join("\n", ScriptCompiler.DefaultAliases.Select(s => $"using {s};")), scriptState.Script.Options, scriptBase).Result;
+                }
+
+                if (scriptBase._ExtractedUserTypeMetadata_.Count > 0)
+                {
+                    Context.SetUserTypeMetadata(scriptBase._ExtractedUserTypeMetadata_.Concat(Context.UserTypeMetadata).ToArray());
+                    scriptBase._ExtractedUserTypeMetadata_.Clear();
                 }
 
                 if (scriptBase._CodeGenCode_.Count > 0)

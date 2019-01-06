@@ -1,4 +1,6 @@
-﻿using CsDebugScript.UI.CodeWindow;
+﻿using CsDebugScript.Drawing.Interfaces;
+using CsDebugScript.UI.CodeWindow;
+using CsDebugScript.UI.Drawing;
 using CsDebugScript.UI.ResultVisualizers;
 using System;
 using System.Collections.Generic;
@@ -7,6 +9,20 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+
+namespace CsDebugScript
+{
+    /// <summary>
+    /// Interface that annotates that <see cref="UserType"/> can nicely print itself to the console.
+    /// </summary>
+    public interface IConsoleVisualizer
+    {
+        /// <summary>
+        /// Nicely print itself on the console.
+        /// </summary>
+        void PrintOnConsole();
+    }
+}
 
 namespace CsDebugScript.UI
 {
@@ -47,10 +63,12 @@ namespace CsDebugScript.UI
         internal const string ExpandingItemText = "Loading...";
 
         private InteractiveWindowContent interactiveWindowContent;
+        System.Windows.Threading.Dispatcher dispatcher;
 
         public InteractiveResultVisualizer(InteractiveWindowContent interactiveWindowContent)
         {
             this.interactiveWindowContent = interactiveWindowContent;
+            dispatcher = interactiveWindowContent?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
         }
 
 
@@ -58,30 +76,60 @@ namespace CsDebugScript.UI
         {
             // We don't visualize null
             if (obj == null)
-            {
                 return null;
-            }
 
             // Primitive types and strings are visualized as ToString
             if (obj.GetType().IsPrimitive || obj is string)
-            {
                 return obj.ToString();
-            }
 
             // UI elements should be resurfaced back.
             if (obj is UIElement)
-            {
                 return obj;
-            }
+
+            // Drawing objects should be resurfaced back.
+            IDrawing drawing = obj as IDrawing;
+
+            if (drawing != null)
+                return new LazyUIResult(() => new DrawingViewer(drawing));
 
             // All other should be visualized in a table
-            IResultVisualizer resultTreeItem = ResultVisualizer.Create(obj, obj.GetType(), "result", null, this);
+            IResultVisualizer resultTreeItem = ResultVisualizer.Create(obj, obj.GetType(), "result", CompletionDataType.Unknown, this);
 
             resultTreeItem.Initialize();
+
+            // Check if we can also represent resulting object as a drawing
+            IDrawingVisualizerObject drawingVisualizerObject = obj as IDrawingVisualizerObject;
+
+            if (drawingVisualizerObject != null && drawingVisualizerObject.CanVisualize())
+            {
+                Graphics graphics = new Graphics(dispatcher);
+
+                drawing = drawingVisualizerObject.CreateDrawing(graphics);
+            }
+
+            if (drawing != null)
+            {
+                // Create panel that will hold both elements.
+                return new LazyUIResult(() =>
+                {
+                    StackPanel panel = new StackPanel();
+
+                    panel.Orientation = Orientation.Vertical;
+                    panel.Children.Add(Visualize(resultTreeItem));
+                    panel.Children.Add(new DrawingViewer(drawing));
+                    return panel;
+                });
+            }
+
+            // Check if it is console printer
+            if (obj is IConsoleVisualizer consoleVisualizer)
+            {
+                consoleVisualizer.PrintOnConsole();
+                return null;
+            }
+
             return new LazyUIResult(() => Visualize(resultTreeItem));
         }
-
-        System.Windows.Threading.Dispatcher dispatcher;
 
         private static FrameworkElementFactory CreateStackPanelFactory(string name)
         {
@@ -179,7 +227,6 @@ namespace CsDebugScript.UI
                     }
                 }
             };
-            dispatcher = tree.Dispatcher;
             return tree;
         }
 
@@ -318,6 +365,7 @@ namespace CsDebugScript.UI
         private TreeViewItem CreateTreeItem(TreeListView tree, string name, ImageSource imageSource, int level, UIElement value = null, string typeString = null, bool nameItalic = false)
         {
             TreeViewItem item = new TreeViewItem();
+            bool alreadyLoaded = false;
             GridViewRowPresenter rowPresenter = new GridViewRowPresenter()
             {
                 Columns = tree.Columns,
@@ -326,6 +374,12 @@ namespace CsDebugScript.UI
             item.Header = rowPresenter;
             item.Loaded += (sender, e) =>
             {
+                if (alreadyLoaded)
+                {
+                    return;
+                }
+                alreadyLoaded = true;
+
                 FrameworkElement expander = item.Template.FindName("Expander", item) as FrameworkElement;
                 StackPanel nameStackPanel = FindVisualChild<StackPanel>(rowPresenter, "Name");
                 StackPanel valueStackPanel = FindVisualChild<StackPanel>(rowPresenter, "Value");
@@ -424,11 +478,11 @@ namespace CsDebugScript.UI
                             {
                                 List<Tuple<string, IEnumerable<IResultVisualizer>>> customChildren = new List<Tuple<string, IEnumerable<IResultVisualizer>>>();
 
-                                foreach (Tuple<string, IEnumerable<IResultVisualizer>> customChild in resultTreeItem.Children)
+                                foreach (Tuple<string, IEnumerable<IResultVisualizer>> customChild in resultTreeItem.ChildrenGroups)
                                 {
                                     if (customChild.Item2.Any())
                                     {
-                                        if (customChild.Item1 == "[Expanded]")
+                                        if (customChild.Item1 == ResultVisualizer.ExpandedGroupName)
                                         {
                                             List<IResultVisualizer> cachedItems = customChild.Item2.ToList();
 
@@ -454,7 +508,7 @@ namespace CsDebugScript.UI
                                         item.Items.Clear();
                                         foreach (Tuple<string, IEnumerable<IResultVisualizer>> customChild in customChildren)
                                         {
-                                            if (customChild.Item1 == "[Expanded]")
+                                            if (customChild.Item1 == ResultVisualizer.ExpandedGroupName)
                                             {
                                                 foreach (IResultVisualizer child in customChild.Item2)
                                                 {
@@ -473,6 +527,10 @@ namespace CsDebugScript.UI
                                                 customItem.Items.Add(ExpandingItemText);
                                                 customItem.Expanded += TreeViewItem_Expanded;
                                                 item.Items.Add(customItem);
+
+                                                // If we have only one child and if it is [Dynamic] group, let's expand it...
+                                                if (customChildren.Count == 1 && customChild.Item1 == ResultVisualizer.DynamicGroupName)
+                                                    customItem.IsExpanded = true;
                                             }
                                         }
                                     }

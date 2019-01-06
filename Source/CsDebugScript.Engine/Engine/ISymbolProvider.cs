@@ -100,6 +100,7 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="module">The module.</param>
         /// <param name="typeId">The type identifier.</param>
+        /// <returns>Type id to pointer type, or <c>int.MaxValue</c> if it doesn't exist and fake should be used.</returns>
         uint GetTypePointerToTypeId(Module module, uint typeId);
 
         /// <summary>
@@ -184,6 +185,15 @@ namespace CsDebugScript.Engine
         uint GetTypeId(Module module, string typeName);
 
         /// <summary>
+        /// Gets the template arguments.
+        /// <para>For given type: MyType&lt;Arg1, 2, Arg3&lt;5&gt;&gt;</para>
+        /// <para>It will return: <code>new object[] { CodeType.Create("Arg1", Module), 2, CodeType.Create("Arg3&lt;5&gt;", Module) }</code></para>
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <param name="typeId">The type identifier.</param>
+        object[] GetTemplateArguments(Module module, uint typeId);
+
+        /// <summary>
         /// Reads the simple data (1 to 8 bytes) for specified type and address to read from.
         /// </summary>
         /// <param name="codeType">Type of the code.</param>
@@ -212,5 +222,12 @@ namespace CsDebugScript.Engine
         /// <param name="virtualCodeType">Virtual class code type.</param>
         /// <returns>Address of the object which code type is virtual class.</returns>
         ulong GetVirtualClassBaseAddress(CodeType originalCodeType, ulong objectAddress, CodeType virtualCodeType);
+
+        /// <summary>
+        /// Gets path to the symbols file or <c>null</c> if we don't have symbols.
+        /// </summary>
+        /// <param name="module">The module.</param>
+        /// <returns>Paths to the symbols file.</returns>
+        string GetModuleSymbolsPath(Module module);
     }
 }

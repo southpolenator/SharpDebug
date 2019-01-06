@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
@@ -102,7 +103,21 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             get
             {
-                return (ulong)Value;
+                if (Value is byte[] bytes)
+                {
+                    if (bytes.Length == 1)
+                        return bytes[0];
+                    else if (bytes.Length == 2)
+                        return BitConverter.ToUInt16(bytes, 0);
+                    else if (bytes.Length == 4)
+                        return BitConverter.ToUInt32(bytes, 0);
+                    else if (bytes.Length == 8)
+                        return BitConverter.ToUInt64(bytes, 0);
+                    else
+                        throw new NotImplementedException();
+                }
+                else
+                    return (ulong)Value;
             }
         }
 

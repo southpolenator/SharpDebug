@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetFramework);$(DefaultNetStandard)</TargetFrameworks>
+    <Description>CsDebugScript.Drawing.Interfaces provides framework for visualizing data as drawings (images, lines, circles, etc.).</Description>
+  </PropertyGroup>
+
+</Project>

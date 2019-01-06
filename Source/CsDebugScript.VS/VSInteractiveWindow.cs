@@ -14,9 +14,9 @@ namespace CsDebugScript.VS
     {
         private VSInteractiveWindowControl control;
 
-        public INativeHandleContract CreateControl()
+        public INativeHandleContract CreateControl(InteractiveExecutionInitialization interactiveExecutionInitialization)
         {
-            control = new VSInteractiveWindowControl();
+            control = new VSInteractiveWindowControl(interactiveExecutionInitialization);
             return FrameworkElementAdapters.ViewToContractAdapter(control);
         }
 
@@ -24,6 +24,65 @@ namespace CsDebugScript.VS
         {
             control.Dispatcher.InvokeShutdown();
             GC.Collect();
+        }
+
+        public void DebuggerEnteredDesignMode()
+        {
+            control.DebuggerEnteredDesignMode();
+        }
+
+        public void DebuggerEnteredRunMode()
+        {
+            control.DebuggerEnteredRunMode();
+        }
+
+        public void DebuggerEnteredBreakMode()
+        {
+            control.DebuggerEnteredBreakMode();
+        }
+    }
+
+    class VSInteractiveExecutionBehavior : InteractiveExecutionBehavior
+    {
+        public const string InitializationScriptRelativePath = "CsDebugScript/init.csx";
+
+        public override string GetResetScriptPath()
+        {
+            string initializationScriptRelativePath = InitializationScriptRelativePath.Replace('/', Path.DirectorySeparatorChar);
+            string initializationScript;
+
+            // Check folder with startup project path
+            EnvDTE.SolutionBuild solutionBuild = VSContext.DTE.Solution.SolutionBuild;
+
+            if (solutionBuild != null && solutionBuild.StartupProjects != null)
+                foreach (string item in (Array)solutionBuild.StartupProjects)
+                {
+                    EnvDTE.Project project = VSContext.DTE.Solution.Projects.Item(item);
+                    string projectPath = project.FullName;
+                    string projectDirectory = projectPath;
+
+                    if (!Directory.Exists(projectPath))
+                        projectDirectory = Path.GetDirectoryName(projectPath);
+                    initializationScript = Path.Combine(projectDirectory, initializationScriptRelativePath);
+                    if (File.Exists(initializationScript))
+                        return initializationScript;
+                }
+
+            // Check folder with solution path
+            string solutionPath = VSContext.DTE.Solution.FullName;
+            string solutionDirectory = !Directory.Exists(solutionPath) ? Path.GetDirectoryName(solutionPath) : solutionPath;
+
+            initializationScript = Path.Combine(solutionDirectory, initializationScriptRelativePath);
+            if (File.Exists(initializationScript))
+                return initializationScript;
+
+            // Check current working directory
+            initializationScript = Path.Combine(Directory.GetCurrentDirectory(), initializationScriptRelativePath);
+            if (File.Exists(initializationScript))
+                return initializationScript;
+
+            // Base class anwser
+            return base.GetResetScriptPath();
         }
     }
 
@@ -41,19 +100,25 @@ namespace CsDebugScript.VS
     [Guid("774827b1-2776-4746-bacd-2cd95407f32a")]
     public class VSInteractiveWindow : ToolWindowPane
     {
+        internal const string CaptionText = "C# Debug Scripting";
         private const string DomainName = "CsDebugScript";
 
         private AppDomain scriptDomain;
+#if USE_APP_DOMAIN
         private VSInteractiveWindowProxy proxy = null;
+#else
+        private VSInteractiveWindowControl interactiveControl;
+#endif
         private TextBlock unloadedDomainControl;
         private Grid grid;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VSInteractiveWindow"/> class.
         /// </summary>
-        public VSInteractiveWindow() : base(null)
+        public VSInteractiveWindow()
+            : base(null)
         {
-            this.Caption = "C# Debug Scripting";
+            this.Caption = CaptionText;
 
             grid = new Grid();
             this.Content = grid;
@@ -62,12 +127,48 @@ namespace CsDebugScript.VS
             unloadedDomainControl.Text = "This window is only active while debugging";
             grid.Children.Add(unloadedDomainControl);
 
-            VSContext.DebuggerEnteredDesignMode += () => UnloadDomain();
-            VSContext.DebuggerEnteredRunMode += () => LoadDomain();
-            VSContext.DebuggerEnteredBreakMode += () => LoadDomain();
+            VSContext.DebuggerEnteredDesignMode += () =>
+            {
+#if USE_APP_DOMAIN
+                proxy?.DebuggerEnteredDesignMode();
+#else
+                interactiveControl?.DebuggerEnteredDesignMode();
+#endif
+                UnloadDomain();
+            };
+            VSContext.DebuggerEnteredRunMode += () =>
+            {
+                LoadDomain();
+#if USE_APP_DOMAIN
+                proxy?.DebuggerEnteredRunMode();
+#else
+                interactiveControl?.DebuggerEnteredRunMode();
+#endif
+            };
+            VSContext.DebuggerEnteredBreakMode += () =>
+            {
+                LoadDomain();
+#if USE_APP_DOMAIN
+                proxy?.DebuggerEnteredBreakMode();
+#else
+                interactiveControl?.DebuggerEnteredBreakMode();
+#endif
+            };
             if (VSContext.CurrentDebugMode == EnvDTE.dbgDebugMode.dbgBreakMode || VSContext.CurrentDebugMode == EnvDTE.dbgDebugMode.dbgRunMode)
             {
                 LoadDomain();
+            }
+        }
+
+        internal VSInteractiveWindowControl InteractiveControl
+        {
+            get
+            {
+#if USE_APP_DOMAIN
+                throw new NotImplementedException();
+#else
+                return interactiveControl;
+#endif
             }
         }
 
@@ -76,7 +177,9 @@ namespace CsDebugScript.VS
             if (scriptDomain != null)
             {
                 var domain = scriptDomain;
+#if USE_APP_DOMAIN
                 var proxy = this.proxy;
+#endif
                 scriptDomain = null;
                 grid.Children.Clear();
                 grid.Children.Add(unloadedDomainControl);
@@ -101,7 +204,7 @@ namespace CsDebugScript.VS
 
         private void LoadDomain()
         {
-            if (scriptDomain == null)
+            if (scriptDomain == null && VSContext.CurrentDebugMode == EnvDTE.dbgDebugMode.dbgBreakMode)
             {
                 try
                 {
@@ -115,13 +218,13 @@ namespace CsDebugScript.VS
                     VSContext.InitializeAppDomain(scriptDomain);
 #if USE_APP_DOMAIN
                     proxy = (VSInteractiveWindowProxy)scriptDomain.CreateInstanceAndUnwrap(typeof(VSInteractiveWindowProxy).Assembly.FullName, typeof(VSInteractiveWindowProxy).FullName);
-                    var control = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl());
+                    var interactiveControl = FrameworkElementAdapters.ContractToViewAdapter(proxy.CreateControl(VSContext.InteractiveExecutionInitialization));
 #else
-                    var control = new VSInteractiveWindowControl();
+                    interactiveControl = new VSInteractiveWindowControl(VSContext.InteractiveExecutionInitialization);
 #endif
 
                     grid.Children.Clear();
-                    grid.Children.Add(control);
+                    grid.Children.Add(interactiveControl);
                 }
                 catch (Exception ex)
                 {

@@ -5,8 +5,9 @@ namespace CsDebugScript.CommonUserTypes.CLR.System
     /// <summary>
     /// CLR code String. This is valid only if there is CLR loaded into debugging process.
     /// </summary>
-    /// <seealso cref="CsDebugScript.Variable" />
-    public class String : Variable
+    /// <seealso cref="CsDebugScript.UserType" />
+    [UserType(TypeName = "System.String")]
+    public class String : UserType
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="String"/> class.
@@ -19,21 +20,13 @@ namespace CsDebugScript.CommonUserTypes.CLR.System
             ClrCodeType codeType = variable.GetCodeType() as ClrCodeType;
 
             if (codeType == null || !codeType.ClrType.IsString)
-            {
                 throw new WrongCodeTypeException(variable.GetCodeType(), nameof(variable), "System.String");
-            }
         }
 
         /// <summary>
         /// Gets the length of the string.
         /// </summary>
-        public int Length
-        {
-            get
-            {
-                return (int)GetField("m_stringLength");
-            }
-        }
+        public int Length => (int)GetField("m_stringLength");
 
         /// <summary>
         /// Gets the text.

@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <!-- OpenCV -->
+    <Type Name="cv::Mat">
+        <CustomVisualizer VisualizerId="{401DAED1-A74F-49F3-9B03-66786EBF65B6}"/>
+    </Type>
+    <Type Name="CvMat">
+        <CustomVisualizer VisualizerId="{401DAED1-A74F-49F3-9B03-66786EBF65B6}"/>
+    </Type>
+
+    <!-- STL -->
+    <Type Name="std::any">
+        <CustomVisualizer VisualizerId="{401DAED1-A74F-49F3-9B03-66786EBF65B6}"/>
+    </Type>
+</AutoVisualizer>
