@@ -42,10 +42,19 @@ namespace CsDebugScript.Tests.CLR
 
             foreach (var f in clrThread.ClrStackTrace.Frames)
                 foreach (var variable in f.Locals)
-                    System.Console.WriteLine(" {2} = ({0}) {1:X}", variable.GetCodeType(), variable.GetPointerAddress(), variable.GetName());
+                {
+                    Assert.NotNull(variable);
+                    Assert.NotNull(variable.GetCodeType());
+                    Assert.NotEqual(0UL, variable.GetPointerAddress());
+                    Assert.NotNull(variable.GetName());
+                }
 
             foreach (Variable variable in clrThread.EnumerateStackObjects())
-                System.Console.WriteLine("   ({0}) {1:X}", variable.GetCodeType(), variable.GetPointerAddress());
+            {
+                Assert.NotNull(variable);
+                Assert.NotNull(variable.GetCodeType());
+                Assert.NotEqual(0UL, variable.GetPointerAddress());
+            }
 
             frame = clrThread.ClrStackTrace.Frames.Where(f => f.FunctionNameWithoutModule.StartsWith("Program.Inner(")).Single();
             Assert.True((bool)frame.Locals["b"]);

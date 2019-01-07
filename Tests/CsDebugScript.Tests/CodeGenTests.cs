@@ -103,7 +103,8 @@ namespace CsDebugScript.Tests
 
             try
             {
-                using (StringWriter writer = new StringWriter())
+                using (StringWriter logger = new StringWriter())
+                using (StringWriter errorLogger = new StringWriter())
                 {
                     Generator generator;
 
@@ -122,10 +123,9 @@ namespace CsDebugScript.Tests
                             throw new NotImplementedException();
                     }
 
-                    Console.SetError(writer);
-                    generator.Generate(xmlConfig);
-                    writer.Flush();
-                    string errorText = writer.GetStringBuilder().ToString();
+                    generator.Generate(xmlConfig, logger);
+                    errorLogger.Flush();
+                    string errorText = errorLogger.GetStringBuilder().ToString();
 
                     if (!string.IsNullOrEmpty(errorText))
                     {

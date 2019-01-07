@@ -84,8 +84,7 @@ ImportUserTypes(options, true);
         {
             Process process = Process.Current;
 
-            Console.WriteLine("Architecture type: {0}", process.ArchitectureType);
-            Console.WriteLine("SystemId: {0}", process.SystemId);
+            Assert.NotEqual(ArchitectureType.Unknown, process.ArchitectureType);
             Assert.NotEqual(0U, process.SystemId);
             Assert.NotEmpty(Process.All);
             Assert.NotEqual(-1, process.FindMemoryRegion(DefaultModule.Address));
@@ -118,7 +117,7 @@ ImportUserTypes(options, true);
             Assert.Equal(Process.Current, defaultTestCaseFunction.Process);
             Assert.Contains(MainSourceFileName, defaultTestCaseFunction.SourceFileName.ToLower());
             Assert.NotEqual(0U, defaultTestCaseFunction.SourceFileLine);
-            Console.WriteLine("SourceFileDisplacement: {0}", defaultTestCaseFunction.SourceFileDisplacement);
+            Assert.True(defaultTestCaseFunction.SourceFileDisplacement < int.MaxValue);
 
             Variable codeFunctionVariable = DefaultModule.GetVariable($"{DefaultModuleName}!defaultTestCaseAddress");
 
