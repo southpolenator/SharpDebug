@@ -258,7 +258,7 @@ namespace CsDebugScript.CodeGen
                             string text = result.Item1;
                             string filename = result.Item2;
 
-                            if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName) && !string.IsNullOrEmpty(text))
+                            if (!string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName) && !string.IsNullOrEmpty(text))
                                 lock (syntaxTrees)
                                 {
                                     syntaxTrees.Add(CSharpSyntaxTree.ParseText(text, path: filename, encoding: System.Text.UTF8Encoding.Default));
@@ -276,7 +276,7 @@ namespace CsDebugScript.CodeGen
                         File.WriteAllText(filename, code);
                     }
 
-                    if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
+                    if (!string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
                     {
                         logger.WriteLine(" {0}", stopwatch.Elapsed);
                         logger.Write("Parsing generated code with Roslyn...");
@@ -287,7 +287,7 @@ namespace CsDebugScript.CodeGen
                 logger.WriteLine(" {0}", stopwatch.Elapsed);
 
                 // Compiling the code
-                if (xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
+                if (!string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
                 {
                     List<MetadataReference> references = new List<MetadataReference>
                     {
@@ -344,74 +344,6 @@ namespace CsDebugScript.CodeGen
                     logger.WriteLine("Compiling: {0}", stopwatch.Elapsed);
                 }
 
-                // Check whether we should generate assembly
-                if (!xmlConfig.GenerateAssemblyWithRoslyn && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
-                {
-#if NET461
-                    var codeProvider = new CSharpCodeProvider();
-                    var compilerParameters = new CompilerParameters()
-                    {
-                        IncludeDebugInformation = !xmlConfig.DisablePdbGeneration,
-                        OutputAssembly = outputDirectory + xmlConfig.GeneratedAssemblyName,
-                    };
-                    List<string> assembliesList = new List<string>();
-
-                    foreach (var assemblyPath in AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).Select(a => a.Location))
-                    {
-                        string assemblyName = Path.GetFileName(assemblyPath);
-
-                        if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(assemblyName)))
-                        {
-                            assembliesList.Add(assemblyPath);
-                        }
-                    }
-
-                    foreach (string dependentAssembly in dependentAssemblies)
-                    {
-                        if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
-                        {
-                            assembliesList.Add(ResolveAssemblyPath(dependentAssembly));
-                        }
-                    }
-                    assembliesList.AddRange(xmlConfig.ReferencedAssemblies.Select(r => ResolveAssemblyPath(r.Path)).ToArray());
-
-                    const string MicrosoftCSharpDll = "Microsoft.CSharp.dll";
-
-                    if (!assembliesList.Where(a => a.Contains(MicrosoftCSharpDll)).Any())
-                    {
-                        assembliesList.Add(MicrosoftCSharpDll);
-                    }
-
-                    Dictionary<string, string> uniqueAssemblies = new Dictionary<string, string>();
-
-                    foreach (string assemblyString in assembliesList)
-                    {
-                        string key = Path.GetFileName(assemblyString);
-
-                        if (!uniqueAssemblies.ContainsKey(key))
-                        {
-                            uniqueAssemblies.Add(key, assemblyString);
-                        }
-                    }
-
-                    compilerParameters.ReferencedAssemblies.AddRange(uniqueAssemblies.Values.ToArray());
-
-                    var filesToCompile = generatedFiles.Values.Concat(includedFiles.Select(f => f.Path)).ToArray();
-                    var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, filesToCompile);
-
-                    if (compileResult.Errors.Count > 0)
-                    {
-                        errorLogger.WriteLine("Compile errors (top 1000):");
-                        foreach (CompilerError err in compileResult.Errors.Cast<CompilerError>().Take(1000))
-                            errorLogger.WriteLine(err);
-                    }
-
-                    logger.WriteLine("Compiling: {0}", stopwatch.Elapsed);
-#else
-                    throw new Exception(".NET standard must use Roslyn to generate assemblies.");
-#endif
-                }
-
                 // Generating props file
                 if (!string.IsNullOrEmpty(xmlConfig.GeneratedPropsFileName))
                 {
@@ -448,12 +380,9 @@ namespace CsDebugScript.CodeGen
             includedFiles = xmlConfig.IncludedFiles;
             referencedAssemblies = xmlConfig.ReferencedAssemblies;
             generationOptions = xmlConfig.GetGenerationFlags();
-            int nameLimit = xmlConfig.GenerateAssemblyWithRoslyn ? 1000 : 250;
+            int nameLimit = xmlConfig.GenerateAssemblyWithILWriter ? 10000 : 1000;
             if (xmlConfig.GenerateAssemblyWithILWriter && !string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
-            {
-                nameLimit = 10000;
                 codeWriter = new ManagedILCodeWriter(Path.GetFileNameWithoutExtension(xmlConfig.GeneratedAssemblyName), generationOptions, nameLimit);
-            }
             else
                 codeWriter = new CSharpCodeWriter(generationOptions, nameLimit);
             userTypeFactory = new UserTypeFactory(xmlConfig.Transformations, codeWriter.Naming);
@@ -802,6 +731,7 @@ namespace CsDebugScript.CodeGen
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                     MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
+                    MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
                 };
 
             foreach (string dependentAssembly in dependentAssemblies)

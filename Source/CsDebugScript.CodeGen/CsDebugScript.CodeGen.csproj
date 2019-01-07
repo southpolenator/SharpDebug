@@ -2,7 +2,7 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetFramework);$(DefaultNetStandard)</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
     <Description>Extension to CsDebugScript.Engine that provides ability to extract user types from symbols files. By default it uses DIA to read PDB files, but it can be used with CsDebugScript.DwarfSymbolProvider to generate from DWARF symbols (either from PE or ELF image containers).</Description>
   </PropertyGroup>
 

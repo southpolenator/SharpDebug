@@ -62,14 +62,6 @@ namespace CsDebugScript.CodeGen
         public string GeneratedAssemblyName { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether generated assembly should be compiled with Roslyn.
-        /// </summary>
-        /// <value>
-        /// <c>true</c> if generated assembly should be compiled with Roslyn; otherwise, <c>false</c>.
-        /// </value>
-        public bool GenerateAssemblyWithRoslyn { get; set; } = true;
-
-        /// <summary>
         /// Gets or sets a value indicating whether generated assembly should be compiled by emitting IL.
         /// </summary>
         /// <value>
@@ -313,7 +305,7 @@ namespace CsDebugScript.CodeGen
             {
                 generationFlags |= UserTypeGenerationFlags.GenerateNamespaceAsStaticClass;
             }
-            if (DontSaveGeneratedCodeFiles && GenerateAssemblyWithRoslyn)
+            if (DontSaveGeneratedCodeFiles)
             {
                 generationFlags |= UserTypeGenerationFlags.DontSaveGeneratedCodeFiles;
             }
