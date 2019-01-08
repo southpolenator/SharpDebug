@@ -27,8 +27,8 @@
         <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="File" Path="System.IO.FileSystem.dll" AssemblyName="System.IO.FileSystem, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     </Assets>
     <Prerequisites>
-        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,16.0)" DisplayName="Visual Studio core editor" />
-        <Prerequisite Id="Microsoft.VisualStudio.Component.Debugger.JustInTime" Version="[15.0,16.0)" DisplayName="Just-In-Time debugger" />
-        <Prerequisite Id="Microsoft.VisualStudio.Component.VC.CoreIde" Version="[15.0,16.0)" DisplayName="Visual Studio C++ core features" />
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,17.0)" DisplayName="Visual Studio core editor" />
+        <Prerequisite Id="Microsoft.VisualStudio.Component.Debugger.JustInTime" Version="[15.0,17.0)" DisplayName="Just-In-Time debugger" />
+        <Prerequisite Id="Microsoft.VisualStudio.Component.VC.CoreIde" Version="[15.0,17.0)" DisplayName="Visual Studio C++ core features" />
     </Prerequisites>
 </PackageManifest>
