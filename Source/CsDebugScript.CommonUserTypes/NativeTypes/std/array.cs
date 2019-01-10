@@ -298,7 +298,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
         /// Gets the &lt;T&gt; at the specified index.
         /// </summary>
         /// <param name="index">The index.</param>
-        public T this[int index] => instance[index];
+        public new T this[int index] => instance[index];
 
         /// <summary>
         /// Returns an enumerator that iterates through the collection.

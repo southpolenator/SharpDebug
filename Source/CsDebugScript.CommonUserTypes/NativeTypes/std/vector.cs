@@ -307,11 +307,6 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             private CodeArray<ulong> compressedBuffer64;
 
             /// <summary>
-            /// Address of end element.
-            /// </summary>
-            private ulong endAddress;
-
-            /// <summary>
             /// Initializes a new instance of the <see cref="VectorBoolBase" /> class.
             /// </summary>
             /// <param name="variable">The variable.</param>

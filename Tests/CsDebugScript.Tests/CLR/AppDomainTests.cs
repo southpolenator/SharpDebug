@@ -67,7 +67,7 @@ namespace CsDebugScript.Tests.CLR
             Assert.Empty(systemDomain.Modules);
 
             IClrAppDomain sharedDomain = runtime.SharedDomain;
-            Assert.Equal(1, sharedDomain.Modules.Length);
+            Assert.Single(sharedDomain.Modules);
 
             IClrModule mscorlib = sharedDomain.Modules.Single();
             Assert.Equal("mscorlib.dll", Path.GetFileName(mscorlib.Module.ImageName), ignoreCase:true);
