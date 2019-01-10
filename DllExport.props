@@ -1,4 +1,4 @@
-<Project>
+<Project InitialTargets="DllExportWarningOnCore">
   <!-- We need to disable signing because of the bug -->
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
@@ -34,6 +34,13 @@
     <NugetPackagesFolder>$(UserProfile)\.nuget\packages</NugetPackagesFolder>
     <DllExportTargets>$(NugetPackagesFolder)\DllExport\1.5.2\tools\net.r_eg.DllExport.targets</DllExportTargets>
   </PropertyGroup>
-  <Import Project="$(DllExportTargets)" Condition="Exists('$(DllExportTargets)')" />
 
+  <!-- Since dotnet build command is not supported, we won't import DllExport.targets for it and we will name project differently -->
+  <Import Project="$(DllExportTargets)" Condition="Exists('$(DllExportTargets)') AND '$(MSBuildRuntimeType)' != 'Core'" />
+  <PropertyGroup Condition="'$(MSBuildRuntimeType)' == 'Core'">
+    <AssemblyName>$(AssemblyName).CLR</AssemblyName>
+  </PropertyGroup>
+  <Target Name="DllExportWarningOnCore">
+    <Warning Text="DllExport not applied for project '$(ProjectName)' on 'dotnet build'" Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(ProjectName)' != ''" />
+  </Target>
 </Project>

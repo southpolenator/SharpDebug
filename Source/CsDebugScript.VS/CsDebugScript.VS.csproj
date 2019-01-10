@@ -524,4 +524,6 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+
+  <Import Project="$(EnlistmentRoot)\DisableMeOnCore.props" />
 </Project>
