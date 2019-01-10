@@ -5,6 +5,7 @@
     <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>CsDebugScript.VS.DPE provides Visual Studio component that will be loaded into Concord debugging process for remote execution.</Description>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
