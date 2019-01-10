@@ -28,6 +28,14 @@
     <DefaultNetCoreApp>netcoreapp2.0</DefaultNetCoreApp>
   </PropertyGroup>
 
+  <!-- Solving problem with non-Windows builds or not installed .net framework -->
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
+    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6.1" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" GeneratePathProperty="true" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net461' AND '$(NuGetPackageRoot)' != ''">
+    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\</FrameworkPathOverride>
+  </PropertyGroup>
+
   <!-- Solving problem with VSIX project build errors -->
   <Target Name="BuiltProjectOutputGroupDependencies" />
   <Target Name="BuiltProjectOutputGroup" />
