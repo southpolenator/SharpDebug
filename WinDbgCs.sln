@@ -48,9 +48,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.DiaSymbolProv
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.ClrMdProvider", "Source\CsDebugScript.ClrMdProvider\CsDebugScript.ClrMdProvider.csproj", "{5BE4AA0C-B242-45FD-968F-EB66745A9EFF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x64", "Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.x64.csproj", "{05AFBC66-4049-4E34-934E-60D336FD7098}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x64", "Source\CsDebugScript.WinDbg\x64proj\CsDebugScript.WinDbg.x64.csproj", "{05AFBC66-4049-4E34-934E-60D336FD7098}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x86", "Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.x86.csproj", "{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x86", "Source\CsDebugScript.WinDbg\x86proj\CsDebugScript.WinDbg.x86.csproj", "{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Scripting", "Source\CsDebugScript.Scripting\CsDebugScript.Scripting.csproj", "{D89B5395-E81F-4426-9884-6EEAB723F80E}"
 EndProject

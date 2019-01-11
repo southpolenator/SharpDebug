@@ -25,7 +25,9 @@ namespace CsDebugScript.WinDbg
         /// <param name="version">The extension version.</param>
         /// <param name="flags">The flags.</param>
         /// <returns>HRESULT</returns>
+#if HAS_DLL_EXPORT
         [DllExport]
+#endif
         public static int DebugExtensionInitialize(ref uint version, ref uint flags)
         {
             // Set the extension version to 1, which expects exports with this signature:
@@ -39,7 +41,9 @@ namespace CsDebugScript.WinDbg
         /// Uninitializes WinDbgExtension.
         /// </summary>
         /// <returns>HRESULT</returns>
+#if HAS_DLL_EXPORT
         [DllExport]
+#endif
         public static int DebugExtensionUninitialize()
         {
             Context.ClearCache();
@@ -52,7 +56,9 @@ namespace CsDebugScript.WinDbg
         /// <param name="client">The debug client native pointer.</param>
         /// <param name="args">The arguments.</param>
         /// <returns>HRESULT</returns>
+#if HAS_DLL_EXPORT
         [DllExport("execute")]
+#endif
         public static int Execute(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
         {
             string[] arguments = args.Split(" ".ToCharArray());
@@ -69,7 +75,9 @@ namespace CsDebugScript.WinDbg
         /// <param name="client">The debug client native pointer.</param>
         /// <param name="args">The arguments.</param>
         /// <returns>HRESULT</returns>
+#if HAS_DLL_EXPORT
         [DllExport("interactive")]
+#endif
         public static int Interactive(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
         {
             return ExecuteAction(client, () =>
@@ -84,7 +92,9 @@ namespace CsDebugScript.WinDbg
         /// <param name="client">The debug client native pointer.</param>
         /// <param name="args">The arguments.</param>
         /// <returns>HRESULT</returns>
+#if HAS_DLL_EXPORT
         [DllExport("interpret")]
+#endif
         public static int Interpret(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
         {
             return ExecuteAction(client, () =>
@@ -99,7 +109,9 @@ namespace CsDebugScript.WinDbg
         /// <param name="client">The debug client native pointer.</param>
         /// <param name="args">The arguments.</param>
         /// <returns>HRESULT</returns>
+#if HAS_DLL_EXPORT
         [DllExport("openui")]
+#endif
         public static int OpenUI(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
         {
             string[] arguments = args.Split(" ".ToCharArray());

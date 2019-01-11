@@ -37,6 +37,9 @@
 
   <!-- Since dotnet build command is not supported, we won't import DllExport.targets for it and we will name project differently -->
   <Import Project="$(DllExportTargets)" Condition="Exists('$(DllExportTargets)') AND '$(MSBuildRuntimeType)' != 'Core'" />
+  <PropertyGroup Condition="'$(MSBuildRuntimeType)' != 'Core'">
+    <DefineConstants>HAS_DLL_EXPORT</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(MSBuildRuntimeType)' == 'Core'">
     <AssemblyName>$(AssemblyName).CLR</AssemblyName>
   </PropertyGroup>
