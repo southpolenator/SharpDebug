@@ -44,6 +44,6 @@
     <AssemblyName>$(AssemblyName).CLR</AssemblyName>
   </PropertyGroup>
   <Target Name="DllExportWarningOnCore" BeforeTargets="Build">
-    <Warning Text="DllExport not applied for project '$(ProjectName)' on 'dotnet build'" Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(ProjectName)' != ''" />
+    <Warning Text="DllExport not applied for project '$(ProjectName)' on 'dotnet build'. Generated DLL cannot be loaded as WinDbg extension." Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(ProjectName)' != ''" />
   </Target>
 </Project>
