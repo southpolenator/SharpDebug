@@ -26,6 +26,7 @@
     <DefaultNetFramework>net461</DefaultNetFramework>
     <DefaultNetStandard>netstandard2.0</DefaultNetStandard>
     <DefaultNetCoreApp>netcoreapp2.0</DefaultNetCoreApp>
+    <DefaultAppTargets>$(DefaultNetCoreApp);$(DefaultNetFramework)</DefaultAppTargets>
   </PropertyGroup>
 
   <!-- Solving problem with non-Windows builds or not installed .net framework -->

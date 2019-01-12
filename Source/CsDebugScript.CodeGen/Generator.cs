@@ -2,9 +2,7 @@
 using CsDebugScript.Engine;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CSharp;
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
