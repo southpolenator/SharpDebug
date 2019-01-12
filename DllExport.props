@@ -1,4 +1,4 @@
-<Project InitialTargets="DllExportWarningOnCore">
+<Project>
   <!-- We need to disable signing because of the bug -->
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
@@ -43,7 +43,7 @@
   <PropertyGroup Condition="'$(MSBuildRuntimeType)' == 'Core'">
     <AssemblyName>$(AssemblyName).CLR</AssemblyName>
   </PropertyGroup>
-  <Target Name="DllExportWarningOnCore">
+  <Target Name="DllExportWarningOnCore" BeforeTargets="Build">
     <Warning Text="DllExport not applied for project '$(ProjectName)' on 'dotnet build'" Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(ProjectName)' != ''" />
   </Target>
 </Project>
