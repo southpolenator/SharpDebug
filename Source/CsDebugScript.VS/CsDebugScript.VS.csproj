@@ -525,5 +525,8 @@
   </Target>
   -->
 
+  <Target Name="pack">
+    <!-- Do nothings -->
+  </Target>
   <Import Project="$(EnlistmentRoot)\DisableMeOnCore.props" />
 </Project>

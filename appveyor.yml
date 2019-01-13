@@ -44,7 +44,7 @@ build:
   project: WinDbgCs.sln
   verbosity: minimal
 after_build:
-  - cmd: dotnet pack --no-build & exit 0
+  - cmd: dotnet pack --no-build
   - ps: pushd $env:PROJECT_ROOT\Source\CsDebugScript.DbgEng\
   - ps: dotnet pack --no-build
   - ps: popd
