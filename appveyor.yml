@@ -5,12 +5,17 @@ platform: Any CPU
 environment:
   PROJECT_ROOT: C:\projects\windbgcs
   DEAFULT_TARGET_FRAMEWORK: net461
+  DEAFULT_TARGET_NETSTANDARD: netstandard2.0
+  DEAFULT_TARGET_NETCOREAPP: netcore2.0
   NUGET_PACKAGES: C:\Users\appveyor\.nuget\packages
   OPENCOVER: $(NUGET_PACKAGES)\OpenCover\4.6.519\tools\OpenCover.Console.exe
   XUNIT_TOOLS: $(NUGET_PACKAGES)\xunit.runner.console\2.2.0\tools
-  TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
-  TESTS_DLL: $(TARGET_DIR)\CsDebugScript.Tests.dll
-  UITESTS_DLL: $(TARGET_DIR)\CsDebugScript.Tests.UI.dll
+  NATIVE_TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
+  CLR_TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
+  UI_TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
+  NATIVE_TESTS_DLL: $(NATIVE_TARGET_DIR)\CsDebugScript.Tests.Native.dll
+  CLR_TESTS_DLL: $(CLR_TARGET_DIR)\CsDebugScript.Tests.CLR.dll
+  UI_TESTS_DLL: $(UI_TARGET_DIR)\CsDebugScript.Tests.UI.dll
   GITHUB_PAGES: $(PROJECT_ROOT)\GitHubPages
   GITHUB_PAGES_REFERENCES: WinDbgCsReference
   HELP_OUTPUT_PATH: $(PROJECT_ROOT)\Utility\CsDebugScript.Reference\Help
@@ -75,13 +80,17 @@ after_build:
            }
         }
 test_script:
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%UITESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.UI.xml -targetdir:%TARGET_DIR%'
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.xml -targetdir:%TARGET_DIR%'
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%UITESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.UI.xml -targetdir:%TARGET_DIR%'
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.xml -targetdir:%TARGET_DIR%'
-  - cmd: codecov -f code_coverage_x64.xml
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%UI_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.UI.xml -targetdir:%UI_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%NATIVE_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.Native.xml -targetdir:%NATIVE_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%CLR_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.CLR.xml -targetdir:%CLR_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%UI_TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.UI.xml -targetdir:%UI_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%NATIVE_TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.Native.xml -targetdir:%NATIVE_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%CLR_TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.CLR.xml -targetdir:%CLR_TARGET_DIR%'
+  - cmd: codecov -f code_coverage_x64.Native.xml
+  - cmd: codecov -f code_coverage_x64.CLR.xml
   - cmd: codecov -f code_coverage_x64.UI.xml
-  - cmd: codecov -f code_coverage_x86.xml
+  - cmd: codecov -f code_coverage_x86.Native.xml
+  - cmd: codecov -f code_coverage_x86.CLR.xml
   - cmd: codecov -f code_coverage_x86.UI.xml
 artifacts:
 - path: bin\**\*.nupkg

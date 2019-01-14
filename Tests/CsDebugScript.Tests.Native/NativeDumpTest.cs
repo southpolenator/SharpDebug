@@ -4,7 +4,6 @@ using System.Linq;
 using Xunit;
 using System.Collections.Generic;
 using CsDebugScript.Engine;
-using CsDebugScript.Tests.Utils;
 using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
 using CsDebugScript.CommonUserTypes;
 

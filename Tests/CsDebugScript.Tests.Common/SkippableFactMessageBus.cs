@@ -3,7 +3,7 @@ using System.Linq;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-namespace CsDebugScript.Tests.Utils
+namespace CsDebugScript.Tests
 {
     public class SkippableFactMessageBus : IMessageBus
     {

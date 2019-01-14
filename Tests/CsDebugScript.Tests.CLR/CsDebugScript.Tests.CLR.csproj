@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="CLR\Apps\*.cs" />
-    <None Include="CLR\Apps\*.cs">
+    <Compile Remove="Apps\*.cs" />
+    <None Include="Apps\*.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -39,10 +39,11 @@
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.PdbSymbolProvider\CsDebugScript.PdbSymbolProvider.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Scripting\CsDebugScript.Scripting.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Tests\CsDebugScript.Tests.Common\CsDebugScript.Tests.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="CsDebugScript.Tests.xunit.runner.json">
+    <None Update="CsDebugScript.Tests.CLR.xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

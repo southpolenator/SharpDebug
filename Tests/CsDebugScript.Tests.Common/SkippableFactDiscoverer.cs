@@ -2,7 +2,7 @@
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-namespace CsDebugScript.Tests.Utils
+namespace CsDebugScript.Tests
 {
     public class SkippableFactDiscoverer : IXunitTestCaseDiscoverer
     {

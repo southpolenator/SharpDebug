@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript.Tests.Utils
+namespace CsDebugScript.Tests
 {
     public class SkipTestException : Exception
     {
