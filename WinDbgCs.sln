@@ -54,7 +54,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x86", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Scripting", "Source\CsDebugScript.Scripting\CsDebugScript.Scripting.csproj", "{D89B5395-E81F-4426-9884-6EEAB723F80E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.UITests", "Tests\CsDebugScript.UITests\CsDebugScript.UITests.csproj", "{83939D6A-D0F8-42A2-BDEC-D9EAD673217D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Tests.UI", "Tests\CsDebugScript.Tests.UI\CsDebugScript.Tests.UI.csproj", "{83939D6A-D0F8-42A2-BDEC-D9EAD673217D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Tests", "Tests\CsDebugScript.Tests\CsDebugScript.Tests.csproj", "{BBACCEFE-2F75-40EB-A366-49E5D702FC0A}"
 EndProject

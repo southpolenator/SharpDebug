@@ -14,7 +14,7 @@ using TestStack.White.UIItems.WindowItems;
 using TestStack.White.WindowsAPI;
 using Xunit;
 
-namespace CsDebugScript.UITests
+namespace CsDebugScript.Tests.UI
 {
     public class InteractiveWindowWrapper
     {

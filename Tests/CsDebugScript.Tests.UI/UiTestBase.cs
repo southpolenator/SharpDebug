@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace CsDebugScript.UITests
+namespace CsDebugScript.Tests.UI
 {
     public class UiTestBase
     {

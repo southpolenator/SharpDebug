@@ -1,10 +1,8 @@
-﻿using CsDebugScript.Tests;
-using System;
+﻿using System;
 using TestStack.White;
 using TestStack.White.Factory;
-using Xunit;
 
-namespace CsDebugScript.UITests
+namespace CsDebugScript.Tests.UI
 {
     public class InteractiveWindowFixture : IDisposable
     {
@@ -16,7 +14,7 @@ namespace CsDebugScript.UITests
                 FileName = TestBase.GetAbsoluteBinPath("CsDebugScript.UI.App.exe"),
                 Arguments = $"-d \"{initialization.DumpPath}\" -p \"{initialization.SymbolPath}\"",
             });
-            InteractiveWindow = new InteractiveWindowWrapper(Application.GetWindow(UI.InteractiveWindow.WindowTitle, InitializeOption.NoCache));
+            InteractiveWindow = new InteractiveWindowWrapper(Application.GetWindow(CsDebugScript.UI.InteractiveWindow.WindowTitle, InitializeOption.NoCache));
         }
 
         public Application Application { get; private set; }

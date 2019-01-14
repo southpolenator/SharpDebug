@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using TestStack.White.UIItems;
 
-namespace CsDebugScript.UITests
+namespace CsDebugScript.Tests.UI
 {
     public class UiExecutionEntry
     {

@@ -10,7 +10,7 @@ environment:
   XUNIT_TOOLS: $(NUGET_PACKAGES)\xunit.runner.console\2.2.0\tools
   TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
   TESTS_DLL: $(TARGET_DIR)\CsDebugScript.Tests.dll
-  UITESTS_DLL: $(TARGET_DIR)\CsDebugScript.UITests.dll
+  UITESTS_DLL: $(TARGET_DIR)\CsDebugScript.Tests.UI.dll
   GITHUB_PAGES: $(PROJECT_ROOT)\GitHubPages
   GITHUB_PAGES_REFERENCES: WinDbgCsReference
   HELP_OUTPUT_PATH: $(PROJECT_ROOT)\Utility\CsDebugScript.Reference\Help
