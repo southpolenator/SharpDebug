@@ -54,7 +54,7 @@ namespace CsDebugScript.Tests.CLR
             string destinationDirectory = GetDumpDirectory();
             string destination = Path.Combine(destinationDirectory, appName + ".exe");
             string pdbPath = Path.Combine(destinationDirectory, appName + ".pdb");
-            string[] fullPathFiles = files.Select(f => Path.Combine(directory, "CLR", "Apps", f)).ToArray();
+            string[] fullPathFiles = files.Select(f => Path.Combine(directory, "Apps", f)).ToArray();
 
             Directory.CreateDirectory(destinationDirectory);
 
