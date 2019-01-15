@@ -33,6 +33,24 @@ namespace CsDebugScript.Tests
             return path;
         }
 
+        public static string GetAbsoluteBinPathRecursive1(string path)
+        {
+            if (Path.IsPathRooted(path))
+                return path;
+
+            string parent = Path.GetDirectoryName(GetBinFolder());
+            string[] directories = Directory.GetDirectories(parent);
+
+            foreach (string directory in directories)
+            {
+                string file = Path.GetFullPath(Path.Combine(directory, path));
+
+                if (File.Exists(file))
+                    return file;
+            }
+            return GetAbsoluteBinPath(path);
+        }
+
         public static StackFrame GetFrame(string functionName)
         {
             foreach (var frame in Thread.Current.StackTrace.Frames)

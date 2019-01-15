@@ -1,6 +1,7 @@
 ﻿using CsDebugScript.Engine;
 using CsDebugScript.Engine.Debuggers;
 using System;
+using System.IO;
 using Xunit;
 
 namespace CsDebugScript.Tests.Native
@@ -10,17 +11,20 @@ namespace CsDebugScript.Tests.Native
     [Trait("x86", "true")]
     public class WinDbgExtensionTests : DumpTestBase
     {
+        public bool ExtensionExists { get; private set; }
+
         public WinDbgExtensionTests(NativeDumpTest_x64_dmp_Initialization initialization)
             : base(initialization)
         {
             string configuration = Environment.Is64BitProcess ? "x64" : "x86";
-            string extensionPath = GetAbsoluteBinPath($"CsDebugScript.WinDbg.{configuration}.dll");
+            string extensionPath = GetAbsoluteBinPathRecursive1($"CsDebugScript.WinDbg.{configuration}.dll");
+            ExtensionExists = File.Exists(extensionPath);
             string output = DbgEngDll.ExecuteAndCapture($".load {extensionPath}");
 
             Assert.Equal("", output?.Trim());
         }
 
-        [Fact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(ExtensionExists))]
         public void CheckSimpleInterpret()
         {
             string output = Execute("!interpret 2+3");
@@ -28,7 +32,7 @@ namespace CsDebugScript.Tests.Native
             Assert.Equal("5", output?.Trim());
         }
 
-        [Fact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(ExtensionExists))]
         public void CheckInterpret()
         {
             string output = Execute("!interpret Process.Current.GetGlobal(\"MyTestClass::staticVariable\")");
@@ -36,7 +40,7 @@ namespace CsDebugScript.Tests.Native
             Assert.Equal("1212121212", output?.Trim());
         }
 
-        [Fact]
+        [SkippableFact(SkipOnFailurePropertyName = nameof(ExtensionExists))]
         public void CheckExecuteFailure()
         {
             string output = Execute("!execute invalid_path_to_script arg1 arg2");
