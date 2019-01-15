@@ -729,6 +729,8 @@ namespace CsDebugScript.CodeGen
             List<MetadataReference> references = new List<MetadataReference>
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                    MetadataReference.CreateFromFile(typeof(System.Dynamic.DynamicObject).Assembly.Location),
+                    MetadataReference.CreateFromFile(typeof(System.IO.FileAttributes).Assembly.Location),
                     MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
                     MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
                 };

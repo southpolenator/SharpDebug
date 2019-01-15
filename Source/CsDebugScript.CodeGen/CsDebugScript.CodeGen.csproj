@@ -8,12 +8,25 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.6.0" />
-    <PackageReference Include="Managed.Reflection" Version="0.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Managed.Reflection">
+      <HintPath>$(EnlistmentRoot)\External\Managed.Reflection.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />
+  </ItemGroup>
+
+  <!-- Hack for 'dotnet pack' command to include Managed.Reflection into nuget. -->
+  <ItemGroup>
+    <_PackageFiles Include="$(EnlistmentRoot)\External\Managed.Reflection.dll">
+      <BuildAction>None</BuildAction>
+      <PackagePath>lib\$(DefaultNetStandard)\</PackagePath>
+    </_PackageFiles>
   </ItemGroup>
 
 </Project>

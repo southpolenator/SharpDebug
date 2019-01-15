@@ -101,7 +101,7 @@ namespace CsDebugScript.Tests
                     Context.SetUserTypeMetadata(ScriptCompiler.ExtractMetadata(new[]
                         {
                             typeof(CsDebugScript.CommonUserTypes.NativeTypes.std.@string).Assembly,
-                            typeof(DumpTestBase).Assembly,
+                            GetType().Assembly,
                         }));
 
                     action();

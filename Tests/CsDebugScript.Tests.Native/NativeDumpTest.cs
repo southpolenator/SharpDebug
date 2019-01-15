@@ -7,7 +7,7 @@ using CsDebugScript.Engine;
 using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
 using CsDebugScript.CommonUserTypes;
 
-namespace CsDebugScript.Tests
+namespace CsDebugScript.Tests.Native
 {
     public abstract class NativeDumpTest : DumpTestBase
     {

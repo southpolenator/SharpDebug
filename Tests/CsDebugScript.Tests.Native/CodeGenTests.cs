@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
-namespace CsDebugScript.Tests
+namespace CsDebugScript.Tests.Native
 {
     public enum CodeGenSymbolProvider
     {

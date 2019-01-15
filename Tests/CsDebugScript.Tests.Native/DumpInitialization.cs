@@ -1,11 +1,6 @@
-﻿using CsDebugScript.DwarfSymbolProvider;
-using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
-using DbgEng;
-using System.IO;
-using Xunit;
+﻿using Xunit;
 
-namespace CsDebugScript.Tests
+namespace CsDebugScript.Tests.Native
 {
     #region NativeDumpTest
     [CollectionDefinition("NativeDumpTest.x64.mdmp")]

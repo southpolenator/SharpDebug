@@ -99,7 +99,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Diagnostics.Runtime">
-      <HintPath>$(EnlistmentRoot)\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
+      <HintPath>$(EnlistmentRoot)\External\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

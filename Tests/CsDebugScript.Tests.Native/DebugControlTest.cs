@@ -8,7 +8,7 @@ using CsDebugScript.Engine.Debuggers;
 using System.IO;
 using Xunit.Abstractions;
 
-namespace CsDebugScript.Tests
+namespace CsDebugScript.Tests.Native
 {
     /// <summary>
     /// Tests for interactive debugging control.

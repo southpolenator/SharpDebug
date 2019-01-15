@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace CsDebugScript.Tests
+namespace CsDebugScript.Tests.Native
 {
     [Trait("x86", "true")]
     [Trait("x64", "true")]

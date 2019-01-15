@@ -77,13 +77,17 @@ namespace CsDebugScript
                 else
                 {
                     foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                    {
-                        if (assembly.Location.EndsWith(dll))
+                        try
                         {
-                            assemblyReferences.Add(assembly.Location);
-                            break;
+                            if (assembly.Location.EndsWith(dll))
+                            {
+                                assemblyReferences.Add(assembly.Location);
+                                break;
+                            }
                         }
-                    }
+                        catch
+                        {
+                        }
                 }
             }
 

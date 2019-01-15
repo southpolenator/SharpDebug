@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <Reference Include="Microsoft.Diagnostics.Runtime">
-      <HintPath>$(EnlistmentRoot)\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
+      <HintPath>$(EnlistmentRoot)\External\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
 

@@ -3,7 +3,7 @@ using CsDebugScript.Engine.Debuggers;
 using System;
 using Xunit;
 
-namespace CsDebugScript.Tests
+namespace CsDebugScript.Tests.Native
 {
     [Collection("NativeDumpTest.x64.mdmp")]
     [Trait("x64", "true")]

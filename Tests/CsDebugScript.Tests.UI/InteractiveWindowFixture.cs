@@ -8,7 +8,7 @@ namespace CsDebugScript.Tests.UI
     {
         public InteractiveWindowFixture()
         {
-            NativeDumpTest_x64_dmp_Initialization initialization = new NativeDumpTest_x64_dmp_Initialization();
+            DumpInitialization initialization = new DumpInitialization("NativeDumpTest.x64.mdmp", "", FixSymbolPath(DumpInitialization.DefaultDumpPath));
             Application = Application.Launch(new System.Diagnostics.ProcessStartInfo()
             {
                 FileName = TestBase.GetAbsoluteBinPath("CsDebugScript.UI.App.exe"),
@@ -25,6 +25,16 @@ namespace CsDebugScript.Tests.UI
         {
             InteractiveWindow.MainWindow?.Close();
             Application.Kill();
+        }
+
+        private static string FixSymbolPath(string symbolPath, bool addSymbolServer = true)
+        {
+            symbolPath = TestBase.GetAbsoluteBinPath(symbolPath);
+            if (addSymbolServer)
+            {
+                symbolPath += ";srv*";
+            }
+            return symbolPath;
         }
     }
 }

@@ -2,7 +2,7 @@
 using Xunit;
 using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
 
-namespace CsDebugScript.Tests
+namespace CsDebugScript.Tests.Native
 {
     public abstract class Cpp17Tests : DumpTestBase
     {
