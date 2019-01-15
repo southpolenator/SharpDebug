@@ -2,7 +2,7 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetCoreApp)</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetCoreApp);$(DefaultNetFramework)</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
