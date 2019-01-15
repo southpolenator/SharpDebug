@@ -6,7 +6,7 @@ environment:
   PROJECT_ROOT: C:\projects\windbgcs
   DEAFULT_TARGET_FRAMEWORK: net461
   DEAFULT_TARGET_NETSTANDARD: netstandard2.0
-  DEAFULT_TARGET_NETCOREAPP: netcore2.0
+  DEAFULT_TARGET_NETCOREAPP: netcoreapp2.0
   NUGET_PACKAGES: C:\Users\appveyor\.nuget\packages
   OPENCOVER: $(NUGET_PACKAGES)\OpenCover\4.6.519\tools\OpenCover.Console.exe
   XUNIT_TOOLS: $(NUGET_PACKAGES)\xunit.runner.console\2.2.0\tools
