@@ -2582,10 +2582,6 @@ namespace CsDebugScript.CodeGen.CodeWriters
             return new TypeToSystemType(type);
         }
 
-        // TODO: Make external folder and move ClrMD dll there.
-        // TODO: Make Managed.Reflection.dll part of external folder.
-        // TODO: Add Managed.Reflection.dll part of this nuget.
-
         /// <summary>
         /// Helper class that contains definitions of all used types, methods, constructors and properties for IL generation.
         /// </summary>
