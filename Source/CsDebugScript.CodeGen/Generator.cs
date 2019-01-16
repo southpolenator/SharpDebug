@@ -287,53 +287,13 @@ namespace CsDebugScript.CodeGen
                 // Compiling the code
                 if (!string.IsNullOrEmpty(xmlConfig.GeneratedAssemblyName))
                 {
-                    List<MetadataReference> references = new List<MetadataReference>
-                    {
-                        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                        MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                        MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
-                    };
-
-                    foreach (string dependentAssembly in dependentAssemblies)
-                    {
-                        if (!xmlConfig.ReferencedAssemblies.Any(a => a.Path.EndsWith(dependentAssembly)))
-                        {
-                            references.Add(MetadataReference.CreateFromFile(ResolveAssemblyPath(dependentAssembly)));
-                        }
-                    }
-
-                    references.AddRange(xmlConfig.ReferencedAssemblies.Select(r => MetadataReference.CreateFromFile(ResolveAssemblyPath(r.Path))));
-
-                    foreach (var includedFile in includedFiles)
-                        syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(includedFile.Path), path: includedFile.Path, encoding: System.Text.UTF8Encoding.Default));
-
-                    CSharpCompilation compilation = CSharpCompilation.Create(
-                        Path.GetFileNameWithoutExtension(xmlConfig.GeneratedAssemblyName),
-                        syntaxTrees: syntaxTrees,
-                        references: references,
-                        options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, platform: Platform.AnyCpu));
-
-                    logger.WriteLine("Syntax trees: {0}", syntaxTrees.Count);
-
                     string dllFilename = Path.Combine(outputDirectory, xmlConfig.GeneratedAssemblyName);
                     string pdbFilename = Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(dllFilename) + ".pdb");
 
                     using (var dllStream = new FileStream(dllFilename, FileMode.Create))
                     using (var pdbStream = new FileStream(pdbFilename, FileMode.Create))
                     {
-                        var result = compilation.Emit(dllStream, !xmlConfig.DisablePdbGeneration ? pdbStream : null);
-
-                        if (!result.Success)
-                        {
-                            IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
-                                diagnostic.IsWarningAsError ||
-                                diagnostic.Severity == DiagnosticSeverity.Error);
-
-                            errorLogger.WriteLine("Compile errors (top 1000):");
-                            foreach (var diagnostic in failures.Take(1000))
-                                errorLogger.WriteLine(diagnostic);
-                        }
-                        else
+                        if (GenerateRoslynAssembly(syntaxTrees, dllStream, pdbStream))
                         {
                             logger.WriteLine("DLL size: {0}", dllStream.Position);
                             logger.WriteLine("PDB size: {0}", pdbStream.Position);
