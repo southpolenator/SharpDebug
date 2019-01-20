@@ -1,7 +1,18 @@
-os: linux
-dist: trusty
-mono: none
-dotnet: 2.1.502
-script:
-  - dotnet restore
-  - dotnet build
+env:
+  global:
+    - DUMPS_VERSION=dumps_3
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      language: cpp
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-trusty-prod trusty main'
+              key_url: 'https://packages.microsoft.com/keys/microsoft.asc'
+          packages:
+            - dotnet-sdk-2.1.4
+      script:
+        - dotnet restore
+        - dotnet build
