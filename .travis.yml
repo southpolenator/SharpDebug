@@ -14,5 +14,4 @@ matrix:
           packages:
             - dotnet-sdk-2.1.4
       script:
-        - dotnet restore
-        - dotnet build
+        - dotnet build /m:1
