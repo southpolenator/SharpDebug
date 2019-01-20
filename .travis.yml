@@ -1,20 +1,10 @@
-env:
-  global:
-    - DUMPS_VERSION=dumps_3
-matrix:
-  include:
-    - os: linux
-      dist: trusty
-      language: cpp
-      addons:
-        apt:
-          sources:
-            - sourceline: 'deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-trusty-prod trusty main'
-              key_url: 'https://packages.microsoft.com/keys/microsoft.asc'
-          packages:
-            - dotnet-sdk-2.1.4
-      script:
-        - dotnet build Utility/ExceptionDumper/ExceptionDumper.csproj
-        - dotnet build Source/CsDebugScript.DbgEng/CsDebugScript.DbgEng.csproj
-        - dotnet build Tests/CsDebugScript.Engine.Test/CsDebugScript.Engine.Test.csproj
-        - dotnet build
+language: csharp
+mono: none
+sudo: required
+dist: xenial
+dotnet: 2.2
+script:
+  - dotnet build Utility/ExceptionDumper/ExceptionDumper.csproj
+  - dotnet build Source/CsDebugScript.DbgEng/CsDebugScript.DbgEng.csproj
+  - dotnet build Tests/CsDebugScript.Engine.Test/CsDebugScript.Engine.Test.csproj
+  - dotnet build
