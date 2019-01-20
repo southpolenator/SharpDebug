@@ -4,7 +4,4 @@ sudo: required
 dist: xenial
 dotnet: 2.2
 script:
-  - dotnet build Utility/ExceptionDumper/ExceptionDumper.csproj
-  - dotnet build Source/CsDebugScript.DbgEng/CsDebugScript.DbgEng.csproj
-  - dotnet build Tests/CsDebugScript.Engine.Test/CsDebugScript.Engine.Test.csproj
   - dotnet build
