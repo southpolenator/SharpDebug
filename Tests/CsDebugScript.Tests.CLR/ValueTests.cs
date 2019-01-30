@@ -5,10 +5,7 @@ using ClrString = CsDebugScript.CommonUserTypes.CLR.System.String;
 
 namespace CsDebugScript.Tests.CLR
 {
-    [Collection("CLR LocalVariables")]
-    [Trait("x64", "true")]
-    [Trait("x86", "true")]
-    public class ValueTests
+    public abstract class ValueTests
     {
         [Fact]
         public void CheckObjectArgsAndLocals()
@@ -167,4 +164,27 @@ namespace CsDebugScript.Tests.CLR
             CheckStruct(s);
         }
     }
+
+    #region Test configurations
+    [Collection("CLR LocalVariables")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class ValueTestsWindows : ValueTests
+    {
+    }
+
+#if ENABLE_CLR_CORE_TESTS
+    [Collection("CLR LocalVariables Windows Core")]
+    [Trait("x64", "true")]
+    public class ValueTestsWindowsCore : ValueTests
+    {
+    }
+
+    [Collection("CLR LocalVariables Linux Core")]
+    [Trait("x64", "true")]
+    public class ValueTestsLinuxCore : ValueTests
+    {
+    }
+#endif
+    #endregion
 }

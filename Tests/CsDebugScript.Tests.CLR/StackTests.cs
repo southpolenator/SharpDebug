@@ -5,10 +5,7 @@ using ClrString = CsDebugScript.CommonUserTypes.CLR.System.String;
 
 namespace CsDebugScript.Tests.CLR
 {
-    [Collection("CLR NestedException")]
-    [Trait("x64", "true")]
-    [Trait("x86", "true")]
-    public class StackTests
+    public abstract class StackTests
     {
         [Fact]
         public void ObjectArgumentAndLocalTest()
@@ -34,4 +31,27 @@ namespace CsDebugScript.Tests.CLR
             Assert.Equal("Foo string", new ClrString(foo.GetField("FooString")).Text);
         }
     }
+
+    #region Test configurations
+    [Collection("CLR NestedException")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class StackTestsWindows : StackTests
+    {
+    }
+
+#if ENABLE_CLR_CORE_TESTS
+    [Collection("CLR NestedException Windows Core")]
+    [Trait("x64", "true")]
+    public class StackTestsWindowsCore : StackTests
+    {
+    }
+
+    [Collection("CLR NestedException Linux Core")]
+    [Trait("x64", "true")]
+    public class StackTestsLinuxCore : StackTests
+    {
+    }
+#endif
+    #endregion
 }

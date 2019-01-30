@@ -5,10 +5,7 @@ using Xunit;
 
 namespace CsDebugScript.Tests.CLR
 {
-    [Collection("CLR NestedException")]
-    [Trait("x64", "true")]
-    [Trait("x86", "true")]
-    public class DataReaderTests
+    public abstract class DataReaderTests
     {
         [Fact]
         public void CodeCoverageTest()
@@ -35,4 +32,27 @@ namespace CsDebugScript.Tests.CLR
             dataReader.Close();
         }
     }
+
+    #region Test configurations
+    [Collection("CLR NestedException")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class DataReaderTestsWindows : DataReaderTests
+    {
+    }
+
+    [Collection("CLR NestedException Windows Core")]
+    [Trait("x64", "true")]
+    public class DataReaderTestsWindowsCore : DataReaderTests
+    {
+    }
+
+#if ENABLE_LINUX_CLR_CORE_TESTS
+    [Collection("CLR NestedException Linux Core")]
+    [Trait("x64", "true")]
+    public class DataReaderTestsLinuxCore : DataReaderTests
+    {
+    }
+#endif
+    #endregion
 }

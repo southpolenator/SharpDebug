@@ -10,153 +10,153 @@ namespace CsDebugScript.Tests.CLR
 {
     public class ClrDumpInitialization : DbgEngDumpInitialization
     {
-        public ClrDumpInitialization(string appName, string customDumpName = null, bool serverGC = false)
-            : base(GetDumpPath(appName, customDumpName, serverGC), appName, GetDumpDirectory())
+        public ClrDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = DefaultDumpPath, bool addSymbolServer = true, bool useDia = true, bool useDwarf = false, bool useILCodeGen = false)
+            : base(dumpPath, defaultModuleName, FixSymbolPath(dumpPath, symbolPath), addSymbolServer, useDia, useDwarf, useILCodeGen)
         {
             Context.ClrProvider = new CsDebugScript.CLR.ClrMdProvider();
         }
 
-        private static string GetDumpPath(string appName, string customDumpName, bool serverGC)
+        private static string FixSymbolPath(string dumpPath, string symbolPath)
         {
-            Environment.SetEnvironmentVariable("COMPlus_BuildFlavor", serverGC ? "svr" : "");
+            if (symbolPath != DefaultDumpPath)
+                return symbolPath;
+            symbolPath = Path.Combine(symbolPath, Path.GetDirectoryName(dumpPath));
+            if (symbolPath.Last() != Path.DirectorySeparatorChar)
+                symbolPath += Path.DirectorySeparatorChar;
+            if (!Path.IsPathRooted(symbolPath))
+                symbolPath = Path.GetFullPath(symbolPath);
+            return symbolPath;
+        }
+    }
 
-            string programName = appName;
+    public class ClrLinuxDumpInitialization : ElfCoreDumpInitialization
+    {
+        public ClrLinuxDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = DefaultDumpPath)
+            : base(dumpPath, defaultModuleName, symbolPath)
+        {
+            Context.ClrProvider = new CsDebugScript.CLR.ClrMdProvider();
+        }
+    }
 
-            if (!string.IsNullOrEmpty(customDumpName))
-            {
-                programName = Path.GetFileNameWithoutExtension(customDumpName);
-            }
+    public class ClrFrameworkDumpInitialization : ClrDumpInitialization
+    {
+        public ClrFrameworkDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = DefaultDumpPath, bool addSymbolServer = true, bool useDia = true, bool useDwarf = false, bool useILCodeGen = false)
+            : base(FixDumpVersion(dumpPath), defaultModuleName, symbolPath, addSymbolServer, useDia, useDwarf, useILCodeGen)
+        {
+        }
 
-            string appPath = CompileApp(programName, appName + ".cs", "SharedLibrary.cs");
-            string appDirectory = Path.GetDirectoryName(appPath);
-            string dumpPath = Path.Combine(appDirectory, Path.GetFileNameWithoutExtension(appName) + ".mdmp");
-
-            if (!string.IsNullOrEmpty(customDumpName))
-            {
-                dumpPath = Path.Combine(appDirectory, customDumpName);
-            }
-
-            if (!File.Exists(dumpPath) || File.GetLastWriteTimeUtc(appPath) > File.GetLastWriteTimeUtc(dumpPath))
-            {
-                ExceptionDumper.Dumper.RunAndDumpOnException(appPath, dumpPath, false);
-            }
+        private static string FixDumpVersion(string dumpPath)
+        {
+            if (IntPtr.Size == 4)
+                return dumpPath.Replace(".x64", ".x86");
             return dumpPath;
-        }
-
-        private static string GetDumpDirectory()
-        {
-            return TestBase.GetAbsoluteBinPath(IntPtr.Size.ToString());
-        }
-
-        private static string CompileApp(string appName, params string[] files)
-        {
-            string directory = TestBase.GetBinFolder();
-            string destinationDirectory = GetDumpDirectory();
-            string destination = Path.Combine(destinationDirectory, appName + ".exe");
-            string pdbPath = Path.Combine(destinationDirectory, appName + ".pdb");
-            string[] fullPathFiles = files.Select(f => Path.Combine(directory, "Apps", f)).ToArray();
-
-            Directory.CreateDirectory(destinationDirectory);
-
-            // Check if we need to compile at all
-            if (File.Exists(destination) && File.Exists(pdbPath))
-            {
-                bool upToDate = true;
-
-                foreach (var file in fullPathFiles)
-                {
-                    if (File.GetLastWriteTimeUtc(file) > File.GetLastWriteTimeUtc(destination))
-                    {
-                        upToDate = false;
-                        break;
-                    }
-                }
-
-                if (upToDate)
-                {
-                    return destination;
-                }
-            }
-
-            CSharpCodeProvider provider = new CSharpCodeProvider();
-            CompilerParameters cp = new CompilerParameters();
-
-            cp.ReferencedAssemblies.Add("system.dll");
-            cp.GenerateInMemory = false;
-            cp.GenerateExecutable = true;
-            cp.CompilerOptions = IntPtr.Size == 4 ? "/platform:x86" : "/platform:x64";
-            cp.IncludeDebugInformation = true;
-            cp.OutputAssembly = destination;
-            CompilerResults cr = provider.CompileAssemblyFromFile(cp, fullPathFiles);
-
-            if (cr.Errors.Count > 0 && System.Diagnostics.Debugger.IsAttached)
-            {
-                System.Diagnostics.Debugger.Break();
-            }
-
-            Assert.Empty(cr.Errors);
-
-            return cr.PathToAssembly;
         }
     }
 
     [CollectionDefinition("CLR AppDomains")]
-    public class ClrAppDomainsInitialization : ClrDumpInitialization, ICollectionFixture<ClrAppDomainsInitialization>
+    public class ClrAppDomainsInitialization : ClrFrameworkDumpInitialization, ICollectionFixture<ClrAppDomainsInitialization>
     {
         public ClrAppDomainsInitialization()
-            : base(GetAppName())
+            : base(Path.Combine("Clr.Windows.x64", "AppDomains.x64.mdmp"), "AppDomains")
         {
-        }
-
-        private static string GetAppName()
-        {
-            ClrNestedExceptionInitialization initialization = new ClrNestedExceptionInitialization();
-
-            return "AppDomains";
         }
     }
 
     [CollectionDefinition("CLR LocalVariables")]
-    public class ClrLocalVariablesInitialization : ClrDumpInitialization, ICollectionFixture<ClrLocalVariablesInitialization>
+    public class ClrLocalVariablesInitialization : ClrFrameworkDumpInitialization, ICollectionFixture<ClrLocalVariablesInitialization>
     {
         public ClrLocalVariablesInitialization()
-            : base("LocalVariables")
+            : base(Path.Combine("Clr.Windows.x64", "LocalVariables.x64.mdmp"), "LocalVariables")
+        {
+        }
+    }
+
+    [CollectionDefinition("CLR LocalVariables Windows Core")]
+    public class ClrLocalVariablesWindowsCoreInitialization : ClrDumpInitialization, ICollectionFixture<ClrLocalVariablesWindowsCoreInitialization>
+    {
+        public ClrLocalVariablesWindowsCoreInitialization()
+            : base(Path.Combine("Clr.Windows.Core", "LocalVariables.Core.mdmp"), "LocalVariables")
+        {
+        }
+    }
+
+    [CollectionDefinition("CLR LocalVariables Linux Core")]
+    public class ClrLocalVariablesLinuxCoreInitialization : ClrLinuxDumpInitialization, ICollectionFixture<ClrLocalVariablesLinuxCoreInitialization>
+    {
+        public ClrLocalVariablesLinuxCoreInitialization()
+            : base(Path.Combine("Clr.linux", "LocalVariables.linux.coredump"), "LocalVariables")
         {
         }
     }
 
     [CollectionDefinition("CLR NestedException")]
-    public class ClrNestedExceptionInitialization : ClrDumpInitialization, ICollectionFixture<ClrNestedExceptionInitialization>
+    public class ClrNestedExceptionInitialization : ClrFrameworkDumpInitialization, ICollectionFixture<ClrNestedExceptionInitialization>
     {
         public ClrNestedExceptionInitialization()
-            : base("NestedException")
+            : base(Path.Combine("Clr.Windows.x64", "NestedException.x64.mdmp"), "NestedException")
+        {
+        }
+    }
+
+    [CollectionDefinition("CLR NestedException Windows Core")]
+    public class ClrNestedExceptionWindowsCoreInitialization : ClrDumpInitialization, ICollectionFixture<ClrNestedExceptionWindowsCoreInitialization>
+    {
+        public ClrNestedExceptionWindowsCoreInitialization()
+            : base(Path.Combine("Clr.Windows.Core", "NestedException.Core.mdmp"), "NestedException")
+        {
+        }
+    }
+
+    [CollectionDefinition("CLR NestedException Linux Core")]
+    public class ClrNestedExceptionLinuxCoreInitialization : ClrLinuxDumpInitialization, ICollectionFixture<ClrNestedExceptionLinuxCoreInitialization>
+    {
+        public ClrNestedExceptionLinuxCoreInitialization()
+            : base(Path.Combine("Clr.linux", "NestedException.linux.coredump"), "NestedException")
         {
         }
     }
 
     [CollectionDefinition("CLR Types")]
-    public class ClrTypesInitialization : ClrDumpInitialization, ICollectionFixture<ClrTypesInitialization>
+    public class ClrTypesInitialization : ClrFrameworkDumpInitialization, ICollectionFixture<ClrTypesInitialization>
     {
         public ClrTypesInitialization()
-            : base("Types")
+            : base(Path.Combine("Clr.Windows.x64", "Types.x64.mdmp"), "Types")
+        {
+        }
+    }
+
+    [CollectionDefinition("CLR Types Windows Core")]
+    public class ClrTypesWindowsCoreInitialization : ClrDumpInitialization, ICollectionFixture<ClrTypesWindowsCoreInitialization>
+    {
+        public ClrTypesWindowsCoreInitialization()
+            : base(Path.Combine("Clr.Windows.Core", "Types.Core.mdmp"), "Types")
+        {
+        }
+    }
+
+    [CollectionDefinition("CLR Types Linux Core")]
+    public class ClrTypesLinuxCoreInitialization : ClrLinuxDumpInitialization, ICollectionFixture<ClrTypesLinuxCoreInitialization>
+    {
+        public ClrTypesLinuxCoreInitialization()
+            : base(Path.Combine("Clr.linux", "Types.linux.coredump"), "Types")
         {
         }
     }
 
     [CollectionDefinition("CLR Types Server")]
-    public class ClrTypesServerInitialization : ClrDumpInitialization, ICollectionFixture<ClrTypesServerInitialization>
+    public class ClrTypesServerInitialization : ClrFrameworkDumpInitialization, ICollectionFixture<ClrTypesServerInitialization>
     {
         public ClrTypesServerInitialization()
-            : base("Types", "TypesServerGC.mdmp", serverGC: true)
+            : base(Path.Combine("Clr.Windows.x64", "Types.x64.ServerGC.mdmp"), "Types")
         {
         }
     }
 
     [CollectionDefinition("CLR Types Workstation")]
-    public class ClrTypesWorkstationInitialization : ClrDumpInitialization, ICollectionFixture<ClrTypesWorkstationInitialization>
+    public class ClrTypesWorkstationInitialization : ClrFrameworkDumpInitialization, ICollectionFixture<ClrTypesWorkstationInitialization>
     {
         public ClrTypesWorkstationInitialization()
-            : base("Types", "TypesWorkstation.mdmp")
+            : base(Path.Combine("Clr.Windows.x64", "Types.x64.mdmp"), "Types")
         {
         }
     }

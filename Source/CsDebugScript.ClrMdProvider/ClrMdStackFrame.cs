@@ -189,8 +189,9 @@ namespace CsDebugScript.ClrMdProvider
                 var function = pdb.GetFunctionFromToken(ClrStackFrame.Method.MetadataToken);
                 uint ilOffset = FindIlOffset(ClrStackFrame);
                 var scope = function.FindScopeByILOffset(ilOffset);
+                int dummyCounter = 0;
 
-                return GetRecursiveSlots(scope).Select(s => s.Name).ToArray();
+                return GetRecursiveSlots(scope).Select(s => s?.Name ?? $"local_dummy_{dummyCounter++}").ToArray();
             }
         }
 

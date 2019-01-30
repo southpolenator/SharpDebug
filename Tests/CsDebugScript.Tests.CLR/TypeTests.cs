@@ -5,10 +5,7 @@ using ClrString = CsDebugScript.CommonUserTypes.CLR.System.String;
 
 namespace CsDebugScript.Tests.CLR
 {
-    [Collection("CLR Types")]
-    [Trait("x64", "true")]
-    [Trait("x86", "true")]
-    public class TypeTests
+    public abstract class TypeTests
     {
         [Fact]
         public void IntegerObjectClrType()
@@ -25,8 +22,9 @@ namespace CsDebugScript.Tests.CLR
         public void FieldNameAndValueTests()
         {
             IClrHeap heap = Process.Current.ClrRuntimes.Single().Heap;
+            Module sharedLibraryModule = Module.All.Single(m => m.Name == "SharedLibrary");
             Module typesModule = Module.All.Single(m => m.Name == "Types");
-            CodeType fooType = CodeType.Create("Foo", typesModule);
+            CodeType fooType = CodeType.Create("Foo", sharedLibraryModule);
             Variable s_foo = typesModule.GetVariable("Types.s_foo");
 
             Assert.Equal(fooType, s_foo.GetCodeType());
@@ -58,4 +56,27 @@ namespace CsDebugScript.Tests.CLR
             }
         }
     }
+
+    #region Test configurations
+    [Collection("CLR Types")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class TypeTestsWindows : TypeTests
+    {
+    }
+
+#if ENABLE_CLR_CORE_TESTS
+    [Collection("CLR Types Windows Core")]
+    [Trait("x64", "true")]
+    public class TypeTestsWindowsCore : TypeTests
+    {
+    }
+
+    [Collection("CLR Types Linux Core")]
+    [Trait("x64", "true")]
+    public class TypeTestsLinuxCore : TypeTests
+    {
+    }
+#endif
+    #endregion
 }

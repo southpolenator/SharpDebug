@@ -7,10 +7,7 @@ using Xunit;
 
 namespace CsDebugScript.Tests.CLR
 {
-    [Collection("CLR NestedException")]
-    [Trait("x64", "true")]
-    [Trait("x86", "true")]
-    public class ExceptionTests
+    public abstract class ExceptionTests
     {
         [Fact]
         public void ExceptionPropertyTest()
@@ -53,4 +50,27 @@ namespace CsDebugScript.Tests.CLR
             }
         }
     }
+
+    #region Test configurations
+    [Collection("CLR NestedException")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class ExceptionTestsWindows : ExceptionTests
+    {
+    }
+
+    [Collection("CLR NestedException Windows Core")]
+    [Trait("x64", "true")]
+    public class ExceptionTestsWindowsCore : ExceptionTests
+    {
+    }
+
+#if ENABLE_LINUX_CLR_CORE_TESTS
+    [Collection("CLR NestedException Linux Core")]
+    [Trait("x64", "true")]
+    public class ExceptionTestsLinuxCore : ExceptionTests
+    {
+    }
+#endif
+    #endregion
 }

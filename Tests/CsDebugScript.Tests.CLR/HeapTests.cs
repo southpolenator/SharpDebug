@@ -4,10 +4,7 @@ using Xunit;
 
 namespace CsDebugScript.Tests.CLR
 {
-    [Collection("CLR Types")]
-    [Trait("x64", "true")]
-    [Trait("x86", "true")]
-    public class HeapTests
+    public abstract class HeapTests
     {
         [Fact]
         public void HeapSize()
@@ -49,6 +46,29 @@ namespace CsDebugScript.Tests.CLR
             Assert.True(count > 0);
         }
     }
+
+    #region Test configurations
+    [Collection("CLR Types")]
+    [Trait("x64", "true")]
+    [Trait("x86", "true")]
+    public class HeapTestsWindows : HeapTests
+    {
+    }
+
+    [Collection("CLR Types Windows Core")]
+    [Trait("x64", "true")]
+    public class HeapTestsWindowsCore : HeapTests
+    {
+    }
+
+#if ENABLE_LINUX_CLR_CORE_TESTS
+    [Collection("CLR Types Linux Core")]
+    [Trait("x64", "true")]
+    public class HeapTestsLinuxCore : HeapTests
+    {
+    }
+#endif
+    #endregion
 
     [Collection("CLR Types Server")]
     [Trait("x64", "true")]
