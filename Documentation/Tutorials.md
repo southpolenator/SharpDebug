@@ -107,6 +107,8 @@ Most of the things will work automatically the same way as for native applicatio
 When debugger (for example DbgEng.dll) doesn't know how to get CLR stack trace correctly, you can find ClrThread and get ClrStackTrace.
 There are also CLR specific classes that help with debugging CLR applications. Debugging CLR applications is done using [ClrMD](https://github.com/Microsoft/clrmd).
 
+**Note:** _ClrMD at this moment supports Windows PDBs only. If you want to debug CLR application that has Portable PDBs, you can use [Pdb2Pdb](https://github.com/dotnet/symreader-converter) tool to convert from Portable to Windows PDBs. Another option is to add `<DebugType>Full</DebugType>` to your CLR project file._
+
 ### Enumerating CLR runtimes in the process
 ```cs
 foreach (Runtime runtime in Process.Current.ClrRuntimes)
