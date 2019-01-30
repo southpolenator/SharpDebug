@@ -2,7 +2,7 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetFramework);$(DefaultNetStandard)</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
     <Description>Collection of useful UserTypes that helps user write scripts easier. Examples user types: std::vector&lt;T&gt;, System.Exception, NativeTypes.Windows.ProcessEnvironmentBlock...</Description>
   </PropertyGroup>
 

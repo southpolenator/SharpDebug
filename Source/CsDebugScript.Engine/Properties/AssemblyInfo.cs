@@ -10,4 +10,6 @@
 [assembly: InternalsVisibleTo("CsDebugScript.Scripting")]
 [assembly: InternalsVisibleTo("CsDebugScript.UI")]
 [assembly: InternalsVisibleTo("CsDebugScript.VS")]
-[assembly: InternalsVisibleTo("CsDebugScript.Tests")]
+[assembly: InternalsVisibleTo("CsDebugScript.Tests.Common")]
+[assembly: InternalsVisibleTo("CsDebugScript.Tests.CLR")]
+[assembly: InternalsVisibleTo("CsDebugScript.Tests.Native")]

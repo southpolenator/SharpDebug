@@ -18,6 +18,7 @@ namespace CsDebugScript.VS
         /// </summary>
         public void EvaluateVisualizedExpression(DkmVisualizedExpression visualizedExpression, out DkmEvaluationResult resultObject)
         {
+            VSContext.InitializeInteractiveExecution();
             VSCustomVisualizerEvaluator evaluator = new VSCustomVisualizerEvaluator(visualizedExpression);
 
             resultObject = evaluator.EvaluationResult;

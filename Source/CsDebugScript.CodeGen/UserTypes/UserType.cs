@@ -158,7 +158,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         public int BaseClassOffset => baseClassCache.Value.Item2;
 
         /// <summary>
-        /// Gets the memory buffer offset done by base classes. Every base class that offsets <see cref="CSharpCodeNaming.MemoryBufferOffsetFieldName"/> makes
+        /// Gets the memory buffer offset done by base classes. Every base class that offsets <see cref="DotNetCodeWriter.MemoryBufferOffsetFieldName"/> makes
         /// dealing with field offsets harder, so we need to know how much wee need to return back to get this class offset.
         /// </summary>
         public int MemoryBufferOffset => memoryBufferOffsetCache.Value;

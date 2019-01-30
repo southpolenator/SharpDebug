@@ -23,7 +23,7 @@ namespace CsDebugScript.Engine.Native
                 uint outSize;
 
                 requestNative.Structure = request;
-                client.Request((uint)requestType, requestNative.Pointer, requestNative.USize, requestNative.Pointer, requestNative.USize, out outSize);
+                client.Request(requestType, requestNative.Pointer, requestNative.USize, requestNative.Pointer, requestNative.USize, out outSize);
                 return requestNative.Structure;
             }
         }
@@ -43,7 +43,7 @@ namespace CsDebugScript.Engine.Native
 
                 requestNative.Extended = extended;
                 requestNative.Structure = request;
-                client.Request((uint)requestType, requestNative.Pointer, requestNative.USize, requestNative.Pointer, requestNative.USize, out outSize);
+                client.Request(requestType, requestNative.Pointer, requestNative.USize, requestNative.Pointer, requestNative.USize, out outSize);
                 return requestNative.Structure;
             }
         }

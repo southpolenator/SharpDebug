@@ -3,4 +3,4 @@
 // Allow internals visibility to other projects
 [assembly: InternalsVisibleTo("CsDebugScript.DbgEng")]
 [assembly: InternalsVisibleTo("CsDebugScript.VS")]
-[assembly: InternalsVisibleTo("CsDebugScript.Tests")]
+[assembly: InternalsVisibleTo("CsDebugScript.Tests.Native")]

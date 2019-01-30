@@ -62,14 +62,6 @@ namespace CsDebugScript.CodeGen
         public string GeneratedAssemblyName { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether generated assembly should be compiled with Roslyn.
-        /// </summary>
-        /// <value>
-        /// <c>true</c> if generated assembly should be compiled with Roslyn; otherwise, <c>false</c>.
-        /// </value>
-        public bool GenerateAssemblyWithRoslyn { get; set; } = true;
-
-        /// <summary>
         /// Gets or sets a value indicating whether generated assembly should be compiled by emitting IL.
         /// </summary>
         /// <value>
@@ -313,7 +305,7 @@ namespace CsDebugScript.CodeGen
             {
                 generationFlags |= UserTypeGenerationFlags.GenerateNamespaceAsStaticClass;
             }
-            if (DontSaveGeneratedCodeFiles && GenerateAssemblyWithRoslyn)
+            if (DontSaveGeneratedCodeFiles)
             {
                 generationFlags |= UserTypeGenerationFlags.DontSaveGeneratedCodeFiles;
             }
@@ -345,10 +337,10 @@ namespace CsDebugScript.CodeGen
         public string Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the path to PDB file.
+        /// Gets or sets the path to symbols file.
         /// </summary>
         [XmlAttribute]
-        public string PdbPath { get; set; }
+        public string SymbolsPath { get; set; }
 
         /// <summary>
         /// Gets or sets the namespace where all exported user types should be placed.
@@ -478,7 +470,7 @@ namespace CsDebugScript.CodeGen
         /// Gets or sets the transformation for generating constructor.
         /// </summary>
         [XmlAttribute]
-        public string Constructor { get; set; }
+        public string Constructor { get; set; } = "${new}";
 
         /// <summary>
         /// Gets or sets the transformation for matching original type.
@@ -493,7 +485,7 @@ namespace CsDebugScript.CodeGen
         /// <c>true</c> if transformed type has physical constructor; otherwise, <c>false</c>.
         /// </value>
         [XmlAttribute]
-        public bool HasPhysicalConstructor { get; set; }
+        public bool HasPhysicalConstructor { get; set; } = false;
 
         /// <summary>
         /// Checks whether this transformation matches the specified input type.

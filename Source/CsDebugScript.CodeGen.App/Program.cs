@@ -8,8 +8,8 @@ namespace CsDebugScript.CodeGen.App
 {
     class Options
     {
-        [Option('p', "pdb", Required = false, HelpText = "Path to PDB which will be used to generate the code", SetName = "cmdSettings")]
-        public string PdbPath { get; set; }
+        [Option('s', "symbols", Required = false, HelpText = "Path to symbols file which will be used to generate the code", SetName = "cmdSettings")]
+        public string SymbolsPath { get; set; }
 
         [Option('t', "types", Separator = ',', Required = false, HelpText = "List of types to be exported", SetName = "cmdSettings")]
         public IList<string> Types { get; set; }
@@ -95,9 +95,9 @@ namespace CsDebugScript.CodeGen.App
                     {
                         new XmlModule
                         {
-                            PdbPath = options.PdbPath,
-                            Name = Path.GetFileNameWithoutExtension(options.PdbPath),
-                            Namespace = Path.GetFileNameWithoutExtension(options.PdbPath),
+                            SymbolsPath = options.SymbolsPath,
+                            Name = Path.GetFileNameWithoutExtension(options.SymbolsPath),
+                            Namespace = Path.GetFileNameWithoutExtension(options.SymbolsPath),
                         }
                     },
                 };

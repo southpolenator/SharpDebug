@@ -323,6 +323,11 @@ namespace CreateDbgEngIdl
                                             int outParameters = 0;
                                             bool forbidOptional = false;
 
+                                            if (methodName == "Breakpoint" && (interfaceName == "IDebugEventCallbacks" || interfaceName == "IDebugEventCallbacksWide"))
+                                            {
+                                                returnValue = "int";
+                                            }
+
                                             if (parametersString.Contains("..."))
                                             {
                                                 returnValue = "[vararg] " + returnValue;

@@ -1,10 +1,6 @@
 ﻿using CsDebugScript.CLR;
 using CsDebugScript.Drawing.Interfaces;
 using CsDebugScript.Engine.Utility;
-using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Reflection;
 
 namespace CsDebugScript.Engine
 {
@@ -27,11 +23,6 @@ namespace CsDebugScript.Engine
         /// The CLR provider interface
         /// </summary>
         public static IClrProvider ClrProvider;
-
-        /// <summary>
-        /// The user type metadata (used for casting to user types)
-        /// </summary>
-        internal static UserTypeMetadata[] UserTypeMetadata;
 
         /// <summary>
         /// Gets or sets a value indicating whether variable caching is enabled.
@@ -68,21 +59,28 @@ namespace CsDebugScript.Engine
         /// <value>
         /// <c>true</c> if debugger is currently in live debugging; otherwise, <c>false</c>.
         /// </value>
-        public static bool IsLiveDebugging
-        {
-            get
-            {
-                return Debugger.IsLiveDebugging;
-            }
-        }
+        public static bool IsLiveDebugging => Debugger.IsLiveDebugging;
+
+        /// <summary>
+        /// The user type metadata (used for casting to user types)
+        /// </summary>
+        internal static UserTypeMetadata[] UserTypeMetadata { get; private set; }
+
+        /// <summary>
+        /// The user type metadata caches (references of caches that can be cleared when <see cref="UserTypeMetadata"/> can be changed).
+        /// </summary>
+        internal static CacheInvalidator UserTypeMetadataCaches { get; private set; } = new CacheInvalidator();
 
         /// <summary>
         /// Initializes the Context with the specified debugger engine interface.
+        /// It will also <see cref="IDebuggerEngine.EndSession"/> for previous debugger engine.
         /// </summary>
         /// <param name="debuggerEngine">The debugger engine interface.</param>
         /// <param name="symbolProvider">The symbol provider interface.</param>
         public static void InitializeDebugger(IDebuggerEngine debuggerEngine, ISymbolProvider symbolProvider)
         {
+            if (Debugger != debuggerEngine)
+                Debugger?.EndSession();
             ClearCache();
             Debugger = debuggerEngine;
             SymbolProvider = symbolProvider;
@@ -103,29 +101,19 @@ namespace CsDebugScript.Engine
         public static void ClearCache()
         {
             CacheInvalidator.InvalidateCaches(ClrProvider);
+            UserTypeMetadataCaches.InvalidateCache();
             GlobalCache.Processes.Clear();
-            var caches = GlobalCache.Caches;
-            GlobalCache.Caches = new ConcurrentBag<ICache>();
-            foreach (ICache cache in caches)
-                cache.InvalidateCache();
+            GlobalCache.Caches.InvalidateCache();
         }
 
         /// <summary>
-        /// Gets the assembly directory.
+        /// Updates <see cref="UserTypeMetadata"/> with the new user type metadata collection.
         /// </summary>
-        internal static string GetAssemblyDirectory()
+        /// <param name="userTypeMetadata">New user type metadata collection.</param>
+        internal static void SetUserTypeMetadata(UserTypeMetadata[] userTypeMetadata)
         {
-            string codeBase = Assembly.GetExecutingAssembly().CodeBase;
-            UriBuilder uri = new UriBuilder(codeBase);
-            string path = Uri.UnescapeDataString(uri.Path);
-
-            path = Path.GetDirectoryName(path);
-            if (!path.EndsWith("\\"))
-            {
-                path += "\\";
-            }
-
-            return path;
+            UserTypeMetadataCaches.InvalidateCache();
+            UserTypeMetadata = userTypeMetadata;
         }
     }
 }

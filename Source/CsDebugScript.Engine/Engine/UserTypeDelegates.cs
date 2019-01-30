@@ -238,6 +238,14 @@ namespace CsDebugScript.Engine
         /// <param name="userType">The user type.</param>
         private static IUserTypeDelegates Get(Type userType)
         {
+            if (userType.ContainsGenericParameters)
+            {
+                Type[] variableTypes = new Type[userType.GetGenericArguments().Length];
+                for (int i = 0; i < variableTypes.Length; i++)
+                    variableTypes[i] = typeof(Variable);
+                userType = userType.MakeGenericType(variableTypes);
+            }
+
             Type userTypeDelegatesType = typeof(UserTypeDelegates<>);
             userTypeDelegatesType = userTypeDelegatesType.MakeGenericType(new Type[] { userType });
             FieldInfo singletonField = userTypeDelegatesType.GetField(nameof(UserTypeDelegates<Variable>.Instance));

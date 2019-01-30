@@ -43,7 +43,7 @@ namespace CsDebugScript.UI
 
         private delegate void BackgroundExecuteDelegate(string documentText, out string textOutput, out string errorOutput, out IEnumerable<object> result);
 
-        private Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
+        private Dictionary<string, IUnresolvedAssembly> loadedAssemblies = new Dictionary<string, IUnresolvedAssembly>();
         private List<object> results = new List<object>();
         private System.Threading.ManualResetEvent initializedEvent = new System.Threading.ManualResetEvent(false);
 
@@ -56,26 +56,27 @@ namespace CsDebugScript.UI
         /// Initializes a new instance of the <see cref="InteractiveCodeEditor" /> class.
         /// </summary>
         /// <param name="objectWriter">Interactive result visualizer object writer.</param>
+        /// <param name="interactiveExecution">Interactive execution with delayed evaluation.</param>
         /// <param name="fontFamily">The font family.</param>
         /// <param name="fontSize">Size of the font.</param>
         /// <param name="indentationSize">Size of the indentation.</param>
         /// <param name="highlightingColors">The highlighting colors.</param>
-        public InteractiveCodeEditor(InteractiveResultVisualizer objectWriter, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
+        public InteractiveCodeEditor(InteractiveResultVisualizer objectWriter, SimpleCache<InteractiveExecution> interactiveExecution, string fontFamily, double fontSize, int indentationSize, params ICSharpCode.AvalonEdit.Highlighting.HighlightingColor[] highlightingColors)
             : base(fontFamily, fontSize, indentationSize, highlightingColors)
         {
-            InteractiveExecution = new InteractiveExecution();
-            InteractiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
-            {
-                InteractiveCodeEditor = this,
-            };
-            InteractiveExecution.scriptBase.ObjectWriter = objectWriter;
-
             // Run initialization of the window in background STA thread
             IsEnabled = false;
+            InteractiveExecutionCache = interactiveExecution;
             System.Threading.Thread thread = new System.Threading.Thread(() =>
             {
                 try
                 {
+                    InteractiveExecution.scriptBase._InternalObjectWriter_ = new ObjectWriter()
+                    {
+                        InteractiveCodeEditor = this,
+                    };
+                    InteractiveExecution.scriptBase.ObjectWriter = objectWriter;
+
                     Dispatcher.InvokeAsync(() =>
                     {
                         IsEnabled = true;
@@ -113,7 +114,9 @@ namespace CsDebugScript.UI
 
         public event Action CloseRequested;
 
-        internal InteractiveExecution InteractiveExecution { get; private set; }
+        internal SimpleCache<InteractiveExecution> InteractiveExecutionCache { get; private set; }
+
+        internal InteractiveExecution InteractiveExecution => InteractiveExecutionCache.Value;
 
         protected new void Initialize()
         {
@@ -121,6 +124,11 @@ namespace CsDebugScript.UI
             base.Initialize();
             InteractiveExecution.UnsafeInterpret("null");
             initializedEvent.Set();
+        }
+
+        public void ExecuteCSharpScript()
+        {
+            OnExecuteCSharpScript();
         }
 
         protected override void OnExecuteCSharpScript()
@@ -321,25 +329,25 @@ namespace CsDebugScript.UI
 
             if (loadedReferences.Length != loadedAssemblies.Count)
             {
-                var newAssemblies = new List<IUnresolvedAssembly>();
+                var newAssemblies = new Dictionary<string, IUnresolvedAssembly>();
 
                 foreach (var assemblyPath in loadedReferences)
                     if (!loadedAssemblies.ContainsKey(assemblyPath))
-                    {
                         try
                         {
                             var loader = new CecilLoader();
                             loader.DocumentationProvider = GetXmlDocumentation(assemblyPath);
-                            newAssemblies.Add(loader.LoadAssemblyFile(assemblyPath));
+                            newAssemblies.Add(assemblyPath, loader.LoadAssemblyFile(assemblyPath));
                         }
                         catch (Exception)
                         {
+                            newAssemblies.Add(assemblyPath, null);
                         }
-                    }
-
                 if (newAssemblies.Count > 0)
                 {
-                    projectContent = projectContent.AddAssemblyReferences(newAssemblies);
+                    projectContent = projectContent.AddAssemblyReferences(newAssemblies.Values.Where(a => a != null));
+                    foreach (var kvp in newAssemblies)
+                        loadedAssemblies.Add(kvp.Key, kvp.Value);
                 }
             }
 
@@ -367,6 +375,8 @@ namespace CsDebugScript.UI
                     };
                 string[] versions = new string[]
                     {
+                        @"v4.7.2",
+                        @"v4.7.1",
                         @"v4.7",
                         @"v4.6.2",
                         @"v4.6.1",

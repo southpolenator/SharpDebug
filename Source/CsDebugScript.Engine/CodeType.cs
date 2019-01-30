@@ -109,7 +109,7 @@ namespace CsDebugScript
             baseClassesAndOffsets = new DictionaryCache<string, Tuple<CodeType, int>>(GetBaseClassAndOffset);
             templateArgumentsStrings = SimpleCache.Create(GetTemplateArgumentsStrings);
             templateArguments = SimpleCache.Create(GetTemplateArguments);
-            userTypes = SimpleCache.Create(GetUserTypes);
+            userTypes = Context.UserTypeMetadataCaches.CreateSimpleCache(GetUserTypes);
         }
 
         /// <summary>
@@ -402,6 +402,15 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Removes pointer from the code type.
+        /// </summary>
+        /// <returns>Element type of if this code type is a pointer or self if it isn't a pointer.</returns>
+        public virtual CodeType RemovePointer()
+        {
+            return IsPointer ? ElementType : this;
+        }
+
+        /// <summary>
         /// Gets the type of the class field.
         /// </summary>
         /// <param name="classFieldName">Name of the class field.</param>
@@ -631,20 +640,12 @@ namespace CsDebugScript
             {
                 // Check types associated with this code type and all of its inherited code types.
                 if (InheritsPrivate(type))
-                {
                     return true;
-                }
 
                 // Check metadata that wasn't extracted from the debugger context.
-                UserTypeMetadata[] metadatas = UserTypeMetadata.ReadFromType(type);
-
-                foreach (var metadata in metadatas)
-                {
+                foreach (var metadata in UserTypeMetadata.ReadFromType(type))
                     if (Inherits(metadata.TypeName))
-                    {
                         return true;
-                    }
-                }
             }
 
             return false;
@@ -688,16 +689,9 @@ namespace CsDebugScript
             if (type.IsSubclassOf(typeof(Variable)))
             {
                 foreach (Type ut in UserTypes)
-                {
                     if (ut == type)
-                    {
                         return true;
-                    }
-                }
-
-                UserTypeMetadata[] metadatas = UserTypeMetadata.ReadFromType(type);
-
-                foreach (var metadata in metadatas)
+                foreach (var metadata in UserTypeMetadata.ReadFromType(type))
                     if (TypeNameMatches(Name, metadata.TypeName))
                         return true;
             }
@@ -846,6 +840,10 @@ namespace CsDebugScript
             // Check if it pointer, but element is not pointer
             if (IsPointer && !ElementType.IsPointer)
                 return ElementType.UserTypes;
+
+            // If we didn't set user type metadata, then we don't know about any user type, so return empty array.
+            if (Context.UserTypeMetadata == null)
+                return Array.Empty<Type>();
 
             // Search Context.UserTypeMetadata for this CodeType
             // TODO: Speed this up with search caches
@@ -1128,8 +1126,10 @@ namespace CsDebugScript
             {
                 try
                 {
-                    uint elementTypeId = Context.SymbolProvider.GetTypePointerToTypeId(Module, TypeId);
-                    return Module.TypesById[elementTypeId];
+                    uint pointerTypeId = Context.SymbolProvider.GetTypePointerToTypeId(Module, TypeId);
+
+                    if (pointerTypeId != int.MaxValue)
+                        return Module.TypesById[pointerTypeId];
                 }
                 catch
                 {
@@ -1243,6 +1243,9 @@ namespace CsDebugScript
         /// </summary>
         protected override object[] GetTemplateArguments()
         {
+            if (IsPointer)
+                return ElementType.TemplateArguments;
+
             object[] result = Context.SymbolProvider.GetTemplateArguments(Module, TypeId);
 
             if (result != null)
@@ -1279,6 +1282,8 @@ namespace CsDebugScript
         /// </summary>
         protected override string[] GetTemplateArgumentsStrings()
         {
+            if (IsPointer)
+                return ElementType.TemplateArgumentsStrings;
             return GetTemplateArgumentsStrings(Name);
         }
 

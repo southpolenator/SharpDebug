@@ -76,6 +76,22 @@ namespace CsDebugScript.DwarfSymbolProvider
         }
 
         /// <summary>
+        /// Ends current debugging session and disposes used memory.
+        /// This method is being called when new debugger engine is loaded with <see cref="Context.InitializeDebugger(IDebuggerEngine, ISymbolProvider)"/>.
+        /// </summary>
+        public void EndSession()
+        {
+            lock (openedDumps)
+            {
+                foreach (var kvp in openedDumps)
+                {
+                    kvp.Value.Dispose();
+                }
+                openedDumps.Clear();
+            }
+        }
+
+        /// <summary>
         /// Gets the ELF core dump associated with the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
@@ -615,6 +631,29 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Adds new breakpoint to the given process.
+        /// </summary>
+        /// <param name="process">Process.</param>
+        /// <param name="address">Expression to be evaluated into breakpoint.</param>
+        /// <returns>New breakpoint.</returns>
+        public IBreakpoint AddBreakpointCode(Process process, ulong address)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Adds new breakpoint with assosiated action.
+        /// </summary>
+        /// <param name="process">Process.</param>
+        /// <param name="breakpointSpec">Description of this breakpoint.</param>
+        /// <returns>New breakpoint.</returns>
+        public IBreakpoint AddBreakpoint(Process process, BreakpointSpec breakpointSpec)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
     }
 }

@@ -1,4 +1,4 @@
-$dumps_version = "dumps_1";
+$dumps_version = "dumps_3";
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $webClient = New-Object System.Net.WebClient
 $webClient.Credentials = new-object System.Net.NetworkCredential("cidownload", "AP6JaG9ToerxBc7gWP5LcU1CNpb");
@@ -15,6 +15,12 @@ foreach ($child in $json.children)
     $filename = "$PSScriptRoot\$file";
     Write-Host "$url  =>  $filename"
     $webClient.DownloadFile($url, $filename);
-    Expand-Archive -Path $filename -DestinationPath $PSScriptRoot -Force
+    $extractPath = $PSScriptRoot;
+    if ($file -like "clr*")
+    {
+        $subfolder = [System.IO.Path]::GetFileNameWithoutExtension($file);
+        $extractPath = "$extractPath\$subfolder"
+    }
+    Expand-Archive -Path $filename -DestinationPath $extractPath -Force
     Remove-Item $filename
 }

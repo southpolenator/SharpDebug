@@ -2,4 +2,4 @@
 
 // Allow internals visibility to other projects
 [assembly: InternalsVisibleTo("CsDebugScript.VS")]
-[assembly: InternalsVisibleTo("CsDebugScript.UITests")]
+[assembly: InternalsVisibleTo("CsDebugScript.Tests.UI")]

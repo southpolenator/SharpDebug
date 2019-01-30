@@ -10,6 +10,20 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
+namespace CsDebugScript
+{
+    /// <summary>
+    /// Interface that annotates that <see cref="UserType"/> can nicely print itself to the console.
+    /// </summary>
+    public interface IConsoleVisualizer
+    {
+        /// <summary>
+        /// Nicely print itself on the console.
+        /// </summary>
+        void PrintOnConsole();
+    }
+}
+
 namespace CsDebugScript.UI
 {
     /// <summary>
@@ -62,27 +76,21 @@ namespace CsDebugScript.UI
         {
             // We don't visualize null
             if (obj == null)
-            {
                 return null;
-            }
 
             // Primitive types and strings are visualized as ToString
             if (obj.GetType().IsPrimitive || obj is string)
-            {
                 return obj.ToString();
-            }
 
             // UI elements should be resurfaced back.
             if (obj is UIElement)
-            {
                 return obj;
-            }
 
             // Drawing objects should be resurfaced back.
-            if (obj is IDrawing)
-            {
-                return ((IDrawing)obj).UIObject;
-            }
+            IDrawing drawing = obj as IDrawing;
+
+            if (drawing != null)
+                return new LazyUIResult(() => new DrawingViewer(drawing));
 
             // All other should be visualized in a table
             IResultVisualizer resultTreeItem = ResultVisualizer.Create(obj, obj.GetType(), "result", CompletionDataType.Unknown, this);
@@ -91,13 +99,12 @@ namespace CsDebugScript.UI
 
             // Check if we can also represent resulting object as a drawing
             IDrawingVisualizerObject drawingVisualizerObject = obj as IDrawingVisualizerObject;
-            UIElement drawing = null;
 
             if (drawingVisualizerObject != null && drawingVisualizerObject.CanVisualize())
             {
                 Graphics graphics = new Graphics(dispatcher);
 
-                drawing = drawingVisualizerObject.CreateDrawing(graphics).UIObject as UIElement;
+                drawing = drawingVisualizerObject.CreateDrawing(graphics);
             }
 
             if (drawing != null)
@@ -109,9 +116,16 @@ namespace CsDebugScript.UI
 
                     panel.Orientation = Orientation.Vertical;
                     panel.Children.Add(Visualize(resultTreeItem));
-                    panel.Children.Add(drawing);
+                    panel.Children.Add(new DrawingViewer(drawing));
                     return panel;
                 });
+            }
+
+            // Check if it is console printer
+            if (obj is IConsoleVisualizer consoleVisualizer)
+            {
+                consoleVisualizer.PrintOnConsole();
+                return null;
             }
 
             return new LazyUIResult(() => Visualize(resultTreeItem));
@@ -513,6 +527,10 @@ namespace CsDebugScript.UI
                                                 customItem.Items.Add(ExpandingItemText);
                                                 customItem.Expanded += TreeViewItem_Expanded;
                                                 item.Items.Add(customItem);
+
+                                                // If we have only one child and if it is [Dynamic] group, let's expand it...
+                                                if (customChildren.Count == 1 && customChild.Item1 == ResultVisualizer.DynamicGroupName)
+                                                    customItem.IsExpanded = true;
                                             }
                                         }
                                     }

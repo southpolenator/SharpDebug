@@ -41,6 +41,14 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         }
 
         /// <summary>
+        /// Gets path to the symbols file or <c>null</c> if we don't have symbols.
+        /// </summary>
+        public string GetSymbolsPath()
+        {
+            return Module.SymbolFileName;
+        }
+
+        /// <summary>
         /// Gets the name of the enumeration value.
         /// </summary>
         /// <param name="enumTypeId">The enumeration type identifier.</param>
@@ -503,6 +511,25 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         }
 
         /// <summary>
+        /// Tries to get the type identifier.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        /// <param name="typeId">The type identifier.</param>
+        public bool TryGetTypeId(string typeName, out uint typeId)
+        {
+            try
+            {
+                typeId = GetTypeId(typeName);
+                return true;
+            }
+            catch
+            {
+                typeId = 0;
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Gets the template arguments. This is optional to be implemented in symbol module provider. If it is not implemented, <see cref="NativeCodeType.GetTemplateArguments"/> will do the job.
         /// <para>For given type: MyType&lt;Arg1, 2, Arg3&lt;5&gt;&gt;</para>
         /// <para>It will return: <code>new object[] { CodeType.Create("Arg1", Module), 2, CodeType.Create("Arg3&lt;5&gt;", Module) }</code></para>
@@ -533,6 +560,7 @@ namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
         /// Gets the type pointer to type of the specified type.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
+        /// <returns>Type id to pointer type, or <c>int.MaxValue</c> if it doesn't exist and fake should be used.</returns>
         public uint GetTypePointerToTypeId(uint typeId)
         {
             using (ProcessSwitcher switcher = new ProcessSwitcher(DbgEngDll.StateCache, Module.Process))

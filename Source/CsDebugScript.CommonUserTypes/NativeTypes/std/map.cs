@@ -646,11 +646,13 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     return null;
 
                 CodeType pairCodeType, treeNodeCodeType;
+                string pairFieldName;
 
                 try
                 {
                     CodeType valueCodeType = (CodeType)__tree_.TemplateArguments[0];
-                    pairCodeType = valueCodeType.GetFieldType("__nc");
+                    pairFieldName = valueCodeType.GetFieldTypes().ContainsKey("__nc") ? "__nc" : "__cc";
+                    pairCodeType = valueCodeType.GetFieldType(pairFieldName);
                     CodeType treeNodeBaseCodeType = __left_.ElementType;
                     const string treeNodeBaseNameStart = "std::__1::__tree_node_base<";
                     const string treeNodeNameStart = "std::__1::__tree_node<";
@@ -674,7 +676,7 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
                     ItemLeftOffset = treeNodeCodeType.GetFieldOffset("__left_"),
                     ItemParentOffset = treeNodeCodeType.GetFieldOffset("__parent_"),
                     ItemRightOffset = treeNodeCodeType.GetFieldOffset("__right_"),
-                    ItemValueOffset = treeNodeCodeType.GetFieldOffset("__value_") + treeNodeCodeType.GetFieldType("__value_").GetFieldOffset("__nc"),
+                    ItemValueOffset = treeNodeCodeType.GetFieldOffset("__value_") + treeNodeCodeType.GetFieldType("__value_").GetFieldOffset(pairFieldName),
                     ItemValueCodeType = pairCodeType,
                     ReadItemIsNil = null,
                     CodeType = codeType,

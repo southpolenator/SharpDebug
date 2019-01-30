@@ -17,6 +17,12 @@ namespace CsDebugScript.Engine
         bool IsLiveDebugging { get; }
 
         /// <summary>
+        /// Ends current debugging session and disposes used memory.
+        /// This method is being called when new debugger engine is loaded with <see cref="Context.InitializeDebugger(IDebuggerEngine, ISymbolProvider)"/>.
+        /// </summary>
+        void EndSession();
+
+        /// <summary>
         /// Gets instance of default symbol provider.
         /// </summary>
         ISymbolProvider GetDefaultSymbolProvider();
@@ -284,5 +290,13 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="process">Process to Terminate.</param>
         void Terminate(Process process);
+
+        /// <summary>
+        /// Adds new breakpoint to the given process.
+        /// </summary>
+        /// <param name="process">Process.</param>
+        /// <param name="breakpointSpec">Description of this breakpoint.</param>
+        /// <returns>New breakpoint.</returns>
+        IBreakpoint AddBreakpoint(Process process, BreakpointSpec breakpointSpec);
     }
 }

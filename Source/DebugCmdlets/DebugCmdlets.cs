@@ -36,7 +36,7 @@ namespace PowershellDebugSession
     /// Cmdlet for staring debug session.
     /// </summary>
     [Cmdlet(VerbsCommunications.Connect, "StartDebugSession")]
-    public class StartDbgSession: Cmdlet
+    public class StartDbgSession : Cmdlet
     {
         /// <summary>
         /// Path of the process to start under debugger.
@@ -51,6 +51,9 @@ namespace PowershellDebugSession
         public string SymbolPath { get; set; }
 
 
+        /// <summary>
+        /// Command main function.
+        /// </summary>
         protected override void ProcessRecord()
         {
             ConnectionState state = ConnectionState.GetConnectionState();
@@ -62,23 +65,10 @@ namespace PowershellDebugSession
                 SymbolPath = "srv*";
             }
 
-            IDebugClient client = DebugClient.DebugCreateEx(0x60);
-
-            ((IDebugSymbols5)client).SetSymbolPathWide(SymbolPath);
-            ((IDebugClient7)client).CreateProcessAndAttach(0, ProcessPath, DebugCreateProcess.DebugOnlyThisProcess, 0, DebugAttach.Default);
-            ((IDebugControl7)client).WaitForEvent(0, uint.MaxValue);
-
-            // For live debugging disable caching.
-            //
-            Context.EnableUserCastedVariableCaching = false;
-            Context.EnableVariableCaching = false;
-
-            IDebuggerEngine debugger = new DbgEngDll(client);
-            ISymbolProvider symbolProvider = new DiaSymbolProvider(debugger.GetDefaultSymbolProvider());
-            Context.InitializeDebugger(debugger, symbolProvider);
-
+            IDebugClient client = DebugClient.OpenProcess(ProcessPath, null, SymbolPath, (uint)(Defines.DebugEngoptInitialBreak | Defines.DebugEngoptFinalBreak));
             WriteDebug("Connection successfully initialized");
 
+            DbgEngDll.InitializeContext(client);
         }
     }
 
@@ -89,6 +79,9 @@ namespace PowershellDebugSession
     [OutputType(typeof(StackTrace))]
     public class GetCallstack : Cmdlet
     {
+        /// <summary>
+        /// Command main function.
+        /// </summary>
         protected override void ProcessRecord()
         {
             Console.WriteLine("Threads: {0}", Thread.All.Length);

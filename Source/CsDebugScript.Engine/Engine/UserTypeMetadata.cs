@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -73,7 +74,7 @@ namespace CsDebugScript.Engine
         /// Reads metadata from the type.
         /// </summary>
         /// <param name="type">The type.</param>
-        public static UserTypeMetadata[] ReadFromType(Type type)
+        public static IEnumerable<UserTypeMetadata> ReadFromType(Type type)
         {
             UserTypeAttribute[] attributes = type.GetCustomAttributes<UserTypeAttribute>(false).ToArray();
             bool derivedFromUserType = IsDerivedFrom(type, typeof(UserType));
@@ -82,22 +83,16 @@ namespace CsDebugScript.Engine
                 throw new Exception($"Type {type.FullName} has defined UserTypeAttribute, but it does not inherit UserType");
             else if (derivedFromUserType)
             {
-                UserTypeMetadata[] metadata = new UserTypeMetadata[attributes.Length];
                 string defaultTypeName = type.Name; // TODO: Form better name for generics type
 
-                for (int i = 0; i < metadata.Length; i++)
+                foreach (UserTypeAttribute attribute in attributes)
                 {
-                    UserTypeAttribute attribute = attributes[i];
                     string moduleName = attribute?.ModuleName;
                     string typeName = attribute?.TypeName ?? defaultTypeName;
 
-                    metadata[i] = new UserTypeMetadata(moduleName, typeName, attribute.CodeTypeVerification, type);
+                    yield return new UserTypeMetadata(moduleName, typeName, attribute.CodeTypeVerification, type);
                 }
-
-                return metadata;
             }
-
-            return new UserTypeMetadata[0];
         }
 
         /// <summary>

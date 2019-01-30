@@ -147,6 +147,60 @@ namespace CsDebugScript.UI.Drawing
         }
 
         /// <summary>
+        /// Creates font object.
+        /// </summary>
+        /// <param name="fontFamily">The font family.</param>
+        /// <param name="fontSize">The font size.</param>
+        /// <param name="fontStyle">The font style.</param>
+        /// <param name="fontWeight">The font weight.</param>
+        /// <returns>Font object.</returns>
+        public IFont CreateFont(string fontFamily, double fontSize, FontStyle fontStyle = FontStyle.Normal, FontWeight fontWeight = FontWeight.Normal)
+        {
+            return new Font(fontFamily, fontSize, fontStyle, fontWeight);
+        }
+
+        /// <summary>
+        /// Creates text as drawing object.
+        /// </summary>
+        /// <param name="text">Text that will be drawn.</param>
+        /// <param name="font">Font that will be used to draw the text.</param>
+        /// <param name="foreground">Brush that will be used to paint the text.</param>
+        /// <param name="left">Left position of the text.</param>
+        /// <param name="top">Top position of the text.</param>
+        /// <param name="width">Virtual text box width. If value is less than 0, it will be automatically computed.</param>
+        /// <param name="height">Virtual text box height. If value is less than 0, it will be automatically computed.</param>
+        /// <param name="horizontalAlignment">Text horizontal alignment.</param>
+        /// <param name="verticalAlignment">Text vertical alignment.</param>
+        /// <param name="wrapping">Text wrapping.</param>
+        /// <param name="rotation">Text clockwise rotation in radians.</param>
+        /// <returns>Text as drawing object.</returns>
+        public IText CreateText(string text, IFont font, IBrush foreground, double left = 0, double top = 0, double width = -1, double height = -1, TextHorizontalAlignment horizontalAlignment = TextHorizontalAlignment.Left, TextVerticalAlignment verticalAlignment = TextVerticalAlignment.Top, TextWrapping wrapping = TextWrapping.Wrap, double rotation = 0)
+        {
+            return CreateText(text, font, foreground, null, left, top, width, height, horizontalAlignment, verticalAlignment, wrapping, rotation);
+        }
+
+        /// <summary>
+        /// Creates text as drawing object.
+        /// </summary>
+        /// <param name="text">Text that will be drawn.</param>
+        /// <param name="font">Font that will be used to draw the text.</param>
+        /// <param name="foreground">Brush that will be used to paint the text.</param>
+        /// <param name="background">Brush that will be used to paint the text's background.</param>
+        /// <param name="left">Left position of the text.</param>
+        /// <param name="top">Top position of the text.</param>
+        /// <param name="width">Virtual text box width. If value is less than 0, it will be automatically computed.</param>
+        /// <param name="height">Virtual text box height. If value is less than 0, it will be automatically computed.</param>
+        /// <param name="horizontalAlignment">Text horizontal alignment.</param>
+        /// <param name="verticalAlignment">Text vertical alignment.</param>
+        /// <param name="wrapping">Text wrapping.</param>
+        /// <param name="rotation">Text clockwise rotation in radians.</param>
+        /// <returns>Text as drawing object.</returns>
+        public IText CreateText(string text, IFont font, IBrush foreground, IBrush background, double left = 0, double top = 0, double width = -1, double height = -1, TextHorizontalAlignment horizontalAlignment = TextHorizontalAlignment.Left, TextVerticalAlignment verticalAlignment = TextVerticalAlignment.Top, TextWrapping wrapping = TextWrapping.Wrap, double rotation = 0)
+        {
+            return dispatcher.Invoke(() => new Text(text, font, foreground, background, left, top, width, height, horizontalAlignment, verticalAlignment, wrapping, rotation));
+        }
+
+        /// <summary>
         /// Creates line as drawing object.
         /// </summary>
         /// <param name="pen">Pen that should be used to draw the line.</param>

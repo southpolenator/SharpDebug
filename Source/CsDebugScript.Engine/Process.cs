@@ -44,7 +44,12 @@ namespace CsDebugScript
         private SimpleCache<Thread[]> threads;
 
         /// <summary>
-        /// The modules
+        /// Original modules returned by the debugger engine.
+        /// </summary>
+        private SimpleCache<Module[]> originalModules;
+
+        /// <summary>
+        /// The modules loaded in this process. It contains <see cref="originalModules"/> and also all CLR modules.
         /// </summary>
         private SimpleCache<Module[]> modules;
 
@@ -107,7 +112,8 @@ namespace CsDebugScript
             dumpFileName = SimpleCache.Create(() => Context.Debugger.GetProcessDumpFileName(this));
             architectureType = SimpleCache.Create(() => Context.Debugger.GetProcessArchitectureType(this));
             threads = SimpleCache.Create(() => Context.Debugger.GetProcessThreads(this));
-            modules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
+            originalModules = SimpleCache.Create(() => Context.Debugger.GetProcessModules(this));
+            modules = SimpleCache.Create(GetModules);
             clrRuntimes = SimpleCache.Create(() =>
             {
                 try
@@ -126,12 +132,18 @@ namespace CsDebugScript
             ModulesByName = new DictionaryCache<string, Module>(GetModuleByName);
             ModulesById = new DictionaryCache<ulong, Module>(GetModuleByAddress);
             Variables = new DictionaryCache<Tuple<CodeType, ulong, string, string>, Variable>((tuple) => new Variable(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
-            UserTypeCastedVariables = new DictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
-            GlobalCache.Caches.Add(UserTypeCastedVariables);
+            UserTypeCastedVariables = Context.UserTypeMetadataCaches.CreateDictionaryCache<Variable, Variable>((variable) => Variable.CastVariableToUserType(variable));
             ClrModuleCache = new DictionaryCache<IClrModule, Module>((clrModule) =>
             {
                 // TODO: This needs to change when ClrModule starts to be child of Module
                 Module module = ModulesById[clrModule.ImageBase];
+                if (module.Id != uint.MaxValue)
+                {
+                    string originalImageName = module.ImageName;
+                    string originalLoadedImageName = module.LoadedImageName;
+                    string originalMappedImageName = module.MappedImageName;
+                    string originalSymbolFileName = module.SymbolFileName;
+                }
 
                 module.ClrModule = clrModule;
                 module.ImageName = clrModule.Name;
@@ -371,6 +383,28 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the array of original modules returned by the debugger engine.
+        /// </summary>
+        internal Module[] OriginalModules
+        {
+            get
+            {
+                return originalModules.Value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the array of process modules if it is cached and fallback to original modules otherwise.
+        /// </summary>
+        internal Module[] ModulesIfCached
+        {
+            get
+            {
+                return modules.Cached ? modules.Value : OriginalModules;
+            }
+        }
+
+        /// <summary>
         /// Gets the array of process modules.
         /// </summary>
         public Module[] Modules
@@ -544,6 +578,25 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets modules loaded into this process (including CLR modules).
+        /// </summary>
+        private Module[] GetModules()
+        {
+            Module[] modules = OriginalModules;
+            IClrRuntime[] clrRuntimes = ClrRuntimes;
+
+            if (clrRuntimes == null || clrRuntimes.Length == 0)
+                return modules;
+
+            HashSet<Module> allModules = new HashSet<Module>(modules);
+
+            foreach (IClrRuntime clrRuntime in clrRuntimes)
+                foreach (IClrModule clrModule in clrRuntime.Modules)
+                    allModules.Add(ClrModuleCache[clrModule]);
+            return allModules.ToArray();
+        }
+
+        /// <summary>
         /// Gets the module with the specified name.
         /// </summary>
         /// <param name="name">The name.</param>
@@ -557,19 +610,26 @@ namespace CsDebugScript
         }
 
         /// <summary>
+        /// Gets the original module (<see cref="originalModules"/>) that contains specified address in its address space.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        internal Module GetOriginalModuleByInnerAddress(ulong address)
+        {
+            foreach (var module in OriginalModules)
+                if (module.Address <= address && module.Address + module.Size > address)
+                    return module;
+            return null;
+        }
+
+        /// <summary>
         /// Gets the module that contains specified address in its address space.
         /// </summary>
         /// <param name="address">The address.</param>
         internal Module GetModuleByInnerAddress(ulong address)
         {
             foreach (var module in Modules)
-            {
                 if (module.Address <= address && module.Address + module.Size > address)
-                {
                     return module;
-                }
-            }
-
             return null;
         }
 

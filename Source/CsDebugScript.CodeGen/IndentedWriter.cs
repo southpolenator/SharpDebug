@@ -105,7 +105,7 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
-        /// Starts new list with the specified indentation. One should end line with <see cref="EndLine"/>
+        /// Starts new line with the specified indentation. One should end line with <see cref="EndLine()"/> functions.
         /// </summary>
         /// <param name="indentation">The indentation.</param>
         public void StartLine(int indentation = 0)
@@ -114,7 +114,7 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
-        /// Starts new list with the specified indentation. One should end line with <see cref="EndLine"/>
+        /// Starts new list with the specified indentation. One should end line with <see cref="EndLine()"/> functions.
         /// </summary>
         /// <param name="indentation">The indentation.</param>
         /// <param name="text">The text to be written.</param>
@@ -125,7 +125,7 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
-        /// Starts new list with the specified indentation. One should end line with <see cref="EndLine"/>
+        /// Starts new list with the specified indentation. One should end line with <see cref="EndLine()"/> functions.
         /// </summary>
         /// <param name="text">The text to be written.</param>
         public void StartLine(string text)
@@ -135,7 +135,7 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
-        /// Writes text on the current line that was started with <see cref="StartLine"/>.
+        /// Writes text on the current line that was started with <see cref="StartLine(string)"/> functions.
         /// </summary>
         /// <param name="text">The text to be written.</param>
         public void Write(string text)
@@ -144,7 +144,7 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
-        /// Writes text on the current line that was started with <see cref="StartLine"/>.
+        /// Writes text on the current line that was started with <see cref="StartLine(string)"/> functions.
         /// </summary>
         /// <param name="value">Number to be written.</param>
         public void Write(int value)
@@ -153,7 +153,7 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
-        /// Ends current line that was started with <see cref="StartLine"/>.
+        /// Ends current line that was started with <see cref="StartLine(string)"/> functions.
         /// </summary>
         public void EndLine()
         {
@@ -161,7 +161,7 @@ namespace CsDebugScript.CodeGen
         }
 
         /// <summary>
-        /// Ends current line that was started with <see cref="StartLine"/>.
+        /// Ends current line that was started with <see cref="StartLine(string)"/> functions.
         /// </summary>
         /// <param name="text">The text to be written.</param>
         public void EndLine(string text)

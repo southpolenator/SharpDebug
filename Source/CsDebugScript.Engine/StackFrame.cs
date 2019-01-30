@@ -64,20 +64,8 @@ namespace CsDebugScript
             locals = SimpleCache.Create(GetLocals);
             arguments = SimpleCache.Create(GetArguments);
             clrStackFrame = SimpleCache.Create(() => Thread.ClrThread?.GetClrStackFrame(InstructionOffset));
-            userTypeConvertedLocals = SimpleCache.Create(() =>
-            {
-                VariableCollection collection = Variable.CastVariableCollectionToUserType(locals.Value);
-
-                GlobalCache.Caches.Add(userTypeConvertedLocals);
-                return collection;
-            });
-            userTypeConvertedArguments = SimpleCache.Create(() =>
-            {
-                VariableCollection collection = Variable.CastVariableCollectionToUserType(arguments.Value);
-
-                GlobalCache.Caches.Add(userTypeConvertedArguments);
-                return collection;
-            });
+            userTypeConvertedLocals = Context.UserTypeMetadataCaches.CreateSimpleCache(() => Variable.CastVariableCollectionToUserType(locals.Value));
+            userTypeConvertedArguments = Context.UserTypeMetadataCaches.CreateSimpleCache(() => Variable.CastVariableCollectionToUserType(arguments.Value));
             module = SimpleCache.Create(() =>
             {
                 var m = Process.GetModuleByInnerAddress(InstructionOffset);
@@ -328,26 +316,16 @@ namespace CsDebugScript
         private Tuple<string, uint, ulong> ReadSourceFileNameAndLine()
         {
             if (clrStackFrame.Cached && clrStackFrame.Value != null)
-            {
-                return ClrStackFrame.ReadSourceFileNameAndLine(Module, InstructionOffset);
-            }
-
+                return ClrStackFrame.ReadSourceFileNameAndLine();
             try
             {
-                string sourceFileName;
-                uint sourceFileLine;
-                ulong displacement;
-
-                Context.SymbolProvider.GetStackFrameSourceFileNameAndLine(this, out sourceFileName, out sourceFileLine, out displacement);
+                Context.SymbolProvider.GetStackFrameSourceFileNameAndLine(this, out string sourceFileName, out uint sourceFileLine, out ulong displacement);
                 return Tuple.Create(sourceFileName, sourceFileLine, displacement);
             }
             catch (Exception ex)
             {
                 if (ClrStackFrame != null)
-                {
-                    return ClrStackFrame.ReadSourceFileNameAndLine(Module, InstructionOffset);
-                }
-
+                    return ClrStackFrame.ReadSourceFileNameAndLine();
                 throw new AggregateException("Couldn't read source file name. Check if symbols are present.", ex);
             }
         }
@@ -359,25 +337,16 @@ namespace CsDebugScript
         private Tuple<string, ulong> ReadFunctionNameAndDisplacement()
         {
             if (clrStackFrame.Cached && ClrStackFrame != null)
-            {
-                return ClrStackFrame.ReadFunctionNameAndDisplacement(Module, InstructionOffset);
-            }
-
+                return ClrStackFrame.ReadFunctionNameAndDisplacement();
             try
             {
-                ulong displacement;
-                string functionName;
-
-                Context.SymbolProvider.GetStackFrameFunctionName(this, out functionName, out displacement);
+                Context.SymbolProvider.GetStackFrameFunctionName(this, out string functionName, out ulong displacement);
                 return Tuple.Create(functionName, displacement);
             }
             catch (Exception ex)
             {
                 if (ClrStackFrame != null)
-                {
-                    return ClrStackFrame.ReadFunctionNameAndDisplacement(Module, InstructionOffset);
-                }
-
+                    return ClrStackFrame.ReadFunctionNameAndDisplacement();
                 throw new AggregateException("Couldn't read function name. Check if symbols are present.", ex);
             }
         }

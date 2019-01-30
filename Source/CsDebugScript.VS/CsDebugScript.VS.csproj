@@ -53,6 +53,15 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CLR\VSClrInstanceField.cs" />
+    <Compile Include="CLR\VSClrStaticField.cs" />
+    <Compile Include="CLR\VSClrAppDomain.cs" />
+    <Compile Include="CLR\VSClrHeap.cs" />
+    <Compile Include="CLR\VSClrModule.cs" />
+    <Compile Include="CLR\VSClrRuntime.cs" />
+    <Compile Include="CLR\VSClrStackFrame.cs" />
+    <Compile Include="CLR\VSClrThread.cs" />
+    <Compile Include="CLR\VSClrType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(EnlistmentRoot)\Properties\SharedAssemblyInfo.cs" />
     <Compile Include="VSContext.cs" />
@@ -83,6 +92,15 @@
     <VsdConfigXml Include="VS.vsdconfigxml">
       <SubType>Designer</SubType>
     </VsdConfigXml>
+    <VsdConfigXml Include="VS.DPE.vsdconfigxml">
+      <SubType>Designer</SubType>
+    </VsdConfigXml>
+    <VsdConfigXmlAdditionalAssemblies Include="$(OutDir)\..\$(AssemblyName).DPE.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Diagnostics.Runtime">
+      <HintPath>$(EnlistmentRoot)\External\Microsoft.Diagnostics.Runtime.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(OutDir)\*.dll" Exclude="$(OutDir)\Microsoft.VisualStudio.TestPlatform*.dll;$(OutDir)\CsDebugScript.WinDbg*.dll">
@@ -142,9 +160,13 @@
       <Project>{d89b5395-e81f-4426-9884-6eeab723f80e}</Project>
       <Name>CsDebugScript.Scripting</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CsDebugScript.Drawing.Interfaces\CsDebugScript.Drawing.Interfaces.csproj">
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Drawing.Interfaces\CsDebugScript.Drawing.Interfaces.csproj">
       <Project>{9ce6dc17-d6a1-4dbf-b83a-b66645711a18}</Project>
       <Name>CsDebugScript.Drawing.Interfaces</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.VS.DPE\CsDebugScript.VS.DPE.csproj">
+      <Project>{a69eb2f9-8c66-40fb-a0f3-5fc0591abda9}</Project>
+      <Name>CsDebugScript.VS.DPE</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -493,7 +515,7 @@
   </Target>
   <Import Project="..\..\packages\Microsoft.VisualStudio.Threading.Analyzers.15.7.17\build\Microsoft.VisualStudio.Threading.Analyzers.targets" Condition="Exists('..\..\packages\Microsoft.VisualStudio.Threading.Analyzers.15.7.17\build\Microsoft.VisualStudio.Threading.Analyzers.targets')" />
   <Import Project="..\..\packages\Microsoft.VSSDK.BuildTools.15.7.109\build\Microsoft.VSSDK.BuildTools.targets" Condition="Exists('..\..\packages\Microsoft.VSSDK.BuildTools.15.7.109\build\Microsoft.VSSDK.BuildTools.targets')" />
-  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
+  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
   <Import Project="$(EnlistmentRoot)\VsdConfig.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -502,4 +524,9 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+
+  <Target Name="pack">
+    <!-- Do nothings -->
+  </Target>
+  <Import Project="$(EnlistmentRoot)\DisableMeOnCore.props" />
 </Project>

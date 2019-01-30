@@ -125,7 +125,9 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         {
             uint pointerTypeId = EngineModuleProvider.GetTypePointerToTypeId(Id);
 
-            return Module.GetSymbol(pointerTypeId);
+            if (pointerTypeId != int.MaxValue)
+                return Module.GetSymbol(pointerTypeId);
+            return base.GetPointerType();
         }
 
         /// <summary>

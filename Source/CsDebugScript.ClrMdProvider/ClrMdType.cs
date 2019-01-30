@@ -23,46 +23,22 @@ namespace CsDebugScript.ClrMdProvider
         /// <summary>
         /// Gets the base size of the object.
         /// </summary>
-        public int BaseSize
-        {
-            get
-            {
-                return ClrType.BaseSize;
-            }
-        }
+        public int BaseSize => ClrType.BaseSize;
 
         /// <summary>
         /// Gets the base type that this type inherits. Can return null if it does not inherit (or is unknown)
         /// </summary>
-        public IClrType BaseType
-        {
-            get
-            {
-                return Provider.FromClrType(ClrType.BaseType);
-            }
-        }
+        public IClrType BaseType => Provider.FromClrType(ClrType.BaseType);
 
         /// <summary>
         /// Gets the type of the element referenced by the pointer.
         /// </summary>
-        public IClrType ComponentType
-        {
-            get
-            {
-                return Provider.FromClrType(ClrType.ComponentType);
-            }
-        }
+        public IClrType ComponentType => Provider.FromClrType(ClrType.ComponentType);
 
         /// <summary>
         /// Gets the size of individual elements of an array.
         /// </summary>
-        public int ElementSize
-        {
-            get
-            {
-                return ClrType.ElementSize;
-            }
-        }
+        public int ElementSize => ClrType.ElementSize;
 
         /// <summary>
         /// Gets the <see cref="T:CsDebugScript.CLR.ClrElementType" />.
@@ -131,9 +107,7 @@ namespace CsDebugScript.ClrMdProvider
             get
             {
                 foreach (var field in ClrType.Fields)
-                {
                     yield return new ClrMdInstanceField(Provider, field);
-                }
             }
         }
 
@@ -143,24 +117,12 @@ namespace CsDebugScript.ClrMdProvider
         /// <value>
         /// <c>true</c> if instance of this type has a simple value; otherwise, <c>false</c>.
         /// </value>
-        public bool HasSimpleValue
-        {
-            get
-            {
-                return ClrType.HasSimpleValue;
-            }
-        }
+        public bool HasSimpleValue => ClrType.HasSimpleValue;
 
         /// <summary>
         /// Gets the heap. All types know the heap they belong to.
         /// </summary>
-        public IClrHeap Heap
-        {
-            get
-            {
-                return Provider.FromClrHeap(ClrType.Heap);
-            }
-        }
+        public IClrHeap Heap => Provider.FromClrHeap(ClrType.Heap);
 
         /// <summary>
         /// Gets a value indicating whether this instance is array.
@@ -170,13 +132,7 @@ namespace CsDebugScript.ClrMdProvider
         /// <value>
         /// <c>true</c> if this instance is array; otherwise, <c>false</c>.
         /// </value>
-        public bool IsArray
-        {
-            get
-            {
-                return ClrType.IsArray;
-            }
-        }
+        public bool IsArray => ClrType.IsArray;
 
         /// <summary>
         /// Gets a value indicating whether this instance is enum.
@@ -184,13 +140,7 @@ namespace CsDebugScript.ClrMdProvider
         /// <value>
         /// <c>true</c> if this instance is enum; otherwise, <c>false</c>.
         /// </value>
-        public bool IsEnum
-        {
-            get
-            {
-                return ClrType.IsEnum;
-            }
-        }
+        public bool IsEnum => ClrType.IsEnum;
 
         /// <summary>
         /// Gets a value indicating whether this type is object reference.
@@ -198,13 +148,7 @@ namespace CsDebugScript.ClrMdProvider
         /// <value>
         ///   <c>true</c> if this type is object reference; otherwise, <c>false</c>.
         /// </value>
-        public bool IsObjectReference
-        {
-            get
-            {
-                return ClrType.IsObjectReference;
-            }
-        }
+        public bool IsObjectReference => ClrType.IsObjectReference;
 
         /// <summary>
         /// Gets a value indicating whether this instance is pointer.
@@ -212,13 +156,7 @@ namespace CsDebugScript.ClrMdProvider
         /// <value>
         ///   <c>true</c> if this instance is pointer; otherwise, <c>false</c>.
         /// </value>
-        public bool IsPointer
-        {
-            get
-            {
-                return ClrType.IsPointer;
-            }
-        }
+        public bool IsPointer => ClrType.IsPointer;
 
         /// <summary>
         /// Gets a value indicating whether this instance is primitive (int, float, etc).
@@ -226,13 +164,7 @@ namespace CsDebugScript.ClrMdProvider
         /// <value>
         ///   <c>true</c> if this instance is primitive; otherwise, <c>false</c>.
         /// </value>
-        public bool IsPrimitive
-        {
-            get
-            {
-                return ClrType.IsPrimitive;
-            }
-        }
+        public bool IsPrimitive => ClrType.IsPrimitive;
 
         /// <summary>
         /// Gets a value indicating whether this type is System.String.
@@ -240,13 +172,7 @@ namespace CsDebugScript.ClrMdProvider
         /// <value>
         ///   <c>true</c> if type is System.String; otherwise, <c>false</c>.
         /// </value>
-        public bool IsString
-        {
-            get
-            {
-                return ClrType.IsString;
-            }
-        }
+        public bool IsString => ClrType.IsString;
 
         /// <summary>
         /// Gets a value indicating whether this instance is value class (struct).
@@ -254,35 +180,17 @@ namespace CsDebugScript.ClrMdProvider
         /// <value>
         ///   <c>true</c> if this instance is value class; otherwise, <c>false</c>.
         /// </value>
-        public bool IsValueClass
-        {
-            get
-            {
-                return ClrType.IsValueClass;
-            }
-        }
+        public bool IsValueClass => ClrType.IsValueClass;
 
         /// <summary>
         /// Gets the module this type is defined in.
         /// </summary>
-        public IClrModule Module
-        {
-            get
-            {
-                return Provider.FromClrModule(ClrType.Module);
-            }
-        }
+        public IClrModule Module => Provider.FromClrModule(ClrType.Module);
 
         /// <summary>
         /// Gets the name.
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return ClrType.Name;
-            }
-        }
+        public string Name => ClrType.Name;
 
         /// <summary>
         /// Gets the CLR provider.
@@ -322,10 +230,7 @@ namespace CsDebugScript.ClrMdProvider
             Microsoft.Diagnostics.Runtime.ClrStaticField staticField = ClrType.GetStaticFieldByName(variableName);
 
             if (staticField != null)
-            {
-                return new ClrMdStaticField(staticField);
-            }
-
+                return new ClrMdStaticField(Provider, staticField);
             return null;
         }
     }

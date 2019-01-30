@@ -7,8 +7,8 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
     /// <summary>
     /// Implementation of std::any
     /// </summary>
-    [UserType(TypeName = "std::any")]
-    [UserType(TypeName = "std::__1::any")]
+    [UserType(TypeName = "std::any", CodeTypeVerification = nameof(any.VerifyCodeType))]
+    [UserType(TypeName = "std::__1::any", CodeTypeVerification = nameof(any.VerifyCodeType))]
     public class any : UserType
     {
         private interface IAny
@@ -575,6 +575,16 @@ namespace CsDebugScript.CommonUserTypes.NativeTypes.std
             new Tuple<Type, Func<CodeType, object>>(typeof(LibStdCpp7), LibStdCpp7.VerifyCodeType),
             new Tuple<Type, Func<CodeType, object>>(typeof(ClangLibCpp), ClangLibCpp.VerifyCodeType),
         });
+
+        /// <summary>
+        /// Verifies that type user type can work with the specified code type.
+        /// </summary>
+        /// <param name="codeType">The code type.</param>
+        /// <returns><c>true</c> if user type can work with the specified code type; <c>false</c> otherwise</returns>
+        public static bool VerifyCodeType(CodeType codeType)
+        {
+            return typeSelector.VerifyCodeType(codeType);
+        }
 
         /// <summary>
         /// The instance used to read variable data

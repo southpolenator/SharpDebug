@@ -23,7 +23,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         /// <param name="generationFlags">The code generation options</param>
         /// <param name="nameLimit">Maximum number of characters that generated name can have.</param>
         public CSharpCodeWriter(UserTypeGenerationFlags generationFlags, int nameLimit)
-            : base(generationFlags, nameLimit)
+            : base(generationFlags, nameLimit, fixKeywordsInUserNaming: true)
         {
         }
 
@@ -704,7 +704,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         output.Write(BaseClassStringFieldName);
                         output.Write(").GetPointerAddress(), variable.GetBaseClass(");
                         output.Write(BaseClassStringFieldName);
-                        output.Write(").GetCodeType().Size), 0, variable.GetBaseClass(");
+                        output.Write(").GetCodeType().RemovePointer().Size), 0, variable.GetBaseClass(");
                         output.Write(BaseClassStringFieldName);
                         output.EndLine(").GetPointerAddress())");
                     }

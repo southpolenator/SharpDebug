@@ -248,6 +248,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </summary>
         /// <param name="userTypes">The list of user types.</param>
         /// <param name="symbolNamespaces">The symbol namespaces.</param>
+        /// <param name="commonNamespace">The namespace name for types found in multiple modules.</param>
         /// <returns>Newly generated user types.</returns>
         internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, Dictionary<Symbol, string> symbolNamespaces, string commonNamespace)
         {
@@ -523,7 +524,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             // Find first transformation that matches the specified type
             string originalFieldTypeString = type.Name;
-            var transformation = typeTransformations.FirstOrDefault(t => t.Matches(originalFieldTypeString));
+            XmlTypeTransformation transformation = typeTransformations.FirstOrDefault(t => t.Matches(originalFieldTypeString));
 
             if (transformation == null)
                 return null;
@@ -533,32 +534,25 @@ namespace CsDebugScript.CodeGen.UserTypes
 
             typeConverter = (inputType) =>
             {
-                var tr = typeTransformations.FirstOrDefault(t => t.Matches(inputType));
+                XmlTypeTransformation tr = typeTransformations.FirstOrDefault(t => t.Matches(inputType));
 
                 if (tr != null)
-                {
                     return tr.TransformType(inputType, typeConverter);
-                }
 
                 UserType userType;
 
                 if (GetUserType(type.Module, inputType, out userType))
-                {
-                    return userType.FullTypeName;
-                }
+                    return ownerUserType.Factory.GetSymbolTypeInstance(ownerUserType, userType.Symbol).GetTypeString();
 
                 Symbol symbol = type.Module.GetSymbol(inputType);
 
                 if (symbol != null)
-                {
                     if ((symbol.Tag == CodeTypeTag.BuiltinType)
                         || (symbol.Tag == CodeTypeTag.Pointer && symbol.ElementType.Tag == CodeTypeTag.BuiltinType)
                         || (symbol.Tag == CodeTypeTag.Array && symbol.ElementType.Tag == CodeTypeTag.BuiltinType))
                     {
                         return ownerUserType.Factory.GetSymbolTypeInstance(ownerUserType, symbol).GetTypeString();
                     }
-                }
-
                 return new VariableTypeInstance(CodeNaming).GetTypeString();
             };
 

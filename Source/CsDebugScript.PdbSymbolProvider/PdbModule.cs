@@ -3,6 +3,7 @@ using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.PdbSymbolProvider.SymbolRecords;
 using CsDebugScript.PdbSymbolProvider.TypeRecords;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace CsDebugScript.PdbSymbolProvider
     /// <summary>
     /// Class represents CodeGen module for PDB reader.
     /// </summary>
-    public class PdbModule : Module
+    public class PdbModule : Module, IDisposable
     {
         /// <summary>
         /// Cache of the global scope symbol.
@@ -57,7 +58,7 @@ namespace CsDebugScript.PdbSymbolProvider
         /// </summary>
         /// <param name="module">The XML module description.</param>
         public PdbModule(XmlModule module)
-            : this(module, new PdbFile(module.PdbPath))
+            : this(module, new PdbFile(module.SymbolsPath))
         {
         }
 
@@ -69,7 +70,7 @@ namespace CsDebugScript.PdbSymbolProvider
         public PdbModule(XmlModule module, PdbFile pdbFile)
         {
             PdbFile = pdbFile;
-            Name = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.PdbPath).ToLower();
+            Name = !string.IsNullOrEmpty(module.Name) ? module.Name : Path.GetFileNameWithoutExtension(module.SymbolsPath).ToLower();
             Namespace = module.Namespace;
             globalScopeCache = SimpleCache.CreateStruct(() => new PdbGlobalScope(this));
             builtinSymbolsCache = new DictionaryCache<TypeIndex, PdbSymbol>(CreateBuiltinSymbol);
@@ -248,6 +249,14 @@ namespace CsDebugScript.PdbSymbolProvider
         }
 
         /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            PdbFile.Dispose();
+        }
+
+        /// <summary>
         /// Gets the public symbols.
         /// </summary>
         protected override IEnumerable<string> GetPublicSymbols()
@@ -281,7 +290,7 @@ namespace CsDebugScript.PdbSymbolProvider
         /// <summary>
         /// Creates new <see cref="PdbSymbol"/> for the specified built-in type index.
         /// </summary>
-        /// <param name="index">Built-in type index.</param>
+        /// <param name="typeIndex">Built-in type index.</param>
         private PdbSymbol CreateBuiltinSymbol(TypeIndex typeIndex)
         {
             return new PdbSymbol(this, typeIndex);

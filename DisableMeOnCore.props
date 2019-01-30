@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildRuntimeType)' == 'Core'">
+    <BuildDependsOn>NotABuild</BuildDependsOn>
+  </PropertyGroup>
+  <Target Name="NotABuild">
+    <Warning Text="Project '$(ProjectName)' is disabled on 'dotnet build'" />
+  </Target>
+</Project>

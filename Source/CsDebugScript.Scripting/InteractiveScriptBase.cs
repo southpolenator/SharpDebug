@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using CsDebugScript.Drawing.Interfaces;
+using CsDebugScript.Engine;
 using Microsoft.CodeAnalysis.Scripting;
 
 namespace CsDebugScript
@@ -122,6 +124,11 @@ namespace CsDebugScript
         /// The assembly resolver used for generating assemblies with CodeGen.
         /// </summary>
         internal ScriptExecution.MetadataResolver _AssemblyResolver_;
+
+        /// <summary>
+        /// Extracted user type metadata from the running assembly. This is used during '#reset' command.
+        /// </summary>
+        internal List<UserTypeMetadata> _ExtractedUserTypeMetadata_ = new List<UserTypeMetadata>();
 
         /// <summary>
         /// Outputs the specified object using ObjectWriter.
@@ -344,5 +351,221 @@ namespace CsDebugScript
                 _CodeGenCode_.Add(code);
             }
         }
+
+        /// <summary>
+        /// Imports user types to be available for automatic user type casting.
+        /// </summary>
+        /// <param name="assembly">The assembly containing user types.</param>
+        public void __ImportUserTypes__(System.Reflection.Assembly assembly)
+        {
+            _ExtractedUserTypeMetadata_.AddRange(ScriptCompiler.ExtractMetadata(assembly));
+        }
+
+        #region Graphics helpers
+        /// <summary>
+        /// Draws image on screen with pixel type read from data element type.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="data"/> is <see cref="Variable"/> of <see cref="CodeType"/> <code>unsigned char*</code>,
+        /// then pixel type is read as <code>byte</code>.
+        /// </remarks>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="channels">Description of the image channels.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawImage(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null)
+        {
+            Dump(CreateImage(width, height, data, channels, stride));
+        }
+
+        /// <summary>
+        /// Draws image on screen with the specified pixel type.
+        /// </summary>
+        /// <typeparam name="PixelType">Type of the pixel.</typeparam>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="channels">Description of the image channels.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawImage<PixelType>(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null)
+        {
+            Dump(CreateImage<PixelType>(width, height, data, channels, stride));
+        }
+
+        /// <summary>
+        /// Draws RGB image on screen with pixel type read from data element type.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="data"/> is <see cref="Variable"/> of <see cref="CodeType"/> <code>unsigned char*</code>,
+        /// then pixel type is read as <code>byte</code>.
+        /// </remarks>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawRgbImage(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage(width, height, data, Channels.RGB, stride));
+        }
+
+        /// <summary>
+        /// Draws RGB image on screen with the specified pixel type.
+        /// </summary>
+        /// <typeparam name="PixelType">Type of the pixel.</typeparam>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawRgbImage<PixelType>(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage<PixelType>(width, height, data, Channels.RGB, stride));
+        }
+
+        /// <summary>
+        /// Draws RGBA image on screen with pixel type read from data element type.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="data"/> is <see cref="Variable"/> of <see cref="CodeType"/> <code>unsigned char*</code>,
+        /// then pixel type is read as <code>byte</code>.
+        /// </remarks>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawRgbaImage(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage(width, height, data, Channels.RGBA, stride));
+        }
+
+        /// <summary>
+        /// Draws RGBA image on screen with the specified pixel type.
+        /// </summary>
+        /// <typeparam name="PixelType">Type of the pixel.</typeparam>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawRgbaImage<PixelType>(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage<PixelType>(width, height, data, Channels.RGBA, stride));
+        }
+
+        /// <summary>
+        /// Draws BGR image on screen with pixel type read from data element type.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="data"/> is <see cref="Variable"/> of <see cref="CodeType"/> <code>unsigned char*</code>,
+        /// then pixel type is read as <code>byte</code>.
+        /// </remarks>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawBgrImage(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage(width, height, data, Channels.BGR, stride));
+        }
+
+        /// <summary>
+        /// Draws BGR image on screen with the specified pixel type.
+        /// </summary>
+        /// <typeparam name="PixelType">Type of the pixel.</typeparam>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawBgrImage<PixelType>(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage<PixelType>(width, height, data, Channels.BGR, stride));
+        }
+
+        /// <summary>
+        /// Draws BGRA image on screen with pixel type read from data element type.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="data"/> is <see cref="Variable"/> of <see cref="CodeType"/> <code>unsigned char*</code>,
+        /// then pixel type is read as <code>byte</code>.
+        /// </remarks>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawBgraImage(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage(width, height, data, Channels.BGRA, stride));
+        }
+
+        /// <summary>
+        /// Draws BGRA image on screen with the specified pixel type.
+        /// </summary>
+        /// <typeparam name="PixelType">Type of the pixel.</typeparam>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawBgraImage<PixelType>(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage<PixelType>(width, height, data, Channels.BGRA, stride));
+        }
+
+        /// <summary>
+        /// Draws CMYK image on screen with pixel type read from data element type.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="data"/> is <see cref="Variable"/> of <see cref="CodeType"/> <code>unsigned char*</code>,
+        /// then pixel type is read as <code>byte</code>.
+        /// </remarks>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawCmykImage(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage(width, height, data, Channels.CMYK, stride));
+        }
+
+        /// <summary>
+        /// Draws CMYK image on screen with the specified pixel type.
+        /// </summary>
+        /// <typeparam name="PixelType">Type of the pixel.</typeparam>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawCmykImage<PixelType>(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage<PixelType>(width, height, data, Channels.CMYK, stride));
+        }
+
+        /// <summary>
+        /// Draws grayscale image on screen with pixel type read from data element type.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="data"/> is <see cref="Variable"/> of <see cref="CodeType"/> <code>unsigned char*</code>,
+        /// then pixel type is read as <code>byte</code>.
+        /// </remarks>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawGrayscaleImage(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage(width, height, data, Channels.Grayscale, stride));
+        }
+
+        /// <summary>
+        /// Draws grayscale image on screen with the specified pixel type.
+        /// </summary>
+        /// <typeparam name="PixelType">Type of the pixel.</typeparam>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="data">Bitmap data.</param>
+        /// <param name="stride">Bitmap stride.</param>
+        public void DrawGrayscaleImage<PixelType>(dynamic width, dynamic height, dynamic data, dynamic stride = null)
+        {
+            Dump(CreateImage<PixelType>(width, height, data, Channels.Grayscale, stride));
+        }
+        #endregion
     }
 }

@@ -8,6 +8,34 @@ namespace CsDebugScript.UI.Drawing
     internal class Rectangle : Drawing, IRectangle
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="Rectangle" /> class.
+        /// </summary>
+        /// <param name="pen">Pen used to draw edges.</param>
+        /// <param name="left">Left coordinate of top left corner.</param>
+        /// <param name="top">Top coordinate of top left corner.</param>
+        /// <param name="width">Rectangle width.</param>
+        /// <param name="height">Rectangle height.</param>
+        /// <param name="fillBrush">Brush used to fill the content.</param>
+        public Rectangle(IPen pen, IBrush fillBrush, double left, double top, double width, double height)
+        {
+            Pen = pen;
+            FillBrush = fillBrush;
+            Left = left;
+            Top = top;
+            Width = width;
+            Height = height;
+            UIRectangle = new System.Windows.Shapes.Rectangle()
+            {
+                Width = width,
+                Height = height,
+                Fill = (fillBrush as Brush)?.UIBrush,
+            };
+            System.Windows.Controls.Canvas.SetLeft(UIRectangle, left);
+            System.Windows.Controls.Canvas.SetTop(UIRectangle, top);
+            UIRectangle.SetPen(pen);
+        }
+
+        /// <summary>
         /// Gets the pen used to draw edges.
         /// </summary>
         public IPen Pen { get; private set; }
@@ -46,33 +74,5 @@ namespace CsDebugScript.UI.Drawing
         /// UI object that should be added to visualization window.
         /// </summary>
         public override object UIObject => UIRectangle;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Rectangle" /> class.
-        /// </summary>
-        /// <param name="pen">Pen used to draw edges.</param>
-        /// <param name="left">Left coordinate of top left corner.</param>
-        /// <param name="top">Top coordinate of top left corner.</param>
-        /// <param name="width">Rectangle width.</param>
-        /// <param name="height">Rectangle height.</param>
-        /// <param name="fillBrush">Brush used to fill the content.</param>
-        public Rectangle(IPen pen, IBrush fillBrush, double left, double top, double width, double height)
-        {
-            Pen = pen;
-            FillBrush = fillBrush;
-            Left = left;
-            Top = top;
-            Width = width;
-            Height = height;
-            UIRectangle = new System.Windows.Shapes.Rectangle()
-            {
-                Width = width,
-                Height = height,
-                Fill = (fillBrush as Brush)?.UIBrush,
-            };
-            System.Windows.Controls.Canvas.SetLeft(UIRectangle, left);
-            System.Windows.Controls.Canvas.SetTop(UIRectangle, top);
-            UIRectangle.SetPen(pen);
-        }
     }
 }

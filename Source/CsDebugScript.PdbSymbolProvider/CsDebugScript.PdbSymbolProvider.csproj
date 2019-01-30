@@ -2,7 +2,7 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetFramework);$(DefaultNetStandard)</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>Provides fast access to symbols by directly reading PDB files. It is symbol provider for CsDebugScript.CodeGen.</Description>
   </PropertyGroup>
@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj" />
     <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj" />
   </ItemGroup>
 
 </Project>

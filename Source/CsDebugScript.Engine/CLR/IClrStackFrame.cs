@@ -25,15 +25,11 @@ namespace CsDebugScript.CLR
         /// <summary>
         /// Reads the name of the source file, line and displacement.
         /// </summary>
-        /// <param name="module">The module.</param>
-        /// <param name="instructionOffset">The instruction offset.</param>
-        Tuple<string, uint, ulong> ReadSourceFileNameAndLine(Module module, ulong instructionOffset);
+        Tuple<string, uint, ulong> ReadSourceFileNameAndLine();
 
         /// <summary>
         /// Reads the function name and displacement.
         /// </summary>
-        /// <param name="module">The module.</param>
-        /// <param name="instructionOffset">The instruction offset.</param>
-        Tuple<string, ulong> ReadFunctionNameAndDisplacement(Module module, ulong instructionOffset);
+        Tuple<string, ulong> ReadFunctionNameAndDisplacement();
     }
 }

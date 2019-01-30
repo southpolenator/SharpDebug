@@ -33,27 +33,24 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <returns>Interface for symbol provider module</returns>
         public override ISymbolProviderModule LoadModule(Module module)
         {
-            // Try to load PDB file into our own DIA session
             string location = File.Exists(module.MappedImageName) ? module.MappedImageName : module.ImageName;
 
             if (File.Exists(location))
-            {
                 try
                 {
-                    IDwarfImage image = LoadImage(location, module.LoadOffset);
-                    var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, image.DebugDataStrings, image.NormalizeAddress);
-                    var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.NormalizeAddress);
-                    var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.EhFrame, new DwarfExceptionHandlingFrameParsingInput(image));
-
-                    if (compilationUnits.Length != 0 || lineNumberPrograms.Length != 0 || commonInformationEntries.Length != 0)
+                    using (IDwarfImage image = LoadImage(location, module.LoadOffset))
                     {
-                        return new DwarfSymbolProviderModule(module, compilationUnits, lineNumberPrograms, commonInformationEntries, image.PublicSymbols, image.CodeSegmentOffset, image.Is64bit);
+                        var compilationUnits = ParseCompilationUnits(image.DebugData, image.DebugDataDescription, image.DebugDataStrings, image.NormalizeAddress);
+                        var lineNumberPrograms = ParseLineNumberPrograms(image.DebugLine, image.NormalizeAddress);
+                        var commonInformationEntries = ParseCommonInformationEntries(image.DebugFrame, image.EhFrame, new DwarfExceptionHandlingFrameParsingInput(image));
+
+                        if (compilationUnits.Length != 0 || lineNumberPrograms.Length != 0 || commonInformationEntries.Length != 0)
+                            return new DwarfSymbolProviderModule(location, module, compilationUnits, lineNumberPrograms, commonInformationEntries, image.PublicSymbols, image.CodeSegmentOffset, image.Is64bit);
                     }
                 }
                 catch
                 {
                 }
-            }
             return null;
         }
 

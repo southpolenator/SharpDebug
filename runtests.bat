@@ -1,13 +1,18 @@
 @ECHO OFF
-SET Configuration=Debug
-SET Platform=x64
+SET CONFIGURATION=Debug
 SET PROJECT_ROOT=%CD%
-REM SET TestConsole=C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe
-REM SET TestConsole=C:\Program Files (x86)\Microsoft Visual Studio\2017\Comunity\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe
-REM SET TestConsole=C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe
-SET TestConsole=C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe
-SET TestSettings=%PROJECT_ROOT%\Tests\DbgEngTest\WinDbgCs_%Platform%.testsettings
-SET DbgEngTest=%PROJECT_ROOT%\bin\%CONFIGURATION%\Tests\DbgEngTest.dll
+SET NUGET_PACKAGES=%userprofile%\.nuget\packages
+SET DEAFULT_TARGET_FRAMEWORK=net461
+SET DEAFULT_TARGET_NETSTANDARD=netstandard2.0
+SET DEAFULT_TARGET_NETCOREAPP=netcoreapp2.0
+SET OPENCOVER=%NUGET_PACKAGES%\OpenCover\4.6.519\tools\OpenCover.Console.exe
+SET XUNIT_TOOLS=%NUGET_PACKAGES%\xunit.runner.console\2.3.1\tools\net452
+SET XUNIT_TOOLS_CORE=%NUGET_PACKAGES%\xunit.runner.console\2.3.1\tools\netcoreapp2.0
+SET NATIVE_TARGET_DIR=%PROJECT_ROOT%\bin\%CONFIGURATION%\%DEAFULT_TARGET_NETCOREAPP%
+SET NATIVE_TESTS_DLL=%NATIVE_TARGET_DIR%\CsDebugScript.Tests.Native.dll
 
-"%TestConsole%" /Settings:"%TestSettings%" /inIsolation /Platform:%Platform% "%DbgEngTest%"
-rem "%TestConsole%" /Settings:"%TestSettings%" /inIsolation /Platform:%Platform% "%DbgEngTest%" /TestCaseFilter:"TestCategory=CLR"
+REM cd %NATIVE_TARGET_DIR%
+REM dotnet %XUNIT_TOOLS_CORE%\xunit.console.dll %NATIVE_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true
+REM cd %PROJECT_ROOT%
+
+"%OPENCOVER%" -oldstyle -register:user -target:"C:\Program Files\dotnet\dotnet.exe" -targetargs:"%XUNIT_TOOLS_CORE%\xunit.console.dll %NATIVE_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.Native.Core.xml -targetdir:%NATIVE_TARGET_DIR%

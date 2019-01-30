@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ICSharpCode.AvalonEdit.Highlighting;
+using CsDebugScript.Engine.Utility;
 
 namespace CsDebugScript.VS
 {
@@ -16,25 +17,22 @@ namespace CsDebugScript.VS
         /// <summary>
         /// Initializes a new instance of the <see cref="VSInteractiveWindowControl"/> class.
         /// </summary>
-        public VSInteractiveWindowControl()
+        /// <param name="interactiveExecutionInitialization">Interactive execution initialization.</param>
+        public VSInteractiveWindowControl(InteractiveExecutionInitialization interactiveExecutionInitialization)
         {
             this.InitializeComponent();
 
             Grid grid = new Grid();
-            ContentControl = CreateInteractiveWindowContent();
+            ContentControl = CreateInteractiveWindowContent(interactiveExecutionInitialization);
             grid.Children.Add(ContentControl);
             this.Content = grid;
 
             MakeEnabled(VSContext.CurrentDebugMode == EnvDTE.dbgDebugMode.dbgBreakMode);
-            // TODO: Once we don't use this control, we should remove our actions from the events
-            VSContext.DebuggerEnteredBreakMode += () => MakeEnabled(true);
-            VSContext.DebuggerEnteredDesignMode += () => MakeEnabled(false);
-            VSContext.DebuggerEnteredRunMode += () => MakeEnabled(false);
         }
 
         internal InteractiveWindowContent ContentControl { get; private set; }
 
-        private static InteractiveWindowContent CreateInteractiveWindowContent()
+        private static InteractiveWindowContent CreateInteractiveWindowContent(InteractiveExecutionInitialization interactiveExecutionInitialization)
         {
             try
             {
@@ -43,12 +41,13 @@ namespace CsDebugScript.VS
                 var colors = properties.Item("FontsAndColorsItems").Object as EnvDTE.FontsAndColorsItems;
                 string fontFamily = properties.Item("FontFamily").Value.ToString();
                 double fontSize = double.Parse(properties.Item("FontSize").Value.ToString());
+                DictionaryCache<string, EnvDTE.ColorableItems> colorsCache = new DictionaryCache<string, EnvDTE.ColorableItems>((name) => colors.Item(name));
                 int indentationSize = 4; // TODO:
 
-                result.Add(CreateColor("#RegularText#", colors.Item("Plain Text")));
-                result.Add(CreateColor("#CurrentLine#", colors.Item("CurrentLineActiveFormat"), colors.Item("Plain Text")));
-                result.Add(CreateColor("#TooltipText#", colors.Item("Plain Text"), colors.Item("Peek Highlighted Text Unfocused")));
-                result.Add(CreateColor("#CompletionText#", colors.Item("Plain Text"), colors.Item("Peek Background Unfocused")));
+                result.Add(CreateColor("#RegularText#", colorsCache["Plain Text"]));
+                result.Add(CreateColor("#CurrentLine#", colorsCache["CurrentLineActiveFormat"], colorsCache["Plain Text"]));
+                result.Add(CreateColor("#TooltipText#", colorsCache["Plain Text"], colorsCache["Peek Highlighted Text Unfocused"]));
+                result.Add(CreateColor("#CompletionText#", colorsCache["Plain Text"], colorsCache["Peek Background Unfocused"]));
 
                 Dictionary<string, string> colorMap = new Dictionary<string, string>()
                 {
@@ -83,7 +82,7 @@ namespace CsDebugScript.VS
 
                 foreach (var kvp in colorMap)
                 {
-                    var color = CreateColor(kvp.Key, colors.Item(kvp.Value));
+                    var color = CreateColor(kvp.Key, colorsCache[kvp.Value]);
 
                     color.Background = null;
                     result.Add(color);
@@ -113,11 +112,11 @@ namespace CsDebugScript.VS
                 MessageBox.Show(sb.ToString());
 #endif
 
-                    return new InteractiveWindowContent(fontFamily, fontSize * 1.4, indentationSize, result.ToArray());
+                    return new InteractiveWindowContent(interactiveExecutionInitialization, fontFamily, fontSize * 1.4, indentationSize, result.ToArray());
             }
             catch
             {
-                return new InteractiveWindowContent();
+                return new InteractiveWindowContent(interactiveExecutionInitialization);
             }
         }
 
@@ -145,6 +144,21 @@ namespace CsDebugScript.VS
             Color color = Color.FromArgb(sdColor.A, sdColor.R, sdColor.G, sdColor.B);
 
             return new SimpleHighlightingBrush(color);
+        }
+
+        internal void DebuggerEnteredBreakMode()
+        {
+            MakeEnabled(true);
+        }
+
+        internal void DebuggerEnteredDesignMode()
+        {
+            MakeEnabled(false);
+        }
+
+        internal void DebuggerEnteredRunMode()
+        {
+            MakeEnabled(false);
         }
 
         private void MakeEnabled(bool enabled)

@@ -48,15 +48,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.DiaSymbolProv
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.ClrMdProvider", "Source\CsDebugScript.ClrMdProvider\CsDebugScript.ClrMdProvider.csproj", "{5BE4AA0C-B242-45FD-968F-EB66745A9EFF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x64", "Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.x64.csproj", "{05AFBC66-4049-4E34-934E-60D336FD7098}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x64", "Source\CsDebugScript.WinDbg\x64proj\CsDebugScript.WinDbg.x64.csproj", "{05AFBC66-4049-4E34-934E-60D336FD7098}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x86", "Source\CsDebugScript.WinDbg\CsDebugScript.WinDbg.x86.csproj", "{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.WinDbg.x86", "Source\CsDebugScript.WinDbg\x86proj\CsDebugScript.WinDbg.x86.csproj", "{D4F1CE3B-ECE3-45F8-81D9-CC2E974583EA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Scripting", "Source\CsDebugScript.Scripting\CsDebugScript.Scripting.csproj", "{D89B5395-E81F-4426-9884-6EEAB723F80E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.UITests", "Tests\CsDebugScript.UITests\CsDebugScript.UITests.csproj", "{83939D6A-D0F8-42A2-BDEC-D9EAD673217D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Tests.UI", "Tests\CsDebugScript.Tests.UI\CsDebugScript.Tests.UI.csproj", "{83939D6A-D0F8-42A2-BDEC-D9EAD673217D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Tests", "Tests\CsDebugScript.Tests\CsDebugScript.Tests.csproj", "{BBACCEFE-2F75-40EB-A366-49E5D702FC0A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Tests.Native", "Tests\CsDebugScript.Tests.Native\CsDebugScript.Tests.Native.csproj", "{BBACCEFE-2F75-40EB-A366-49E5D702FC0A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.UI.App", "Source\CsDebugScript.UI.App\CsDebugScript.UI.App.csproj", "{52967235-B70E-4AB2-9764-1CD077BDA316}"
 EndProject
@@ -67,6 +67,12 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Drawing.Interfaces", "Source\CsDebugScript.Drawing.Interfaces\CsDebugScript.Drawing.Interfaces.csproj", "{9CE6DC17-D6A1-4DBF-B83A-B66645711A18}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.PdbSymbolProvider", "Source\CsDebugScript.PdbSymbolProvider\CsDebugScript.PdbSymbolProvider.csproj", "{C2CB7599-B319-45BE-9F37-320E7865DE2D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.VS.DPE", "Source\CsDebugScript.VS.DPE\CsDebugScript.VS.DPE.csproj", "{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Tests.CLR", "Tests\CsDebugScript.Tests.CLR\CsDebugScript.Tests.CLR.csproj", "{1795C23F-6BD2-493B-8CEB-883964D93E2B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsDebugScript.Tests.Common", "Tests\CsDebugScript.Tests.Common\CsDebugScript.Tests.Common.csproj", "{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -372,6 +378,42 @@ Global
 		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|x64.Build.0 = Release|Any CPU
 		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|x86.ActiveCfg = Release|Any CPU
 		{C2CB7599-B319-45BE-9F37-320E7865DE2D}.Release|x86.Build.0 = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|x64.Build.0 = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Debug|x86.Build.0 = Debug|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|x64.ActiveCfg = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|x64.Build.0 = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|x86.ActiveCfg = Release|Any CPU
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9}.Release|x86.Build.0 = Release|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Debug|x64.Build.0 = Debug|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Debug|x86.Build.0 = Debug|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Release|x64.ActiveCfg = Release|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Release|x64.Build.0 = Release|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Release|x86.ActiveCfg = Release|Any CPU
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B}.Release|x86.Build.0 = Release|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Debug|x64.Build.0 = Debug|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Debug|x86.Build.0 = Debug|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Release|x64.ActiveCfg = Release|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Release|x64.Build.0 = Release|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Release|x86.ActiveCfg = Release|Any CPU
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -402,6 +444,9 @@ Global
 		{7DFFED6E-52CE-4C6D-91EF-568AA5DFC567} = {EF2FD4E0-777D-4E92-A036-4604D0D14868}
 		{9CE6DC17-D6A1-4DBF-B83A-B66645711A18} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
 		{C2CB7599-B319-45BE-9F37-320E7865DE2D} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
+		{A69EB2F9-8C66-40FB-A0F3-5FC0591ABDA9} = {18FD9D16-E851-4EC3-8A30-8BB9E69C2374}
+		{1795C23F-6BD2-493B-8CEB-883964D93E2B} = {F1AA153A-AAB9-4F0A-8A41-C7ED8FDD0EC5}
+		{DDFC8C55-57E0-42C8-9AE6-F23F216BCD5E} = {F1AA153A-AAB9-4F0A-8A41-C7ED8FDD0EC5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9EE35CEC-B6D7-4442-BD27-F74972D115AE}
