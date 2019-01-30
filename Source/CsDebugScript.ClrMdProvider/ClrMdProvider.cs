@@ -123,7 +123,7 @@ namespace CsDebugScript.CLR
             Process process = GlobalCache.Processes[processId];
             var dataTarget = Microsoft.Diagnostics.Runtime.DataTarget.CreateFromDataReader(new DataReader(process));
 
-            dataTarget.SymbolLocator.SymbolPath += ";http://symweb";
+            dataTarget.SymbolLocator = new ClrMdSymbolLocator(process, dataTarget.SymbolLocator);
             return dataTarget;
         }
     }

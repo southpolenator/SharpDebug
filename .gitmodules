@@ -1,0 +1,3 @@
+[submodule "dumps/Source"]
+	path = dumps/Source
+	url = https://github.com/southpolenator/WinDbgCs_dumps/

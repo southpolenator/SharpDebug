@@ -248,6 +248,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// </summary>
         /// <param name="userTypes">The list of user types.</param>
         /// <param name="symbolNamespaces">The symbol namespaces.</param>
+        /// <param name="commonNamespace">The namespace name for types found in multiple modules.</param>
         /// <returns>Newly generated user types.</returns>
         internal IEnumerable<UserType> ProcessTypes(IEnumerable<UserType> userTypes, Dictionary<Symbol, string> symbolNamespaces, string commonNamespace)
         {

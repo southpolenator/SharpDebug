@@ -2,16 +2,12 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetFramework);$(DefaultNetStandard)</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>CsDebugScript</RootNamespace>
     <Description>Engine for debugger scripting. This package doesn't provide access to debuggers, but defines interfaces that other packages implement. Search for packages that provide access to DbgEng.dll (WinDbg debugging engine), PDB symbols, DWARF symbols, ELF core dumps...</Description>
     <Summary>Engine for debugger scripting. This package doesn't provide access to debuggers, but defines interfaces that other packages implement. Search for packages that provide access to DbgEng.dll (WinDbg debugging engine), PDB symbols, DWARF symbols, ELF core dumps... You can also search for Visual Studio extension that exposes this engine.</Summary>
   </PropertyGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="..\..\Key.snk" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.4.0" />

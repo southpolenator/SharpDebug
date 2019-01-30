@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Architecture = Microsoft.Diagnostics.Runtime.Architecture;
 
 namespace CsDebugScript.ClrMdProvider
 {
@@ -79,7 +80,7 @@ namespace CsDebugScript.ClrMdProvider
         /// </returns>
         public IList<ModuleInfo> EnumerateModules()
         {
-            return Process.Modules.Select(m => new ModuleInfo(this)
+            return Process.OriginalModules.Select(m => new ModuleInfo(this)
             {
                 TimeStamp = (uint)Math.Round((m.Timestamp - new DateTime(1970, 1, 1)).TotalSeconds),
                 FileSize = (uint)m.Size,
@@ -178,7 +179,7 @@ namespace CsDebugScript.ClrMdProvider
         /// <param name="version">The version.</param>
         public void GetVersionInfo(ulong address, out VersionInfo version)
         {
-            Module module = Process.GetModuleByInnerAddress(address);
+            Module module = Process.GetOriginalModuleByInnerAddress(address);
             var moduleVersion = module.ModuleVersion;
 
             version = new VersionInfo()

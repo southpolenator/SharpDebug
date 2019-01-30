@@ -32,7 +32,6 @@ namespace DbgEng.NoExceptions
         #endregion
 
         #region IDebugAdvanced2
-        [PreserveSig]
         /// <summary>
         /// The Request method performs a variety of different operations.
         /// </summary>
@@ -42,6 +41,7 @@ namespace DbgEng.NoExceptions
         /// <param name="OutBuffer">Receives the output from this method. The type and interpretation of the output depends on the <paramref name="Request"/> parameter. If <paramref name="OutBuffer"/> is <c>null</c>, the output is not returned.</param>
         /// <param name="OutBufferSize">Specifies the size of the output buffer <paramref name="OutBufferSize"/>. If the type of the output returned to <paramref name="OutBuffer"/> has a known size, <paramref name="OutBufferSize"/> is usually expected to be exactly that size, even if <paramref name="OutBuffer"/> is set to <c>null</c>.</param>
         /// <param name="OutSize">Receives the size of the output returned in the output buffer <paramref name="OutBuffer"/>.</param>
+        [PreserveSig]
         int Request(
             [In] DebugRequest Request,
             [In] IntPtr InBuffer,

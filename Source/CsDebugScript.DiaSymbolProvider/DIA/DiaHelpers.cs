@@ -15,9 +15,16 @@ namespace DIA
         /// <param name="container">The container.</param>
         public static IEnumerable<IDiaSymbol> Enum(this IDiaEnumSymbols container)
         {
-            foreach (IDiaSymbol symbol in container)
+            IDiaSymbol[] tempSymbols = new IDiaSymbol[1];
+            container.Reset();
+            while (true)
             {
-                yield return symbol;
+                uint count;
+
+                container.Next((uint)tempSymbols.Length, tempSymbols, out count);
+                if (count == 0)
+                    break;
+                yield return tempSymbols[0];
             }
         }
 
@@ -27,9 +34,16 @@ namespace DIA
         /// <param name="container">The container.</param>
         public static IEnumerable<IDiaLineNumber> Enum(this IDiaEnumLineNumbers container)
         {
-            foreach (IDiaLineNumber lineNumber in container)
+            IDiaLineNumber[] tempLineNumbers = new IDiaLineNumber[1];
+            container.Reset();
+            while (true)
             {
-                yield return lineNumber;
+                uint count;
+
+                container.Next((uint)tempLineNumbers.Length, tempLineNumbers, out count);
+                if (count == 0)
+                    break;
+                yield return tempLineNumbers[0];
             }
         }
 

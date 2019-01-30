@@ -244,7 +244,7 @@ namespace CsDebugScript.DwarfSymbolProvider
                 // Find offset for main module
                 ulong offset = 0;
 
-                if (!string.IsNullOrEmpty(mainModulePath))
+                if (!string.IsNullOrEmpty(mainModulePath) && File.Exists(mainModulePath))
                 {
                     var elf = ELFReader.Load<ulong>(mainModulePath);
                     foreach (AuxvEntry entry in auxVector)
@@ -272,7 +272,7 @@ namespace CsDebugScript.DwarfSymbolProvider
             string name = files.First(f => f.start == baseAddress).name;
             string imagePath = ElfCoreDumpDebuggingEngine.GetModuleMappedImage(this, name);
 
-            if (!string.IsNullOrEmpty(imagePath))
+            if (!string.IsNullOrEmpty(imagePath) && File.Exists(imagePath))
             {
                 // Return file size
                 return (ulong)(new FileInfo(imagePath).Length);
@@ -316,7 +316,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         {
             try
             {
-                return segment.GetContents();
+                return segment.GetFileContents();
             }
             catch
             {

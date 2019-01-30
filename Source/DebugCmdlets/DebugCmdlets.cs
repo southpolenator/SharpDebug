@@ -36,7 +36,7 @@ namespace PowershellDebugSession
     /// Cmdlet for staring debug session.
     /// </summary>
     [Cmdlet(VerbsCommunications.Connect, "StartDebugSession")]
-    public class StartDbgSession: Cmdlet
+    public class StartDbgSession : Cmdlet
     {
         /// <summary>
         /// Path of the process to start under debugger.
@@ -51,6 +51,9 @@ namespace PowershellDebugSession
         public string SymbolPath { get; set; }
 
 
+        /// <summary>
+        /// Command main function.
+        /// </summary>
         protected override void ProcessRecord()
         {
             ConnectionState state = ConnectionState.GetConnectionState();
@@ -76,6 +79,9 @@ namespace PowershellDebugSession
     [OutputType(typeof(StackTrace))]
     public class GetCallstack : Cmdlet
     {
+        /// <summary>
+        /// Command main function.
+        /// </summary>
         protected override void ProcessRecord()
         {
             Console.WriteLine("Threads: {0}", Thread.All.Length);

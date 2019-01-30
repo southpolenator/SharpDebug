@@ -56,7 +56,6 @@ Here is an example XML configuration file:
                     NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.vector&lt;${T}&gt;" />
   </Transformations>
   <UseDirectClassAccess>true</UseDirectClassAccess>
-  <GenerateAssemblyWithRoslyn>true</GenerateAssemblyWithRoslyn>
   <DontSaveGeneratedCodeFiles>true</DontSaveGeneratedCodeFiles>
   <GeneratePhysicalMappingOfUserTypes>true</GeneratePhysicalMappingOfUserTypes>
 </XmlConfig>
@@ -73,12 +72,12 @@ In order to fully benefit performance wise from code generation, you want to use
 Some symbol providers (DbgEng symbol provider) doesn't support getting base classes, class fields, but only all fields defined in the type. Modern symbol providers support direct class access and should be used by default.
 
 #### Different ways to generate assembly
-There are three assembly generators:
+There are two assembly generators:
 1. Roslyn
-2. Using old C# compiler
-3. IL emitting
+2. IL emitting
 
-Roslyn is much faster than using old C# compiler and that's why it is default option. Both Roslyn and old C# compiler allow usage of `IncludedFiles` and `ReferencedAssemblies`. IL emitting is the fastest assembly generation since it doesn't do two pass generation (source code and then compiling it), but it doesn't support added user code (`InlcudedFiles`).
+Roslyn allows usage of `IncludedFiles` and `ReferencedAssemblies`.
+IL emitting is the fastest assembly generation since it doesn't do two pass generation (source code and then compiling it), but it doesn't support added user code (`InlcudedFiles`).
 
 #### Enhancing generated user types with custom code
 All user types are generated as partial classes allowing user to add custom code to make user types easier to use.

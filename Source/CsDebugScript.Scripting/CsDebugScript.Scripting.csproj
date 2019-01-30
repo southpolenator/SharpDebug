@@ -2,17 +2,13 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
     <RootNamespace>CsDebugScript</RootNamespace>
     <Description>Provides scripting ability to CsDebugScript.Engine: executing scripts, interactive execution with REPL.</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="2.6.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="System.Web.Extensions" />
   </ItemGroup>
 
   <ItemGroup>

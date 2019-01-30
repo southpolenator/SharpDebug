@@ -46,6 +46,9 @@ namespace CsDebugScript.VS.DPE
         VariableEnumerator_Dispose,
     }
 
+    /// <summary>
+    /// Exported class for communication between DPE process and Visual Studio extension.
+    /// </summary>
     public class MessageReceiver : IDkmCustomMessageForwardReceiver
     {
         private volatile int nextRuntimeId = 1;
@@ -56,6 +59,12 @@ namespace CsDebugScript.VS.DPE
         private volatile int nextVariableEnumeratorId = 1;
         private ConcurrentDictionary<int, IEnumerator<Tuple<ulong, int>>> variableEnumeratorsCache = new ConcurrentDictionary<int, IEnumerator<Tuple<ulong, int>>>();
 
+        /// <summary>
+        /// Sends a message to a listening component which is lower in the hierarchy.
+        /// </summary>
+        /// <param name="message">Message structure used to pass information between custom debugger backend
+        /// components and custom visual studio UI components (packages, add-ins, etc).</param>
+        /// <returns>Message sent back from the implementation.</returns>
         public DkmCustomMessage SendLower(DkmCustomMessage message)
         {
             object result;

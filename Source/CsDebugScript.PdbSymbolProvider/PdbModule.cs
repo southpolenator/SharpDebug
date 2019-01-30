@@ -290,7 +290,7 @@ namespace CsDebugScript.PdbSymbolProvider
         /// <summary>
         /// Creates new <see cref="PdbSymbol"/> for the specified built-in type index.
         /// </summary>
-        /// <param name="index">Built-in type index.</param>
+        /// <param name="typeIndex">Built-in type index.</param>
         private PdbSymbol CreateBuiltinSymbol(TypeIndex typeIndex)
         {
             return new PdbSymbol(this, typeIndex);

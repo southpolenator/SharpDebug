@@ -13,13 +13,13 @@
 
   <ItemGroup>
     <Reference Include="Microsoft.Diagnostics.Runtime">
-      <HintPath>$(EnlistmentRoot)\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
+      <HintPath>$(EnlistmentRoot)\External\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <!-- Hack for 'dotnet pack' command to include ClrMD into nuget. -->
   <ItemGroup>
-    <_PackageFiles Include="$(EnlistmentRoot)\ClrMd\Microsoft.Diagnostics.Runtime.dll">
+    <_PackageFiles Include="$(EnlistmentRoot)\External\Microsoft.Diagnostics.Runtime.dll">
       <BuildAction>None</BuildAction>
       <PackagePath>lib\$(DefaultNetFramework)\</PackagePath>
     </_PackageFiles>

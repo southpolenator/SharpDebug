@@ -6,7 +6,7 @@
     <VersionPrefix>1.4</VersionPrefix>
     <Authors>CsDebugScript Team</Authors>
     <Copyright>Copyright (C) WinDbgCs team 2015-2019</Copyright>
-    <PackageLicenseUrl>https://github.com/southpolenator/WinDbgCs/blob/master/license.txt</PackageLicenseUrl>
+    <PackageLicenseFile>license.txt</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/southpolenator/WinDbgCs</PackageProjectUrl>
     <!--<PackageIconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</PackageIconUrl>-->
     <PackageTags>windbg;dbgeng;dump-analysis;clr;dumps;dump-processing;coredump;dwarf;elf</PackageTags>
@@ -19,8 +19,6 @@
     <EnlistmentRoot>$(MSBuildThisFileDirectory)</EnlistmentRoot>
     <OutputPath>$(EnlistmentRoot)\bin\$(Configuration)\</OutputPath>
     <DocumentationFile>$(OutputPath)\$(AssemblyName).XML</DocumentationFile>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(EnlistmentRoot)\Key.snk</AssemblyOriginatorKeyFile>
     <DebugType>full</DebugType>
     <DebugSymbols>True</DebugSymbols>
 
@@ -28,6 +26,20 @@
     <DefaultNetFramework>net461</DefaultNetFramework>
     <DefaultNetStandard>netstandard2.0</DefaultNetStandard>
     <DefaultNetCoreApp>netcoreapp2.0</DefaultNetCoreApp>
+    <DefaultAppTargets>$(DefaultNetCoreApp);$(DefaultNetFramework)</DefaultAppTargets>
+  </PropertyGroup>
+
+  <!-- Nuget license file -->
+  <ItemGroup>
+    <None Include="$(EnlistmentRoot)license.txt" Pack="true" PackagePath=""/>
+  </ItemGroup>
+
+  <!-- Solving problem with non-Windows builds or not installed .net framework -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461' AND '$(MSBuildRuntimeType)' == 'Core' AND '$(OS)' != 'Windows_NT'">
+    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6.1" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" GeneratePathProperty="true" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net461' AND '$(MSBuildRuntimeType)' == 'Core' AND '$(OS)' != 'Windows_NT' AND '$(NuGetPackageRoot)' != ''">
+    <FrameworkPathOverride>$(NuGetPackageRoot)microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\</FrameworkPathOverride>
   </PropertyGroup>
 
   <!-- Solving problem with VSIX project build errors -->

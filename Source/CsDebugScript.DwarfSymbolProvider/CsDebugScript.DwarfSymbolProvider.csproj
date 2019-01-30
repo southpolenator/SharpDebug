@@ -2,7 +2,7 @@
   <Import Project="..\..\SharedAssemblyInfo.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
     <Description>Provides access to DWARF symbols (for PE and ELF image containers) and also ability to read ELF core dumps. It is symbol provider and debugger engine interface for CsDebugScript.Engine.</Description>
   </PropertyGroup>
 
@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="CxxDemangler" Version="0.2.4.11" />
-    <PackageReference Include="ELFSharp" Version="1.0.4" />
+    <PackageReference Include="ELFSharp" Version="2.0.0" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.4.0" />
   </ItemGroup>
 

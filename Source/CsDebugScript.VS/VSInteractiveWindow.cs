@@ -192,7 +192,11 @@ namespace CsDebugScript.VS
 #endif
                         AppDomain.Unload(domain);
                     }
+#if DEBUG
                     catch (Exception ex)
+#else
+                    catch
+#endif
                     {
 #if DEBUG
                         System.Windows.MessageBox.Show("Domain failed to unload:\n" + ex.ToString());
@@ -226,7 +230,11 @@ namespace CsDebugScript.VS
                     grid.Children.Clear();
                     grid.Children.Add(interactiveControl);
                 }
+#if DEBUG
                 catch (Exception ex)
+#else
+                catch
+#endif
                 {
 #if DEBUG
                     System.Windows.MessageBox.Show("Loading domain failed:\n" + ex.ToString());
