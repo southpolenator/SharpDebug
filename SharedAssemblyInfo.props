@@ -18,7 +18,7 @@
     <!-- Common properties for all projects -->
     <EnlistmentRoot>$(MSBuildThisFileDirectory)</EnlistmentRoot>
     <OutputPath>$(EnlistmentRoot)\bin\$(Configuration)\</OutputPath>
-    <DocumentationFile>$(OutputPath)\$(AssemblyName).XML</DocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DebugType>full</DebugType>
     <DebugSymbols>True</DebugSymbols>
 
