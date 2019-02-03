@@ -1,8 +1,9 @@
 ﻿using CsDebugScript.CodeGen;
 using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.Engine.Utility;
-using CsDebugScript.PdbSymbolProvider.SymbolRecords;
-using CsDebugScript.PdbSymbolProvider.TypeRecords;
+using SharpPdb.Windows;
+using SharpPdb.Windows.SymbolRecords;
+using SharpPdb.Windows.TypeRecords;
+using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,8 +11,8 @@ using System.Linq;
 
 namespace CsDebugScript.PdbSymbolProvider
 {
+    using ConstantSymbol = SharpPdb.Windows.SymbolRecords.ConstantSymbol;
     using Module = CsDebugScript.CodeGen.SymbolProviders.Module;
-    using ConstantSymbol = SymbolRecords.ConstantSymbol;
 
     /// <summary>
     /// Class represents CodeGen module for PDB reader.

@@ -1,11 +1,10 @@
 ﻿using CsDebugScript.UI;
+using ICSharpCode.AvalonEdit.Highlighting;
+using SharpUtilities;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ICSharpCode.AvalonEdit.Highlighting;
-using CsDebugScript.Engine.Utility;
 
 namespace CsDebugScript.VS
 {

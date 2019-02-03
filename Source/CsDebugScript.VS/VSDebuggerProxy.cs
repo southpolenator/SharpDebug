@@ -1,5 +1,4 @@
 ﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Utility;
 using CsDebugScript.VS.DPE;
 using DIA;
 using Microsoft.VisualStudio.Debugger;
@@ -7,6 +6,7 @@ using Microsoft.VisualStudio.Debugger.CallStack;
 using Microsoft.VisualStudio.Debugger.Clr;
 using Microsoft.VisualStudio.Debugger.Evaluation;
 using Microsoft.VisualStudio.Debugger.Symbols;
+using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -1,13 +1,14 @@
-﻿using ELFSharp.ELF;
+﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Utility;
+using ELFSharp.ELF;
 using ELFSharp.ELF.Segments;
+using SharpUtilities;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.IO;
-using CsDebugScript.Engine.Utility;
-using CsDebugScript.Engine;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {

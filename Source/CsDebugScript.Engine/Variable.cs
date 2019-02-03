@@ -1,11 +1,10 @@
 ﻿using CsDebugScript.CLR;
 using CsDebugScript.Engine;
-using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
+using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq;
 using System.Reflection;
 
 namespace CsDebugScript

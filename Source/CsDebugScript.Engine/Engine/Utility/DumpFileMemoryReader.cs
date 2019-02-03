@@ -1,9 +1,10 @@
-﻿using System;
+﻿using CsDebugScript.Exceptions;
+using SharpUtilities;
+using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
-using CsDebugScript.Exceptions;
 
 namespace CsDebugScript.Engine.Utility
 {

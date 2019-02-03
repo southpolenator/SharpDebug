@@ -1,10 +1,10 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.PdbSymbolProvider.SymbolRecords;
-using CsDebugScript.PdbSymbolProvider.TypeRecords;
+using SharpPdb.Windows.SymbolRecords;
+using SharpPdb.Windows.TypeRecords;
 
 namespace CsDebugScript.PdbSymbolProvider
 {
-    using ConstantSymbol = SymbolRecords.ConstantSymbol;
+    using ConstantSymbol = SharpPdb.Windows.SymbolRecords.ConstantSymbol;
 
     /// <summary>
     /// Interface represents symbol field for PDB reader.

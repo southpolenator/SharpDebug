@@ -1,6 +1,6 @@
 ﻿using CsDebugScript.ClrMdProvider;
 using CsDebugScript.Engine;
-using CsDebugScript.Engine.Utility;
+using SharpUtilities;
 using System.Linq;
 
 namespace CsDebugScript.CLR

@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.CLR;
-using CsDebugScript.Engine.Utility;
+using SharpUtilities;
 
 namespace CsDebugScript.VS.CLR
 {

@@ -1,7 +1,7 @@
 ﻿using CsDebugScript.CLR;
 using CsDebugScript.Engine;
-using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
+using SharpUtilities;
 using System;
 
 namespace CsDebugScript

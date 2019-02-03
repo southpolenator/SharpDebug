@@ -5,6 +5,7 @@ using CsDebugScript.Engine.SymbolProviders;
 using CsDebugScript.Engine.Utility;
 using CsDebugScript.VS.CLR;
 using DIA;
+using SharpUtilities;
 using System;
 using System.IO;
 using System.Linq;

@@ -1,21 +1,21 @@
-﻿using System;
+﻿using CsDebugScript.CodeGen.SymbolProviders;
+using CsDebugScript.CodeGen.TypeInstances;
+using CsDebugScript.CodeGen.UserTypes;
+using CsDebugScript.CodeGen.UserTypes.Members;
+using DIA;
+using Managed.Reflection;
+using Managed.Reflection.Emit;
+using SharpUtilities;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.CodeGen.TypeInstances;
-using CsDebugScript.CodeGen.UserTypes;
-using CsDebugScript.CodeGen.UserTypes.Members;
-using CsDebugScript.Engine.Utility;
-using DIA;
-using Managed.Reflection;
-using Managed.Reflection.Emit;
 
 namespace CsDebugScript.CodeGen.CodeWriters
 {
-    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
     using Type = Managed.Reflection.Type;
+    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
 
     /// <summary>
     /// Code writer that outputs IL code and compiles it using System.Reflection.Emit.

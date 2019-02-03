@@ -1,7 +1,7 @@
 ﻿using CsDebugScript.Engine.Native;
 using CsDebugScript.Engine.SymbolProviders;
-using CsDebugScript.Engine.Utility;
 using DbgEng;
+using SharpUtilities;
 using System;
 
 namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers

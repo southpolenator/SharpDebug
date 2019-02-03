@@ -1,12 +1,12 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.PdbSymbolProvider.SymbolRecords;
+using SharpPdb.Windows.SymbolRecords;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace CsDebugScript.PdbSymbolProvider
 {
-    using ConstantSymbol = SymbolRecords.ConstantSymbol;
+    using ConstantSymbol = SharpPdb.Windows.SymbolRecords.ConstantSymbol;
 
     /// <summary>
     /// Represents global scope symbol for PDB reader.

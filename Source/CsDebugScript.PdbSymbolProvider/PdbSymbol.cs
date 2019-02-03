@@ -1,5 +1,6 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.PdbSymbolProvider.TypeRecords;
+using SharpPdb.Windows;
+using SharpPdb.Windows.TypeRecords;
 using System;
 using System.Collections.Generic;
 

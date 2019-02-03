@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Utility;
+using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;

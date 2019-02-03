@@ -6,6 +6,7 @@ using CsDebugScript.Engine.Utility;
 using CsDebugScript.Exceptions;
 using DbgEng;
 using DIA;
+using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -1,6 +1,6 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
 using CsDebugScript.CodeGen.TypeInstances;
-using CsDebugScript.Engine.Utility;
+using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.IO;

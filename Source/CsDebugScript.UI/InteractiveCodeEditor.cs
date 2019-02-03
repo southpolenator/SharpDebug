@@ -1,8 +1,12 @@
-﻿using CsDebugScript.UI.CodeWindow;
+﻿using CsDebugScript.Engine;
+using CsDebugScript.Engine.Debuggers;
 using CsDebugScript.Engine.Utility;
+using CsDebugScript.UI.CodeWindow;
+using CsDebugScript.UI.Drawing;
 using DbgEng;
 using ICSharpCode.NRefactory.Documentation;
 using ICSharpCode.NRefactory.TypeSystem;
+using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,9 +16,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
-using CsDebugScript.Engine.Debuggers;
-using CsDebugScript.Engine;
-using CsDebugScript.UI.Drawing;
 
 namespace CsDebugScript.UI
 {

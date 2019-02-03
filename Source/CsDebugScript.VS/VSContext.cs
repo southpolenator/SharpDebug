@@ -1,7 +1,7 @@
 ﻿using CsDebugScript.Engine.SymbolProviders;
-using CsDebugScript.Engine.Utility;
 using EnvDTE;
 using Microsoft.VisualStudio.OLE.Interop;
+using SharpUtilities;
 using System;
 using System.Runtime.InteropServices;
 

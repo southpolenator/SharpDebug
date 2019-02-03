@@ -1,5 +1,5 @@
 ﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.Engine.Utility;
+using SharpUtilities;
 using System;
 
 namespace CsDebugScript.CodeGen.UserTypes

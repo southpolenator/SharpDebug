@@ -1,5 +1,5 @@
-﻿using CsDebugScript.Engine.Utility;
-using CsDebugScript.Exceptions;
+﻿using CsDebugScript.Exceptions;
+using SharpUtilities;
 using System;
 using System.Collections;
 

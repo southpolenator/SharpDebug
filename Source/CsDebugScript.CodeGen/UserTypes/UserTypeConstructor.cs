@@ -62,7 +62,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
         /// <summary>
         /// <code>
-        /// public Constructor(Variable variable, CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress)
+        /// public Constructor(Variable variable, SharpUtilities.MemoryBuffer buffer, int offset, ulong bufferAddress)
         ///     : base(variable, buffer, offset, bufferAddress)
         /// {
         /// }
@@ -73,7 +73,7 @@ namespace CsDebugScript.CodeGen.UserTypes
             Arguments = new Tuple<Type, string>[]
             {
                 Tuple.Create(typeof(Variable), "variable"),
-                Tuple.Create(typeof(CsDebugScript.Engine.Utility.MemoryBuffer), "buffer"),
+                Tuple.Create(typeof(SharpUtilities.MemoryBuffer), "buffer"),
                 Tuple.Create(typeof(int), "offset"),
                 Tuple.Create(typeof(ulong), "bufferAddress"),
             },
@@ -84,7 +84,7 @@ namespace CsDebugScript.CodeGen.UserTypes
 
         /// <summary>
         /// <code>
-        /// public Constructor(CsDebugScript.Engine.Utility.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath)
+        /// public Constructor(SharpUtilities.MemoryBuffer buffer, int offset, ulong bufferAddress, CodeType codeType, ulong address, string name = Variable.ComputedName, string path = Variable.UnknownPath)
         ///     : base(buffer, offset, bufferAddress, codeType, address, name, path)
         /// {
         /// }
@@ -94,7 +94,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         {
             Arguments = new Tuple<Type, string>[]
             {
-                Tuple.Create(typeof(CsDebugScript.Engine.Utility.MemoryBuffer), "buffer"),
+                Tuple.Create(typeof(SharpUtilities.MemoryBuffer), "buffer"),
                 Tuple.Create(typeof(int), "offset"),
                 Tuple.Create(typeof(ulong), "bufferAddress"),
                 Tuple.Create(typeof(CodeType), "codeType"),

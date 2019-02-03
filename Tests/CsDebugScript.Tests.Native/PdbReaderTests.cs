@@ -1,8 +1,8 @@
-﻿using CsDebugScript.PdbSymbolProvider;
-using CsDebugScript.PdbSymbolProvider.DBI;
-using CsDebugScript.PdbSymbolProvider.SymbolRecords;
-using CsDebugScript.PdbSymbolProvider.TPI;
-using CsDebugScript.PdbSymbolProvider.TypeRecords;
+﻿using SharpPdb.Windows;
+using SharpPdb.Windows.DBI;
+using SharpPdb.Windows.SymbolRecords;
+using SharpPdb.Windows.TPI;
+using SharpPdb.Windows.TypeRecords;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -54,15 +54,15 @@ namespace CsDebugScript.Tests.Native
         private void Test(SymbolStream symbolStream)
         {
             // Check that getting symbols by kind works correctly
-            SymbolRecordKind[] kinds = symbolStream.references.Select(r => r.Kind).Distinct().ToArray();
+            SymbolRecordKind[] kinds = symbolStream.References.Select(r => r.Kind).Distinct().ToArray();
 
             foreach (SymbolRecordKind kind in kinds)
-                Assert.Equal(symbolStream.references.Count(r => r.Kind == kind), symbolStream[kind].Length);
+                Assert.Equal(symbolStream.References.Count(r => r.Kind == kind), symbolStream[kind].Length);
         }
 
         private void Test(TpiStream tpiStream)
         {
-            Assert.Equal(tpiStream.TypeRecordCount, tpiStream.references.Count);
+            Assert.Equal(tpiStream.TypeRecordCount, tpiStream.References.Count);
             Assert.NotEmpty(tpiStream.HashValues);
             if (tpiStream.HashAdjusters != null)
                 Assert.NotEmpty(tpiStream.HashAdjusters.Dictionary);
@@ -70,19 +70,19 @@ namespace CsDebugScript.Tests.Native
             // Verify that type offsets are correct in references array
             foreach (TypeIndexOffset offset in tpiStream.TypeIndexOffsets)
             {
-                var reference = tpiStream.references[(int)offset.Type.ArrayIndex];
+                var reference = tpiStream.References[(int)offset.Type.ArrayIndex];
                 Assert.Equal(offset.Offset, reference.DataOffset - RecordPrefix.Size);
             }
 
             // Verify that all types can be read
-            for (int i = 0; i < tpiStream.references.Count; i++)
+            for (int i = 0; i < tpiStream.References.Count; i++)
                 Assert.NotNull(tpiStream[TypeIndex.FromArrayIndex(i)]);
 
             // Check that getting types by kind works correctly
-            TypeLeafKind[] kinds = tpiStream.references.Select(r => r.Kind).Distinct().ToArray();
+            TypeLeafKind[] kinds = tpiStream.References.Select(r => r.Kind).Distinct().ToArray();
 
             foreach (TypeLeafKind kind in kinds)
-                Assert.Equal(tpiStream.references.Count(r => r.Kind == kind), tpiStream[kind].Length);
+                Assert.Equal(tpiStream.References.Count(r => r.Kind == kind), tpiStream[kind].Length);
         }
     }
 }

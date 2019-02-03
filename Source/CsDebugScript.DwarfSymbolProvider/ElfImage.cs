@@ -1,9 +1,8 @@
 ﻿using ELFSharp.ELF;
 using ELFSharp.ELF.Sections;
-using System.Linq;
+using SharpUtilities;
 using System.Collections.Generic;
-using CsDebugScript.Engine.Utility;
-using System;
+using System.Linq;
 
 namespace CsDebugScript.DwarfSymbolProvider
 {
