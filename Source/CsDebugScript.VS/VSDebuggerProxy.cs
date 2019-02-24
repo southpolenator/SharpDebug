@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Debugger.CallStack;
 using Microsoft.VisualStudio.Debugger.Clr;
 using Microsoft.VisualStudio.Debugger.Evaluation;
 using Microsoft.VisualStudio.Debugger.Symbols;
+using SharpPdb.Managed;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
@@ -997,28 +998,27 @@ namespace CsDebugScript.VS
                 if (File.Exists(pdbPath))
                 {
                     // TODO: This needs to be cached
-                    using (var pdbReader = new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath))
+                    using (var pdbReader = Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader.OpenPdb(pdbPath))
                     {
-                        var function = pdbReader.GetFunctionFromToken(tuple.Item2);
+                        var function = pdbReader.GetFunctionFromToken((int)tuple.Item2);
                         uint ilOffset = tuple.Item3;
 
                         ulong distance = ulong.MaxValue;
                         string sourceFileName = "";
                         uint sourceFileLine = uint.MaxValue;
 
-                        foreach (Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSequencePointCollection sequenceCollection in function.SequencePoints)
-                            foreach (Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSequencePoint point in sequenceCollection.Lines)
-                                if (point.Offset <= ilOffset)
-                                {
-                                    ulong dist = ilOffset - point.Offset;
+                        foreach (IPdbSequencePoint point in function.SequencePoints)
+                            if (point.Offset <= ilOffset)
+                            {
+                                ulong dist = (ulong)(ilOffset - point.Offset);
 
-                                    if (dist < distance)
-                                    {
-                                        sourceFileName = sequenceCollection.File.Name;
-                                        sourceFileLine = point.LineBegin;
-                                        distance = dist;
-                                    }
+                                if (dist < distance)
+                                {
+                                    sourceFileName = point.Source.Name;
+                                    sourceFileLine = (uint)point.StartLine;
+                                    distance = dist;
                                 }
+                            }
                         return Tuple.Create(sourceFileName, sourceFileLine, distance);
                     }
                 }
@@ -1172,12 +1172,13 @@ namespace CsDebugScript.VS
                     if (File.Exists(pdbPath))
                     {
                         // TODO: This needs to be cached
-                        using (var pdbReader = new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath))
+                        using (var pdbReader = Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader.OpenPdb(pdbPath))
                         {
-                            var function = pdbReader.GetFunctionFromToken(variables[0].Item4);
-                            var scope = function.FindScopeByILOffset(variables[0].Item5);
+                            var function = pdbReader.GetFunctionFromToken((int)variables[0].Item4);
+                            var scope = function.LocalScopes.FirstOrDefault(s => s.StartOffset <= variables[0].Item5 && variables[0].Item5 < s.EndOffset);
+                            int dummyCounter = 0;
 
-                            names = GetRecursiveSlots(scope).Select(s => s.Name).ToArray();
+                            names = GetRecursiveSlots(scope).Select(s => s?.Name ?? $"local_dummy_{dummyCounter++}").ToArray();
                         }
                     }
 
@@ -1200,18 +1201,18 @@ namespace CsDebugScript.VS
         /// </summary>
         /// <param name="scope">The scope.</param>
         /// <param name="results">The results.</param>
-        private static IEnumerable<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> GetRecursiveSlots(Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbScope scope, List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> results = null)
+        private static IEnumerable<IPdbLocalVariable> GetRecursiveSlots(IPdbLocalScope scope, List<IPdbLocalVariable> results = null)
         {
             if (results == null)
-                results = new List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot>();
-            foreach (var slot in scope.Slots)
+                results = new List<IPdbLocalVariable>();
+            foreach (var variable in scope.Variables)
             {
-                while (results.Count <= slot.Slot)
+                while (results.Count <= variable.Index)
                     results.Add(null);
-                results[(int)slot.Slot] = slot;
+                results[variable.Index] = variable;
             }
 
-            foreach (var innerScope in scope.Scopes)
+            foreach (var innerScope in scope.Children)
                 GetRecursiveSlots(innerScope, results);
             return results;
         }

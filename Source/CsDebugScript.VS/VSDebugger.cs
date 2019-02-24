@@ -609,6 +609,14 @@ namespace CsDebugScript.VS
                 });
             return runtimes;
         }
+
+        /// <summary>
+        /// Clears the internal CLR provider caches.
+        /// </summary>
+        public void ClearCache()
+        {
+            // Do nothing as we don't have caches.
+        }
         #endregion
     }
 }
