@@ -100,7 +100,7 @@ namespace CsDebugScript.Engine
         /// </summary>
         public static void ClearCache()
         {
-            CacheInvalidator.InvalidateCaches(ClrProvider);
+            ClrProvider?.ClearCache();
             UserTypeMetadataCaches.InvalidateCache();
             GlobalCache.Processes.Clear();
             GlobalCache.Caches.InvalidateCache();

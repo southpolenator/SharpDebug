@@ -1,4 +1,5 @@
 ﻿using CsDebugScript.CLR;
+using SharpPdb.Managed;
 using SharpUtilities;
 using System;
 
@@ -7,12 +8,12 @@ namespace CsDebugScript.ClrMdProvider
     /// <summary>
     /// ClrMD implementation of <see cref="IClrModule"/>.
     /// </summary>
-    internal class ClrMdModule : IClrModule
+    internal class ClrMdModule : IClrModule, IDisposable
     {
         /// <summary>
-        /// The CLR PDB reader
+        /// The managed PDB reader.
         /// </summary>
-        private SimpleCache<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader> clrPdbReader;
+        private SimpleCache<IPdbFile> clrPdbReader;
 
         /// <summary>
         /// The native module
@@ -36,7 +37,7 @@ namespace CsDebugScript.ClrMdProvider
 
                     if (!string.IsNullOrEmpty(pdbPath))
                     {
-                        return new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath);
+                        return Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader.OpenPdb(pdbPath);
                     }
                 }
                 catch (Exception)
@@ -54,57 +55,27 @@ namespace CsDebugScript.ClrMdProvider
         /// <summary>
         /// Gets the base of the image loaded into memory. This may be 0 if there is not a physical file backing it.
         /// </summary>
-        public ulong ImageBase
-        {
-            get
-            {
-                return ClrModule.ImageBase;
-            }
-        }
+        public ulong ImageBase => ClrModule.ImageBase;
 
         /// <summary>
         /// Gets the name of the module.
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return ClrModule.Name;
-            }
-        }
+        public string Name => ClrModule.Name;
 
         /// <summary>
         /// Gets the name of the PDB file.
         /// </summary>
-        public string PdbFileName
-        {
-            get
-            {
-                return ClrModule.Pdb?.FileName;
-            }
-        }
+        public string PdbFileName => ClrModule.Pdb?.FileName;
 
         /// <summary>
         /// Gets the size of the image in memory.
         /// </summary>
-        public ulong Size
-        {
-            get
-            {
-                return ClrModule.Size;
-            }
-        }
+        public ulong Size => ClrModule.Size;
 
         /// <summary>
         /// Gets the native module.
         /// </summary>
-        public Module Module
-        {
-            get
-            {
-                return module.Value;
-            }
-        }
+        public Module Module => module.Value;
 
         /// <summary>
         /// Gets the CLR provider.
@@ -119,13 +90,7 @@ namespace CsDebugScript.ClrMdProvider
         /// <summary>
         /// Gets the CLR PDB reader.
         /// </summary>
-        internal Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader ClrPdbReader
-        {
-            get
-            {
-                return clrPdbReader.Value;
-            }
-        }
+        internal IPdbFile ClrPdbReader => clrPdbReader.Value;
 
         /// <summary>
         /// Attempts to obtain a <see cref="T:CsDebugScript.CLR.IClrType" /> based on the name of the type.
@@ -137,6 +102,14 @@ namespace CsDebugScript.ClrMdProvider
         public IClrType GetTypeByName(string typeName)
         {
             return Provider.FromClrType(ClrModule.GetTypeByName(typeName));
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            clrPdbReader.Dispose();
         }
     }
 }

@@ -10,5 +10,10 @@
         /// </summary>
         /// <param name="process">The process.</param>
         IClrRuntime[] GetClrRuntimes(Process process);
+
+        /// <summary>
+        /// Clears the internal CLR provider caches.
+        /// </summary>
+        void ClearCache();
     }
 }

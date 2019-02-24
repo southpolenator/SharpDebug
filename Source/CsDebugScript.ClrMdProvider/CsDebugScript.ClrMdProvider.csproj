@@ -12,6 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="SharpPdb" Version="1.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>$(EnlistmentRoot)\External\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>

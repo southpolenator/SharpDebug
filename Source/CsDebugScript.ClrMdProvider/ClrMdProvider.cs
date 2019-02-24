@@ -64,6 +64,17 @@ namespace CsDebugScript.CLR
         }
 
         /// <summary>
+        /// Clears the internal CLR provider caches.
+        /// </summary>
+        public void ClearCache()
+        {
+            dataTargetsPerProcess.InvalidateCache();
+            clrTypes.InvalidateCache();
+            clrModules.InvalidateCache();
+            clrHeaps.InvalidateCache();
+        }
+
+        /// <summary>
         /// Converts CLR type to Engine interface.
         /// </summary>
         /// <param name="clrType">The CLR type.</param>

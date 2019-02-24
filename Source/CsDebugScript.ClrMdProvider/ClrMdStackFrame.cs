@@ -1,8 +1,9 @@
-﻿using System;
-using CsDebugScript.CLR;
+﻿using CsDebugScript.CLR;
+using SharpPdb.Managed;
+using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
+using System.Text;
 
 namespace CsDebugScript.ClrMdProvider
 {
@@ -104,27 +105,26 @@ namespace CsDebugScript.ClrMdProvider
         /// <param name="address">The address.</param>
         internal static Tuple<string, uint, ulong> ReadSourceFileNameAndLine(ClrMdModule module, Microsoft.Diagnostics.Runtime.ClrMethod method, ulong address)
         {
-            Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader pdbReader = module.ClrPdbReader;
-            Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbFunction function = pdbReader.GetFunctionFromToken(method.MetadataToken);
+            IPdbFile pdbReader = module.ClrPdbReader;
+            IPdbFunction function = pdbReader.GetFunctionFromToken((int)method.MetadataToken);
             uint ilOffset = FindIlOffset(method, address);
 
             ulong distance = ulong.MaxValue;
             string sourceFileName = "";
             uint sourceFileLine = uint.MaxValue;
 
-            foreach (Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSequencePointCollection sequenceCollection in function.SequencePoints)
-                foreach (Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSequencePoint point in sequenceCollection.Lines)
-                    if (point.Offset <= ilOffset)
-                    {
-                        ulong dist = ilOffset - point.Offset;
+            foreach (IPdbSequencePoint point in function.SequencePoints)
+                if (point.Offset <= ilOffset)
+                {
+                    ulong dist = (ulong)(ilOffset - point.Offset);
 
-                        if (dist < distance)
-                        {
-                            sourceFileName = sequenceCollection.File.Name;
-                            sourceFileLine = point.LineBegin;
-                            distance = dist;
-                        }
+                    if (dist < distance)
+                    {
+                        sourceFileName = point.Source.Name;
+                        sourceFileLine = (uint)point.StartLine;
+                        distance = dist;
                     }
+                }
             return Tuple.Create(sourceFileName, sourceFileLine, distance);
         }
 
@@ -167,31 +167,41 @@ namespace CsDebugScript.ClrMdProvider
         private string[] GetClrLocalsNames()
         {
             var pdb = (Module as ClrMdModule)?.ClrPdbReader;
+            bool disposePdb = false;
 
             if (pdb == null)
-            {
                 try
                 {
                     string pdbPath = ClrStackFrame.Runtime.DataTarget.SymbolLocator.FindPdb(ClrStackFrame.Module.Pdb);
 
                     if (!string.IsNullOrEmpty(pdbPath))
-                        pdb = new Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader(pdbPath);
+                    {
+                        pdb = Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbReader.OpenPdb(pdbPath);
+                        disposePdb = true;
+                    }
                 }
                 catch
                 {
                 }
-            }
 
-            if (pdb == null)
-                return Enumerable.Range(0, ClrStackFrame.Locals.Count).Select(id => string.Format("local_{0}", id)).ToArray();
-            else
+            try
             {
-                var function = pdb.GetFunctionFromToken(ClrStackFrame.Method.MetadataToken);
-                uint ilOffset = FindIlOffset(ClrStackFrame);
-                var scope = function.FindScopeByILOffset(ilOffset);
-                int dummyCounter = 0;
+                if (pdb == null)
+                    return Enumerable.Range(0, ClrStackFrame.Locals.Count).Select(id => string.Format("local_{0}", id)).ToArray();
+                else
+                {
+                    var function = pdb.GetFunctionFromToken((int)ClrStackFrame.Method.MetadataToken);
+                    uint ilOffset = FindIlOffset(ClrStackFrame);
+                    var scope = function.LocalScopes.FirstOrDefault(s => s.StartOffset <= ilOffset && ilOffset < s.EndOffset);
+                    int dummyCounter = 0;
 
-                return GetRecursiveSlots(scope).Select(s => s?.Name ?? $"local_dummy_{dummyCounter++}").ToArray();
+                    return GetRecursiveSlots(scope).Select(s => s?.Name ?? $"local_dummy_{dummyCounter++}").ToArray();
+                }
+            }
+            finally
+            {
+                if (disposePdb && pdb != null)
+                    pdb.Dispose();
             }
         }
 
@@ -245,18 +255,18 @@ namespace CsDebugScript.ClrMdProvider
         /// </summary>
         /// <param name="scope">The scope.</param>
         /// <param name="results">The results.</param>
-        private static IEnumerable<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> GetRecursiveSlots(Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbScope scope, List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot> results = null)
+        private static IEnumerable<IPdbLocalVariable> GetRecursiveSlots(IPdbLocalScope scope, List<IPdbLocalVariable> results = null)
         {
             if (results == null)
-                results = new List<Microsoft.Diagnostics.Runtime.Utilities.Pdb.PdbSlot>();
-            foreach (var slot in scope.Slots)
+                results = new List<IPdbLocalVariable>();
+            foreach (var variable in scope.Variables)
             {
-                while (results.Count <= slot.Slot)
+                while (results.Count <= variable.Index)
                     results.Add(null);
-                results[(int)slot.Slot] = slot;
+                results[variable.Index] = variable;
             }
 
-            foreach (var innerScope in scope.Scopes)
+            foreach (var innerScope in scope.Children)
                 GetRecursiveSlots(innerScope, results);
             return results;
         }
