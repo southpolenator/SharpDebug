@@ -98,6 +98,9 @@
     <VsdConfigXmlAdditionalAssemblies Include="$(OutDir)\..\$(AssemblyName).DPE.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="ELFSharp, Version=2.0.0.0, Culture=neutral, PublicKeyToken=f2d0c9031b10d3c0, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\ELFSharp.2.1.1\lib\net45\ELFSharp.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>$(EnlistmentRoot)\External\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
@@ -186,10 +189,6 @@
     </Reference>
     <Reference Include="Dynamitey, Version=2.0.9.136, Culture=neutral, PublicKeyToken=cbf53ea3aeb972c6, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Dynamitey.2.0.9.136\lib\net40\Dynamitey.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="ELFSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=22f480d29a3ced83, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\ELFSharp.1.0.4\lib\net40\ELFSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="EnvDTE, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
@@ -359,9 +358,8 @@
       <HintPath>..\..\packages\Microsoft.VisualStudio.Validation.15.3.32\lib\net45\Microsoft.VisualStudio.Validation.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="MiscUtil, Version=1.0.0.0, Culture=neutral, PublicKeyToken=d3c42c4bfacf7596, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\JonSkeet.MiscUtil.0.1\lib\net35-Client\MiscUtil.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="MiscUtil, Version=0.2.0.0, Culture=neutral, PublicKeyToken=d3c42c4bfacf7596, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\JonSkeet.MiscUtil.0.2.0\lib\net35\MiscUtil.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil, Version=0.9.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.dll</HintPath>
@@ -395,6 +393,7 @@
     </Reference>
     <Reference Include="StreamJsonRpc, Version=1.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\packages\StreamJsonRpc.1.2.8\lib\net45\StreamJsonRpc.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.AddIn.Contract" />

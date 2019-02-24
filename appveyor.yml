@@ -8,9 +8,9 @@ environment:
   DEAFULT_TARGET_NETSTANDARD: netstandard2.0
   DEAFULT_TARGET_NETCOREAPP: netcoreapp2.0
   NUGET_PACKAGES: C:\Users\appveyor\.nuget\packages
-  OPENCOVER: $(NUGET_PACKAGES)\OpenCover\4.6.519\tools\OpenCover.Console.exe
-  XUNIT_TOOLS: $(NUGET_PACKAGES)\xunit.runner.console\2.3.1\tools\net452
-  XUNIT_TOOLS_CORE: $(NUGET_PACKAGES)\xunit.runner.console\2.3.1\tools\netcoreapp2.0
+  OPENCOVER: $(NUGET_PACKAGES)\OpenCover\4.7.922\tools\OpenCover.Console.exe
+  XUNIT_TOOLS: $(NUGET_PACKAGES)\xunit.runner.console\2.4.1\tools\net452
+  XUNIT_TOOLS_CORE: $(NUGET_PACKAGES)\xunit.runner.console\2.4.1\tools\netcoreapp2.0
   NATIVE_TARGET_CORE_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_NETCOREAPP)
   NATIVE_TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
   CLR_TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
