@@ -83,7 +83,7 @@ namespace CsDebugScript.VS.DPE
                                 FileName = m.FullName,
                                 ImageBase = m.BaseAddress,
                                 FileSize = m.Size,
-                                TimeStamp = (uint)Math.Round((DateTime.FromFileTime((long)m.TimeDateStamp) - new DateTime(1970, 1, 1)).TotalSeconds),
+                                TimeStamp = (uint)Math.Round((DateTime.FromFileTimeUtc((long)m.TimeDateStamp) - new DateTime(1970, 1, 1)).TotalSeconds),
                                 Version = ExtractVersion(m.Version?.FileVersionString),
                             };
                         }).ToList();
@@ -98,7 +98,7 @@ namespace CsDebugScript.VS.DPE
                                 FileName = module.FileName,
                                 ImageBase = (ulong)module.BaseAddress.ToInt64(),
                                 FileSize = (uint)module.ModuleMemorySize,
-                                TimeStamp = (uint)Math.Round((File.GetCreationTime(module.FileName) - new DateTime(1970, 1, 1)).TotalSeconds),
+                                TimeStamp = ReadPeImageTimestamp(module.FileName),
                                 Version = new VersionInfo()
                                 {
                                     Major = module.FileVersionInfo.FileMajorPart,
@@ -362,6 +362,23 @@ namespace CsDebugScript.VS.DPE
                 }
             }
             return version;
+        }
+
+        /// <summary>
+        /// Reads PE image timestamp located in the header.
+        /// </summary>
+        /// <param name="path">Path to the PE image file.</param>
+        private static uint ReadPeImageTimestamp(string path)
+        {
+            using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read))
+            using (BinaryReader reader = new BinaryReader(stream))
+            {
+                ushort magic = reader.ReadUInt16();
+                stream.Position = 60;
+                uint lfanew = reader.ReadUInt32();
+                stream.Position = lfanew + 8;
+                return reader.ReadUInt32();
+            }
         }
     }
 }

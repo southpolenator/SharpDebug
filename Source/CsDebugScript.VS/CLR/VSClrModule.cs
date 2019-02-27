@@ -23,7 +23,7 @@ namespace CsDebugScript.VS.CLR
         {
             Runtime = runtime;
             ImageBase = imageBase;
-            moduleCache = SimpleCache.Create(() => Runtime.Process.Modules.FirstOrDefault(m => m.Address == ImageBase));
+            moduleCache = SimpleCache.Create(() => Runtime.Process.OriginalModules.FirstOrDefault(m => m.Address == ImageBase));
         }
 
         /// <summary>

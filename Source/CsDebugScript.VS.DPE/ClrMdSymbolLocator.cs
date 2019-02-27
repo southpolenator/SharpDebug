@@ -1,28 +1,23 @@
 ﻿using Microsoft.Diagnostics.Runtime.Utilities;
+using Microsoft.VisualStudio.Debugger;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace CsDebugScript.CLR
+namespace CsDebugScript.VS.DPE
 {
-    /// <summary>
-    /// Helper class to aid ClrMD in searching for symbols and binaries locations.
-    /// </summary>
     internal class ClrMdSymbolLocator : SymbolLocator
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ClrMdSymbolLocator"/> class.
         /// </summary>
-        public ClrMdSymbolLocator(Process process, SymbolLocator symbolLocator)
+        public ClrMdSymbolLocator(DkmProcess process, SymbolLocator symbolLocator)
         {
             Process = process;
             OriginalSymbolLocator = symbolLocator;
         }
 
-        /// <summary>
-        /// Gets the process that this symbol locator is associated to.
-        /// </summary>
-        public Process Process { get; private set; }
+        public DkmProcess Process { get; private set; }
 
         /// <summary>
         /// Gets the original symbol locator.
@@ -65,6 +60,7 @@ namespace CsDebugScript.CLR
             if (base.ValidateBinary(testPath, buildTimeStamp, imageSize, checkProperties))
                 return testPath;
 
+
             // Check if it is known file
             if (fileName.StartsWith("mscordaccore"))
             {
@@ -81,23 +77,6 @@ namespace CsDebugScript.CLR
                     }
                 }
             }
-
-            // Check if it is one of the modules
-            string justFileName = Path.GetFileName(fileName);
-
-            foreach (Module module in Process.ModulesIfCached)
-                try
-                {
-                    if (ValidateBinary(module.ImageName, justFileName, buildTimeStamp, imageSize, checkProperties))
-                        return module.ImageName;
-                    if (ValidateBinary(module.LoadedImageName, justFileName, buildTimeStamp, imageSize, checkProperties))
-                        return module.ImageName;
-                    if (ValidateBinary(module.MappedImageName, justFileName, buildTimeStamp, imageSize, checkProperties))
-                        return module.ImageName;
-                }
-                catch
-                {
-                }
 
             // Fall back to original symbol locator
             return OriginalSymbolLocator.FindBinary(fileName, buildTimeStamp, imageSize, checkProperties);
@@ -140,24 +119,6 @@ namespace CsDebugScript.CLR
         /// <returns>A full path on disk (local) of where the pdb was copied to.</returns>
         public override string FindPdb(string pdbName, Guid pdbIndexGuid, int pdbIndexAge)
         {
-            // Check if it is symbol of one of the modules
-            string justFileName = Path.GetFileName(pdbName);
-
-            foreach (Module module in Process.ModulesIfCached)
-                try
-                {
-                    if (ValidatePdb(module.SymbolFileName, justFileName, pdbIndexGuid, pdbIndexAge))
-                        return module.SymbolFileName;
-
-                    string pdbPath = Path.ChangeExtension(module.MappedImageName, "pdb");
-
-                    if (ValidatePdb(pdbPath, justFileName, pdbIndexGuid, pdbIndexAge))
-                        return module.SymbolFileName;
-                }
-                catch
-                {
-                }
-
             // Fall back to original symbol locator
             return OriginalSymbolLocator.FindPdb(pdbName, pdbIndexGuid, pdbIndexAge);
         }

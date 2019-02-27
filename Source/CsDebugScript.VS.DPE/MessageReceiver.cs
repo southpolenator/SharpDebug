@@ -175,6 +175,7 @@ namespace CsDebugScript.VS.DPE
             DkmProcess process = GetProcess(processId);
             ClrMdDataReader dataReader = new ClrMdDataReader(process);
             DataTarget dataTarget = DataTarget.CreateFromDataReader(dataReader);
+            dataTarget.SymbolLocator = new ClrMdSymbolLocator(process, dataTarget.SymbolLocator);
             ClrRuntime[] clrRuntimes = dataTarget.ClrVersions.Select(clrInfo => clrInfo.CreateRuntime()).ToArray();
 
             if (clrRuntimes.Length > 0)
