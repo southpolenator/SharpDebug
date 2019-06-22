@@ -15,13 +15,13 @@ environment:
   NATIVE_TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
   CLR_TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
   UI_TARGET_DIR: $(PROJECT_ROOT)\bin\$(CONFIGURATION)\$(DEAFULT_TARGET_FRAMEWORK)
-  NATIVE_TESTS_DLL: $(NATIVE_TARGET_DIR)\CsDebugScript.Tests.Native.dll
-  NATIVE_TESTS_DLL_CORE: $(NATIVE_TARGET_CORE_DIR)\CsDebugScript.Tests.Native.dll
-  CLR_TESTS_DLL: $(CLR_TARGET_DIR)\CsDebugScript.Tests.CLR.dll
-  UI_TESTS_DLL: $(UI_TARGET_DIR)\CsDebugScript.Tests.UI.dll
+  NATIVE_TESTS_DLL: $(NATIVE_TARGET_DIR)\SharpDebug.Tests.Native.dll
+  NATIVE_TESTS_DLL_CORE: $(NATIVE_TARGET_CORE_DIR)\SharpDebug.Tests.Native.dll
+  CLR_TESTS_DLL: $(CLR_TARGET_DIR)\SharpDebug.Tests.CLR.dll
+  UI_TESTS_DLL: $(UI_TARGET_DIR)\SharpDebug.Tests.UI.dll
   GITHUB_PAGES: $(PROJECT_ROOT)\GitHubPages
   GITHUB_PAGES_REFERENCES: WinDbgCsReference
-  HELP_OUTPUT_PATH: $(PROJECT_ROOT)\Utility\CsDebugScript.Reference\Help
+  HELP_OUTPUT_PATH: $(PROJECT_ROOT)\Utility\SharpDebug.Reference\Help
   GITHUB_USERNAME: southpolenator
   GITHUB_PASSWORD:
     secure: 2KQWKwkpAyvIjNLzJS6g4SY9URejpaumcJuJLTqvppYB4+aINA3ElJC7n8UoD0zd
@@ -39,7 +39,7 @@ install:
 before_build:
   - ps: Vsix-IncrementVsixVersion
   - ps: |-
-        Vsix-TokenReplacement Source\CsDebugScript.VS\VSInteractiveWindowPackage.cs 'productId: "([0-9\\.]+)"' 'productId: "{version}"'
+        Vsix-TokenReplacement Source\SharpDebug.VS\VSInteractiveWindowPackage.cs 'productId: "([0-9\\.]+)"' 'productId: "{version}"'
   - ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<AssemblyVersion>([0-9\\.]+)</AssemblyVersion>' '<AssemblyVersion>{version}</AssemblyVersion>'
   - ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<FileVersion>([0-9\\.]+)</FileVersion>' '<FileVersion>{version}</FileVersion>'
   - ps: Vsix-TokenReplacement SharedAssemblyInfo.props '<VersionPrefix>([0-9\\.]+)</VersionPrefix>' '<VersionPrefix>{version}</VersionPrefix>'
@@ -53,19 +53,19 @@ build:
   verbosity: minimal
 after_build:
   - cmd: dotnet pack --no-build
-  - ps: pushd $env:PROJECT_ROOT\Source\CsDebugScript.DbgEng\
+  - ps: pushd $env:PROJECT_ROOT\Source\SharpDebug.DbgEng\
   - ps: dotnet pack --no-build
   - ps: popd
-  - ps: msbuild WinDbgCs.sln /t:Source\CsDebugScript_VS /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
+  - ps: msbuild WinDbgCs.sln /t:Source\SharpDebug_VS /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
   - ps: pushd $env:PROJECT_ROOT\bin\$env:CONFIGURATION\$env:DEAFULT_TARGET_FRAMEWORK\
-  - ps: 7z a CsDebugScript.WinDbgCs-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@("CsDebugScript.CommonUserTypes.dll", "CsDebugScript.DwarfSymbolProvider.dll", "CsDebugScript.WinDbg.x64.dll", "CsDebugScript.WinDbg.x86.dll")))
+  - ps: 7z a SharpDebug.WinDbgCs-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@("SharpDebug.CommonUserTypes.dll", "SharpDebug.DwarfSymbolProvider.dll", "SharpDebug.WinDbg.x64.dll", "SharpDebug.WinDbg.x86.dll")))
   - ps: if (($env:CONFIGURATION -eq "Release") -and (($env:APPVEYOR_REPO_BRANCH -eq "master") -or ($env:APPVEYOR_REPO_BRANCH -eq "next"))) { Vsix-PushArtifacts | Vsix-PublishToGallery }
   - ps: popd
   - ps: |-
         if ($env:CONFIGURATION -eq "Release") {
             if ($env:APPVEYOR_REPO_BRANCH -eq "master") {
                if(-not $env:APPVEYOR_PULL_REQUEST_NUMBER) {
-                   msbuild Utility\CsDebugScript.Reference\csDebugScript.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
+                   msbuild Utility\SharpDebug.Reference\SharpDebug.Reference.shfbproj /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
                    git clone $env:GITHUB_PAGES_URL $env:GITHUB_PAGES
                    git config --global core.autocrlf false
                    pushd $env:GITHUB_PAGES
@@ -83,13 +83,13 @@ after_build:
            }
         }
 test_script:
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%UI_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.UI.xml -targetdir:%UI_TARGET_DIR%'
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"C:\Program Files\dotnet\dotnet.exe" -targetargs:"%XUNIT_TOOLS_CORE%\xunit.console.dll %NATIVE_TESTS_DLL_CORE% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.Native.Core.xml -targetdir:%NATIVE_TARGET_CORE_DIR%'
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%NATIVE_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.Native.xml -targetdir:%NATIVE_TARGET_DIR%'
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%CLR_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.CLR.xml -targetdir:%CLR_TARGET_DIR%'
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%UI_TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.UI.xml -targetdir:%UI_TARGET_DIR%'
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%NATIVE_TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.Native.xml -targetdir:%NATIVE_TARGET_DIR%'
-  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%CLR_TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[CsDebugScript*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.CLR.xml -targetdir:%CLR_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%UI_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[SharpDebug*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.UI.xml -targetdir:%UI_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"C:\Program Files\dotnet\dotnet.exe" -targetargs:"%XUNIT_TOOLS_CORE%\xunit.console.dll %NATIVE_TESTS_DLL_CORE% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[SharpDebug*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.Native.Core.xml -targetdir:%NATIVE_TARGET_CORE_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%NATIVE_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[SharpDebug*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.Native.xml -targetdir:%NATIVE_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.exe" -targetargs:"%CLR_TESTS_DLL% -noshadow -parallel assemblies -trait x64=true -appveyor" -filter:"+[SharpDebug*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x64.CLR.xml -targetdir:%CLR_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%UI_TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[SharpDebug*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.UI.xml -targetdir:%UI_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%NATIVE_TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[SharpDebug*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.Native.xml -targetdir:%NATIVE_TARGET_DIR%'
+  - cmd: '"%OPENCOVER%" -oldstyle -register:user -target:"%XUNIT_TOOLS%\xunit.console.x86.exe" -targetargs:"%CLR_TESTS_DLL% -noshadow -parallel assemblies -trait x86=true -appveyor" -filter:"+[SharpDebug*]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -hideskipped:All -output:.\code_coverage_x86.CLR.xml -targetdir:%CLR_TARGET_DIR%'
   - cmd: codecov -f code_coverage_x64.Native.Core.xml
   - cmd: codecov -f code_coverage_x64.Native.xml
   - cmd: codecov -f code_coverage_x64.CLR.xml
@@ -100,15 +100,15 @@ test_script:
 artifacts:
 - path: bin\**\*.nupkg
   name: NuGets
-- path: Utility\CsDebugScript.Reference\Help\CsScripts.chm
+- path: Utility\SharpDebug.Reference\Help\CsScripts.chm
   name: Help file
-- path: bin\**\CsDebugScript.VS.vsix
+- path: bin\**\SharpDebug.VS.vsix
   name: Visual Studio Extension
 - path: bin\**\*.trx
   name: Test Results
 - path: bin\**\*.zip
   name: WinDbg Extension
-- path: Utility\CsDebugScript.Reference\Help\LastBuild.log
+- path: Utility\SharpDebug.Reference\Help\LastBuild.log
   name: Reference build log
 deploy:
 - provider: NuGet

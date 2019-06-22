@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn> <!-- TODO: Until all XML doc comments are fixed for DbgEng interfaces, structures and enums -->
+    <Description>Provides DbgEng.dll as debugger engine interface for SharpDebug.Engine. It can be used to inspect Windows dumps or debug running applications. Also includes COM interfaces for working with DbgEng.dll (WinDbg debugging engine).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Engine\SharpDebug.Engine.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DiaSymbolProvider\SharpDebug.DiaSymbolProvider.csproj" />
+  </ItemGroup>
+
+</Project>

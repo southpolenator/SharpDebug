@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Engine\SharpDebug.Engine.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.UI\SharpDebug.UI.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.CodeGen\SharpDebug.CodeGen.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.CommonUserTypes\SharpDebug.CommonUserTypes.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DwarfSymbolProvider\SharpDebug.DwarfSymbolProvider.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DbgEng\SharpDebug.DbgEng.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DiaSymbolProvider\SharpDebug.DiaSymbolProvider.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug\SharpDebug.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.4.3" />
+  </ItemGroup>
+</Project>

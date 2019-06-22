@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>SharpDebug</RootNamespace>
+    <Description>Engine for debugger scripting. This package doesn't provide access to debuggers, but defines interfaces that other packages implement. Search for packages that provide access to DbgEng.dll (WinDbg debugging engine), PDB symbols, DWARF symbols, ELF core dumps...</Description>
+    <Summary>Engine for debugger scripting. This package doesn't provide access to debuggers, but defines interfaces that other packages implement. Search for packages that provide access to DbgEng.dll (WinDbg debugging engine), PDB symbols, DWARF symbols, ELF core dumps... You can also search for Visual Studio extension that exposes this engine.</Summary>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.4.0" />
+    <PackageReference Include="SharpUtilities" Version="1.4.2" />
+    <PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
+    <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.TypeExtensions" Version="4.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Drawing.Interfaces\SharpDebug.Drawing.Interfaces.csproj" />
+  </ItemGroup>
+
+</Project>

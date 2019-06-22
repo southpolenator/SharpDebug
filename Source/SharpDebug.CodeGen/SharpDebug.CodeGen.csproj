@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
+    <Description>Extension to SharpDebug.Engine that provides ability to extract user types from symbols files. By default it uses DIA to read PDB files, but it can be used with SharpDebug.DwarfSymbolProvider to generate from DWARF symbols (either from PE or ELF image containers).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Managed.Reflection">
+      <HintPath>$(EnlistmentRoot)\External\Managed.Reflection.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Engine\SharpDebug.Engine.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DiaSymbolProvider\SharpDebug.DiaSymbolProvider.csproj" />
+  </ItemGroup>
+
+  <!-- Hack for 'dotnet pack' command to include Managed.Reflection into nuget. -->
+  <ItemGroup>
+    <_PackageFiles Include="$(EnlistmentRoot)\External\Managed.Reflection.dll">
+      <BuildAction>None</BuildAction>
+      <PackagePath>lib\$(DefaultNetStandard)\</PackagePath>
+    </_PackageFiles>
+  </ItemGroup>
+
+</Project>
