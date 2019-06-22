@@ -47,18 +47,18 @@ before_build:
   - ps: pushd $env:PROJECT_ROOT\dumps\
   - ps: .\download.ps1
   - ps: popd
-  - ps: msbuild WinDbgCs.sln /t:Utility\ExceptionDumper32 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
+  - ps: msbuild SharpDebug.sln /t:Utility\ExceptionDumper32 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
 build:
-  project: WinDbgCs.sln
+  project: SharpDebug.sln
   verbosity: minimal
 after_build:
   - cmd: dotnet pack --no-build
   - ps: pushd $env:PROJECT_ROOT\Source\SharpDebug.DbgEng\
   - ps: dotnet pack --no-build
   - ps: popd
-  - ps: msbuild WinDbgCs.sln /t:Source\SharpDebug_VS /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
+  - ps: msbuild SharpDebug.sln /t:Source\SharpDebug_VS /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=$env:CONFIGURATION /verbosity:minimal
   - ps: pushd $env:PROJECT_ROOT\bin\$env:CONFIGURATION\$env:DEAFULT_TARGET_FRAMEWORK\
-  - ps: 7z a SharpDebug.WinDbgCs-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@("SharpDebug.CommonUserTypes.dll", "SharpDebug.DwarfSymbolProvider.dll", "SharpDebug.WinDbg.x64.dll", "SharpDebug.WinDbg.x86.dll")))
+  - ps: 7z a SharpDebug.WinDbg-$env:appveyor_build_version-$env:CONFIGURATION.zip (Get-ShipFiles(@("SharpDebug.CommonUserTypes.dll", "SharpDebug.DwarfSymbolProvider.dll", "SharpDebug.WinDbg.x64.dll", "SharpDebug.WinDbg.x86.dll")))
   - ps: if (($env:CONFIGURATION -eq "Release") -and (($env:APPVEYOR_REPO_BRANCH -eq "master") -or ($env:APPVEYOR_REPO_BRANCH -eq "next"))) { Vsix-PushArtifacts | Vsix-PublishToGallery }
   - ps: popd
   - ps: |-
