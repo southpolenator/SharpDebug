@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using CsDebugScript.Engine.Native;
+using SharpDebug.Engine.Native;
 
-namespace CsDebugScript.Engine.Marshaling
+namespace SharpDebug.Engine.Marshaling
 {
     /// <summary>
     /// Marshaled structure that can have extended part of the structure.

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
-using CsDebugScript.UI.CodeWindow;
+using SharpDebug.UI.CodeWindow;
 
-namespace CsDebugScript.UI.ResultVisualizers
+namespace SharpDebug.UI.ResultVisualizers
 {
     /// <summary>
     /// Simple wrapper around child elements that can appear ([Dynamic] group for example).

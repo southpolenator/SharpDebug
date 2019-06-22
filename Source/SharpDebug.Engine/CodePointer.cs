@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Exceptions;
+﻿using SharpDebug.Exceptions;
 using System;
 using System.Linq;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Extension specialization functions for CodePointer.

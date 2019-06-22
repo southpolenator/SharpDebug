@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CLR
+﻿namespace SharpDebug.CLR
 {
     /// <summary>
     /// CLR code instance field interface. Fundamentally it represents a name and a type.

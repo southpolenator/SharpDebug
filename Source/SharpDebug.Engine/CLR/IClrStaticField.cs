@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CLR
+﻿namespace SharpDebug.CLR
 {
     /// <summary>
     /// CLR code static field interface. This is valid only if there is CLR loaded into debugging process.

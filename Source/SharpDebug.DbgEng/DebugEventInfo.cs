@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
+﻿using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers;
 using DbgEng;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Class Describing Debugger Event.

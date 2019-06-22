@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace CsDebugScript.Engine.Native
+namespace SharpDebug.Engine.Native
 {
     /// <summary>
     /// The DEBUG_MODULE_PARAMETERS structure contains most of the parameters for describing a module.

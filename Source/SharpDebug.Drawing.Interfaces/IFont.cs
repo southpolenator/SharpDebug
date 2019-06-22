@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Drawing.Interfaces
+﻿namespace SharpDebug.Drawing.Interfaces
 {
     /// <summary>
     /// Enumeration that represents style of the font.

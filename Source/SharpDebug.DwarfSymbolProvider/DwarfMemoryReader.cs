@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Simple memory reader that provides specific functionality to read DWARF streams.

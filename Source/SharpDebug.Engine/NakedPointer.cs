@@ -1,7 +1,7 @@
-﻿using CsDebugScript.Exceptions;
+﻿using SharpDebug.Exceptions;
 using System;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Wrapper class that represents a pointer to void (i.e. void*)

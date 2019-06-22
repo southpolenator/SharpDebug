@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Helper class that parses debug line data stream and returns list of file/line information.

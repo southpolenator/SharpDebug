@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CsDebugScript.Drawing.Interfaces
+namespace SharpDebug.Drawing.Interfaces
 {
     /// <summary>
     /// Interface that represents the pen object.

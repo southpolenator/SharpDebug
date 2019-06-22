@@ -1,9 +1,9 @@
-﻿using CsDebugScript.DwarfSymbolProvider;
-using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
+﻿using SharpDebug.DwarfSymbolProvider;
+using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers;
 using DbgEng;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Class for simplified debugger initialization.

@@ -1,9 +1,9 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.VS.CLR
+namespace SharpDebug.VS.CLR
 {
     /// <summary>
     /// Visual Studio implementation of the <see cref="IClrType"/>.
@@ -125,7 +125,7 @@ namespace CsDebugScript.VS.CLR
         public int ElementSize => dataCache.Value.ElementSize;
 
         /// <summary>
-        /// Gets the <see cref="T:CsDebugScript.CLR.ClrElementType" />.
+        /// Gets the <see cref="T:SharpDebug.CLR.ClrElementType" />.
         /// </summary>
         public ClrElementType ElementType
         {

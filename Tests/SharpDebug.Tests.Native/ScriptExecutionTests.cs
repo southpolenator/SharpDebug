@@ -2,7 +2,7 @@
 using System.IO;
 using Xunit;
 
-namespace CsDebugScript.Tests.Native
+namespace SharpDebug.Tests.Native
 {
     [Collection("NativeDumpTest.x64.mdmp")]
     [Trait("x64", "true")]

@@ -10,7 +10,7 @@ using ICSharpCode.NRefactory;
 using System.IO;
 using System.Windows;
 
-namespace CsDebugScript.UI.CodeWindow
+namespace SharpDebug.UI.CodeWindow
 {
     internal class EntityWrapper<T>
         where T : IEntity

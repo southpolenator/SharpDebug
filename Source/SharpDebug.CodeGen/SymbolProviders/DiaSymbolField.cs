@@ -1,7 +1,7 @@
 ﻿using DIA;
 using System;
 
-namespace CsDebugScript.CodeGen.SymbolProviders
+namespace SharpDebug.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Class represents symbol field during debugging.

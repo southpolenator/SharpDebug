@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CodeGen.UserTypes
+﻿namespace SharpDebug.CodeGen.UserTypes
 {
     /// <summary>
     /// Enumeration of .NET access levels.

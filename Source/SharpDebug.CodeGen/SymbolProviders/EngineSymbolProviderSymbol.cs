@@ -1,9 +1,9 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using DIA;
 using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.CodeGen.SymbolProviders
+namespace SharpDebug.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Class represents symbol during debugging.
@@ -67,7 +67,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <summary>
         /// Gets the engine module.
         /// </summary>
-        public CsDebugScript.Module EngineModule
+        public SharpDebug.Module EngineModule
         {
             get
             {

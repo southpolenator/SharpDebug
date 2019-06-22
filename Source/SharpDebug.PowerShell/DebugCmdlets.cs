@@ -1,7 +1,7 @@
-﻿using CsDebugScript;
-using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
-using CsDebugScript.Engine.SymbolProviders;
+﻿using SharpDebug;
+using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers;
+using SharpDebug.Engine.SymbolProviders;
 using DbgEng;
 using System;
 using System.Management.Automation;

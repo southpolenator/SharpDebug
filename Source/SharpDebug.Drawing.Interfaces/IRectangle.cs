@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Drawing.Interfaces
+﻿namespace SharpDebug.Drawing.Interfaces
 {
     /// <summary>
     /// Interface for rectangle as drawing object.

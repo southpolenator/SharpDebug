@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace CsDebugScript.Tests.Native
+namespace SharpDebug.Tests.Native
 {
     #region NativeDumpTest
     [CollectionDefinition("NativeDumpTest.x64.mdmp")]

@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Engine.Marshaling
+﻿namespace SharpDebug.Engine.Marshaling
 {
     /// <summary>
     /// Collection of helper classes used for marshaling from/to DbgEng.dll interfaces.

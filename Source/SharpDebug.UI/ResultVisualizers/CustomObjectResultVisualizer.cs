@@ -1,9 +1,9 @@
-﻿using CsDebugScript.UI.CodeWindow;
+﻿using SharpDebug.UI.CodeWindow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript.UI.ResultVisualizers
+namespace SharpDebug.UI.ResultVisualizers
 {
     /// <summary>
     /// Helper (base) class for visualizing custom resulting objects.

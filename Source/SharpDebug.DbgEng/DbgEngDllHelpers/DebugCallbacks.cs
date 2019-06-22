@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
+namespace SharpDebug.Engine.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Debug callbacks called during WaitForEvent callback.

@@ -1,6 +1,6 @@
-﻿using CsDebugScript.Exceptions;
+﻿using SharpDebug.Exceptions;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.std
+namespace SharpDebug.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
     /// Microsoft implementation of std::pair

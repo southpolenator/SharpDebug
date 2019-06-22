@@ -1,4 +1,4 @@
-﻿using CsDebugScript.Engine.Utility;
+﻿using SharpDebug.Engine.Utility;
 using DbgEng;
 using System;
 using System.Collections.Generic;
@@ -14,7 +14,7 @@ using TestStack.White.UIItems.WindowItems;
 using TestStack.White.WindowsAPI;
 using Xunit;
 
-namespace CsDebugScript.Tests.UI
+namespace SharpDebug.Tests.UI
 {
     public class InteractiveWindowWrapper
     {

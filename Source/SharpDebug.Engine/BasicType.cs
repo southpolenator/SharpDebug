@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript
+﻿namespace SharpDebug
 {
     /// <summary>
     /// Wrapper class that helps reading basic types that are native pointers and can be null-able

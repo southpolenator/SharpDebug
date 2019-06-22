@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
-using CsDebugScript.Engine.Utility;
-using CsDebugScript.UI.CodeWindow;
-using CsDebugScript.UI.Drawing;
+﻿using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers;
+using SharpDebug.Engine.Utility;
+using SharpDebug.UI.CodeWindow;
+using SharpDebug.UI.Drawing;
 using DbgEng;
 using ICSharpCode.NRefactory.Documentation;
 using ICSharpCode.NRefactory.TypeSystem;
@@ -17,7 +17,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace CsDebugScript.UI
+namespace SharpDebug.UI
 {
     internal delegate void CommandExecutedHandler(bool csharpCode, string textOutput, IEnumerable<object> objectOutput);
 

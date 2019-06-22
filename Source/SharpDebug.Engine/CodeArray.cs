@@ -1,12 +1,12 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Exceptions;
+﻿using SharpDebug.Engine;
+using SharpDebug.Exceptions;
 using SharpUtilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Extension specialization functions for CodeArray.

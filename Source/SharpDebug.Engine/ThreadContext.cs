@@ -1,9 +1,9 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Marshaling;
+﻿using SharpDebug.Engine;
+using SharpDebug.Engine.Marshaling;
 using System;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Thread context of the process being debugged.

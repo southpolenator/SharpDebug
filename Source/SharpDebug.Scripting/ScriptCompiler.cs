@@ -1,4 +1,4 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     internal static class ScriptCompiler
     {
@@ -28,7 +28,7 @@ namespace CsDebugScript
         /// <summary>
         /// Collection of additional DLLs that should be loaded.
         /// </summary>
-        private static readonly string[] AdditionalDlls = new[] { "CsDebugScript.CommonUserTypes.dll", "CsDebugScript.UI.dll" };
+        private static readonly string[] AdditionalDlls = new[] { "SharpDebug.CommonUserTypes.dll", "SharpDebug.UI.dll" };
 
         /// <summary>
         /// Gets the list of search folders.
@@ -43,12 +43,12 @@ namespace CsDebugScript
         /// <summary>
         /// The default list of using commands used by the compiler.
         /// </summary>
-        internal static readonly string[] DefaultUsings = new string[] { "System", "System.Linq", "System.Collections.Generic", "CsDebugScript", "CsDebugScript.Drawing.Interfaces", "CsDebugScript.CommonUserTypes" };
+        internal static readonly string[] DefaultUsings = new string[] { "System", "System.Linq", "System.Collections.Generic", "SharpDebug", "SharpDebug.Drawing.Interfaces", "SharpDebug.CommonUserTypes" };
 
         /// <summary>
         /// The default list of using alias commands used by the compiler.
         /// </summary>
-        internal static readonly string[] DefaultAliases = new string[] { "std = CsDebugScript.CommonUserTypes.NativeTypes.std" };
+        internal static readonly string[] DefaultAliases = new string[] { "std = SharpDebug.CommonUserTypes.NativeTypes.std" };
 
         /// <summary>
         /// Gets the default assembly references used by the compiler.
@@ -60,14 +60,14 @@ namespace CsDebugScript
 
             assemblyReferences.Add(typeof(System.Object).Assembly.Location);
             assemblyReferences.Add(typeof(System.Linq.Enumerable).Assembly.Location);
-            assemblyReferences.Add(typeof(CsDebugScript.Drawing.Interfaces.IGraphics).Assembly.Location);
-            assemblyReferences.Add(typeof(CsDebugScript.Variable).Assembly.Location);
-            assemblyReferences.Add(typeof(CsDebugScript.InteractiveScriptBase).Assembly.Location);
+            assemblyReferences.Add(typeof(SharpDebug.Drawing.Interfaces.IGraphics).Assembly.Location);
+            assemblyReferences.Add(typeof(SharpDebug.Variable).Assembly.Location);
+            assemblyReferences.Add(typeof(SharpDebug.InteractiveScriptBase).Assembly.Location);
 
             // Try to find additional DLLs
             foreach (string dll in AdditionalDlls)
             {
-                string defaultPath = typeof(CsDebugScript.Variable).Assembly.Location;
+                string defaultPath = typeof(SharpDebug.Variable).Assembly.Location;
                 string commonUserTypes = Path.Combine(Path.GetDirectoryName(defaultPath), dll);
 
                 if (File.Exists(commonUserTypes))
@@ -104,7 +104,7 @@ namespace CsDebugScript
         /// <param name="importedCode">The imported code.</param>
         /// <param name="scriptCode">The script code.</param>
         /// <param name="scriptBaseClassName">Name of the script base class.</param>
-        internal static string GenerateCode(IEnumerable<string> usings, string importedCode, string scriptCode, string scriptBaseClassName = "CsDebugScript.ScriptBase")
+        internal static string GenerateCode(IEnumerable<string> usings, string importedCode, string scriptCode, string scriptBaseClassName = "SharpDebug.ScriptBase")
         {
             StringBuilder codeBuilder = new StringBuilder();
 

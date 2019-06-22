@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.DwarfSymbolProvider
+﻿namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// DWARF frame description entry.

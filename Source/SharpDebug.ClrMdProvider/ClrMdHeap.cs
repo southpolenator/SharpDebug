@@ -1,7 +1,7 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using System.Collections.Generic;
 
-namespace CsDebugScript.ClrMdProvider
+namespace SharpDebug.ClrMdProvider
 {
     /// <summary>
     /// ClrMD implementation of <see cref="IClrHeap"/>.

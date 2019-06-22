@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
+namespace SharpDebug.Engine.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Cache for current process, thread and stack frame. Also introduces lazy state sync.

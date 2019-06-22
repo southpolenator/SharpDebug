@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Drawing.Interfaces
+﻿namespace SharpDebug.Drawing.Interfaces
 {
     /// <summary>
     /// Drawing object that should be visualized.

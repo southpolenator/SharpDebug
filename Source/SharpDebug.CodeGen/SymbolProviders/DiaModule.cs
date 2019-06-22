@@ -1,4 +1,4 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using DIA;
 using System;
 using System.Collections.Concurrent;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace CsDebugScript.CodeGen.SymbolProviders
+namespace SharpDebug.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Class represents module during debugging. It is being described by PDB.

@@ -1,10 +1,10 @@
-﻿using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.SymbolProviders;
+﻿using SharpDebug.Engine.Native;
+using SharpDebug.Engine.SymbolProviders;
 using DbgEng;
 using SharpUtilities;
 using System;
 
-namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
+namespace SharpDebug.Engine.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Symbol provider that is being implemented over DbgEng.dll.

@@ -1,11 +1,11 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Xunit;
 
-namespace CsDebugScript.Tests
+namespace SharpDebug.Tests
 {
     public class TestBase
     {
@@ -118,7 +118,7 @@ namespace CsDebugScript.Tests
                 {
                     Context.SetUserTypeMetadata(ScriptCompiler.ExtractMetadata(new[]
                         {
-                            typeof(CsDebugScript.CommonUserTypes.NativeTypes.std.@string).Assembly,
+                            typeof(SharpDebug.CommonUserTypes.NativeTypes.std.@string).Assembly,
                             GetType().Assembly,
                         }));
 

@@ -1,8 +1,8 @@
 ﻿using System.Linq;
 using Xunit;
-using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
+using std = SharpDebug.CommonUserTypes.NativeTypes.std;
 
-namespace CsDebugScript.Tests.Native
+namespace SharpDebug.Tests.Native
 {
     public abstract class Cpp17Tests : DumpTestBase
     {

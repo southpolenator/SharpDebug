@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript.CommonUserTypes
+namespace SharpDebug.CommonUserTypes
 {
     /// <summary>
     /// Exception that is being thrown when symbols are not valid.

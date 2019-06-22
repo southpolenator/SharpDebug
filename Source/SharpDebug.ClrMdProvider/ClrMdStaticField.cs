@@ -1,6 +1,6 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 
-namespace CsDebugScript.ClrMdProvider
+namespace SharpDebug.ClrMdProvider
 {
     /// <summary>
     /// ClrMD implementation of the <see cref="IClrStaticField"/>.

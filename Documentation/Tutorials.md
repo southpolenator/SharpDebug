@@ -251,8 +251,8 @@ HelpMe("It works!");
 ### Referencing assemblies in scripts
 By now, you have huge collection of common code and compiling scripts is not that fast any more, you should create .NET library (dll) and just reference it from the script:
 ```cs
-#r "CsDebugScript.CommonUserTypes.dll"
-using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
+#r "SharpDebug.CommonUserTypes.dll"
+using std = SharpDebug.CommonUserTypes.NativeTypes.std;
  
 var variable = Process.Current.GetGlobal("mymodule!globalVariable");
 var s = variable.CastAs<std.wstring>();

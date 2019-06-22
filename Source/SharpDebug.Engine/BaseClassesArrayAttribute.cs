@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Attribute that gives more info for user defined types in scripts.

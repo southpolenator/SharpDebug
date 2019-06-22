@@ -1,11 +1,11 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using System;
 using System.Collections;
 using System.IO;
-using ClrException = CsDebugScript.CommonUserTypes.CLR.System.Exception;
+using ClrException = SharpDebug.CommonUserTypes.CLR.System.Exception;
 using Xunit;
 
-namespace CsDebugScript.Tests.CLR
+namespace SharpDebug.Tests.CLR
 {
     public abstract class ExceptionTests
     {

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// DWARF symbol instance.

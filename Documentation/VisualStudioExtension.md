@@ -1,14 +1,14 @@
 ## Installing Visual Studio extension
 
 ### Visual Studio marketplace
-Open __Extensions and Updates__ and in _Online_ gallery search for CsDebugScript.VS extension.
+Open __Extensions and Updates__ and in _Online_ gallery search for SharpDebug.VS extension.
 
 ### Open [VSIX Gallery](http://vsixgallery.com)
 VSIX gallery will provide access to newest versions of extensions.
 
 Open __Options/Environment/Extensions and Updates__. Add additional gallery: http://vsixgallery.com/feed/
 
-Open __Extensions and Updates__ and in new gallery search for CsDebugScript.VS extension.
+Open __Extensions and Updates__ and in new gallery search for SharpDebug.VS extension.
 ![Open VSIX Gallery installation](Images/VS_Installation_VSIX_Gallery.png)
 
 ## Automatic visualizations
@@ -28,7 +28,7 @@ In order to define new visualizations, you need to do following:
 2. Define NatVis file that will contain all the types that should be visualized
 
 ### Initialization script
-By default, engine will load initialization script relative to the default project location: `CsDebugScript/init.csx'.
+By default, engine will load initialization script relative to the default project location: `SharpDebug/init.csx'.
 
 You can see more about how to define [user types](UserTypes.md).
 

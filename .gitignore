@@ -214,16 +214,16 @@ ModelManifest.xml
 # Custom project files
 *.VC.opendb
 *.VC.db
-/Utility/CsDebugScript.Reference/Help
+/Utility/SharpDebug.Reference/Help
 /NuGet.Packager/lib
 
 # temp gvim files
 *.swp
 *.swo
-/Source/CsDebugScript.VS/Microsoft.CodeAnalysis.dll
-/Source/CsDebugScript.VS/Microsoft.CodeAnalysis.CSharp.dll
-/Source/CsDebugScript.VS/System.Collections.Immutable.dll
-/Source/CsDebugScript.VS/System.IO.FileSystem.dll
-/Source/CsDebugScript.VS/System.Reflection.Metadata.dll
+/Source/SharpDebug.VS/Microsoft.CodeAnalysis.dll
+/Source/SharpDebug.VS/Microsoft.CodeAnalysis.CSharp.dll
+/Source/SharpDebug.VS/System.Collections.Immutable.dll
+/Source/SharpDebug.VS/System.IO.FileSystem.dll
+/Source/SharpDebug.VS/System.Reflection.Metadata.dll
 /Source/DiaHelpers/Dia2Lib.dll
 /dumps

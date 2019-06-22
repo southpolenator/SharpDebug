@@ -1,9 +1,9 @@
-﻿using CsDebugScript.ClrMdProvider;
-using CsDebugScript.Engine;
+﻿using SharpDebug.ClrMdProvider;
+using SharpDebug.Engine;
 using SharpUtilities;
 using System.Linq;
 
-namespace CsDebugScript.CLR
+namespace SharpDebug.CLR
 {
     /// <summary>
     /// ClrMD implementation of <see cref="IClrProvider"/>.

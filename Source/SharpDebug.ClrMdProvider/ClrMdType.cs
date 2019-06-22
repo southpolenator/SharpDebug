@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using CsDebugScript.CLR;
+using SharpDebug.CLR;
 
-namespace CsDebugScript.ClrMdProvider
+namespace SharpDebug.ClrMdProvider
 {
     /// <summary>
     /// ClrMD implementation of the <see cref="IClrType"/>.
@@ -41,7 +41,7 @@ namespace CsDebugScript.ClrMdProvider
         public int ElementSize => ClrType.ElementSize;
 
         /// <summary>
-        /// Gets the <see cref="T:CsDebugScript.CLR.ClrElementType" />.
+        /// Gets the <see cref="T:SharpDebug.CLR.ClrElementType" />.
         /// </summary>
         public ClrElementType ElementType
         {

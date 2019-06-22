@@ -14,9 +14,9 @@
     <ProjectGuid>7a19dbb3-da7d-48e8-bcba-48a727176063</ProjectGuid>
     <SHFBSchemaVersion>2015.6.5.0</SHFBSchemaVersion>
     <!-- AssemblyName, Name, and RootNamespace are not used by SHFB but Visual Studio adds them anyway -->
-    <AssemblyName>CsDebugScript.Reference</AssemblyName>
-    <RootNamespace>CsDebugScript.Reference</RootNamespace>
-    <Name>CsDebugScript.Reference</Name>
+    <AssemblyName>SharpDebug.Reference</AssemblyName>
+    <RootNamespace>SharpDebug.Reference</RootNamespace>
+    <Name>SharpDebug.Reference</Name>
     <!-- SHFB properties -->
     <FrameworkVersion>.NET Framework 4.6.1</FrameworkVersion>
     <OutputPath>.\Help\</OutputPath>
@@ -32,15 +32,15 @@
       <Argument Key="maxVersionParts" Value="" xmlns="" />
     </TransformComponentArguments>
     <DocumentationSources>
-      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
-      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\CsDebugScript.ClrMdProvider\CsDebugScript.ClrMdProvider.csproj" />
-      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\CsDebugScript.CodeGen\CsDebugScript.CodeGen.csproj" />
-      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\CsDebugScript.CommonUserTypes\CsDebugScript.CommonUserTypes.csproj" />
-      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj" />
-      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />
-      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\CsDebugScript.DwarfSymbolProvider\CsDebugScript.DwarfSymbolProvider.csproj" />
-      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\CsDebugScript.Scripting\CsDebugScript.Scripting.csproj" />
-      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\CsDebugScript.UI\CsDebugScript.UI.csproj" />
+      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\SharpDebug.Engine\SharpDebug.Engine.csproj" />
+      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\SharpDebug.ClrMdProvider\SharpDebug.ClrMdProvider.csproj" />
+      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\SharpDebug.CodeGen\SharpDebug.CodeGen.csproj" />
+      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\SharpDebug.CommonUserTypes\SharpDebug.CommonUserTypes.csproj" />
+      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\SharpDebug.DbgEng\SharpDebug.DbgEng.csproj" />
+      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\SharpDebug.DiaSymbolProvider\SharpDebug.DiaSymbolProvider.csproj" />
+      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\SharpDebug.DwarfSymbolProvider\SharpDebug.DwarfSymbolProvider.csproj" />
+      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\SharpDebug.Scripting\SharpDebug.Scripting.csproj" />
+      <DocumentationSource sourceFile="$(EnlistmentRoot)\Source\SharpDebug.UI\SharpDebug.UI.csproj" />
     </DocumentationSources>
     <BuildAssemblerVerbosity>OnlyWarningsAndErrors</BuildAssemblerVerbosity>
     <HelpFileFormat>HtmlHelp1, MSHelpViewer, Website</HelpFileFormat>

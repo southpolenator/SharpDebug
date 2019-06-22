@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.Windows
+namespace SharpDebug.CommonUserTypes.NativeTypes.Windows
 {
     /// <summary>
     /// Class that represents PEB (Process environment block).

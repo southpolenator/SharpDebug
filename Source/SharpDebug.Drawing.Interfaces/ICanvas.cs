@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CsDebugScript.Drawing.Interfaces
+namespace SharpDebug.Drawing.Interfaces
 {
     /// <summary>
     /// Interface that represents canvas as drawing object. Canvas is container of other drawing objects.

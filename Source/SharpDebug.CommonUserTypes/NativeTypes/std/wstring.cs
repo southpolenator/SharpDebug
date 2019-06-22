@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CommonUserTypes.NativeTypes.std
+﻿namespace SharpDebug.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
     /// Microsoft implementation of std::wstring

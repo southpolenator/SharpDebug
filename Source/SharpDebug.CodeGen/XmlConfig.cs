@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 
-namespace CsDebugScript.CodeGen
+namespace SharpDebug.CodeGen
 {
     /// <summary>
     /// XML configuration for the code generator.

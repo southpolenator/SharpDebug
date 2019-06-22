@@ -1,14 +1,14 @@
-﻿using CsDebugScript.CodeGen.CodeWriters;
-using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.CodeGen.TypeInstances;
-using CsDebugScript.Engine;
+﻿using SharpDebug.CodeGen.CodeWriters;
+using SharpDebug.CodeGen.SymbolProviders;
+using SharpDebug.CodeGen.TypeInstances;
+using SharpDebug.Engine;
 using DIA;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.CodeGen.UserTypes
+namespace SharpDebug.CodeGen.UserTypes
 {
     /// <summary>
     /// Class representing user type factory. It is being used to find types.

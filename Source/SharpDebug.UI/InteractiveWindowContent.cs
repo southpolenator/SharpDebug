@@ -1,4 +1,4 @@
-﻿using CsDebugScript.UI.CodeWindow;
+﻿using SharpDebug.UI.CodeWindow;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace CsDebugScript.UI
+namespace SharpDebug.UI
 {
     internal class InteractiveWindowContent : UserControl
     {

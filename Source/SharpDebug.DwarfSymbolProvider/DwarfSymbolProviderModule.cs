@@ -1,4 +1,4 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using SharpUtilities;
 using System;
 using System.Collections.Concurrent;
@@ -6,12 +6,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// DWARF symbol provider for specific module.
     /// </summary>
-    /// <seealso cref="CsDebugScript.Engine.ISymbolProviderModule" />
+    /// <seealso cref="SharpDebug.Engine.ISymbolProviderModule" />
     internal class DwarfSymbolProviderModule : ISymbolProviderModule
     {
         /// <summary>

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace CsDebugScript.VS.DPE
+namespace SharpDebug.VS.DPE
 {
     /// <summary>
     /// Data reader necessary for Microsoft.Diagnostics.Runtime library initialization

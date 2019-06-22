@@ -1,7 +1,7 @@
-﻿using CsDebugScript.Drawing.Interfaces;
+﻿using SharpDebug.Drawing.Interfaces;
 using System;
 
-namespace CsDebugScript.UI.Drawing
+namespace SharpDebug.UI.Drawing
 {
     /// <summary>
     /// Implements the text object.

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Common information entry shared across frame description entries.

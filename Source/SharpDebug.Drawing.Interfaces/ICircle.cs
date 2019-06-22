@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Drawing.Interfaces
+﻿namespace SharpDebug.Drawing.Interfaces
 {
     /// <summary>
     /// Interface that reprensents circle as drawing object.

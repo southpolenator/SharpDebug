@@ -1,6 +1,6 @@
 ﻿using DIA;
 
-namespace CsDebugScript.Engine.SymbolProviders
+namespace SharpDebug.Engine.SymbolProviders
 {
     /// <summary>
     /// Interface that provides existing DIA sessions to avoid reopening sessions in the same process.

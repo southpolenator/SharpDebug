@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Engine
+﻿namespace SharpDebug.Engine
 {
     /// <summary>
     /// Defines <see cref="CodeType"/> tags.

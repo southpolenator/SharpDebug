@@ -3,7 +3,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace CsDebugScript.CLR
+namespace SharpDebug.CLR
 {
     /// <summary>
     /// Helper class to aid ClrMD in searching for symbols and binaries locations.

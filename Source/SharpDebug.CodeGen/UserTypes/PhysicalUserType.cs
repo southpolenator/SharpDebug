@@ -1,6 +1,6 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
+﻿using SharpDebug.CodeGen.SymbolProviders;
 
-namespace CsDebugScript.CodeGen.UserTypes
+namespace SharpDebug.CodeGen.UserTypes
 {
     /// <summary>
     /// Physical representation of the user type

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using CsDebugScript.CodeGen.SymbolProviders;
+using SharpDebug.CodeGen.SymbolProviders;
 
-namespace CsDebugScript.CodeGen.UserTypes
+namespace SharpDebug.CodeGen.UserTypes
 {
     /// <summary>
     /// User type that represents specialization of template user type. For example: MyType&lt;int&gt;

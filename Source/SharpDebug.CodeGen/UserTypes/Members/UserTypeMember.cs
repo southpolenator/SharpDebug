@@ -1,6 +1,6 @@
-﻿using CsDebugScript.CodeGen.TypeInstances;
+﻿using SharpDebug.CodeGen.TypeInstances;
 
-namespace CsDebugScript.CodeGen.UserTypes.Members
+namespace SharpDebug.CodeGen.UserTypes.Members
 {
     /// <summary>
     /// Represents member that can appear in user type. Examples: data field, constant, base class property...

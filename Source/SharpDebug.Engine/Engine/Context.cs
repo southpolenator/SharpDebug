@@ -1,8 +1,8 @@
-﻿using CsDebugScript.CLR;
-using CsDebugScript.Drawing.Interfaces;
+﻿using SharpDebug.CLR;
+using SharpDebug.Drawing.Interfaces;
 using SharpUtilities;
 
-namespace CsDebugScript.Engine
+namespace SharpDebug.Engine
 {
     /// <summary>
     /// Static class that has the whole debugging engine context

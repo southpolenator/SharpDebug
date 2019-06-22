@@ -1,8 +1,8 @@
-﻿using CsDebugScript.CodeGen.CodeWriters;
-using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.CodeGen.TypeInstances;
-using CsDebugScript.CodeGen.UserTypes.Members;
-using CsDebugScript.Engine;
+﻿using SharpDebug.CodeGen.CodeWriters;
+using SharpDebug.CodeGen.SymbolProviders;
+using SharpDebug.CodeGen.TypeInstances;
+using SharpDebug.CodeGen.UserTypes.Members;
+using SharpDebug.Engine;
 using DIA;
 using SharpUtilities;
 using System;
@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.CodeGen.UserTypes
+namespace SharpDebug.CodeGen.UserTypes
 {
     /// <summary>
     /// Base class for any exported user type

@@ -2,10 +2,10 @@
 using System.Linq;
 using System.Dynamic;
 using System.Collections.Generic;
-using CsDebugScript.Drawing.Interfaces;
-using CsDebugScript.Engine;
+using SharpDebug.Drawing.Interfaces;
+using SharpDebug.Engine;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Base class for all C# scripts.

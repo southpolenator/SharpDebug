@@ -1,9 +1,9 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
+﻿using SharpDebug.CodeGen.SymbolProviders;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.CodeGen
+namespace SharpDebug.CodeGen
 {
     /// <summary>
     /// Helper functions that aid with symbol name string manipulations.

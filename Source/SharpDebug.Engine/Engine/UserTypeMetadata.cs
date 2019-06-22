@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace CsDebugScript.Engine
+namespace SharpDebug.Engine
 {
     internal class UserTypeMetadata
     {
@@ -131,7 +131,7 @@ namespace CsDebugScript.Engine
         /// </summary>
         /// <param name="metadatas">The metadatas.</param>
         /// <param name="module">The module.</param>
-        public static UserTypeMetadata FromModuleOrFirst(this UserTypeMetadata[] metadatas, CsDebugScript.Module module)
+        public static UserTypeMetadata FromModuleOrFirst(this UserTypeMetadata[] metadatas, SharpDebug.Module module)
         {
             foreach (var metadata in metadatas)
                 if (metadata.ModuleName == module.Name)

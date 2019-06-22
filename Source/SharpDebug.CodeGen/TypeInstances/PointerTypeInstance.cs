@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript.CodeGen.TypeInstances
+namespace SharpDebug.CodeGen.TypeInstances
 {
     /// <summary>
     /// Type instance that represents pointer to a type.

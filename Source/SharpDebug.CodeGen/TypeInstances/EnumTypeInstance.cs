@@ -1,6 +1,6 @@
-﻿using CsDebugScript.CodeGen.UserTypes;
+﻿using SharpDebug.CodeGen.UserTypes;
 
-namespace CsDebugScript.CodeGen.TypeInstances
+namespace SharpDebug.CodeGen.TypeInstances
 {
     /// <summary>
     /// Type instance that represents enumeration user type.

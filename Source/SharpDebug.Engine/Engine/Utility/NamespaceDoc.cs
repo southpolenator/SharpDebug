@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Engine.Utility
+﻿namespace SharpDebug.Engine.Utility
 {
     /// <summary>
     /// Collection of utility classes.

@@ -1,9 +1,9 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using System.Linq;
 using Xunit;
-using ClrString = CsDebugScript.CommonUserTypes.CLR.System.String;
+using ClrString = SharpDebug.CommonUserTypes.CLR.System.String;
 
-namespace CsDebugScript.Tests.CLR
+namespace SharpDebug.Tests.CLR
 {
     public abstract class TypeTests
     {

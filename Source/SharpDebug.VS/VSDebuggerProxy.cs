@@ -1,5 +1,5 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.VS.DPE;
+﻿using SharpDebug.Engine;
+using SharpDebug.VS.DPE;
 using DIA;
 using Microsoft.VisualStudio.Debugger;
 using Microsoft.VisualStudio.Debugger.CallStack;
@@ -14,7 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.VS
+namespace SharpDebug.VS
 {
     /// <summary>
     /// Visual Studio Debugger Proxy object to default AppDomain

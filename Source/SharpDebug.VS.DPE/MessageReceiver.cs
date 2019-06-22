@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.VS.DPE
+namespace SharpDebug.VS.DPE
 {
     internal enum MessageCodes
     {

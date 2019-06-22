@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Exceptions;
+﻿using SharpDebug.Engine;
+using SharpDebug.Exceptions;
 using System;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.std
+namespace SharpDebug.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
     /// Implementation of std::any

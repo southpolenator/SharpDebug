@@ -1,10 +1,10 @@
-﻿using CsDebugScript.DwarfSymbolProvider;
-using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
+﻿using SharpDebug.DwarfSymbolProvider;
+using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers;
 using DbgEng;
 using System.IO;
 
-namespace CsDebugScript.Tests
+namespace SharpDebug.Tests
 {
     public class DumpInitialization
     {

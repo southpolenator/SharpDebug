@@ -1,9 +1,9 @@
-﻿using CsDebugScript.Drawing.Interfaces;
-using CsDebugScript.Exceptions;
+﻿using SharpDebug.Drawing.Interfaces;
+using SharpDebug.Exceptions;
 using System;
 using System.Linq;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
+namespace SharpDebug.CommonUserTypes.NativeTypes.cv
 {
     /// <summary>
     /// Implementation of cv::Mat class.

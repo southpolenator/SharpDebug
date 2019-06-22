@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace CsDebugScript.Engine
+namespace SharpDebug.Engine
 {
     /// <summary>
     /// Helper methods for IL generation.

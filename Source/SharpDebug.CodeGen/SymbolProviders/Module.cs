@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.CodeGen.SymbolProviders
+namespace SharpDebug.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Fake symbol that represents template argument constant.

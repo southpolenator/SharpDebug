@@ -1,6 +1,6 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
+﻿using SharpDebug.CodeGen.SymbolProviders;
 
-namespace CsDebugScript.CodeGen.UserTypes.Members
+namespace SharpDebug.CodeGen.UserTypes.Members
 {
     /// <summary>
     /// Represents data field declared in user type.

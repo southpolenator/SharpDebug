@@ -1,5 +1,5 @@
-﻿using CsDebugScript.CodeGen.UserTypes;
-using CsDebugScript.Engine;
+﻿using SharpDebug.CodeGen.UserTypes;
+using SharpDebug.Engine;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System;
@@ -11,11 +11,11 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CsDebugScript.CodeGen
+namespace SharpDebug.CodeGen
 {
-    using CsDebugScript.CodeGen.CodeWriters;
+    using SharpDebug.CodeGen.CodeWriters;
     using SymbolProviders;
-    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+    using UserType = SharpDebug.CodeGen.UserTypes.UserType;
 
     /// <summary>
     /// Starting point for generating user types from PDBs.
@@ -27,8 +27,8 @@ namespace CsDebugScript.CodeGen
         /// </summary>
         private static readonly string[] dependentAssemblies = new string[]
         {
-            "CsDebugScript.Engine.dll",
-            "CsDebugScript.CommonUserTypes.dll",
+            "SharpDebug.Engine.dll",
+            "SharpDebug.CommonUserTypes.dll",
         };
 
         /// <summary>

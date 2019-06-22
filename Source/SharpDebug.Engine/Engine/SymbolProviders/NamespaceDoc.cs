@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Engine.SymbolProviders
+﻿namespace SharpDebug.Engine.SymbolProviders
 {
     /// <summary>
     /// Debugging symbol providers.

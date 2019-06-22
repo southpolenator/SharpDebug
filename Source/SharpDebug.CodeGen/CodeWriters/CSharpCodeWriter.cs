@@ -1,16 +1,16 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.CodeGen.TypeInstances;
-using CsDebugScript.CodeGen.UserTypes;
-using CsDebugScript.CodeGen.UserTypes.Members;
+﻿using SharpDebug.CodeGen.SymbolProviders;
+using SharpDebug.CodeGen.TypeInstances;
+using SharpDebug.CodeGen.UserTypes;
+using SharpDebug.CodeGen.UserTypes.Members;
 using DIA;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.CodeGen.CodeWriters
+namespace SharpDebug.CodeGen.CodeWriters
 {
-    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+    using UserType = SharpDebug.CodeGen.UserTypes.UserType;
 
     /// <summary>
     /// Code writer that outputs code in C#.
@@ -695,11 +695,11 @@ namespace CsDebugScript.CodeGen.CodeWriters
                         output.WriteLine(1, ": base(variable)");
                     else if (constructor == UserTypeConstructor.SimplePhysical)
                     {
-                        //output.WriteLine(1, $": this(variable.GetBaseClass({BaseClassStringFieldName}), {ToString(typeof(CsDebugScript.Debugger))}.ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass({BaseClassStringFieldName}).GetPointerAddress(), variable.GetBaseClass({BaseClassStringFieldName}).GetCodeType().Size), 0, variable.GetBaseClass({BaseClassStringFieldName}).GetPointerAddress())");
+                        //output.WriteLine(1, $": this(variable.GetBaseClass({BaseClassStringFieldName}), {ToString(typeof(SharpDebug.Debugger))}.ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass({BaseClassStringFieldName}).GetPointerAddress(), variable.GetBaseClass({BaseClassStringFieldName}).GetCodeType().Size), 0, variable.GetBaseClass({BaseClassStringFieldName}).GetPointerAddress())");
                         output.StartLine(1, ": this(variable.GetBaseClass(");
                         output.Write(BaseClassStringFieldName);
                         output.Write("), ");
-                        output.Write(ToString(typeof(CsDebugScript.Debugger)));
+                        output.Write(ToString(typeof(SharpDebug.Debugger)));
                         output.Write(".ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass(");
                         output.Write(BaseClassStringFieldName);
                         output.Write(").GetPointerAddress(), variable.GetBaseClass(");

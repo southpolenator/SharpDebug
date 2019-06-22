@@ -1,9 +1,9 @@
-﻿using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
-using CsDebugScript.Engine.Marshaling;
-using CsDebugScript.Engine.Native;
-using CsDebugScript.Engine.SymbolProviders;
-using CsDebugScript.Engine.Utility;
-using CsDebugScript.Exceptions;
+﻿using SharpDebug.Engine.Debuggers.DbgEngDllHelpers;
+using SharpDebug.Engine.Marshaling;
+using SharpDebug.Engine.Native;
+using SharpDebug.Engine.SymbolProviders;
+using SharpDebug.Engine.Utility;
+using SharpDebug.Exceptions;
 using DbgEng;
 using DIA;
 using SharpUtilities;
@@ -14,12 +14,12 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CsDebugScript.Engine.Debuggers
+namespace SharpDebug.Engine.Debuggers
 {
     /// <summary>
     /// DbgEng.dll implementation of <see cref="IDebuggerEngine"/>.
     /// </summary>
-    /// <seealso cref="CsDebugScript.Engine.IDebuggerEngine" />
+    /// <seealso cref="SharpDebug.Engine.IDebuggerEngine" />
     public class DbgEngDll : IDebuggerEngine
     {
         /// <summary>

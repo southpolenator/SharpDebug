@@ -1,4 +1,4 @@
-﻿using CsDebugScript.UI;
+﻿using SharpDebug.UI;
 using ICSharpCode.AvalonEdit.Highlighting;
 using SharpUtilities;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace CsDebugScript.VS
+namespace SharpDebug.VS
 {
     /// <summary>
     /// Interaction logic for VSInteractiveWindowControl.

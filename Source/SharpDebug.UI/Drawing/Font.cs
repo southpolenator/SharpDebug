@@ -1,6 +1,6 @@
-﻿using CsDebugScript.Drawing.Interfaces;
+﻿using SharpDebug.Drawing.Interfaces;
 
-namespace CsDebugScript.UI.Drawing
+namespace SharpDebug.UI.Drawing
 {
     /// <summary>
     /// Implements the font object.

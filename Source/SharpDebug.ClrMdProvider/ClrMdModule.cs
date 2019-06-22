@@ -1,9 +1,9 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using SharpPdb.Managed;
 using SharpUtilities;
 using System;
 
-namespace CsDebugScript.ClrMdProvider
+namespace SharpDebug.ClrMdProvider
 {
     /// <summary>
     /// ClrMD implementation of <see cref="IClrModule"/>.
@@ -93,12 +93,12 @@ namespace CsDebugScript.ClrMdProvider
         internal IPdbFile ClrPdbReader => clrPdbReader.Value;
 
         /// <summary>
-        /// Attempts to obtain a <see cref="T:CsDebugScript.CLR.IClrType" /> based on the name of the type.
+        /// Attempts to obtain a <see cref="T:SharpDebug.CLR.IClrType" /> based on the name of the type.
         /// Note this is a "best effort" due to the way that the DAC handles types.
         /// This function will fail for Generics, and types which have never been constructed in the target process.
         /// Please be sure to null-check the return value of this function.
         /// </summary>
-        /// <param name="typeName">The name of the type. (This would be the EXACT value returned by <see cref="P:CsDebugScript.CLR.IClrType.Name" />).</param>
+        /// <param name="typeName">The name of the type. (This would be the EXACT value returned by <see cref="P:SharpDebug.CLR.IClrType.Name" />).</param>
         public IClrType GetTypeByName(string typeName)
         {
             return Provider.FromClrType(ClrModule.GetTypeByName(typeName));

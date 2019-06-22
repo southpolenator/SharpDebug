@@ -1,10 +1,10 @@
 ﻿using CommandLine;
-using CsDebugScript.DwarfSymbolProvider;
-using CsDebugScript.PdbSymbolProvider;
+using SharpDebug.DwarfSymbolProvider;
+using SharpDebug.PdbSymbolProvider;
 using System.Collections.Generic;
 using System.IO;
 
-namespace CsDebugScript.CodeGen.App
+namespace SharpDebug.CodeGen.App
 {
     class Options
     {

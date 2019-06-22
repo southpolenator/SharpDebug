@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using static CxxDemangler.CxxDemangler;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Public symbol defined in image container (<see cref="IDwarfImage"/>).

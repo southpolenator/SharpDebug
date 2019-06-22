@@ -6,7 +6,7 @@ using ICSharpCode.NRefactory.CSharp;
 using ICSharpCode.NRefactory.TypeSystem;
 using ICSharpCode.NRefactory.CSharp.Completion;
 
-namespace CsDebugScript.UI.CodeWindow
+namespace SharpDebug.UI.CodeWindow
 {
     internal class CompletionDataFactory : ICompletionDataFactory
     {

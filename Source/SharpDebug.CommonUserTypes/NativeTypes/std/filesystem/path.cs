@@ -1,7 +1,7 @@
-﻿using CsDebugScript.Exceptions;
+﻿using SharpDebug.Exceptions;
 using System;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.std.filesystem
+namespace SharpDebug.CommonUserTypes.NativeTypes.std.filesystem
 {
     /// <summary>
     /// Implementation of std::filesystem::path

@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Engine
+﻿namespace SharpDebug.Engine
 {
     /// <summary>
     /// Collection of base classes needed for C# scripting.

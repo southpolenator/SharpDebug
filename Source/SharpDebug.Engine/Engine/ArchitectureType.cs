@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Engine
+﻿namespace SharpDebug.Engine
 {
     /// <summary>
     /// The architecture type of the computer.

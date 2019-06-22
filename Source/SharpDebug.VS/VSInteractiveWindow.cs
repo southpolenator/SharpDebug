@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Controls;
 
-namespace CsDebugScript.VS
+namespace SharpDebug.VS
 {
     class VSInteractiveWindowProxy : MarshalByRefObject
     {
@@ -44,7 +44,7 @@ namespace CsDebugScript.VS
 
     class VSInteractiveExecutionBehavior : InteractiveExecutionBehavior
     {
-        public const string InitializationScriptRelativePath = "CsDebugScript/init.csx";
+        public const string InitializationScriptRelativePath = "SharpDebug/init.csx";
 
         public override string GetResetScriptPath()
         {
@@ -101,7 +101,7 @@ namespace CsDebugScript.VS
     public class VSInteractiveWindow : ToolWindowPane
     {
         internal const string CaptionText = "C# Debug Scripting";
-        private const string DomainName = "CsDebugScript";
+        private const string DomainName = "SharpDebug";
 
         private AppDomain scriptDomain;
 #if USE_APP_DOMAIN

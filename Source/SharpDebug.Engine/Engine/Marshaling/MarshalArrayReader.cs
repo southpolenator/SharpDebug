@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.Engine.Marshaling
+namespace SharpDebug.Engine.Marshaling
 {
     /// <summary>
     /// Marshaled array of elements

@@ -35,7 +35,7 @@
           </content>
         </section>
         <section address="Loading_CsScripts_plugin_into_WinDbg">
-          <title>Loading CsDebugScript plugin into WinDbg</title>
+          <title>Loading SharpDebug plugin into WinDbg</title>
           <content>
             <para>
               Use WinDbg
@@ -43,10 +43,10 @@
                 <linkText>.load</linkText>
                 <linkUri>https://msdn.microsoft.com/en-us/library/windows/hardware/ff563964%28v=vs.85%29.aspx</linkUri>
               </externalLink>
-              command and point it to address of CsDebugScript.WinDbg.dll. For example:
+              command and point it to address of SharpDebug.WinDbg.dll. For example:
             </para>
             <code>
-              .load C:\debuggers\winext\CsDebugScript.WinDbg.dll
+              .load C:\debuggers\winext\SharpDebug.WinDbg.dll
             </code>
           </content>
         </section>
@@ -54,7 +54,7 @@
           <title>Executing C# script</title>
           <content>
             <para>
-              Use <codeInline>!execute</codeInline> command exported from CsDebugScript.WinDbg extension:
+              Use <codeInline>!execute</codeInline> command exported from SharpDebug.WinDbg extension:
             </para>
             <code>
               !execute path_to_csx_script [optional arguments given to the script]
@@ -69,7 +69,7 @@
               In case you have one more extension that exports <codeInline>!execute</codeInline> command, you must specify extension at the beginning:
             </para>
             <code>
-              !CsDebugScript.execute c:\Scripts\myscript.csx
+              !SharpDebug.execute c:\Scripts\myscript.csx
             </code>
           </content>
         </section>
@@ -77,10 +77,10 @@
           <title>Entering interactive mode</title>
           <content>
             <para>
-              Use <codeInline>!interactive</codeInline> command exported from CsDebugScript extension:
+              Use <codeInline>!interactive</codeInline> command exported from SharpDebug extension:
             </para>
             <code>
-              !CsDebugScript.interactive
+              !SharpDebug.interactive
             </code>
             <para>
               Interactive mode can execute both WinDbg commands and C# expressions. C# expression saves the state and must end with semicolon (;). WinDbg commands start with #dbg. For example you can enter following commands and not get an error:
@@ -96,10 +96,10 @@
           <title>Entering UI interactive mode</title>
           <content>
             <para>
-              Use <codeInline>!openui</codeInline> command exported from CsDebugScript extension:
+              Use <codeInline>!openui</codeInline> command exported from SharpDebug extension:
             </para>
             <code>
-              !CsDebugScript.openui
+              !SharpDebug.openui
             </code>
             <para>
               UI interactive mode is more powerful than regular interactive mode as it provides C# editor, completion window, XML documentation, etc.
@@ -124,10 +124,10 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Process</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Process</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>M:CsDebugScript.ScriptBase.writeln(System.String,System.Object[])</codeEntityReference>
+                <codeEntityReference>M:SharpDebug.ScriptBase.writeln(System.String,System.Object[])</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -143,13 +143,13 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Thread</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Thread</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference linkText="Process.Threads">P:CsDebugScript.Process.Threads</codeEntityReference>
+                <codeEntityReference linkText="Process.Threads">P:SharpDebug.Process.Threads</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>M:CsDebugScript.ScriptBase.writeln(System.String,System.Object[])</codeEntityReference>
+                <codeEntityReference>M:SharpDebug.ScriptBase.writeln(System.String,System.Object[])</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -171,13 +171,13 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Module</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Module</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference linkText="Process.Modules">P:CsDebugScript.Process.Modules</codeEntityReference>
+                <codeEntityReference linkText="Process.Modules">P:SharpDebug.Process.Modules</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>M:CsDebugScript.ScriptBase.writeln(System.String,System.Object[])</codeEntityReference>
+                <codeEntityReference>M:SharpDebug.ScriptBase.writeln(System.String,System.Object[])</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -192,16 +192,16 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Thread</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Thread</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.StackTrace</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.StackTrace</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.StackFrame</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.StackFrame</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>M:CsDebugScript.ScriptBase.writeln(System.Object)</codeEntityReference>
+                <codeEntityReference>M:SharpDebug.ScriptBase.writeln(System.Object)</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -219,22 +219,22 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Thread</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Thread</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.StackTrace</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.StackTrace</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.StackFrame</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.StackFrame</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.VariableCollection</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.VariableCollection</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Variable</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Variable</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>M:CsDebugScript.ScriptBase.writeln(System.Object)</codeEntityReference>
+                <codeEntityReference>M:SharpDebug.ScriptBase.writeln(System.Object)</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -247,7 +247,7 @@
               dynamic staticClassVariable = Process.Current.GetGlobal("mymodule!Class::staticVariable");
             </code>
             <para>
-              You can also access through <codeEntityReference>F:CsDebugScript.ScriptBase.Modules</codeEntityReference>:
+              You can also access through <codeEntityReference>F:SharpDebug.ScriptBase.Modules</codeEntityReference>:
             </para>
             <code language="c#">
               dynamic globalVariable = Modules.mymodule.globalVariable;
@@ -256,13 +256,13 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Process</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Process</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Variable</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Variable</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>F:CsDebugScript.ScriptBase.Modules</codeEntityReference>
+                <codeEntityReference>F:SharpDebug.ScriptBase.Modules</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -284,13 +284,13 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Process</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Process</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Variable</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Variable</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>F:CsDebugScript.ScriptBase.Modules</codeEntityReference>
+                <codeEntityReference>F:SharpDebug.ScriptBase.Modules</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -304,10 +304,10 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.CodeType</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.CodeType</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Variable</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Variable</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -323,10 +323,10 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Process</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Process</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Variable</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Variable</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -341,10 +341,10 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Process</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Process</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Variable</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Variable</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -361,10 +361,10 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Process</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Process</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Variable</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Variable</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -386,13 +386,13 @@
             References:
             <list class="bullet">
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Process</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Process</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>T:CsDebugScript.Variable</codeEntityReference>
+                <codeEntityReference>T:SharpDebug.Variable</codeEntityReference>
               </listItem>
               <listItem>
-                <codeEntityReference>F:CsDebugScript.ScriptBase.Modules</codeEntityReference>
+                <codeEntityReference>F:SharpDebug.ScriptBase.Modules</codeEntityReference>
               </listItem>
             </list>
           </content>
@@ -450,8 +450,8 @@
               You now have huge collection of common code and compiling scripts is not that fast any more, you should create .NET library (dll) and just reference it from the script:
             </para>
             <code language="c#">
-              #r "CsDebugScript.CommonUserTypes.dll"
-              using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
+              #r "SharpDebug.CommonUserTypes.dll"
+              using std = SharpDebug.CommonUserTypes.NativeTypes.std;
 
               Variable variable = Process.Current.GetGlobal("mymodule!globalVariable");
               std.wstring s = variable.CastAs&lt;std.wstring&gt;();
@@ -464,8 +464,8 @@
             <para>
               Please take a look at
               <externalLink>
-                <linkText>CsDebugScript.Engine.Test</linkText>
-                <linkUri>https://github.com/southpolenator/WinDbgCs/blob/master/Tests/CsDebugScript.Engine.Test/Program.cs</linkUri>
+                <linkText>SharpDebug.Engine.Test</linkText>
+                <linkUri>https://github.com/southpolenator/WinDbgCs/blob/master/Tests/SharpDebug.Engine.Test/Program.cs</linkUri>
               </externalLink>.
               It shows how to:
             </para>
@@ -483,7 +483,7 @@
       <title>Exporting User types from PDB file</title>
       <content>
         <para>
-          You have a lot of classes in your project and you would like to have typed access in scripts or be safe when field gets renamed. Use tool CsDebugScript.CodeGen.
+          You have a lot of classes in your project and you would like to have typed access in scripts or be safe when field gets renamed. Use tool SharpDebug.CodeGen.
         </para>
       </content>
       <sections>
@@ -494,13 +494,13 @@
               This command will export only MyType from the PDB. Built-in types will also be exported.
             </para>
             <code language="powershell">
-              CsDebugScript.CodeGen -p myPdb.pdb -t MyType
+              SharpDebug.CodeGen -p myPdb.pdb -t MyType
             </code>
             <para>
               This command will export two user types and if one of them has field that points to another, it will be correctly exported.
             </para>
             <code language="powershell">
-              CsDebugScript.CodeGen -p myPdb.pdb -t MyType,MySecondType
+              SharpDebug.CodeGen -p myPdb.pdb -t MyType,MySecondType
             </code>
           </content>
         </section>
@@ -508,7 +508,7 @@
           <title>Using XML export configuration file</title>
           <content>
             <code language="powershell">
-              CsDebugScript.CodeGen -x export.xml
+              SharpDebug.CodeGen -x export.xml
             </code>
             <para>
               Where export.xml looks like:
@@ -522,8 +522,8 @@
                   &lt;Module Namespace="MyModule" PdbPath="myPdb.pdb"/&gt;
                 &lt;/Modules&gt;
                 &lt;Transformations&gt;
-                  &lt;Transformation OriginalType="std::basic_string&amp;lt;wchar_t,${char_traits},${allocator}&amp;gt;" NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.wstring" Constructor="${new}" /&gt;
-                  &lt;Transformation OriginalType="std::vector&amp;lt;${T},${allocator}&amp;gt;" NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.vector&amp;lt;${T}&amp;gt;" Constructor="${new}" /&gt;
+                  &lt;Transformation OriginalType="std::basic_string&amp;lt;wchar_t,${char_traits},${allocator}&amp;gt;" NewType="SharpDebug.CommonUserTypes.NativeTypes.std.wstring" Constructor="${new}" /&gt;
+                  &lt;Transformation OriginalType="std::vector&amp;lt;${T},${allocator}&amp;gt;" NewType="SharpDebug.CommonUserTypes.NativeTypes.std.vector&amp;lt;${T}&amp;gt;" Constructor="${new}" /&gt;
                 &lt;/Transformations&gt;
               &lt;/XmlConfig&gt;
             </code>

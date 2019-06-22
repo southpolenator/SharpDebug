@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.Engine.SymbolProviders
+namespace SharpDebug.Engine.SymbolProviders
 {
     /// <summary>
     /// Symbol provider that is being implemented over DIA library.

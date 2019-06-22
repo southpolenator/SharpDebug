@@ -1,8 +1,8 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
+﻿using SharpDebug.CodeGen.SymbolProviders;
 using SharpUtilities;
 using System;
 
-namespace CsDebugScript.CodeGen.UserTypes
+namespace SharpDebug.CodeGen.UserTypes
 {
     /// <summary>
     /// Class represents transformation done on the symbol that should convert it to user type.

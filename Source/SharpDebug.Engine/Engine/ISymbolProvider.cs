@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.Engine
+namespace SharpDebug.Engine
 {
     /// <summary>
     /// Debugging symbol provider.

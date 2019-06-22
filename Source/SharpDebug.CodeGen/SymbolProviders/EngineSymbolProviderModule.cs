@@ -1,9 +1,9 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.CodeGen.SymbolProviders
+namespace SharpDebug.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Class represents module during debugging. It is being described by engine <see cref="ISymbolProviderModule"/>.
@@ -25,7 +25,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// </summary>
         /// <param name="module">The engine module.</param>
         /// <param name="xmlModule">The XML module description.</param>
-        public EngineSymbolProviderModule(CsDebugScript.Module module, XmlModule xmlModule)
+        public EngineSymbolProviderModule(SharpDebug.Module module, XmlModule xmlModule)
             : this(module, xmlModule, Context.SymbolProvider)
         {
         }
@@ -36,7 +36,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <param name="module">The engine module.</param>
         /// <param name="xmlModule">The XML module description.</param>
         /// <param name="symbolProvider">The engine symbol provider.</param>
-        public EngineSymbolProviderModule(CsDebugScript.Module module, XmlModule xmlModule, ISymbolProvider symbolProvider)
+        public EngineSymbolProviderModule(SharpDebug.Module module, XmlModule xmlModule, ISymbolProvider symbolProvider)
         {
             if (string.IsNullOrEmpty(xmlModule.Name))
             {
@@ -53,7 +53,7 @@ namespace CsDebugScript.CodeGen.SymbolProviders
         /// <summary>
         /// Gets the engine module.
         /// </summary>
-        public CsDebugScript.Module EngineModule { get; private set; }
+        public SharpDebug.Module EngineModule { get; private set; }
 
         /// <summary>
         /// Gets the engine module provider.

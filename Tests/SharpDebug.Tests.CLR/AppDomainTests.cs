@@ -1,10 +1,10 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace CsDebugScript.Tests.CLR
+namespace SharpDebug.Tests.CLR
 {
     [Collection("CLR AppDomains")]
     [Trait("x64", "true")]

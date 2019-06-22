@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CodeGen.SymbolProviders
+﻿namespace SharpDebug.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Interface for opening modules

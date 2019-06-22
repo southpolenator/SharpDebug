@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows.Media;
 
-namespace CsDebugScript.UI.CodeWindow
+namespace SharpDebug.UI.CodeWindow
 {
     internal class ParameterDataProvider : ICSharpCode.NRefactory.Completion.IParameterDataProvider, ICSharpCode.AvalonEdit.CodeCompletion.IOverloadProvider
     {

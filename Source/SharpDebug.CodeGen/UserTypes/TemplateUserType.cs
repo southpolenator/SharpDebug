@@ -1,12 +1,12 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.CodeGen.TypeInstances;
-using CsDebugScript.CodeGen.UserTypes.Members;
+﻿using SharpDebug.CodeGen.SymbolProviders;
+using SharpDebug.CodeGen.TypeInstances;
+using SharpDebug.CodeGen.UserTypes.Members;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.CodeGen.UserTypes
+namespace SharpDebug.CodeGen.UserTypes
 {
     /// <summary>
     /// User type that represents template user type. For example: MyType&lt;T&gt;

@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript
+﻿namespace SharpDebug
 {
     /// <summary>
     /// Wrapper class that represents a void type

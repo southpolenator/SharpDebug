@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.Engine.Utility
+namespace SharpDebug.Engine.Utility
 {
     internal unsafe class WindowsDumpFileMemoryReader : DumpFileMemoryReader
     {

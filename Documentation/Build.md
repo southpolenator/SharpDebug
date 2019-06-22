@@ -12,4 +12,4 @@ Before running tests, you need to download all dumps. Execute `dumps\download.ps
 
 With Visual Studio, you can use __Test Explorer__ to find and execute tests.
 
-Enter `Tests\CsDebugScript.Tests.Native` directory. Run `dotnet test` command.
+Enter `Tests\SharpDebug.Tests.Native` directory. Run `dotnet test` command.

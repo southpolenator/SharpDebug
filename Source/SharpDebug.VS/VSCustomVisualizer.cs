@@ -1,12 +1,12 @@
-﻿using CsDebugScript.UI.CodeWindow;
-using CsDebugScript.UI.ResultVisualizers;
+﻿using SharpDebug.UI.CodeWindow;
+using SharpDebug.UI.ResultVisualizers;
 using Microsoft.VisualStudio.Debugger;
 using Microsoft.VisualStudio.Debugger.ComponentInterfaces;
 using Microsoft.VisualStudio.Debugger.Evaluation;
 using System;
 using System.Linq;
 
-namespace CsDebugScript.VS
+namespace SharpDebug.VS
 {
     /// <summary>
     /// Class that communicates with VS debugger and visualizes expressions (watch/locals window).

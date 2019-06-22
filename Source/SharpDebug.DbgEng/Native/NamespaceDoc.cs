@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Engine.Native
+﻿namespace SharpDebug.Engine.Native
 {
     /// <summary>
     /// Collection of Structures, Enumerations and extensions that helps working with DbgEng.dll interfaces.

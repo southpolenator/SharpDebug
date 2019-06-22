@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Attribute that tells UI visualizers that we should stop using our visualizers and try to force default visualizers.

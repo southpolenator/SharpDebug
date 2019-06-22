@@ -1,9 +1,9 @@
 ﻿using SharpUtilities;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
-    /// Helper class that provides <see cref="CsDebugScript.InteractiveExecution"/> delayed initialization.
+    /// Helper class that provides <see cref="SharpDebug.InteractiveExecution"/> delayed initialization.
     /// </summary>
     public class InteractiveExecutionInitialization
     {

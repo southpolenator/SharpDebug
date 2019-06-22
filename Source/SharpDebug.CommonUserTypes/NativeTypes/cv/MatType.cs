@@ -1,7 +1,7 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using System;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
+namespace SharpDebug.CommonUserTypes.NativeTypes.cv
 {
     /// <summary>
     /// Type of the matrix.

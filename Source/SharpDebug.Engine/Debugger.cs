@@ -1,11 +1,11 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Helper class that controls the debugger

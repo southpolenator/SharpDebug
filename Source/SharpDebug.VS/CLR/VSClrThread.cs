@@ -1,10 +1,10 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript.VS.CLR
+namespace SharpDebug.VS.CLR
 {
     /// <summary>
     /// Visual Studio implementation of the <see cref="IClrThread"/>.

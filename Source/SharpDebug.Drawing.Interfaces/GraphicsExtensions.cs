@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace CsDebugScript.Drawing.Interfaces
+namespace SharpDebug.Drawing.Interfaces
 {
     /// <summary>
     /// Useful <see cref="IGraphics"/> extensions for creating objects with different parameters.

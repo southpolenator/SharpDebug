@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.Engine.Native
+namespace SharpDebug.Engine.Native
 {
     [StructLayout(LayoutKind.Explicit)]
     internal struct DEBUG_LAST_EVENT_INFO

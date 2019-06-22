@@ -1,9 +1,9 @@
-﻿using CsDebugScript.CodeGen;
-using CsDebugScript.CodeGen.SymbolProviders;
+﻿using SharpDebug.CodeGen;
+using SharpDebug.CodeGen.SymbolProviders;
 
-namespace CsDebugScript.PdbSymbolProvider
+namespace SharpDebug.PdbSymbolProvider
 {
-    using Module = CsDebugScript.CodeGen.SymbolProviders.Module;
+    using Module = SharpDebug.CodeGen.SymbolProviders.Module;
 
     /// <summary>
     /// CodeGen module provider based on PDB reader.

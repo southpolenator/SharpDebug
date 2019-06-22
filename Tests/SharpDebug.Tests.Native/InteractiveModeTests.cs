@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
+﻿using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers;
 using Xunit;
 
-namespace CsDebugScript.Tests.Native
+namespace SharpDebug.Tests.Native
 {
     [Collection("NativeDumpTest.x64.mdmp")]
     [Trait("x64", "true")]

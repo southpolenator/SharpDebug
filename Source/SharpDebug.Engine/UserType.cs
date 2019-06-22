@@ -1,11 +1,11 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Extension class providing cast functionality.

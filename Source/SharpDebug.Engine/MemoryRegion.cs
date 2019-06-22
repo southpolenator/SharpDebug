@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Region of memory that application is using.

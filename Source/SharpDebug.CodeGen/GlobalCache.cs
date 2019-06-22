@@ -1,12 +1,12 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.Engine;
+﻿using SharpDebug.CodeGen.SymbolProviders;
+using SharpDebug.Engine;
 using DIA;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CsDebugScript.CodeGen
+namespace SharpDebug.CodeGen
 {
-    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+    using UserType = SharpDebug.CodeGen.UserTypes.UserType;
 
     internal static class GlobalCache
     {

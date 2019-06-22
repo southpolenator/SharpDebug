@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript
+﻿namespace SharpDebug
 {
     /// <summary>
     /// Interface for allowing crossing to downcast parent.

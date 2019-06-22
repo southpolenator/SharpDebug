@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Drawing.Interfaces;
-using CsDebugScript.Engine;
+﻿using SharpDebug.Drawing.Interfaces;
+using SharpDebug.Engine;
 using System;
 
-namespace CsDebugScript.CommonUserTypes
+namespace SharpDebug.CommonUserTypes
 {
     /// <summary>
     /// Helper class for easier implementation of bimap user types.

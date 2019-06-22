@@ -1,8 +1,8 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using SharpUtilities;
 using System.Linq;
 
-namespace CsDebugScript.VS.CLR
+namespace SharpDebug.VS.CLR
 {
     /// <summary>
     /// Visual Studio implementation of <see cref="IClrModule"/>.

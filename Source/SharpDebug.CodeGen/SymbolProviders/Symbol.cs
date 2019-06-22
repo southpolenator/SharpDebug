@@ -1,13 +1,13 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using DIA;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript.CodeGen.SymbolProviders
+namespace SharpDebug.CodeGen.SymbolProviders
 {
-    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+    using UserType = SharpDebug.CodeGen.UserTypes.UserType;
 
     /// <summary>
     /// Interface represents symbol during debugging.

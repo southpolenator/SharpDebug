@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace CsDebugScript.VS.DPE
+namespace SharpDebug.VS.DPE
 {
     internal class ClrMdSymbolLocator : SymbolLocator
     {

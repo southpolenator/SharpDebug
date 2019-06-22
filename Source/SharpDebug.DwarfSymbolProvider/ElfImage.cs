@@ -4,12 +4,12 @@ using SharpUtilities;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Simple ELF image reader.
     /// </summary>
-    /// <seealso cref="CsDebugScript.DwarfSymbolProvider.IDwarfImage" />
+    /// <seealso cref="SharpDebug.DwarfSymbolProvider.IDwarfImage" />
     internal class ElfImage : IDwarfImage
     {
         /// <summary>

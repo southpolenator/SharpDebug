@@ -2,7 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
+namespace SharpDebug.Engine.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Controller for Debugee actions during live debugging.

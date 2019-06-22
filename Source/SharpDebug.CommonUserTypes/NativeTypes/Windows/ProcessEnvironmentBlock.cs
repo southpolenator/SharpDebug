@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.Windows
+namespace SharpDebug.CommonUserTypes.NativeTypes.Windows
 {
     /// <summary>
     /// Class that represents PEB (Process environment block).

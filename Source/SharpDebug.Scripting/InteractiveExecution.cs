@@ -1,5 +1,5 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
+﻿using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
@@ -12,7 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Internal exception used for stopping interactive scripting

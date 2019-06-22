@@ -13,7 +13,7 @@
 
         <list class="bullet">
           <listItem>
-            <para>Renaming projects to CsDebugScript.*</para>
+            <para>Renaming projects to SharpDebug.*</para>
           </listItem>
           <listItem>
             <para>Adding UI projects that target interactive experience (REPL) when using written scripts.</para>

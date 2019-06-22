@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript.CLR
+namespace SharpDebug.CLR
 {
     /// <summary>
     /// CLR code StackFrame interface. This is valid only if there is CLR loaded into debugging process.

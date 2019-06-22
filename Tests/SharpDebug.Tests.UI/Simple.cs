@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace CsDebugScript.Tests.UI
+namespace SharpDebug.Tests.UI
 {
     [Trait("x64", "true")]
     public class Simple : UiTestBase, IClassFixture<InteractiveWindowFixture>

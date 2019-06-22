@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CommonUserTypes.NativeTypes.cv
+﻿namespace SharpDebug.CommonUserTypes.NativeTypes.cv
 {
     /// <summary>
     /// Type of array/matrix element.

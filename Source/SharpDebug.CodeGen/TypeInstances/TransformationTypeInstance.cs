@@ -1,8 +1,8 @@
-﻿using CsDebugScript.CodeGen.CodeWriters;
-using CsDebugScript.CodeGen.UserTypes;
+﻿using SharpDebug.CodeGen.CodeWriters;
+using SharpDebug.CodeGen.UserTypes;
 using System;
 
-namespace CsDebugScript.CodeGen.TypeInstances
+namespace SharpDebug.CodeGen.TypeInstances
 {
     /// <summary>
     /// Type instance that represents transformation to be applied.

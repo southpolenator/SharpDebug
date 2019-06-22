@@ -1,6 +1,6 @@
 ﻿using DIA;
 
-namespace CsDebugScript.CodeGen.SymbolProviders
+namespace SharpDebug.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Interface represents symbol field during debugging.

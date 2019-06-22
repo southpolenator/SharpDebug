@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CsDebugScript.CLR
+namespace SharpDebug.CLR
 {
     /// <summary>
     /// CLR code thread interface. This is valid only if there is CLR loaded into debugging process.

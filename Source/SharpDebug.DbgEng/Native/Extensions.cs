@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Engine.Marshaling;
+﻿using SharpDebug.Engine.Marshaling;
 using DbgEng;
 using System.Text;
 
-namespace CsDebugScript.Engine.Native
+namespace SharpDebug.Engine.Native
 {
     /// <summary>
     /// Extensions for DbgEng.dll interfaces for easier manipulation

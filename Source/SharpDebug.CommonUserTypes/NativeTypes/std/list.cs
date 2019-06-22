@@ -1,9 +1,9 @@
-﻿using CsDebugScript.Exceptions;
+﻿using SharpDebug.Exceptions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.std
+namespace SharpDebug.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
     /// Implementation of std::list

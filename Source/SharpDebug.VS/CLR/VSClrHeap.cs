@@ -1,9 +1,9 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.VS.CLR
+namespace SharpDebug.VS.CLR
 {
     /// <summary>
     /// Visual Studio implementation of <see cref="IClrHeap"/>.

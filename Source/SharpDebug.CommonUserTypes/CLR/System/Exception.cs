@@ -1,14 +1,14 @@
-﻿using CsDebugScript.Exceptions;
+﻿using SharpDebug.Exceptions;
 using SharpUtilities;
 using System;
 using System.Collections;
 
-namespace CsDebugScript.CommonUserTypes.CLR.System
+namespace SharpDebug.CommonUserTypes.CLR.System
 {
     /// <summary>
     /// CLR code Exception. This is valid only if there is CLR loaded into debugging process.
     /// </summary>
-    /// <seealso cref="CsDebugScript.Variable" />
+    /// <seealso cref="SharpDebug.Variable" />
     public class Exception : Variable
     {
         /// <summary>

@@ -1,6 +1,6 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Stack trace of the process being debugged.

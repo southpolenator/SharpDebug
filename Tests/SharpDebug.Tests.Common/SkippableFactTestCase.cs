@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-namespace CsDebugScript.Tests
+namespace SharpDebug.Tests
 {
     public class SkippableFactTestCase : XunitTestCase
     {

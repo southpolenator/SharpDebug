@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.Engine.SymbolProviders
+namespace SharpDebug.Engine.SymbolProviders
 {
     /// <summary>
     /// DIA library module representation

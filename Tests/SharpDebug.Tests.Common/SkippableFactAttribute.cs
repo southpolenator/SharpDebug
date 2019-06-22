@@ -1,9 +1,9 @@
 ﻿using Xunit;
 using Xunit.Sdk;
 
-namespace CsDebugScript.Tests
+namespace SharpDebug.Tests
 {
-    [XunitTestCaseDiscoverer("CsDebugScript.Tests.SkippableFactDiscoverer", "CsDebugScript.Tests")]
+    [XunitTestCaseDiscoverer("SharpDebug.Tests.SkippableFactDiscoverer", "SharpDebug.Tests")]
     public class SkippableFactAttribute : FactAttribute
     {
         public string SkipOnFailurePropertyName { get; set; }

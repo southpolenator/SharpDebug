@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Enumeration that represents attribute value type.

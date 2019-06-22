@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.CodeGen.UserTypes
+namespace SharpDebug.CodeGen.UserTypes
 {
     /// <summary>
     /// Class represents constructor for UserType
@@ -44,7 +44,7 @@ namespace CsDebugScript.CodeGen.UserTypes
         /// <summary>
         /// <code>
         /// public Constructor(Variable variable)
-        ///     : this(variable.GetBaseClass(baseClassString), CsDebugScript.Debugger.ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass(baseClassString).GetPointerAddress(), variable.GetBaseClass(baseClassString).GetCodeType().Size), 0, variable.GetBaseClass(baseClassString).GetPointerAddress())
+        ///     : this(variable.GetBaseClass(baseClassString), SharpDebug.Debugger.ReadMemory(variable.GetCodeType().Module.Process, variable.GetBaseClass(baseClassString).GetPointerAddress(), variable.GetBaseClass(baseClassString).GetCodeType().Size), 0, variable.GetBaseClass(baseClassString).GetPointerAddress())
         /// {
         /// }
         /// </code>

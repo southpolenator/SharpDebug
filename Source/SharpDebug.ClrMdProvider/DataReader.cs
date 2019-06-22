@@ -1,4 +1,4 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using Microsoft.Diagnostics.Runtime;
 using SharpUtilities;
 using System;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Architecture = Microsoft.Diagnostics.Runtime.Architecture;
 
-namespace CsDebugScript.ClrMdProvider
+namespace SharpDebug.ClrMdProvider
 {
     /// <summary>
     /// Data reader necessary for Microsoft.Diagnostics.Runtime library initialization

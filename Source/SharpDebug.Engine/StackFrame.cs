@@ -1,9 +1,9 @@
-﻿using CsDebugScript.CLR;
-using CsDebugScript.Engine;
+﻿using SharpDebug.CLR;
+using SharpDebug.Engine;
 using SharpUtilities;
 using System;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Stack frame of the process being debugged.

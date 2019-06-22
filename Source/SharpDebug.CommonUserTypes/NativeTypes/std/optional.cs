@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Engine.Utility;
-using CsDebugScript.Exceptions;
+﻿using SharpDebug.Engine.Utility;
+using SharpDebug.Exceptions;
 using System;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.std
+namespace SharpDebug.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
     /// Implementation of std::optional

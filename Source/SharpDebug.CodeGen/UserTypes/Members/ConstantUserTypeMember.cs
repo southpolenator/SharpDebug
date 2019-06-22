@@ -1,6 +1,6 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
+﻿using SharpDebug.CodeGen.SymbolProviders;
 
-namespace CsDebugScript.CodeGen.UserTypes.Members
+namespace SharpDebug.CodeGen.UserTypes.Members
 {
     /// <summary>
     /// Represents constant declared in user type.

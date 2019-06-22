@@ -1,5 +1,5 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Utility;
+﻿using SharpDebug.Engine;
+using SharpDebug.Engine.Utility;
 using ELFSharp.ELF;
 using ELFSharp.ELF.Segments;
 using SharpUtilities;
@@ -10,7 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Simple ELF core dump reader.
@@ -40,7 +40,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Memory reader for ELF core dump files.
         /// </summary>
-        /// <seealso cref="CsDebugScript.Engine.Utility.DumpFileMemoryReader" />
+        /// <seealso cref="SharpDebug.Engine.Utility.DumpFileMemoryReader" />
         private class CoreDumpReader : DumpFileMemoryReader
         {
             /// <summary>
@@ -383,7 +383,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Implementation for Intel386 platform
         /// </summary>
-        /// <seealso cref="CsDebugScript.DwarfSymbolProvider.ElfCoreDump.IInstance" />
+        /// <seealso cref="SharpDebug.DwarfSymbolProvider.ElfCoreDump.IInstance" />
         private class Intel386Instance : IInstance
         {
             /// <summary>
@@ -705,7 +705,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// <summary>
         /// Implementation for AMD64 platform
         /// </summary>
-        /// <seealso cref="CsDebugScript.DwarfSymbolProvider.ElfCoreDump.IInstance" />
+        /// <seealso cref="SharpDebug.DwarfSymbolProvider.ElfCoreDump.IInstance" />
         private class AMD64Instance : IInstance
         {
             /// <summary>

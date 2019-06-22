@@ -1,16 +1,16 @@
-﻿using CsDebugScript.CLR;
-using CsDebugScript.Engine;
-using CsDebugScript.Engine.Marshaling;
-using CsDebugScript.Engine.SymbolProviders;
-using CsDebugScript.Engine.Utility;
-using CsDebugScript.VS.CLR;
+﻿using SharpDebug.CLR;
+using SharpDebug.Engine;
+using SharpDebug.Engine.Marshaling;
+using SharpDebug.Engine.SymbolProviders;
+using SharpDebug.Engine.Utility;
+using SharpDebug.VS.CLR;
 using DIA;
 using SharpUtilities;
 using System;
 using System.IO;
 using System.Linq;
 
-namespace CsDebugScript.VS
+namespace SharpDebug.VS
 {
     internal class VSDebugger : IDebuggerEngine, IDiaSessionProvider, IClrProvider
     {
@@ -23,7 +23,7 @@ namespace CsDebugScript.VS
             Proxy = proxy;
             Context.SetUserTypeMetadata(ScriptCompiler.ExtractMetadata(new[]
                 {
-                    typeof(CsDebugScript.CommonUserTypes.NativeTypes.cv.Mat).Assembly, // CsDebugScript.CommonUserTypes.dll
+                    typeof(SharpDebug.CommonUserTypes.NativeTypes.cv.Mat).Assembly, // SharpDebug.CommonUserTypes.dll
                 }));
         }
 

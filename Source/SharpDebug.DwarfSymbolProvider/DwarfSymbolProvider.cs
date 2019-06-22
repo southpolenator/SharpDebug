@@ -1,9 +1,9 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using System.Collections.Generic;
-using CsDebugScript.Engine.SymbolProviders;
+using SharpDebug.Engine.SymbolProviders;
 using System.IO;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Gets address offset within module when it is loaded.
@@ -14,7 +14,7 @@ namespace CsDebugScript.DwarfSymbolProvider
     /// <summary>
     /// DWARF symbol provider that can be used with the <see cref="Context"/>.
     /// </summary>
-    /// <seealso cref="CsDebugScript.Engine.SymbolProviders.PerModuleSymbolProvider" />
+    /// <seealso cref="SharpDebug.Engine.SymbolProviders.PerModuleSymbolProvider" />
     public class DwarfSymbolProvider : PerModuleSymbolProvider
     {
         /// <summary>

@@ -1,9 +1,9 @@
-﻿using CsDebugScript.ClrMdProvider;
+﻿using SharpDebug.ClrMdProvider;
 using System.Linq;
-using ClrException = CsDebugScript.CommonUserTypes.CLR.System.Exception;
+using ClrException = SharpDebug.CommonUserTypes.CLR.System.Exception;
 using Xunit;
 
-namespace CsDebugScript.Tests.CLR
+namespace SharpDebug.Tests.CLR
 {
     public abstract class DataReaderTests
     {

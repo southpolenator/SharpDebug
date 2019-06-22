@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CodeGen
+﻿namespace SharpDebug.CodeGen
 {
     /// <summary>
     /// Collection of classes needed for running CodeGen in user process instead of calling CodeGen application.

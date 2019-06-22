@@ -1,12 +1,12 @@
-﻿using CsDebugScript.CLR;
-using CsDebugScript.Engine;
+﻿using SharpDebug.CLR;
+using SharpDebug.Engine;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Debugging type of variables
@@ -1361,7 +1361,7 @@ namespace CsDebugScript
     /// <summary>
     /// Helper base class for all builtin code type that can be used directly in .NET (sbyte, byte, int, long, etc.).
     /// </summary>
-    /// <seealso cref="CsDebugScript.CodeType" />
+    /// <seealso cref="SharpDebug.CodeType" />
     internal abstract class NativeBuiltinCodeType : CodeType
     {
         /// <summary>
@@ -2050,7 +2050,7 @@ namespace CsDebugScript
     /// <summary>
     /// Helper type to aid NakedPointer class.
     /// </summary>
-    /// <seealso cref="CsDebugScript.CodeType" />
+    /// <seealso cref="SharpDebug.CodeType" />
     internal class NakedPointerCodeType : CodeType
     {
         /// <summary>

@@ -1,6 +1,6 @@
 ﻿using SharpUtilities;
 
-namespace CsDebugScript.Engine
+namespace SharpDebug.Engine
 {
     /// <summary>
     /// Helper class for caching global objects that will be cleared when <see cref="Context.ClearCache"/> is called.

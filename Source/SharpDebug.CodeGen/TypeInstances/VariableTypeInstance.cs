@@ -1,7 +1,7 @@
-﻿using CsDebugScript.CodeGen.CodeWriters;
+﻿using SharpDebug.CodeGen.CodeWriters;
 using System;
 
-namespace CsDebugScript.CodeGen.TypeInstances
+namespace SharpDebug.CodeGen.TypeInstances
 {
     /// <summary>
     /// Type instance that represents unknown user type (and will be represented as <see cref="Variable"/> or <see cref="UserType"/> if it is base class).

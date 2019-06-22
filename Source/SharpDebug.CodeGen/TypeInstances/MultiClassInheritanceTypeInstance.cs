@@ -1,6 +1,6 @@
-﻿using CsDebugScript.CodeGen.CodeWriters;
+﻿using SharpDebug.CodeGen.CodeWriters;
 
-namespace CsDebugScript.CodeGen.TypeInstances
+namespace SharpDebug.CodeGen.TypeInstances
 {
     /// <summary>
     /// Type instance that represents multiple base classes and that <see cref="UserType"/> should be used.

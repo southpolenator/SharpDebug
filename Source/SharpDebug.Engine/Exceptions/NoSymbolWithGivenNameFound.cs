@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript.Exceptions
+namespace SharpDebug.Exceptions
 {
     /// <summary>
     /// Exception thrown when search for symbol doesn't return unique result.

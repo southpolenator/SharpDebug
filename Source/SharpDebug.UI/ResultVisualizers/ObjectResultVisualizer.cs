@@ -1,4 +1,4 @@
-﻿using CsDebugScript.UI.CodeWindow;
+﻿using SharpDebug.UI.CodeWindow;
 using Dynamitey;
 using System;
 using System.Collections;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
-namespace CsDebugScript.UI.ResultVisualizers
+namespace SharpDebug.UI.ResultVisualizers
 {
     /// <summary>
     /// Visualizes all types of objects and can be used as a base class.

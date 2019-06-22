@@ -1,9 +1,9 @@
 ﻿using Xunit;
 using Xunit.Sdk;
 
-namespace CsDebugScript.Tests
+namespace SharpDebug.Tests
 {
-    [XunitTestCaseDiscoverer("CsDebugScript.Tests.SkippableTheoryDiscoverer", "CsDebugScript.Tests")]
+    [XunitTestCaseDiscoverer("SharpDebug.Tests.SkippableTheoryDiscoverer", "SharpDebug.Tests")]
     public class SkippableTheoryAttribute : TheoryAttribute
     {
     }

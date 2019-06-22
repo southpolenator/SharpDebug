@@ -1,5 +1,5 @@
-﻿using CsDebugScript.UI;
-using CsDebugScript.UI.ResultVisualizers;
+﻿using SharpDebug.UI;
+using SharpDebug.UI.ResultVisualizers;
 using Microsoft.VisualStudio.Debugger.Evaluation;
 using Microsoft.VisualStudio.Debugger.Interop;
 using System;
@@ -9,7 +9,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CsDebugScript.VS
+namespace SharpDebug.VS
 {
     /// <summary>
     /// Interface that represents UI visualizer service. It is used only for external exposure using natvis.
@@ -49,7 +49,7 @@ namespace CsDebugScript.VS
         static VSUIVisualizerService()
         {
             List<DkmCustomUIVisualizerInfo> allVisualizers = new List<DkmCustomUIVisualizerInfo>();
-            allVisualizers.Add(DkmCustomUIVisualizerInfo.Create((uint)VSUIVisualizerType.ModalWindow, "CsDebugScript visualization", "Visualizes expression using CsDebugScript UI Visualizer", GuidString));
+            allVisualizers.Add(DkmCustomUIVisualizerInfo.Create((uint)VSUIVisualizerType.ModalWindow, "SharpDebug visualization", "Visualizes expression using SharpDebug UI Visualizer", GuidString));
             allVisualizers.Add(DkmCustomUIVisualizerInfo.Create((uint)VSUIVisualizerType.InteractiveWindow, $"Add to '{VSInteractiveWindow.CaptionText}' interactive window", $"Adds expression to '{VSInteractiveWindow.CaptionText}' interactive window", GuidString));
             AllCustomUiVisualizers = new ReadOnlyCollection<DkmCustomUIVisualizerInfo>(allVisualizers);
         }

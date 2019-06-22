@@ -1,8 +1,8 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
+﻿using SharpDebug.CodeGen.SymbolProviders;
 using SharpPdb.Windows.SymbolRecords;
 using SharpPdb.Windows.TypeRecords;
 
-namespace CsDebugScript.PdbSymbolProvider
+namespace SharpDebug.PdbSymbolProvider
 {
     using ConstantSymbol = SharpPdb.Windows.SymbolRecords.ConstantSymbol;
 

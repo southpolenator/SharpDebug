@@ -1,11 +1,11 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using SharpPdb.Managed;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.ClrMdProvider
+namespace SharpDebug.ClrMdProvider
 {
     /// <summary>
     /// ClrMD implementation of the <see cref="IClrStackFrame"/>.

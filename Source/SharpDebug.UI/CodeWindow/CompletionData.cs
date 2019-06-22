@@ -8,7 +8,7 @@ using System.Windows.Media.Imaging;
 using System.Windows;
 using System.Globalization;
 
-namespace CsDebugScript.UI.CodeWindow
+namespace SharpDebug.UI.CodeWindow
 {
     internal class CompletionData : ICSharpCode.AvalonEdit.CodeCompletion.ICompletionData, ICSharpCode.NRefactory.Completion.ICompletionData
     {
@@ -108,7 +108,7 @@ namespace CsDebugScript.UI.CodeWindow
         {
             try
             {
-                using (System.IO.Stream stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream($"CsDebugScript.UI.Icons.{completionDataType}.png"))
+                using (System.IO.Stream stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream($"SharpDebug.UI.Icons.{completionDataType}.png"))
                 {
                     if (stream != null)
                     {

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CsDebugScript.Drawing.Interfaces
+namespace SharpDebug.Drawing.Interfaces
 {
     /// <summary>
     /// Channel type used when creating bitmap.

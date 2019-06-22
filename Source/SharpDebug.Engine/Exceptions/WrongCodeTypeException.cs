@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript.Exceptions
+namespace SharpDebug.Exceptions
 {
     /// <summary>
     /// Exception that is thrown when variable of unexpected code type has been given as an argument.

@@ -1,12 +1,12 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Utility;
+﻿using SharpDebug.Engine;
+using SharpDebug.Engine.Utility;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Debugging engine that allows opening and reading ELF core dumps.

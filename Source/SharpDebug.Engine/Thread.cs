@@ -1,10 +1,10 @@
-﻿using CsDebugScript.CLR;
-using CsDebugScript.Engine;
+﻿using SharpDebug.CLR;
+using SharpDebug.Engine;
 using SharpUtilities;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Thread of the process being debugged.

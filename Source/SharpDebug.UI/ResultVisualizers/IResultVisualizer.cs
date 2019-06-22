@@ -1,10 +1,10 @@
-﻿using CsDebugScript.UI.CodeWindow;
+﻿using SharpDebug.UI.CodeWindow;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
 
-namespace CsDebugScript.UI.ResultVisualizers
+namespace SharpDebug.UI.ResultVisualizers
 {
     /// <summary>
     /// Interface for abstracting result visualizers.

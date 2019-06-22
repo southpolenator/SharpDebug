@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CsDebugScript.CodeGen.CodeWriters
+namespace SharpDebug.CodeGen.CodeWriters
 {
-    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+    using UserType = SharpDebug.CodeGen.UserTypes.UserType;
 
     /// <summary>
     /// Declares how come naming should behave. Code naming interfaces are used to output code namings for generated user types.

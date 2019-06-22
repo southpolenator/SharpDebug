@@ -33,7 +33,7 @@ Here are helper functions with dynamic arguments that can be used for easier vis
 void DrawImage(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null);
 ```
 Where `width`, `height` and `stride` can be any kind of number that can be casted to int. It can also be Variable that holds number type.
-`channels` can be any value from `CsDebugScript.Drawing.Channels` predefined static fields or you can create a new one.
+`channels` can be any value from `SharpDebug.Drawing.Channels` predefined static fields or you can create a new one.
 `data` can be ulong value of the pointer, pointer to a simple type, or pointer to void. If pixel channel type cannot be deduced, you can use generics function:
 ```cs
 void DrawImage<T>(dynamic width, dynamic height, dynamic data, ChannelType[] channels, dynamic stride = null);

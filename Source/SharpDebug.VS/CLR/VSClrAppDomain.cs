@@ -1,7 +1,7 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 using SharpUtilities;
 
-namespace CsDebugScript.VS.CLR
+namespace SharpDebug.VS.CLR
 {
     /// <summary>
     /// Visual Studio implementation of <see cref="IClrAppDomain"/>.

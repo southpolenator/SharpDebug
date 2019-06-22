@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Simple Portable Executable image reader.
     /// </summary>
-    /// <seealso cref="CsDebugScript.DwarfSymbolProvider.IDwarfImage" />
+    /// <seealso cref="SharpDebug.DwarfSymbolProvider.IDwarfImage" />
     internal class PeImage : IDwarfImage
     {
         /// <summary>

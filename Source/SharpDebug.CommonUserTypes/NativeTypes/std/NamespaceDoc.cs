@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CommonUserTypes.NativeTypes.std
+﻿namespace SharpDebug.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
     /// Collection of wrapper classes for STL containers.

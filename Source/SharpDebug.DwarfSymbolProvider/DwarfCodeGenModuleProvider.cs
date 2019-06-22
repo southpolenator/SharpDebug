@@ -1,12 +1,12 @@
-﻿using CsDebugScript.CodeGen;
-using CsDebugScript.CodeGen.SymbolProviders;
+﻿using SharpDebug.CodeGen;
+using SharpDebug.CodeGen.SymbolProviders;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Implementation of <see cref="IModuleProvider"/> that uses DWARF for opening modules.
     /// </summary>
-    /// <seealso cref="CsDebugScript.CodeGen.SymbolProviders.IModuleProvider" />
+    /// <seealso cref="SharpDebug.CodeGen.SymbolProviders.IModuleProvider" />
     public class DwarfCodeGenModuleProvider : IModuleProvider
     {
         /// <summary>
@@ -26,7 +26,7 @@ namespace CsDebugScript.DwarfSymbolProvider
         /// Opens the module for the specified XML module description.
         /// </summary>
         /// <param name="xmlModule">The XML module description.</param>
-        public CsDebugScript.CodeGen.SymbolProviders.Module Open(XmlModule xmlModule)
+        public SharpDebug.CodeGen.SymbolProviders.Module Open(XmlModule xmlModule)
         {
             Module module = new Module(default(Process), 0)
             {

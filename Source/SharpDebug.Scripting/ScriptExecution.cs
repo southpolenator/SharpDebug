@@ -1,7 +1,7 @@
-﻿using CsDebugScript.CodeGen;
-using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
+﻿using SharpDebug.CodeGen;
+using SharpDebug.CodeGen.SymbolProviders;
+using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers.DbgEngDllHelpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
@@ -14,7 +14,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Compiles and executes scripts
@@ -29,127 +29,127 @@ namespace CsDebugScript
             new XmlTypeTransformation()
             {
                 OriginalType = "std::basic_string<char,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.@string",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::basic_string<wchar_t,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.wstring",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::basic_string<unsigned short,${char_traits},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.wstring",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::basic_string<char>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.@string",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.@string",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::basic_string<wchar_t>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.wstring",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::basic_string<unsigned short>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.wstring",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.wstring",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::vector<${T},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.vector<${T}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.vector<${T}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::list<${T},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.list<${T}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.list<${T}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::map<${TKey},${TValue},${comparator},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.map<${TKey},${TValue}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.map<${TKey},${TValue}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::unordered_map<${TKey},${TValue},${hasher},${keyEquality},${allocator}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.unordered_map<${TKey},${TValue}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::pair<${TFirst},${TSecond}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.pair<${TFirst},${TSecond}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::any",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.any",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.any",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::array<${T},${Length}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.array<${T}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.array<${T}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::optional<${T}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.optional<${T}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.optional<${T}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::shared_ptr<${T}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.shared_ptr<${T}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.shared_ptr<${T}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::weak_ptr<${T}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.weak_ptr<${T}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.weak_ptr<${T}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::variant<${T1}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.variant<${T1}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::variant<${T1},${T2}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.variant<${T1},${T2}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::variant<${T1},${T2},${T3}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::variant<${T1},${T2},${T3},${T4}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::variant<${T1},${T2},${T3},${T4},${T5}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::variant<${T1},${T2},${T3},${T4},${T5},${T6}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5},${T6}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5},${T6}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::variant<${T1},${T2},${T3},${T4},${T5},${T6},${T7}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5},${T6},${T7}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5},${T6},${T7}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::variant<${T1},${T2},${T3},${T4},${T5},${T6},${T7},${T8}>",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5},${T6},${T7},${T8}>",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.variant<${T1},${T2},${T3},${T4},${T5},${T6},${T7},${T8}>",
             },
             new XmlTypeTransformation()
             {
                 OriginalType = "std::filesystem::path",
-                NewType = "CsDebugScript.CommonUserTypes.NativeTypes.std.filesystem.path",
+                NewType = "SharpDebug.CommonUserTypes.NativeTypes.std.filesystem.path",
             },
         });
 
@@ -482,7 +482,7 @@ namespace CsDebugScript
             internal ImportUserTypeAssembly GenerateAssembly(ImportUserTypeOptions options)
             {
                 // Generate CodeGen configuration
-                string assemblyPath = Path.Combine(Path.GetTempPath(), "CsDebugScript.CodeGen.Assemblies", Guid.NewGuid().ToString() + ".dll");
+                string assemblyPath = Path.Combine(Path.GetTempPath(), "SharpDebug.CodeGen.Assemblies", Guid.NewGuid().ToString() + ".dll");
                 XmlConfig codeGenConfig = ConvertOptionsToCodeGenConfig(options);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(assemblyPath));

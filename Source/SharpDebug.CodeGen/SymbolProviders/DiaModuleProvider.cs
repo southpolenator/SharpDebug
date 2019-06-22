@@ -1,9 +1,9 @@
-﻿namespace CsDebugScript.CodeGen.SymbolProviders
+﻿namespace SharpDebug.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Implementation of <see cref="IModuleProvider"/> that uses DIA for opening modules.
     /// </summary>
-    /// <seealso cref="CsDebugScript.CodeGen.SymbolProviders.IModuleProvider" />
+    /// <seealso cref="SharpDebug.CodeGen.SymbolProviders.IModuleProvider" />
     public class DiaModuleProvider : IModuleProvider
     {
         /// <summary>

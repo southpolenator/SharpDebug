@@ -1,6 +1,6 @@
 ﻿using DIA;
 
-namespace CsDebugScript.Engine.SymbolProviders
+namespace SharpDebug.Engine.SymbolProviders
 {
     /// <summary>
     /// Interface for accessing register values.

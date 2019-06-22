@@ -1,9 +1,9 @@
 ﻿using System;
-using CsDebugScript.CodeGen.CodeWriters;
+using SharpDebug.CodeGen.CodeWriters;
 
-namespace CsDebugScript.CodeGen.TypeInstances
+namespace SharpDebug.CodeGen.TypeInstances
 {
-    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+    using UserType = SharpDebug.CodeGen.UserTypes.UserType;
 
     /// <summary>
     /// Interface for converting user types to types.

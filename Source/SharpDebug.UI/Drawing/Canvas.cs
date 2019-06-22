@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CsDebugScript.Drawing.Interfaces;
+using SharpDebug.Drawing.Interfaces;
 
-namespace CsDebugScript.UI.Drawing
+namespace SharpDebug.UI.Drawing
 {
     /// <summary>
     /// Implements canvas as drawing object. Canvas is container of other drawing objects.

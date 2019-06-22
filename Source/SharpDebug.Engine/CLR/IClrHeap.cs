@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CsDebugScript.CLR
+namespace SharpDebug.CLR
 {
     /// <summary>
     /// CLR code Heap interface is an abstraction for the whole GC Heap. This is valid only if there is CLR loaded into debugging process.

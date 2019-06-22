@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.CodeGen.TypeInstances;
+using SharpDebug.CodeGen.SymbolProviders;
+using SharpDebug.CodeGen.TypeInstances;
 
-namespace CsDebugScript.CodeGen.UserTypes
+namespace SharpDebug.CodeGen.UserTypes
 {
     /// <summary>
     /// Class that represents namespace for the user types

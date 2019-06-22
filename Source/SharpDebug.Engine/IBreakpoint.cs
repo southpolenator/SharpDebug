@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Interface for breakpoints.

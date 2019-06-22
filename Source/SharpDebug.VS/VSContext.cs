@@ -1,11 +1,11 @@
-﻿using CsDebugScript.Engine.SymbolProviders;
+﻿using SharpDebug.Engine.SymbolProviders;
 using EnvDTE;
 using Microsoft.VisualStudio.OLE.Interop;
 using SharpUtilities;
 using System;
 using System.Runtime.InteropServices;
 
-namespace CsDebugScript.VS
+namespace SharpDebug.VS
 {
     /// <summary>
     /// Context for interacting with Visual Studio

@@ -1,4 +1,4 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
@@ -6,14 +6,14 @@ using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace CsDebugScript.Tests.CLR
+namespace SharpDebug.Tests.CLR
 {
     public class ClrDumpInitialization : DbgEngDumpInitialization
     {
         public ClrDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = DefaultDumpPath, bool addSymbolServer = true, bool useDia = true, bool useDwarf = false, bool useILCodeGen = false)
             : base(dumpPath, defaultModuleName, FixSymbolPath(dumpPath, symbolPath), addSymbolServer, useDia, useDwarf, useILCodeGen)
         {
-            Context.ClrProvider = new CsDebugScript.CLR.ClrMdProvider();
+            Context.ClrProvider = new SharpDebug.CLR.ClrMdProvider();
         }
 
         private static string FixSymbolPath(string dumpPath, string symbolPath)
@@ -34,7 +34,7 @@ namespace CsDebugScript.Tests.CLR
         public ClrLinuxDumpInitialization(string dumpPath, string defaultModuleName, string symbolPath = DefaultDumpPath)
             : base(dumpPath, defaultModuleName, symbolPath)
         {
-            Context.ClrProvider = new CsDebugScript.CLR.ClrMdProvider();
+            Context.ClrProvider = new SharpDebug.CLR.ClrMdProvider();
         }
     }
 

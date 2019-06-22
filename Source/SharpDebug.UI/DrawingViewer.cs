@@ -1,12 +1,12 @@
-﻿using CsDebugScript.Drawing.Interfaces;
-using CsDebugScript.UI.Drawing;
+﻿using SharpDebug.Drawing.Interfaces;
+using SharpDebug.UI.Drawing;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace CsDebugScript.UI
+namespace SharpDebug.UI
 {
     /// <summary>
     /// User control that displays drawing and adds few more goodies that helps debugging images.

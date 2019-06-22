@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Linq;
-using CsDebugScript.UI;
-using CsDebugScript.UI.CodeWindow;
-using CsDebugScript.UI.ResultVisualizers;
+using SharpDebug.UI;
+using SharpDebug.UI.CodeWindow;
+using SharpDebug.UI.ResultVisualizers;
 using Microsoft.VisualStudio.Debugger;
 using Microsoft.VisualStudio.Debugger.Evaluation;
 
-namespace CsDebugScript.VS
+namespace SharpDebug.VS
 {
     /// <summary>
     /// Helper class that represents evaluator for VS custom visualizer.
@@ -89,7 +89,7 @@ namespace CsDebugScript.VS
 
                 if (string.IsNullOrEmpty(typeString) || string.IsNullOrEmpty(moduleName) || !hasAddress)
                 {
-                    string displayString = "{...CsDebugScript failure...}";
+                    string displayString = "{...SharpDebug failure...}";
 
                     EvaluationResult = DkmSuccessEvaluationResult.Create(
                         VisualizedExpression.InspectionContext,
@@ -121,11 +121,11 @@ namespace CsDebugScript.VS
 
                     Variable = codeType.IsPointer ? Variable.CreatePointer(codeType, address) : Variable.Create(codeType, address);
                     title = Variable.ToString();
-                    ResultVisualizer = CsDebugScript.UI.ResultVisualizers.ResultVisualizer.Create(Variable, Variable.GetType(), "result", CompletionDataType.Unknown, dummyInteractiveResultVisualizer);
+                    ResultVisualizer = SharpDebug.UI.ResultVisualizers.ResultVisualizer.Create(Variable, Variable.GetType(), "result", CompletionDataType.Unknown, dummyInteractiveResultVisualizer);
                 }
                 catch
                 {
-                    title = "{...CsDebugScript...}";
+                    title = "{...SharpDebug...}";
                 }
 
                 DkmDataAddress dkmDataAddress = DkmDataAddress.Create(VisualizedExpression.RuntimeInstance, address, rootVisualizedExpression.StackFrame?.InstructionAddress);

@@ -1,7 +1,7 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
-using CsDebugScript.CodeGen.TypeInstances;
-using CsDebugScript.CodeGen.UserTypes;
-using CsDebugScript.CodeGen.UserTypes.Members;
+﻿using SharpDebug.CodeGen.SymbolProviders;
+using SharpDebug.CodeGen.TypeInstances;
+using SharpDebug.CodeGen.UserTypes;
+using SharpDebug.CodeGen.UserTypes.Members;
 using DIA;
 using Managed.Reflection;
 using Managed.Reflection.Emit;
@@ -12,10 +12,10 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.CodeGen.CodeWriters
+namespace SharpDebug.CodeGen.CodeWriters
 {
     using Type = Managed.Reflection.Type;
-    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+    using UserType = SharpDebug.CodeGen.UserTypes.UserType;
 
     /// <summary>
     /// Code writer that outputs IL code and compiles it using System.Reflection.Emit.
@@ -2710,7 +2710,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
             #endregion
 
             #region UserType
-            public static readonly Type UserType = ConvertType(typeof(CsDebugScript.UserType));
+            public static readonly Type UserType = ConvertType(typeof(SharpDebug.UserType));
             public static readonly MethodInfo[] UserType_Methods = UserType.GetMethods();
             public static readonly MethodInfo UserType_GetBaseClassString = UserType.GetMethod("GetBaseClassString");
             public static readonly MethodInfo UserType_GetClassCodeType = UserType.GetMethod("GetClassCodeType");

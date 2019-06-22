@@ -1,7 +1,7 @@
-﻿using CsDebugScript.Exceptions;
+﻿using SharpDebug.Exceptions;
 using System;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.std
+namespace SharpDebug.CommonUserTypes.NativeTypes.std
 {
     /// <summary>
     /// Implementation of std::basic_string

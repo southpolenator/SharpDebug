@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace CsDebugScript.CodeGen
+namespace SharpDebug.CodeGen
 {
     /// <summary>
     /// Helper class that provides indented writing to the text writer.

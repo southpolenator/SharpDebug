@@ -1,10 +1,10 @@
-﻿using CsDebugScript.CLR;
-using CsDebugScript.Engine;
-using CsDebugScript.Exceptions;
+﻿using SharpDebug.CLR;
+using SharpDebug.Engine;
+using SharpDebug.Exceptions;
 using SharpUtilities;
 using System;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Wrapper class that represents a function pointer.

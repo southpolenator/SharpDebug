@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace CsDebugScript.VS.DPE
+namespace SharpDebug.VS.DPE
 {
     internal interface IMessageSerializer
     {

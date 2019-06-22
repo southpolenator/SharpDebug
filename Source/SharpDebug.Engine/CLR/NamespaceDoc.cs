@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CLR
+﻿namespace SharpDebug.CLR
 {
     /// <summary>
     /// Collection of classes used when there is CLR loaded into debugging process.

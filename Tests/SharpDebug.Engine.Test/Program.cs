@@ -1,10 +1,10 @@
 ﻿using CommandLine;
-using CsDebugScript.Engine.Debuggers;
-using CsDebugScript.Engine.Utility;
+using SharpDebug.Engine.Debuggers;
+using SharpDebug.Engine.Utility;
 using DbgEng;
 using System;
 
-namespace CsDebugScript.Engine.Test
+namespace SharpDebug.Engine.Test
 {
     class Options
     {

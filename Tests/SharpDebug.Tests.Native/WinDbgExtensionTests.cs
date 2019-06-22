@@ -1,10 +1,10 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
+﻿using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers;
 using System;
 using System.IO;
 using Xunit;
 
-namespace CsDebugScript.Tests.Native
+namespace SharpDebug.Tests.Native
 {
     [Collection("NativeDumpTest.x64.mdmp")]
     [Trait("x64", "true")]
@@ -17,7 +17,7 @@ namespace CsDebugScript.Tests.Native
             : base(initialization)
         {
             string configuration = Environment.Is64BitProcess ? "x64" : "x86";
-            string extensionPath = GetAbsoluteBinPathRecursive1($"CsDebugScript.WinDbg.{configuration}.dll");
+            string extensionPath = GetAbsoluteBinPathRecursive1($"SharpDebug.WinDbg.{configuration}.dll");
             ExtensionExists = File.Exists(extensionPath);
             string output = DbgEngDll.ExecuteAndCapture($".load {extensionPath}");
 

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace CsDebugScript.UI.CodeWindow
+namespace SharpDebug.UI.CodeWindow
 {
     internal class CsTextEditor : TextEditor
     {

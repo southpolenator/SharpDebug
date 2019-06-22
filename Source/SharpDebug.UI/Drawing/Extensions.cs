@@ -1,6 +1,6 @@
-﻿using CsDebugScript.Drawing.Interfaces;
+﻿using SharpDebug.Drawing.Interfaces;
 
-namespace CsDebugScript.UI.Drawing
+namespace SharpDebug.UI.Drawing
 {
     /// <summary>
     /// Useful extension methods for converting drawing interfaces to WPF objects.

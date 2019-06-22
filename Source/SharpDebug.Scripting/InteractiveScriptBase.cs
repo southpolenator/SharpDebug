@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CsDebugScript.Drawing.Interfaces;
-using CsDebugScript.Engine;
+using SharpDebug.Drawing.Interfaces;
+using SharpDebug.Engine;
 using Microsoft.CodeAnalysis.Scripting;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Helper for dumping objects using InteractiveScriptBase.ObjectWriter.

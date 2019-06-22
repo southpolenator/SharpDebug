@@ -1,7 +1,7 @@
-﻿using CsDebugScript.Drawing.Interfaces;
-using CsDebugScript.UI.CodeWindow;
-using CsDebugScript.UI.Drawing;
-using CsDebugScript.UI.ResultVisualizers;
+﻿using SharpDebug.Drawing.Interfaces;
+using SharpDebug.UI.CodeWindow;
+using SharpDebug.UI.Drawing;
+using SharpDebug.UI.ResultVisualizers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Interface that annotates that <see cref="UserType"/> can nicely print itself to the console.
@@ -24,7 +24,7 @@ namespace CsDebugScript
     }
 }
 
-namespace CsDebugScript.UI
+namespace SharpDebug.UI
 {
     /// <summary>
     /// Helper class that represents UIElement to be created as result of executing interactive script.

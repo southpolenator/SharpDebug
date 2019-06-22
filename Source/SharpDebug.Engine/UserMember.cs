@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Helper class for caching user members (fields) in auto generated classes

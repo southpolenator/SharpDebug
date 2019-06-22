@@ -2,7 +2,7 @@
 using System.Threading;
 using DbgEng;
 
-namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
+namespace SharpDebug.Engine.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// IBreakpoint implementation for dbgeng.

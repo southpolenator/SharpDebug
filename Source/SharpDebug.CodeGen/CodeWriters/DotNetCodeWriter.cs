@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.CodeGen.CodeWriters
+namespace SharpDebug.CodeGen.CodeWriters
 {
-    using UserType = CsDebugScript.CodeGen.UserTypes.UserType;
+    using UserType = SharpDebug.CodeGen.UserTypes.UserType;
 
     /// <summary>
     /// Base class for .NET code writers.
@@ -33,19 +33,19 @@ namespace CsDebugScript.CodeGen.CodeWriters
         protected const string ClassCodeTypeFieldName = "ClassCodeType";
 
         /// <summary>
-        /// Name of the <see cref="CsDebugScript.UserType"/> member field: memoryBuffer.
+        /// Name of the <see cref="SharpDebug.UserType"/> member field: memoryBuffer.
         /// It is being used in physical user type to get memory buffer that holds data for instance of this user type.
         /// </summary>
         protected const string MemoryBufferFieldName = "memoryBuffer";
 
         /// <summary>
-        /// Name of the <see cref="CsDebugScript.UserType"/> member field: memoryBufferOffset.
+        /// Name of the <see cref="SharpDebug.UserType"/> member field: memoryBufferOffset.
         /// It is being used in physical user type to get memory buffer offset where is the start of instance of this user type.
         /// </summary>
         protected const string MemoryBufferOffsetFieldName = "memoryBufferOffset";
 
         /// <summary>
-        /// Name of the <see cref="CsDebugScript.UserType"/> member field: memoryBufferAddress.
+        /// Name of the <see cref="SharpDebug.UserType"/> member field: memoryBufferAddress.
         /// It is being used in physical user type to get process address from which memory buffer starts. <see cref="MemoryBufferFieldName"/>
         /// </summary>
         protected const string MemoryBufferAddressFieldName = "memoryBufferAddress";
@@ -277,7 +277,7 @@ namespace CsDebugScript.CodeGen.CodeWriters
         }
 
         /// <summary>
-        /// Converts built-in type to <see cref="CsDebugScript.UserType"/> naming of it used in Read functions.
+        /// Converts built-in type to <see cref="SharpDebug.UserType"/> naming of it used in Read functions.
         /// </summary>
         /// <param name="type">Built-in type.</param>
         protected static string ToUserTypeName(Type type)

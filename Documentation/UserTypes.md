@@ -29,7 +29,7 @@ This is ok approach, but there are some problems with it:
 3. It won't be as fast as reading memory directly.
 
 Here are some steps on how to improve it:
-#### Start using [CodeArray](../Source/CsDebugScript.Engine/CodeArray.cs) (get some speed benefits)
+#### Start using [CodeArray](../Source/SharpDebug.Engine/CodeArray.cs) (get some speed benefits)
 ```cs
 CodeArray global_data = new CodeArray(Process.Current.GetGlobal("global_data"));
 foreach (Variable data in global_data)
@@ -96,7 +96,7 @@ There are some special cases when you actually want to write user types manually
 - Code generation doesn't know how to deal with C++ specializations for different number constants or has some other problems with your specific type
 - You want to share your user types for different versions of library
 
-In those cases, you want to help engine with work with these user types correctly. That means that you probably want to inherit [UserType](../Source/CsDebugScript.Engine/UserType.cs) class and also you want to add [UserTypeAttribute](../Source/CsDebugScript.Engine/UserTypeAttribute.cs) to new class.
+In those cases, you want to help engine with work with these user types correctly. That means that you probably want to inherit [UserType](../Source/SharpDebug.Engine/UserType.cs) class and also you want to add [UserTypeAttribute](../Source/SharpDebug.Engine/UserTypeAttribute.cs) to new class.
 
 Inheriting from UserType class will help with storing necessary data for you (like remembering Variable, or MemoryBuffer in advanced scenarios). Adding UserTypeAttribute to your class will trigger automatic casting in interactive mode. If you don't care about goddies of UserType and UserTypeAttribute, you should inherit Variable class when implementing your user type.
 

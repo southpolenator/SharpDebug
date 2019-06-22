@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript.Exceptions
+namespace SharpDebug.Exceptions
 {
     /// <summary>
     /// Thrown when user wants to read memory that is not fully available in the process being debugged.

@@ -1,9 +1,9 @@
-﻿namespace CsDebugScript.CommonUserTypes
+﻿namespace SharpDebug.CommonUserTypes
 {
     /// <summary>
     /// Helper class that allows using dynamic field self and easily read members in scripting.
     /// </summary>
-    /// <seealso cref="CsDebugScript.Variable" />
+    /// <seealso cref="SharpDebug.Variable" />
     public class DynamicSelfVariable : Variable
     {
         /// <summary>
@@ -25,7 +25,7 @@
     /// <summary>
     /// Helper class that allows using dynamic field self and easily read members in scripting.
     /// </summary>
-    /// <seealso cref="CsDebugScript.Variable" />
+    /// <seealso cref="SharpDebug.Variable" />
     public class DynamicSelfUserType : UserType
     {
         /// <summary>

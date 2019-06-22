@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Engine.Utility;
+﻿using SharpDebug.Engine.Utility;
 using SharpUtilities;
 using System;
 
-namespace CsDebugScript.Engine
+namespace SharpDebug.Engine
 {
     /// <summary>
     /// Debugger engine interface that provides functionality for controlling debugger engine

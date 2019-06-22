@@ -1,13 +1,13 @@
-﻿using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
+﻿using std = SharpDebug.CommonUserTypes.NativeTypes.std;
 using System;
 using System.Linq;
 using Xunit;
 using System.Collections.Generic;
-using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
-using CsDebugScript.CommonUserTypes;
+using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers.DbgEngDllHelpers;
+using SharpDebug.CommonUserTypes;
 
-namespace CsDebugScript.Tests.Native
+namespace SharpDebug.Tests.Native
 {
     public abstract class NativeDumpTest : DumpTestBase
     {

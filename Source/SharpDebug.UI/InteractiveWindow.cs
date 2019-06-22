@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace CsDebugScript.UI
+namespace SharpDebug.UI
 {
     /// <summary>
     /// C# REPL interactive window

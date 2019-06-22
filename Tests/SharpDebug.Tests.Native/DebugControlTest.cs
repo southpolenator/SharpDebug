@@ -1,14 +1,14 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using System;
 using Diagnostics = System.Diagnostics;
 using System.Linq;
 using Xunit;
 using DbgEng;
-using CsDebugScript.Engine.Debuggers;
+using SharpDebug.Engine.Debuggers;
 using System.IO;
 using Xunit.Abstractions;
 
-namespace CsDebugScript.Tests.Native
+namespace SharpDebug.Tests.Native
 {
     /// <summary>
     /// Tests for interactive debugging control.

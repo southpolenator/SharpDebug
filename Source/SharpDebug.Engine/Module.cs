@@ -1,10 +1,10 @@
-﻿using CsDebugScript.CLR;
-using CsDebugScript.Engine;
+﻿using SharpDebug.CLR;
+using SharpDebug.Engine;
 using SharpUtilities;
 using System;
 using System.Linq;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Represents the version of a Module.

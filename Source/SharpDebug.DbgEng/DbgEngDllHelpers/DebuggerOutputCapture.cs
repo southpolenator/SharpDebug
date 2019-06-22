@@ -1,9 +1,9 @@
-﻿using CsDebugScript.Engine.Utility;
+﻿using SharpDebug.Engine.Utility;
 using DbgEng;
 using System.IO;
 using System.Text;
 
-namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
+namespace SharpDebug.Engine.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Helper class for capturing debugger output while executing commands

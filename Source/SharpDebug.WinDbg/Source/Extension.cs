@@ -1,13 +1,13 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.Engine.Debuggers;
-using CsDebugScript.UI;
+﻿using SharpDebug.Engine;
+using SharpDebug.Engine.Debuggers;
+using SharpDebug.UI;
 using DbgEng;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-namespace CsDebugScript.WinDbg
+namespace SharpDebug.WinDbg
 {
     /// <summary>
     /// Wraps extension functionality for WinDbg.

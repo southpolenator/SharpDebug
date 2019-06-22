@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using SharpUtilities;
 using System;
 
-namespace CsDebugScript.CommonUserTypes
+namespace SharpDebug.CommonUserTypes
 {
     /// <summary>
     /// Helper class that allows easier implementation of different user types.

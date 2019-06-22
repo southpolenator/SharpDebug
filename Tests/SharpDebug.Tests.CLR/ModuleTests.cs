@@ -2,7 +2,7 @@
 using System.Linq;
 using Xunit;
 
-namespace CsDebugScript.Tests.CLR
+namespace SharpDebug.Tests.CLR
 {
     public abstract class ModuleTests
     {

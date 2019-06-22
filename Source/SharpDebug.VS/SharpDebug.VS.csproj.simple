@@ -69,9 +69,9 @@
 
   <ItemGroup>
     <ProjectReference Include="$(EnlistmentRoot)\Utility\CreateDbgEngIdl\CreateDbgEngIdl.csproj" />
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DiaSymbolProvider\CsDebugScript.DiaSymbolProvider.csproj" />
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.Engine\CsDebugScript.Engine.csproj" />
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.UI\CsDebugScript.UI.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DiaSymbolProvider\SharpDebug.DiaSymbolProvider.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Engine\SharpDebug.Engine.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.UI\SharpDebug.UI.csproj" />
   </ItemGroup>
 
 </Project>

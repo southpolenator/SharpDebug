@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace CsDebugScript.Engine
+namespace SharpDebug.Engine
 {
     /// <summary>
     /// The symbolic constructor delegate. Creates a new user type by calling constructor with signature of this delegate.
@@ -213,10 +213,10 @@ namespace CsDebugScript.Engine
         {
             moduleBuilder = SimpleCache.Create(() =>
             {
-                AssemblyName assemblyName = new AssemblyName("CsDebugScript.DynamicAssembly");
+                AssemblyName assemblyName = new AssemblyName("SharpDebug.DynamicAssembly");
                 AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
 
-                return assemblyBuilder.DefineDynamicModule("CsDebugScript.Dynamic");
+                return assemblyBuilder.DefineDynamicModule("SharpDebug.Dynamic");
             });
         }
 

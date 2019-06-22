@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Engine
+﻿namespace SharpDebug.Engine
 {
     /// <summary>
     /// All constants used in the project

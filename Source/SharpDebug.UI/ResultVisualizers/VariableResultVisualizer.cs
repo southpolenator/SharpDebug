@@ -1,9 +1,9 @@
-﻿using CsDebugScript.Engine;
-using CsDebugScript.UI.CodeWindow;
+﻿using SharpDebug.Engine;
+using SharpDebug.UI.CodeWindow;
 using System;
 using System.Collections.Generic;
 
-namespace CsDebugScript.UI.ResultVisualizers
+namespace SharpDebug.UI.ResultVisualizers
 {
     /// <summary>
     /// Class that visualizes <see cref="Variable"/> from process that is being debugged.

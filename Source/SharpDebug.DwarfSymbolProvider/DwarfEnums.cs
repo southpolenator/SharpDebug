@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript.DwarfSymbolProvider
+namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// DWARF symbol tag.

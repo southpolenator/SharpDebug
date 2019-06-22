@@ -1,7 +1,7 @@
-﻿using CsDebugScript.CodeGen.SymbolProviders;
+﻿using SharpDebug.CodeGen.SymbolProviders;
 using System;
 
-namespace CsDebugScript.CodeGen
+namespace SharpDebug.CodeGen
 {
     /// <summary>
     /// Options used when generating user type code.

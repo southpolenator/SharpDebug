@@ -1,13 +1,13 @@
-﻿using CsDebugScript.CLR;
-using CsDebugScript.Engine;
-using CsDebugScript.Exceptions;
+﻿using SharpDebug.CLR;
+using SharpDebug.Engine;
+using SharpDebug.Exceptions;
 using SharpUtilities;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Reflection;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Ultimate class for working with variables from process being debugged.

@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.Engine
+﻿namespace SharpDebug.Engine
 {
     /// <summary>
     /// Defines built-in types available from the debugged code.

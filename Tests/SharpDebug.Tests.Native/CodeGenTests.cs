@@ -1,11 +1,11 @@
-﻿using CsDebugScript.CodeGen;
-using CsDebugScript.DwarfSymbolProvider;
-using CsDebugScript.PdbSymbolProvider;
+﻿using SharpDebug.CodeGen;
+using SharpDebug.DwarfSymbolProvider;
+using SharpDebug.PdbSymbolProvider;
 using System;
 using System.IO;
 using Xunit;
 
-namespace CsDebugScript.Tests.Native
+namespace SharpDebug.Tests.Native
 {
     public enum CodeGenSymbolProvider
     {
@@ -166,11 +166,11 @@ namespace CsDebugScript.Tests.Native
                 {
                     new XmlReferencedAssembly()
                     {
-                        Path = GetAbsoluteBinPath("CsDebugScript.Engine.dll"),
+                        Path = GetAbsoluteBinPath("SharpDebug.Engine.dll"),
                     },
                     new XmlReferencedAssembly()
                     {
-                        Path = GetAbsoluteBinPath("CsDebugScript.CommonUserTypes.dll"),
+                        Path = GetAbsoluteBinPath("SharpDebug.CommonUserTypes.dll"),
                     },
                 },
                 Types = new XmlType[0],

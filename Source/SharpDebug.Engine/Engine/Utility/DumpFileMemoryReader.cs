@@ -1,4 +1,4 @@
-﻿using CsDebugScript.Exceptions;
+﻿using SharpDebug.Exceptions;
 using SharpUtilities;
 using System;
 using System.IO;
@@ -6,7 +6,7 @@ using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.Engine.Utility
+namespace SharpDebug.Engine.Utility
 {
     /// <summary>
     /// Wraps functionality for reading files that are region mapped.

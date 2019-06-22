@@ -1,10 +1,10 @@
-﻿using CsDebugScript.Engine;
+﻿using SharpDebug.Engine;
 using DIA;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CsDebugScript.CodeGen.SymbolProviders
+namespace SharpDebug.CodeGen.SymbolProviders
 {
     /// <summary>
     /// Class represents symbol during debugging.

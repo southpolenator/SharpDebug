@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript
+namespace SharpDebug
 {
     /// <summary>
     /// Status of action execution on breakpoint hit.

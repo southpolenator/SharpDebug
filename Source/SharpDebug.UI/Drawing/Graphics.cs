@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Drawing.Interfaces;
+﻿using SharpDebug.Drawing.Interfaces;
 using System.Collections.Generic;
 using System.Windows.Threading;
 
-namespace CsDebugScript.UI.Drawing
+namespace SharpDebug.UI.Drawing
 {
     /// <summary>
     /// Implementation of <see cref="IGraphics"/> for WPF.

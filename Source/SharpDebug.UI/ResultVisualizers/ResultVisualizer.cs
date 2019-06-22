@@ -1,4 +1,4 @@
-﻿using CsDebugScript.UI.CodeWindow;
+﻿using SharpDebug.UI.CodeWindow;
 using SharpUtilities;
 using System;
 using System.Collections;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
-namespace CsDebugScript.UI.ResultVisualizers
+namespace SharpDebug.UI.ResultVisualizers
 {
     /// <summary>
     /// Helper (base) class that for classes that want to implement <see cref="IResultVisualizer"/>.

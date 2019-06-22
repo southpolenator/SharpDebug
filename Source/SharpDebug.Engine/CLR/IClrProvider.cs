@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CLR
+﻿namespace SharpDebug.CLR
 {
     /// <summary>
     /// Entry interface that provides CLR debugability.

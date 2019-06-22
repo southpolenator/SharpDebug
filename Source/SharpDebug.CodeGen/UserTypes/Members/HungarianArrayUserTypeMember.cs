@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CodeGen.UserTypes.Members
+﻿namespace SharpDebug.CodeGen.UserTypes.Members
 {
     /// <summary>
     /// Represents generated array property based on data fields declared in user type that match Hungarian notation.

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CsDebugScript.CommonUserTypes.NativeTypes.Windows
+namespace SharpDebug.CommonUserTypes.NativeTypes.Windows
 {
     /// <summary>
     /// Class that represents TEB (Thread environment block).

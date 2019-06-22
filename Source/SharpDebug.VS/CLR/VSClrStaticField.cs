@@ -1,6 +1,6 @@
-﻿using CsDebugScript.CLR;
+﻿using SharpDebug.CLR;
 
-namespace CsDebugScript.VS.CLR
+namespace SharpDebug.VS.CLR
 {
     /// <summary>
     /// Visual Studio implementation of the <see cref="IClrStaticField"/>.

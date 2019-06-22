@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.DwarfSymbolProvider
+﻿namespace SharpDebug.DwarfSymbolProvider
 {
     /// <summary>
     /// Information about line containing compiled code.

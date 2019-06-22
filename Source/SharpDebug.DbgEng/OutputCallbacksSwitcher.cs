@@ -1,8 +1,8 @@
-﻿using CsDebugScript.Engine.Debuggers;
-using CsDebugScript.Engine.Debuggers.DbgEngDllHelpers;
+﻿using SharpDebug.Engine.Debuggers;
+using SharpDebug.Engine.Debuggers.DbgEngDllHelpers;
 using System;
 
-namespace CsDebugScript.Engine.Utility
+namespace SharpDebug.Engine.Utility
 {
     /// <summary>
     /// Helper class for replacing debugger output callbacks - used when capturing command output. Example usage:

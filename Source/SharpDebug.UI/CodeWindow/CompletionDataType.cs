@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.UI.CodeWindow
+﻿namespace SharpDebug.UI.CodeWindow
 {
     internal enum CompletionDataType
     {

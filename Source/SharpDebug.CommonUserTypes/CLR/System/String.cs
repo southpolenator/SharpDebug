@@ -1,11 +1,11 @@
-﻿using CsDebugScript.Exceptions;
+﻿using SharpDebug.Exceptions;
 
-namespace CsDebugScript.CommonUserTypes.CLR.System
+namespace SharpDebug.CommonUserTypes.CLR.System
 {
     /// <summary>
     /// CLR code String. This is valid only if there is CLR loaded into debugging process.
     /// </summary>
-    /// <seealso cref="CsDebugScript.UserType" />
+    /// <seealso cref="SharpDebug.UserType" />
     [UserType(TypeName = "System.String")]
     public class String : UserType
     {

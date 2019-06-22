@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript
+﻿namespace SharpDebug
 {
     /// <summary>
     /// Interface that says that user type has VTable and that it is safe to do downcasting.

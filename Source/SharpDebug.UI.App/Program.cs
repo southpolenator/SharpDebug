@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 
-namespace CsDebugScript.UI.App
+namespace SharpDebug.UI.App
 {
     class Options
     {

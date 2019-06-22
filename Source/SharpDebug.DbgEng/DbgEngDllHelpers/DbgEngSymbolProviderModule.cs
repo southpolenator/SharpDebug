@@ -1,4 +1,4 @@
-﻿using CsDebugScript.Engine.Native;
+﻿using SharpDebug.Engine.Native;
 using DbgEng;
 using DIA;
 using System;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CsDebugScript.Engine.Debuggers.DbgEngDllHelpers
+namespace SharpDebug.Engine.Debuggers.DbgEngDllHelpers
 {
     /// <summary>
     /// Symbol provider module that is being implemented over DbgEng.dll.

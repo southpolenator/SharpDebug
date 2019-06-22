@@ -1,11 +1,11 @@
-﻿using CsDebugScript.Drawing.Interfaces;
+﻿using SharpDebug.Drawing.Interfaces;
 using System;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using DefinedChannels = CsDebugScript.Drawing.Interfaces.Channels;
+using DefinedChannels = SharpDebug.Drawing.Interfaces.Channels;
 
-namespace CsDebugScript.UI.Drawing
+namespace SharpDebug.UI.Drawing
 {
     /// <summary>
     /// Implementation of <see cref="IBitmap"/> for WPF.

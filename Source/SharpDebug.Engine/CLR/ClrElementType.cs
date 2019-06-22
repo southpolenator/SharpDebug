@@ -1,4 +1,4 @@
-﻿namespace CsDebugScript.CLR
+﻿namespace SharpDebug.CLR
 {
     /// <summary>
     /// This is a representation of the metadata element type. These values map CLR's CorElementType.
