@@ -1,5 +1,5 @@
 ## Using WinDbg extension
-1. Download extension from [latest GitHub release](https://github.com/southpolenator/WinDbgCs/releases/latest) or from [Latest build](https://ci.appveyor.com/project/southpolenator/windbgcs/branch/next).
+1. Download extension from [latest GitHub release](https://github.com/southpolenator/SharpDebug/releases/latest) or from [Latest build](https://ci.appveyor.com/project/southpolenator/sharpdebug/branch/next).
 2. Extract it to some folder (don't forget to "Unblock" zip file before extraction)
 3. Load it into WinDbg session using [.load](https://msdn.microsoft.com/en-us/library/windows/hardware/ff563964%28v=vs.85%29.aspx) commnd. For example:
 ```

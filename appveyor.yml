@@ -3,7 +3,7 @@ image: Visual Studio 2017
 configuration: Release
 platform: Any CPU
 environment:
-  PROJECT_ROOT: C:\projects\windbgcs
+  PROJECT_ROOT: C:\projects\sharpdebug
   DEAFULT_TARGET_FRAMEWORK: net461
   DEAFULT_TARGET_NETSTANDARD: netstandard2.0
   DEAFULT_TARGET_NETCOREAPP: netcoreapp2.0
@@ -20,7 +20,7 @@ environment:
   CLR_TESTS_DLL: $(CLR_TARGET_DIR)\SharpDebug.Tests.CLR.dll
   UI_TESTS_DLL: $(UI_TARGET_DIR)\SharpDebug.Tests.UI.dll
   GITHUB_PAGES: $(PROJECT_ROOT)\GitHubPages
-  GITHUB_PAGES_REFERENCES: WinDbgCsReference
+  GITHUB_PAGES_REFERENCES: SharpDebugReference
   HELP_OUTPUT_PATH: $(PROJECT_ROOT)\Utility\SharpDebug.Reference\Help
   GITHUB_USERNAME: southpolenator
   GITHUB_PASSWORD:
@@ -34,7 +34,7 @@ init:
          }
 install:
   - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
-  - ps: (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/WinDbgCs/master/GetShipFiles.ps1") | iex
+  - ps: (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/southpolenator/SharpDebug/master/GetShipFiles.ps1") | iex
   - ps: choco install codecov --limitoutput --no-progress
 before_build:
   - ps: Vsix-IncrementVsixVersion

@@ -19,7 +19,7 @@
               Copy flavor you need from Official build location (or build it yourself from
               <externalLink>
                 <linkText>source code</linkText>
-                <linkUri>https://github.com/southpolenator/WinDbgCs</linkUri>
+                <linkUri>https://github.com/southpolenator/SharpDebug</linkUri>
               </externalLink>) to your local hard drive.
             </para>
             <para>
@@ -465,7 +465,7 @@
               Please take a look at
               <externalLink>
                 <linkText>SharpDebug.Engine.Test</linkText>
-                <linkUri>https://github.com/southpolenator/WinDbgCs/blob/master/Tests/SharpDebug.Engine.Test/Program.cs</linkUri>
+                <linkUri>https://github.com/southpolenator/SharpDebug/blob/master/Tests/SharpDebug.Engine.Test/Program.cs</linkUri>
               </externalLink>.
               It shows how to:
             </para>

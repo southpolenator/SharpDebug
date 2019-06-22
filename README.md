@@ -5,13 +5,13 @@ Extension libraries provide access to dbgeng.dll for processing Windows dumps, a
 Debugging both native and managed code is supported (currently, managed code is supported only for dbgeng.dll, WinDbg and Visual Studio extensions).
 
 ### Latest status
-[![Build status](https://ci.appveyor.com/api/projects/status/d2j4lxglq0tl1x1i/branch/next?svg=true)](https://ci.appveyor.com/project/southpolenator/windbgcs/branch/next)
-[![Code coverage](https://img.shields.io/codecov/c/github/southpolenator/WinDbgCs.svg)](https://codecov.io/github/southpolenator/WinDbgCs)
+[![Build status](https://ci.appveyor.com/api/projects/status/d2j4lxglq0tl1x1i/branch/next?svg=true)](https://ci.appveyor.com/project/southpolenator/sharpdebug/branch/next)
+[![Code coverage](https://img.shields.io/codecov/c/github/southpolenator/SharpDebug.svg)](https://codecov.io/github/southpolenator/SharpDebug)
 [![Nuget version](https://img.shields.io/nuget/v/sharpdebug.engine.svg?style=flat)](https://www.nuget.org/packages/sharpdebug.engine/)
-[![GitHub release](https://img.shields.io/github/release/southpolenator/windbgcs.svg?style=flat)](https://github.com/southpolenator/WinDbgCs/releases/latest)
+[![GitHub release](https://img.shields.io/github/release/southpolenator/sharpdebug.svg?style=flat)](https://github.com/southpolenator/SharpDebug/releases/latest)
 
 Latest version of Visual Studio extension is uploaded to [Open VSIX Gallery](http://vsixgallery.com/).
-If you want newer build than what is available in Releases page or as nuget package, you can click on [Latest build](https://ci.appveyor.com/project/southpolenator/windbgcs/branch/next), select Configuration and click on Artifacts. You can also use private nuget feed from [AppVeyor CI builds](https://ci.appveyor.com/nuget/windbgcs-raewbx34ffcq).
+If you want newer build than what is available in Releases page or as nuget package, you can click on [Latest build](https://ci.appveyor.com/project/southpolenator/sharpdebug/branch/next), select Configuration and click on Artifacts. You can also use private nuget feed from [AppVeyor CI builds](https://ci.appveyor.com/nuget/sharpdebug-raewbx34ffcq).
 
 # Debugger extensions:
 * [Visual Studio Extension](Documentation/VisualStudioExtension.md)
