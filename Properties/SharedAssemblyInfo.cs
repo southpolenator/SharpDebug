@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-[assembly: AssemblyCopyright("Copyright © SharpDebug team 2015-2019")]
+[assembly: AssemblyCopyright("Copyright © Vuk Jovanovic 2015-2019")]
 
 // Version information for an assembly consists of the following four values:
 //
