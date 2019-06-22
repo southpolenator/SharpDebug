@@ -22,7 +22,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpDebug.CodeGen", "Sourc
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpDebug.CommonUserTypes", "Source\SharpDebug.CommonUserTypes\SharpDebug.CommonUserTypes.csproj", "{21A929EA-B96B-4523-9D0F-853EA771058D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DebugCmdlets", "Source\DebugCmdlets\DebugCmdlets.csproj", "{1E791857-FBC2-4AC2-ABD7-5CC2AA7D4D59}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpDebug.PowerShell", "Source\SharpDebug.PowerShell\SharpDebug.PowerShell.csproj", "{1E791857-FBC2-4AC2-ABD7-5CC2AA7D4D59}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExceptionDumper", "Utility\ExceptionDumper\ExceptionDumper.csproj", "{21997EEA-5B04-4B68-A8E6-5BCE8621EF2C}"
 	ProjectSection(ProjectDependencies) = postProject
