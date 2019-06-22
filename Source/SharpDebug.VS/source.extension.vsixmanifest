@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="SharpDebug.VS.Vuk Jovanovic.1a8bc80a-3559-4a40-b220-2d1cebfa811a" Version="1.4.0" Language="en-US" Publisher="Vuk Jovanovic" />
+        <Identity Id="SharpDebug.VS.Vuk Jovanovic.1a8bc80a-3559-4a40-b220-2d1cebfa811a" Version="2.0.0" Language="en-US" Publisher="Vuk Jovanovic" />
         <DisplayName>SharpDebug.VS</DisplayName>
         <Description xml:space="preserve">SharpDebug extension for Visual Studio</Description>
     </Metadata>
