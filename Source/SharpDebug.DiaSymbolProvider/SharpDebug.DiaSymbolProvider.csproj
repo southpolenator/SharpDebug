@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>Provides fast access to symbols by directly reading PDB files using DIA library. It is symbol provider for SharpDebug.Engine.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DIA" Version="1.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Engine\SharpDebug.Engine.csproj" />
+  </ItemGroup>
+
+</Project>

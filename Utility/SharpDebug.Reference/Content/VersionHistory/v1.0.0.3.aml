@@ -1,0 +1,136 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<topic id="7A7E54BC-F6AB-4D00-8AA8-214208222547" revisionNumber="1">
+  <developerConceptualDocument xmlns="http://ddue.schemas.microsoft.com/authoring/2003/5" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <introduction>
+      <para>
+        Version 1.0.0.3 was released on 2/7/2016.
+      </para>
+    </introduction>
+
+    <section>
+      <title>Changes in This Release</title>
+      <content>
+
+        <list class="bullet">
+          <listItem>
+            <para>
+              Adding new option to GenerateUserTypesFromPdb to always use <codeInline>new</codeInline> instead of user type casting.
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              Adding new option to GenerateUserTypesFromPdb to compile generated code into assembly.
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              Adding support in DIA symbol provider for reading locals that have LocationType static.
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <codeEntityReference qualifyHint="true">M:SharpDebug.UserMember`1.ToString</codeEntityReference> now forwards call to cached value's ToString() function.
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              GenerateUserTypesFromPdb generates properties for getting base classes for Multiple inheritance.
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              Adding support for enums and GenerateUserTypesFromPdb now exports all enums used in exported UserTypes.
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              Adding support for support for double/float variables and adding casting operators for them.
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              Adding support for accessing base classes from <codeEntityReference>T:SharpDebug.CodeType</codeEntityReference>
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              Easy conversion from <codeEntityReference>T:SharpDebug.CodePointer`1</codeEntityReference> to <codeEntityReference>T:SharpDebug.CodeArray`1</codeEntityReference>.
+            </para>
+          </listItem>
+          <listItem>
+            <para>
+              <codeEntityReference>T:SharpDebug.Debugger</codeEntityReference> now has function for searching memory for pattern:
+            </para>
+            <list class="bullet">
+              <listItem>
+                <para>
+                  <codeEntityReference>Overload:SharpDebug.Debugger.FindBytePatternInMemory</codeEntityReference>
+                </para>
+              </listItem>
+              <listItem>
+                <para>
+                  <codeEntityReference>Overload:SharpDebug.Debugger.FindAllBytePatternInMemory</codeEntityReference>
+                </para>
+              </listItem>
+              <listItem>
+                <para>
+                  <codeEntityReference>Overload:SharpDebug.Debugger.FindPatternInMemory</codeEntityReference>
+                </para>
+              </listItem>
+              <listItem>
+                <para>
+                  <codeEntityReference>Overload:SharpDebug.Debugger.FindAllPatternInMemory</codeEntityReference>
+                </para>
+              </listItem>
+              <listItem>
+                <para>
+                  <codeEntityReference>Overload:SharpDebug.Debugger.FindTextPatternInMemory</codeEntityReference>
+                </para>
+              </listItem>
+              <listItem>
+                <para>
+                  <codeEntityReference>Overload:SharpDebug.Debugger.FindAllTextPatternInMemory</codeEntityReference>
+                </para>
+              </listItem>
+            </list>
+          </listItem>
+          <listItem>
+            <para>Bug fixes</para>
+            <list class="bullet">
+              <listItem>
+                <para>Reading static array members</para>
+              </listItem>
+              <listItem>
+                <para>Code generation will now always generates constructor needed for base class constructor</para>
+              </listItem>
+              <listItem>
+                <para>
+                  <codeEntityReference qualifyHint="true">M:SharpDebug.Variable.CastAs``1</codeEntityReference> works with UserType types that haven't been loaded into metadata cache.
+                </para>
+              </listItem>
+              <listItem>
+                <para>Code generation now calls .ToString() instead of type casting to string.</para>
+              </listItem>
+              <listItem>
+                <para>
+                  <codeEntityReference qualifyHint="true">M:SharpDebug.Variable.#ctor(SharpDebug.Variable)</codeEntityReference> now copies all member fields.
+                </para>
+              </listItem>
+              <listItem>
+                <para>
+                  <codeEntityReference qualifyHint="true">M:SharpDebug.Variable.GetName</codeEntityReference> now has full path to how user get to this variable.
+                </para>
+              </listItem>
+            </list>
+          </listItem>
+        </list>
+
+      </content>
+    </section>
+
+    <relatedTopics>
+      <link xlink:href="b76ffd2d-4d7f-4b4f-9b3b-277603e78dd6" />
+    </relatedTopics>
+
+  </developerConceptualDocument>
+</topic>

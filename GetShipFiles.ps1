@@ -74,8 +74,8 @@ function Get-ShipFiles($dlls)
 }
 
 #Get-ShipFiles(@(
-#    #"CsDebugScript.CodeGen.App.exe",
-#    "CsDebugScript.CommonUserTypes.dll",
-#    "CsDebugScript.DwarfSymbolProvider.dll",
-#    "CsDebugScript.WinDbg.x64.dll",
-#    "CsDebugScript.WinDbg.x86.dll"));
+#    #"SharpDebug.CodeGen.App.exe",
+#    "SharpDebug.CommonUserTypes.dll",
+#    "SharpDebug.DwarfSymbolProvider.dll",
+#    "SharpDebug.WinDbg.x64.dll",
+#    "SharpDebug.WinDbg.x86.dll"));

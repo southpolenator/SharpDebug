@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
+    <Description>Provides access to DWARF symbols (for PE and ELF image containers) and also ability to read ELF core dumps. It is symbol provider and debugger engine interface for SharpDebug.Engine.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Engine\SharpDebug.Engine.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.CodeGen\SharpDebug.CodeGen.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CxxDemangler" Version="0.2.4.11" />
+    <PackageReference Include="ELFSharp" Version="2.1.1" />
+    <PackageReference Include="System.Reflection.TypeExtensions" Version="4.4.0" />
+  </ItemGroup>
+
+</Project>

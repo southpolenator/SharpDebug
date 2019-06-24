@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.CommonUserTypes\SharpDebug.CommonUserTypes.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DbgEng\SharpDebug.DbgEng.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DwarfSymbolProvider\SharpDebug.DwarfSymbolProvider.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Scripting\SharpDebug.Scripting.csproj" />
+  </ItemGroup>
+
+</Project>

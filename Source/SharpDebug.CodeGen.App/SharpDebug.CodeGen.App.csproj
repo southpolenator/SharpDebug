@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultAppTargets)</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <IsTool>True</IsTool>
+    <Description>Small tool that uses SharpDebug.CodeGen ability to extract user types from symbols files. It uses DIA to read PDB files and SharpDebug.DwarfSymbolProvider for DWARF symbols (either from PE or ELF image containers).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.CodeGen\SharpDebug.CodeGen.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DwarfSymbolProvider\SharpDebug.DwarfSymbolProvider.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.PdbSymbolProvider\SharpDebug.PdbSymbolProvider.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.4.3" />
+  </ItemGroup>
+
+</Project>

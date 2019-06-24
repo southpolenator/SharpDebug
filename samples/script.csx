@@ -1,10 +1,10 @@
-#r "CsDebugScript.CommonUserTypes.dll"
+#r "SharpDebug.CommonUserTypes.dll"
 #load "helper.csx"
 
 using System;
 using System.Linq;
-using CsDebugScript;
-using std = CsDebugScript.CommonUserTypes.NativeTypes.std;
+using SharpDebug;
+using std = SharpDebug.CommonUserTypes.NativeTypes.std;
 
 Console.Error.WriteLine("This is sample error");
 HelpMe("It works!");

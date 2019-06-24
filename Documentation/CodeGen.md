@@ -47,26 +47,26 @@ Here is an example XML configuration file:
   </Modules>
   <Transformations>
     <Transformation OriginalType="std::any"
-                    NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.any" />
+                    NewType="SharpDebug.CommonUserTypes.NativeTypes.std.any" />
     <Transformation OriginalType="std::array&lt;${T},${Length}&gt;"
-                    NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.array&lt;${T}&gt;" />
+                    NewType="SharpDebug.CommonUserTypes.NativeTypes.std.array&lt;${T}&gt;" />
     <Transformation OriginalType="std::basic_string&lt;char,${char_traits},${allocator}&gt;"
-                    NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.@string" />
+                    NewType="SharpDebug.CommonUserTypes.NativeTypes.std.@string" />
     <Transformation OriginalType="std::vector&lt;${T},${allocator}&gt;"
-                    NewType="CsDebugScript.CommonUserTypes.NativeTypes.std.vector&lt;${T}&gt;" />
+                    NewType="SharpDebug.CommonUserTypes.NativeTypes.std.vector&lt;${T}&gt;" />
   </Transformations>
   <UseDirectClassAccess>true</UseDirectClassAccess>
   <DontSaveGeneratedCodeFiles>true</DontSaveGeneratedCodeFiles>
   <GeneratePhysicalMappingOfUserTypes>true</GeneratePhysicalMappingOfUserTypes>
 </XmlConfig>
 ```
-You can see more about all available XML fields in [source code](../Source/CsDebugScript.CodeGen/XmlConfig.cs).
+You can see more about all available XML fields in [source code](../Source/SharpDebug.CodeGen/XmlConfig.cs).
 
 #### Transformations
 Transformations are being used for user types defined somewhere else (like [common user types](CommonUserTypes.md)). They allow mapping from symbol type to existing user type during code generation. For example, if user defines transformation for std::vector class like in example above, all members that are of type std::vector will be exported as CsDebubScript.commonUserTypes.NativeTypes.std.vector.
 
 #### Generating physical mapping of user types
-In order to fully benefit performance wise from code generation, you want to use this option. This will generate user types that read whole memory associated with the type (size of the type is written in symbol file) and later using types and offsets available from symbol file it will read directly from [MemoryBuffer](../Source/CsDebugScript.Engine/Engine/Utility/MemoryBuffer.cs). You can find all Read* functions in [UserType](../Source/CsDebugScript.Engine/UserType.cs) class.
+In order to fully benefit performance wise from code generation, you want to use this option. This will generate user types that read whole memory associated with the type (size of the type is written in symbol file) and later using types and offsets available from symbol file it will read directly from [MemoryBuffer](../Source/SharpDebug.Engine/Engine/Utility/MemoryBuffer.cs). You can find all Read* functions in [UserType](../Source/SharpDebug.Engine/UserType.cs) class.
 
 #### Using direct class access
 Some symbol providers (DbgEng symbol provider) doesn't support getting base classes, class fields, but only all fields defined in the type. Modern symbol providers support direct class access and should be used by default.

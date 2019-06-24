@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(EnlistmentRoot)\Source\CsDebugScript.DbgEng\CsDebugScript.DbgEng.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DbgEng\SharpDebug.DbgEng.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetStandard)</TargetFrameworks>
+    <RootNamespace>SharpDebug</RootNamespace>
+    <Description>Provides scripting ability to SharpDebug.Engine: executing scripts, interactive execution with REPL.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="2.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.CodeGen\SharpDebug.CodeGen.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DbgEng\SharpDebug.DbgEng.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Engine\SharpDebug.Engine.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.PdbSymbolProvider\SharpDebug.PdbSymbolProvider.csproj" />
+  </ItemGroup>
+
+</Project>

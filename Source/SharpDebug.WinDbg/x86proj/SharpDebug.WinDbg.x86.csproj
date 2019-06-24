@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <PlatformTarget>x86</PlatformTarget>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Source\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.ClrMdProvider\SharpDebug.ClrMdProvider.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.DbgEng\SharpDebug.DbgEng.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Engine\SharpDebug.Engine.csproj" />
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.UI\SharpDebug.UI.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(EnlistmentRoot)\DllExport.props" />
+
+</Project>

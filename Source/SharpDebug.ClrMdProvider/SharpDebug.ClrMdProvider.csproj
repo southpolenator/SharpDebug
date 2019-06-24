@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\SharedAssemblyInfo.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetFramework)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>Provides CLR debugging ability to SharpDebug.Engine using ClrMD. It only works when used with SharpDebug.DbgEng as debugger engine.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(EnlistmentRoot)\Source\SharpDebug.Engine\SharpDebug.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpPdb" Version="1.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Diagnostics.Runtime">
+      <HintPath>$(EnlistmentRoot)\External\Microsoft.Diagnostics.Runtime.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Hack for 'dotnet pack' command to include ClrMD into nuget. -->
+  <ItemGroup>
+    <_PackageFiles Include="$(EnlistmentRoot)\External\Microsoft.Diagnostics.Runtime.dll">
+      <BuildAction>None</BuildAction>
+      <PackagePath>lib\$(DefaultNetFramework)\</PackagePath>
+    </_PackageFiles>
+  </ItemGroup>
+</Project>
