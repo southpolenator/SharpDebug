@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.3\build\Microsoft.CodeAnalysis.Analyzers.props" Condition="Exists('..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.3\build\Microsoft.CodeAnalysis.Analyzers.props')" />
+  <Import Project="..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.9.3\build\Microsoft.CodeAnalysis.Analyzers.props" Condition="Exists('..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.9.3\build\Microsoft.CodeAnalysis.Analyzers.props')" />
   <Import Project="..\..\packages\Microsoft.VSSDK.BuildTools.15.7.109\build\Microsoft.VSSDK.BuildTools.props" Condition="Exists('..\..\packages\Microsoft.VSSDK.BuildTools.15.7.109\build\Microsoft.VSSDK.BuildTools.props')" />
   <PropertyGroup>
     <EnlistmentRoot>$(MSBuildThisFileDirectory)\..\..\</EnlistmentRoot>
@@ -102,17 +102,17 @@
     <Reference Include="ELFSharp, Version=2.0.0.0, Culture=neutral, PublicKeyToken=f2d0c9031b10d3c0, processorArchitecture=MSIL">
       <HintPath>..\..\packages\ELFSharp.2.1.1\lib\net45\ELFSharp.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.CodeAnalysis, Version=2.10.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.CodeAnalysis.Common.2.10.0\lib\netstandard1.3\Microsoft.CodeAnalysis.dll</HintPath>
+    <Reference Include="Microsoft.CodeAnalysis, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.CodeAnalysis.Common.3.1.0\lib\netstandard2.0\Microsoft.CodeAnalysis.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.CSharp, Version=2.10.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.CodeAnalysis.CSharp.2.10.0\lib\netstandard1.3\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.CodeAnalysis.CSharp.3.1.0\lib\netstandard2.0\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.CSharp.Scripting, Version=2.10.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.CodeAnalysis.CSharp.Scripting.2.10.0\lib\netstandard1.3\Microsoft.CodeAnalysis.CSharp.Scripting.dll</HintPath>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp.Scripting, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.CodeAnalysis.CSharp.Scripting.3.1.0\lib\netstandard2.0\Microsoft.CodeAnalysis.CSharp.Scripting.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.Scripting, Version=2.10.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.CodeAnalysis.Scripting.Common.2.10.0\lib\netstandard1.3\Microsoft.CodeAnalysis.Scripting.dll</HintPath>
+    <Reference Include="Microsoft.CodeAnalysis.Scripting, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.CodeAnalysis.Scripting.Common.3.1.0\lib\netstandard2.0\Microsoft.CodeAnalysis.Scripting.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>$(EnlistmentRoot)\External\Microsoft.Diagnostics.Runtime.dll</HintPath>
@@ -380,8 +380,8 @@
     <Reference Include="SharpPdb.Windows, Version=1.0.3.0, Culture=neutral, PublicKeyToken=3a5f07d24fadcaec, processorArchitecture=MSIL">
       <HintPath>..\..\packages\SharpPdb.Windows.1.0.3\lib\net45\SharpPdb.Windows.dll</HintPath>
     </Reference>
-    <Reference Include="SharpUtilities, Version=1.4.2.0, Culture=neutral, PublicKeyToken=3a5f07d24fadcaec, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\SharpUtilities.1.4.2\lib\net45\SharpUtilities.dll</HintPath>
+    <Reference Include="SharpUtilities, Version=1.4.6.0, Culture=neutral, PublicKeyToken=3a5f07d24fadcaec, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\SharpUtilities.1.4.6\lib\net45\SharpUtilities.dll</HintPath>
     </Reference>
     <Reference Include="stdole, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>False</EmbedInteropTypes>
@@ -396,13 +396,17 @@
       <HintPath>..\..\packages\System.AppContext.4.3.0\lib\net46\System.AppContext.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Buffers.4.5.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
+    </Reference>
     <Reference Include="System.Collections, Version=4.0.11.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System.Collections.Immutable, Version=1.2.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\packages\System.Collections.Immutable.1.5.0\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.Composition" />
-    <Reference Include="System.Console, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Console.4.3.0\lib\net46\System.Console.dll</HintPath>
+    <Reference Include="System.Console, Version=4.0.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Console.4.3.1\lib\net46\System.Console.dll</HintPath>
+      <Private>True</Private>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Data" />
@@ -435,17 +439,28 @@
     <Reference Include="System.IO.UnmanagedMemoryStream, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\packages\System.IO.UnmanagedMemoryStream.4.3.0\lib\net46\System.IO.UnmanagedMemoryStream.dll</HintPath>
     </Reference>
+    <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Memory.4.5.3\lib\netstandard2.0\System.Memory.dll</HintPath>
+    </Reference>
     <Reference Include="System.Net.Http, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
     <Reference Include="System.Reflection.Metadata, Version=1.4.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\packages\System.Reflection.Metadata.1.6.0\lib\netstandard2.0\System.Reflection.Metadata.dll</HintPath>
     </Reference>
-    <Reference Include="System.Reflection.TypeExtensions, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Reflection.TypeExtensions.4.4.0\lib\net461\System.Reflection.TypeExtensions.dll</HintPath>
+    <Reference Include="System.Reflection.TypeExtensions, Version=4.1.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Reflection.TypeExtensions.4.5.1\lib\net461\System.Reflection.TypeExtensions.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Runtime.CompilerServices.Unsafe.4.5.2\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
     <Reference Include="System.Security.Cryptography.Algorithms, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Security.Cryptography.Algorithms.4.3.0\lib\net461\System.Security.Cryptography.Algorithms.dll</HintPath>
+      <HintPath>..\..\packages\System.Security.Cryptography.Algorithms.4.3.1\lib\net461\System.Security.Cryptography.Algorithms.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Security.Cryptography.Encoding, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\packages\System.Security.Cryptography.Encoding.4.3.0\lib\net46\System.Security.Cryptography.Encoding.dll</HintPath>
@@ -455,24 +470,23 @@
       <HintPath>..\..\packages\System.Security.Cryptography.Primitives.4.3.0\lib\net46\System.Security.Cryptography.Primitives.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System.Security.Cryptography.X509Certificates, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Security.Cryptography.X509Certificates.4.3.0\lib\net461\System.Security.Cryptography.X509Certificates.dll</HintPath>
+    <Reference Include="System.Security.Cryptography.X509Certificates, Version=4.1.1.2, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Security.Cryptography.X509Certificates.4.3.2\lib\net461\System.Security.Cryptography.X509Certificates.dll</HintPath>
+      <Private>True</Private>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System.Text.Encoding.CodePages, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Text.Encoding.CodePages.4.3.0\lib\net46\System.Text.Encoding.CodePages.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.Text.Encoding.CodePages, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Text.Encoding.CodePages.4.5.1\lib\net461\System.Text.Encoding.CodePages.dll</HintPath>
     </Reference>
-    <Reference Include="System.Threading.Tasks.Extensions, Version=4.1.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Threading.Tasks.Extensions.4.3.0\lib\portable-net45+win8+wp8+wpa81\System.Threading.Tasks.Extensions.dll</HintPath>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Threading.Tasks.Extensions.4.5.2\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System.Threading.Thread, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\packages\System.Threading.Thread.4.3.0\lib\net46\System.Threading.Thread.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System.ValueTuple, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.ValueTuple.4.5.0\lib\net461\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Presentation" />
@@ -480,7 +494,8 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Xml.ReaderWriter, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\System.Xml.ReaderWriter.4.3.0\lib\net46\System.Xml.ReaderWriter.dll</HintPath>
+      <HintPath>..\..\packages\System.Xml.ReaderWriter.4.3.1\lib\net46\System.Xml.ReaderWriter.dll</HintPath>
+      <Private>True</Private>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Xml.XmlDocument, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -504,8 +519,8 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
-    <Analyzer Include="..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
+    <Analyzer Include="..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.9.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
+    <Analyzer Include="..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.9.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
     <Analyzer Include="..\..\packages\Microsoft.VisualStudio.SDK.Analyzers.15.7.4\analyzers\cs\Microsoft.VisualStudio.SDK.Analyzers.dll" />
     <Analyzer Include="..\..\packages\Microsoft.VisualStudio.Threading.Analyzers.15.7.17\analyzers\cs\Microsoft.VisualStudio.Threading.Analyzers.dll" />
   </ItemGroup>
@@ -519,7 +534,7 @@
     <Error Condition="!Exists('..\..\packages\Microsoft.VisualStudio.Threading.Analyzers.15.7.17\build\Microsoft.VisualStudio.Threading.Analyzers.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.VisualStudio.Threading.Analyzers.15.7.17\build\Microsoft.VisualStudio.Threading.Analyzers.targets'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.VSSDK.BuildTools.15.7.109\build\Microsoft.VSSDK.BuildTools.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.VSSDK.BuildTools.15.7.109\build\Microsoft.VSSDK.BuildTools.props'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.VSSDK.BuildTools.15.7.109\build\Microsoft.VSSDK.BuildTools.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.VSSDK.BuildTools.15.7.109\build\Microsoft.VSSDK.BuildTools.targets'))" />
-    <Error Condition="!Exists('..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.3\build\Microsoft.CodeAnalysis.Analyzers.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.3\build\Microsoft.CodeAnalysis.Analyzers.props'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.9.3\build\Microsoft.CodeAnalysis.Analyzers.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.CodeAnalysis.Analyzers.2.9.3\build\Microsoft.CodeAnalysis.Analyzers.props'))" />
   </Target>
   <Import Project="..\..\packages\Microsoft.VisualStudio.Threading.Analyzers.15.7.17\build\Microsoft.VisualStudio.Threading.Analyzers.targets" Condition="Exists('..\..\packages\Microsoft.VisualStudio.Threading.Analyzers.15.7.17\build\Microsoft.VisualStudio.Threading.Analyzers.targets')" />
   <Import Project="..\..\packages\Microsoft.VSSDK.BuildTools.15.7.109\build\Microsoft.VSSDK.BuildTools.targets" Condition="Exists('..\..\packages\Microsoft.VSSDK.BuildTools.15.7.109\build\Microsoft.VSSDK.BuildTools.targets')" />

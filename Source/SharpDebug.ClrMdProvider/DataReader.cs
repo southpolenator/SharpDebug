@@ -240,7 +240,7 @@ namespace SharpDebug.ClrMdProvider
                         byte* destination = (byte*)buffer.ToPointer();
 
                         MemoryBuffer.MemCpy(destination, memoryBuffer.BytePointer, (uint)bytesRequested);
-                        bytesRead = memoryBuffer.BytePointerLength;
+                        bytesRead = memoryBuffer.Length;
                     }
                     else
                     {
@@ -289,7 +289,7 @@ namespace SharpDebug.ClrMdProvider
                             MemoryBuffer.MemCpy(destination, memoryBuffer.BytePointer, (uint)bytesRequested);
                         }
 
-                        bytesRead = memoryBuffer.BytePointerLength;
+                        bytesRead = memoryBuffer.Length;
                     }
                     else
                     {
