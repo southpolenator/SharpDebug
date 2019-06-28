@@ -96,7 +96,9 @@
     <VsdConfigXml Include="VS.DPE.vsdconfigxml">
       <SubType>Designer</SubType>
     </VsdConfigXml>
-    <VsdConfigXmlAdditionalAssemblies Include="$(OutDir)\..\$(AssemblyName).DPE.dll" />
+    <VsdConfigXmlAdditionalAssemblies Include="$(OutDir)\..\$(AssemblyName).DPE.dll">
+      <InProject>false</InProject>
+    </VsdConfigXmlAdditionalAssemblies>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ELFSharp, Version=2.0.0.0, Culture=neutral, PublicKeyToken=f2d0c9031b10d3c0, processorArchitecture=MSIL">
@@ -122,10 +124,12 @@
     <Content Include="$(OutDir)\*.dll" Exclude="$(OutDir)\Microsoft.VisualStudio.TestPlatform*.dll;$(OutDir)\SharpDebug.WinDbg*.dll">
       <Link>%(Filename)%(Extension)</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <InProject>false</InProject>
     </Content>
     <Content Include="$(OutDir)\*.vsdconfig">
       <Link>%(Filename)%(Extension)</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <InProject>false</InProject>
     </Content>
     <Content Include="Resources\VSInteractiveWindowCommand.png" />
     <Content Include="Resources\VSInteractiveWindowPackage.ico" />
