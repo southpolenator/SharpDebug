@@ -83,8 +83,8 @@ namespace SharpDebug.PdbSymbolProvider
 
                 foreach (SymbolRecordKind kind in ConstantSymbol.Kinds)
                     foreach (ConstantSymbol c in PdbFile.PdbSymbolStream[kind].OfType<ConstantSymbol>())
-                        if (!constants.ContainsKey(c.Name))
-                            constants.Add(c.Name, c);
+                        if (!constants.ContainsKey(c.Name.String))
+                            constants.Add(c.Name.String, c);
                 return (IReadOnlyDictionary<string, ConstantSymbol>)constants;
             });
         }
@@ -266,7 +266,7 @@ namespace SharpDebug.PdbSymbolProvider
 
             foreach (SymbolRecordKind kind in dataKinds)
                 foreach (DataSymbol data in PdbFile.PdbSymbolStream[kind].OfType<DataSymbol>())
-                    yield return data.Name;
+                    yield return data.Name.String;
         }
 
         /// <summary>

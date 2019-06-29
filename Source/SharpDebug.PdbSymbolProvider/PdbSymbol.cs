@@ -156,7 +156,7 @@ namespace SharpDebug.PdbSymbolProvider
             else
                 throw new NotImplementedException($"Unexpected record kind: {record.Kind}");
             BasicType = DIA.BasicType.NoType;
-            Name = record.Name;
+            Name = record.Name.String;
 
             ulong size = record.Size;
 
@@ -167,7 +167,7 @@ namespace SharpDebug.PdbSymbolProvider
             Size = (int)size;
             hasVTable = record.VirtualTableShape != TypeIndex.None;
             IsForwardReference = record.IsForwardReference;
-            UniqueName = record.UniqueName;
+            UniqueName = record.UniqueName.String;
         }
 
         /// <summary>
@@ -177,7 +177,7 @@ namespace SharpDebug.PdbSymbolProvider
         {
             Tag = Engine.CodeTypeTag.Union;
             BasicType = DIA.BasicType.NoType;
-            Name = record.Name;
+            Name = record.Name.String;
 
             ulong size = record.Size;
 
@@ -187,7 +187,7 @@ namespace SharpDebug.PdbSymbolProvider
             }
             Size = (int)size;
             IsForwardReference = record.IsForwardReference;
-            UniqueName = record.UniqueName;
+            UniqueName = record.UniqueName.String;
         }
 
         /// <summary>
@@ -197,9 +197,9 @@ namespace SharpDebug.PdbSymbolProvider
         {
             Initialize(record.UnderlyingType);
             Tag = Engine.CodeTypeTag.Enum;
-            Name = record.Name;
+            Name = record.Name.String;
             IsForwardReference = record.IsForwardReference;
-            UniqueName = record.UniqueName;
+            UniqueName = record.UniqueName.String;
         }
 
         /// <summary>
@@ -494,7 +494,7 @@ namespace SharpDebug.PdbSymbolProvider
             if (typeRecord is EnumRecord enumRecord)
                 foreach (TypeRecord field in EnumerateFieldList(enumRecord.FieldList))
                     if (field is EnumeratorRecord enumField)
-                        yield return Tuple.Create(enumField.Name, enumField.Value.ToString());
+                        yield return Tuple.Create(enumField.Name.String, enumField.Value.ToString());
         }
 
         /// <summary>

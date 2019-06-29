@@ -19,7 +19,7 @@ namespace SharpDebug.PdbSymbolProvider
         public PdbSymbolField(PdbSymbol parentType, DataMemberRecord record)
             : base(parentType)
         {
-            Name = record.Name;
+            Name = record.Name.String;
             DataKind = DIA.DataKind.Member;
             Offset = (int)record.FieldOffset;
             TypeRecord typeRecord = !record.Type.IsSimple ? parentType.PdbModule.PdbFile.TpiStream[record.Type] : null;
@@ -46,7 +46,7 @@ namespace SharpDebug.PdbSymbolProvider
         public PdbSymbolField(PdbSymbol parentType, StaticDataMemberRecord record)
             : base(parentType)
         {
-            Name = record.Name;
+            Name = record.Name.String;
             LocationType = DIA.LocationType.Static;
             DataKind = DIA.DataKind.StaticMember;
             Type = parentType.PdbModule.GetSymbol(record.Type);
@@ -80,7 +80,7 @@ namespace SharpDebug.PdbSymbolProvider
         public PdbSymbolField(PdbGlobalScope parentType, DataSymbol data)
             : base(parentType)
         {
-            Name = data.Name;
+            Name = data.Name.String;
             LocationType = DIA.LocationType.Static;
             DataKind = DIA.DataKind.StaticMember;
             Type = parentType.PdbModule.GetSymbol(data.Type);
@@ -95,7 +95,7 @@ namespace SharpDebug.PdbSymbolProvider
         public PdbSymbolField(PdbGlobalScope parentType, ConstantSymbol constant)
             : base(parentType)
         {
-            Name = constant.Name;
+            Name = constant.Name.String;
             LocationType = DIA.LocationType.Constant;
             DataKind = DIA.DataKind.StaticMember;
             Type = parentType.PdbModule.GetSymbol(constant.TypeIndex);
